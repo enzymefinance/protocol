@@ -1,7 +1,7 @@
 # protocol
 Melon Protocol Specification
 
-See our [wiki][wiki-url] for more information.
+See our [wiki][wiki-url] (in development) for more information.
 
 [![Gitter](https://badges.gitter.im/melonproject/general.svg)][gitter-url]
            
