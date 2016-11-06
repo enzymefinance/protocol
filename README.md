@@ -1,7 +1,13 @@
 # protocol
 Melon Protocol Specification
 
-[![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+See our [wiki][wiki-url] for more information.
+
+[![Gitter](https://badges.gitter.im/melonproject/general.svg)][gitter-url]
+           
+[gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[wiki-url]: https://github.com/melonproject/protocol/wiki
+
 
 ## Installation
 
