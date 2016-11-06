@@ -1,12 +1,13 @@
 # protocol
 Melon Protocol Specification
 
-See our [wiki][wiki-url] (in development) for more information.
+See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more information.
 
 [![Gitter](https://badges.gitter.im/melonproject/general.svg)][gitter-url]
            
 [gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [wiki-url]: https://github.com/melonproject/protocol/wiki
+[whitepaper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
 
 
 ## Installation
