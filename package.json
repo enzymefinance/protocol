@@ -1,0 +1,35 @@
+{
+  "name": "protocol",
+  "version": "0.0.1",
+  "description": "Blockchain protocol for wealth preservation",
+  "main": "package.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melonproject/protocol.git"
+  },
+  "keywords": [
+    "Ethereum",
+    "Protocol",
+    "Melon"
+  ],
+  "author": "“Reto Trinkler <“rt@melonport.com”>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/melonproject/protocol/issues"
+  },
+  "homepage": "https://github.com/melonproject/protocol#readme",
+  "dependencies": {
+    "assert": "^1.4.1",
+    "async": "^2.0.1",
+    "bignumber.js": "^2.4.0",
+    "js-sha256": "^0.3.2",
+    "ethereumjs-testrpc": "3.0.0",
+    "truffle": "3.0.0-3"
+  }
+}
