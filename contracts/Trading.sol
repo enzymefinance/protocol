@@ -1,9 +1,9 @@
 pragma solidity ^0.4.4;
 
+import "./dependencies/Owned.sol";
 import "./TradingProtocol.sol";
 import "./RegistrarProtocol.sol";
 import "./PriceFeedProtocol.sol";
-import "./Owned.sol";
 
 /// @title Trading Contract
 /// @author Melonport AG <team@melonport.com>

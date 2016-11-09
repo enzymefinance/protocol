@@ -2,43 +2,80 @@ pragma solidity ^0.4.4;
 
 import "./PriceFeedProtocol.sol";
 
-
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Price Feed.
 contract PriceFeed is PriceFeedProtocol {
 
-    modifier noEther() { if (msg.value > 0) throw; _; }
-    modifier onlyOwner { if (msg.sender != owner) throw; _; }
+    // FILEDS
 
-    mapping (address => uint) prices;
+    address public OWNER = msg.sender;
+    uint public fee = 0;
+    uint public precision = 8; // Precision of price
+    uint public lastUpdate;
+    mapping (address => uint) m_price; // Address of fungible => price of fungible
+    mapping (address => uint) m_timestamp; // Address of fungible => price of fungible
+
+
+    // EVENTS
+
+    // MODIFIERS
+
+    modifier onlyOwner {
+        if (msg.sender != OWNER) throw;
+        _;
+    }
+
+    modifier msg_value_at_least() {
+        if (msg.value < fee) throw;
+        _;
+
+    }
+
+    modifier maps_equal(address[] x uint[] y) {
+        if (x.length != y.length) throw;
+        _;
+    }
+
+
+    // CONSTANT METHODS
+
+    /// Pre: Price of fungible has been set
+    /// Post: Price of asset asset relative to Ether with Precision _pricePrecision
+    function getPrice(address _asset)
+        constant
+        msg_value_at_least()
+        returns (uint)
+    {
+        return m_price[_asset];
+    }
+
+    // NON-CONSTANT METHODS
 
     function PriceFeed() {}
-    function () { throw; }
 
-    /// Set price of fundigle asset relative to Ether
+    /// Set price of fungible relative to Ether
     /** Ex:
-     *  Let asset == UST, let Value of 1 UST == 0.080456789 ETH
+     *  Let asset == UST, let Value of 1 UST := 1 USD == 0.080456789 ETH
      *  and let precision == 8,
-     *  => prices[UST] = 08045678
+     *  => m_price[UST] = 08045678
      */
-    function setPrice(address _asset, uint _price) noEther onlyOwner returns (bool) {
-        prices[_asset] = _price;
-        return true;
+    function setPrice(address[] assets, uint[] prices)
+        onlyOwner
+        maps_equal(assets, prices)
+    {
+        lastUpdate = now;
+        for (uint i = 0; i < assets.length; ++i) {
+            m_price[assets[i]] = prices[i];
+            m_timestamp[assets[i]] = now;
+        }
     }
 
-    /// Get price of fundigle asset relative to Ether with Precision _pricePrecision
-    function getPrice(address _asset) constant returns (uint) {
-        if (msg.value >= fee)
-            return prices[_asset];
-        return 0;
+    function setFee(uint256 newFee) onlyOwner returns (uint) {
+        fee = newFee;
     }
 
-    function setFee(uint256 _fee) noEther onlyOwner returns (uint) {
-        fee = _fee;
-    }
-
-    function payOut() noEther onlyOwner {
+    function payOut() onlyOwner {
         if(!msg.sender.send(this.balance)) throw;
     }
 }

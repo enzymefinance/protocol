@@ -1,11 +1,11 @@
 pragma solidity ^0.4.4;
 
+import "./dependencies/Owned.sol";
 import "./RegistrarProtocol.sol";
 import "./PriceFeedProtocol.sol";
 import "./TokenProtocol.sol";
 import "./PerformanceFeeProtocol.sol";
 import "./ReferenceTypeProtocol.sol";
-import "./Owned.sol";
 import "./Token.sol";
 
 contract Shares is Token {}
