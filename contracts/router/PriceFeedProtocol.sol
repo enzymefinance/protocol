@@ -10,7 +10,7 @@ contract PriceFeedProtocol {
     uint public fee = 0;
     uint public precision = 8;  // Precision of price ticker
     function getPrice(address _asset) constant returns (uint) {}
-    function setPrice(address _asset, uint _price) returns (bool) {}
+    function setPrice(address[] fungibles, uint[] prices) {}
     function setFee(uint256 _fee) returns (uint) {}
     function payOut() {}
 }

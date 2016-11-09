@@ -1,4 +1,3 @@
-/* eslint-env mocha */
 var BigNumber = require('bignumber.js');
 var Accounts = require('../lib/accounts.js');
 
@@ -125,7 +124,7 @@ contract('Core', (accounts) => {
       priceGraph.push(new BigNumber(1e+17)); // 1 ETH = 10 USD
       priceGraph.push(new BigNumber(8.3333333e+16)); // 1 ETH = 12 USD
       priceFeedProtocolInstances[0].setPrice(priceFeeds, priceGraph[0]);
-      
+
       /* Investing:
        *  Round 1: Exact
        *  Rount 2: Overpaid

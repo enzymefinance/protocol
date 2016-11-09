@@ -16,7 +16,6 @@ contract PriceFeed is PriceFeedProtocol {
     mapping (address => uint) m_price; // Address of fungible => price of fungible
     mapping (address => uint) m_timestamp; // Address of fungible => price of fungible
 
-
     // EVENTS
 
     // MODIFIERS
@@ -36,17 +35,16 @@ contract PriceFeed is PriceFeedProtocol {
         _;
     }
 
-
     // CONSTANT METHODS
 
     /// Pre: Price of fungible has been set
     /// Post: Price of asset asset relative to Ether with Precision _pricePrecision
-    function getPrice(address _asset)
+    function getPrice(address asset)
         constant
         msg_value_at_least(fee)
         returns (uint)
     {
-        return m_price[_asset];
+        return m_price[asset];
     }
 
     // NON-CONSTANT METHODS
@@ -59,14 +57,14 @@ contract PriceFeed is PriceFeedProtocol {
      *  and let precision == 8,
      *  => m_price[UST] = 08045678
      */
-    function setPrice(address[] assets, uint[] prices)
+    function setPrice(address[] fungibles, uint[] prices)
         onlyOwner
-        maps_equal(assets, prices)
+        maps_equal(fungibles, prices)
     {
         lastUpdate = now;
-        for (uint i = 0; i < assets.length; ++i) {
-            m_price[assets[i]] = prices[i];
-            m_timestamp[assets[i]] = now;
+        for (uint i = 0; i < fungibles.length; ++i) {
+            m_price[fungibles[i]] = prices[i];
+            m_timestamp[fungibles[i]] = now;
         }
     }
 
