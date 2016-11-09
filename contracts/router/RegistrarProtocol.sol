@@ -11,8 +11,8 @@ contract RegistrarProtocol {
     address[] public prices;
     address[] public exchanges;
 
-    mapping (address => bool) is_asset_available;
-    mapping (address => address) exchange_for_asset; // exchange available for certain asset
+    mapping (address => bool) m_isAssetAvailable;
+    mapping (address => address) m_exchangeForAsset; // exchange available for certain asset
 
     function numAssets() constant returns (uint) {}
     function lookup(address _asset) constant returns(bool) {}
