@@ -9,7 +9,7 @@ contract PriceFeed is PriceFeedProtocol {
 
     // FILEDS
 
-    address public OWNER = msg.sender;
+    address public owner;
     uint public fee = 0;
     uint public precision = 8; // Precision of price
     uint public lastUpdate;
@@ -21,7 +21,7 @@ contract PriceFeed is PriceFeedProtocol {
     // MODIFIERS
 
     modifier onlyOwner {
-        if (msg.sender != OWNER) throw;
+        if (msg.sender != owner) throw;
         _;
     }
 
@@ -49,7 +49,9 @@ contract PriceFeed is PriceFeedProtocol {
 
     // NON-CONSTANT METHODS
 
-    function PriceFeed() {}
+    function PriceFeed(address ownedBy) {
+        owner = ownedBy;
+    }
 
     /// Set price of fungible relative to Ether
     /** Ex:

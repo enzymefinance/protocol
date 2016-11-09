@@ -2,7 +2,7 @@
   "name": "protocol",
   "version": "0.0.1",
   "description": "Blockchain protocol for wealth preservation",
-  "main": "package.js",
+  "main": "index.js",
   "directories": {
     "test": "test"
   },
@@ -24,7 +24,7 @@
     "url": "https://github.com/melonproject/protocol/issues"
   },
   "homepage": "https://github.com/melonproject/protocol#readme",
-  "dependencies": {
+  "devDependencies": {
     "assert": "^1.4.1",
     "async": "^2.0.1",
     "bignumber.js": "^2.4.0",

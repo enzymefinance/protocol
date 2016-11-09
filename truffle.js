@@ -23,16 +23,11 @@ module.exports = {
       // gasPrice
       // from - default address to use for any transaction Truffle makes during migrations
     },
-    "morden": {
-      network_id: 2 // Official Ethereum test network
-    },
     "parity": {
       network_id: 2, // Official Ethereum test network
-      port: 8546
-    },
-    "staging": {
-      network_id: 1337 // custom private network
-      // use default rpc settings
+      port: 8546,
+      gas: 900000,
+      gasPrice: 30000000000,
     },
     "development": {
       network_id: "default"

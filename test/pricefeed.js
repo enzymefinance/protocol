@@ -38,7 +38,7 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    PriceFeed.new().then((result) => {
+    PriceFeed.new(OWNER).then((result) => {
       contract = result;
       contractAddress = contract.address;
       return contract.fee();
