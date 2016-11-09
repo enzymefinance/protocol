@@ -8,29 +8,44 @@ import "./RegistrarProtocol.sol";
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
 contract Registrar is RegistrarProtocol {
 
-    function Registrar(address[] _assets, address[] _prices, address[] _exchanges) {
-        if (_assets.length != _prices.length ||
-            _assets.length != _exchanges.length)
-          throw;
+    // FILEDS
+    
+    address public owner = msg.sender;
+    address[] public assets;
+    address[] public prices;
+    address[] public exchanges;
 
-        for (uint i = 0; i < _assets.length; ++i) {
-            is_asset_available[_assets[i]] = true;
-            assets.push(_assets[i]);
-            prices.push(_prices[i]);
-            exchanges.push(_exchanges[i]);
-            exchange_for_asset[_assets[i]] = _exchanges[i];
-        }
+    mapping (address => bool) m_isAssetAvailable;
+    mapping (address => address) m_exchangeForAsset; // exchange available for certain asset
+
+    // EVENTS
+
+    // MODIFIERS
+
+    modifier maps_equal(address[] x, address[] y, address[] z) {
+        if (x.length != y.length || y.length != z.length) throw;
+        _;
     }
+
+    // CONSTANT METHDOS
 
     function numAssets() constant returns (uint) { return assets.length; }
 
-    /// Lookup if asset can be stored in this vault
-    function lookup(address _asset) constant returns(bool) {
-        return is_asset_available[_asset];
-    }
+    function lookup(address _asset) constant returns(bool) { return m_isAssetAvailable[_asset]; }
 
-    /// Lookup if asset can be stored in this vault
-    function lookupExchange(address _asset) constant returns (address) {
-        return exchange_for_asset[_asset];
+    function lookupExchange(address _asset) constant returns (address) { return m_exchangeForAsset[_asset]; }
+
+    // NON-CONSTANT METHODS
+
+    function Registrar(address[] _assets, address[] _prices, address[] _exchanges)
+        maps_equal(_assets, _prices, _exchanges)
+    {
+        for (uint i = 0; i < _assets.length; ++i) {
+            m_isAssetAvailable[_assets[i]] = true;
+            assets.push(_assets[i]);
+            prices.push(_prices[i]);
+            exchanges.push(_exchanges[i]);
+            m_exchangeForAsset[_assets[i]] = _exchanges[i];
+        }
     }
 }

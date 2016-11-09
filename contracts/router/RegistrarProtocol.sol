@@ -11,8 +11,6 @@ contract RegistrarProtocol {
     address[] public prices;
     address[] public exchanges;
 
-    enum Properties { Voting, Demurrage }
-
     mapping (address => bool) is_asset_available;
     mapping (address => address) exchange_for_asset; // exchange available for certain asset
 
