@@ -4,6 +4,7 @@ import "./RegistrarProtocol.sol";
 
 /// @title Registrar Contract
 /// @author Melonport AG <team@melonport.com>
+/// @notice Routes internal data to smart-contracts
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
 contract Registrar is RegistrarProtocol {
 

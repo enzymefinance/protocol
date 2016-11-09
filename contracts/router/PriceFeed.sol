@@ -4,7 +4,7 @@ import "./PriceFeedProtocol.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Price Feed.
+/// @notice Routes external data to smart-contracts
 contract PriceFeed is PriceFeedProtocol {
 
     // FILEDS
@@ -26,13 +26,12 @@ contract PriceFeed is PriceFeedProtocol {
         _;
     }
 
-    modifier msg_value_at_least() {
-        if (msg.value < fee) throw;
+    modifier msg_value_at_least(uint x) {
+        if (msg.value < x) throw;
         _;
-
     }
 
-    modifier maps_equal(address[] x uint[] y) {
+    modifier maps_equal(address[] x, uint[] y) {
         if (x.length != y.length) throw;
         _;
     }
@@ -44,7 +43,7 @@ contract PriceFeed is PriceFeedProtocol {
     /// Post: Price of asset asset relative to Ether with Precision _pricePrecision
     function getPrice(address _asset)
         constant
-        msg_value_at_least()
+        msg_value_at_least(fee)
         returns (uint)
     {
         return m_price[_asset];

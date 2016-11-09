@@ -15,5 +15,5 @@ contract PerformanceFee is PerformanceFeeProtocol {
     }
     function () { throw; }
 
-    function calculatePerformanceFee() ifOwner returns (uint) {}
+    function calculatePerformanceFee() ifOwner returns (uint) { return 0; }
 }

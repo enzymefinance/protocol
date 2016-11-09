@@ -15,5 +15,5 @@ contract ManagementFee is ManagementFeeProtocol {
     }
     function () { throw; }
 
-    function calculateManagementFee() ifOwner returns (uint) {}
+    function calculateManagementFee() ifOwner returns (uint) { return 0; }
 }

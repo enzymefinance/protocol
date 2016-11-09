@@ -1,14 +1,13 @@
 pragma solidity ^0.4.4;
 
+import "./dependencies/ERC20.sol";
+import "./dependencies/ERC20Protocol.sol";
 import "./dependencies/Owned.sol";
-import "./RegistrarProtocol.sol";
-import "./PriceFeedProtocol.sol";
-import "./TokenProtocol.sol";
-import "./PerformanceFeeProtocol.sol";
-import "./ReferenceTypeProtocol.sol";
-import "./Token.sol";
+import "./router/RegistrarProtocol.sol";
+import "./router/PriceFeedProtocol.sol";
+import "./router/PerformanceFeeProtocol.sol";
 
-contract Shares is Token {}
+contract Shares is ERC20 {}
 
 
 contract CoreProtocol {
@@ -50,7 +49,6 @@ contract Core is Owned, CoreProtocol, Shares {
   struct Modules {
     RegistrarProtocol registrar;
     PerformanceFeeProtocol performanceFee;
-    ReferenceTypeProtocol referenceType;
     address addrKYC;
     address addrAML;
   }
@@ -68,7 +66,6 @@ contract Core is Owned, CoreProtocol, Shares {
   function Core(
     address addrRegistrar,
     address addrPerformanceFee,
-    address addrReferenceType,
     uint maxInvestment_
   ) {
     // Open or closed ended portfolio
@@ -81,7 +78,6 @@ contract Core is Owned, CoreProtocol, Shares {
 
     module.registrar = RegistrarProtocol(addrRegistrar);
     module.performanceFee = PerformanceFeeProtocol(addrPerformanceFee);
-    module.referenceType = ReferenceTypeProtocol(addrReferenceType);
   }
 
   function () { throw; }
@@ -262,8 +258,8 @@ contract Core is Owned, CoreProtocol, Shares {
     /*LogInt('calcGAV::numAssets', numAssets);*/
     for (uint i = 0; i < numAssets; ++i) {
       // Get asset holdings
-      TokenProtocol Token = TokenProtocol(address(module.registrar.assets(i)));
-      uint holdings = Token.balanceOf(address(this));
+      ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assets(i)));
+      uint holdings = ERC20.balanceOf(address(this));
       // Get asset prices
       PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.prices(i)));
       uint price = Price.getPrice(address(module.registrar.assets(i)));
