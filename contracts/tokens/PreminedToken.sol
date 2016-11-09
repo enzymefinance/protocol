@@ -1,11 +1,11 @@
 pragma solidity ^0.4.4;
 
-import "./TokenProtocol.sol";
+import "../dependencies/ERC20.sol";
 
 /// @title Premine Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract PreminedToken is TokenProtocol {
+contract PreminedToken is ERC20 {
     /*
      *  FIELDS
      */

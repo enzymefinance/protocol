@@ -26,6 +26,10 @@ module.exports = {
     "morden": {
       network_id: 2 // Official Ethereum test network
     },
+    "parity": {
+      network_id: 2, // Official Ethereum test network
+      port: 8546
+    },
     "staging": {
       network_id: 1337 // custom private network
       // use default rpc settings
