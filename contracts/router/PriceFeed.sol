@@ -49,9 +49,7 @@ contract PriceFeed is PriceFeedProtocol {
 
     // NON-CONSTANT METHODS
 
-    function PriceFeed(address ownedBy) {
-        owner = ownedBy;
-    }
+    function PriceFeed() {}
 
     /// Set price of fungible relative to Ether
     /** Ex:
