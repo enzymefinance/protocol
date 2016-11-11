@@ -1,8 +1,6 @@
 var async = require('async');
 var assert = require('assert');
 var BigNumber = require('bignumber.js');
-var sha256 = require('js-sha256').sha256;
-
 
 
 contract('PriceFeed', (accounts) => {
@@ -38,7 +36,7 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    PriceFeed.new(OWNER).then((result) => {
+    PriceFeed.new().then((result) => {
       contract = result;
       contractAddress = contract.address;
       return contract.fee();
@@ -57,8 +55,8 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Set multiple price', (done) => {
-    const addresses = [TEST_CASES[0].address, TEST_CASES[1].address, TEST_CASES[2].address ];
-    const prices = [TEST_CASES[0].price, TEST_CASES[1].price, TEST_CASES[2].price ];
+    const addresses = [TEST_CASES[0].address, TEST_CASES[1].address, TEST_CASES[2].address];
+    const prices = [TEST_CASES[0].price, TEST_CASES[1].price, TEST_CASES[2].price];
     contract.setPrice(addresses, prices, { from: OWNER }).then((result) => {
       return contract.lastUpdate();
     }).then((result) => {

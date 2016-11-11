@@ -9,7 +9,7 @@ contract PriceFeed is PriceFeedProtocol {
 
     // FILEDS
 
-    address public owner;
+    address public owner = msg.sender;
     uint public fee = 0;
     uint public precision = 8; // Precision of price
     uint public lastUpdate;
