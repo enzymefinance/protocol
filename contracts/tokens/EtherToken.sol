@@ -2,7 +2,7 @@ pragma solidity ^0.4.4;
 
 import "../dependencies/ERC20.sol";
 
-/// @title Premine Token Contract.
+/// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
@@ -33,7 +33,17 @@ contract EtherToken is ERC20 {
     // NON-CONSTANT METHODS
 
     // Post: Exchanged Ether against Token
-    function() payable returns (bool) { return deposit(); }
+    function() payable { deposit(); }
+
+    // Post: Exchanged Ether against Token
+    function deposit()
+        payable
+        returns (bool)
+    {
+        balances[msg.sender] += msg.value;
+        Deposit(msg.sender, msg.value);
+        return true;
+    }
 
     // Post: Exchanged Token against Ether
     function withdraw(uint amount)
@@ -43,16 +53,6 @@ contract EtherToken is ERC20 {
         if(!msg.sender.send(amount)) throw;
         balances[msg.sender] -= amount;
         Withdrawal(msg.sender, amount);
-        return true;
-    }
-
-    // Post: Exchanged Ether against Token
-    function deposit()
-        payable
-        returns (bool)
-    {
-        balances[msg.sender] += msg.value;
-        Deposit(msg.sender, msg.value);
         return true;
     }
 }
