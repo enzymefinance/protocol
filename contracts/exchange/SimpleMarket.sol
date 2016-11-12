@@ -32,27 +32,27 @@ contract SimpleMarket is SafeMath, MutexUser {
     // METHODS
 
     modifier is_past_zero(uint x) {
-        if (x <= 0) throw;
+        assert(0 < x);
         _;
     }
 
     modifier ERC20_initialized(ERC20 x) {
-        if (x == ERC20(0x0)) throw;
+        assert(x != ERC20(0x0));
         _;
     }
 
     modifier ERC20_not_equal(ERC20 x, ERC20 y) {
-        if (x == y) throw;
+        assert(x != y);
         _;
     }
 
     modifier is_offer_active(uint id) {
-        if (!isActive(id)) throw;
+        assert(isActive(id));
         _;
     }
 
     modifier only_offer_owner(uint id) {
-        if (msg.sender != getOwner(id)) throw;
+        assert(msg.sender == getOwner(id));
         _;
     }
 
@@ -84,14 +84,14 @@ contract SimpleMarket is SafeMath, MutexUser {
     )
         internal
     {
-        if (!buy_which_token.transferFrom(buyer, seller, buy_how_much)) throw;
-        if (!sell_which_token.transfer(buyer, sell_how_much)) throw;
+        assert(buy_which_token.transferFrom(buyer, seller, buy_how_much));
+        assert(sell_which_token.transfer(buyer, sell_how_much));
         Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     // NON-CONSTANT PUBLIC METHODS
 
-    // Make a new offer. Takes funds from the caller into market escrow.
+    // Make a new offer. Takes funds from the caller into exchnage escrow.
     function offer(
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
@@ -113,7 +113,7 @@ contract SimpleMarket is SafeMath, MutexUser {
         info.active = true;
         id = next_id();
         offers[id] = info;
-        if (!sell_which_token.transferFrom(msg.sender, this, sell_how_much)) throw;
+        assert(sell_which_token.transferFrom( msg.sender, this, info.sell_how_much));
         ItemUpdate(id);
     }
     // Accept given `quantity` of an offer. Transfers funds from caller to
@@ -163,7 +163,7 @@ contract SimpleMarket is SafeMath, MutexUser {
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
         delete offers[id];
-        if (!offer.sell_which_token.transfer(offer.owner, offer.sell_how_much)) throw;
+        assert(offer.sell_which_token.transfer(offer.owner, offer.sell_how_much));
         ItemUpdate(id);
         return true;
     }

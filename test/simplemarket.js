@@ -9,8 +9,12 @@ contract('SimpleMarket', (accounts) => {
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
-  const NUM_OFFERS = 8;
-
+  const NUM_OFFERS = 2;
+  const PREMINED_NAME = "Bitcoin Token";
+  const PREMINED_SYMBOL = "BTT";
+  const PREMINED_PRECISION = 8;
+  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));
+  const ALLOWANCE_AMOUNT = PREMINED_AMOUNT / 10;
 
   // GLOBALS
   let contract;
@@ -40,10 +44,19 @@ contract('SimpleMarket', (accounts) => {
     }).then((result) => {
       etherTokenContract = result;
       etherTokenAddress = etherTokenContract.address;
-      return PremineToken.new({ from: OWNER });
+      return PremineToken.new(
+        PREMINED_NAME, PREMINED_SYMBOL,
+        PREMINED_PRECISION, PREMINED_AMOUNT, { from: OWNER }
+      );
     }).then((result) => {
       premineTokenContract = result;
       premineTokenAddress = premineTokenContract.address;
+      return premineTokenContract.totalSupply({ from: OWNER });
+    }).then((result) => {
+      assert.equal(result.toNumber(), PREMINED_AMOUNT.toNumber());
+      return premineTokenContract.balanceOf(OWNER);
+    }).then((result) => {
+      assert.equal(result.toNumber(), PREMINED_AMOUNT.toNumber());
       done();
     });
   });
@@ -57,34 +70,42 @@ contract('SimpleMarket', (accounts) => {
           sell_which_token: premineTokenAddress,
           buy_how_much: 2*i + 1,
           buy_which_token: etherTokenAddress,
-          id: 0,
         }
       );
     }
     done();
   });
 
+  it('OWNER approves exchange to hold funds of preminedTokenContract', (done) => {
+    premineTokenContract.approve(contractAddress, ALLOWANCE_AMOUNT, { from: OWNER }
+    ).then((result) => {
+      return premineTokenContract.allowance(OWNER, contractAddress);
+    }).then((result) => {
+      assert.equal(result, ALLOWANCE_AMOUNT);
+      done();
+    });
+  });
+
   it('Create one side of the orderbook', (done) => {
-    //TODO asyncMap
-    for (i = 0; i < NUM_OFFERS; i++) {
-      lastOfferId += 1;
-      console.log(testCases[i].sell_how_much + "\t" +
-        testCases[i].sell_which_token + "\n" +
-        testCases[i].buy_how_much  + "\t" +
-        testCases[i].buy_which_token + "\n");
-      // contract.offer(
-      //   testCases[i].sell_how_much,
-      //   testCases[i].sell_which_token,
-      //   testCases[i].buy_how_much,
-      //   testCases[i].buy_which_token,
-      //   { from: OWNER }
-      // ).then((result) => {
-      //   // testCases[i].id = result;
-      //   console.log('Result: ', result);
-      //   if (lastOfferId == NUM_OFFERS) done();
-      // });
-    }
-    done();
+    async.mapSeries(
+      testCases,
+      (testCase, callbackMap) => {
+        contract.offer(
+          testCase.sell_how_much,
+          testCase.sell_which_token,
+          testCase.buy_how_much,
+          testCase.buy_which_token,
+          { from: OWNER }
+        ).then((result) => {
+          testCase.txHash = result;
+          callbackMap(null, testCase);
+        });
+      }
+      , function(err, results) {
+        testCases = results;
+        done();
+      }
+    );
   });
 
 });
