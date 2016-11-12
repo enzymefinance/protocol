@@ -21,7 +21,7 @@ contract SimpleMarket is SafeMath, MutexUser {
     }
     mapping( uint => OfferInfo ) public offers;
 
-    uint public last_offer_id;
+    uint public lastOfferId;
 
     // EVENTS
 
@@ -75,7 +75,7 @@ contract SimpleMarket is SafeMath, MutexUser {
     // NON-CONSTANT INTERNAL METHODS
 
     function next_id() internal returns (uint) {
-        last_offer_id++; return last_offer_id;
+        lastOfferId++; return lastOfferId;
     }
 
     function trade(

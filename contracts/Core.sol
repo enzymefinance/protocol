@@ -3,6 +3,7 @@ pragma solidity ^0.4.4;
 import "./dependencies/ERC20.sol";
 import "./dependencies/ERC20Protocol.sol";
 import "./dependencies/Owned.sol";
+import "./tokens/PremineToken.sol";
 import "./router/RegistrarProtocol.sol";
 import "./router/PriceFeedProtocol.sol";
 import "./router/PerformanceFeeProtocol.sol";
@@ -11,29 +12,24 @@ contract Shares is ERC20 {}
 
 
 contract CoreProtocol {
-    uint public sumInvested;
-    uint public sumWithdrawn;
-    uint public sumAssetsBought;
-    uint public sumAssetsSold;
-    uint public maxInvestment;
-    uint public sharePrice = 10**18;
 
-    event SharesCreated(address buyer, uint numShares, uint sharePrice);
-    event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
-    event Refund(address to, uint value);
+  event SharesCreated(address buyer, uint numShares, uint sharePrice);
+  event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
+  event Refund(address to, uint value);
 
-    event LogString(string text);
-    event LogInt(string text, uint value);
-    event LogBool(string text, bool value);
+  event LogString(string text);
+  event LogInt(string text, uint value);
+  event LogBool(string text, bool value);
+
 }
 
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
 contract Core is Owned, CoreProtocol, Shares {
-  /*
-   *  TYPES
-   */
+
+  // TYPES
+
   struct Manager {
       uint capital;
       uint delta;
@@ -47,43 +43,46 @@ contract Core is Owned, CoreProtocol, Shares {
       uint timestamp;
   }
   struct Modules {
+      PremineToken premineToken;
       RegistrarProtocol registrar;
       PerformanceFeeProtocol performanceFee;
       address addrKYC;
       address addrAML;
   }
 
-  /*
-   *  FIELDS
-   */
+  // FIELDS
+
   Manager manager;
   Analytics analytics;
   Modules module;
 
-  /*
-   *  METHODS
-   */
-  function Core(
-      address addrRegistrar,
-      address addrPerformanceFee,
-      uint maxInvestment_
-  ) {
-      // Open or closed ended portfolio
-      if (maxInvestment_ != 0)
-        maxInvestment = maxInvestment_;
+  uint public sumInvested;
+  uint public sumWithdrawn;
+  uint public sumAssetsBought;
+  uint public sumAssetsSold;
+  uint public sharePrice = 10**18;
 
+  // EVENTS
+
+  // CONSTANT METHDOS
+
+  // NON-CONSTANT METHODS
+
+  function Core(
+      address addrPremineToken,
+      address addrRegistrar,
+      address addrPerformanceFee
+  ) {
       analytics.nav = 0;
       analytics.delta = 10**18;
       analytics.timestamp = now;
 
+      module.premineToken = PremineToken(addrPremineToken);
       module.registrar = RegistrarProtocol(addrRegistrar);
       module.performanceFee = PerformanceFeeProtocol(addrPerformanceFee);
   }
 
-  /*
-   *  METHODS - INVESTING
-   */
-  /// Invest in a fund by creating shares
+  // Invest in a fund by creating shares
   /* Note:
    *  This is can be seen as a none persistent all or nothing limit order, where:
    *  quantity == quantitiyShares and
@@ -98,10 +97,6 @@ contract Core is Owned, CoreProtocol, Shares {
 
       if (sharePrice == 0) throw;
       uint sentFunds = msg.value;
-
-      if (maxInvestment != 0 &&
-          maxInvestment > sharePrice * wantedShares / 10**18)
-          throw;
 
       LogInt('create shares; sentFunds', sentFunds);
       LogInt('create shares; sharePrice', sharePrice);
@@ -135,9 +130,6 @@ contract Core is Owned, CoreProtocol, Shares {
       return true;
   }
 
-  /*
-   *  METHODS - WITHDRAWING
-   */
   /// Withdraw from a fund by annihilating shares
   function annihilateShares(uint offeredShares, uint wantedAmount) returns (bool) {
     if (manager.receivedFirstInvestment == false ||
