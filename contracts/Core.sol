@@ -3,7 +3,8 @@ pragma solidity ^0.4.4;
 import "./dependencies/ERC20.sol";
 import "./dependencies/ERC20Protocol.sol";
 import "./dependencies/Owned.sol";
-import "./tokens/PremineToken.sol";
+import "./dependencies/SafeMath.sol";
+import "./tokens/EtherToken.sol";
 import "./router/RegistrarProtocol.sol";
 import "./router/PriceFeedProtocol.sol";
 import "./router/PerformanceFeeProtocol.sol";
@@ -26,7 +27,7 @@ contract CoreProtocol {
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
-contract Core is Owned, CoreProtocol, Shares {
+contract Core is Owned, CoreProtocol, Shares, SafeMath {
 
   // TYPES
 
@@ -43,7 +44,7 @@ contract Core is Owned, CoreProtocol, Shares {
       uint timestamp;
   }
   struct Modules {
-      PremineToken premineToken;
+      EtherToken etherToken;
       RegistrarProtocol registrar;
       PerformanceFeeProtocol performanceFee;
       address addrKYC;
@@ -69,7 +70,7 @@ contract Core is Owned, CoreProtocol, Shares {
   // NON-CONSTANT METHODS
 
   function Core(
-      address addrPremineToken,
+      address addrEtherToken,
       address addrRegistrar,
       address addrPerformanceFee
   ) {
@@ -77,7 +78,7 @@ contract Core is Owned, CoreProtocol, Shares {
       analytics.delta = 10**18;
       analytics.timestamp = now;
 
-      module.premineToken = PremineToken(addrPremineToken);
+      module.etherToken = EtherToken(addrEtherToken);
       module.registrar = RegistrarProtocol(addrRegistrar);
       module.performanceFee = PerformanceFeeProtocol(addrPerformanceFee);
   }
@@ -116,6 +117,8 @@ contract Core is Owned, CoreProtocol, Shares {
           if (manager.receivedFirstInvestment == false) {
               manager.receivedFirstInvestment = true;
           }
+          // Store Ether in EtherToken contract
+          assert(module.etherToken.send(msg.value));
           SharesCreated(msg.sender, wantedShares, sharePrice);
       }
       // Refund remainder
@@ -195,57 +198,46 @@ contract Core is Owned, CoreProtocol, Shares {
       uint delta;
       uint nav = calcNAV();
 
+      // First investment not made
       if (analytics.nav == 0) {
-          // First investment not made
           delta = 10**18;
+      // First investment made; all funds withdrawn
       } else if (nav == 0) {
-          // First investment made; all funds withdrawn
           delta = 10**18;
+      // First investment made; not all funds withdrawn
       } else {
-          // First investment made; not all funds withdrawn
           delta = (analytics.delta * nav) / analytics.nav;
       }
-
-      LogInt('calcDelta; nav', nav);
-      LogInt('calcDelta; analytics.nav', analytics.nav);
-      LogInt('calcDelta; delta', delta);
-      LogInt('calcDelta; delta.analytics', analytics.delta);
 
       // Update Analytics
       analytics.delta = delta;
       analytics.nav = nav;
       analytics.timestamp = now;
 
-      // Reference Type here!
       return delta;
   }
 
   function calcNAV() constant returns (uint) {
-      uint gav = calcGAV();
+      uint nav = calcGAV();
       /* Rem:
        *  nav := gav - perf.fee - manage.fee
        */
-       return gav;
+       return nav;
   }
 
   /// Calcualte Fund Gross Asset Value in Wei
-  function calcGAV() constant returns (uint) {
-      // Add ether amount of fund
+  // Pre: Registar must include EtherToken specified in this Core contract
+  function calcGAV() constant returns (uint gav) {
       /* Rem:
        *  The current Investment (Withdrawal) is not yet stored in the
        *  sumInvested (sumWithdrawn) field.
        * Rem 2:
        *  Since by convention the first asset represents Ether, and the prices
        *  are given in Ether the first price is always equal to one.
-       */
-      uint gav = sumInvested - sumAssetsBought - sumWithdrawn + sumAssetsSold;
-
-      /* Rem:
+       * Rem 3:
        *  Assets need to be linked to the right price feed
        */
-      // Add assets other then ether
       uint numAssets = module.registrar.numAssets();
-      /*LogInt('calcGAV::numAssets', numAssets);*/
       for (uint i = 0; i < numAssets; ++i) {
           // Get asset holdings
           ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assets(i)));
@@ -261,12 +253,6 @@ contract Core is Owned, CoreProtocol, Shares {
            *  with 0 <= precision <= 18 and precision is a natural number.
            */
           gav += holdings * price;
-          LogInt('calcGAV::precision', precision);
-          LogInt('calcGAV::holdings', holdings);
-          LogInt('calcGAV::price', price);
-          LogInt('calcGAV::gav', gav);
       }
-
-      return gav;
   }
 }
