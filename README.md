@@ -21,3 +21,17 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
     ```
     npm install
     ```
+    
+## Getting started
+
+After installation is complete, go to the above `melon` directory, open a terminal and:
+
+1. Launch a testrpc client:
+    ```
+    node_modules/.bin/testrpc
+    ```
+
+2. Open a second terminal and run the test framework:
+    ```
+    node_modules/.bin/truffle test
+    ```
