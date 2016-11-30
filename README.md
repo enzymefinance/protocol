@@ -24,7 +24,7 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
     
 ## Getting started
 
-After installation is complete, go to the above `melon` directory, open a terminal and:
+After installation is complete, go to the above `protocol` directory, open a terminal and:
 
 1. Launch a testrpc client:
     ```
