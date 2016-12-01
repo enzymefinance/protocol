@@ -235,6 +235,7 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
        * Rem 3:
        *  Assets need to be linked to the right price feed
        */
+      gav += module.etherToken.balanceOf(this);
       uint numAssets = module.registrar.numAssets();
       for (uint i = 0; i < numAssets; ++i) {
           // Get asset holdings
