@@ -12,29 +12,41 @@ contract('PriceFeed', (accounts) => {
   const OWNER = accounts[0];
   const INITIAL_FEE = 0;
   const PREMINED_PRECISION = new BigNumber(Math.pow(10,8));
-  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));  
+  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));
 
-  // CONSTANTS
+  // Test constants
   const NOT_OWNER = accounts[1];
-  const TEST_CASES = [
+  // Set price of fungible relative to Ether
+  /** Ex:
+   *  Let asset == UST, let Value of 1 UST := 1 USD == 0.080456789 ETH
+   *  and let precision == 8,
+   *  => assetPrices[UST] = 08045678
+   */
+  var data = {"BTC":0.01117,"USD":8.45,"EUR":7.92};
+  const prices = [
+    1.0 / data['BTC'] * PREMINED_PRECISION,
+    1.0 / data['USD'] * PREMINED_PRECISION,
+    1.0 / data['EUR'] * PREMINED_PRECISION
+  ];
+  console.log(prices);
+  let testCases = [
     {
       address: "0x0000000000000000000000000000000000000000",
-      price: new BigNumber(9.0909091e+16),
+      price: prices[0],
     },
     {
       address: "0x0000000000000000000000000000000000000001",
-      price: new BigNumber(1e+17),
+      price: prices[1],
     },
     {
       address: "0x0000000000000000000000000000000000000002",
-      price: new BigNumber(8.3333333e+16),
+      price: prices[2],
     },
   ];
 
-  // GLOBALS
+  // Test globals
   let contract;
   let contractAddress;
-  const ETHER = new BigNumber(Math.pow(10,18));
 
 
   before('Check accounts', (done) => {
@@ -62,8 +74,8 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Set multiple price', (done) => {
-    const addresses = [TEST_CASES[0].address, TEST_CASES[1].address, TEST_CASES[2].address];
-    const prices = [TEST_CASES[0].price, TEST_CASES[1].price, TEST_CASES[2].price];
+    const addresses = [testCases[0].address, testCases[1].address, testCases[2].address];
+    const prices = [testCases[0].price, testCases[1].price, testCases[2].price];
     contract.setPrice(addresses, prices, { from: OWNER }).then((result) => {
       return contract.lastUpdate();
     }).then((result) => {
@@ -73,13 +85,17 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Get multiple existent prices', (done) => {
-    async.mapSeries(TEST_CASES, (testCase, callbackMap) => {
-      contract.getPrice(testCase.address, { from: NOT_OWNER }).then((result) => {
+    async.mapSeries(
+      testCases,
+      (testCase, callbackMap) => {
+      contract.getPrice(testCase.address, { from: NOT_OWNER }
+      ).then((result) => {
         assert.notEqual(result, testCase.price);
         callbackMap(null, testCase);
       });
-    }, (err, result) => {
-      testCases = result;
+    },
+    (err, results) => {
+      testCases = results;
       done();
     });
   });
