@@ -25,9 +25,7 @@ module.exports = {
     },
     "parity": {
       network_id: 2, // Official Ethereum test network
-      port: 8546,
-      gas: 900000,
-      gasPrice: 30000000000,
+      port: 8545
     },
     "development": {
       network_id: "default"

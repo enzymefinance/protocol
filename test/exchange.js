@@ -3,7 +3,7 @@ var assert = require('assert');
 var BigNumber = require('bignumber.js');
 
 
-contract('SimpleMarket', (accounts) => {
+contract('Exchange', (accounts) => {
 
   // CONSTANTS
   const INITIAL_OFFER_ID = 0;
@@ -34,7 +34,7 @@ contract('SimpleMarket', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    SimpleMarket.new().then((result) => {
+    Exchange.new().then((result) => {
       contract = result;
       contractAddress = contract.address;
       return contract.lastOfferId();
@@ -87,6 +87,37 @@ contract('SimpleMarket', (accounts) => {
   });
 
   it('Create one side of the orderbook', (done) => {
+    async.mapSeries(
+      testCases,
+      (testCase, callbackMap) => {
+        contract.offer(
+          testCase.sell_how_much,
+          testCase.sell_which_token,
+          testCase.buy_how_much,
+          testCase.buy_which_token,
+          { from: OWNER }
+        ).then((result) => {
+          testCase.txHash = result;
+          callbackMap(null, testCase);
+        });
+      }
+      , function(err, results) {
+        testCases = results;
+        done();
+      }
+    );
+  });
+
+  it('Check of orders open', (done) => {
+    contract.offers(0, { from: OWNER }
+    ).then((result) => {
+      console.log(result);
+      // assert.equal(result, ALLOWANCE_AMOUNT);
+      done();
+    });
+  });
+
+  it('Cancel one side of the orderbook', (done) => {
     async.mapSeries(
       testCases,
       (testCase, callbackMap) => {

@@ -7,7 +7,7 @@ import '../dependencies/MutexUser.sol';
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
-contract SimpleMarket is SafeMath, MutexUser {
+contract Exchange is SafeMath, MutexUser {
 
     // FIELDS
 
