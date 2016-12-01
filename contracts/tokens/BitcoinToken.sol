@@ -1,7 +1,6 @@
 pragma solidity ^0.4.4;
 
 import "./PreminedToken.sol";
-import "../dependencies/SafeMath.sol";
 
 /// @title Premine Token Contract.
 /// @author Melonport AG <team@melonport.com>

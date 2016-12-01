@@ -6,11 +6,10 @@ pragma solidity ^0.4.4;
 /// @notice This is to be considered as a protocol on how to access the underlying
 /// Price Feed Contract
 contract PriceFeedProtocol {
-    address public owner = msg.sender;
-    uint public fee = 0;
-    uint public precision = 8;  // Precision of price ticker
-    function getPrice(address _asset) constant returns (uint) {}
-    function setPrice(address[] fungibles, uint[] prices) {}
-    function setFee(uint256 _fee) returns (uint) {}
+
+    function getPrice(address ofAsset) constant returns (uint) {}
+    function setPrice(address[] ofAssets, uint[] newPrices) {}
+    function setFee(uint256 newFee) returns (uint) {}
     function payOut() {}
+      
 }

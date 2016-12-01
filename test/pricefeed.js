@@ -5,9 +5,16 @@ var BigNumber = require('bignumber.js');
 
 contract('PriceFeed', (accounts) => {
 
-  // CONSTANTS
-  const INITIAL_FEE = 0;
+  // Solidity constants
+  const ether = new BigNumber(Math.pow(10,18));
+
+  // Contract constants
   const OWNER = accounts[0];
+  const INITIAL_FEE = 0;
+  const PREMINED_PRECISION = new BigNumber(Math.pow(10,8));
+  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));  
+
+  // CONSTANTS
   const NOT_OWNER = accounts[1];
   const TEST_CASES = [
     {

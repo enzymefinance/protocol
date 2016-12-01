@@ -1,51 +1,52 @@
 pragma solidity ^0.4.4;
 
 import "./RegistrarProtocol.sol";
+import "../dependencies/SafeMath.sol";
 
 /// @title Registrar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes internal data to smart-contracts
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
-contract Registrar is RegistrarProtocol {
+contract Registrar is RegistrarProtocol, SafeMath {
 
     // FILEDS
-    
+
     address public owner = msg.sender;
     address[] public assets;
-    address[] public prices;
+    address[] public priceFeeds;
     address[] public exchanges;
 
-    mapping (address => bool) m_isAssetAvailable;
-    mapping (address => address) m_exchangeForAsset; // exchange available for certain asset
+    mapping (address => bool) isAssetAvailable;
+    mapping (address => address) assignedExchanges; // exchange available for certain asset
 
     // EVENTS
 
     // MODIFIERS
 
     modifier maps_equal(address[] x, address[] y, address[] z) {
-        if (x.length != y.length || y.length != z.length) throw;
+        assert(x.length == y.length && y.length == z.length);
         _;
     }
 
     // CONSTANT METHDOS
 
-    function numAssets() constant returns (uint) { return assets.length; }
+    function numAssignedAssets() constant returns (uint) { return assets.length; }
 
-    function lookup(address _asset) constant returns(bool) { return m_isAssetAvailable[_asset]; }
+    function lookupAvailability(address ofAsset) constant returns(bool) { return isAssetAvailable[ofAsset]; }
 
-    function lookupExchange(address _asset) constant returns (address) { return m_exchangeForAsset[_asset]; }
+    function lookupAssignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
 
     // NON-CONSTANT METHODS
 
-    function Registrar(address[] _assets, address[] _prices, address[] _exchanges)
-        maps_equal(_assets, _prices, _exchanges)
+    function Registrar(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
+        maps_equal(ofAssets, ofPriceFeeds, ofExchanges)
     {
-        for (uint i = 0; i < _assets.length; ++i) {
-            m_isAssetAvailable[_assets[i]] = true;
-            assets.push(_assets[i]);
-            prices.push(_prices[i]);
-            exchanges.push(_exchanges[i]);
-            m_exchangeForAsset[_assets[i]] = _exchanges[i];
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            isAssetAvailable[ofAssets[i]] = true;
+            assets.push(ofAssets[i]);
+            priceFeeds.push(ofPriceFeeds[i]);
+            exchanges.push(ofExchanges[i]);
+            assignedExchanges[ofAssets[i]] = ofExchanges[i];
         }
     }
 }
