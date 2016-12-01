@@ -71,8 +71,7 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
 
   function Core(
       address addrEtherToken,
-      address addrRegistrar,
-      address addrPerformanceFee
+      address addrRegistrar
   ) {
       analytics.nav = 0;
       analytics.delta = 10**18;
@@ -80,7 +79,6 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
 
       module.etherToken = EtherToken(addrEtherToken);
       module.registrar = RegistrarProtocol(addrRegistrar);
-      module.performanceFee = PerformanceFeeProtocol(addrPerformanceFee);
   }
 
   // Invest in a fund by creating shares

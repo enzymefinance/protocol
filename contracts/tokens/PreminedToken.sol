@@ -6,7 +6,7 @@ import "../dependencies/SafeMath.sol";
 /// @title Premine Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract PremineToken is ERC20, SafeMath {
+contract PreminedToken is ERC20, SafeMath {
 
     // FIELDS
 
@@ -17,7 +17,7 @@ contract PremineToken is ERC20, SafeMath {
 
     // METHODS
 
-    function PremineToken(string _name, string _symbol, uint _precision, uint _amount) {
+    function PreminedToken(string _name, string _symbol, uint _precision, uint _amount) {
         name = _name; // Set the name for display purposes
         symbol = _symbol; // Set the symbol for display purposes
         precision = _precision; // Defined in price feed protocol
