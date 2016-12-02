@@ -2,20 +2,19 @@ pragma solidity ^0.4.4;
 
 import "./RegistrarProtocol.sol";
 import "../dependencies/SafeMath.sol";
+import "../dependencies/Owned.sol";
 
 /// @title Registrar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes internal data to smart-contracts
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
-contract Registrar is RegistrarProtocol, SafeMath {
+contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     // FILEDS
 
-    address public owner = msg.sender;
     address[] public assets;
     address[] public priceFeeds;
     address[] public exchanges;
-
     mapping (address => bool) isAssetAvailable;
     mapping (address => address) assignedExchanges; // exchange available for certain asset
 
@@ -32,9 +31,13 @@ contract Registrar is RegistrarProtocol, SafeMath {
 
     function numAssignedAssets() constant returns (uint) { return assets.length; }
 
-    function lookupAvailability(address ofAsset) constant returns(bool) { return isAssetAvailable[ofAsset]; }
+    function assetAt(uint index) constant returns (address) { return assets[index]; }
 
-    function lookupAssignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
+    function priceFeedsAt(uint index) constant returns (address) { return priceFeeds[index]; }
+
+    function availability(address ofAsset) constant returns (bool) { return isAssetAvailable[ofAsset]; }
+
+    function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
 
     // NON-CONSTANT METHODS
 

@@ -7,9 +7,10 @@ pragma solidity ^0.4.4;
 /// Price Feed Contract
 contract PriceFeedProtocol {
 
+    function precision() constant returns (uint) {}
     function getPrice(address ofAsset) constant returns (uint) {}
     function setPrice(address[] ofAssets, uint[] newPrices) {}
     function setFee(uint256 newFee) returns (uint) {}
     function payOut() {}
-      
+
 }

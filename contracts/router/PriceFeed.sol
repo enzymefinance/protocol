@@ -2,29 +2,31 @@ pragma solidity ^0.4.4;
 
 import "./PriceFeedProtocol.sol";
 import "../dependencies/SafeMath.sol";
+import "../dependencies/Owned.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart-contracts
-contract PriceFeed is PriceFeedProtocol, SafeMath {
+contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // FILEDS
 
-    address public owner = msg.sender;
+    // Constant fields
+    uint constant PRECISION = 8; // Precision of price
+
+    // Fields that can be changed by functions
+    uint updateCounter = 0;
     uint public fee = 0;
-    uint public precision = 8; // Precision of price
     uint public lastUpdate;
     mapping (address => uint) assetPrices; // Address of fungible => price of fungible
     mapping (address => uint) assetTimestamps; // Address of fungible => price of fungible
 
     // EVENTS
 
-    // MODIFIERS
+    event PriceSet(address indexed ofAsset, uint ofPrice, uint updateCounter);
+    event PriceRequested(address indexed sender, address indexed ofAsset, uint updateCounter);
 
-    modifier onlyOwner {
-        assert(msg.sender == owner);
-        _;
-    }
+    // MODIFIERS
 
     modifier msg_value_at_least(uint x) {
         assert(msg.value >= x);
@@ -38,6 +40,8 @@ contract PriceFeed is PriceFeedProtocol, SafeMath {
 
     // CONSTANT METHODS
 
+    function precision() constant returns (uint) { return PRECISION; }
+
     /// Pre: Price of fungible has been set
     /// Post: Price of asset asset relative to Ether with Precision _pricePrecision
     function getPrice(address ofAsset)
@@ -45,6 +49,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath {
         msg_value_at_least(fee)
         returns (uint)
     {
+        PriceRequested(msg.sender, ofAsset, updateCounter);
         return assetPrices[ofAsset];
     }
 
@@ -66,6 +71,8 @@ contract PriceFeed is PriceFeedProtocol, SafeMath {
         for (uint i = 0; i < ofAssets.length; ++i) {
             assetPrices[ofAssets[i]] = newPrices[i];
             assetTimestamps[ofAssets[i]] = now;
+            updateCounter += 1;
+            PriceSet(ofAssets[i], newPrices[i], updateCounter);
         }
     }
 

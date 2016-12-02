@@ -7,6 +7,7 @@ import "./dependencies/SafeMath.sol";
 import "./tokens/EtherToken.sol";
 import "./router/RegistrarProtocol.sol";
 import "./router/PriceFeedProtocol.sol";
+import "./router/ManagementFeeProtocol.sol";
 import "./router/PerformanceFeeProtocol.sol";
 
 contract Shares is ERC20 {}
@@ -34,8 +35,8 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
   struct Manager {
       uint capital;
       uint delta;
-      bool receivedFirstInvestment;
-      uint evaluationInterval;  // Calcuate delta for fees every x days
+      bool received_first_investment;
+      uint evaluation_interval;  // Calcuate delta for fees every x days
   }
   // Analytics of last time creation/annihilation of shares happened.
   struct Analytics {
@@ -44,11 +45,10 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
       uint timestamp;
   }
   struct Modules {
-      EtherToken etherToken;
+      EtherToken ether_token;
       RegistrarProtocol registrar;
-      PerformanceFeeProtocol performanceFee;
-      address addrKYC;
-      address addrAML;
+      ManagementFeeProtocol management_fee;
+      PerformanceFeeProtocol performance_fee;
   }
 
   // FIELDS
@@ -77,7 +77,7 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
       analytics.delta = 10**18;
       analytics.timestamp = now;
 
-      module.etherToken = EtherToken(addrEtherToken);
+      module.ether_token = EtherToken(addrEtherToken);
       module.registrar = RegistrarProtocol(addrRegistrar);
   }
 
@@ -112,11 +112,11 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
           // Bookkeeping
           analytics.nav += curSumInvested;
           // Flag first investment as happened
-          if (manager.receivedFirstInvestment == false) {
-              manager.receivedFirstInvestment = true;
+          if (manager.received_first_investment == false) {
+              manager.received_first_investment = true;
           }
           // Store Ether in EtherToken contract
-          assert(module.etherToken.send(msg.value));
+          assert(module.ether_token.send(msg.value));
           SharesCreated(msg.sender, wantedShares, sharePrice);
       }
       // Refund remainder
@@ -133,7 +133,7 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
 
   /// Withdraw from a fund by annihilating shares
   function annihilateShares(uint offeredShares, uint wantedAmount) returns (bool) {
-    if (manager.receivedFirstInvestment == false ||
+    if (manager.received_first_investment == false ||
         offeredShares == 0 ||
         wantedAmount == 0)
         throw;
@@ -235,15 +235,15 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
        * Rem 3:
        *  Assets need to be linked to the right price feed
        */
-      gav += module.etherToken.balanceOf(this);
-      uint numAssets = module.registrar.numAssets();
-      for (uint i = 0; i < numAssets; ++i) {
+      gav += module.ether_token.balanceOf(this) * 1;
+      uint numAssignedAssets = module.registrar.numAssignedAssets();
+      for (uint i = 0; i < numAssignedAssets; ++i) {
           // Get asset holdings
-          ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assets(i)));
+          ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
           uint holdings = ERC20.balanceOf(address(this));
           // Get asset prices
-          PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.prices(i)));
-          uint price = Price.getPrice(address(module.registrar.assets(i)));
+          PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
+          uint price = Price.getPrice(address(module.registrar.assetAt(i)));
           uint precision = Price.precision();
           // Sum up product of asset holdings and asset prices
           /* Rem:

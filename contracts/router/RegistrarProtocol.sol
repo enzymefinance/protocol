@@ -7,7 +7,9 @@ pragma solidity ^0.4.4;
 contract RegistrarProtocol {
 
     function numAssignedAssets() constant returns (uint) {}
-    function lookupAvailability(address ofAsset) constant returns(bool) {}
-    function lookupAssignedExchange(address ofAsset) constant returns (address) {}
-      
+    function assetAt(uint index) constant returns (address) {}
+    function priceFeedsAt(uint index) constant returns (address) {}
+    function availability(address ofAsset) constant returns(bool) {}
+    function assignedExchange(address ofAsset) constant returns (address) {}
+
 }
