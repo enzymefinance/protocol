@@ -3,27 +3,22 @@ var assert = require('assert');
 var BigNumber = require('bignumber.js');
 var Helpers = require('../lib/Helpers.js');
 var SolKeywords = require('../lib/SolKeywords.js');
+var SolConstants = require('../lib/SolConstants.js');
+
 
 contract('Exchange', (accounts) => {
-
-  // Contract constants
-  const PREMINED_PRECISION = new BigNumber(Math.pow(10,8));
-  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));
 
   // Test constants
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
   const NUM_OFFERS = 3;
-  const ALLOWANCE_AMOUNT = PREMINED_AMOUNT / 10;
+  const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
 
   // Test globals
-  let contract;
-  let contractAddress;
-  let etherTokenContract;
-  let etherTokenAddress;
-  let bitcoinTokenContract;
-  let bitcoinTokenAddress;
+  let contract,
+    etherTokenContract,
+    bitcoinTokenContract;
   let testCases;
   let lastOfferId = 0;
 
@@ -35,25 +30,22 @@ contract('Exchange', (accounts) => {
   it('Deploy smart contract', (done) => {
     Exchange.new().then((result) => {
       contract = result;
-      contractAddress = contract.address;
       return contract.lastOfferId();
     }).then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID)
       return EtherToken.new();
     }).then((result) => {
       etherTokenContract = result;
-      etherTokenAddress = etherTokenContract.address;
       return BitcoinToken.new({ from: OWNER }
       );
     }).then((result) => {
       bitcoinTokenContract = result;
-      bitcoinTokenAddress = bitcoinTokenContract.address;
       return bitcoinTokenContract.totalSupply({ from: OWNER });
     }).then((result) => {
-      assert.equal(result.toNumber(), PREMINED_AMOUNT.toNumber());
+      assert.equal(result.toNumber(), SolConstants.PREMINED_AMOUNT.toNumber());
       return bitcoinTokenContract.balanceOf(OWNER);
     }).then((result) => {
-      assert.equal(result.toNumber(), PREMINED_AMOUNT.toNumber());
+      assert.equal(result.toNumber(), SolConstants.PREMINED_AMOUNT.toNumber());
       done();
     });
   });
@@ -65,9 +57,9 @@ contract('Exchange', (accounts) => {
       testCases.push(
         {
           sell_how_much: Helpers.atomizedPrices[0] * (1 - i*0.1),
-          sell_which_token: bitcoinTokenAddress,
+          sell_which_token: bitcoinTokenContract.address,
           buy_how_much: 1 * SolKeywords.ether,
-          buy_which_token: etherTokenAddress,
+          buy_which_token: etherTokenContract.address,
           id: i + 1,
           owner: OWNER,
           active: true,
@@ -78,9 +70,9 @@ contract('Exchange', (accounts) => {
   });
 
   it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
-    bitcoinTokenContract.approve(contractAddress, ALLOWANCE_AMOUNT, { from: OWNER }
+    bitcoinTokenContract.approve(contract.address, ALLOWANCE_AMOUNT, { from: OWNER }
     ).then((result) => {
-      return bitcoinTokenContract.allowance(OWNER, contractAddress);
+      return bitcoinTokenContract.allowance(OWNER, contract.address);
     }).then((result) => {
       assert.equal(result, ALLOWANCE_AMOUNT);
       done();

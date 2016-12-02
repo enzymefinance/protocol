@@ -7,13 +7,8 @@ var SolKeywords = require('../lib/SolKeywords.js');
 
 contract('PriceFeed', (accounts) => {
 
-  // Contract constants
-  const OWNER = accounts[0];
-  const INITIAL_FEE = 0;
-  const PREMINED_PRECISION = new BigNumber(Math.pow(10,8));
-  const PREMINED_AMOUNT = new BigNumber(Math.pow(10,10));
-
   // Test constants
+  const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
   let testCases = [
     {
