@@ -1,13 +1,11 @@
 var async = require('async');
 var assert = require('assert');
 var BigNumber = require('bignumber.js');
-var helpers = require('../lib/helpers.js');
+var Helpers = require('../lib/Helpers.js');
+var SolKeywords = require('../lib/SolKeywords.js');
 
 
 contract('PriceFeed', (accounts) => {
-
-  // Solidity constants
-  const ether = new BigNumber(Math.pow(10,18));
 
   // Contract constants
   const OWNER = accounts[0];
@@ -20,15 +18,15 @@ contract('PriceFeed', (accounts) => {
   let testCases = [
     {
       address: "0x0000000000000000000000000000000000000000",
-      price: helpers.inverseAtomizedPrices[0],
+      price: Helpers.inverseAtomizedPrices[0],
     },
     {
       address: "0x0000000000000000000000000000000000000001",
-      price: helpers.inverseAtomizedPrices[1],
+      price: Helpers.inverseAtomizedPrices[1],
     },
     {
       address: "0x0000000000000000000000000000000000000002",
-      price: helpers.inverseAtomizedPrices[2],
+      price: Helpers.inverseAtomizedPrices[2],
     },
   ];
 

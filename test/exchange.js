@@ -1,12 +1,10 @@
 var async = require('async');
 var assert = require('assert');
 var BigNumber = require('bignumber.js');
-var helpers = require('../lib/helpers.js');
+var Helpers = require('../lib/Helpers.js');
+var SolKeywords = require('../lib/SolKeywords.js');
 
 contract('Exchange', (accounts) => {
-
-  // Solidity constants
-  const ether = new BigNumber(Math.pow(10,18));
 
   // Contract constants
   const PREMINED_PRECISION = new BigNumber(Math.pow(10,8));
@@ -28,7 +26,6 @@ contract('Exchange', (accounts) => {
   let bitcoinTokenAddress;
   let testCases;
   let lastOfferId = 0;
-
 
   before('Check accounts', (done) => {
     assert.equal(accounts.length, 10);
@@ -67,9 +64,9 @@ contract('Exchange', (accounts) => {
     for (let i = 0; i < NUM_OFFERS; i++) {
       testCases.push(
         {
-          sell_how_much: helpers.atomizedPrices[0] * (1 - i*0.1),
+          sell_how_much: Helpers.atomizedPrices[0] * (1 - i*0.1),
           sell_which_token: bitcoinTokenAddress,
-          buy_how_much: 1 * ether,
+          buy_how_much: 1 * SolKeywords.ether,
           buy_which_token: etherTokenAddress,
           id: i + 1,
           owner: OWNER,
