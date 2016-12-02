@@ -64,7 +64,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
      *  => assetPrices[UST] = 08045678
      */
     function setPrice(address[] ofAssets, uint[] newPrices)
-        onlyOwner
+        only_owner
         maps_equal(ofAssets, newPrices)
     {
         lastUpdate = now;
@@ -76,11 +76,11 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
         }
     }
 
-    function setFee(uint256 newFee) onlyOwner returns (uint fee) {
+    function setFee(uint256 newFee) only_owner returns (uint fee) {
         fee = newFee;
     }
 
-    function payOut() onlyOwner {
+    function payOut() only_owner {
         assert(msg.sender.send(this.balance));
     }
 }

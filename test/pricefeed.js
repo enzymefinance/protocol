@@ -3,6 +3,7 @@ var assert = require('assert');
 var BigNumber = require('bignumber.js');
 var Helpers = require('../lib/Helpers.js');
 var SolKeywords = require('../lib/SolKeywords.js');
+var SolConstants = require('../lib/SolConstants.js');
 
 
 contract('PriceFeed', (accounts) => {
@@ -41,7 +42,7 @@ contract('PriceFeed', (accounts) => {
       contractAddress = contract.address;
       return contract.fee();
     }).then((result) => {
-      assert.equal(result.toNumber(), INITIAL_FEE)
+      assert.equal(result.toNumber(), SolConstants.INITIAL_FEE)
     }).then((result) => {
       done();
     });

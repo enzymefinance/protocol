@@ -116,6 +116,7 @@ contract Exchange is SafeMath, MutexUser {
         assert(sell_which_token.transferFrom( msg.sender, this, info.sell_how_much));
         ItemUpdate(id);
     }
+    
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
     function buy(uint id, uint quantity)

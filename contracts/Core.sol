@@ -12,23 +12,9 @@ import "./router/PerformanceFeeProtocol.sol";
 
 contract Shares is ERC20 {}
 
-
-contract CoreProtocol {
-
-  event SharesCreated(address buyer, uint numShares, uint sharePrice);
-  event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
-  event Refund(address to, uint value);
-
-  event LogString(string text);
-  event LogInt(string text, uint value);
-  event LogBool(string text, bool value);
-
-}
-
-
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
-contract Core is Owned, CoreProtocol, Shares, SafeMath {
+contract Core is Shares, SafeMath, Owned {
 
   // TYPES
 
@@ -61,9 +47,16 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
   uint public sumWithdrawn;
   uint public sumAssetsBought;
   uint public sumAssetsSold;
-  uint public sharePrice = 10**18;
+  uint public sharePrice = 1 ether;
 
   // EVENTS
+
+  event SharesCreated(address buyer, uint numShares, uint sharePrice);
+  event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
+  event Refund(address to, uint value);
+  event LogString(string text);
+  event LogInt(string text, uint value);
+  event LogBool(string text, bool value);
 
   // CONSTANT METHDOS
 
@@ -74,7 +67,7 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
       address addrRegistrar
   ) {
       analytics.nav = 0;
-      analytics.delta = 10**18;
+      analytics.delta = 1 ether;
       analytics.timestamp = now;
 
       module.ether_token = EtherToken(addrEtherToken);
@@ -92,22 +85,22 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
         throw;
 
       sharePrice = calcSharePrice();
-      sharePrice = 10**18;
+      sharePrice = 1 ether;
 
       if (sharePrice == 0) throw;
       uint sentFunds = msg.value;
 
       LogInt('create shares; sentFunds', sentFunds);
       LogInt('create shares; sharePrice', sharePrice);
-      LogInt('create shares; if calc', sharePrice * wantedShares / 10**18);
+      LogInt('create shares; if calc', sharePrice * wantedShares / (1 ether));
 
       // Check if enough funds sent for requested quantity of shares.
       uint curSumInvested = 0;
-      if (sharePrice * wantedShares / 10**18 <= sentFunds) {
+      if (sharePrice * wantedShares / (1 ether) <= sentFunds) {
           // Create Shares
           balances[msg.sender] += wantedShares;
           totalSupply += wantedShares;
-          curSumInvested = sharePrice * wantedShares / 10**18;
+          curSumInvested = sharePrice * wantedShares / (1 ether);
           sumInvested += curSumInvested;
           // Bookkeeping
           analytics.nav += curSumInvested;
@@ -121,8 +114,8 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
       }
       // Refund remainder
       uint remainder = 0;
-      if (sharePrice * wantedShares / 10**18 < sentFunds) {
-          remainder = sentFunds - sharePrice * wantedShares / 10**18;
+      if (sharePrice * wantedShares / (1 ether) < sentFunds) {
+          remainder = sentFunds - sharePrice * wantedShares / (1 ether);
           LogInt('create shares', remainder);
           if(!msg.sender.send(remainder)) throw;
           Refund(msg.sender, remainder);
@@ -157,11 +150,11 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
 
     // Check if enough shares offered for requested amount of funds.
     uint curSumWithdrawn = 0;
-    if (wantedAmount <= sharePrice * offeredShares / 10**18) {
+    if (wantedAmount <= sharePrice * offeredShares / (1 ether)) {
         // Annihilate Shares
         balances[msg.sender] -= offeredShares;
         totalSupply -= offeredShares;
-        curSumWithdrawn = sharePrice * offeredShares / 10**18;
+        curSumWithdrawn = sharePrice * offeredShares / (1 ether);
         sumWithdrawn += curSumWithdrawn;
         // Bookkeeping
         analytics.nav -= curSumWithdrawn;
@@ -170,8 +163,8 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
         SharesAnnihilated(msg.sender, offeredShares, sharePrice);
     }
     // Refund remainder
-    if (wantedAmount < sharePrice * offeredShares / 10**18) {
-        uint remainder = sharePrice * offeredShares / 10**18 - wantedAmount;
+    if (wantedAmount < sharePrice * offeredShares / (1 ether)) {
+        uint remainder = sharePrice * offeredShares / (1 ether) - wantedAmount;
         if(!msg.sender.send(remainder)) throw;
         Refund(msg.sender, remainder);
     }
@@ -182,49 +175,37 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
   /*
    *  METHODS - SHARE PRICE
    */
-  /// Calculate Share Price in Wei
-  function calcSharePrice() constant returns (uint) {
-      uint delta = calcDelta();
-      /* Rem:
-       *  sharePrice := delta - perf.fee - manage.fee
-       */
-      return delta;
-  }
+  /// Post: Calculate Share Price in Wei
+  function calcSharePrice() constant returns (uint) { return calcDelta(); }
 
-  /// Calculate Delta in percent
-  function calcDelta() constant returns (uint) {
-      uint delta;
+  /// Pre:
+  /// Post: Delta as a result of current and previous NAV
+  function calcDelta() constant returns (uint delta) {
       uint nav = calcNAV();
-
-      // First investment not made
+      // Set delta
       if (analytics.nav == 0) {
-          delta = 10**18;
-      // First investment made; all funds withdrawn
+          delta = 1 ether; // First investment not made
       } else if (nav == 0) {
-          delta = 10**18;
-      // First investment made; not all funds withdrawn
+          delta = 1 ether; // First investment made; All funds withdrawn
       } else {
-          delta = (analytics.delta * nav) / analytics.nav;
+          delta = (analytics.delta * nav) / analytics.nav; // First investment made; Not all funds withdrawn
       }
-
       // Update Analytics
       analytics.delta = delta;
       analytics.nav = nav;
       analytics.timestamp = now;
-
-      return delta;
   }
 
-  function calcNAV() constant returns (uint) {
-      uint nav = calcGAV();
-      /* Rem:
-       *  nav := gav - perf.fee - manage.fee
-       */
-       return nav;
+  /// Pre:
+  /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
+  function calcNAV() constant returns (uint nav) {
+      uint managementFee = 0;
+      uint performanceFee = 0;
+      nav = calcGAV() - managementFee - performanceFee;
   }
 
-  /// Calcualte Fund Gross Asset Value in Wei
-  // Pre: Registar must include EtherToken specified in this Core contract
+  /// Pre: Precision in Token must be equal to precision in PriceFeed for all entries in Registrar
+  /// Post: Portfolio Gross Asset Value in Wei
   function calcGAV() constant returns (uint gav) {
       /* Rem:
        *  The current Investment (Withdrawal) is not yet stored in the
@@ -234,24 +215,19 @@ contract Core is Owned, CoreProtocol, Shares, SafeMath {
        *  are given in Ether the first price is always equal to one.
        * Rem 3:
        *  Assets need to be linked to the right price feed
+       * Rem 4:
+       *  Price Input Unit: [Wei/(Asset * 10**(uint(precision)))]
+       *  Holdings Input Unit: [Asset * 10**(uint(precision)))]
+       *  with 0 <= precision <= 18 and precision is a natural number.
        */
-      gav += module.ether_token.balanceOf(this) * 1;
+      gav += module.ether_token.balanceOf(this) * 1; // EtherToken as Asset
       uint numAssignedAssets = module.registrar.numAssignedAssets();
       for (uint i = 0; i < numAssignedAssets; ++i) {
-          // Get asset holdings
           ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
-          uint holdings = ERC20.balanceOf(address(this));
-          // Get asset prices
+          uint holdings = ERC20.balanceOf(address(this)); // Asset holdings
           PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
-          uint price = Price.getPrice(address(module.registrar.assetAt(i)));
-          uint precision = Price.precision();
-          // Sum up product of asset holdings and asset prices
-          /* Rem:
-           *  Price Input Unit: [Wei/(Asset * 10**(uint(precision)))]
-           *  Holdings Input Unit: [Asset * 10**(uint(precision)))]
-           *  with 0 <= precision <= 18 and precision is a natural number.
-           */
-          gav += holdings * price;
+          uint price = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price
+          gav += holdings * price; // Sum up product of asset holdings and asset prices
       }
   }
 }

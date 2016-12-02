@@ -1,19 +1,28 @@
 pragma solidity ^0.4.4;
 
 import "./ManagementFeeProtocol.sol";
+import "../dependencies/Owned.sol";
+
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract ManagementFee is ManagementFeeProtocol {
+contract ManagementFee is ManagementFeeProtocol, Owned {
 
-    modifier ifOwner() { if(msg.sender != owner) throw; _; }
+    // FILEDS
 
-    function ManagementFee() {
-        owner = msg.sender;
-        fee = 0;
-    }
-    function () { throw; }
+    uint public fee = 0;
 
-    function calculateManagementFee() ifOwner returns (uint) { return 0; }
+    // EVENTS
+
+    // MODIFIERS
+
+    // CONSTANT METHODS
+
+    function calculateFee() only_owner constant returns (uint) { return fee; }
+
+    // NON-CONSTANT METHODS
+
+    function ManagementFee() {}
+
 }
