@@ -28,7 +28,6 @@ contract('PriceFeed', (accounts) => {
 
   // Test globals
   let contract;
-  let contractAddress;
 
 
   before('Check accounts', (done) => {
@@ -39,7 +38,6 @@ contract('PriceFeed', (accounts) => {
   it('Deploy smart contract', (done) => {
     PriceFeed.new().then((result) => {
       contract = result;
-      contractAddress = contract.address;
       return contract.fee();
     }).then((result) => {
       assert.equal(result.toNumber(), SolConstants.INITIAL_FEE)

@@ -2,7 +2,7 @@ pragma solidity ^0.4.4;
 
 import "./PreminedToken.sol";
 
-/// @title Premine Token Contract.
+/// @title DollarToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
 contract DollarToken is PreminedToken {

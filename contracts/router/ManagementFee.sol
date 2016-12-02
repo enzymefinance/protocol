@@ -4,9 +4,9 @@ import "./ManagementFeeProtocol.sol";
 import "../dependencies/Owned.sol";
 
 
-/// @title Price Feed Contract
+/// @title ManagementFee Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Management Fee.
+/// @notice Simple and static ManagementFee.
 contract ManagementFee is ManagementFeeProtocol, Owned {
 
     // FILEDS

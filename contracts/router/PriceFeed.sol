@@ -6,7 +6,7 @@ import "../dependencies/Owned.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Routes external data to smart-contracts
+/// @notice Routes external data to smart contracts
 contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // FILEDS

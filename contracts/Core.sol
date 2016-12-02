@@ -58,6 +58,23 @@ contract Core is Shares, SafeMath, Owned {
     event LogInt(string text, uint value);
     event LogBool(string text, bool value);
 
+    // MODIFIERS
+
+    modifier msg_value_at_least(uint x) {
+        assert(msg.value >= x);
+        _;
+    }
+
+    modifier msg_value_past(uint x) {
+        assert(msg.value > x);
+        _;
+    }
+
+    modifier maps_equal(address[] x, uint[] y) {
+        assert(x.length == y.length);
+        _;
+    }
+
     // CONSTANT METHDOS
 
     // NON-CONSTANT METHODS
@@ -80,14 +97,14 @@ contract Core is Shares, SafeMath, Owned {
      *  quantity == quantitiyShares and
      *  amount == msg.value (amount investor is willing to pay for the req. quantity)
      */
-    function createShares(uint wantedShares) returns (bool) {
-        if (msg.value <= 0 || wantedShares == 0)
-          throw;
-
-        sharePrice = calcSharePrice();
+    function createShares(uint wantedShares)
+        payable
+        msg_value_past(0)
+        returns (bool)
+    {
+        /*sharePrice = calcSharePrice();
+        return;*/
         sharePrice = 1 ether;
-
-        if (sharePrice == 0) throw;
         uint sentFunds = msg.value;
 
         LogInt('create shares; sentFunds', sentFunds);
@@ -96,30 +113,31 @@ contract Core is Shares, SafeMath, Owned {
 
         // Check if enough funds sent for requested quantity of shares.
         uint curSumInvested = 0;
-        if (sharePrice * wantedShares / (1 ether) <= sentFunds) {
+        uint intendedInvestment = sharePrice * wantedShares / (1 ether);
+        if (intendedInvestment <= sentFunds) {
             // Create Shares
             balances[msg.sender] += wantedShares;
             totalSupply += wantedShares;
-            curSumInvested = sharePrice * wantedShares / (1 ether);
+            curSumInvested = intendedInvestment;
             sumInvested += curSumInvested;
             // Bookkeeping
             analytics.nav += curSumInvested;
             // Flag first investment as happened
-            if (manager.received_first_investment == false) {
+            if (!manager.received_first_investment) {
                 manager.received_first_investment = true;
             }
             // Store Ether in EtherToken contract
             assert(module.ether_token.send(msg.value));
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
-        // Refund remainder
+        /*// Refund remainder
         uint remainder = 0;
-        if (sharePrice * wantedShares / (1 ether) < sentFunds) {
-            remainder = sentFunds - sharePrice * wantedShares / (1 ether);
+        if (intendedInvestment < sentFunds) {
+            remainder = sentFunds - intendedInvestment;
             LogInt('create shares', remainder);
             if(!msg.sender.send(remainder)) throw;
             Refund(msg.sender, remainder);
-        }
+        }*/
 
         return true;
     }
@@ -220,7 +238,7 @@ contract Core is Shares, SafeMath, Owned {
          *  Holdings Input Unit: [Asset * 10**(uint(precision)))]
          *  with 0 <= precision <= 18 and precision is a natural number.
          */
-        gav += module.ether_token.balanceOf(this) * 1; // EtherToken as Asset
+        gav = module.ether_token.balanceOf(this) * 1; // EtherToken as Asset
         uint numAssignedAssets = module.registrar.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));

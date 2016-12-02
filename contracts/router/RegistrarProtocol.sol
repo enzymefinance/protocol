@@ -1,6 +1,6 @@
 pragma solidity ^0.4.4;
 
-/// @title Registrar Protocol Contract
+/// @title RegistrarProtocol Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying
 /// Registrar Contract

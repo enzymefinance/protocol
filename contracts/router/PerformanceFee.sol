@@ -4,9 +4,9 @@ import "./PerformanceFeeProtocol.sol";
 import "../dependencies/Owned.sol";
 
 
-/// @title Price Feed Contract
+/// @title PerformanceFee Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Performance Fee.
+/// @notice Simple and static PerformanceFee.
 contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // FILEDS
