@@ -1,6 +1,7 @@
 var async = require('async');
 var assert = require('assert');
 var BigNumber = require('bignumber.js');
+var helpers = require('../lib/helpers.js');
 
 
 contract('PriceFeed', (accounts) => {
@@ -16,31 +17,18 @@ contract('PriceFeed', (accounts) => {
 
   // Test constants
   const NOT_OWNER = accounts[1];
-  // Set price of fungible relative to Ether
-  /** Ex:
-   *  Let asset == UST, let Value of 1 UST := 1 USD == 0.080456789 ETH
-   *  and let precision == 8,
-   *  => assetPrices[UST] = 08045678
-   */
-  var data = {"BTC":0.01117,"USD":8.45,"EUR":7.92};
-  const prices = [
-    1.0 / data['BTC'] * PREMINED_PRECISION,
-    1.0 / data['USD'] * PREMINED_PRECISION,
-    1.0 / data['EUR'] * PREMINED_PRECISION
-  ];
-  console.log(prices);
   let testCases = [
     {
       address: "0x0000000000000000000000000000000000000000",
-      price: prices[0],
+      price: helpers.inverseAtomizedPrices[0],
     },
     {
       address: "0x0000000000000000000000000000000000000001",
-      price: prices[1],
+      price: helpers.inverseAtomizedPrices[1],
     },
     {
       address: "0x0000000000000000000000000000000000000002",
-      price: prices[2],
+      price: helpers.inverseAtomizedPrices[2],
     },
   ];
 
@@ -75,8 +63,8 @@ contract('PriceFeed', (accounts) => {
 
   it('Set multiple price', (done) => {
     const addresses = [testCases[0].address, testCases[1].address, testCases[2].address];
-    const prices = [testCases[0].price, testCases[1].price, testCases[2].price];
-    contract.setPrice(addresses, prices, { from: OWNER }).then((result) => {
+    const inverseAtomizedPrices = [testCases[0].price, testCases[1].price, testCases[2].price];
+    contract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER }).then((result) => {
       return contract.lastUpdate();
     }).then((result) => {
       assert.notEqual(result.toNumber(), 0);

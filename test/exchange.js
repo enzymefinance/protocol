@@ -1,7 +1,7 @@
 var async = require('async');
 var assert = require('assert');
 var BigNumber = require('bignumber.js');
-
+var helpers = require('../lib/helpers.js');
 
 contract('Exchange', (accounts) => {
 
@@ -61,13 +61,13 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  // Assuming 1 BTT == 0.01115 EtherToken, reduce offers by 0.1 on each order
+  // Reduce sell amount by 0.1 on each order
   it('Set up test cases', (done) => {
     testCases = [];
     for (let i = 0; i < NUM_OFFERS; i++) {
       testCases.push(
         {
-          sell_how_much: 0.01115 * (1 - i*0.1) * PREMINED_PRECISION,
+          sell_how_much: helpers.atomizedPrices[0] * (1 - i*0.1),
           sell_which_token: bitcoinTokenAddress,
           buy_how_much: 1 * ether,
           buy_which_token: etherTokenAddress,
