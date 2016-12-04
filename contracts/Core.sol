@@ -1,14 +1,16 @@
 pragma solidity ^0.4.4;
 
+import "./tokens/EtherToken.sol";
 import "./dependencies/ERC20.sol";
 import "./dependencies/ERC20Protocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
-import "./tokens/EtherToken.sol";
 import "./router/RegistrarProtocol.sol";
 import "./router/PriceFeedProtocol.sol";
 import "./router/ManagementFeeProtocol.sol";
 import "./router/PerformanceFeeProtocol.sol";
+import "./trading/TradingProtocol.sol";
+
 
 contract Shares is ERC20 {}
 
@@ -35,6 +37,7 @@ contract Core is Shares, SafeMath, Owned {
         RegistrarProtocol registrar;
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
+        TradingProtocol trading;
     }
 
     // FIELDS
@@ -147,7 +150,8 @@ contract Core is Shares, SafeMath, Owned {
 
     function Core(
         address addrEtherToken,
-        address addrRegistrar
+        address addrRegistrar,
+        address addrTrading
     ) {
         analytics.nav = 0;
         analytics.delta = 1 ether;
@@ -155,6 +159,7 @@ contract Core is Shares, SafeMath, Owned {
 
         module.ether_token = EtherToken(addrEtherToken);
         module.registrar = RegistrarProtocol(addrRegistrar);
+        module.trading = TradingProtocol(addrTrading);
     }
 
     // Pre: Needed to receive Ether from EtherToken Contract
@@ -175,7 +180,6 @@ contract Core is Shares, SafeMath, Owned {
     {
         sharePrice = calcSharePrice();
         uint sentFunds = msg.value;
-
         // Check if enough funds sent for requested quantity of shares.
         uint intendedInvestment = sharePrice * wantedShares / (1 ether);
         if (intendedInvestment <= sentFunds) {
@@ -197,11 +201,11 @@ contract Core is Shares, SafeMath, Owned {
             assert(msg.sender.send(remainder));
             Refund(msg.sender, remainder);
         }
-
         return true;
     }
 
     /// Withdraw from a fund by annihilating shares
+    /* TODO implement forced withdrawal */
     function annihilateShares(uint offeredShares, uint wantedAmount)
         balances_msg_sender_at_least(offeredShares)
         this_balance_at_least(wantedAmount)
@@ -210,10 +214,6 @@ contract Core is Shares, SafeMath, Owned {
         returns (bool)
     {
         sharePrice = calcSharePrice();
-
-        /* TODO implement forced withdrawal
-         */
-
         // Check if enough shares offered for requested amount of funds.
         uint intendedOffering = sharePrice * offeredShares / (1 ether);
         if (wantedAmount <= intendedOffering) {
@@ -221,9 +221,8 @@ contract Core is Shares, SafeMath, Owned {
             balances[msg.sender] -= offeredShares;
             totalSupply -= offeredShares;
             sumWithdrawn += intendedOffering;
-            // Bookkeeping
-            analytics.nav -= intendedOffering;
-            // Send Funds
+            analytics.nav -= intendedOffering; // Bookkeeping
+            // Withdraw Ether from EtherToken contract
             assert(module.ether_token.withdraw(intendedOffering));
             assert(msg.sender.send(intendedOffering));
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
@@ -237,4 +236,30 @@ contract Core is Shares, SafeMath, Owned {
         return true;
     }
 
+    /// Place an Order on the selected Exchange
+    /* TODO assert exchange */
+    function offer(
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
+    )
+        only_owner
+        returns (uint256 _offerId)
+    {
+      // Assert that asset is available
+      assert(module.registrar.availability(sell_which_token));
+      assert(module.registrar.availability(buy_which_token));
+      module.trading.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+    }
+
+    function buy(uint id, uint quantity)
+        only_owner
+    {
+        module.trading.buy(id, quantity);
+    }
+
+    function cancel(uint id)
+        only_owner
+    {
+        module.trading.cancel(id);
+    }
 }

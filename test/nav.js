@@ -23,7 +23,8 @@ contract('Net Asset Value', (accounts) => {
     euroTokenContract,
     priceFeedContract,
     exchangeContract,
-    registrarContract;
+    registrarContract,
+    tradingContract;
   let testCases;
 
   before('Check accounts', (done) => {
@@ -63,12 +64,15 @@ contract('Net Asset Value', (accounts) => {
       );
     }).then((result) => {
       registrarContract = result;
+      return Trading.new({ from: OWNER });
+    }).then((result) => {
+      tradingContract = result;
       done();
     });
   });
 
   it('Deploy smart contract', (done) => {
-    Core.new(etherTokenContract.address, registrarContract.address).then((result) => {
+    Core.new(etherTokenContract.address, registrarContract.address, tradingContract.address).then((result) => {
       contract = result;
       return contract.sumInvested();
     }).then((result) => {
