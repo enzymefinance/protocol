@@ -80,6 +80,11 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
+    modifier this_balance_at_least(uint x) {
+        assert(this.balance >= x);
+        _;
+    }
+
     // CONSTANT METHDOS
 
     /// Post: Calculate Share Price in Wei
@@ -152,6 +157,10 @@ contract Core is Shares, SafeMath, Owned {
         module.registrar = RegistrarProtocol(addrRegistrar);
     }
 
+    // Pre: Needed to receive Ether from EtherToken Contract
+    // Post: Receive Either directly
+    function() payable {}
+
     // Invest in a fund by creating shares
     /* Note:
      *  This is can be seen as a none persistent all or nothing limit order, where:
@@ -195,6 +204,7 @@ contract Core is Shares, SafeMath, Owned {
     /// Withdraw from a fund by annihilating shares
     function annihilateShares(uint offeredShares, uint wantedAmount)
         balances_msg_sender_at_least(offeredShares)
+        this_balance_at_least(wantedAmount)
         not_zero(wantedAmount)
         not_zero(offeredShares)
         returns (bool)
@@ -202,26 +212,20 @@ contract Core is Shares, SafeMath, Owned {
         sharePrice = calcSharePrice();
 
         /* TODO implement forced withdrawal
-         *  Via registrar contract and exchange
          */
-        uint ethBalance = this.balance;
-        if (wantedAmount > ethBalance)
-            throw;
 
         // Check if enough shares offered for requested amount of funds.
-        uint curSumWithdrawn = 0;
         uint intendedOffering = sharePrice * offeredShares / (1 ether);
         if (wantedAmount <= intendedOffering) {
             // Annihilate Shares
             balances[msg.sender] -= offeredShares;
             totalSupply -= offeredShares;
-            curSumWithdrawn = intendedOffering;
-            sumWithdrawn += curSumWithdrawn;
+            sumWithdrawn += intendedOffering;
             // Bookkeeping
-            analytics.nav -= curSumWithdrawn;
+            analytics.nav -= intendedOffering;
             // Send Funds
-            /*assert(module.ether_token.withdraw(intendedInvestment));*/
-            if(!msg.sender.send(curSumWithdrawn)) throw;
+            assert(module.ether_token.withdraw(intendedOffering));
+            assert(msg.sender.send(intendedOffering));
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
         }
         // Refund remainder
