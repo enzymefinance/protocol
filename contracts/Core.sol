@@ -70,129 +70,18 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier maps_equal(address[] x, uint[] y) {
-        assert(x.length == y.length);
+    modifier not_zero(uint x) {
+        assert(x != 0);
+        _;
+    }
+
+    modifier balances_msg_sender_at_least(uint x) {
+        assert(balances[msg.sender] >= x);
         _;
     }
 
     // CONSTANT METHDOS
 
-    // NON-CONSTANT METHODS
-
-    function Core(
-        address addrEtherToken,
-        address addrRegistrar
-    ) {
-        analytics.nav = 0;
-        analytics.delta = 1 ether;
-        analytics.timestamp = now;
-
-        module.ether_token = EtherToken(addrEtherToken);
-        module.registrar = RegistrarProtocol(addrRegistrar);
-    }
-
-    // Invest in a fund by creating shares
-    /* Note:
-     *  This is can be seen as a none persistent all or nothing limit order, where:
-     *  quantity == quantitiyShares and
-     *  amount == msg.value (amount investor is willing to pay for the req. quantity)
-     */
-    function createShares(uint wantedShares)
-        payable
-        msg_value_past(0)
-        returns (bool)
-    {
-        /*sharePrice = calcSharePrice();
-        return;*/
-        sharePrice = 1 ether;
-        uint sentFunds = msg.value;
-
-        LogInt('create shares; sentFunds', sentFunds);
-        LogInt('create shares; sharePrice', sharePrice);
-        LogInt('create shares; if calc', sharePrice * wantedShares / (1 ether));
-
-        // Check if enough funds sent for requested quantity of shares.
-        uint curSumInvested = 0;
-        uint intendedInvestment = sharePrice * wantedShares / (1 ether);
-        if (intendedInvestment <= sentFunds) {
-            // Create Shares
-            balances[msg.sender] += wantedShares;
-            totalSupply += wantedShares;
-            curSumInvested = intendedInvestment;
-            sumInvested += curSumInvested;
-            // Bookkeeping
-            analytics.nav += curSumInvested;
-            // Flag first investment as happened
-            if (!manager.received_first_investment) {
-                manager.received_first_investment = true;
-            }
-            // Store Ether in EtherToken contract
-            assert(module.ether_token.send(msg.value));
-            SharesCreated(msg.sender, wantedShares, sharePrice);
-        }
-        /*// Refund remainder
-        uint remainder = 0;
-        if (intendedInvestment < sentFunds) {
-            remainder = sentFunds - intendedInvestment;
-            LogInt('create shares', remainder);
-            if(!msg.sender.send(remainder)) throw;
-            Refund(msg.sender, remainder);
-        }*/
-
-        return true;
-    }
-
-    /// Withdraw from a fund by annihilating shares
-    function annihilateShares(uint offeredShares, uint wantedAmount) returns (bool) {
-      if (manager.received_first_investment == false ||
-          offeredShares == 0 ||
-          wantedAmount == 0)
-          throw;
-
-      // Assert if sender has enough shares
-      if (balances[msg.sender] < offeredShares)
-          throw;
-
-      // First investment happened
-      sharePrice = calcSharePrice();
-      LogInt('annihilateShares::sharePrice', sharePrice);
-      if (sharePrice == 0)
-          throw;
-
-      /* TODO implement forced withdrawal
-       *  Via registrar contract and exchange
-       */
-      uint ethBalance = this.balance;
-      if (wantedAmount > ethBalance)
-          throw;
-
-      // Check if enough shares offered for requested amount of funds.
-      uint curSumWithdrawn = 0;
-      if (wantedAmount <= sharePrice * offeredShares / (1 ether)) {
-          // Annihilate Shares
-          balances[msg.sender] -= offeredShares;
-          totalSupply -= offeredShares;
-          curSumWithdrawn = sharePrice * offeredShares / (1 ether);
-          sumWithdrawn += curSumWithdrawn;
-          // Bookkeeping
-          analytics.nav -= curSumWithdrawn;
-          // Send Funds
-          if(!msg.sender.send(curSumWithdrawn)) throw;
-          SharesAnnihilated(msg.sender, offeredShares, sharePrice);
-      }
-      // Refund remainder
-      if (wantedAmount < sharePrice * offeredShares / (1 ether)) {
-          uint remainder = sharePrice * offeredShares / (1 ether) - wantedAmount;
-          if(!msg.sender.send(remainder)) throw;
-          Refund(msg.sender, remainder);
-      }
-
-      return true;
-    }
-
-    /*
-     *  METHODS - SHARE PRICE
-     */
     /// Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
 
@@ -248,4 +137,100 @@ contract Core is Shares, SafeMath, Owned {
             gav += holdings * price; // Sum up product of asset holdings and asset prices
         }
     }
+
+    // NON-CONSTANT METHODS
+
+    function Core(
+        address addrEtherToken,
+        address addrRegistrar
+    ) {
+        analytics.nav = 0;
+        analytics.delta = 1 ether;
+        analytics.timestamp = now;
+
+        module.ether_token = EtherToken(addrEtherToken);
+        module.registrar = RegistrarProtocol(addrRegistrar);
+    }
+
+    // Invest in a fund by creating shares
+    /* Note:
+     *  This is can be seen as a none persistent all or nothing limit order, where:
+     *  quantity == quantitiyShares and
+     *  amount == msg.value (amount investor is willing to pay for the req. quantity)
+     */
+    function createShares(uint wantedShares)
+        payable
+        msg_value_past(0)
+        not_zero(wantedShares)
+        returns (bool)
+    {
+        sharePrice = calcSharePrice();
+        uint sentFunds = msg.value;
+
+        // Check if enough funds sent for requested quantity of shares.
+        uint intendedInvestment = sharePrice * wantedShares / (1 ether);
+        if (intendedInvestment <= sentFunds) {
+            // Create Shares
+            balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
+            totalSupply = safeAdd(totalSupply, wantedShares);
+            sumInvested = safeAdd(sumInvested, intendedInvestment);
+            analytics.nav = safeAdd(analytics.nav, intendedInvestment); // Bookkeeping
+            if (!manager.received_first_investment) {
+                manager.received_first_investment = true; // Flag first investment as happened
+            }
+            // Store Ether in EtherToken contract
+            assert(module.ether_token.deposit.value(intendedInvestment)());
+            SharesCreated(msg.sender, wantedShares, sharePrice);
+        }
+        // Refund remainder
+        if (intendedInvestment < sentFunds) {
+            uint remainder = sentFunds - intendedInvestment;
+            assert(msg.sender.send(remainder));
+            Refund(msg.sender, remainder);
+        }
+
+        return true;
+    }
+
+    /// Withdraw from a fund by annihilating shares
+    function annihilateShares(uint offeredShares, uint wantedAmount)
+        balances_msg_sender_at_least(offeredShares)
+        not_zero(wantedAmount)
+        not_zero(offeredShares)
+        returns (bool)
+    {
+        sharePrice = calcSharePrice();
+
+        /* TODO implement forced withdrawal
+         *  Via registrar contract and exchange
+         */
+        uint ethBalance = this.balance;
+        if (wantedAmount > ethBalance)
+            throw;
+
+        // Check if enough shares offered for requested amount of funds.
+        uint curSumWithdrawn = 0;
+        uint intendedOffering = sharePrice * offeredShares / (1 ether);
+        if (wantedAmount <= intendedOffering) {
+            // Annihilate Shares
+            balances[msg.sender] -= offeredShares;
+            totalSupply -= offeredShares;
+            curSumWithdrawn = intendedOffering;
+            sumWithdrawn += curSumWithdrawn;
+            // Bookkeeping
+            analytics.nav -= curSumWithdrawn;
+            // Send Funds
+            /*assert(module.ether_token.withdraw(intendedInvestment));*/
+            if(!msg.sender.send(curSumWithdrawn)) throw;
+            SharesAnnihilated(msg.sender, offeredShares, sharePrice);
+        }
+        // Refund remainder
+        if (wantedAmount < intendedOffering) {
+            uint remainder = intendedOffering - wantedAmount;
+            assert(msg.sender.send(remainder));
+            Refund(msg.sender, remainder);
+        }
+        return true;
+    }
+
 }

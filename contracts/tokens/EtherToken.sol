@@ -39,17 +39,21 @@ contract EtherToken is ERC20, SafeMath {
     // Post: Exchanged Ether against Token
     function deposit()
         payable
+        returns (bool)
     {
         balances[msg.sender] = safeAdd(balances[msg.sender], msg.value);
         Deposit(msg.sender, msg.value);
+        return true;
     }
 
     // Post: Exchanged Token against Ether
     function withdraw(uint amount)
         balances_msg_sender_at_least(amount)
+        returns (bool)
     {
         balances[msg.sender] = safeSub(balances[msg.sender], amount);
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
+        return true;
     }
 }
