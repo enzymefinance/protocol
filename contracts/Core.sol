@@ -26,8 +26,7 @@ contract Core is Shares, SafeMath, Owned {
         bool received_first_investment;
         uint evaluation_interval;  // Calcuate delta for fees every x days
     }
-    // Analytics of last time creation/annihilation of shares happened.
-    struct Analytics {
+    struct Analytics { // last time creation/annihilation of shares happened.
         uint nav;
         uint delta;
         uint timestamp;
@@ -45,7 +44,6 @@ contract Core is Shares, SafeMath, Owned {
     Manager manager;
     Analytics analytics;
     Modules module;
-
     uint public sumInvested;
     uint public sumWithdrawn;
     uint public sumAssetsBought;
@@ -57,9 +55,6 @@ contract Core is Shares, SafeMath, Owned {
     event SharesCreated(address buyer, uint numShares, uint sharePrice);
     event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
     event Refund(address to, uint value);
-    event LogString(string text);
-    event LogInt(string text, uint value);
-    event LogBool(string text, bool value);
 
     // MODIFIERS
 
@@ -156,7 +151,6 @@ contract Core is Shares, SafeMath, Owned {
         analytics.nav = 0;
         analytics.delta = 1 ether;
         analytics.timestamp = now;
-
         module.ether_token = EtherToken(addrEtherToken);
         module.registrar = RegistrarProtocol(addrRegistrar);
         module.trading = TradingProtocol(addrTrading);
@@ -166,18 +160,17 @@ contract Core is Shares, SafeMath, Owned {
     // Post: Receive Either directly
     function() payable {}
 
-    // Invest in a fund by creating shares
-    /* Note:
-     *  This is can be seen as a none persistent all or nothing limit order, where:
-     *  quantity == quantitiyShares and
-     *  amount == msg.value (amount investor is willing to pay for the req. quantity)
-     */
+    // Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
         msg_value_past(0)
         not_zero(wantedShares)
-        returns (bool)
     {
+        /* Rem:
+         *  This is can be seen as a none persistent all or nothing limit order, where:
+         *  quantity == quantitiyShares and
+         *  amount == msg.value (amount investor is willing to pay for the req. quantity)
+         */
         sharePrice = calcSharePrice();
         uint sentFunds = msg.value;
         // Check if enough funds sent for requested quantity of shares.
@@ -201,7 +194,6 @@ contract Core is Shares, SafeMath, Owned {
             assert(msg.sender.send(remainder));
             Refund(msg.sender, remainder);
         }
-        return true;
     }
 
     /// Withdraw from a fund by annihilating shares
@@ -211,7 +203,6 @@ contract Core is Shares, SafeMath, Owned {
         this_balance_at_least(wantedAmount)
         not_zero(wantedAmount)
         not_zero(offeredShares)
-        returns (bool)
     {
         sharePrice = calcSharePrice();
         // Check if enough shares offered for requested amount of funds.
@@ -233,7 +224,6 @@ contract Core is Shares, SafeMath, Owned {
             assert(msg.sender.send(remainder));
             Refund(msg.sender, remainder);
         }
-        return true;
     }
 
     /// Place an Order on the selected Exchange
