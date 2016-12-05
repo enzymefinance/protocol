@@ -25,9 +25,12 @@ contract('Net Asset Value', (accounts) => {
     exchangeContract,
     registrarContract,
     tradingContract;
-  let testCases;
+  let testCasesPriceFeed,
+    testCasesExchange;
+  let lastOfferId = 0;
 
-  before('Check accounts', (done) => {
+
+  before('Check accounts, deploy modules, set testcase', (done) => {
     assert.equal(accounts.length, 10);
 
     EtherToken.new({ from: OWNER }).then((result) => {
@@ -64,11 +67,132 @@ contract('Net Asset Value', (accounts) => {
       );
     }).then((result) => {
       registrarContract = result;
-      return Trading.new({ from: OWNER });
+      return Trading.new(exchangeContract.address, { from: OWNER });
     }).then((result) => {
       tradingContract = result;
+      // Set testCasesPriceFeed
+      testCasesPriceFeed = [
+        {
+          address: bitcoinTokenContract.address,
+          price: Helpers.inverseAtomizedPrices[0],
+        },
+        {
+          address: dollarTokenContract.address,
+          price: Helpers.inverseAtomizedPrices[1],
+        },
+        {
+          address: euroTokenContract.address,
+          price: Helpers.inverseAtomizedPrices[2],
+        },
+      ];
       done();
     });
+  });
+
+  it('Set multiple price', (done) => {
+    const addresses = [testCasesPriceFeed[0].address, testCasesPriceFeed[1].address, testCasesPriceFeed[2].address];
+    const inverseAtomizedPrices = [testCasesPriceFeed[0].price, testCasesPriceFeed[1].price, testCasesPriceFeed[2].price];
+    priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER }).then((result) => {
+      return priceFeedContract.lastUpdate();
+    }).then((result) => {
+      assert.notEqual(result.toNumber(), 0);
+      done();
+    });
+  });
+
+  it('Get multiple existent prices', (done) => {
+    async.mapSeries(
+      testCasesPriceFeed,
+      (testCase, callbackMap) => {
+      priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER }
+      ).then((result) => {
+        assert.notEqual(result, testCase.price);
+        callbackMap(null, testCase);
+      });
+    },
+    (err, results) => {
+      testCasesPriceFeed = results;
+      done();
+    });
+  });
+
+  it('Set up test cases', (done) => {
+    testCasesExchange = [];
+    for (let i = 0; i < NUM_OFFERS; i++) {
+      testCasesExchange.push(
+        {
+          sell_how_much: Helpers.atomizedPrices[0] * (1 - i*0.1),
+          sell_which_token: bitcoinTokenContract.address,
+          buy_how_much: 1 * SolKeywords.ether,
+          buy_which_token: etherTokenContract.address,
+          id: i + 1,
+          owner: OWNER,
+          active: true,
+        }
+      );
+    }
+    done();
+  });
+
+  it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
+    bitcoinTokenContract.approve(exchangeContract.address, ALLOWANCE_AMOUNT, { from: OWNER }
+    ).then((result) => {
+      return bitcoinTokenContract.allowance(OWNER, exchangeContract.address);
+    }).then((result) => {
+      assert.equal(result, ALLOWANCE_AMOUNT);
+      done();
+    });
+  });
+
+  it('Create one side of the orderbook', (done) => {
+    async.mapSeries(
+      testCasesExchange,
+      (testCase, callbackMap) => {
+        exchangeContract.offer(
+          testCase.sell_how_much,
+          testCase.sell_which_token,
+          testCase.buy_how_much,
+          testCase.buy_which_token,
+          { from: OWNER }
+        ).then((result) => {
+          testCase.txHash = result;
+          callbackMap(null, testCase);
+        });
+      },
+      (err, results) => {
+        testCasesExchange = results;
+        done();
+      }
+    );
+  });
+
+  it('Check if orders created', (done) => {
+    exchangeContract.lastOfferId({ from: OWNER }
+    ).then((result) => {
+      lastOfferId = result.toNumber();
+      assert.equal(lastOfferId, NUM_OFFERS);
+      done();
+    });
+  });
+
+  it('Check orders information', (done) => {
+    async.mapSeries(
+      testCasesExchange,
+      (testCase, callbackMap) => {
+          exchangeContract.offers(testCase.id
+        ).then((result) => {
+          let data = result;
+          const idx = testCase.id.toString();
+          const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = data;
+          console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
+          callbackMap(null, testCase);
+        });
+      },
+      (err, results) => {
+        testCasesExchange = results;
+        done();
+      }
+    );
   });
 
   it('Deploy smart contract', (done) => {
@@ -185,9 +309,9 @@ contract('Net Asset Value', (accounts) => {
       // TODO: calculate sumInvested via Smart Contract
       assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
     }).then((result) => {
-
-      // ROUND 3 MANAGING
-    //   return contract.buy(tokenUST.address, buyUST[0], {from: accounts[1]});
+    // 
+    //   // ROUND 3 MANAGING
+    //   return contract.buy(1, buyUST[0], {from: accounts[1]});
     // }).then((result) => {
     //   return UST.totalSupply()
     // }).then((result) => {
@@ -197,7 +321,7 @@ contract('Net Asset Value', (accounts) => {
     //   // Price changes
     //   return UST.setPrices(priceGraph[1], {from: OWNER});
     // }).then((result) => {
-    //
+
       // ROUND 3
       return contract.createShares(wantedShares[2], { from: accounts[2], value: investFunds[2].toNumber() });
     }).then((result) => {

@@ -233,12 +233,11 @@ contract Core is Shares, SafeMath, Owned {
         uint buy_how_much,  ERC20 buy_which_token
     )
         only_owner
-        returns (uint256 _offerId)
     {
-      // Assert that asset is available
-      assert(module.registrar.availability(sell_which_token));
-      assert(module.registrar.availability(buy_which_token));
-      module.trading.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        // Assert that asset is available
+        assert(module.registrar.availability(sell_which_token));
+        assert(module.registrar.availability(buy_which_token));
+        module.trading.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     function buy(uint id, uint quantity)
