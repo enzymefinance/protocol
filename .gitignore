@@ -1,3 +1,5 @@
 /app
 /build
 /node_modules
+*.iml
+.idea

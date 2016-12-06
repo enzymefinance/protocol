@@ -19,7 +19,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     uint public fee = 0;
     uint public lastUpdate;
     mapping (address => uint) assetPrices; // Address of fungible => price of fungible
-    mapping (address => uint) assetTimestamps; // Address of fungible => price of fungible
+    mapping (address => uint) assetTimestamps; // Address of fungible => timestamp of fungible
 
     // EVENTS
 
