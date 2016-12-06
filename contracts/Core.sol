@@ -10,6 +10,7 @@ import "./router/PriceFeedProtocol.sol";
 import "./router/ManagementFeeProtocol.sol";
 import "./router/PerformanceFeeProtocol.sol";
 import "./trading/TradingProtocol.sol";
+import "./exchange/Exchange.sol";
 
 
 contract Shares is ERC20 {}
@@ -37,6 +38,7 @@ contract Core is Shares, SafeMath, Owned {
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
         TradingProtocol trading;
+        Exchange exchange;
     }
 
     // FIELDS
@@ -146,7 +148,8 @@ contract Core is Shares, SafeMath, Owned {
     function Core(
         address addrEtherToken,
         address addrRegistrar,
-        address addrTrading
+        address addrTrading,
+        address addrExchange
     ) {
         analytics.nav = 0;
         analytics.delta = 1 ether;
@@ -154,6 +157,7 @@ contract Core is Shares, SafeMath, Owned {
         module.ether_token = EtherToken(addrEtherToken);
         module.registrar = RegistrarProtocol(addrRegistrar);
         module.trading = TradingProtocol(addrTrading);
+        module.exchange = Exchange(addrExchange);
     }
 
     // Pre: Needed to receive Ether from EtherToken Contract
@@ -186,6 +190,7 @@ contract Core is Shares, SafeMath, Owned {
             }
             // Store Ether in EtherToken contract
             assert(module.ether_token.deposit.value(intendedInvestment)());
+            assert(module.ether_token.approve(module.exchange, intendedInvestment));
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
         // Refund remainder
@@ -226,6 +231,17 @@ contract Core is Shares, SafeMath, Owned {
         }
     }
 
+    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    function approveSpendingOf(ERC20 token, address toBeApproved, uint256 approvalAmount)
+        only_owner
+        returns (bool success)
+    {
+      /* TODO: include EtherToken in first assert */
+      assert(module.registrar.availability(token));
+      token.approve(toBeApproved, approvalAmount);
+      return true;
+    }
+
     /// Place an Order on the selected Exchange
     /* TODO assert exchange */
     function offer(
@@ -237,18 +253,18 @@ contract Core is Shares, SafeMath, Owned {
         // Assert that asset is available
         assert(module.registrar.availability(sell_which_token));
         assert(module.registrar.availability(buy_which_token));
-        module.trading.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        module.exchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     function buy(uint id, uint quantity)
         only_owner
     {
-        module.trading.buy(id, quantity);
+        module.exchange.buy(id, quantity);
     }
 
     function cancel(uint id)
         only_owner
     {
-        module.trading.cancel(id);
+        module.exchange.cancel(id);
     }
 }
