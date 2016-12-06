@@ -226,7 +226,6 @@ contract Core is Shares, SafeMath, Owned {
         // Refund remainder
         if (wantedAmount < intendedOffering) {
             uint remainder = intendedOffering - wantedAmount;
-            assert(msg.sender.send(remainder));
             Refund(msg.sender, remainder);
         }
     }
@@ -234,12 +233,10 @@ contract Core is Shares, SafeMath, Owned {
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     function approveSpendingOf(ERC20 token, address toBeApproved, uint256 approvalAmount)
         only_owner
-        returns (bool success)
     {
       /* TODO: include EtherToken in first assert */
       assert(module.registrar.availability(token));
       token.approve(toBeApproved, approvalAmount);
-      return true;
     }
 
     /// Place an Order on the selected Exchange

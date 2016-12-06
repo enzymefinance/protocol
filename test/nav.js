@@ -204,54 +204,22 @@ contract('Net Asset Value', (accounts) => {
   // MAIN TESTING
 
   it("Create and Annihilate Shares by investing and withdrawing in a Core and calculate performance",(done) => {
-    // Investment Round 1 by Account 1
-    //  Parameters
 
-    /* Investing:
-     *  Round 1: Exact
-     *  Rount 2: Overpaid
-     *  Round 3: Underpaid
+    /* Investing and redeeming:
+     *  Round 1 & 4: Exact
+     *  Rount 2 & 5: Overpaid
+     *  Round 3 & 6: Underpaid
      */
-    var wantedShares = [];
-    wantedShares.push(new BigNumber(2e+18));
-    wantedShares.push(new BigNumber(3e+18));
-    wantedShares.push(new BigNumber(7e+18));
-
-    var investFunds = [];
-    investFunds.push(new BigNumber(2e+18));
-    investFunds.push(new BigNumber(5e+18));
-    investFunds.push(new BigNumber(6e+18));
-
-    var correctPriceToBePaid = [];
-    correctPriceToBePaid.push(new BigNumber(2e+18));
-    correctPriceToBePaid.push(new BigNumber(3e+18));
-    correctPriceToBePaid.push(new BigNumber(7e+18));
-
+    const wantedShares = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+    const investFunds = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
+    const correctPriceToBePaid = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+    const withdrawFunds = [2*999999999999977800, new BigNumber(1e+18), new BigNumber(7e+18)];
+    const offeredShares = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+    const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
     /* Managing
      *  Round 1:
      */
-    var buy = [];
-    buy.push({ buy_how_much: Helpers.atomizedPrices[0], id: 1 });
-
-    /* Withdrawing:
-     *  Round 1: Exact
-     *  Rount 2: Overpaid
-     *  Round 3: Underpaid
-     */
-    var withdrawFunds = [];
-    withdrawFunds.push(new BigNumber(2e+18));
-    withdrawFunds.push(new BigNumber(1e+18));
-    withdrawFunds.push(new BigNumber(7e+18));
-
-    var offeredShares = [];
-    offeredShares.push(new BigNumber(2e+18));
-    offeredShares.push(new BigNumber(1e+18));
-    offeredShares.push(new BigNumber(7e+18));
-
-    var correctPriceToBeReceived = [];
-    correctPriceToBeReceived.push(new BigNumber(2e+18));
-    correctPriceToBeReceived.push(new BigNumber(1e+18));
-    correctPriceToBeReceived.push(new BigNumber(7e+18));
+    var buy = [{ buy_how_much: Helpers.atomizedPrices[0], id: 1 }];
 
     contract.totalSupply().then((result) => {
       assert.strictEqual(result.toNumber(), 0);
@@ -268,10 +236,7 @@ contract('Net Asset Value', (accounts) => {
     }).then((result) => {
       // TODO: calculate sumInvested via Smart Contract
       assert.strictEqual(result.toNumber(), investFunds[0].toNumber());
-      return etherTokenContract.balanceOf(contract.address);
-    }).then((result) => {
-      console.log(result.toNumber());
-    }).then((result) => {
+
       // ROUND 2 0VERPAID
       return contract.createShares(wantedShares[1], {from: accounts[1], value: investFunds[1].toNumber()});
     }).then((result) => {
@@ -286,13 +251,6 @@ contract('Net Asset Value', (accounts) => {
       // TODO: calculate sumInvested via Smart Contract
       assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
     }).then((result) => {
-
-      // ROUND 3 MANAGING
-      return contract.buy(buy[0].id, buy[0].buy_how_much, { from: OWNER });
-    }).then((result) => {
-      return bitcoinTokenContract.balanceOf(contract.address);
-    }).then((result) => {
-      console.log('Total Token Supply: ' + result.toNumber());
 
       // ROUND 3
       return contract.createShares(wantedShares[2], { from: accounts[2], value: investFunds[2].toNumber() });
@@ -309,6 +267,62 @@ contract('Net Asset Value', (accounts) => {
       // Paid to little, hence no investment made
       assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
 
+      // ROUND 3 MANAGING
+      return contract.buy(buy[0].id, buy[0].buy_how_much, { from: OWNER });
+    }).then((result) => {
+      return etherTokenContract.balanceOf(contract.address);
+    }).then((result) => {
+      console.log('EtherToken held: ', result.toNumber());
+      return bitcoinTokenContract.balanceOf(contract.address);
+    }).then((result) => {
+      console.log('BitcoinToken held: ', result.toNumber());
+      return contract.calcSharePrice();
+    }).then((result) => {
+      console.log("New share price is: ", result.toString())
+
+      // ROUND 4 EXACT
+      return contract.annihilateShares(offeredShares[0], 10000, { from: OWNER });
+    }).then((result) => {
+      // Check totalSupply
+      return contract.totalSupply();
+    }).then((result) => {
+      var balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+      assert.strictEqual(result.toNumber(), balance);
+    }).then((result) => {
+      // Check sumInvested
+      return contract.sumWithdrawn();
+    }).then((result) => {
+      // TODO: calculate outside w commission etc.
+      console.log('Sold shares: ' + offeredShares[0]);
+      console.log('Funds received: ' + result.toNumber());
+      // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
+    }).then((result) => {
+      // ROUND 5 OVERPAID
+      return contract.annihilateShares(offeredShares[1], 10000, {from: accounts[1]});
+    }).then((result) => {
+      // Check totalSupply
+      return contract.totalSupply();
+    }).then((result) => {
+      var balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
+      assert.strictEqual(result.toNumber(), balance);
+    }).then((result) => {
+      // Check sumInvested
+      return contract.sumWithdrawn();
+    }).then((result) => {
+      // TODO: calculate outside w commission etc.
+      console.log('Sold shares: ' + offeredShares[1]);
+      console.log('Funds received (total): ' + result.toNumber());
+      // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
+    }).then((result) => {
+      // TODO: calculate outside w commission, performance gains, loses etc.
+      // for (i = 0; i < numAccounts; ++i) {
+      //   // Actual Balance
+      //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
+      //   // >=, since actual balance has a gas cost for sending the tx.
+      //   // TODO: Estimate Gas cost
+      //   console.log(' Gas cost of Account ' + i + ':', balances[i].minus(balance).dividedBy('10e+18').toNumber());
+      //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance), "One of the Accounts has wrong balance!")
+      // };
     }).then(done).catch(done);
   });
 
