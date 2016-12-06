@@ -15,7 +15,7 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
     address[] public assets;
     address[] public priceFeeds;
     address[] public exchanges;
-    mapping (address => bool) isAssetAvailable;
+    mapping (address => bool) assetAvailabilities;
     mapping (address => address) assignedExchanges; // exchange available for certain asset
 
     // EVENTS
@@ -35,7 +35,7 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     function priceFeedsAt(uint index) constant returns (address) { return priceFeeds[index]; }
 
-    function availability(address ofAsset) constant returns (bool) { return isAssetAvailable[ofAsset]; }
+    function availability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
 
     function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
 
@@ -45,7 +45,7 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
         maps_equal(ofAssets, ofPriceFeeds, ofExchanges)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
-            isAssetAvailable[ofAssets[i]] = true;
+            assetAvailabilities[ofAssets[i]] = true;
             assets.push(ofAssets[i]);
             priceFeeds.push(ofPriceFeeds[i]);
             exchanges.push(ofExchanges[i]);
