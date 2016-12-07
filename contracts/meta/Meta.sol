@@ -12,10 +12,9 @@ contract Meta is Owned {
     address[] public versions;
     mapping (address => bool) versionAvailabilities;
 
-
     // EVENTS
 
-    event VersionUpdated(address indexed toVersion, uint indexed id);
+    event VersionUpdated(address indexed nextVersion, uint indexed id);
 
     // MODIFIERS
 
@@ -23,14 +22,15 @@ contract Meta is Owned {
 
     function numVersions() constant returns (uint) { return versions.length; }
 
+    function versionAt(uint index) constant returns (address) { return versions[index]; }
+
     function availability(address ofVersion) constant returns (bool) { return versionAvailabilities[ofVersion]; }
 
-    /// Insert voting mechanism
-    function updateVersion(address toVersion) only_owner returns (bool) {
-        // Registrar Version
-        versions.push(toVersion);
-        versionAvailabilities[toVersion] = true;
-        VersionUpdated(toVersion, versions.length);
+    function updateVersion(address nextVersion) only_owner returns (bool) {
+        // TODO: Assert stakeholder consensus
+        versions.push(nextVersion);
+        versionAvailabilities[nextVersion] = true;
+        VersionUpdated(nextVersion, versions.length);
         return true;
     }
 

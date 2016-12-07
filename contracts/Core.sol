@@ -240,7 +240,6 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     /// Place an Order on the selected Exchange
-    /* TODO assert exchange */
     function offer(
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
