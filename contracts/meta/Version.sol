@@ -27,19 +27,19 @@ contract Version is Owned {
     function Version(address ofMeta) { addrMeta = ofMeta; }
 
     function createPortfolio(
-        address addrEtherToken,
-        address addrRegistrar,
-        address addrTrading,
-        address addrExchange
+        address ofRegistrar,
+        address ofTrading,
+        address ofManagmentFee,
+        address ofPerformanceFee
     )
         returns (address)
     {
         // Create new Portfolio
         address createAddr = address(new Core(
-            addrEtherToken,
-            addrRegistrar,
-            addrTrading,
-            addrExchange
+            ofRegistrar,
+            ofTrading,
+            ofManagmentFee,
+            ofPerformanceFee
         ));
 
         // Change owner to msg.sender

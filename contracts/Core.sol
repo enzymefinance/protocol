@@ -43,6 +43,10 @@ contract Core is Shares, SafeMath, Owned {
 
     // FIELDS
 
+    // Constant fields
+    uint public constant ETHER_TOKEN_INDEX_IN_REGISTRAR = 0;
+
+    // Fields that can be changed by functions
     Manager manager;
     Analytics analytics;
     Modules module;
@@ -82,6 +86,11 @@ contract Core is Shares, SafeMath, Owned {
 
     modifier this_balance_at_least(uint x) {
         assert(this.balance >= x);
+        _;
+    }
+
+    modifier token_registered_to_exchange(ERC20 token, Exchange exchange) {
+        assert(exchange == Exchange(module.registrar.assignedExchange(token)));
         _;
     }
 
@@ -135,8 +144,9 @@ contract Core is Shares, SafeMath, Owned {
         gav = module.ether_token.balanceOf(this) * 1; // EtherToken as Asset
         uint numAssignedAssets = module.registrar.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
+            if (i == ETHER_TOKEN_INDEX_IN_REGISTRAR) continue;
             ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
-            uint holdings = ERC20.balanceOf(address(this)); // Asset holdings
+            uint holdings = ERC20.balanceOf(this); // Asset holdings
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
             uint price = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price
             gav += holdings * price; // Sum up product of asset holdings and asset prices
@@ -146,18 +156,19 @@ contract Core is Shares, SafeMath, Owned {
     // NON-CONSTANT METHODS
 
     function Core(
-        address addrEtherToken,
-        address addrRegistrar,
-        address addrTrading,
-        address addrExchange
+        address ofRegistrar,
+        address ofTrading,
+        address ofManagmentFee,
+        address ofPerformanceFee
     ) {
         analytics.nav = 0;
         analytics.delta = 1 ether;
         analytics.timestamp = now;
-        module.ether_token = EtherToken(addrEtherToken);
-        module.registrar = RegistrarProtocol(addrRegistrar);
-        module.trading = TradingProtocol(addrTrading);
-        module.exchange = Exchange(addrExchange);
+        module.registrar = RegistrarProtocol(ofRegistrar);
+        module.ether_token = EtherToken(address(module.registrar.assetAt(ETHER_TOKEN_INDEX_IN_REGISTRAR)));
+        module.trading = TradingProtocol(ofTrading);
+        module.management_fee = ManagementFeeProtocol(ofManagmentFee);
+        module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
     }
 
     // Pre: Needed to receive Ether from EtherToken Contract
@@ -190,7 +201,6 @@ contract Core is Shares, SafeMath, Owned {
             }
             // Store Ether in EtherToken contract
             assert(module.ether_token.deposit.value(intendedInvestment)());
-            assert(module.ether_token.approve(module.exchange, intendedInvestment));
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
         // Refund remainder
@@ -231,36 +241,38 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    function approveSpendingOf(ERC20 token, address toBeApproved, uint256 approvalAmount)
+    /// Post: Token specific exchange as registered in registrar, approved to spend ofToken
+    function approveSpending(ERC20 ofToken, uint approvalAmount)
         only_owner
     {
-      /* TODO: include EtherToken in first assert */
-      assert(module.registrar.availability(token));
-      token.approve(toBeApproved, approvalAmount);
+        assert(module.registrar.availability(ofToken));
+        ofToken.approve(module.registrar.assignedExchange(ofToken), approvalAmount);
     }
 
     /// Place an Order on the selected Exchange
-    function offer(
+    function offer(Exchange onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
         only_owner
+        token_registered_to_exchange(sell_which_token, onExchange)
     {
-        // Assert that asset is available
         assert(module.registrar.availability(sell_which_token));
         assert(module.registrar.availability(buy_which_token));
-        module.exchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
-    function buy(uint id, uint quantity)
+    function buy(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
-        module.exchange.buy(id, quantity);
+        // TODO: assert token of orderId is registred to onExchange
+        onExchange.buy(id, quantity);
     }
 
-    function cancel(uint id)
+    function cancel(Exchange onExchange, uint id)
         only_owner
     {
-        module.exchange.cancel(id);
+        // TODO: assert token of orderId is registred to onExchange
+        onExchange.cancel(id);
     }
 }

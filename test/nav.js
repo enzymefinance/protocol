@@ -12,6 +12,7 @@ contract('Net Asset Value', (accounts) => {
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
+  const ADDRESS_PLACEHOLDER = "0x0";
   const NUM_OFFERS = 3;
   const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
 
@@ -66,6 +67,7 @@ contract('Net Asset Value', (accounts) => {
       exchangeContract = result;
       return Registrar.new(
         [
+          etherTokenContract.address,
           bitcoinTokenContract.address,
           dollarTokenContract.address,
           euroTokenContract.address
@@ -73,7 +75,9 @@ contract('Net Asset Value', (accounts) => {
           priceFeedContract.address,
           priceFeedContract.address,
           priceFeedContract.address,
+          priceFeedContract.address,
         ], [
+          exchangeContract.address,
           exchangeContract.address,
           exchangeContract.address,
           exchangeContract.address,
@@ -89,8 +93,11 @@ contract('Net Asset Value', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    Core.new(etherTokenContract.address, registrarContract.address,
-      tradingContract.address, exchangeContract.address, { from: OWNER }).then((result) => {
+    Core.new(registrarContract.address,
+      tradingContract.address,
+      ADDRESS_PLACEHOLDER,
+      ADDRESS_PLACEHOLDER,
+      { from: OWNER }).then((result) => {
       contract = result;
       return contract.sumInvested();
     }).then((result) => {
@@ -219,7 +226,13 @@ contract('Net Asset Value', (accounts) => {
     /* Managing
      *  Round 1:
      */
-    var buy = [{ buy_how_much: Helpers.atomizedPrices[0], id: 1 }];
+    var buy = [
+      {
+        exchange: exchangeContract.address,
+        buy_how_much: Helpers.atomizedPrices[0],
+        id: 1
+      }
+    ];
 
     contract.totalSupply().then((result) => {
       assert.strictEqual(result.toNumber(), 0);
@@ -268,7 +281,13 @@ contract('Net Asset Value', (accounts) => {
       assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
 
       // ROUND 3 MANAGING
-      return contract.buy(buy[0].id, buy[0].buy_how_much, { from: OWNER });
+    return contract.approveSpending(etherTokenContract.address, 1000 * SolKeywords.ether, { from: OWNER });
+    }).then((result) => {
+      return etherTokenContract.allowance(contract.address, buy[0].exchange);
+    }).then((result) => {
+      assert.equal(result, 1000 * SolKeywords.ether);
+      console.log(buy[0].exchange, buy[0].id, buy[0].buy_how_much)
+      return contract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
     }).then((result) => {
       return etherTokenContract.balanceOf(contract.address);
     }).then((result) => {

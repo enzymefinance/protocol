@@ -6,12 +6,15 @@ import "../dependencies/Owned.sol";
 
 /// @title Registrar Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Routes internal data to smart-contracts
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
 contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     // FILEDS
 
+    // Constant fields
+    uint public constant ETHER_TOKEN_INDEX = 0;
+
+    // Fields that can be changed by functions
     address[] public assets;
     address[] public priceFeeds;
     address[] public exchanges;
@@ -22,11 +25,15 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     // MODIFIERS
 
-    modifier maps_equal(address[] x, address[] y, address[] z) {
+    modifier arrays_equal(address[] x, address[] y, address[] z) {
         assert(x.length == y.length && y.length == z.length);
         _;
     }
 
+    modifier array_not_empty(address[] x) {
+        assert(x.length >= 1);
+        _;
+    }
     // CONSTANT METHDOS
 
     function numAssignedAssets() constant returns (uint) { return assets.length; }
@@ -41,8 +48,10 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     // NON-CONSTANT METHODS
 
+    /// Pre: Assign EtherToken at index 0 of "ofAssets"
     function Registrar(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
-        maps_equal(ofAssets, ofPriceFeeds, ofExchanges)
+        arrays_equal(ofAssets, ofPriceFeeds, ofExchanges)
+        array_not_empty(ofAssets)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
             assetAvailabilities[ofAssets[i]] = true;

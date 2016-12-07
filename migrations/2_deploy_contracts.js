@@ -9,9 +9,9 @@ module.exports = function(deployer) {
     Exchange
   ]).then(() => {
     return deployer.deploy(Registrar,
-      [BitcoinToken.address, DollarToken.address, EuroToken.address],
-      [PriceFeed.address, PriceFeed.address, PriceFeed.address],
-      [Exchange.address, Exchange.address, Exchange.address]
+      [EtherToken.address, BitcoinToken.address, DollarToken.address, EuroToken.address],
+      [PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address],
+      [Exchange.address, Exchange.address, Exchange.address, Exchange.address]
     );
   });
 };
