@@ -15,6 +15,7 @@ contract('Net Asset Value', (accounts) => {
   const ADDRESS_PLACEHOLDER = "0x0";
   const NUM_OFFERS = 3;
   const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
+  const DATA = {"BTC":0.01117,"USD":8.45,"EUR":7.92};
 
   // Test globals
   let contract,
@@ -51,15 +52,15 @@ contract('Net Asset Value', (accounts) => {
       testCasesPriceFeed = [ // Set testCasesPriceFeed
         {
           address: bitcoinTokenContract.address,
-          price: Helpers.inverseAtomizedPrices[0],
+          price: Helpers.createInverseAtomizedPrices(DATA)[0],
         },
         {
           address: dollarTokenContract.address,
-          price: Helpers.inverseAtomizedPrices[1],
+          price: Helpers.createInverseAtomizedPrices(DATA)[1],
         },
         {
           address: euroTokenContract.address,
-          price: Helpers.inverseAtomizedPrices[2],
+          price: Helpers.createInverseAtomizedPrices(DATA)[2],
         },
       ];
       return Exchange.new({ from: OWNER });
@@ -138,7 +139,7 @@ contract('Net Asset Value', (accounts) => {
     for (let i = 0; i < NUM_OFFERS; i++) {
       testCasesExchange.push(
         {
-          sell_how_much: Helpers.atomizedPrices[0] * (1 - i*0.1),
+          sell_how_much: Helpers.createAtomizedPrices(DATA)[0] * (1 - i*0.1),
           sell_which_token: bitcoinTokenContract.address,
           buy_how_much: 1 * SolKeywords.ether,
           buy_which_token: etherTokenContract.address,
@@ -229,7 +230,7 @@ contract('Net Asset Value', (accounts) => {
     var buy = [
       {
         exchange: exchangeContract.address,
-        buy_how_much: Helpers.atomizedPrices[0],
+        buy_how_much: Helpers.createAtomizedPrices(DATA)[0],
         id: 1
       }
     ];
