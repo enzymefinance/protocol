@@ -1,3 +1,3 @@
 module.exports = function(deployer) {
-  deployer.deploy(Migrations);
+  deployer.deploy(Migrations, { gas: 4000000, data: Migrations.unlinked_binary });
 };
