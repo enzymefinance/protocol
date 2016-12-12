@@ -1,4 +1,4 @@
-module.exports = function(deployer) {
+module.exports = (deployer) => {
   // Deploy contracts
   deployer.deploy([
     EtherToken,
@@ -6,12 +6,11 @@ module.exports = function(deployer) {
     DollarToken,
     EuroToken,
     PriceFeed,
-    Exchange
-  ]).then(() => {
-    return deployer.deploy(Registrar,
+    Exchange,
+  ]).then(() =>
+    deployer.deploy(
+      Registrar,
       [BitcoinToken.address, DollarToken.address, EuroToken.address],
       [PriceFeed.address, PriceFeed.address, PriceFeed.address],
-      [Exchange.address, Exchange.address, Exchange.address]
-    );
-  });
+      [Exchange.address, Exchange.address, Exchange.address]));
 };

@@ -1,0 +1,21 @@
+{
+  "parser": "babel-eslint",
+  "plugins": [
+    "meteor"
+  ],
+  "extends": [
+    "airbnb",
+    "plugin:meteor/recommended"
+  ],
+  "rules": {
+    "no-undef": 0
+  },
+  "settings": {
+    "import/resolver": "meteor"
+  },
+  "globals": {
+    "web3": true,
+    "contract": true,
+    "it": true
+  }
+}
