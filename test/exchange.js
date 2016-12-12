@@ -1,19 +1,17 @@
-var async = require('async');
-var assert = require('assert');
-var BigNumber = require('bignumber.js');
-var Helpers = require('../lib/Helpers.js');
-var SolKeywords = require('../lib/SolKeywords.js');
-var SolConstants = require('../lib/SolConstants.js');
+const async = require('async');
+const assert = require('assert');
+const Helpers = require('../lib/Helpers.js');
+const SolKeywords = require('../lib/SolKeywords.js');
+const SolConstants = require('../lib/SolConstants.js');
 
 
 contract('Exchange', (accounts) => {
   // Test constants
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
-  const NOT_OWNER = accounts[1];
   const NUM_OFFERS = 3;
   const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
-  const DATA = {"BTC":0.01117,"USD":8.45,"EUR":7.92};
+  const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
 
   // Test globals
   let contract;

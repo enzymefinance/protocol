@@ -1,4 +1,4 @@
-module.exports = function(deployer) {
+module.exports = (deployer) => {
   // Deploy contracts
   deployer.deploy([
     [EtherToken, { gas: 4000000, data: EtherToken.unlinked_binary }],
