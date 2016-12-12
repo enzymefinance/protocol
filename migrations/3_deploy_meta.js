@@ -1,6 +1,4 @@
-module.exports = function(deployer) {
+module.exports = (deployer) => {
   // Deploy meta strucutre
-  deployer.deploy(Meta).then(() => {
-    return deployer.deploy(Version, Meta.address);
-  });
+  deployer.deploy(Meta).then(() => deployer.deploy(Version, Meta.address));
 };

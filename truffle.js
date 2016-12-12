@@ -1,34 +1,34 @@
 module.exports = {
   build: {
-    "index.html": "index.html",
-    "app.js": [
-      "javascripts/app.js"
+    'index.html': 'index.html',
+    'app.js': [
+      'javascripts/app.js',
     ],
-    "app.css": [
-      "stylesheets/app.css"
+    'app.css': [
+      'stylesheets/app.css',
     ],
-    "images/": "images/"
+    'images/': 'images/',
   },
   rpc: {
-    host: "localhost",
-    port: 8545
+    host: 'localhost',
+    port: 8545,
   },
   networks: {
-    "live": {
+    live: {
       network_id: 1, // Ethereum public network
       // optional config values
-      // host - defaults to "localhost"
+      // host - defaults to 'localhost'
       // port - defaults to 8545
       // gas
       // gasPrice
       // from - default address to use for any transaction Truffle makes during migrations
     },
-    "ropsten": {
+    ropsten: {
       network_id: 3, // Official Ethereum test network
-      port: 8545
+      port: 8545,
     },
-    "development": {
-      network_id: "default"
-    }
-  }
+    development: {
+      network_id: 'default',
+    },
+  },
 };
