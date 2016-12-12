@@ -8,18 +8,19 @@ contract('PriceFeed', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
+  const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
   let testCases = [
     {
       address: '0x0000000000000000000000000000000000000000',
-      price: Helpers.inverseAtomizedPrices[0],
+      price: Helpers.createInverseAtomizedPrices(DATA)[0],
     },
     {
       address: '0x0000000000000000000000000000000000000001',
-      price: Helpers.inverseAtomizedPrices[1],
+      price: Helpers.createInverseAtomizedPrices(DATA)[1],
     },
     {
       address: '0x0000000000000000000000000000000000000002',
-      price: Helpers.inverseAtomizedPrices[2],
+      price: Helpers.createInverseAtomizedPrices(DATA)[2],
     },
   ];
 

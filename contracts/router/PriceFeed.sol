@@ -33,7 +33,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
         _;
     }
 
-    modifier maps_equal(address[] x, uint[] y) {
+    modifier arrays_equal(address[] x, uint[] y) {
         assert(x.length == y.length);
         _;
     }
@@ -65,7 +65,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
      */
     function setPrice(address[] ofAssets, uint[] newPrices)
         only_owner
-        maps_equal(ofAssets, newPrices)
+        arrays_equal(ofAssets, newPrices)
     {
         lastUpdate = now;
         for (uint i = 0; i < ofAssets.length; ++i) {

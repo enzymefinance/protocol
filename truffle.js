@@ -23,8 +23,8 @@ module.exports = {
       // gasPrice
       // from - default address to use for any transaction Truffle makes during migrations
     },
-    parity: {
-      network_id: 2, // Official Ethereum test network
+    ropsten: {
+      network_id: 3, // Official Ethereum test network
       port: 8545,
     },
     development: {
