@@ -37,6 +37,13 @@ After installation is complete, go to the above `protocol` directory, open a ter
     ```
     node_modules/.bin/truffle test
     ```
+    
+## Linting
+
+After installation is complete, go to the above `protocol` directory, open a terminal and run:
+
+`meteor npm run lint`
+
 
 ## Deployment
 
