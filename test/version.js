@@ -7,7 +7,7 @@ contract('Version', (accounts) => {
   const ADDRESS_PLACEHOLDER = '0x0';
 
   // Test globals
-  let contract;
+  let versionContract;
   let coreContract;
   let etherTokenContract;
   let bitcoinTokenContract;
@@ -76,17 +76,17 @@ contract('Version', (accounts) => {
   it('Create a Core contract through the Version contract', (done) => {
     Version.new(ADDRESS_PLACEHOLDER)
         .then((result) => {
-          contract = result;
-          return contract.createPortfolio(registrarContract.address,
+          versionContract = result;
+          return versionContract.createPortfolio(registrarContract.address,
             tradingContract.address,
             ADDRESS_PLACEHOLDER,
             ADDRESS_PLACEHOLDER,
             { from: OWNER });
         })
-        .then(() => contract.numPortfolios())
+        .then(() => versionContract.numPortfolios())
         .then((result) => {
           assert.strictEqual(result.toNumber(), 1);
-          return contract.portfolios(0);
+          return versionContract.portfolios(0);
         })
         .then((result) => {
           coreContract = Core.at(result);

@@ -25,7 +25,7 @@ contract('PriceFeed', (accounts) => {
   ];
 
   // Test globals
-  let contract;
+  let priceFeedContract;
 
 
   before('Check accounts', (done) => {
@@ -35,8 +35,8 @@ contract('PriceFeed', (accounts) => {
 
   it('Deploy smart contract', (done) => {
     PriceFeed.new().then((result) => {
-      contract = result;
-      return contract.fee();
+      priceFeedContract = result;
+      return priceFeedContract.fee();
     }).then((result) => {
       assert.equal(result.toNumber(), SolConstants.INITIAL_FEE);
     }).then(() => {
@@ -45,7 +45,7 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Get not existent price', (done) => {
-    contract.getPrice('', { from: NOT_OWNER }).then((result) => {
+    priceFeedContract.getPrice('', { from: NOT_OWNER }).then((result) => {
       assert.equal(result.toNumber(), 0);
       done();
     });
@@ -54,8 +54,8 @@ contract('PriceFeed', (accounts) => {
   it('Set multiple price', (done) => {
     const addresses = [testCases[0].address, testCases[1].address, testCases[2].address];
     const inverseAtomizedPrices = [testCases[0].price, testCases[1].price, testCases[2].price];
-    contract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
-        .then(() => contract.lastUpdate())
+    priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
+        .then(() => priceFeedContract.lastUpdate())
         .then((result) => {
           assert.notEqual(result.toNumber(), 0);
           done();
@@ -66,7 +66,7 @@ contract('PriceFeed', (accounts) => {
     async.mapSeries(
       testCases,
       (testCase, callbackMap) => {
-        contract.getPrice(testCase.address, { from: NOT_OWNER })
+        priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
             .then((result) => {
               assert.notEqual(result, testCase.price);
               callbackMap(null, testCase);

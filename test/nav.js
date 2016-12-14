@@ -16,7 +16,7 @@ contract('Net Asset Value', (accounts) => {
   const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
 
   // Test globals
-  let contract;
+  let coreContract;
   let etherTokenContract;
   let bitcoinTokenContract;
   let dollarTokenContract;
@@ -105,8 +105,8 @@ contract('Net Asset Value', (accounts) => {
       ADDRESS_PLACEHOLDER,
       { from: OWNER })
         .then((result) => {
-          contract = result;
-          return contract.sumInvested();
+          coreContract = result;
+          return coreContract.sumInvested();
         })
         .then((result) => {
           assert.equal(result.toNumber(), 0);
@@ -251,79 +251,79 @@ contract('Net Asset Value', (accounts) => {
       },
     ];
 
-    contract.totalSupply()
+    coreContract.totalSupply()
         .then((result) => {
           assert.strictEqual(result.toNumber(), 0);
           // ROUND 1 EXACT
-          return contract.createShares(
+          return coreContract.createShares(
               wantedShares[0], { from: OWNER, value: investFunds[0].toNumber() });
         })
-        .then(() => contract.totalSupply())
+        .then(() => coreContract.totalSupply())
         .then((result) => {
           assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
         })
         // Check sumInvested
-        .then(() => contract.sumInvested())
+        .then(() => coreContract.sumInvested())
         .then((result) => {
           // TODO: calculate sumInvested via Smart Contract
           assert.strictEqual(result.toNumber(), investFunds[0].toNumber());
           // ROUND 2 0VERPAID
-          return contract.createShares(wantedShares[1],
+          return coreContract.createShares(wantedShares[1],
               { from: accounts[1], value: investFunds[1].toNumber() });
         })
-        .then(() => contract.totalSupply())
+        .then(() => coreContract.totalSupply())
         .then((result) => {
           assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
         })
-        .then(() => contract.sumInvested())
+        .then(() => coreContract.sumInvested())
         .then((result) => {
           // TODO: calculate sumInvested via Smart Contract
           assert.strictEqual(result.toNumber(),
               correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
         })
-        .then(() => contract.createShares(wantedShares[2],
+        .then(() => coreContract.createShares(wantedShares[2],
               { from: accounts[2], value: investFunds[2].toNumber() }))
-        .then(() => contract.totalSupply())
+        .then(() => coreContract.totalSupply())
         .then((result) => {
           // Paid to little, hence no shares received
           assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
         })
-        .then(() => contract.sumInvested())
+        .then(() => coreContract.sumInvested())
         .then((result) => {
           // Paid to little, hence no investment made
           assert.strictEqual(result.toNumber(),
               correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
           // ROUND 3 MANAGING
-          return contract.approveSpending(etherTokenContract.address,
+          return coreContract.approveSpending(etherTokenContract.address,
               1000 * SolKeywords.ether, { from: OWNER });
         })
-        .then(() => etherTokenContract.allowance(contract.address, buy[0].exchange))
+        .then(() => etherTokenContract.allowance(coreContract.address, buy[0].exchange))
         .then((result) => {
           assert.equal(result, 1000 * SolKeywords.ether);
           // console.log(buy[0].exchange, buy[0].id, buy[0].buy_how_much)
-          return contract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
+          return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
         })
-        .then(() => etherTokenContract.balanceOf(contract.address))
+        .then(() => etherTokenContract.balanceOf(coreContract.address))
         .then((result) => {
           console.log('EtherToken held: ', result.toNumber());
-          return bitcoinTokenContract.balanceOf(contract.address);
+          return bitcoinTokenContract.balanceOf(coreContract.address);
         })
         .then((result) => {
           console.log('BitcoinToken held: ', result.toNumber());
-          return contract.calcSharePrice();
+          return coreContract.calcSharePrice();
         })
         .then((result) => {
           console.log('New share price is: ', result.toString());
 
           // ROUND 4 EXACT
-          return contract.annihilateShares(offeredShares[0], 10000, { from: OWNER });
+          return coreContract.annihilateShares(offeredShares[0], 10000, { from: OWNER });
         })
-        .then(() => contract.totalSupply())
+        .then(() => coreContract.totalSupply())
         .then((result) => {
           const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
           assert.strictEqual(result.toNumber(), balance);
         })
-        .then(() => contract.sumWithdrawn())
+        .then(() => coreContract.sumWithdrawn())
         .then(() => {
           // TODO: calculate outside w commission etc.
           // console.log(`Sold shares: ${offeredShares[0]}`);
@@ -331,15 +331,15 @@ contract('Net Asset Value', (accounts) => {
           // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
         })
         // ROUND 5 OVERPAID
-        .then(() => contract.annihilateShares(offeredShares[1], 10000, { from: accounts[1] }))
-        .then(() => contract.totalSupply())
+        .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: accounts[1] }))
+        .then(() => coreContract.totalSupply())
         .then((result) => {
           const balance = wantedShares[0]
               .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
           assert.strictEqual(result.toNumber(), balance);
         })
         // Check sumInvested
-        .then(() => contract.sumWithdrawn())
+        .then(() => coreContract.sumWithdrawn())
         .then(() => {
           // TODO: calculate outside w commission etc.
           // console.log('Sold shares: ' + offeredShares[1]);
