@@ -18,7 +18,6 @@ contract('Exchange', (accounts) => {
   let etherTokenContract;
   let bitcoinTokenContract;
   let testCases;
-  let lastOfferId = 0;
 
   before('Check accounts', (done) => {
     assert.equal(accounts.length, 10);
@@ -53,8 +52,8 @@ contract('Exchange', (accounts) => {
         });
   });
 
-  // Reduce sell amount by 0.1 on each order
-  it('Set up test cases', (done) => {
+  it('Create one side of the orderbook', (done) => {
+    // Reduce sell amount by 0.1 on each order
     testCases = [];
     for (let i = 0; i < NUM_OFFERS; i += 1) {
       testCases.push(
@@ -69,32 +68,29 @@ contract('Exchange', (accounts) => {
         },
       );
     }
-    done();
-  });
 
-  it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
-    bitcoinTokenContract.approve(contract.address, ALLOWANCE_AMOUNT, { from: OWNER },
-    ).then(() => bitcoinTokenContract.allowance(OWNER, contract.address),
-    ).then((result) => {
-      assert.equal(result, ALLOWANCE_AMOUNT);
-      done();
-    });
-  });
-
-  it('Create one side of the orderbook', (done) => {
     async.mapSeries(
       testCases,
       (testCase, callbackMap) => {
-        contract.offer(
-          testCase.sell_how_much,
-          testCase.sell_which_token,
-          testCase.buy_how_much,
-          testCase.buy_which_token,
-          { from: OWNER },
-        ).then((txHash) => {
-          const result = Object.assign({ txHash }, testCase);
-          callbackMap(null, result);
-        });
+        bitcoinTokenContract.approve(contract.address, testCase.sell_how_much, { from: OWNER })
+          .then(() => bitcoinTokenContract.allowance(OWNER, contract.address))
+          .then((result) => {
+            assert.equal(result, testCase.sell_how_much);
+            return contract.offer(
+            testCase.sell_how_much,
+            testCase.sell_which_token,
+            testCase.buy_how_much,
+            testCase.buy_which_token,
+            { from: OWNER });
+          })
+          .then((txHash) => {
+            Object.assign({ txHash }, testCase);
+            return contract.lastOfferId({ from: OWNER });
+          })
+          .then((lastOfferId) => {
+            assert.equal(testCase.id, lastOfferId);
+            callbackMap(null, testCase);
+          });
       },
       (err, results) => {
         testCases = results;
@@ -104,25 +100,25 @@ contract('Exchange', (accounts) => {
   });
 
   it('Check if orders created', (done) => {
-    contract.lastOfferId({ from: OWNER },
-    ).then((result) => {
-      lastOfferId = result.toNumber();
-      assert.equal(lastOfferId, NUM_OFFERS);
-      done();
-    });
+    contract.lastOfferId({ from: OWNER })
+      .then((result) => {
+        const lastOfferId = result.toNumber();
+        assert.equal(lastOfferId, NUM_OFFERS);
+        done();
+      });
   });
 
   it('Check orders information', (done) => {
     async.mapSeries(
       testCases,
       (testCase, callbackMap) => {
-        contract.offers(testCase.id,
-        ).then(() => {
-          // const sellHowMuch = result[0];
-          // const buyHowMuch = result[2];
-          // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
-          callbackMap(null, testCase);
-        });
+        contract.offers(testCase.id)
+          .then(() => {
+            // const sellHowMuch = result[0];
+            // const buyHowMuch = result[2];
+            // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
+            callbackMap(null, testCase);
+          });
       },
       (err, results) => {
         testCases = results;
@@ -136,10 +132,10 @@ contract('Exchange', (accounts) => {
       testCases,
       (testCase, callbackMap) => {
         contract.cancel(testCase.id, { from: OWNER })
-            .then((txHash) => {
-              const result = Object.assign({ txHash }, testCase);
-              callbackMap(null, result);
-            });
+          .then((txHash) => {
+            const result = Object.assign({ txHash }, testCase);
+            callbackMap(null, result);
+          });
       },
       (err, results) => {
         testCases = results;
@@ -153,12 +149,12 @@ contract('Exchange', (accounts) => {
       testCases,
       (testCase, callbackMap) => {
         contract.offers(testCase.id)
-            .then(() => {
-              // const sellHowMuch = result[0];
-              // const buyHowMuch = result[2];
-              // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
-              callbackMap(null, testCase);
-            });
+          .then(() => {
+            // const sellHowMuch = result[0];
+            // const buyHowMuch = result[2];
+            // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
+            callbackMap(null, testCase);
+          });
       },
       (err, results) => {
         testCases = results;
