@@ -189,57 +189,57 @@ contract Core is Shares, SafeMath, Owned {
          *  amount == msg.value (amount investor is willing to pay for the req. quantity)
          */
         sharePrice = calcSharePrice();
-        uint sentFunds = msg.value;
+        uint offeredValue = msg.value;
         // Check if enough funds sent for requested quantity of shares.
-        uint intendedInvestment = sharePrice * wantedShares / (1 ether);
-        if (intendedInvestment <= sentFunds) {
+        uint wantedValue = sharePrice * wantedShares / (1 ether);
+        if (wantedValue <= offeredValue) {
             // Create Shares
             balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
             totalSupply = safeAdd(totalSupply, wantedShares);
-            sumInvested = safeAdd(sumInvested, intendedInvestment);
-            analytics.nav = safeAdd(analytics.nav, intendedInvestment); // Bookkeeping
+            sumInvested = safeAdd(sumInvested, wantedValue);
+            analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
             if (!manager.received_first_investment) {
                 manager.received_first_investment = true; // Flag first investment as happened
             }
             // Store Ether in EtherToken contract
-            assert(module.ether_token.deposit.value(intendedInvestment)());
+            assert(module.ether_token.deposit.value(wantedValue)());
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
-        // Refund remainder
-        if (intendedInvestment < sentFunds) {
-            uint remainder = sentFunds - intendedInvestment;
-            assert(msg.sender.send(remainder));
-            Refund(msg.sender, remainder);
+        // Refund excessOfferedValue
+        if (wantedValue < offeredValue) {
+            uint excessOfferedValue = offeredValue - wantedValue;
+            assert(msg.sender.send(excessOfferedValue));
+            Refund(msg.sender, excessOfferedValue);
         }
     }
 
     /// Withdraw from a fund by annihilating shares
-    /* TODO implement forced withdrawal */
-    function annihilateShares(uint offeredShares, uint wantedAmount)
+    function annihilateShares(uint offeredShares, uint wantedValue)
         balances_msg_sender_at_least(offeredShares)
-        this_balance_at_least(wantedAmount)
-        not_zero(wantedAmount)
         not_zero(offeredShares)
     {
         sharePrice = calcSharePrice();
         // Check if enough shares offered for requested amount of funds.
-        uint intendedOffering = sharePrice * offeredShares / (1 ether);
-        if (wantedAmount <= intendedOffering) {
+        uint offeredValue = sharePrice * offeredShares / (1 ether);
+        if (wantedValue <= offeredValue) {
             // Annihilate Shares
             balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
             totalSupply = safeSub(totalSupply, offeredShares);
-            sumWithdrawn = safeAdd(sumWithdrawn, intendedOffering);
-            analytics.nav = safeSub(analytics.nav, intendedOffering); // Bookkeeping
-            // Withdraw Ether from EtherToken contract
-            assert(module.ether_token.withdraw(intendedOffering));
-            assert(msg.sender.send(intendedOffering));
+            sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
+            analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
+            // Separate a portion of all EtherToken
+            // TODO iterate this overall assets of registrar
+            uint totalEtherHoldings = module.ether_token.balanceOf(this);
+            uint etherHoldings = totalEtherHoldings * offeredShares / totalSupply; // ownership percentage of total Ether holdings
+            // Transfer Ownership of EtherTokens from portfolio to investor
+            assert(module.ether_token.transfer(msg.sender, etherHoldings));
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
-        }
-        // Refund remainder
-        if (wantedAmount < intendedOffering) {
-            uint remainder = intendedOffering - wantedAmount;
-            Refund(msg.sender, remainder);
-        }
+      }
+      // Refund excessOfferedValue
+      if (wantedValue < offeredValue) {
+          uint excessOfferedValue = offeredValue - wantedValue;
+          Refund(msg.sender, excessOfferedValue);
+      }
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf

@@ -12,5 +12,7 @@ module.exports = (deployer) => {
       [EtherToken.address, BitcoinToken.address, DollarToken.address, EuroToken.address],
       [PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address],
       [Exchange.address, Exchange.address, Exchange.address, Exchange.address],
-      { gas: 4000000, data: Registrar.unlinked_binary }));
+      { gas: 4000000, data: Registrar.unlinked_binary }
+    )
+  );
 };
