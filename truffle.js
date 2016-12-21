@@ -25,7 +25,7 @@ module.exports = {
     },
     ropsten: {
       network_id: 3, // Official Ethereum test network
-      port: 8545,
+      port: 8546,
     },
     development: {
       network_id: 'default',

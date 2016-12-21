@@ -34,68 +34,68 @@ contract('Net Asset Value', (accounts) => {
     assert.equal(accounts.length, 10);
 
     EtherToken.new({ from: OWNER })
-        .then((result) => {
-          etherTokenContract = result;
-          return BitcoinToken.new({ from: OWNER });
-        })
-        .then((result) => {
-          bitcoinTokenContract = result;
-          return DollarToken.new({ from: OWNER });
-        })
-        .then((result) => {
-          dollarTokenContract = result;
-          return EuroToken.new({ from: OWNER });
-        })
-        .then((result) => {
-          euroTokenContract = result;
-          return PriceFeed.new({ from: OWNER });
-        })
-        .then((result) => {
-          priceFeedContract = result;
-          testCasesPriceFeed = [ // Set testCasesPriceFeed
-            {
-              address: bitcoinTokenContract.address,
-              price: Helpers.createInverseAtomizedPrices(DATA)[0],
-            },
-            {
-              address: dollarTokenContract.address,
-              price: Helpers.createInverseAtomizedPrices(DATA)[1],
-            },
-            {
-              address: euroTokenContract.address,
-              price: Helpers.createInverseAtomizedPrices(DATA)[2],
-            },
-          ];
-          return Exchange.new({ from: OWNER });
-        })
-        .then((result) => {
-          exchangeContract = result;
-          return Registrar.new(
-            [
-              etherTokenContract.address,
-              bitcoinTokenContract.address,
-              dollarTokenContract.address,
-              euroTokenContract.address,
-            ], [
-              priceFeedContract.address,
-              priceFeedContract.address,
-              priceFeedContract.address,
-              priceFeedContract.address,
-            ], [
-              exchangeContract.address,
-              exchangeContract.address,
-              exchangeContract.address,
-              exchangeContract.address,
-            ], { from: OWNER });
-        })
-        .then((result) => {
-          registrarContract = result;
-          return Trading.new(exchangeContract.address, { from: OWNER });
-        })
-        .then((result) => {
-          tradingContract = result;
-          done();
-        });
+      .then((result) => {
+        etherTokenContract = result;
+        return BitcoinToken.new({ from: OWNER });
+      })
+      .then((result) => {
+        bitcoinTokenContract = result;
+        return DollarToken.new({ from: OWNER });
+      })
+      .then((result) => {
+        dollarTokenContract = result;
+        return EuroToken.new({ from: OWNER });
+      })
+      .then((result) => {
+        euroTokenContract = result;
+        return PriceFeed.new({ from: OWNER });
+      })
+      .then((result) => {
+        priceFeedContract = result;
+        testCasesPriceFeed = [ // Set testCasesPriceFeed
+          {
+            address: bitcoinTokenContract.address,
+            price: Helpers.createInverseAtomizedPrices(DATA)[0],
+          },
+          {
+            address: dollarTokenContract.address,
+            price: Helpers.createInverseAtomizedPrices(DATA)[1],
+          },
+          {
+            address: euroTokenContract.address,
+            price: Helpers.createInverseAtomizedPrices(DATA)[2],
+          },
+        ];
+        return Exchange.new({ from: OWNER });
+      })
+      .then((result) => {
+        exchangeContract = result;
+        return Registrar.new(
+          [
+            etherTokenContract.address,
+            bitcoinTokenContract.address,
+            dollarTokenContract.address,
+            euroTokenContract.address,
+          ], [
+            priceFeedContract.address,
+            priceFeedContract.address,
+            priceFeedContract.address,
+            priceFeedContract.address,
+          ], [
+            exchangeContract.address,
+            exchangeContract.address,
+            exchangeContract.address,
+            exchangeContract.address,
+          ], { from: OWNER });
+      })
+      .then((result) => {
+        registrarContract = result;
+        return Trading.new(exchangeContract.address, { from: OWNER });
+      })
+      .then((result) => {
+        tradingContract = result;
+        done();
+      });
   });
 
   it('Deploy smart contract', (done) => {
@@ -127,11 +127,11 @@ contract('Net Asset Value', (accounts) => {
       testCasesPriceFeed[2].price,
     ];
     priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
-        .then(() => priceFeedContract.lastUpdate())
-        .then((result) => {
-          assert.notEqual(result.toNumber(), 0);
-          done();
-        });
+      .then(() => priceFeedContract.lastUpdate())
+      .then((result) => {
+        assert.notEqual(result.toNumber(), 0);
+        done();
+      });
   });
 
   it('Get multiple existent prices', (done) => {
@@ -139,10 +139,10 @@ contract('Net Asset Value', (accounts) => {
       testCasesPriceFeed,
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
-            .then((result) => {
-              assert.notEqual(result, testCase.price);
-              callbackMap(null, testCase);
-            });
+          .then((result) => {
+            assert.notEqual(result, testCase.price);
+            callbackMap(null, testCase);
+          });
       },
       (err, results) => {
         testCasesPriceFeed = results;
@@ -170,11 +170,11 @@ contract('Net Asset Value', (accounts) => {
 
   it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
     bitcoinTokenContract.approve(exchangeContract.address, ALLOWANCE_AMOUNT, { from: OWNER })
-        .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
-        .then((result) => {
-          assert.equal(result, ALLOWANCE_AMOUNT);
-          done();
-        });
+      .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
+      .then((result) => {
+        assert.equal(result, ALLOWANCE_AMOUNT);
+        done();
+      });
   });
 
   it('Create one side of the orderbook', (done) => {
@@ -237,7 +237,11 @@ contract('Net Asset Value', (accounts) => {
     const investFunds = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
     const correctPriceToBePaid = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
     // const withdrawFunds = [2*999999999999977800, new BigNumber(1e+18), new BigNumber(7e+18)];
-    const offeredShares = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+    const offeredShares = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
+    const redeemFunds = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+    // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+
+
     // const correctPriceToBeReceived =
     //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
 
@@ -253,115 +257,135 @@ contract('Net Asset Value', (accounts) => {
     ];
 
     coreContract.totalSupply()
-        .then((result) => {
-          assert.strictEqual(result.toNumber(), 0);
-          // ROUND 1 EXACT
-          return coreContract.createShares(
-              wantedShares[0], { from: OWNER, value: investFunds[0].toNumber() });
-        })
-        .then(() => coreContract.totalSupply())
-        .then((result) => {
-          assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
-        })
-        // Check sumInvested
-        .then(() => coreContract.sumInvested())
-        .then((result) => {
-          // TODO: calculate sumInvested via Smart Contract
-          assert.strictEqual(result.toNumber(), investFunds[0].toNumber());
-          // ROUND 2 0VERPAID
-          return coreContract.createShares(wantedShares[1],
-              { from: accounts[1], value: investFunds[1].toNumber() });
-        })
-        .then(() => coreContract.totalSupply())
-        .then((result) => {
-          assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-        })
-        .then(() => coreContract.sumInvested())
-        .then((result) => {
-          // TODO: calculate sumInvested via Smart Contract
-          assert.strictEqual(result.toNumber(),
-              correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-        })
-        .then(() => coreContract.createShares(wantedShares[2],
-              { from: accounts[2], value: investFunds[2].toNumber() }))
-        .then(() => coreContract.totalSupply())
-        .then((result) => {
-          // Paid to little, hence no shares received
-          assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-        })
-        .then(() => coreContract.sumInvested())
-        .then((result) => {
-          // Paid to little, hence no investment made
-          assert.strictEqual(result.toNumber(),
-              correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-          // ROUND 3 MANAGING
-          return coreContract.approveSpending(etherTokenContract.address,
-              1000 * SolKeywords.ether, { from: OWNER });
-        })
-        .then(() => etherTokenContract.allowance(coreContract.address, buy[0].exchange))
-        .then((result) => {
-          assert.equal(result, 1000 * SolKeywords.ether);
-          // console.log(buy[0].exchange, buy[0].id, buy[0].buy_how_much)
-          return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
-        })
-        .then(() => etherTokenContract.balanceOf(coreContract.address))
-        .then((result) => {
-          console.log('EtherToken held: ', result.toNumber());
-          return bitcoinTokenContract.balanceOf(coreContract.address);
-        })
-        .then((result) => {
-          console.log('BitcoinToken held: ', result.toNumber());
-          return coreContract.calcSharePrice();
-        })
-        .then((result) => {
-          console.log('New share price is: ', result.toString());
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), 0);
 
-          // ROUND 4 EXACT
-          return coreContract.annihilateShares(offeredShares[0], 10000, { from: OWNER });
-        })
-        .then(() => coreContract.totalSupply())
-        .then((result) => {
-          const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
-          assert.strictEqual(result.toNumber(), balance);
-        })
-        .then(() => coreContract.sumWithdrawn())
-        .then(() => {
-          // TODO: calculate outside w commission etc.
-          // console.log(`Sold shares: ${offeredShares[0]}`);
-          // console.log(`Funds received: ${result.toNumber()}`);
-          // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
-        })
-        // ROUND 5 OVERPAID
-        .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: accounts[1] }))
-        .then(() => coreContract.totalSupply())
-        .then((result) => {
-          const balance = wantedShares[0]
-              .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
-          assert.strictEqual(result.toNumber(), balance);
-        })
-        // Check sumInvested
-        .then(() => coreContract.sumWithdrawn())
-        .then(() => {
-          // TODO: calculate outside w commission etc.
-          // console.log('Sold shares: ' + offeredShares[1]);
-          // console.log('Funds received (total): ' + result.toNumber());
-          // assert.strictEqual(result.toNumber(),
-          //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
-        })
-        .then(() => {
-          // TODO: calculate outside w commission, performance gains, loses etc.
-          // for (i = 0; i < numAccounts; ++i) {
-          //   // Actual Balance
-          //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
-          //   // >=, since actual balance has a gas cost for sending the tx.
-          //   // TODO: Estimate Gas cost
-          //   console.log(' Gas cost of Account ' + i + ':',
-          //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
-            // assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
-            //     "One of the Accounts has wrong balance!")
-          // };
-        })
-        .then(done)
-        .catch(done);
+        // ROUND 1 EXACT
+        return coreContract.createShares(wantedShares[0],
+          { from: NOT_OWNER, value: investFunds[0].toNumber() });
+      })
+      // Check totalSupply and sumInvested
+      .then(() => coreContract.totalSupply())
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
+      })
+      .then(() => coreContract.sumInvested())
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
+
+        // ROUND 2 0VERPAID
+        return coreContract.createShares(wantedShares[1],
+            { from: NOT_OWNER, value: investFunds[1].toNumber() });
+      })
+      // Check totalSupply and sumInvested
+      .then(() => coreContract.totalSupply())
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+      })
+      .then(() => coreContract.sumInvested())
+      .then((result) => {
+        assert.strictEqual(result.toNumber(),
+          correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+
+        // ROUND 3 UNDERPAID
+        return coreContract.createShares(wantedShares[2],
+          { from: NOT_OWNER, value: investFunds[2].toNumber() });
+      })
+      // Check totalSupply and sumInvested
+      .then(() => coreContract.totalSupply())
+      .then((result) => {
+        // Paid to little, hence no shares received
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+      })
+      .then(() => coreContract.sumInvested())
+      .then((result) => {
+        // Paid to little, hence no investment made
+        assert.strictEqual(result.toNumber(),
+            correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+
+
+        return coreContract.balanceOf(NOT_OWNER);
+      })
+      .then((result) => {
+        const balance = wantedShares[0].add(wantedShares[1]).toNumber();
+        assert.strictEqual(result.toNumber(), balance);
+
+        // ROUND 3 MANAGING
+        return coreContract.approveSpending(etherTokenContract.address,
+            1000 * SolKeywords.ether, { from: OWNER });
+      })
+      .then(() => etherTokenContract.allowance(coreContract.address, buy[0].exchange))
+      .then((result) => {
+        assert.equal(result, 1000 * SolKeywords.ether);
+        // console.log(buy[0].exchange, buy[0].id, buy[0].buy_how_much)
+        return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
+      })
+      .then(() => etherTokenContract.balanceOf(coreContract.address))
+      .then((result) => {
+        console.log(`EtherToken held: \t\t${result.toString()}`);
+        return bitcoinTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        console.log(`BitcoinToken held: \t\t${result.toString()}`);
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        console.log(`New share price is: \t\t${result.toString()}`);
+        //TODO Calculate more precise
+        const roundingError = 0.01;
+        console.log(`Round 4; Sell shares: \t\t${offeredShares[0]}`);
+        console.log(`Round 4; Funds to redeem: \t${redeemFunds[0] * result.toString() / SolKeywords.ether * (1.0 - roundingError)}`);
+
+        // ROUND 4 EXACT
+        return coreContract.annihilateShares(offeredShares[0], redeemFunds[0] * result.toString() / SolKeywords.ether * (1.0 - roundingError), { from: NOT_OWNER });
+      })
+      .then(() => coreContract.totalSupply())
+      .then((result) => {
+        const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+        assert.strictEqual(result.toNumber(), balance);
+      })
+      .then(() => coreContract.sumWithdrawn())
+      .then((result) => {
+        // TODO: calculate outside w commission etc.
+        console.log(`Round 4; Funds received: \t${result.toNumber()}`);
+        // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
+      })
+      .then(() => coreContract.balanceOf(NOT_OWNER))
+      .then((result) => {
+        const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+        assert.strictEqual(result.toNumber(), balance);
+      })
+      // // ROUND 5 OVERPAID
+      // .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: NOT_OWNER }))
+      // .then(() => coreContract.totalSupply())
+      // .then((result) => {
+      //   const balance = wantedShares[0]
+      //     .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
+      //   assert.strictEqual(result.toNumber(), balance);
+      // })
+      // // Check sumInvested
+      // .then(() => coreContract.sumWithdrawn())
+      // .then(() => {
+      //   // TODO: calculate outside w commission etc.
+      //   // console.log('Sold shares: ' + offeredShares[1]);
+      //   // console.log('Funds received (total): ' + result.toNumber());
+      //   // assert.strictEqual(result.toNumber(),
+      //   //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
+      // })
+      // .then(() => {
+      //   // TODO: calculate outside w commission, performance gains, loses etc.
+      //   // for (i = 0; i < numAccounts; ++i) {
+      //   //   // Actual Balance
+      //   //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
+      //   //   // >=, since actual balance has a gas cost for sending the tx.
+      //   //   // TODO: Estimate Gas cost
+      //   //   console.log(' Gas cost of Account ' + i + ':',
+      //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
+      //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
+      //   //       "One of the Accounts has wrong balance!")
+      //   // };
+      // })
+      .then(done)
+      .catch(done);
   });
 });

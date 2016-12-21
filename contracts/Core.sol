@@ -226,10 +226,10 @@ contract Core is Shares, SafeMath, Owned {
         uint intendedOffering = sharePrice * offeredShares / (1 ether);
         if (wantedAmount <= intendedOffering) {
             // Annihilate Shares
-            balances[msg.sender] -= offeredShares;
-            totalSupply -= offeredShares;
-            sumWithdrawn += intendedOffering;
-            analytics.nav -= intendedOffering; // Bookkeeping
+            balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
+            totalSupply = safeSub(totalSupply, offeredShares);
+            sumWithdrawn = safeAdd(sumWithdrawn, intendedOffering);
+            analytics.nav = safeSub(analytics.nav, intendedOffering); // Bookkeeping
             // Withdraw Ether from EtherToken contract
             assert(module.ether_token.withdraw(intendedOffering));
             assert(msg.sender.send(intendedOffering));
