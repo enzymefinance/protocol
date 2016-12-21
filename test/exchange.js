@@ -10,7 +10,6 @@ contract('Exchange', (accounts) => {
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
   const NUM_OFFERS = 3;
-  const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
   const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
 
   // Test globals
@@ -72,7 +71,10 @@ contract('Exchange', (accounts) => {
     async.mapSeries(
       testCases,
       (testCase, callbackMap) => {
-        bitcoinTokenContract.approve(exchangeContract.address, testCase.sell_how_much, { from: OWNER })
+        bitcoinTokenContract.approve(
+          exchangeContract.address,
+          testCase.sell_how_much,
+          { from: OWNER })
           .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
           .then((result) => {
             assert.equal(result, testCase.sell_how_much);

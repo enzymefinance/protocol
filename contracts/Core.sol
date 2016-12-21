@@ -156,11 +156,13 @@ contract Core is Shares, SafeMath, Owned {
     // NON-CONSTANT METHODS
 
     function Core(
+        address ofManager,
         address ofRegistrar,
         address ofTrading,
         address ofManagmentFee,
         address ofPerformanceFee
     ) {
+        owner = ofManager;
         analytics.nav = 0;
         analytics.delta = 1 ether;
         analytics.timestamp = now;

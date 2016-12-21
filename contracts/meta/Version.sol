@@ -36,6 +36,7 @@ contract Version is Owned {
     {
         // Create new Portfolio
         address createAddr = address(new Core(
+            msg.sender,
             ofRegistrar,
             ofTrading,
             ofManagmentFee,

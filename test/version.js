@@ -3,7 +3,6 @@ const assert = require('assert');
 contract('Version', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
-  // const NOT_OWNER = accounts[1];
   const ADDRESS_PLACEHOLDER = '0x0';
 
   // Test globals
@@ -77,7 +76,8 @@ contract('Version', (accounts) => {
     Version.new(ADDRESS_PLACEHOLDER)
         .then((result) => {
           versionContract = result;
-          return versionContract.createPortfolio(registrarContract.address,
+          return versionContract.createPortfolio(
+            registrarContract.address,
             tradingContract.address,
             ADDRESS_PLACEHOLDER,
             ADDRESS_PLACEHOLDER,

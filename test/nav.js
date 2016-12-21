@@ -99,7 +99,8 @@ contract('Net Asset Value', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    Core.new(registrarContract.address,
+    Core.new(OWNER,
+      registrarContract.address,
       tradingContract.address,
       ADDRESS_PLACEHOLDER,
       ADDRESS_PLACEHOLDER,
