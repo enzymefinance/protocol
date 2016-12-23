@@ -9,6 +9,7 @@ contract RegistrarProtocol {
     function numAssignedAssets() constant returns (uint) {}
     function assetAt(uint index) constant returns (address) {}
     function priceFeedsAt(uint index) constant returns (address) {}
+    function exchangesAt(uint index) constant returns (address) {}
     function availability(address ofAsset) constant returns(bool) {}
     function assignedExchange(address ofAsset) constant returns (address) {}
 

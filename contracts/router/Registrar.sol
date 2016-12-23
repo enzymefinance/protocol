@@ -42,6 +42,8 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
     function priceFeedsAt(uint index) constant returns (address) { return priceFeeds[index]; }
 
+    function exchangesAt(uint index) constant returns (address) { return exchanges[index]; }
+
     function availability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
 
     function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
