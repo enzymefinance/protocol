@@ -50,10 +50,8 @@ contract Core is Shares, SafeMath, Owned {
     Manager manager;
     Analytics analytics;
     Modules module;
-    uint public sumInvested;
-    uint public sumWithdrawn;
-    uint public sumAssetsBought;
-    uint public sumAssetsSold;
+    uint public sumInvested; // Sum of all investments in Ether
+    uint public sumWithdrawn; // Sum of all withdrawals in Ether
     uint public sharePrice = 1 ether;
 
     // EVENTS
@@ -193,16 +191,16 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough funds sent for requested quantity of shares.
         uint wantedValue = sharePrice * wantedShares / (1 ether);
         if (wantedValue <= offeredValue) {
-            // Create Shares
-            balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-            totalSupply = safeAdd(totalSupply, wantedShares);
-            sumInvested = safeAdd(sumInvested, wantedValue);
-            analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
             if (!manager.received_first_investment) {
                 manager.received_first_investment = true; // Flag first investment as happened
             }
-            // Store Ether in EtherToken contract
-            assert(module.ether_token.deposit.value(wantedValue)());
+            // Acount for and deposit Ether
+            sumInvested = safeAdd(sumInvested, wantedValue);
+            analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
+            assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
+            // Create Shares
+            balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
+            totalSupply = safeAdd(totalSupply, wantedShares);
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
         // Refund excessOfferedValue
@@ -222,17 +220,21 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough shares offered for requested amount of funds.
         uint offeredValue = sharePrice * offeredShares / (1 ether);
         if (wantedValue <= offeredValue) {
+            // Acount for and withdraw Ether
+            //  EtherToken as Asset
+            uint totalEtherHoldings = module.ether_token.balanceOf(this); // Separate a portion of all EtherToken
+            uint etherHoldings = totalEtherHoldings * offeredShares / totalSupply; // ownership percentage of total Ether holdings
+            assert(module.ether_token.withdraw(etherHoldings)); // Withdraw Ether from EtherToken contract
+            assert(msg.sender.send(etherHoldings)); // Send Ether from portfolio to investor
+            // TODO iterate this overall assets of registrar
+            /*assert(module.ether_token.transfer(msg.sender, etherHoldings)); // Transfer Ownership of EtherTokens from portfolio to investor*/
+            // TODO replace etherHoldings with totalSumWithdrawn
+            sumWithdrawn = safeAdd(sumWithdrawn, etherHoldings);
+            // TODO replace etherHoldings with totalSumWithdrawn
+            analytics.nav = safeSub(analytics.nav, etherHoldings); // Bookkeeping
             // Annihilate Shares
             balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
             totalSupply = safeSub(totalSupply, offeredShares);
-            sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
-            analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
-            // Separate a portion of all EtherToken
-            // TODO iterate this overall assets of registrar
-            uint totalEtherHoldings = module.ether_token.balanceOf(this);
-            uint etherHoldings = totalEtherHoldings * offeredShares / totalSupply; // ownership percentage of total Ether holdings
-            // Transfer Ownership of EtherTokens from portfolio to investor
-            assert(module.ether_token.transfer(msg.sender, etherHoldings));
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
       }
       // Refund excessOfferedValue

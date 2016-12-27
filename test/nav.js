@@ -302,8 +302,6 @@ contract('Net Asset Value', (accounts) => {
         // Paid to little, hence no investment made
         assert.strictEqual(result.toNumber(),
             correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-
-
         return coreContract.balanceOf(NOT_OWNER);
       })
       .then((result) => {
