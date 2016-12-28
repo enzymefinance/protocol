@@ -1,11 +1,11 @@
 pragma solidity ^0.4.4;
 
-import "./PreminedToken.sol";
+import "./PreminedAsset.sol";
 
 /// @title DollarToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract DollarToken is PreminedToken {
+contract DollarToken is PreminedAsset {
 
     // FILEDS
 
@@ -18,6 +18,6 @@ contract DollarToken is PreminedToken {
     // METHODS
 
     function DollarToken()
-        PreminedToken(name, symbol, precision, preminedAmount)
+        PreminedAsset(name, symbol, precision, preminedAmount)
     {}
 }

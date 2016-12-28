@@ -1,12 +1,10 @@
 pragma solidity ^0.4.4;
 
 import "../dependencies/ERC20.sol";
-import "../dependencies/SafeMath.sol";
 
-/// @title PreminedToken Contract.
+/// @title Asset Contract.
 /// @author Melonport AG <team@melonport.com>
-/// @notice Premined amount used to make markets
-contract PreminedToken is ERC20, SafeMath {
+contract Asset is ERC20 {
 
     // FIELDS
 
@@ -15,13 +13,19 @@ contract PreminedToken is ERC20, SafeMath {
     string public symbol;
     uint public precision;
 
-    // METHODS
+    // CONSTANT METHODS
 
-    function PreminedToken(string _name, string _symbol, uint _precision, uint _amount) {
+    function getName() constant returns (string) { return name; }
+
+    function getSymbol() constant returns (string) { return symbol; }
+
+    function getPrecision() constant returns (uint) { return precision; }
+
+    // NON-CONSTANT METHODS
+
+    function Asset(string _name, string _symbol, uint _precision) {
         name = _name; // Set the name for display purposes
         symbol = _symbol; // Set the symbol for display purposes
         precision = _precision; // Defined in price feed protocol
-        balances[msg.sender] = safeAdd(balances[msg.sender], _amount);
-        totalSupply = safeAdd(totalSupply, _amount);
     }
 }

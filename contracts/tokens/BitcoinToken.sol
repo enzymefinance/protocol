@@ -1,11 +1,11 @@
 pragma solidity ^0.4.4;
 
-import "./PreminedToken.sol";
+import "./PreminedAsset.sol";
 
 /// @title BitcoinToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract BitcoinToken is PreminedToken {
+contract BitcoinToken is PreminedAsset {
 
     // FILEDS
 
@@ -18,6 +18,6 @@ contract BitcoinToken is PreminedToken {
     // METHODS
 
     function BitcoinToken()
-        PreminedToken(name, symbol, precision, preminedAmount)
+        PreminedAsset(name, symbol, precision, preminedAmount)
     {}
 }

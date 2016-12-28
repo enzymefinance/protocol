@@ -94,6 +94,8 @@ contract Core is Shares, SafeMath, Owned {
 
     // CONSTANT METHDOS
 
+    function getRegistrarAddress() constant returns (address) { return module.registrar; }
+
     /// Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
 

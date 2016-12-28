@@ -1,11 +1,11 @@
 pragma solidity ^0.4.4;
 
-import "./PreminedToken.sol";
+import "./PreminedAsset.sol";
 
 /// @title EuroToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract EuroToken is PreminedToken {
+contract EuroToken is PreminedAsset {
 
     // FILEDS
 
@@ -18,6 +18,6 @@ contract EuroToken is PreminedToken {
     // METHODS
 
     function EuroToken()
-        PreminedToken(name, symbol, precision, preminedAmount)
+        PreminedAsset(name, symbol, precision, preminedAmount)
     {}
 }
