@@ -11,22 +11,23 @@ contract Version is Owned {
     // FILEDS
 
     address public addrMeta;
-    address[] public portfolios;
+    address[] public cores;
 
     // EVENTS
 
-    event PortfolioCreated(address _fundAddress, uint indexed _id);
+    event CoreCreated(address _fundAddress, uint indexed _id);
 
     // MODIFIERS
 
     // CONSTANT METHODS
 
-    function numPortfolios() constant returns (uint) { return portfolios.length; }
+    function numCreatedCores() constant returns (uint) { return cores.length; }
+    function coreAt(uint index) constant returns (address) { return cores[index]; }
 
     // NON-CONSTANT METHODS
     function Version(address ofMeta) { addrMeta = ofMeta; }
 
-    function createPortfolio(
+    function createCore(
         address ofRegistrar,
         address ofTrading,
         address ofManagmentFee,
@@ -34,7 +35,7 @@ contract Version is Owned {
     )
         returns (address)
     {
-        // Create new Portfolio
+        // Create new Core
         address createAddr = address(new Core(
             msg.sender,
             ofRegistrar,
@@ -45,12 +46,12 @@ contract Version is Owned {
 
         // Change owner to msg.sender
 
-        // Registrar Portfolio
-        portfolios.push(createAddr);
-        PortfolioCreated(createAddr, portfolios.length);
+        // Register Core
+        cores.push(createAddr);
+        CoreCreated(createAddr, cores.length);
         return createAddr;
     }
 
-    // Dereference Portfolio and trigger selfdestruct
-    function annihilatePortfolio() returns (address) {}
+    // Dereference Core and trigger selfdestruct
+    function annihilateCore() returns (address) {}
 }

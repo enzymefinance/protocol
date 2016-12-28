@@ -40,7 +40,9 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // CONSTANT METHODS
 
-    function precision() constant returns (uint) { return PRECISION; }
+    function getPrecision() constant returns (uint) { return PRECISION; }
+    
+    function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
     /// Pre: Price of fungible has been set
     /// Post: Price of asset asset relative to Ether with Precision _pricePrecision

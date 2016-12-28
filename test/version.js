@@ -76,17 +76,17 @@ contract('Version', (accounts) => {
     Version.new(ADDRESS_PLACEHOLDER)
         .then((result) => {
           versionContract = result;
-          return versionContract.createPortfolio(
+          return versionContract.createCore(
             registrarContract.address,
             tradingContract.address,
             ADDRESS_PLACEHOLDER,
             ADDRESS_PLACEHOLDER,
             { from: OWNER });
         })
-        .then(() => versionContract.numPortfolios())
+        .then(() => versionContract.numCreatedCores())
         .then((result) => {
           assert.strictEqual(result.toNumber(), 1);
-          return versionContract.portfolios(0);
+          return versionContract.coreAt(0);
         })
         .then((result) => {
           coreContract = Core.at(result);
