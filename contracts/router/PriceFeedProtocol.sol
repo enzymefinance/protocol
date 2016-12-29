@@ -6,9 +6,14 @@ pragma solidity ^0.4.4;
 /// @notice This is to be considered as a protocol on how to access the underlying PriceFeed Contract
 contract PriceFeedProtocol {
 
+    // CONSTANT METHODS
+
     function getPrecision() constant returns (uint) {}
     function getLastUpdate() constant returns (uint) {}
     function getPrice(address ofAsset) constant returns (uint) {}
+
+    // NON-CONSTANT METHODS
+
     function setPrice(address[] ofAssets, uint[] newPrices) {}
     function setFee(uint256 newFee) returns (uint) {}
     function payOut() {}

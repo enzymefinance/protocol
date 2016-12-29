@@ -1,5 +1,6 @@
 pragma solidity ^0.4.4;
 
+import "./ExchangeProtocol.sol";
 import '../dependencies/ERC20.sol';
 import '../dependencies/SafeMath.sol';
 import '../dependencies/MutexUser.sol';
@@ -7,7 +8,7 @@ import '../dependencies/MutexUser.sol';
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
-contract Exchange is SafeMath, MutexUser {
+contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // FIELDS
 
@@ -57,6 +58,8 @@ contract Exchange is SafeMath, MutexUser {
     }
 
     // CONSTANT METHODS
+
+    function getLastOfferId() constant returns (uint) { return lastOfferId; }
 
     function isActive(uint id) constant returns (bool active) {
         return offers[id].active;
