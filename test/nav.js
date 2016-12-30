@@ -13,7 +13,7 @@ contract('Net Asset Value', (accounts) => {
   const ADDRESS_PLACEHOLDER = '0x0';
   const NUM_OFFERS = 2;
   const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
-  const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
+  const DATA = { ETH: 1.0, BTC: 0.01117, USD: 8.45, EUR: 7.92 };
   const ATOMIZEDPRICES = Helpers.createAtomizedPrices(DATA);
   const INVERSEATOMIZEDPRICES = Helpers.createInverseAtomizedPrices(DATA);
 
@@ -32,7 +32,6 @@ contract('Net Asset Value', (accounts) => {
   let exchangeTestCases;
   let tradingTestCases;
   let lastOfferId = 0;
-
 
   before('Check accounts, deploy modules, set testcase', (done) => {
     assert.equal(accounts.length, 10);
@@ -66,7 +65,7 @@ contract('Net Asset Value', (accounts) => {
         for (let i = 0; i < INVERSEATOMIZEDPRICES.length; i += 1) {
           priceFeedTestCases.push(
             {
-              address: assetList[i + 1],
+              address: assetList[i],
               price: INVERSEATOMIZEDPRICES[i],
             },
           );
@@ -121,15 +120,16 @@ contract('Net Asset Value', (accounts) => {
   });
 
   it('Set multiple price', (done) => {
+    // Price of EtherToken is constant for all times
     const addresses = [
-      priceFeedTestCases[0].address,
       priceFeedTestCases[1].address,
       priceFeedTestCases[2].address,
+      priceFeedTestCases[3].address,
     ];
     const inverseAtomizedPrices = [
-      priceFeedTestCases[0].price,
       priceFeedTestCases[1].price,
       priceFeedTestCases[2].price,
+      priceFeedTestCases[3].price,
     ];
     priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
       .then(() => priceFeedContract.lastUpdate())
@@ -160,7 +160,7 @@ contract('Net Asset Value', (accounts) => {
     for (let i = 0; i < NUM_OFFERS; i += 1) {
       exchangeTestCases.push(
         {
-          sell_how_much: ATOMIZEDPRICES[0] * (1 - (i * 0.1)),
+          sell_how_much: ATOMIZEDPRICES[1] * (1 - (i * 0.1)),
           sell_which_token: bitcoinTokenContract.address,
           buy_how_much: 1 * SolKeywords.ether,
           buy_which_token: etherTokenContract.address,
@@ -174,7 +174,7 @@ contract('Net Asset Value', (accounts) => {
     // for (let i = 0; i < NUM_OFFERS; i += 1) {
     //   tradingTestCases.push(
     //     {
-    //       sell_how_much: ATOMIZEDPRICES[0] * (1 - (i * 0.1)),
+    //       sell_how_much: ATOMIZEDPRICES[1] * (1 - (i * 0.1)),
     //       sell_which_token: bitcoinTokenContract.address,
     //       buy_how_much: 1 * SolKeywords.ether,
     //       buy_which_token: etherTokenContract.address,
@@ -270,7 +270,7 @@ contract('Net Asset Value', (accounts) => {
     const buy = [
       {
         exchange: exchangeContract.address,
-        buy_how_much: ATOMIZEDPRICES[0],
+        buy_how_much: ATOMIZEDPRICES[1],
         id: 1,
       },
     ];
