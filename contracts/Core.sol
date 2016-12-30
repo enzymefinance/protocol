@@ -240,7 +240,8 @@ contract Core is Shares, SafeMath, Owned {
 
     // Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     // Post: Token specific exchange as registered in registrar, approved to spend ofToken
-    function approveSpending(ERC20 ofToken, uint approvalAmount)
+    function approveSpending(uint approvalAmount, ERC20 ofToken)
+        internal
         only_owner
     {
         assert(module.registrar.availability(ofToken));
@@ -263,6 +264,10 @@ contract Core is Shares, SafeMath, Owned {
     function buy(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
+        // Buying what another person is selling. Inverse variable terminology!
+        var (buy_how_much, buy_which_token,
+                sell_how_much, sell_which_token) = onExchange.getOffer(id);
+        approveSpending(sell_how_much, sell_which_token);
         // TODO: assert token of orderId is registred to onExchange
         onExchange.buy(id, quantity);
     }
@@ -270,7 +275,7 @@ contract Core is Shares, SafeMath, Owned {
     function cancel(Exchange onExchange, uint id)
         only_owner
     {
-        // TODO: assert token of orderId is registred to onExchange
+        // TODO: assert token of orderId is registered to onExchange
         onExchange.cancel(id);
     }
 }

@@ -309,13 +309,6 @@ contract('Net Asset Value', (accounts) => {
         assert.strictEqual(result.toNumber(), balance);
 
         // ROUND 3 MANAGING
-        return coreContract.approveSpending(etherTokenContract.address,
-            1000 * SolKeywords.ether, { from: OWNER });
-      })
-      .then(() => etherTokenContract.allowance(coreContract.address, buy[0].exchange))
-      .then((result) => {
-        assert.equal(result, 1000 * SolKeywords.ether);
-        // console.log(buy[0].exchange, buy[0].id, buy[0].buy_how_much)
         return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
       })
       .then(() => etherTokenContract.balanceOf(coreContract.address))
