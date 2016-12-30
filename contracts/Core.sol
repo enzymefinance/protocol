@@ -21,12 +21,6 @@ contract Core is Shares, SafeMath, Owned {
 
     // TYPES
 
-    struct Manager {
-        uint capital;
-        uint delta;
-        bool is_funded;
-        uint evaluation_interval;  // Calcuate delta for fees every x days
-    }
     struct Analytics { // last time creation/annihilation of shares happened.
         uint nav;
         uint delta;
@@ -47,7 +41,6 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant ETHER_TOKEN_INDEX_IN_REGISTRAR = 0;
 
     // Fields that can be changed by functions
-    Manager manager;
     Analytics analytics;
     Modules module;
     uint public sumInvested; // Sum of all investments in Ether
@@ -96,11 +89,11 @@ contract Core is Shares, SafeMath, Owned {
 
     function getRegistrarAddress() constant returns (address) { return module.registrar; }
 
-    /// Post: Calculate Share Price in Wei
+    // Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
 
-    /// Pre:
-    /// Post: Delta as a result of current and previous NAV
+    // Pre:
+    // Post: Delta as a result of current and previous NAV
     function calcDelta() constant returns (uint delta) {
         uint nav = calcNAV();
         // Set delta
@@ -117,16 +110,16 @@ contract Core is Shares, SafeMath, Owned {
         analytics.timestamp = now;
     }
 
-    /// Pre:
-    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
+    // Pre:
+    // Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
     function calcNAV() constant returns (uint nav) {
         uint managementFee = 0;
         uint performanceFee = 0;
         nav = calcGAV() - managementFee - performanceFee;
     }
 
-    /// Pre: Precision in Token must be equal to precision in PriceFeed for all entries in Registrar
-    /// Post: Portfolio Gross Asset Value in Wei
+    // Pre: Precision in Token must be equal to precision in PriceFeed for all entries in Registrar
+    // Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
         /* Rem:
          *  The current Investment (Withdrawal) is not yet stored in the
@@ -194,8 +187,6 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough funds sent for requested quantity of shares.
         uint wantedValue = sharePrice * wantedShares / (1 ether);
         if (wantedValue <= offeredValue) {
-            // Flag first investment as happened
-            if (!manager.is_funded) manager.is_funded = true;
             // Acount for and deposit Ether
             sumInvested = safeAdd(sumInvested, wantedValue);
             analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
@@ -247,8 +238,8 @@ contract Core is Shares, SafeMath, Owned {
       }
     }
 
-    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Token specific exchange as registered in registrar, approved to spend ofToken
+    // Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    // Post: Token specific exchange as registered in registrar, approved to spend ofToken
     function approveSpending(ERC20 ofToken, uint approvalAmount)
         only_owner
     {

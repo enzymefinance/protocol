@@ -44,8 +44,8 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     
     function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
-    /// Pre: Price of fungible has been set
-    /// Post: Price of asset asset relative to Ether with Precision _pricePrecision
+    // Pre: Price of fungible has been set
+    // Post: Price of asset asset relative to Ether with Precision _pricePrecision
     function getPrice(address ofAsset)
         constant
         msg_value_at_least(fee)
