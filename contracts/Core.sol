@@ -24,7 +24,7 @@ contract Core is Shares, SafeMath, Owned {
     struct Manager {
         uint capital;
         uint delta;
-        bool received_first_investment;
+        bool is_funded;
         uint evaluation_interval;  // Calcuate delta for fees every x days
     }
     struct Analytics { // last time creation/annihilation of shares happened.
@@ -177,6 +177,7 @@ contract Core is Shares, SafeMath, Owned {
     // Post: Receive Either directly
     function() payable {}
 
+    // Pre: EtherToken as Asset in Registrar at index ETHER_TOKEN_INDEX_IN_REGISTRAR
     // Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
@@ -193,9 +194,8 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough funds sent for requested quantity of shares.
         uint wantedValue = sharePrice * wantedShares / (1 ether);
         if (wantedValue <= offeredValue) {
-            if (!manager.received_first_investment) {
-                manager.received_first_investment = true; // Flag first investment as happened
-            }
+            // Flag first investment as happened
+            if (!manager.is_funded) manager.is_funded = true;
             // Acount for and deposit Ether
             sumInvested = safeAdd(sumInvested, wantedValue);
             analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
@@ -213,7 +213,8 @@ contract Core is Shares, SafeMath, Owned {
         }
     }
 
-    /// Withdraw from a fund by annihilating shares
+    // Pre: Investment made by msg sender
+    // Post: Withdraw from a fund by annihilating shares
     function annihilateShares(uint offeredShares, uint wantedValue)
         balances_msg_sender_at_least(offeredShares)
         not_zero(offeredShares)

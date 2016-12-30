@@ -10,7 +10,7 @@ import '../dependencies/MutexUser.sol';
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
 contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
-    // FIELDS
+    // TYPES
 
     struct OfferInfo {
         uint sell_how_much;
@@ -20,8 +20,10 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         address owner;
         bool active;
     }
-    mapping( uint => OfferInfo ) public offers;
 
+    // FIELDS
+
+    mapping( uint => OfferInfo ) public offers;
     uint public lastOfferId;
 
     // METHODS
