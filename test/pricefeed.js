@@ -9,7 +9,7 @@ contract('PriceFeed', (accounts) => {
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
   const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
-  let testCases = [
+  let priceFeedTestCases = [
     {
       address: '0x0000000000000000000000000000000000000000',
       price: Helpers.createInverseAtomizedPrices(DATA)[0],
@@ -52,8 +52,8 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Set multiple price', (done) => {
-    const addresses = [testCases[0].address, testCases[1].address, testCases[2].address];
-    const inverseAtomizedPrices = [testCases[0].price, testCases[1].price, testCases[2].price];
+    const addresses = [priceFeedTestCases[0].address, priceFeedTestCases[1].address, priceFeedTestCases[2].address];
+    const inverseAtomizedPrices = [priceFeedTestCases[0].price, priceFeedTestCases[1].price, priceFeedTestCases[2].price];
     priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
         .then(() => priceFeedContract.lastUpdate())
         .then((result) => {
@@ -64,7 +64,7 @@ contract('PriceFeed', (accounts) => {
 
   it('Get multiple existent prices', (done) => {
     async.mapSeries(
-      testCases,
+      priceFeedTestCases,
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
             .then((result) => {
@@ -73,7 +73,7 @@ contract('PriceFeed', (accounts) => {
             });
       },
     (err, results) => {
-      testCases = results;
+      priceFeedTestCases = results;
       done();
     });
   });

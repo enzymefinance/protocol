@@ -16,7 +16,7 @@ contract('Exchange', (accounts) => {
   let exchangeContract;
   let etherTokenContract;
   let bitcoinTokenContract;
-  let testCases;
+  let exchangeTestCases;
 
   before('Check accounts', (done) => {
     assert.equal(accounts.length, 10);
@@ -53,9 +53,9 @@ contract('Exchange', (accounts) => {
 
   it('Create one side of the orderbook', (done) => {
     // Reduce sell amount by 0.1 on each order
-    testCases = [];
+    exchangeTestCases = [];
     for (let i = 0; i < NUM_OFFERS; i += 1) {
-      testCases.push(
+      exchangeTestCases.push(
         {
           sell_how_much: Helpers.createAtomizedPrices(DATA)[0] * (1 - (i * 0.1)),
           sell_which_token: bitcoinTokenContract.address,
@@ -69,7 +69,7 @@ contract('Exchange', (accounts) => {
     }
 
     async.mapSeries(
-      testCases,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         bitcoinTokenContract.approve(
           exchangeContract.address,
@@ -95,7 +95,7 @@ contract('Exchange', (accounts) => {
           });
       },
       (err, results) => {
-        testCases = results;
+        exchangeTestCases = results;
         done();
       },
     );
@@ -112,7 +112,7 @@ contract('Exchange', (accounts) => {
 
   it('Check orders information', (done) => {
     async.mapSeries(
-      testCases,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
           .then(() => {
@@ -123,7 +123,7 @@ contract('Exchange', (accounts) => {
           });
       },
       (err, results) => {
-        testCases = results;
+        exchangeTestCases = results;
         done();
       },
     );
@@ -131,7 +131,7 @@ contract('Exchange', (accounts) => {
 
   it('Cancel one side of the orderbook', (done) => {
     async.mapSeries(
-      testCases,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.cancel(testCase.id, { from: OWNER })
           .then((txHash) => {
@@ -140,7 +140,7 @@ contract('Exchange', (accounts) => {
           });
       },
       (err, results) => {
-        testCases = results;
+        exchangeTestCases = results;
         done();
       },
     );
@@ -148,7 +148,7 @@ contract('Exchange', (accounts) => {
 
   it('Check orders information', (done) => {
     async.mapSeries(
-      testCases,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
           .then(() => {
@@ -159,7 +159,7 @@ contract('Exchange', (accounts) => {
           });
       },
       (err, results) => {
-        testCases = results;
+        exchangeTestCases = results;
         done();
       },
     );

@@ -11,9 +11,11 @@ contract('Net Asset Value', (accounts) => {
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
   const ADDRESS_PLACEHOLDER = '0x0';
-  const NUM_OFFERS = 3;
+  const NUM_OFFERS = 2;
   const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
   const DATA = { BTC: 0.01117, USD: 8.45, EUR: 7.92 };
+  const ATOMIZEDPRICES = Helpers.createAtomizedPrices(DATA);
+  const INVERSEATOMIZEDPRICES = Helpers.createInverseAtomizedPrices(DATA);
 
   // Test globals
   let coreContract;
@@ -21,61 +23,64 @@ contract('Net Asset Value', (accounts) => {
   let bitcoinTokenContract;
   let dollarTokenContract;
   let euroTokenContract;
+  let assetList;
   let priceFeedContract;
   let exchangeContract;
   let registrarContract;
   let tradingContract;
-  let testCasesPriceFeed;
-  let testCasesExchange;
+  let priceFeedTestCases;
+  let exchangeTestCases;
+  let tradingTestCases;
   let lastOfferId = 0;
 
 
   before('Check accounts, deploy modules, set testcase', (done) => {
     assert.equal(accounts.length, 10);
 
+    // Setup Asset
+    assetList = [];
+    priceFeedTestCases = [];
     EtherToken.new({ from: OWNER })
       .then((result) => {
         etherTokenContract = result;
+        assetList.push(result.address)
         return BitcoinToken.new({ from: OWNER });
       })
       .then((result) => {
         bitcoinTokenContract = result;
+        assetList.push(result.address)
         return DollarToken.new({ from: OWNER });
       })
       .then((result) => {
         dollarTokenContract = result;
+        assetList.push(result.address)
         return EuroToken.new({ from: OWNER });
       })
       .then((result) => {
         euroTokenContract = result;
+        assetList.push(result.address)
         return PriceFeed.new({ from: OWNER });
       })
       .then((result) => {
         priceFeedContract = result;
-        testCasesPriceFeed = [ // Set testCasesPriceFeed
-          {
-            address: bitcoinTokenContract.address,
-            price: Helpers.createInverseAtomizedPrices(DATA)[0],
-          },
-          {
-            address: dollarTokenContract.address,
-            price: Helpers.createInverseAtomizedPrices(DATA)[1],
-          },
-          {
-            address: euroTokenContract.address,
-            price: Helpers.createInverseAtomizedPrices(DATA)[2],
-          },
-        ];
+        for (let i = 0; i < INVERSEATOMIZEDPRICES.length; i += 1) {
+          priceFeedTestCases.push(
+            {
+              address: assetList[i + 1],
+              price: INVERSEATOMIZEDPRICES[i],
+            },
+          );
+        }
         return Exchange.new({ from: OWNER });
       })
       .then((result) => {
         exchangeContract = result;
         return Registrar.new(
           [
-            etherTokenContract.address,
-            bitcoinTokenContract.address,
-            dollarTokenContract.address,
-            euroTokenContract.address,
+            assetList[0],
+            assetList[1],
+            assetList[2],
+            assetList[3],
           ], [
             priceFeedContract.address,
             priceFeedContract.address,
@@ -117,14 +122,14 @@ contract('Net Asset Value', (accounts) => {
 
   it('Set multiple price', (done) => {
     const addresses = [
-      testCasesPriceFeed[0].address,
-      testCasesPriceFeed[1].address,
-      testCasesPriceFeed[2].address,
+      priceFeedTestCases[0].address,
+      priceFeedTestCases[1].address,
+      priceFeedTestCases[2].address,
     ];
     const inverseAtomizedPrices = [
-      testCasesPriceFeed[0].price,
-      testCasesPriceFeed[1].price,
-      testCasesPriceFeed[2].price,
+      priceFeedTestCases[0].price,
+      priceFeedTestCases[1].price,
+      priceFeedTestCases[2].price,
     ];
     priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
       .then(() => priceFeedContract.lastUpdate())
@@ -136,7 +141,7 @@ contract('Net Asset Value', (accounts) => {
 
   it('Get multiple existent prices', (done) => {
     async.mapSeries(
-      testCasesPriceFeed,
+      priceFeedTestCases,
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
           .then((result) => {
@@ -145,17 +150,17 @@ contract('Net Asset Value', (accounts) => {
           });
       },
       (err, results) => {
-        testCasesPriceFeed = results;
+        priceFeedTestCases = results;
         done();
       });
   });
 
   it('Set up test cases', (done) => {
-    testCasesExchange = [];
+    exchangeTestCases = [];
     for (let i = 0; i < NUM_OFFERS; i += 1) {
-      testCasesExchange.push(
+      exchangeTestCases.push(
         {
-          sell_how_much: Helpers.createAtomizedPrices(DATA)[0] * (1 - (i * 0.1)),
+          sell_how_much: ATOMIZEDPRICES[0] * (1 - (i * 0.1)),
           sell_which_token: bitcoinTokenContract.address,
           buy_how_much: 1 * SolKeywords.ether,
           buy_which_token: etherTokenContract.address,
@@ -165,6 +170,20 @@ contract('Net Asset Value', (accounts) => {
         },
       );
     }
+    // tradingTestCases = [];
+    // for (let i = 0; i < NUM_OFFERS; i += 1) {
+    //   tradingTestCases.push(
+    //     {
+    //       sell_how_much: ATOMIZEDPRICES[0] * (1 - (i * 0.1)),
+    //       sell_which_token: bitcoinTokenContract.address,
+    //       buy_how_much: 1 * SolKeywords.ether,
+    //       buy_which_token: etherTokenContract.address,
+    //       id: i + 1,
+    //       owner: OWNER,
+    //       active: true,
+    //     },
+    //   );
+    // }
     done();
   });
 
@@ -179,7 +198,7 @@ contract('Net Asset Value', (accounts) => {
 
   it('Create one side of the orderbook', (done) => {
     async.mapSeries(
-      testCasesExchange,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offer(
           testCase.sell_how_much,
@@ -193,7 +212,7 @@ contract('Net Asset Value', (accounts) => {
         });
       },
       (err, results) => {
-        testCasesExchange = results;
+        exchangeTestCases = results;
         done();
       },
     );
@@ -210,7 +229,7 @@ contract('Net Asset Value', (accounts) => {
 
   it('Check orders information', (done) => {
     async.mapSeries(
-      testCasesExchange,
+      exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
             .then(() => {
@@ -218,7 +237,7 @@ contract('Net Asset Value', (accounts) => {
             });
       },
       (err, results) => {
-        testCasesExchange = results;
+        exchangeTestCases = results;
         done();
       },
     );
@@ -251,7 +270,7 @@ contract('Net Asset Value', (accounts) => {
     const buy = [
       {
         exchange: exchangeContract.address,
-        buy_how_much: Helpers.createAtomizedPrices(DATA)[0],
+        buy_how_much: ATOMIZEDPRICES[0],
         id: 1,
       },
     ];

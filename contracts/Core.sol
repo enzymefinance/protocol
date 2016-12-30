@@ -187,7 +187,7 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough funds sent for requested quantity of shares.
         uint wantedValue = sharePrice * wantedShares / (1 ether);
         if (wantedValue <= offeredValue) {
-            // Acount for and deposit Ether
+            // Acount for investment amount and deposit Ether
             sumInvested = safeAdd(sumInvested, wantedValue);
             analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
             assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
@@ -214,7 +214,7 @@ contract Core is Shares, SafeMath, Owned {
         // Check if enough shares offered for requested amount of funds.
         uint offeredValue = sharePrice * offeredShares / (1 ether);
         if (wantedValue <= offeredValue) {
-            // Acount for and withdraw Ether
+            // Acount for withdrawal amount and withdraw Ether
             //  EtherToken as Asset
             uint totalEtherHoldings = module.ether_token.balanceOf(this); // Separate a portion of all EtherToken
             uint etherHoldings = totalEtherHoldings * offeredShares / totalSupply; // ownership percentage of total Ether holdings
