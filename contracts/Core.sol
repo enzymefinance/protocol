@@ -2,6 +2,7 @@ pragma solidity ^0.4.4;
 
 import "./tokens/EtherToken.sol";
 import "./dependencies/ERC20.sol";
+import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./dependencies/ERC20Protocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
@@ -12,8 +13,6 @@ import "./router/PerformanceFeeProtocol.sol";
 import "./trading/TradingProtocol.sol";
 import "./exchange/Exchange.sol";
 
-
-contract Shares is ERC20 {}
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
