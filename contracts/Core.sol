@@ -16,6 +16,8 @@ import "./exchange/Exchange.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
+/// @notice Simple core where REFERENCE_ASSET_INDEX_IN_REGISTRAR is EtherToken and
+///   Creation and Annihilation of Shares is done with Ether
 contract Core is Shares, SafeMath, Owned {
 
     // TYPES
@@ -37,7 +39,9 @@ contract Core is Shares, SafeMath, Owned {
     // FIELDS
 
     // Constant fields
-    uint public constant ETHER_TOKEN_INDEX_IN_REGISTRAR = 0;
+    uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Registrar Module
+    uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
+    uint public constant BASE_UNIT_OF_SHARES = 1 ether;
 
     // Fields that can be changed by functions
     Analytics analytics;
@@ -120,28 +124,25 @@ contract Core is Shares, SafeMath, Owned {
     // Pre: Precision in Token must be equal to precision in PriceFeed for all entries in Registrar
     // Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
-        /* Rem:
-         *  The current Investment (Withdrawal) is not yet stored in the
-         *  sumInvested (sumWithdrawn) field.
+        /* Rem 1:
+         *  All prices are relative to the reference asset price. For this version,
+         *  the reference asset is set as the EtherToken. The price of the EtherToken
+         *  relative to Ether is defined to always be equal to one.
          * Rem 2:
-         *  Since by convention the first asset represents Ether, and the prices
-         *  are given in Ether the first price is always equal to one.
+         *  All assets need to be linked to the right price feed
          * Rem 3:
-         *  Assets need to be linked to the right price feed
-         * Rem 4:
-         *  Price Input Unit: [Wei/(Asset * 10**(uint(precision)))]
-         *  Holdings Input Unit: [Asset * 10**(uint(precision)))]
-         *  with 0 <= precision <= 18 and precision is a natural number.
+         *  Price Input Unit: [Wei/(Asset * 10**(uint(precision)))] == Base unit amount of reference asset per base unit amout of asset
+         *  Holdings Input Unit: [Asset * 10**(uint(precision)))] == Base unit amount of asset this core holds
+         *    ==> coreHoldings * price == value of asset holdings of this core relative to reference asset price.
+         *  where 0 <= precision <= 18 and precision is a natural number.
          */
-        gav = module.ether_token.balanceOf(this) * 1; // EtherToken as Asset
         uint numAssignedAssets = module.registrar.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
-            if (i == ETHER_TOKEN_INDEX_IN_REGISTRAR) continue;
             ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
-            uint holdings = ERC20.balanceOf(this); // Asset holdings
+            uint coreHolings = ERC20.balanceOf(this); // Amount of asset base units this core holds
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
-            uint price = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price
-            gav += holdings * price; // Sum up product of asset holdings and asset prices
+            uint price = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
+            gav = safeAdd(gav, coreHolings * price); // Sum up product of asset holdings of this core and asset prices
         }
     }
 
@@ -159,7 +160,7 @@ contract Core is Shares, SafeMath, Owned {
         analytics.delta = 1 ether;
         analytics.timestamp = now;
         module.registrar = RegistrarProtocol(ofRegistrar);
-        module.ether_token = EtherToken(address(module.registrar.assetAt(ETHER_TOKEN_INDEX_IN_REGISTRAR)));
+        module.ether_token = EtherToken(address(module.registrar.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
         module.trading = TradingProtocol(ofTrading);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
@@ -169,7 +170,8 @@ contract Core is Shares, SafeMath, Owned {
     // Post: Receive Either directly
     function() payable {}
 
-    // Pre: EtherToken as Asset in Registrar at index ETHER_TOKEN_INDEX_IN_REGISTRAR
+    // Pre: EtherToken as Asset in Registrar at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
+    //  Creating Shares only possible with Ether
     // Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
@@ -182,9 +184,9 @@ contract Core is Shares, SafeMath, Owned {
          *  amount == msg.value (amount investor is willing to pay for the req. quantity)
          */
         sharePrice = calcSharePrice();
-        uint offeredValue = msg.value;
+        uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
         // Check if enough funds sent for requested quantity of shares.
-        uint wantedValue = sharePrice * wantedShares / (1 ether);
+        uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
         if (wantedValue <= offeredValue) {
             // Acount for investment amount and deposit Ether
             sumInvested = safeAdd(sumInvested, wantedValue);
@@ -204,34 +206,34 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     // Pre: Investment made by msg sender
-    // Post: Withdraw from a fund by annihilating shares
+    // Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateShares(uint offeredShares, uint wantedValue)
         balances_msg_sender_at_least(offeredShares)
         not_zero(offeredShares)
     {
         sharePrice = calcSharePrice();
         // Check if enough shares offered for requested amount of funds.
-        uint offeredValue = sharePrice * offeredShares / (1 ether);
-        if (wantedValue <= offeredValue) {
-            // Acount for withdrawal amount and withdraw Ether
-            //  EtherToken as Asset
-            uint totalEtherHoldings = module.ether_token.balanceOf(this); // Separate a portion of all EtherToken
-            uint etherHoldings = totalEtherHoldings * offeredShares / totalSupply; // ownership percentage of total Ether holdings
-            assert(module.ether_token.withdraw(etherHoldings)); // Withdraw Ether from EtherToken contract
-            assert(msg.sender.send(etherHoldings)); // Send Ether from portfolio to investor
-            // TODO iterate this overall assets of registrar
-            /*assert(module.ether_token.transfer(msg.sender, etherHoldings)); // Transfer Ownership of EtherTokens from portfolio to investor*/
-            // TODO replace etherHoldings with totalSumWithdrawn
-            sumWithdrawn = safeAdd(sumWithdrawn, etherHoldings);
-            // TODO replace etherHoldings with totalSumWithdrawn
-            analytics.nav = safeSub(analytics.nav, etherHoldings); // Bookkeeping
+        uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
+        if (offeredValue >= wantedValue) {
+            // Transfer ownedHoldings of Assets
+            uint numAssignedAssets = module.registrar.numAssignedAssets();
+            for (uint i = 0; i < numAssignedAssets; ++i) {
+                ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
+                uint coreHoldings = ERC20.balanceOf(this); // Amount of asset base units this core holds
+                if (coreHoldings == 0) continue;
+                uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
+                assert(ERC20.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
+            }
+            // Acount for withdrawal amount
+            sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
+            analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
             // Annihilate Shares
             balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
             totalSupply = safeSub(totalSupply, offeredShares);
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
       }
       // Refund excessOfferedValue
-      if (wantedValue < offeredValue) {
+      if (offeredValue > wantedValue) {
           uint excessOfferedValue = offeredValue - wantedValue;
           Refund(msg.sender, excessOfferedValue);
       }

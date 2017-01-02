@@ -122,11 +122,13 @@ contract('Net Asset Value', (accounts) => {
   it('Set multiple price', (done) => {
     // Price of EtherToken is constant for all times
     const addresses = [
+      priceFeedTestCases[0].address,
       priceFeedTestCases[1].address,
       priceFeedTestCases[2].address,
       priceFeedTestCases[3].address,
     ];
     const inverseAtomizedPrices = [
+      priceFeedTestCases[0].price,
       priceFeedTestCases[1].price,
       priceFeedTestCases[2].price,
       priceFeedTestCases[3].price,
@@ -145,7 +147,8 @@ contract('Net Asset Value', (accounts) => {
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
           .then((result) => {
-            assert.notEqual(result, testCase.price);
+            console.log(`Price: ${result}, \t TestCase: ${testCase.price}`);
+            assert.equal(result.toNumber(), testCase.price);
             callbackMap(null, testCase);
           });
       },
