@@ -1,5 +1,10 @@
 {
   "parser": "babel-eslint",
+  "parserOptions": {
+    "allowImportExportEverywhere": true,
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
   "plugins": [
     "meteor"
   ],
@@ -7,15 +12,54 @@
     "airbnb",
     "plugin:meteor/recommended"
   ],
-  "rules": {
-    "no-undef": 0
-  },
   "settings": {
-    "import/resolver": "meteor"
+    "import/resolver": meteor,
   },
+  "rules": {
+    "import/extensions": ["off", "never"],
+    "import/no-absolute-path": "off",
+    "import/no-unresolved": [
+      2,
+      {
+        "ignore": [
+          "^meteor/"
+        ]
+      }
+    ],
+    "meteor/no-session": [
+      0
+    ],
+    "max-len": [
+      2,
+      120,
+      2,
+      {
+        "ignoreComments": true
+      }
+    ],
+    "import/no-extraneous-dependencies": 0,
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": [
+          "_id"
+        ]
+      }
+    ]
+  },
+  "env": {
+    "browser": true,
+    "node": true
+  },
+
   "globals": {
     "web3": true,
     "contract": true,
-    "it": true
+    "describe": false,
+    "it": false,
+    "before": false,
+    "beforeEach": false,
+    "after": false,
+    "afterEach": false
   }
 }
