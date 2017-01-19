@@ -1,8 +1,8 @@
 const async = require('async');
 const assert = require('assert');
-const Helpers = require('../lib/Helpers.js');
-const SolKeywords = require('../lib/SolKeywords.js');
-const SolConstants = require('../lib/SolConstants.js');
+const Helpers = require('../utils/Helpers.js');
+const SolKeywords = require('../utils/SolKeywords.js');
+const SolConstants = require('../utils/SolConstants.js');
 
 
 contract('Exchange', (accounts) => {

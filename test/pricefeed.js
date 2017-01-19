@@ -1,7 +1,7 @@
 const async = require('async');
 const assert = require('assert');
-const Helpers = require('../lib/Helpers.js');
-const SolConstants = require('../lib/SolConstants.js');
+const Helpers = require('../utils/Helpers.js');
+const SolConstants = require('../utils/SolConstants.js');
 
 
 contract('PriceFeed', (accounts) => {
