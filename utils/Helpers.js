@@ -2,9 +2,9 @@ const SolConstants = require('./SolConstants.js');
 
 // Price of Ether relative to smallest unit of token
 /** Ex:
- *  Let asset == UST, let Value of 1 ETH = 8.45 USD =: 8.45 UST
- *  and let UST precision == 8,
- *  => ATOMIZEDPRICES[UST] = 8.45 * 10 ** 8
+ *  Let asset == EUR, let Value of 1 ETH = 8.45 USD =: 8.45 EUR
+ *  and let EUR precision == 8,
+ *  => ATOMIZEDPRICES[EUR] = 8.45 * 10 ** 8
  */
 exports.createAtomizedPrices = data => [
   Math.floor(data.ETH * SolConstants.ETHERTOKEN_ATOMIZE),
@@ -16,10 +16,10 @@ exports.createAtomizedPrices = data => [
 
 // Price of smallest unit of token relative to smallest unit of Ether, eg Wei
 /** Ex:
- *  Let asset == UST, let Value of 1 UST := 1 USD == 0.118343195 ETH
- *  and let UST precision == 8,
- *  hence UST outstanding precision == 18 - 8 == 10
- *  => INVERSEATOMIZEDPRICES[UST] = 1183431950
+ *  Let asset == EUR, let Value of 1 EUR := 1 USD == 0.118343195 ETH
+ *  and let EUR precision == 8,
+ *  hence EUR outstanding precision == 18 - 8 == 10
+ *  => INVERSEATOMIZEDPRICES[EUR] = 1183431950
  */
 exports.createInverseAtomizedPrices = data => [
   Math.floor((1.0 * SolConstants.ETHER_ATOMIZE) / (data.ETH * SolConstants.ETHERTOKEN_ATOMIZE)),

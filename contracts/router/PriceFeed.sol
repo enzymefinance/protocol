@@ -41,7 +41,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     // CONSTANT METHODS
 
     function getPrecision() constant returns (uint) { return PRECISION; }
-    
+
     function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
     // Pre: Price of fungible has been set
@@ -61,9 +61,9 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     /// Set price of fungible relative to Ether
     /** Ex:
-     *  Let asset == UST, let Value of 1 UST := 1 USD == 0.080456789 ETH
+     *  Let asset == EUR, let Value of 1 EUR := 1 USD == 0.080456789 ETH
      *  and let precision == 8,
-     *  => assetPrices[UST] = 08045678
+     *  => assetPrices[EUR] = 08045678
      */
     function setPrice(address[] ofAssets, uint[] newPrices)
         only_owner

@@ -48,7 +48,7 @@ contract('Net Asset Value', (accounts) => {
       .then((result) => {
         bitcoinTokenContract = result;
         assetList.push(result.address)
-        return DollarToken.new({ from: OWNER });
+        return RepToken.new({ from: OWNER });
       })
       .then((result) => {
         dollarTokenContract = result;

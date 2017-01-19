@@ -27,7 +27,7 @@ contract('Version', (accounts) => {
         })
         .then((result) => {
           bitcoinTokenContract = result;
-          return DollarToken.new({ from: OWNER });
+          return RepToken.new({ from: OWNER });
         })
         .then((result) => {
           dollarTokenContract = result;
