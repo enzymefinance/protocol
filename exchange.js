@@ -1,8 +1,8 @@
 const async = require('async');
 const assert = require('assert');
-const Helpers = require('../utils/Helpers.js');
-const SolKeywords = require('../utils/SolKeywords.js');
-const SolConstants = require('../utils/SolConstants.js');
+const functions = require('../utils/functions.js');
+const constants = require('../utils/constants.js');
+const constants = require('../utils/constants.js');
 
 
 contract('Exchange', (accounts) => {
@@ -25,30 +25,30 @@ contract('Exchange', (accounts) => {
 
   it('Deploy smart contract', (done) => {
     Exchange.new()
-        .then((result) => {
-          exchangeContract = result;
-          return exchangeContract.lastOfferId();
-        })
-        .then((result) => {
-          assert.equal(result.toNumber(), INITIAL_OFFER_ID);
-          return EtherToken.new();
-        })
-        .then((result) => {
-          etherTokenContract = result;
-          return BitcoinToken.new({ from: OWNER });
-        })
-        .then((result) => {
-          bitcoinTokenContract = result;
-          return bitcoinTokenContract.totalSupply({ from: OWNER });
-        })
-        .then((result) => {
-          assert.equal(result.toNumber(), SolConstants.PREMINED_AMOUNT.toNumber());
-          return bitcoinTokenContract.balanceOf(OWNER);
-        })
-        .then((result) => {
-          assert.equal(result.toNumber(), SolConstants.PREMINED_AMOUNT.toNumber());
-          done();
-        });
+    .then((result) => {
+      exchangeContract = result;
+      return exchangeContract.lastOfferId();
+    })
+    .then((result) => {
+      assert.equal(result.toNumber(), INITIAL_OFFER_ID);
+      return EtherToken.new();
+    })
+    .then((result) => {
+      etherTokenContract = result;
+      return BitcoinToken.new({ from: OWNER });
+    })
+    .then((result) => {
+      bitcoinTokenContract = result;
+      return bitcoinTokenContract.totalSupply({ from: OWNER });
+    })
+    .then((result) => {
+      assert.equal(result.toNumber(), constants.PREMINED_AMOUNT.toNumber());
+      return bitcoinTokenContract.balanceOf(OWNER);
+    })
+    .then((result) => {
+      assert.equal(result.toNumber(), constants.PREMINED_AMOUNT.toNumber());
+      done();
+    });
   });
 
   it('Create one side of the orderbook', (done) => {
@@ -57,16 +57,18 @@ contract('Exchange', (accounts) => {
     for (let i = 0; i < NUM_OFFERS; i += 1) {
       exchangeTestCases.push(
         {
-          sell_how_much: Helpers.createAtomizedPrices(DATA)[0] * (1 - (i * 0.1)),
+          sell_how_much: functions.createAtomizedPrices(DATA)[0] * (1 - (i * 0.1)),
           sell_which_token: bitcoinTokenContract.address,
-          buy_how_much: 1 * SolKeywords.ether,
+          buy_how_much: 1 * constants.ether,
           buy_which_token: etherTokenContract.address,
           id: i + 1,
           owner: OWNER,
           active: true,
-        },
+        }
       );
     }
+
+    console.log(exchangeTestCases)
 
     async.mapSeries(
       exchangeTestCases,
@@ -79,11 +81,12 @@ contract('Exchange', (accounts) => {
           .then((result) => {
             assert.equal(result, testCase.sell_how_much);
             return exchangeContract.offer(
-            testCase.sell_how_much,
-            testCase.sell_which_token,
-            testCase.buy_how_much,
-            testCase.buy_which_token,
-            { from: OWNER });
+              testCase.sell_how_much,
+              testCase.sell_which_token,
+              testCase.buy_how_much,
+              testCase.buy_which_token,
+              { from: OWNER }
+            );
           })
           .then((txHash) => {
             Object.assign({ txHash }, testCase);
@@ -97,7 +100,7 @@ contract('Exchange', (accounts) => {
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 
@@ -125,7 +128,7 @@ contract('Exchange', (accounts) => {
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 
@@ -142,7 +145,7 @@ contract('Exchange', (accounts) => {
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 
@@ -161,7 +164,7 @@ contract('Exchange', (accounts) => {
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 });

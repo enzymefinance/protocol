@@ -16,6 +16,7 @@
     "import/resolver": meteor,
   },
   "rules": {
+    "no-undef": 0,
     "import/extensions": ["off", "never"],
     "import/no-absolute-path": "off",
     "import/no-unresolved": [
@@ -47,11 +48,6 @@
       }
     ]
   },
-  "env": {
-    "browser": true,
-    "node": true
-  },
-
   "globals": {
     "web3": true,
     "contract": true,

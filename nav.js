@@ -1,9 +1,9 @@
 const async = require('async');
 const assert = require('assert');
 const BigNumber = require('bignumber.js');
-const Helpers = require('../utils/Helpers.js');
-const SolKeywords = require('../utils/SolKeywords.js');
-const SolConstants = require('../utils/SolConstants.js');
+const functions = require('../utils/functions.js');
+const constants = require('../utils/constants.js');
+const constants = require('../utils/constants.js');
 
 
 contract('Net Asset Value', (accounts) => {
@@ -12,10 +12,10 @@ contract('Net Asset Value', (accounts) => {
   const NOT_OWNER = accounts[1];
   const ADDRESS_PLACEHOLDER = '0x0';
   const NUM_OFFERS = 2;
-  const ALLOWANCE_AMOUNT = SolConstants.PREMINED_AMOUNT / 10;
+  const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
   const DATA = { ETH: 1.0, BTC: 0.01117, USD: 8.45, EUR: 7.92 };
-  const ATOMIZEDPRICES = Helpers.createAtomizedPrices(DATA);
-  const INVERSEATOMIZEDPRICES = Helpers.createInverseAtomizedPrices(DATA);
+  const ATOMIZEDPRICES = functions.createAtomizedPrices(DATA);
+  const INVERSEATOMIZEDPRICES = functions.createInverseAtomizedPrices(DATA);
 
   // Test globals
   let coreContract;
@@ -67,7 +67,7 @@ contract('Net Asset Value', (accounts) => {
             {
               address: assetList[i],
               price: INVERSEATOMIZEDPRICES[i],
-            },
+            }
           );
         }
         return Exchange.new({ from: OWNER });
@@ -165,12 +165,12 @@ contract('Net Asset Value', (accounts) => {
         {
           sell_how_much: ATOMIZEDPRICES[1] * (1 - (i * 0.1)),
           sell_which_token: bitcoinTokenContract.address,
-          buy_how_much: 1 * SolKeywords.ether,
+          buy_how_much: 1 * constants.ether,
           buy_which_token: etherTokenContract.address,
           id: i + 1,
           owner: OWNER,
           active: true,
-        },
+        }
       );
     }
     // tradingTestCases = [];
@@ -179,7 +179,7 @@ contract('Net Asset Value', (accounts) => {
     //     {
     //       sell_how_much: ATOMIZEDPRICES[1] * (1 - (i * 0.1)),
     //       sell_which_token: bitcoinTokenContract.address,
-    //       buy_how_much: 1 * SolKeywords.ether,
+    //       buy_how_much: 1 * constants.ether,
     //       buy_which_token: etherTokenContract.address,
     //       id: i + 1,
     //       owner: OWNER,
@@ -208,7 +208,7 @@ contract('Net Asset Value', (accounts) => {
           testCase.sell_which_token,
           testCase.buy_how_much,
           testCase.buy_which_token,
-          { from: OWNER },
+          { from: OWNER }
         ).then((txHash) => {
           const result = Object.assign({ txHash }, testCase);
           callbackMap(null, result);
@@ -217,13 +217,13 @@ contract('Net Asset Value', (accounts) => {
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 
   it('Check if orders created', (done) => {
-    exchangeContract.lastOfferId({ from: OWNER },
-    ).then((result) => {
+    exchangeContract.lastOfferId({ from: OWNER })
+    .then((result) => {
       lastOfferId = result.toNumber();
       assert.equal(lastOfferId, NUM_OFFERS);
       done();
@@ -235,14 +235,14 @@ contract('Net Asset Value', (accounts) => {
       exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
-            .then(() => {
-              callbackMap(null, testCase);
-            });
+        .then(() => {
+          callbackMap(null, testCase);
+        });
       },
       (err, results) => {
         exchangeTestCases = results;
         done();
-      },
+      }
     );
   });
 
@@ -275,130 +275,130 @@ contract('Net Asset Value', (accounts) => {
         exchange: exchangeContract.address,
         buy_how_much: ATOMIZEDPRICES[1],
         id: 1,
-      },
+      }
     ];
 
     coreContract.totalSupply()
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), 0);
+    .then((result) => {
+      assert.strictEqual(result.toNumber(), 0);
 
-        // ROUND 1 EXACT
-        return coreContract.createShares(wantedShares[0],
-          { from: NOT_OWNER, value: investFunds[0].toNumber() });
-      })
-      // Check totalSupply and sumInvested
-      .then(() => coreContract.totalSupply())
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
-      })
-      .then(() => coreContract.sumInvested())
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
+      // ROUND 1 EXACT
+      return coreContract.createShares(wantedShares[0],
+        { from: NOT_OWNER, value: investFunds[0].toNumber() });
+    })
+    // Check totalSupply and sumInvested
+    .then(() => coreContract.totalSupply())
+    .then((result) => {
+      assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
+    })
+    .then(() => coreContract.sumInvested())
+    .then((result) => {
+      assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
 
-        // ROUND 2 0VERPAID
-        return coreContract.createShares(wantedShares[1],
-            { from: NOT_OWNER, value: investFunds[1].toNumber() });
-      })
-      // Check totalSupply and sumInvested
-      .then(() => coreContract.totalSupply())
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-      })
-      .then(() => coreContract.sumInvested())
-      .then((result) => {
-        assert.strictEqual(result.toNumber(),
+      // ROUND 2 0VERPAID
+      return coreContract.createShares(wantedShares[1],
+          { from: NOT_OWNER, value: investFunds[1].toNumber() });
+    })
+    // Check totalSupply and sumInvested
+    .then(() => coreContract.totalSupply())
+    .then((result) => {
+      assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+    })
+    .then(() => coreContract.sumInvested())
+    .then((result) => {
+      assert.strictEqual(result.toNumber(),
+        correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+
+      // ROUND 3 UNDERPAID
+      return coreContract.createShares(wantedShares[2],
+        { from: NOT_OWNER, value: investFunds[2].toNumber() });
+    })
+    // Check totalSupply and sumInvested
+    .then(() => coreContract.totalSupply())
+    .then((result) => {
+      // Paid to little, hence no shares received
+      assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+    })
+    .then(() => coreContract.sumInvested())
+    .then((result) => {
+      // Paid to little, hence no investment made
+      assert.strictEqual(result.toNumber(),
           correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+      return coreContract.balanceOf(NOT_OWNER);
+    })
+    .then((result) => {
+      const balance = wantedShares[0].add(wantedShares[1]).toNumber();
+      assert.strictEqual(result.toNumber(), balance);
 
-        // ROUND 3 UNDERPAID
-        return coreContract.createShares(wantedShares[2],
-          { from: NOT_OWNER, value: investFunds[2].toNumber() });
-      })
-      // Check totalSupply and sumInvested
-      .then(() => coreContract.totalSupply())
-      .then((result) => {
-        // Paid to little, hence no shares received
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-      })
-      .then(() => coreContract.sumInvested())
-      .then((result) => {
-        // Paid to little, hence no investment made
-        assert.strictEqual(result.toNumber(),
-            correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-        return coreContract.balanceOf(NOT_OWNER);
-      })
-      .then((result) => {
-        const balance = wantedShares[0].add(wantedShares[1]).toNumber();
-        assert.strictEqual(result.toNumber(), balance);
+      // ROUND 3 MANAGING
+      return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
+    })
+    .then(() => etherTokenContract.balanceOf(coreContract.address))
+    .then((result) => {
+      console.log(`EtherToken held: \t\t${result.toString()}`);
+      return bitcoinTokenContract.balanceOf(coreContract.address);
+    })
+    .then((result) => {
+      console.log(`BitcoinToken held: \t\t${result.toString()}`);
+      return coreContract.calcSharePrice();
+    })
+    .then((result) => {
+      console.log(`New share price is: \t\t${result.toString()}`);
+      //TODO Calculate more precise
+      const roundingError = 0.01;
+      console.log(`Round 4; Sell shares: \t\t${offeredShares[0]}`);
+      console.log(`Round 4; Funds to redeem: \t${redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError)}`);
 
-        // ROUND 3 MANAGING
-        return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
-      })
-      .then(() => etherTokenContract.balanceOf(coreContract.address))
-      .then((result) => {
-        console.log(`EtherToken held: \t\t${result.toString()}`);
-        return bitcoinTokenContract.balanceOf(coreContract.address);
-      })
-      .then((result) => {
-        console.log(`BitcoinToken held: \t\t${result.toString()}`);
-        return coreContract.calcSharePrice();
-      })
-      .then((result) => {
-        console.log(`New share price is: \t\t${result.toString()}`);
-        //TODO Calculate more precise
-        const roundingError = 0.01;
-        console.log(`Round 4; Sell shares: \t\t${offeredShares[0]}`);
-        console.log(`Round 4; Funds to redeem: \t${redeemFunds[0] * result.toString() / SolKeywords.ether * (1.0 - roundingError)}`);
-
-        // ROUND 4 EXACT
-        return coreContract.annihilateShares(offeredShares[0], redeemFunds[0] * result.toString() / SolKeywords.ether * (1.0 - roundingError), { from: NOT_OWNER });
-      })
-      .then(() => coreContract.totalSupply())
-      .then((result) => {
-        const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
-        assert.strictEqual(result.toNumber(), balance);
-      })
-      .then(() => coreContract.sumWithdrawn())
-      .then((result) => {
-        // TODO: calculate outside w commission etc.
-        console.log(`Round 4; Funds received: \t${result.toNumber()}`);
-        // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
-      })
-      .then(() => coreContract.balanceOf(NOT_OWNER))
-      .then((result) => {
-        const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
-        assert.strictEqual(result.toNumber(), balance);
-      })
-      // // ROUND 5 OVERPAID
-      // .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: NOT_OWNER }))
-      // .then(() => coreContract.totalSupply())
-      // .then((result) => {
-      //   const balance = wantedShares[0]
-      //     .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
-      //   assert.strictEqual(result.toNumber(), balance);
-      // })
-      // // Check sumInvested
-      // .then(() => coreContract.sumWithdrawn())
-      // .then(() => {
-      //   // TODO: calculate outside w commission etc.
-      //   // console.log('Sold shares: ' + offeredShares[1]);
-      //   // console.log('Funds received (total): ' + result.toNumber());
-      //   // assert.strictEqual(result.toNumber(),
-      //   //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
-      // })
-      // .then(() => {
-      //   // TODO: calculate outside w commission, performance gains, loses etc.
-      //   // for (i = 0; i < numAccounts; ++i) {
-      //   //   // Actual Balance
-      //   //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
-      //   //   // >=, since actual balance has a gas cost for sending the tx.
-      //   //   // TODO: Estimate Gas cost
-      //   //   console.log(' Gas cost of Account ' + i + ':',
-      //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
-      //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
-      //   //       "One of the Accounts has wrong balance!")
-      //   // };
-      // })
-      .then(done)
-      .catch(done);
+      // ROUND 4 EXACT
+      return coreContract.annihilateShares(offeredShares[0], redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError), { from: NOT_OWNER });
+    })
+    .then(() => coreContract.totalSupply())
+    .then((result) => {
+      const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+      assert.strictEqual(result.toNumber(), balance);
+    })
+    .then(() => coreContract.sumWithdrawn())
+    .then((result) => {
+      // TODO: calculate outside w commission etc.
+      console.log(`Round 4; Funds received: \t${result.toNumber()}`);
+      // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
+    })
+    .then(() => coreContract.balanceOf(NOT_OWNER))
+    .then((result) => {
+      const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+      assert.strictEqual(result.toNumber(), balance);
+    })
+    // // ROUND 5 OVERPAID
+    // .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: NOT_OWNER }))
+    // .then(() => coreContract.totalSupply())
+    // .then((result) => {
+    //   const balance = wantedShares[0]
+    //     .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
+    //   assert.strictEqual(result.toNumber(), balance);
+    // })
+    // // Check sumInvested
+    // .then(() => coreContract.sumWithdrawn())
+    // .then(() => {
+    //   // TODO: calculate outside w commission etc.
+    //   // console.log('Sold shares: ' + offeredShares[1]);
+    //   // console.log('Funds received (total): ' + result.toNumber());
+    //   // assert.strictEqual(result.toNumber(),
+    //   //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
+    // })
+    // .then(() => {
+    //   // TODO: calculate outside w commission, performance gains, loses etc.
+    //   // for (i = 0; i < numAccounts; ++i) {
+    //   //   // Actual Balance
+    //   //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
+    //   //   // >=, since actual balance has a gas cost for sending the tx.
+    //   //   // TODO: Estimate Gas cost
+    //   //   console.log(' Gas cost of Account ' + i + ':',
+    //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
+    //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
+    //   //       "One of the Accounts has wrong balance!")
+    //   // };
+    // })
+    .then(done)
+    .catch(done);
   });
 });

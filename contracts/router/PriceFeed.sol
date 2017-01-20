@@ -61,9 +61,9 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     /// Set price of fungible relative to Ether
     /** Ex:
-     *  Let asset == EUR, let Value of 1 EUR := 1 USD == 0.080456789 ETH
-     *  and let precision == 8,
-     *  => assetPrices[EUR] = 08045678
+     *  Let asset == EUT, let Value of 1 EUT := 1 EUR == 0.080456789 ETH
+     *  and let EUT precision == 8,
+     *  => assetPrices[EUT] = 08045678
      */
     function setPrice(address[] ofAssets, uint[] newPrices)
         only_owner

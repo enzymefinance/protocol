@@ -28,14 +28,6 @@ contract EtherToken is ERC20, SafeMath {
         _;
     }
 
-    // CONSTANT METHODS
-
-    // Pre: Each token equals one ether
-    // Post: Amount of ether held as collateral
-    function totalSupply() constant returns (uint supply) {
-        return this.balance;
-    }
-
     // NON-CONSTANT METHODS
 
     // Post: Exchanged Ether against Token

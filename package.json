@@ -1,8 +1,7 @@
 {
   "name": "protocol",
   "version": "0.0.1",
-  "description": "Blockchain protocol for wealth preservation",
-  "main": "index.js",
+  "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
   },
@@ -33,9 +32,8 @@
     "eslint-plugin-jsx-a11y": "^2.2.3",
     "eslint-plugin-meteor": "^4.0.1",
     "eslint-plugin-react": "^6.8.0",
-    "ethereumjs-testrpc": "3.0.0",
     "js-sha256": "^0.3.2",
-    "truffle": "3.0.0-3"
+    "truffle": "3.0.0-9"
   },
   "dependencies": {
     "@parity/parity.js": "^0.2.74",
