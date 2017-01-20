@@ -1,9 +1,8 @@
 const async = require('async');
 const assert = require('assert');
 const BigNumber = require('bignumber.js');
+const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
-const constants = require('../utils/constants.js');
-const constants = require('../utils/constants.js');
 
 
 contract('Net Asset Value', (accounts) => {

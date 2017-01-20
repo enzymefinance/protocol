@@ -7,7 +7,7 @@ contract('Exchange', (accounts) => {
   // Test constants
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
-  const NUM_OFFERS = 3;
+  const NUM_OFFERS = 2;
   // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
   const data = {
     'error':[],
@@ -46,21 +46,12 @@ contract('Exchange', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    Exchange.new()
-    .then((result) => {
-      exchangeContract = result;
-      return exchangeContract.lastOfferId();
-    })
+    exchangeContract = Exchange.deployed();
+    etherTokenContract = EtherToken.deployed();
+    bitcoinTokenContract = BitcoinToken.deployed();
+    exchangeContract.lastOfferId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
-      return EtherToken.new();
-    })
-    .then((result) => {
-      etherTokenContract = result;
-      return BitcoinToken.new({ from: OWNER });
-    })
-    .then((result) => {
-      bitcoinTokenContract = result;
       return bitcoinTokenContract.totalSupply({ from: OWNER });
     })
     .then((result) => {
@@ -77,17 +68,16 @@ contract('Exchange', (accounts) => {
     // Reduce sell amount by 0.1 on each order
     exchangeTestCases = [];
     for (let i = 0; i < NUM_OFFERS; i += 1) {
-      exchangeTestCases.push(
-        {
-          sell_how_much: pricesRelAsset[1] * (1 - (i * 0.1)),
-          sell_which_token: bitcoinTokenContract.address,
-          buy_how_much: 1 * constants.ether,
-          buy_which_token: etherTokenContract.address,
-          id: i + 1,
-          owner: OWNER,
-          active: true,
-        }
-      );
+      // console.log((Math.random() - 0.5) * 0.1)
+      exchangeTestCases.push({
+        sell_how_much: pricesRelAsset[1] * (1 - (i * 0.1)),
+        sell_which_token: bitcoinTokenContract.address,
+        buy_how_much: 1 * constants.ether,
+        buy_which_token: etherTokenContract.address,
+        id: i + 1,
+        owner: OWNER,
+        active: true,
+      });
     }
 
     console.log(exchangeTestCases)
@@ -98,26 +88,27 @@ contract('Exchange', (accounts) => {
         bitcoinTokenContract.approve(
           exchangeContract.address,
           testCase.sell_how_much,
-          { from: OWNER })
-          .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
-          .then((result) => {
-            assert.equal(result, testCase.sell_how_much);
-            return exchangeContract.offer(
-              testCase.sell_how_much,
-              testCase.sell_which_token,
-              testCase.buy_how_much,
-              testCase.buy_which_token,
-              { from: OWNER }
-            );
-          })
-          .then((txHash) => {
-            Object.assign({ txHash }, testCase);
-            return exchangeContract.lastOfferId({ from: OWNER });
-          })
-          .then((lastOfferId) => {
-            assert.equal(testCase.id, lastOfferId);
-            callbackMap(null, testCase);
-          });
+          { from: OWNER }
+        )
+        .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
+        .then((result) => {
+          assert.equal(result, testCase.sell_how_much);
+          return exchangeContract.offer(
+            testCase.sell_how_much,
+            testCase.sell_which_token,
+            testCase.buy_how_much,
+            testCase.buy_which_token,
+            { from: OWNER }
+          );
+        })
+        .then((txHash) => {
+          Object.assign({ txHash }, testCase);
+          return exchangeContract.lastOfferId({ from: OWNER });
+        })
+        .then((lastOfferId) => {
+          assert.equal(testCase.id, lastOfferId);
+          callbackMap(null, testCase);
+        });
       },
       (err, results) => {
         exchangeTestCases = results;
@@ -128,11 +119,11 @@ contract('Exchange', (accounts) => {
 
   it('Check if orders created', (done) => {
     exchangeContract.lastOfferId({ from: OWNER })
-      .then((result) => {
-        const lastOfferId = result.toNumber();
-        assert.equal(lastOfferId, NUM_OFFERS);
-        done();
-      });
+    .then((result) => {
+      const lastOfferId = result.toNumber();
+      assert.equal(lastOfferId, NUM_OFFERS);
+      done();
+    });
   });
 
   it('Check orders information', (done) => {
@@ -140,12 +131,11 @@ contract('Exchange', (accounts) => {
       exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
-          .then(() => {
-            // const sellHowMuch = result[0];
-            // const buyHowMuch = result[2];
-            // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
-            callbackMap(null, testCase);
-          });
+        .then((result) => {
+          const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = result;
+          console.log(`Sell how much: ${sellHowMuch}`)
+          callbackMap(null, testCase);
+        });
       },
       (err, results) => {
         exchangeTestCases = results;
@@ -159,10 +149,10 @@ contract('Exchange', (accounts) => {
       exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.cancel(testCase.id, { from: OWNER })
-          .then((txHash) => {
-            const result = Object.assign({ txHash }, testCase);
-            callbackMap(null, result);
-          });
+        .then((txHash) => {
+          const result = Object.assign({ txHash }, testCase);
+          callbackMap(null, result);
+        });
       },
       (err, results) => {
         exchangeTestCases = results;
@@ -176,12 +166,12 @@ contract('Exchange', (accounts) => {
       exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
-          .then(() => {
-            // const sellHowMuch = result[0];
-            // const buyHowMuch = result[2];
-            // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
-            callbackMap(null, testCase);
-          });
+        .then(() => {
+          // const sellHowMuch = result[0];
+          // const buyHowMuch = result[2];
+          // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
+          callbackMap(null, testCase);
+        });
       },
       (err, results) => {
         exchangeTestCases = results;

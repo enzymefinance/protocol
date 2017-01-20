@@ -49,7 +49,7 @@ contract('PriceFeed', (accounts) => {
   let priceFeedContract;
 
 
-  before('Check accounts', (done) => {
+  before('Check accounts set asset addresses', (done) => {
     assert.equal(accounts.length, 10);
     done();
   });
