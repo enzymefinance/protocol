@@ -70,31 +70,31 @@ contract('Version', (accounts) => {
     });
   });
 
-  // it('Create a Core contract through the Version contract', (done) => {
-  //   Version.new(ADDRESS_PLACEHOLDER)
-  //   .then((result) => {
-  //     versionContract = result;
-  //     return versionContract.createCore(
-  //       registrarContract.address,
-  //       tradingContract.address,
-  //       ADDRESS_PLACEHOLDER,
-  //       ADDRESS_PLACEHOLDER,
-  //       { from: OWNER });
-  //   })
-  //   .then(() => versionContract.numCreatedCores())
-  //   .then((result) => {
-  //     assert.strictEqual(result.toNumber(), 1);
-  //     return versionContract.coreAt(0);
-  //   })
-  //   .then((result) => {
-  //     coreContract = Core.at(result);
-  //     return coreContract.owner();
-  //   })
-  //   .then(() => {
-  //     /* TODO Set Owner of Portfolio equal to Portfolio creator */
-  //     // assert.equal(OWNER, result, "Core.owner != OWNER!");
-  //   })
-  //   .then(done)
-  //   .catch(done);
-  // });
+  it('Create a Core contract through the Version contract', (done) => {
+    Version.new(ADDRESS_PLACEHOLDER)
+    .then((result) => {
+      versionContract = result;
+      return versionContract.createCore(
+        registrarContract.address,
+        tradingContract.address,
+        ADDRESS_PLACEHOLDER,
+        ADDRESS_PLACEHOLDER,
+        { from: OWNER });
+    })
+    .then(() => versionContract.numCreatedCores())
+    .then((result) => {
+      assert.strictEqual(result.toNumber(), 1);
+      return versionContract.coreAt(0);
+    })
+    .then((result) => {
+      coreContract = Core.at(result);
+      return coreContract.owner();
+    })
+    .then(() => {
+      /* TODO Set Owner of Portfolio equal to Portfolio creator */
+      // assert.equal(OWNER, result, "Core.owner != OWNER!");
+    })
+    .then(done)
+    .catch(done);
+  });
 });
