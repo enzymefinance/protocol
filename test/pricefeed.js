@@ -4,16 +4,17 @@ const assert = require('assert');
 const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
-// const TOKEN_ADDRESSES = [
-//   BitcoinToken.all_networks['3'].address,
-//   RepToken.all_networks['3'].address,
-//   EuroToken.all_networks['3'].address,
-// ];
 
 contract('PriceFeed', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
+  const ASSETS = [
+    '0x0000000000000000000000000000000000000000',
+    '0x0000000000000000000000000000000000000001',
+    '0x0000000000000000000000000000000000000002',
+    '0x0000000000000000000000000000000000000003',
+  ]
 
   // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
   const data = {
@@ -24,24 +25,26 @@ contract('PriceFeed', (accounts) => {
       'XREPXETH': {'a':['0.435820','1','1.000'],'b':['0.430570','80','80.000'],'c':['0.435790','1.71736386'],'v':['483.41580154','569.06380459'],'p':['0.428581','0.429142'],'t':[36,48],'l':['0.421730','0.421730'],'h':['0.437000','0.437000'],'o':'0.423270'}
     },
   };
-  console.log(data.result.XETHXXBT.c[0])
-  const xbt = new BigNumber(data.result.XETHXXBT.c[0]);
-  console.log(xbt.e)
 
-  let priceFeedTestCases = [
-    {
-      address: '0x0000000000000000000000000000000000000000',
-      price: functions.createInverseAtomizedPrices(data)[0],
-    },
-    {
-      address: '0x0000000000000000000000000000000000000001',
-      price: functions.createInverseAtomizedPrices(data)[1],
-    },
-    {
-      address: '0x0000000000000000000000000000000000000002',
-      price: functions.createInverseAtomizedPrices(data)[2],
-    },
+  // Prices Relative to Ether
+  const ett_eth = 1.0; // By definition
+  const xbt_eth = functions.invertAssetPairPrice(data.result.XETHXXBT.c[0])
+  const rep_eth = data.result.XREPXETH.c[0]; // Price already relavtive to ether
+  const eur_eth = functions.invertAssetPairPrice(data.result.XETHZEUR.c[0])
+
+  // Atomize Prices
+  const prices = [
+    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_PRECISION),
+    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_PRECISION),
+    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_PRECISION),
+    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_PRECISION),
   ];
+  console.log(prices)
+
+  let priceFeedTestCases = [];
+  for (let i = 0; i < ASSETS.length; i += 1) {
+    priceFeedTestCases.push({address: ASSETS[i], price: prices[i],});
+  }
 
   // Test globals
   let priceFeedContract;
@@ -71,14 +74,13 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Set multiple price', (done) => {
-    const addresses = [priceFeedTestCases[0].address, priceFeedTestCases[1].address, priceFeedTestCases[2].address];
-    const inverseAtomizedPrices = [priceFeedTestCases[0].price, priceFeedTestCases[1].price, priceFeedTestCases[2].price];
-    priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
-        .then(() => priceFeedContract.lastUpdate())
-        .then((result) => {
-          assert.notEqual(result.toNumber(), 0);
-          done();
-        });
+
+    priceFeedContract.setPrice(ASSETS, prices, { from: OWNER })
+    .then(() => priceFeedContract.lastUpdate())
+    .then((result) => {
+      assert.notEqual(result.toNumber(), 0);
+      done();
+    });
   });
 
   it('Get multiple existent prices', (done) => {
@@ -87,6 +89,7 @@ contract('PriceFeed', (accounts) => {
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
         .then((result) => {
+          console.log(`Actual: ${result.toNumber()}; Expected: ${testCase.price}`)
           assert.equal(result.toNumber(), testCase.price);
           callbackMap(null, testCase);
         });
