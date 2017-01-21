@@ -1,6 +1,3 @@
-const BigNumber = require('bignumber.js');
-
-
 // Price Feed
 
 // Pre: Asset Pair; Eg. ETH/BTC
@@ -15,3 +12,6 @@ exports.invertAssetPairPrice = price => 1.0 / price;
  *  => ATOMIZEDPRICES[EUT] = 8.45 * 10 ** 8
  */
 exports.atomizeAssetPrice = (price, precision) => Math.floor(price * (10 ** precision));
+
+
+// Exchange

@@ -3,6 +3,7 @@ const assert = require('assert');
 const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
+
 contract('Exchange', (accounts) => {
   // Test constants
   const INITIAL_OFFER_ID = 0;
@@ -133,7 +134,10 @@ contract('Exchange', (accounts) => {
         exchangeContract.offers(testCase.id)
         .then((result) => {
           const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = result;
-          console.log(`Sell how much: ${sellHowMuch}`)
+          // TODO for more general token
+          console.log(`Is active: ${active}`);
+          console.log(`Sell how much: ${sellHowMuch / (10 ** constants.BITCOINTOKEN_PRECISION)}`);
+          console.log(`Buy how much: ${buyHowMuch / (10 ** constants.ETHERTOKEN_PRECISION)}`);
           callbackMap(null, testCase);
         });
       },
@@ -166,10 +170,12 @@ contract('Exchange', (accounts) => {
       exchangeTestCases,
       (testCase, callbackMap) => {
         exchangeContract.offers(testCase.id)
-        .then(() => {
-          // const sellHowMuch = result[0];
-          // const buyHowMuch = result[2];
-          // console.log(testCase.id, sellHowMuch.toNumber(), buyHowMuch.toNumber());
+        .then((result) => {
+          const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = result;
+          // TODO for more general token
+          console.log(`Is active: ${active}`);
+          console.log(`Sell how much: ${sellHowMuch / (10 ** constants.BITCOINTOKEN_PRECISION)}`);
+          console.log(`Buy how much: ${buyHowMuch / (10 ** constants.ETHERTOKEN_PRECISION)}`);
           callbackMap(null, testCase);
         });
       },
