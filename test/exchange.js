@@ -21,9 +21,9 @@ contract('Exchange', (accounts) => {
 
   // Prices Relative to Asset
   const eth_ett = 1.0; // By definition
-  const eth_xbt = data.result.XETHXXBT.c[0]; // Price already relavtive to asset
+  const eth_xbt = functions.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
   const eth_rep = functions.invertAssetPairPrice(data.result.XREPXETH.c[0]);
-  const eth_eur = data.result.XETHZEUR.c[0]; // Price already relavtive to asset
+  const eth_eur = functions.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
 
   // Atomize Prices realtive to Asset
   const pricesRelAsset = [

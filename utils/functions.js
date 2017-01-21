@@ -11,7 +11,7 @@ exports.invertAssetPairPrice = price => 1.0 / price;
  *  and let EUT precision == 8,
  *  => ATOMIZEDPRICES[EUT] = 8.45 * 10 ** 8
  */
-exports.atomizeAssetPrice = (price, precision) => Math.floor(price * (10 ** precision));
+exports.atomizeAssetPrice = (price, precision) => Math.floor(price * (Math.pow(10, precision)));
 
 
 // Exchange

@@ -27,9 +27,9 @@ contract('PriceFeed', (accounts) => {
 
   // Prices Relative to Ether
   const ett_eth = 1.0; // By definition
-  const xbt_eth = functions.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
+  const xbt_eth = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
   const rep_eth = data.result.XREPXETH.c[0]; // Price already relavtive to ether
-  const eur_eth = functions.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
+  const eur_eth = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
 
   // Atomize Prices realtive to Ether
   const pricesRelEther = [
