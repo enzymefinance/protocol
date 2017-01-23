@@ -13,7 +13,7 @@ contract EtherToken is ERC20, SafeMath {
 
     // Constant token specific fields
     string public constant name = "Ether Token";
-    string public constant symbol = "ETT";
+    string public constant symbol = "ETH-T";
     uint public constant precision = 18;
 
     // EVENTS
