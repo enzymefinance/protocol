@@ -13,7 +13,7 @@ contract BitcoinToken is PreminedAsset {
     string public constant name = "Bitcoin Token";
     string public constant symbol = "BTC-T";
     uint public constant precision = 8;
-    uint public constant preminedAmount = 10**10;
+    uint public constant preminedAmount = 10**18;
 
     // NON-CONSTANT METHODS
 

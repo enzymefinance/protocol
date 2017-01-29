@@ -3,7 +3,7 @@ module.exports = (deployer) => {
   deployer.deploy([
     [EtherToken, { gas: 4000000, data: EtherToken.unlinked_binary }],
     [BitcoinToken, { gas: 4000000, data: BitcoinToken.unlinked_binary }],
-    [RepToken, { gass: 4000000, data: RepToken.unlinked_binary }],
+    [RepToken, { gas: 4000000, data: RepToken.unlinked_binary }],
     [EuroToken, { gas: 4000000, data: EuroToken.unlinked_binary }],
     [PriceFeed, { gas: 4000000, data: PriceFeed.unlinked_binary }],
     [Exchange, { gas: 4000000, data: Exchange.unlinked_binary }],

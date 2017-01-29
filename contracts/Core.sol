@@ -150,7 +150,6 @@ contract Core is Shares, SafeMath, Owned {
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
             uint assetPrice = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetPrecision)); // Sum up product of asset holdings of this core and asset prices
-
         }
     }
 
