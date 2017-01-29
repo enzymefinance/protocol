@@ -10,10 +10,7 @@ import "../dependencies/Owned.sol";
 contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // FILEDS
-
-    // Constant fields
-    uint constant PRECISION = 8; // Precision of price
-
+    
     // Fields that can be changed by functions
     uint updateCounter = 0;
     uint public fee = 0;
@@ -40,12 +37,10 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // CONSTANT METHODS
 
-    function getPrecision() constant returns (uint) { return PRECISION; }
-
     function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
     // Pre: Price of fungible has been set
-    // Post: Price of asset asset relative to Ether with Precision _pricePrecision
+    // Post: Price of asset asset relative to Ether with precision of Asset
     function getPrice(address ofAsset)
         constant
         msg_value_at_least(fee)

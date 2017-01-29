@@ -15,7 +15,7 @@ contract BitcoinToken is PreminedAsset {
     uint public constant precision = 8;
     uint public constant preminedAmount = 10**10;
 
-    // METHODS
+    // NON-CONSTANT METHODS
 
     function BitcoinToken()
         PreminedAsset(name, symbol, precision, preminedAmount)

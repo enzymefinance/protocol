@@ -1,13 +1,13 @@
 pragma solidity ^0.4.4;
 
-import "../dependencies/ERC20.sol";
+import "./Asset.sol";
 import "../dependencies/SafeMath.sol";
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
-contract EtherToken is ERC20, SafeMath {
+contract EtherToken is Asset, SafeMath {
 
     // FIELDS
 
@@ -29,6 +29,10 @@ contract EtherToken is ERC20, SafeMath {
     }
 
     // NON-CONSTANT METHODS
+
+    function EtherToken()
+        Asset(name, symbol, precision)
+    {}
 
     // Post: Exchanged Ether against Token
     function() payable { deposit(); }

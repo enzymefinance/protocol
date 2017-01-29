@@ -3,7 +3,7 @@ pragma solidity ^0.4.4;
 import "./tokens/EtherToken.sol";
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
-import "./dependencies/ERC20Protocol.sol";
+import "./dependencies/AssetProtocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./router/RegistrarProtocol.sol";
@@ -37,6 +37,12 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     // FIELDS
+
+    // Constant token specific fields
+    // TODO set in constructor - similar to EtherToken
+    string public constant name = "Melon Portfolio";
+    string public constant symbol = "MLN-P";
+    uint public constant precision = 18;
 
     // Constant fields
     uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Registrar Module
@@ -138,11 +144,13 @@ contract Core is Shares, SafeMath, Owned {
          */
         uint numAssignedAssets = module.registrar.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
-            ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
-            uint coreHolings = ERC20.balanceOf(this); // Amount of asset base units this core holds
+            AssetProtocol Asset = AssetProtocol(address(module.registrar.assetAt(i)));
+            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            uint assetPrecision = Asset.getPrecision();
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
-            uint price = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
-            gav = safeAdd(gav, coreHolings * price); // Sum up product of asset holdings of this core and asset prices
+            uint assetPrice = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
+            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetPrecision)); // Sum up product of asset holdings of this core and asset prices
+
         }
     }
 
@@ -218,11 +226,11 @@ contract Core is Shares, SafeMath, Owned {
             // Transfer ownedHoldings of Assets
             uint numAssignedAssets = module.registrar.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
-                ERC20Protocol ERC20 = ERC20Protocol(address(module.registrar.assetAt(i)));
-                uint coreHoldings = ERC20.balanceOf(this); // Amount of asset base units this core holds
+                AssetProtocol Asset = AssetProtocol(address(module.registrar.assetAt(i)));
+                uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
                 if (coreHoldings == 0) continue;
                 uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
-                assert(ERC20.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
+                assert(Asset.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
             }
             // Acount for withdrawal amount
             sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);

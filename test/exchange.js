@@ -8,7 +8,7 @@ contract('Exchange', (accounts) => {
   // Test constants
   const INITIAL_OFFER_ID = 0;
   const OWNER = accounts[0];
-  const NUM_OFFERS = 2;
+  const NUM_OFFERS = 1;
   // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
   const data = {
     'error':[],
@@ -71,9 +71,9 @@ contract('Exchange', (accounts) => {
     for (let i = 0; i < NUM_OFFERS; i += 1) {
       // console.log((Math.random() - 0.5) * 0.1)
       exchangeTestCases.push({
-        sell_how_much: pricesRelAsset[1] * (1 - (i * 0.1)),
+        sell_how_much: Math.floor(pricesRelAsset[1] * (1 - (i * 0.1))),
         sell_which_token: bitcoinTokenContract.address,
-        buy_how_much: 1 * constants.ether,
+        buy_how_much: Math.floor(1 * constants.ether),
         buy_which_token: etherTokenContract.address,
         id: i + 1,
         owner: OWNER,
@@ -93,7 +93,7 @@ contract('Exchange', (accounts) => {
         )
         .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
         .then((result) => {
-          assert.equal(result, testCase.sell_how_much);
+          assert.equal(result.toNumber(), testCase.sell_how_much);
           return exchangeContract.offer(
             testCase.sell_how_much,
             testCase.sell_which_token,

@@ -15,7 +15,7 @@ contract RepToken is PreminedAsset {
     uint public constant precision = 8;
     uint public constant preminedAmount = 10**10;
 
-    // METHODS
+    // NON-CONSTANT METHODS
 
     function RepToken()
         PreminedAsset(name, symbol, precision, preminedAmount)
