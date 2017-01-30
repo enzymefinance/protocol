@@ -2,6 +2,7 @@ const async = require('async');
 const assert = require('assert');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
+const collections = require('../utils/collections.js');
 
 
 let offers = [];  // Offers collections
@@ -21,8 +22,8 @@ contract('Exchange', (accounts) => {
     }
   };
   // Atomize Prices realtive to Asset
-  const pricesRelAsset = functions.krakenPricesRelAsset(data);
-  console.log(`pricesRelAsset: ${pricesRelAsset}`);
+  const pricesRelEther = functions.krakenPricesRelEther(data);
+  console.log(`pricesRelEther: ${pricesRelEther}`);
 
 
   before('Check accounts, exchange and premined amount', (done) => {
@@ -44,7 +45,7 @@ contract('Exchange', (accounts) => {
 
   it('Create one side of the orderbook', (done) => {
     functions.buyOneEtherFor(
-      pricesRelAsset[1],
+      pricesRelEther[1],
       BitcoinToken.deployed().address,
       OWNER,
       NUM_OFFERS,
@@ -67,43 +68,37 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  // it('Check orders information', (done) => {
-  //   async.mapSeries(
-  //     offers,
-  //     (offer, callbackMap) => {
-  //       Exchange.deployed().offers(offer.id)
-  //       .then((result) => {
-  //         const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = result;
-  //         // TODO for more general token
-  //         console.log(`Is active: ${active}`);
-  //         console.log(`Sell how much: ${sellHowMuch / (10 ** constants.BITCOINTOKEN_PRECISION)}`);
-  //         console.log(`Buy how much: ${buyHowMuch / (10 ** constants.ETHERTOKEN_PRECISION)}`);
-  //         callbackMap(null, offer);
-  //       });
-  //     },
-  //     (err, results) => {
-  //       offers = results;
-  //       done();
-  //     }
-  //   );
-  // });
-  //
-  // it('Cancel one side of the orderbook', (done) => {
-  //   async.mapSeries(
-  //     offers,
-  //     (offer, callbackMap) => {
-  //       Exchange.deployed().cancel(offer.id, { from: OWNER })
-  //       .then((txHash) => {
-  //         const result = Object.assign({ txHash }, offer);
-  //         callbackMap(null, result);
-  //       });
-  //     },
-  //     (err, results) => {
-  //       offers = results;
-  //       done();
-  //     }
-  //   );
-  // });
+  it('Check orders information', (done) => {
+    collections.sync(
+      (err, result) => {
+        if (!err) {
+          offers = result;
+          done();
+        } else {
+          console.log(err);
+        }
+      }
+    );
+  });
+
+  it('Cancel one side of the orderbook', (done) => {
+    console.log(offers);
+    done();
+    async.mapSeries(
+      offers,
+      (offer, callbackMap) => {
+        Exchange.deployed().cancel(offer.id, { from: OWNER })
+        .then((txHash) => {
+          const result = Object.assign({ txHash }, offer);
+          callbackMap(null, result);
+        });
+      },
+      (err, results) => {
+        offers = results;
+        done();
+      }
+    );
+  });
   //
   // it('Check orders information', (done) => {
   //   async.mapSeries(

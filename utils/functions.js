@@ -88,7 +88,7 @@ exports.buyOneEtherFor = (sellHowMuch, sellWhichToken, owner, depth, callback) =
     offers.push({
       sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
       sell_which_token: sellWhichToken,
-      buy_how_much: Math.floor(1 * constants.ether),
+      buy_how_much: 1 * constants.ether,
       buy_which_token: EtherToken.deployed().address,
       id: i + 1,
       owner,
@@ -107,8 +107,7 @@ exports.buyOneEtherFor = (sellHowMuch, sellWhichToken, owner, depth, callback) =
             console.log(err);
           }
         });
-    },
-    (err, results) => {
+    }, (err, results) => {
       offers = results;
       callback(null, offers);
     });
