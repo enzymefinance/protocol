@@ -1,4 +1,5 @@
 const constants = require('./constants.js');
+const specs = require('./specs.js');
 const async = require('async');
 
 // Offers
@@ -10,43 +11,25 @@ exports.syncOffer = (id, callback) => {
   .then((res) => {
     const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = res;
     if (active) {
-      // TODO make more efficient
-      let sellPrecision;
-      let sellToken;
-      let buyPrecision;
-      let buyToken;
-      AssetProtocol.at(sellWhichTokenAddress).getPrecision()
-      .then((result) => {
-        sellPrecision = result.toNumber();
-        return AssetProtocol.at(sellWhichTokenAddress).getSymbol();
-      })
-      .then((result) => {
-        sellToken = result;
-        return AssetProtocol.at(buyWhichTokenAddress).getPrecision();
-      })
-      .then((result) => {
-        buyPrecision = result.toNumber();
-        return AssetProtocol.at(buyWhichTokenAddress).getSymbol();
-      })
-      .then((result) => {
-        buyToken = result;
-
-        const buyHowMuchValue = buyHowMuch / (10 ** buyPrecision);
-        const sellHowMuchValue = sellHowMuch / (10 ** sellPrecision);
-        const offer = {
-          id,
-          owner,
-          buyWhichTokenAddress,
-          buyWhichToken: buyToken,
-          sellWhichTokenAddress,
-          sellWhichToken: sellToken,
-          buyHowMuch: buyHowMuchValue.toString(10),
-          sellHowMuch: sellHowMuchValue.toString(10),
-          ask_price: buyHowMuchValue / sellHowMuchValue,
-          bid_price: sellHowMuchValue / buyHowMuchValue,
-        };
-        callback(null, offer);
-      });
+      const sellPrecision = specs.getTokenPrecisionByAddress(sellWhichTokenAddress);
+      const buyPrecision = specs.getTokenPrecisionByAddress(buyWhichTokenAddress);
+      const sellSymbol = specs.getTokenSymbolByAddress(sellWhichTokenAddress);
+      const buySymbol = specs.getTokenSymbolByAddress(buyWhichTokenAddress);
+      const buyHowMuchValue = buyHowMuch / (10 ** buyPrecision);
+      const sellHowMuchValue = sellHowMuch / (10 ** sellPrecision);
+      const offer = {
+        id,
+        owner,
+        buyWhichTokenAddress,
+        buyWhichToken: buySymbol,
+        sellWhichTokenAddress,
+        sellWhichToken: sellSymbol,
+        buyHowMuch: buyHowMuchValue.toString(10),
+        sellHowMuch: sellHowMuchValue.toString(10),
+        ask_price: buyHowMuchValue / sellHowMuchValue,
+        bid_price: sellHowMuchValue / buyHowMuchValue,
+      };
+      callback(null, offer);
     } else {
       callback('Not active', undefined);
     }
@@ -64,6 +47,8 @@ exports.sync = (callback) => {
       this.syncOffer(id + 1, (err, offer) => {
         if (!err) {
           callbackMap(null, offer);
+        } else if (err == 'Not active') {
+          callbackMap(null, undefined);
         } else {
           callbackMap(err, undefined);
         }

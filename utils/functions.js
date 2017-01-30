@@ -1,7 +1,6 @@
 const constants = require('./constants.js');
 const async = require('async');
 
-
 // Price Feed
 
 // Pre: Asset Pair; Eg. ETH/BTC
@@ -73,7 +72,42 @@ exports.approveAndOffer = (offer, callback) => {
   });
 };
 
-exports.takeOfferById = (id, owner, callback) => {};
+// Pre:
+// Post:
+exports.buyOffer = (id, owner, callback) => {};
+
+// Pre:
+// Post:
+exports.cancelOffer = (id, owner, callback) => {
+  Exchange.deployed().cancel(id, { from: owner })
+  .then((txHash) => {
+    //TODO handel better
+    // const result = Object.assign({ txHash }, offer);
+    callback(null, txHash);
+  });
+};
+
+// Pre:
+// Post:
+exports.cancelAllOffersOfOwner = (owner, callback) => {
+  Exchange.deployed().lastOfferId()
+  .then((result) => {
+    const numOffers = result.toNumber();
+
+    async.times(numOffers, (id, callbackMap) => {
+      // TODO better naming of offer - see cnacelOffer callback
+      this.cancelOffer(id + 1, owner, (err, txHash) => {
+        if (!err) {
+          callbackMap(null, txHash);
+        } else {
+          callbackMap(err, undefined);
+        }
+      });
+    }, (err, txHashs) => {
+      callback(null, txHashs);
+    });
+  });
+};
 
 // Liquidity Provider
 
@@ -104,7 +138,7 @@ exports.buyOneEtherFor = (sellHowMuch, sellWhichToken, owner, depth, callback) =
           if (!err) {
             callbackMap(null, Object.assign({ txHash: hash }, offer));
           } else {
-            console.log(err);
+            callbackMap(err, undefined);
           }
         });
     }, (err, results) => {
