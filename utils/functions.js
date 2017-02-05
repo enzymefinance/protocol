@@ -22,7 +22,7 @@ exports.krakenPricesRelAsset = (data) => {
   // Prices Relative to Asset
   const ETHETT = 1.0; // By definition
   const ETHXBT = this.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
-  const ETHREP = this.invertAssetPairPrice(data.result.XREPXETH.c[0]);
+  const ETHREP = data.result.XREPXETH.c[0];
   const ETHEUR = this.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
   // Atomize Prices realtive to Asset
   return [
@@ -39,7 +39,7 @@ exports.krakenPricesRelEther = (data) => {
   // Prices Relative to Ether
   const ETTETH = 1.0; // By definition
   const XBTETH = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
-  const REPETH = data.result.XREPXETH.c[0]; // Price already relavtive to ether
+  const REPETH = this.invertAssetPairPrice(data.result.XREPXETH.c[0]); // Price already relavtive to ether
   const EURETH = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
   // Atomize Prices realtive to Ether
   return [

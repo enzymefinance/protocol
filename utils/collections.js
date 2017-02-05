@@ -42,7 +42,6 @@ exports.sync = (callback) => {
   Exchange.deployed().lastOfferId()
   .then((result) => {
     const numOffers = result.toNumber();
-
     async.times(numOffers, (id, callbackMap) => {
       this.syncOffer(id + 1, (err, offer) => {
         if (!err) {

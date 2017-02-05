@@ -61,6 +61,7 @@ contract Core is Shares, SafeMath, Owned {
     event SharesCreated(address buyer, uint numShares, uint sharePrice);
     event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
     event Refund(address to, uint value);
+    event NotAllocated(address to, uint value);
 
     // MODIFIERS
 
@@ -205,10 +206,14 @@ contract Core is Shares, SafeMath, Owned {
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
         // Refund excessOfferedValue
-        if (wantedValue < offeredValue) {
+        else if (wantedValue < offeredValue) {
             uint excessOfferedValue = offeredValue - wantedValue;
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
+        // Valuation of Shares to low, refund all
+        } else {
+            assert(msg.sender.send(offeredValue));
+            Refund(msg.sender, offeredValue);
         }
     }
 
@@ -240,9 +245,12 @@ contract Core is Shares, SafeMath, Owned {
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
       }
       // Refund excessOfferedValue
-      if (offeredValue > wantedValue) {
+      else if (offeredValue > wantedValue) {
           uint excessOfferedValue = offeredValue - wantedValue;
-          Refund(msg.sender, excessOfferedValue);
+          NotAllocated(msg.sender, excessOfferedValue);
+      // Valuation of Shares to low, refund all
+      } else {
+          NotAllocated(msg.sender, offeredValue);
       }
     }
 

@@ -18,6 +18,15 @@ exports.getTokenSymbolByAddress = (address) => {
   return false;
 };
 
+exports.getTokenAddress = (symbol) => {
+  if (symbol === 'ETH-T') return EtherToken.deployed().address;
+  if (symbol === 'BTC-T') return BitcoinToken.deployed().symbol;
+  if (symbol === 'REP') return RepToken.deployed().symbol;
+  if (symbol === 'EUR-T') return EuroToken.deployed().symbol;
+  return false;
+};
+
+
 exports.getQuoteTokens = () => ['ETH-T'];
 
 exports.getBaseTokens = () => ['BTC-T', 'REP', 'EUR-T'];
