@@ -10,7 +10,7 @@ import "../dependencies/Owned.sol";
 /// @author Melonport AG <team@melonport.com>
 contract Trading is TradingProtocol, SafeMath, Owned {
 
-    // FILEDS
+    // FIELDS
 
     Exchange exchange;
 

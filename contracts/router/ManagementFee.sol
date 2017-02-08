@@ -9,7 +9,7 @@ import "../dependencies/Owned.sol";
 /// @notice Simple and static ManagementFee.
 contract ManagementFee is ManagementFeeProtocol, Owned {
 
-    // FILEDS
+    // FIELDS
 
     uint public fee = 0;
 

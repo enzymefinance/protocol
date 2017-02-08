@@ -7,7 +7,7 @@ import "../dependencies/Owned.sol";
 /// @notice Simple and static Meta contract.
 contract Meta is Owned {
 
-    // FILEDS
+    // FIELDS
 
     address[] public versions;
     mapping (address => bool) versionAvailabilities;

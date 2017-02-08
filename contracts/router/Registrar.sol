@@ -9,7 +9,7 @@ import "../dependencies/Owned.sol";
 /// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
 contract Registrar is RegistrarProtocol, SafeMath, Owned {
 
-    // FILEDS
+    // FIELDS
 
     // Constant fields
     uint public constant ETHER_TOKEN_INDEX = 0;

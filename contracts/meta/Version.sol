@@ -8,7 +8,7 @@ import "../dependencies/Owned.sol";
 /// @notice Simple and static Management Fee.
 contract Version is Owned {
 
-    // FILEDS
+    // FIELDS
 
     address public addrMeta;
     address[] public cores;

@@ -7,7 +7,7 @@ import "./PreminedAsset.sol";
 /// @notice Premined amount used to make markets
 contract RepToken is PreminedAsset {
 
-    // FILEDS
+    // FIELDS
 
     // Constant token specific fields
     string public constant name = "Rep Token";

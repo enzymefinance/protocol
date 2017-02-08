@@ -9,7 +9,7 @@ import "../dependencies/Owned.sol";
 /// @notice Simple and static PerformanceFee.
 contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
-    // FILEDS
+    // FIELDS
 
     uint public fee = 0;
 

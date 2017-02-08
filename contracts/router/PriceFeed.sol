@@ -9,7 +9,7 @@ import "../dependencies/Owned.sol";
 /// @notice Routes external data to smart contracts
 contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
-    // FILEDS
+    // FIELDS
     
     // Fields that can be changed by functions
     uint updateCounter = 0;
