@@ -239,7 +239,7 @@ contract('Net Asset Value', (accounts) => {
     // .then((result) => {
     //   done();
     // });
-
+    
     // async.mapSeries(
     //   exchangeTestCases,
     //   (testCase, callbackMap) => {

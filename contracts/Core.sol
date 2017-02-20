@@ -1,15 +1,15 @@
 pragma solidity ^0.4.4;
 
-import "./tokens/EtherToken.sol";
+import "./assets/EtherToken.sol";
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./dependencies/AssetProtocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
-import "./router/RegistrarProtocol.sol";
-import "./router/PriceFeedProtocol.sol";
-import "./router/ManagementFeeProtocol.sol";
-import "./router/PerformanceFeeProtocol.sol";
+import "./datafeeds/RegistrarProtocol.sol";
+import "./datafeeds/PriceFeedProtocol.sol";
+import "./calculations/ManagementFeeProtocol.sol";
+import "./calculations/PerformanceFeeProtocol.sol";
 import "./trading/TradingProtocol.sol";
 import "./exchange/Exchange.sol";
 
