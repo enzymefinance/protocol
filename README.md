@@ -42,7 +42,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
 
-`meteor npm run lint`
+`npm run lint`
 
 
 ## Deployment
