@@ -2,11 +2,11 @@ const constants = require('./constants.js');
 
 // Tokens
 
-exports.getTokenPrecisionByAddress = (address) => {
-  if (address === EtherToken.deployed().address) return constants.ETHERTOKEN_PRECISION;
-  if (address === BitcoinToken.deployed().address) return constants.BITCOINTOKEN_PRECISION;
-  if (address === RepToken.deployed().address) return constants.REPTOKEN_PRECISION;
-  if (address === EuroToken.deployed().address) return constants.EUROTOKEN_PRECISION;
+exports.getTokenDecimalsByAddress = (address) => {
+  if (address === EtherToken.deployed().address) return constants.ETHERTOKEN_DECIMALS;
+  if (address === BitcoinToken.deployed().address) return constants.BITCOINTOKEN_DECIMALS;
+  if (address === RepToken.deployed().address) return constants.REPTOKEN_DECIMALS;
+  if (address === EuroToken.deployed().address) return constants.EUROTOKEN_DECIMALS;
   return false;
 };
 

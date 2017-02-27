@@ -40,7 +40,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
     // Pre: Price of fungible has been set
-    // Post: Price of asset asset relative to Ether with precision of Asset
+    // Post: Price of asset asset relative to Ether with decimals of Asset
     function getPrice(address ofAsset)
         constant
         msg_value_at_least(fee)
@@ -57,7 +57,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     /// Set price of fungible relative to Ether
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
-     *  and let EUR-T precision == 8,
+     *  and let EUR-T decimals == 8,
      *  => assetPrices[EUR-T] = 08045678
      */
     function setPrice(address[] ofAssets, uint[] newPrices)

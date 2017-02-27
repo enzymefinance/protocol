@@ -42,7 +42,7 @@ contract Core is Shares, SafeMath, Owned {
     // TODO set in constructor - similar to EtherToken
     string public constant name = "Melon Portfolio";
     string public constant symbol = "MLN-P";
-    uint public constant precision = 18;
+    uint public constant decimals = 18;
 
     // Constant fields
     uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Registrar Module
@@ -128,7 +128,7 @@ contract Core is Shares, SafeMath, Owned {
         nav = calcGAV() - managementFee - performanceFee;
     }
 
-    // Pre: Precision in Token must be equal to precision in PriceFeed for all entries in Registrar
+    // Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Registrar
     // Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
         /* Rem 1:
@@ -138,19 +138,19 @@ contract Core is Shares, SafeMath, Owned {
          * Rem 2:
          *  All assets need to be linked to the right price feed
          * Rem 3:
-         *  Price Input Unit: [Wei/(Asset * 10**(uint(precision)))] == Base unit amount of reference asset per base unit amout of asset
-         *  Holdings Input Unit: [Asset * 10**(uint(precision)))] == Base unit amount of asset this core holds
+         *  Price Input Unit: [Wei/(Asset * 10**(uint(decimals)))] == Base unit amount of reference asset per base unit amout of asset
+         *  Holdings Input Unit: [Asset * 10**(uint(decimals)))] == Base unit amount of asset this core holds
          *    ==> coreHoldings * price == value of asset holdings of this core relative to reference asset price.
-         *  where 0 <= precision <= 18 and precision is a natural number.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
         uint numAssignedAssets = module.registrar.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             AssetProtocol Asset = AssetProtocol(address(module.registrar.assetAt(i)));
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-            uint assetPrecision = Asset.getPrecision();
+            uint assetDecimals = Asset.getDecimals();
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
             uint assetPrice = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
-            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetPrecision)); // Sum up product of asset holdings of this core and asset prices
+            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
         }
     }
 

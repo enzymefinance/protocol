@@ -7,14 +7,14 @@ const async = require('async');
 // Post: Inverted Asset Pair; Eg. BTC/ETH
 exports.invertAssetPairPrice = price => 1.0 / price;
 
-// Pre: Precision meaning the number of decimals it takes to EURresent the atomized price
+// Pre: Decimals meaning the number of decimals it takes to EURresent the atomized price
 // Post: Price in its smallest unit
 /** Ex:
  *  Let asset == EUR-T, let Value of 1 ETH = 8.45 EUR-T =: 8.45 EUR
- *  and let EUR-T precision == 8,
+ *  and let EUR-T decimals == 8,
  *  => ATOMIZEDPRICES[EUR-T] = 8.45 * 10 ** 8
  */
-exports.atomizeAssetPrice = (price, precision) => Math.floor(price * (Math.pow(10, precision)));
+exports.atomizeAssetPrice = (price, decimals) => Math.floor(price * (Math.pow(10, decimals)));
 
 // Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
 // Post: Prices in its smallest unit relative to Asset
@@ -26,10 +26,10 @@ exports.krakenPricesRelAsset = (data) => {
   const ETHEUR = this.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
   // Atomize Prices realtive to Asset
   return [
-    this.atomizeAssetPrice(ETHETT, constants.ETHERTOKEN_PRECISION),
-    this.atomizeAssetPrice(ETHXBT, constants.BITCOINTOKEN_PRECISION),
-    this.atomizeAssetPrice(ETHREP, constants.REPTOKEN_PRECISION),
-    this.atomizeAssetPrice(ETHEUR, constants.EUROTOKEN_PRECISION),
+    this.atomizeAssetPrice(ETHETT, constants.ETHERTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHXBT, constants.BITCOINTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHREP, constants.REPTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHEUR, constants.EUROTOKEN_DECIMALS),
   ];
 };
 
@@ -43,10 +43,10 @@ exports.krakenPricesRelEther = (data) => {
   const EURETH = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
   // Atomize Prices realtive to Ether
   return [
-    this.atomizeAssetPrice(ETTETH, constants.ETHERTOKEN_PRECISION),
-    this.atomizeAssetPrice(XBTETH, constants.BITCOINTOKEN_PRECISION),
-    this.atomizeAssetPrice(REPETH, constants.REPTOKEN_PRECISION),
-    this.atomizeAssetPrice(EURETH, constants.EUROTOKEN_PRECISION),
+    this.atomizeAssetPrice(ETTETH, constants.ETHERTOKEN_DECIMALS),
+    this.atomizeAssetPrice(XBTETH, constants.BITCOINTOKEN_DECIMALS),
+    this.atomizeAssetPrice(REPETH, constants.REPTOKEN_DECIMALS),
+    this.atomizeAssetPrice(EURETH, constants.EUROTOKEN_DECIMALS),
   ];
 };
 

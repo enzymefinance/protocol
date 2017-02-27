@@ -11,7 +11,7 @@ contract Asset is ERC20 {
     // Constant token specific fields
     string public name;
     string public symbol;
-    uint public precision;
+    uint public decimals;
 
     // CONSTANT METHODS
 
@@ -19,13 +19,13 @@ contract Asset is ERC20 {
 
     function getSymbol() constant returns (string) { return symbol; }
 
-    function getPrecision() constant returns (uint) { return precision; }
+    function getDecimals() constant returns (uint) { return decimals; }
 
     // NON-CONSTANT METHODS
 
-    function Asset(string _name, string _symbol, uint _precision) {
+    function Asset(string _name, string _symbol, uint _decimals) {
         name = _name; // Set the name for display purposes
         symbol = _symbol; // Set the symbol for display purposes
-        precision = _precision; // Defined in price feed protocol
+        decimals = _decimals; // Defined in price feed protocol
     }
 }

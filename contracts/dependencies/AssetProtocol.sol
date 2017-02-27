@@ -10,6 +10,6 @@ contract AssetProtocol is ERC20Protocol {
 
   function getName() constant returns (string) {}
   function getSymbol() constant returns (string) {}
-  function getPrecision() constant returns (uint) {}
+  function getDecimals() constant returns (uint) {}
 
 }

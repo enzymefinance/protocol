@@ -13,12 +13,12 @@ contract PreminedAsset is Asset, SafeMath {
     // Constant token specific fields
     string public name;
     string public symbol;
-    uint public precision;
+    uint public decimals;
 
     // METHODS
 
-    function PreminedAsset(string _name, string _symbol, uint _precision, uint _amount)
-        Asset(_name, _symbol, _precision)
+    function PreminedAsset(string _name, string _symbol, uint _decimals, uint _amount)
+        Asset(_name, _symbol, _decimals)
     {
         balances[msg.sender] = safeAdd(balances[msg.sender], _amount);
         totalSupply = safeAdd(totalSupply, _amount);

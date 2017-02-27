@@ -12,12 +12,12 @@ contract RepToken is PreminedAsset {
     // Constant token specific fields
     string public constant name = "Rep Token";
     string public constant symbol = "REP";
-    uint public constant precision = 8;
+    uint public constant decimals = 8;
     uint public constant preminedAmount = 10**18;
 
     // NON-CONSTANT METHODS
 
     function RepToken()
-        PreminedAsset(name, symbol, precision, preminedAmount)
+        PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 }

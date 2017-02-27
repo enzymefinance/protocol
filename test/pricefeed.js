@@ -33,10 +33,10 @@ contract('PriceFeed', (accounts) => {
 
   // Atomize Prices realtive to Ether
   const pricesRelEther = [
-    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_PRECISION),
-    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_PRECISION),
-    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_PRECISION),
-    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_PRECISION),
+    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_DECIMALS),
   ];
 
   // Testcases

@@ -14,7 +14,7 @@ contract EtherToken is Asset, SafeMath {
     // Constant token specific fields
     string public constant name = "Ether Token";
     string public constant symbol = "ETH-T";
-    uint public constant precision = 18;
+    uint public constant decimals = 18;
 
     // EVENTS
 
@@ -31,7 +31,7 @@ contract EtherToken is Asset, SafeMath {
     // NON-CONSTANT METHODS
 
     function EtherToken()
-        Asset(name, symbol, precision)
+        Asset(name, symbol, decimals)
     {}
 
     // Post: Exchanged Ether against Token

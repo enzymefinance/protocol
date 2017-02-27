@@ -28,10 +28,10 @@ contract('Net Asset Value', (accounts) => {
   const eth_eur = functions.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
   // Atomize Prices realtive to Asset
   const pricesRelAsset = [
-    functions.atomizeAssetPrice(eth_ett, constants.ETHERTOKEN_PRECISION),
-    functions.atomizeAssetPrice(eth_xbt, constants.BITCOINTOKEN_PRECISION),
-    functions.atomizeAssetPrice(eth_rep, constants.REPTOKEN_PRECISION),
-    functions.atomizeAssetPrice(eth_eur, constants.EUROTOKEN_PRECISION),
+    functions.atomizeAssetPrice(eth_ett, constants.ETHERTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(eth_xbt, constants.BITCOINTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(eth_rep, constants.REPTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(eth_eur, constants.EUROTOKEN_DECIMALS),
   ];
   // Prices Relative to Ether
   const ett_eth = 1.0; // By definition
@@ -40,10 +40,10 @@ contract('Net Asset Value', (accounts) => {
   const eur_eth = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
   // Atomize Prices realtive to Ether
   const pricesRelEther = [
-    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_PRECISION),
-    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_PRECISION),
-    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_PRECISION),
-    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_PRECISION),
+    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_DECIMALS),
+    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_DECIMALS),
   ];
 
   // Test globals
