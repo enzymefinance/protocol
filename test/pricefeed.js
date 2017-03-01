@@ -26,21 +26,9 @@ contract('PriceFeed', (accounts) => {
     }
   };
 
-  // Prices Relative to Ether
-  const ett_eth = 1.0; // By definition
-  const xbt_eth = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
-  const rep_eth = functions.invertAssetPairPrice(data.result.XREPXETH.c[0]);
-  const eur_eth = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
-
   // Atomize Prices realtive to Ether
-  const pricesRelEther = [
-    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_DECIMALS),
-  ];
+  const pricesRelEther = functions.krakenPricesRelEther(data);
 
-  // Testcases
   let priceFeedTestCases = [];
   for (let i = 0; i < assets.length; i += 1) {
     priceFeedTestCases.push({ address: assets[i], price: pricesRelEther[i] });

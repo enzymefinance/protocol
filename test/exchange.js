@@ -21,6 +21,7 @@ contract('Exchange', (accounts) => {
 
   // Atomize Prices realtive to Asset
   const pricesRelEther = functions.krakenPricesRelEther(data);
+  
   console.log(`pricesRelEther: ${pricesRelEther}`);
 
 
