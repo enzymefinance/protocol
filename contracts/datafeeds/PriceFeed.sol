@@ -27,7 +27,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // EVENTS
 
-    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint updateCounter);
+    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint ofUpdateCounter);
 
     // MODIFIERS
 
@@ -45,6 +45,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
+    function getUpdateCounter() constant returns (uint) { return updateCounter; }
     function getPrice(address ofAsset) constant returns (uint) { return data[ofAsset].price; }
     function getTimestamp(address ofAsset) constant returns (uint) { return data[ofAsset].timestamp; }
     function getData(address ofAsset) constant returns (uint, uint) { return (data[ofAsset].price, data[ofAsset].timestamp); }

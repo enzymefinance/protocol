@@ -6,17 +6,22 @@ const async = require('async');
 
 // Pre:
 // Post:
-exports.syncOffer = (id, callback) => {
-  Exchange.deployed().offers(id)
+export function syncOffer(id, callback) {
+  let exchangeContract;
+  Exchange.deployed()
+  .then((result) => {
+    exchangeContract = result;
+    return exchangeContract.offers(id);
+  })
   .then((res) => {
     const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = res;
     if (active) {
-      const sellDecimals = specs.getTokenDecimalsByAddress(sellWhichTokenAddress);
-      const buyDecimals = specs.getTokenDecimalsByAddress(buyWhichTokenAddress);
+      const sellPrecision = specs.getTokenPrecisionByAddress(sellWhichTokenAddress);
+      const buyPrecision = specs.getTokenPrecisionByAddress(buyWhichTokenAddress);
       const sellSymbol = specs.getTokenSymbolByAddress(sellWhichTokenAddress);
       const buySymbol = specs.getTokenSymbolByAddress(buyWhichTokenAddress);
-      const buyHowMuchValue = buyHowMuch / (10 ** buyDecimals);
-      const sellHowMuchValue = sellHowMuch / (10 ** sellDecimals);
+      const buyHowMuchValue = buyHowMuch / (Math.pow(10, buyPrecision));
+      const sellHowMuchValue = sellHowMuch / (Math.pow(10, sellPrecision));
       const offer = {
         id,
         owner,
@@ -34,19 +39,24 @@ exports.syncOffer = (id, callback) => {
       callback('Not active', undefined);
     }
   });
-};
+}
 
 // Pre:
 // Post:
-exports.sync = (callback) => {
-  Exchange.deployed().lastOfferId()
+export function sync(callback) {
+  let exchangeContract;
+  Exchange.deployed()
+  .then((result) => {
+    exchangeContract = result;
+    return exchangeContract.lastOfferId();
+  })
   .then((result) => {
     const numOffers = result.toNumber();
     async.times(numOffers, (id, callbackMap) => {
-      this.syncOffer(id + 1, (err, offer) => {
+      syncOffer(id + 1, (err, offer) => {
         if (!err) {
           callbackMap(null, offer);
-        } else if (err == 'Not active') {
+        } else if (err === 'Not active') {
           callbackMap(null, undefined);
         } else {
           callbackMap(err, undefined);
@@ -56,4 +66,4 @@ exports.sync = (callback) => {
       callback(null, offers);
     });
   });
-};
+}

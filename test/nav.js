@@ -162,8 +162,8 @@ contract('Net Asset Value', (accounts) => {
       priceFeedTestCases[2].price,
       priceFeedTestCases[3].price,
     ];
-    priceFeedContract.setPrice(addresses, inverseAtomizedPrices, { from: OWNER })
-      .then(() => priceFeedContract.lastUpdate())
+    priceFeedContract.updatePrice(addresses, inverseAtomizedPrices, { from: OWNER })
+      .then(() => priceFeedContract.getUpdateCounter())
       .then((result) => {
         assert.notEqual(result.toNumber(), 0);
         done();
@@ -239,7 +239,7 @@ contract('Net Asset Value', (accounts) => {
     // .then((result) => {
     //   done();
     // });
-    
+
     // async.mapSeries(
     //   exchangeTestCases,
     //   (testCase, callbackMap) => {

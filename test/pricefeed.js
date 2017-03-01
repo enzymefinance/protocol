@@ -73,29 +73,39 @@ contract('PriceFeed', (accounts) => {
     });
   });
 
-  // it('Set multiple price', (done) => {
-  //   priceFeedContract.setPrice(assets, pricesRelEther, { from: OWNER })
-  //   .then(() => priceFeedContract.lastUpdate())
-  //   .then((result) => {
-  //     assert.notEqual(result.toNumber(), 0);
-  //     done();
-  //   });
-  // });
-  //
-  // it('Get multiple existent prices relative to Ether', (done) => {
-  //   async.mapSeries(
-  //     priceFeedTestCases,
-  //     (testCase, callbackMap) => {
-  //       priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
-  //       .then((result) => {
-  //         console.log(`\tActual: \t${result.toNumber()}\n\tExpected: \t${testCase.price}`);
-  //         assert.equal(result.toNumber(), testCase.price);
-  //         callbackMap(null, testCase);
-  //       });
-  //     },
-  //   (err, results) => {
-  //     priceFeedTestCases = results;
-  //     done();
-  //   });
-  // });
+  it('Set multiple price', (done) => {
+    priceFeedContract.updatePrice(assets, pricesRelEther, { from: OWNER })
+    .then((result) => {
+      // Check Logs
+      assert.notEqual(result.logs.length, 0);
+      for (let i = 0; i < result.logs.length; i += 1) {
+        // console.log(result);
+        assert.equal(result.logs[i].event, 'PriceUpdated');
+        assert.equal(result.logs[i].args.ofAsset, assets[i]);
+        assert.equal(result.logs[i].args.ofPrice, pricesRelEther[i]);
+        assert.equal(result.logs[i].args.ofUpdateCounter.toNumber(), i + 1);
+      }
+      return priceFeedContract.getUpdateCounter();
+    })
+    .then((result) => {
+      assert.equal(result.toNumber(), assets.length);
+      done();
+    });
+  });
+
+  it('Get multiple existent prices relative to Ether', (done) => {
+    async.mapSeries(
+      priceFeedTestCases,
+      (testCase, callbackMap) => {
+        priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
+        .then((result) => {
+          assert.equal(result.toNumber(), testCase.price);
+          callbackMap(null, testCase);
+        });
+      },
+    (err, results) => {
+      priceFeedTestCases = results;
+      done();
+    });
+  });
 });
