@@ -18,8 +18,8 @@ function syncOffer(id, callback) {
   .then((res) => {
     const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = res;
     if (active) {
-      const sellPrecision = specs.getTokenPrecisionByAddress(sellWhichTokenAddress);
-      const buyPrecision = specs.getTokenPrecisionByAddress(buyWhichTokenAddress);
+      const sellPrecision = specs.getTokenDecimalsByAddress(sellWhichTokenAddress);
+      const buyPrecision = specs.getTokenDecimalsByAddress(buyWhichTokenAddress);
       const sellSymbol = specs.getTokenSymbolByAddress(sellWhichTokenAddress);
       const buySymbol = specs.getTokenSymbolByAddress(buyWhichTokenAddress);
       const buyHowMuchValue = buyHowMuch / (Math.pow(10, buyPrecision));

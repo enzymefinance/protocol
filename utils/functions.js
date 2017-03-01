@@ -145,7 +145,6 @@ function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
       });
     }
 
-    console.log(offers)
     // Execute all above created offers
     async.mapSeries(
       offers,
