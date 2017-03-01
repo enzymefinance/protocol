@@ -5,7 +5,7 @@ const async = require('async');
 
 // Pre: Asset Pair; Eg. ETH/BTC
 // Post: Inverted Asset Pair; Eg. BTC/ETH
-exports.invertAssetPairPrice = price => 1.0 / price;
+function invertAssetPairPrice(price) { return 1.0 / price; }
 
 // Pre: Decimals meaning the number of decimals it takes to EURresent the atomized price
 // Post: Price in its smallest unit
@@ -14,11 +14,11 @@ exports.invertAssetPairPrice = price => 1.0 / price;
  *  and let EUR-T decimals == 8,
  *  => ATOMIZEDPRICES[EUR-T] = 8.45 * 10 ** 8
  */
-exports.atomizeAssetPrice = (price, decimals) => Math.floor(price * (Math.pow(10, decimals)));
+function atomizeAssetPrice(price, decimals) { return Math.floor(price * (Math.pow(10, decimals))); }
 
 // Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
 // Post: Prices in its smallest unit relative to Asset
-exports.krakenPricesRelAsset = (data) => {
+function krakenPricesRelAsset(data) {
   // Prices Relative to Asset
   const ETHETT = 1.0; // By definition
   const ETHXBT = this.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
@@ -31,11 +31,11 @@ exports.krakenPricesRelAsset = (data) => {
     this.atomizeAssetPrice(ETHREP, constants.REPTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHEUR, constants.EUROTOKEN_DECIMALS),
   ];
-};
+}
 
 // Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
 // Post: Prices in its smallest unit relative to Ether
-exports.krakenPricesRelEther = (data) => {
+function krakenPricesRelEther(data) {
   // Prices Relative to Ether
   const ETTETH = 1.0; // By definition
   const XBTETH = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
@@ -48,13 +48,13 @@ exports.krakenPricesRelEther = (data) => {
     this.atomizeAssetPrice(REPETH, constants.REPTOKEN_DECIMALS),
     this.atomizeAssetPrice(EURETH, constants.EUROTOKEN_DECIMALS),
   ];
-};
+}
 
 // Exchange
 
 // Pre: Initialised offer object
 // Post: Executed offer as specified in offer object
-exports.approveAndOffer = (offer, callback) => {
+function approveAndOffer(offer, callback) {
   // Approve spending of selling amount at selling token
   AssetProtocol.at(offer.sell_which_token).approve(
     Exchange.deployed().address,
@@ -70,26 +70,26 @@ exports.approveAndOffer = (offer, callback) => {
   .then((txHash) => {
     callback(null, txHash);
   });
-};
+}
 
 // Pre:
 // Post:
-exports.buyOffer = (id, owner, callback) => {};
+function buyOffer(id, owner, callback) {}
 
 // Pre:
 // Post:
-exports.cancelOffer = (id, owner, callback) => {
+function cancelOffer(id, owner, callback) {
   Exchange.deployed().cancel(id, { from: owner })
   .then((txHash) => {
-    //TODO handel better
+    // TODO handel better
     // const result = Object.assign({ txHash }, offer);
     callback(null, txHash);
   });
-};
+}
 
 // Pre:
 // Post:
-exports.cancelAllOffersOfOwner = (owner, callback) => {
+function cancelAllOffersOfOwner(owner, callback) {
   Exchange.deployed().lastOfferId()
   .then((result) => {
     const numOffers = result.toNumber();
@@ -107,14 +107,14 @@ exports.cancelAllOffersOfOwner = (owner, callback) => {
       callback(null, txHashs);
     });
   });
-};
+}
 
 // Liquidity Provider
 
 // Note: Simple liquidity provider
 // Pre: Only owner of premined amount of assets. Always buying one Ether
 // Post: Multiple offers created
-exports.buyOneEtherFor = (sellHowMuch, sellWhichToken, owner, depth, callback) => {
+function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
   let offers = [];
   // Reduce sell amount by 0.1 on each order
   for (let i = 0; i < depth; i += 1) {
@@ -145,4 +145,16 @@ exports.buyOneEtherFor = (sellHowMuch, sellWhichToken, owner, depth, callback) =
       offers = results;
       callback(null, offers);
     });
+}
+
+module.exports = {
+  invertAssetPairPrice,
+  atomizeAssetPrice,
+  krakenPricesRelAsset,
+  krakenPricesRelEther,
+  approveAndOffer,
+  buyOffer,
+  cancelOffer,
+  cancelAllOffersOfOwner,
+  buyOneEtherFor,
 };

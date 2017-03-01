@@ -1,8 +1,4 @@
 /app
 /build
 /node_modules
-*.iml
-.idea
-index.js
-deployment.js
 npm-debug.log

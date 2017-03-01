@@ -8,7 +8,6 @@ contract PriceFeedProtocol {
 
     // CONSTANT METHODS
 
-    function getLastUpdate() constant returns (uint) {}
     function getPrice(address ofAsset) constant returns (uint) {}
 
     // NON-CONSTANT METHODS

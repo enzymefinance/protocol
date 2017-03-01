@@ -1,3 +1,11 @@
+const EtherToken = artifacts.require("./EtherToken.sol");
+const BitcoinToken = artifacts.require("./BitcoinToken.sol");
+const RepToken = artifacts.require("./RepToken.sol");
+const EuroToken = artifacts.require("./EuroToken.sol");
+const PriceFeed = artifacts.require("./PriceFeed.sol");
+const Exchange = artifacts.require("./Exchange.sol");
+const Registrar = artifacts.require("./Registrar.sol");
+
 module.exports = (deployer) => {
   // Deploy contracts
   deployer.deploy([

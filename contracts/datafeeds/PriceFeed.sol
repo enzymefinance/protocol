@@ -9,6 +9,12 @@ import "../dependencies/Owned.sol";
 /// @notice Routes external data to smart contracts
 contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
+    // TYPES
+    struct Data {
+        uint timestamp; // Timestamp of last price update of this asset
+        uint price; // Price of asset relative to Ether with decimals of this asset
+    }
+
     // FIELDS
 
     // Constant fields
@@ -16,16 +22,12 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     uint validity = 120; // After time has passed data is considered invalid.
 
     // Fields that can be changed by functions
-    uint updateCounter = 0;
-    uint public fee = 0;
-    uint public lastUpdate;
-    mapping (address => uint) assetPrices; // Address of fungible => price of fungible
-    mapping (address => uint) assetTimestamps; // Address of fungible => timestamp of fungible
+    uint updateCounter = 0; // Used to track how many times data has been updated
+    mapping (address => Data) data; // Address of fungible => price of fungible
 
     // EVENTS
 
-    event PriceSet(address indexed ofAsset, uint ofPrice, uint updateCounter);
-    event PriceRequested(address indexed sender, address indexed ofAsset, uint updateCounter);
+    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint updateCounter);
 
     // MODIFIERS
 
@@ -43,19 +45,9 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
-    function getLastUpdate() constant returns (uint) { return lastUpdate; }
-
-    // Pre: Price of fungible has been set
-    // Post: Price of asset asset relative to Ether with decimals of Asset
-    function getPrice(address ofAsset)
-        constant
-        payable
-        msg_value_at_least(fee)
-        returns (uint)
-    {
-        PriceRequested(msg.sender, ofAsset, updateCounter);
-        return assetPrices[ofAsset];
-    }
+    function getPrice(address ofAsset) constant returns (uint) { return data[ofAsset].price; }
+    function getTimestamp(address ofAsset) constant returns (uint) { return data[ofAsset].timestamp; }
+    function getData(address ofAsset) constant returns (uint, uint) { return (data[ofAsset].price, data[ofAsset].timestamp); }
 
     // NON-CONSTANT METHODS
 
@@ -65,26 +57,17 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
-     *  => assetPrices[EUR-T] = 08045678
+     *  => data[EUR-T].price = 08045678
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
         only_owner
         arrays_equal(ofAssets, newPrices)
     {
-        lastUpdate = now;
         for (uint i = 0; i < ofAssets.length; ++i) {
-            assetPrices[ofAssets[i]] = newPrices[i];
-            assetTimestamps[ofAssets[i]] = now;
+            data[ofAssets[i]].price = newPrices[i];
+            data[ofAssets[i]].timestamp = now;
             updateCounter += 1;
-            PriceSet(ofAssets[i], newPrices[i], updateCounter);
+            PriceUpdated(ofAssets[i], newPrices[i], updateCounter);
         }
-    }
-
-    function updateFee(uint256 newFee) only_owner returns (uint fee) {
-        fee = newFee;
-    }
-
-    function payOut() only_owner {
-        assert(msg.sender.send(this.balance));
     }
 }
