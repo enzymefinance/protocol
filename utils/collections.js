@@ -2,11 +2,13 @@ const constants = require('./constants.js');
 const specs = require('./specs.js');
 const async = require('async');
 
+const Exchange = artifacts.require('Exchange.sol');
+
 // Offers
 
 // Pre:
 // Post:
-export function syncOffer(id, callback) {
+function syncOffer(id, callback) {
   let exchangeContract;
   Exchange.deployed()
   .then((result) => {
@@ -43,7 +45,7 @@ export function syncOffer(id, callback) {
 
 // Pre:
 // Post:
-export function sync(callback) {
+function sync(callback) {
   let exchangeContract;
   Exchange.deployed()
   .then((result) => {
@@ -67,3 +69,7 @@ export function sync(callback) {
     });
   });
 }
+
+module.exports = {
+  sync,
+};

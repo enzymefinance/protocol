@@ -1,6 +1,13 @@
 const constants = require('./constants.js');
 const async = require('async');
 
+const Exchange = artifacts.require('Exchange.sol');
+const EtherToken = artifacts.require("./EtherToken.sol");
+const BitcoinToken = artifacts.require("./BitcoinToken.sol");
+const RepToken = artifacts.require("./RepToken.sol");
+const EuroToken = artifacts.require("./EuroToken.sol");
+const AssetProtocol = artifacts.require("./AssetProtocol.sol");
+
 // Price Feed
 
 // Pre: Asset Pair; Eg. ETH/BTC
@@ -55,20 +62,23 @@ function krakenPricesRelEther(data) {
 // Pre: Initialised offer object
 // Post: Executed offer as specified in offer object
 function approveAndOffer(offer, callback) {
-  // Approve spending of selling amount at selling token
-  AssetProtocol.at(offer.sell_which_token).approve(
-    Exchange.deployed().address,
-    offer.sell_how_much)
-  // Offer selling amount of selling token for buying amount of buying token
-  .then(() =>
-    Exchange.deployed().offer(
-      offer.sell_how_much,
-      offer.sell_which_token,
-      offer.buy_how_much,
-      offer.buy_which_token,
-      { from: offer.owner }))
-  .then((txHash) => {
-    callback(null, txHash);
+
+  let exchangeAddress;
+  Exchange.deployed()
+  .then((deployed) => {
+    exchangeAddress = deployed.address;
+    // Approve spending of selling amount at selling token
+    AssetProtocol.at(offer.sell_which_token).approve(exchangeAddress, offer.sell_how_much)
+    // Offer selling amount of selling token for buying amount of buying token
+    .then(() => deployed.offer(
+        offer.sell_how_much,
+        offer.sell_which_token,
+        offer.buy_how_much,
+        offer.buy_which_token,
+        { from: offer.owner }))
+    .then((txHash) => {
+      callback(null, txHash);
+    });
   });
 }
 
@@ -79,7 +89,7 @@ function buyOffer(id, owner, callback) {}
 // Pre:
 // Post:
 function cancelOffer(id, owner, callback) {
-  Exchange.deployed().cancel(id, { from: owner })
+  Exchange.deployed().then(deployed => deployed.cancel(id, { from: owner }))
   .then((txHash) => {
     // TODO handel better
     // const result = Object.assign({ txHash }, offer);
@@ -90,7 +100,7 @@ function cancelOffer(id, owner, callback) {
 // Pre:
 // Post:
 function cancelAllOffersOfOwner(owner, callback) {
-  Exchange.deployed().lastOfferId()
+  Exchange.deployed().then(deployed => deployed.lastOfferId())
   .then((result) => {
     const numOffers = result.toNumber();
 
@@ -116,35 +126,43 @@ function cancelAllOffersOfOwner(owner, callback) {
 // Post: Multiple offers created
 function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
   let offers = [];
-  // Reduce sell amount by 0.1 on each order
-  for (let i = 0; i < depth; i += 1) {
-    // console.log((Math.random() - 0.5) * 0.1)
-    offers.push({
-      sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
-      sell_which_token: sellWhichToken,
-      buy_how_much: 1 * constants.ether,
-      buy_which_token: EtherToken.deployed().address,
-      id: i + 1,
-      owner,
-      active: true,
-    });
-  }
-  // Execute all above created offers
-  async.mapSeries(
-    offers,
-    (offer, callbackMap) => {
-      this.approveAndOffer(offer,
-        (err, hash) => {
-          if (!err) {
-            callbackMap(null, Object.assign({ txHash: hash }, offer));
-          } else {
-            callbackMap(err, undefined);
-          }
-        });
-    }, (err, results) => {
-      offers = results;
-      callback(null, offers);
-    });
+  let etherTokenAddress;
+
+  EtherToken.deployed()
+  .then((deployed) => {
+    etherTokenAddress = deployed.address;
+    // Reduce sell amount by 0.1 on each order
+    for (let i = 0; i < depth; i += 1) {
+      // console.log((Math.random() - 0.5) * 0.1)
+      offers.push({
+        sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
+        sell_which_token: sellWhichToken,
+        buy_how_much: 1 * constants.ether,
+        buy_which_token: etherTokenAddress,
+        id: i + 1,
+        owner,
+        active: true,
+      });
+    }
+
+    console.log(offers)
+    // Execute all above created offers
+    async.mapSeries(
+      offers,
+      (offer, callbackMap) => {
+        this.approveAndOffer(offer,
+          (err, hash) => {
+            if (!err) {
+              callbackMap(null, Object.assign({ txHash: hash }, offer));
+            } else {
+              callbackMap(err, undefined);
+            }
+          });
+      }, (err, results) => {
+        offers = results;
+        callback(null, offers);
+      });
+  });
 }
 
 module.exports = {

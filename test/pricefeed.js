@@ -3,7 +3,7 @@ const assert = require('assert');
 const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
-var PriceFeed = artifacts.require("PriceFeed.sol");
+const PriceFeed = artifacts.require('PriceFeed.sol');
 
 contract('PriceFeed', (accounts) => {
   // Test constants
