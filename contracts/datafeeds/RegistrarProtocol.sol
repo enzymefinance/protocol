@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 /// @title RegistrarProtocol Contract
 /// @author Melonport AG <team@melonport.com>

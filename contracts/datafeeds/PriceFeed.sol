@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 import "./PriceFeedProtocol.sol";
 import "../dependencies/SafeMath.sol";
@@ -10,7 +10,11 @@ import "../dependencies/Owned.sol";
 contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // FIELDS
-    
+
+    // Constant fields
+    uint frequency = 120; // Frequency of updates in seconds
+    uint validity = 120; // After time has passed data is considered invalid.
+
     // Fields that can be changed by functions
     uint updateCounter = 0;
     uint public fee = 0;
@@ -37,12 +41,15 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // CONSTANT METHODS
 
+    function getFrequency() constant returns (uint) { return frequency; }
+    function getValidity() constant returns (uint) { return validity; }
     function getLastUpdate() constant returns (uint) { return lastUpdate; }
 
     // Pre: Price of fungible has been set
     // Post: Price of asset asset relative to Ether with decimals of Asset
     function getPrice(address ofAsset)
         constant
+        payable
         msg_value_at_least(fee)
         returns (uint)
     {
@@ -54,13 +61,13 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     function PriceFeed() {}
 
-    /// Set price of fungible relative to Ether
+    /// Update price of fungible relative to Ether
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
      *  => assetPrices[EUR-T] = 08045678
      */
-    function setPrice(address[] ofAssets, uint[] newPrices)
+    function updatePrice(address[] ofAssets, uint[] newPrices)
         only_owner
         arrays_equal(ofAssets, newPrices)
     {
@@ -73,7 +80,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
         }
     }
 
-    function setFee(uint256 newFee) only_owner returns (uint fee) {
+    function updateFee(uint256 newFee) only_owner returns (uint fee) {
         fee = newFee;
     }
 

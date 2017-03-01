@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 import "../Core.sol";
 import "../dependencies/Owned.sol";

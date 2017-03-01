@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 /// @title PriceFeed Protocol Contract
 /// @author Melonport AG <team@melonport.com>
@@ -13,8 +13,8 @@ contract PriceFeedProtocol {
 
     // NON-CONSTANT METHODS
 
-    function setPrice(address[] ofAssets, uint[] newPrices) {}
-    function setFee(uint256 newFee) returns (uint) {}
+    function updatePrice(address[] ofAssets, uint[] newPrices) {}
+    function updateFee(uint256 newFee) returns (uint) {}
     function payOut() {}
 
 }
