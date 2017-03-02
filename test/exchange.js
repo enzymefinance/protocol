@@ -86,7 +86,7 @@ contract('Exchange', (accounts) => {
         }
       });
   });
-  
+
   it('Cancel one side of the orderbook', (done) => {
     functions.cancelAllOffersOfOwner(
       OWNER,

@@ -33,10 +33,9 @@
     "eslint-plugin-meteor": "^4.0.1",
     "eslint-plugin-react": "^6.8.0",
     "js-sha256": "^0.3.2",
-    "truffle": "3.0.0-9"
+    "truffle": "3.1.9"
   },
   "dependencies": {
-    "@parity/parity.js": "^0.2.74",
     "babel": "^6.5.2",
     "babel-core": "^6.20.0",
     "bignumber.js": "^2.4.0"
