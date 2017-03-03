@@ -3,15 +3,24 @@ const BigNumber = require('bignumber.js');
 // Tokens
 
 // Constants as defined in the token contracts
-exports.PREMINED_AMOUNT = new BigNumber(Math.pow(10, 18));
-exports.ETHERTOKEN_DECIMALS = 18;
-exports.BITCOINTOKEN_DECIMALS = 8;
-exports.REPTOKEN_DECIMALS = 8;
-exports.EUROTOKEN_DECIMALS = 8;
+const PREMINED_AMOUNT = new BigNumber(Math.pow(10, 18));
+const ETHERTOKEN_DECIMALS = 18;
+const BITCOINTOKEN_DECIMALS = 8;
+const REPTOKEN_DECIMALS = 8;
+const EUROTOKEN_DECIMALS = 8;
 
 // Price Feed
 
 // Exchange
 
 // Solidity constants
-exports.ether = new BigNumber(Math.pow(10, 18));
+const ether = new BigNumber(Math.pow(10, 18));
+
+module.exports = {
+  PREMINED_AMOUNT,
+  ETHERTOKEN_DECIMALS,
+  BITCOINTOKEN_DECIMALS,
+  REPTOKEN_DECIMALS,
+  EUROTOKEN_DECIMALS,
+  ether,
+};
