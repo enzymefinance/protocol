@@ -51,17 +51,17 @@ contract('Exchange', (accounts) => {
     .then((deployed) => {
       bitcoinTokenAddress = deployed.address;
       functions.buyOneEtherFor(
-          pricesRelEther[1],
-          bitcoinTokenAddress,
-          OWNER,
-          NUM_OFFERS,
-          (err) => {
-            if (!err) {
-              done();
-            } else {
-              console.log(err);
-            }
-          });
+        pricesRelEther[1],
+        bitcoinTokenAddress,
+        OWNER,
+        NUM_OFFERS,
+        (err) => {
+          if (!err) {
+            done();
+          } else {
+            console.log(err);
+          }
+        });
     });
   });
 

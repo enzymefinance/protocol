@@ -62,7 +62,6 @@ function krakenPricesRelEther(data) {
 // Pre: Initialised offer object
 // Post: Executed offer as specified in offer object
 function approveAndOffer(offer, callback) {
-
   let exchangeAddress;
   Exchange.deployed()
   .then((deployed) => {
