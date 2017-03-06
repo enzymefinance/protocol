@@ -8,12 +8,12 @@ contract PriceFeedProtocol {
 
     // CONSTANT METHODS
 
-    function getFrequency() constant returns (uint) { return frequency; }
-    function getValidity() constant returns (uint) { return validity; }
-    function getUpdateCounter() constant returns (uint) { return updateCounter; }
-    function getPrice(address ofAsset) constant returns (uint) { return data[ofAsset].price; }
-    function getTimestamp(address ofAsset) constant returns (uint) { return data[ofAsset].timestamp; }
-    function getData(address ofAsset) constant returns (uint, uint) { return (data[ofAsset].price, data[ofAsset].timestamp); }
+    function getFrequency() constant returns (uint) {}
+    function getValidity() constant returns (uint) {}
+    function getUpdateCounter() constant returns (uint) {}
+    function getPrice(address ofAsset) constant returns (uint) {}
+    function getTimestamp(address ofAsset) constant returns (uint) {}
+    function getData(address ofAsset) constant returns (uint, uint) {}
 
     // NON-CONSTANT METHODS
 
