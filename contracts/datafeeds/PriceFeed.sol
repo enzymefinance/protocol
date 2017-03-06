@@ -1,13 +1,13 @@
 pragma solidity ^0.4.8;
 
 import "./PriceFeedProtocol.sol";
-import "../dependencies/SafeMath.sol";
 import "../dependencies/Owned.sol";
+import "../dependencies/SafeMath.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
+contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
 
     // TYPES
     struct Data {
@@ -24,10 +24,6 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
     // Fields that can be changed by functions
     uint updateCounter = 0; // Used to track how many times data has been updated
     mapping (address => Data) data; // Address of asset => price of asset
-
-    // EVENTS
-
-    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint ofUpdateCounter);
 
     // MODIFIERS
 

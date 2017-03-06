@@ -15,6 +15,10 @@ contract PriceFeedProtocol {
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
 
+    // EVENTS
+
+    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint ofUpdateCounter);
+
     // NON-CONSTANT METHODS
 
     function updatePrice(address[] ofAssets, uint[] newPrices) {}
