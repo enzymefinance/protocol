@@ -23,7 +23,7 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     // Fields that can be changed by functions
     uint updateCounter = 0; // Used to track how many times data has been updated
-    mapping (address => Data) data; // Address of fungible => price of fungible
+    mapping (address => Data) data; // Address of asset => price of asset
 
     // EVENTS
 
@@ -54,11 +54,12 @@ contract PriceFeed is PriceFeedProtocol, SafeMath, Owned {
 
     function PriceFeed() {}
 
-    /// Update price of fungible relative to Ether
+    /// Pre: Only Owner; Same sized input arrays
+    /// Post: Update price of asset relative to Ether
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
-     *  => data[EUR-T].price = 08045678
+     *  => data[EUR-T].price = 8045678
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
         only_owner
