@@ -17,7 +17,7 @@ contract PriceFeedProtocol {
 
     // EVENTS
 
-    event PriceUpdated(address indexed ofAsset, uint ofPrice, uint ofUpdateCounter);
+    event PriceUpdated(address indexed ofAsset, uint atTimestamp, uint ofPrice);
 
     // NON-CONSTANT METHODS
 

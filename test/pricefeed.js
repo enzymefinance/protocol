@@ -55,8 +55,9 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Get not existent price', (done) => {
-    priceFeedContract.getPrice('', { from: NOT_OWNER }).then((result) => {
-      assert.equal(result.toNumber(), 0);
+    priceFeedContract.getPrice('', { from: NOT_OWNER })
+    .then(() => console.log('If this gets executed then previous contract did not throw error.'))
+    .catch(() => {
       done();
     });
   });

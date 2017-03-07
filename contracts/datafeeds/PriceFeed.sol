@@ -1,8 +1,8 @@
 pragma solidity ^0.4.8;
 
-import "./PriceFeedProtocol.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/SafeMath.sol";
+import "./PriceFeedProtocol.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
@@ -10,6 +10,7 @@ import "../dependencies/SafeMath.sol";
 contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
 
     // TYPES
+
     struct Data {
         uint timestamp; // Timestamp of last price update of this asset
         uint price; // Price of asset relative to Ether with decimals of this asset
@@ -18,17 +19,28 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
     // FIELDS
 
     // Constant fields
-    uint frequency = 120; // Frequency of updates in seconds
-    uint validity = 120; // After time has passed data is considered invalid.
+
+    /// Note: Frequency is purely self imposed and for information purposes only
+    uint constant frequency = 120; // Frequency of updates in seconds
+    uint constant validity = 60; // Time in seconds data is considered valid
 
     // Fields that can be changed by functions
-    uint updateCounter = 0; // Used to track how many times data has been updated
     mapping (address => Data) data; // Address of asset => price of asset
 
     // MODIFIERS
 
     modifier msg_value_at_least(uint x) {
         assert(msg.value >= x);
+        _;
+    }
+
+    modifier data_initialised(address ofAsset) {
+        assert(data[ofAsset].timestamp > 0);
+        _;
+    }
+
+    modifier data_still_valid(address ofAsset) {
+        assert(now - data[ofAsset].timestamp <= validity);
         _;
     }
 
@@ -41,10 +53,29 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
 
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
-    function getUpdateCounter() constant returns (uint) { return updateCounter; }
-    function getPrice(address ofAsset) constant returns (uint) { return data[ofAsset].price; }
-    function getTimestamp(address ofAsset) constant returns (uint) { return data[ofAsset].timestamp; }
-    function getData(address ofAsset) constant returns (uint, uint) { return (data[ofAsset].price, data[ofAsset].timestamp); }
+
+    // Pre: Checks for initialisation and inactivity
+    // Post: Price of asset, where last updated not longer than `validity` seconds ago
+    function getPrice(address ofAsset)
+        constant
+        data_initialised(ofAsset)
+        data_still_valid(ofAsset)
+        returns (uint)
+
+    {
+        return data[ofAsset].price;
+    }
+
+    // Pre: Checks for initialisation and inactivity
+    // Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+    function getData(address ofAsset)
+        constant
+        data_initialised(ofAsset)
+        data_still_valid(ofAsset)
+        returns (uint, uint)
+    {
+        return (data[ofAsset].timestamp, data[ofAsset].price);
+    }
 
     // NON-CONSTANT METHODS
 
@@ -62,10 +93,10 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
         arrays_equal(ofAssets, newPrices)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
-            data[ofAssets[i]].price = newPrices[i];
-            data[ofAssets[i]].timestamp = now;
-            updateCounter += 1;
-            PriceUpdated(ofAssets[i], newPrices[i], updateCounter);
+            // Intended to prevent several updates w/in one block, eg w different prices
+            assert(data[ofAssets[i]].timestamp != now);
+            data[ofAssets[i]] = Data( now, newPrices[i] );
+            PriceUpdated(ofAssets[i], now, newPrices[i]);
         }
     }
 }
