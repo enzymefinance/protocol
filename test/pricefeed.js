@@ -71,13 +71,10 @@ contract('PriceFeed', (accounts) => {
         // console.log(result);
         assert.equal(result.logs[i].event, 'PriceUpdated');
         assert.equal(result.logs[i].args.ofAsset, assets[i]);
+        // TODO test against actual block.time
+        assert.notEqual(result.logs[i].args.atTimestamp.toNumber(), 0);
         assert.equal(result.logs[i].args.ofPrice, pricesRelEther[i]);
-        assert.equal(result.logs[i].args.ofUpdateCounter.toNumber(), i + 1);
       }
-      return priceFeedContract.getUpdateCounter();
-    })
-    .then((result) => {
-      assert.equal(result.toNumber(), assets.length);
       done();
     });
   });
