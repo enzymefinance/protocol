@@ -2,10 +2,10 @@ pragma solidity ^0.4.8;
 
 import "../dependencies/Owned.sol";
 
-/// @title Meta Contract
+/// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Meta contract.
-contract Meta is Owned {
+/// @notice Simple and static Governance contract.
+contract Governance is Owned {
 
     // FIELDS
 
@@ -36,6 +36,6 @@ contract Meta is Owned {
 
     // NON-CONSTANT METHODS
 
-    function Meta() {}
+    function Governance() {}
 
 }

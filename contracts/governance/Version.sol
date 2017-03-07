@@ -10,7 +10,7 @@ contract Version is Owned {
 
     // FIELDS
 
-    address public addrMeta;
+    address public addrGovernance;
     address[] public cores;
 
     // EVENTS
@@ -25,7 +25,7 @@ contract Version is Owned {
     function coreAt(uint index) constant returns (address) { return cores[index]; }
 
     // NON-CONSTANT METHODS
-    function Version(address ofMeta) { addrMeta = ofMeta; }
+    function Version(address ofGovernance) { addrGovernance = ofGovernance; }
 
     function createCore(
         address ofUniverse,
