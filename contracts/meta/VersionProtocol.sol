@@ -7,6 +7,6 @@ contract VersionProtocol {
 
   function numCreatedCores() constant returns (uint) {}
   function coreAt(uint index) constant returns (address) {}
-  function createCore(address ofRegistrar, address ofTrading, address ofManagmentFee, address ofPerformanceFee) returns (address) {}
+  function createCore(address ofUniverse, address ofTrading, address ofManagmentFee, address ofPerformanceFee) returns (address) {}
 
 }

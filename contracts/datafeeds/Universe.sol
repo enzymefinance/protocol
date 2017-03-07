@@ -1,13 +1,13 @@
 pragma solidity ^0.4.8;
 
-import "./RegistrarProtocol.sol";
+import "./UniverseProtocol.sol";
 import "../dependencies/SafeMath.sol";
 import "../dependencies/Owned.sol";
 
-/// @title Registrar Contract
+/// @title Universe Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple Registrar Contract, no adding of assets, no asset specific functionality.
-contract Registrar is RegistrarProtocol, SafeMath, Owned {
+/// @notice Simple Universe Contract, no adding of assets, no asset specific functionality.
+contract Universe is UniverseProtocol, SafeMath, Owned {
 
     // FIELDS
 
@@ -37,21 +37,16 @@ contract Registrar is RegistrarProtocol, SafeMath, Owned {
     // CONSTANT METHDOS
 
     function numAssignedAssets() constant returns (uint) { return assets.length; }
-
     function assetAt(uint index) constant returns (address) { return assets[index]; }
-
     function priceFeedsAt(uint index) constant returns (address) { return priceFeeds[index]; }
-
     function exchangesAt(uint index) constant returns (address) { return exchanges[index]; }
-
     function availability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
-
     function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
 
     // NON-CONSTANT METHODS
 
     // Pre: Assign EtherToken at index 0 of "ofAssets"
-    function Registrar(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
+    function Universe(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
         arrays_equal(ofAssets, ofPriceFeeds, ofExchanges)
         array_not_empty(ofAssets)
     {

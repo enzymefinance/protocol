@@ -28,7 +28,7 @@ contract Version is Owned {
     function Version(address ofMeta) { addrMeta = ofMeta; }
 
     function createCore(
-        address ofRegistrar,
+        address ofUniverse,
         address ofTrading,
         address ofManagmentFee,
         address ofPerformanceFee
@@ -38,7 +38,7 @@ contract Version is Owned {
         // Create new Core
         address createAddr = address(new Core(
             msg.sender,
-            ofRegistrar,
+            ofUniverse,
             ofTrading,
             ofManagmentFee,
             ofPerformanceFee

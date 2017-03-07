@@ -5,6 +5,6 @@ pragma solidity ^0.4.8;
 /// @notice This is to be considered as a protocol on how to access the underlying Core Contract
 contract CoreProtocol {
 
-  function getRegistrarAddress() constant returns (address) {}
+  function getUniverseAddress() constant returns (address) {}
 
 }

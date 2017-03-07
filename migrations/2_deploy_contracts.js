@@ -4,7 +4,7 @@ const RepToken = artifacts.require("./RepToken.sol");
 const EuroToken = artifacts.require("./EuroToken.sol");
 const PriceFeed = artifacts.require("./PriceFeed.sol");
 const Exchange = artifacts.require("./Exchange.sol");
-const Registrar = artifacts.require("./Registrar.sol");
+const Universe = artifacts.require("./Universe.sol");
 
 module.exports = (deployer) => {
   // Deploy contracts
@@ -16,11 +16,11 @@ module.exports = (deployer) => {
     [PriceFeed, { gas: 4000000, data: PriceFeed.unlinked_binary }],
     [Exchange, { gas: 4000000, data: Exchange.unlinked_binary }],
   ]).then(() =>
-    deployer.deploy(Registrar,
+    deployer.deploy(Universe,
       [EtherToken.address, BitcoinToken.address, RepToken.address, EuroToken.address],
       [PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address],
       [Exchange.address, Exchange.address, Exchange.address, Exchange.address],
-      { gas: 4000000, data: Registrar.unlinked_binary }
+      { gas: 4000000, data: Universe.unlinked_binary }
     )
   );
 };

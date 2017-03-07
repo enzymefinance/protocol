@@ -42,7 +42,7 @@ contract('Version', (accounts) => {
     })
     .then((result) => {
       exchangeContract = result;
-      return Registrar.new(
+      return Universe.new(
         [
           etherTokenContract.address,
           bitcoinTokenContract.address,

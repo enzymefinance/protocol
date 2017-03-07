@@ -103,7 +103,7 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         exchangeContract = result;
-        return Registrar.new(
+        return Universe.new(
           [
             assetList[0],
             assetList[1],

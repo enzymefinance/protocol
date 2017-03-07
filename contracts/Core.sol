@@ -6,7 +6,7 @@ import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./dependencies/AssetProtocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
-import "./datafeeds/RegistrarProtocol.sol";
+import "./datafeeds/UniverseProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
 import "./calculations/ManagementFeeProtocol.sol";
 import "./calculations/PerformanceFeeProtocol.sol";
@@ -29,7 +29,7 @@ contract Core is Shares, SafeMath, Owned {
     }
     struct Modules {
         EtherToken ether_token;
-        RegistrarProtocol registrar;
+        UniverseProtocol registrar;
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
         TradingProtocol trading;
@@ -45,7 +45,7 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant decimals = 18;
 
     // Constant fields
-    uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Registrar Module
+    uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Universe Module
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
     uint public constant BASE_UNIT_OF_SHARES = 1 ether;
 
@@ -97,7 +97,7 @@ contract Core is Shares, SafeMath, Owned {
 
     // CONSTANT METHDOS
 
-    function getRegistrarAddress() constant returns (address) { return module.registrar; }
+    function getUniverseAddress() constant returns (address) { return module.registrar; }
 
     // Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
@@ -128,7 +128,7 @@ contract Core is Shares, SafeMath, Owned {
         nav = calcGAV() - managementFee - performanceFee;
     }
 
-    // Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Registrar
+    // Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
     // Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
         /* Rem 1:
@@ -158,7 +158,7 @@ contract Core is Shares, SafeMath, Owned {
 
     function Core(
         address ofManager,
-        address ofRegistrar,
+        address ofUniverse,
         address ofTrading,
         address ofManagmentFee,
         address ofPerformanceFee
@@ -167,7 +167,7 @@ contract Core is Shares, SafeMath, Owned {
         analytics.nav = 0;
         analytics.delta = 1 ether;
         analytics.timestamp = now;
-        module.registrar = RegistrarProtocol(ofRegistrar);
+        module.registrar = UniverseProtocol(ofUniverse);
         module.ether_token = EtherToken(address(module.registrar.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
         module.trading = TradingProtocol(ofTrading);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
@@ -178,7 +178,7 @@ contract Core is Shares, SafeMath, Owned {
     // Post: Receive Either directly
     function() payable {}
 
-    // Pre: EtherToken as Asset in Registrar at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
+    // Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
     //  Creating Shares only possible with Ether
     // Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
