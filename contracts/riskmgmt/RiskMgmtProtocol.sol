@@ -2,10 +2,10 @@ pragma solidity ^0.4.8;
 
 import '../dependencies/ERC20.sol';
 
-/// @title TradingProtocol Contract
+/// @title RiskMgmtProtocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying Trading Contract
-contract TradingProtocol {
+/// @notice This is to be considered as a protocol on how to access the underlying RiskMgmt Contract
+contract RiskMgmtProtocol {
 
   function offer(
       uint sell_how_much, ERC20 sell_which_token,

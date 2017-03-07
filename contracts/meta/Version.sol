@@ -29,7 +29,7 @@ contract Version is Owned {
 
     function createCore(
         address ofUniverse,
-        address ofTrading,
+        address ofRiskMgmt,
         address ofManagmentFee,
         address ofPerformanceFee
     )
@@ -39,7 +39,7 @@ contract Version is Owned {
         address createAddr = address(new Core(
             msg.sender,
             ofUniverse,
-            ofTrading,
+            ofRiskMgmt,
             ofManagmentFee,
             ofPerformanceFee
         ));

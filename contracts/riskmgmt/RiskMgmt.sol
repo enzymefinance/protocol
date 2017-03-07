@@ -1,14 +1,14 @@
 pragma solidity ^0.4.8;
 
-import "./TradingProtocol.sol";
+import "./RiskMgmtProtocol.sol";
 import "../exchange/Exchange.sol";
 import '../dependencies/ERC20.sol';
 import '../dependencies/SafeMath.sol';
 import "../dependencies/Owned.sol";
 
-/// @title Trading Contract
+/// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract Trading is TradingProtocol, SafeMath, Owned {
+contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     // FIELDS
 
@@ -27,7 +27,7 @@ contract Trading is TradingProtocol, SafeMath, Owned {
 
     // NON-CONSTANT METHODS
 
-    function Trading(Exchange setExchange) {
+    function RiskMgmt(Exchange setExchange) {
         exchange = setExchange;
     }
 

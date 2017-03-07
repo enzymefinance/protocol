@@ -15,7 +15,7 @@ contract('Version', (accounts) => {
   let priceFeedContract;
   let exchangeContract;
   let registrarContract;
-  let tradingContract;
+  let riskmgmtContract;
 
   before('Check accounts, deploy modules, set testcase', (done) => {
     assert.equal(accounts.length, 10);
@@ -62,10 +62,10 @@ contract('Version', (accounts) => {
     })
     .then((result) => {
       registrarContract = result;
-      return Trading.new(exchangeContract.address, { from: OWNER });
+      return RiskMgmt.new(exchangeContract.address, { from: OWNER });
     })
     .then((result) => {
-      tradingContract = result;
+      riskmgmtContract = result;
       done();
     });
   });
@@ -76,7 +76,7 @@ contract('Version', (accounts) => {
       versionContract = result;
       return versionContract.createCore(
         registrarContract.address,
-        tradingContract.address,
+        riskmgmtContract.address,
         ADDRESS_PLACEHOLDER,
         ADDRESS_PLACEHOLDER,
         { from: OWNER });

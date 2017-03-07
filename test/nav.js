@@ -56,10 +56,10 @@ contract('Net Asset Value', (accounts) => {
   let priceFeedContract;
   let exchangeContract;
   let registrarContract;
-  let tradingContract;
+  let riskmgmtContract;
   let priceFeedTestCases;
   let exchangeTestCases;
-  let tradingTestCases;
+  let riskmgmtTestCases;
   let lastOfferId = 0;
 
   before('Check accounts, deploy modules, set testcase', (done) => {
@@ -123,10 +123,10 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         registrarContract = result;
-        return Trading.new(exchangeContract.address, { from: OWNER });
+        return RiskMgmt.new(exchangeContract.address, { from: OWNER });
       })
       .then((result) => {
-        tradingContract = result;
+        riskmgmtContract = result;
         done();
       });
   });
@@ -134,7 +134,7 @@ contract('Net Asset Value', (accounts) => {
   it('Deploy smart contract', (done) => {
     Core.new(OWNER,
       registrarContract.address,
-      tradingContract.address,
+      riskmgmtContract.address,
       ADDRESS_PLACEHOLDER,
       ADDRESS_PLACEHOLDER,
       { from: OWNER })
@@ -202,9 +202,9 @@ contract('Net Asset Value', (accounts) => {
         }
       );
     }
-    // tradingTestCases = [];
+    // riskmgmtTestCases = [];
     // for (let i = 0; i < NUM_OFFERS; i += 1) {
-    //   tradingTestCases.push(
+    //   riskmgmtTestCases.push(
     //     {
     //       sell_how_much: Math.floor(pricesRelAsset[1] * (1 - (i * 0.1))),
     //       sell_which_token: bitcoinTokenContract.address,

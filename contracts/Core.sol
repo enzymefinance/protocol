@@ -10,7 +10,7 @@ import "./datafeeds/UniverseProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
 import "./calculations/ManagementFeeProtocol.sol";
 import "./calculations/PerformanceFeeProtocol.sol";
-import "./trading/TradingProtocol.sol";
+import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/Exchange.sol";
 
 
@@ -32,7 +32,7 @@ contract Core is Shares, SafeMath, Owned {
         UniverseProtocol registrar;
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
-        TradingProtocol trading;
+        RiskMgmtProtocol riskmgmt;
         Exchange exchange;
     }
 
@@ -159,7 +159,7 @@ contract Core is Shares, SafeMath, Owned {
     function Core(
         address ofManager,
         address ofUniverse,
-        address ofTrading,
+        address ofRiskMgmt,
         address ofManagmentFee,
         address ofPerformanceFee
     ) {
@@ -169,7 +169,7 @@ contract Core is Shares, SafeMath, Owned {
         analytics.timestamp = now;
         module.registrar = UniverseProtocol(ofUniverse);
         module.ether_token = EtherToken(address(module.registrar.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
-        module.trading = TradingProtocol(ofTrading);
+        module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
     }
