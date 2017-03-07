@@ -27,9 +27,10 @@ contract Core is Shares, SafeMath, Owned {
         uint delta;
         uint timestamp;
     }
+
     struct Modules {
         EtherToken ether_token;
-        UniverseProtocol registrar;
+        UniverseProtocol universe;
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
         RiskMgmtProtocol riskmgmt;
@@ -91,13 +92,13 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     modifier token_registered_to_exchange(ERC20 token, Exchange exchange) {
-        assert(exchange == Exchange(module.registrar.assignedExchange(token)));
+        assert(exchange == Exchange(module.universe.assignedExchange(token)));
         _;
     }
 
     // CONSTANT METHDOS
 
-    function getUniverseAddress() constant returns (address) { return module.registrar; }
+    function getUniverseAddress() constant returns (address) { return module.universe; }
 
     // Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
@@ -106,7 +107,7 @@ contract Core is Shares, SafeMath, Owned {
     // Post: Delta as a result of current and previous NAV
     function calcDelta() constant returns (uint delta) {
         uint nav = calcNAV();
-        // Set delta
+        // Set Delta
         if (analytics.nav == 0) {
             delta = 1 ether; // First investment not made
         } else if (nav == 0) {
@@ -115,9 +116,7 @@ contract Core is Shares, SafeMath, Owned {
             delta = (analytics.delta * nav) / analytics.nav; // First investment made; Not all funds withdrawn
         }
         // Update Analytics
-        analytics.delta = delta;
-        analytics.nav = nav;
-        analytics.timestamp = now;
+        analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
     }
 
     // Pre:
@@ -143,13 +142,13 @@ contract Core is Shares, SafeMath, Owned {
          *    ==> coreHoldings * price == value of asset holdings of this core relative to reference asset price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
-        uint numAssignedAssets = module.registrar.numAssignedAssets();
+        uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.registrar.assetAt(i)));
+            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint assetDecimals = Asset.getDecimals();
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.registrar.priceFeedsAt(i)));
-            uint assetPrice = Price.getPrice(address(module.registrar.assetAt(i))); // Asset price relative to reference asset price
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedsAt(i)));
+            uint assetPrice = Price.getPrice(address(module.universe.assetAt(i))); // Asset price relative to reference asset price
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
         }
     }
@@ -164,11 +163,9 @@ contract Core is Shares, SafeMath, Owned {
         address ofPerformanceFee
     ) {
         owner = ofManager;
-        analytics.nav = 0;
-        analytics.delta = 1 ether;
-        analytics.timestamp = now;
-        module.registrar = UniverseProtocol(ofUniverse);
-        module.ether_token = EtherToken(address(module.registrar.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
+        analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
+        module.universe = UniverseProtocol(ofUniverse);
+        module.ether_token = EtherToken(address(module.universe.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
@@ -228,9 +225,9 @@ contract Core is Shares, SafeMath, Owned {
         uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
         if (offeredValue >= wantedValue) {
             // Transfer ownedHoldings of Assets
-            uint numAssignedAssets = module.registrar.numAssignedAssets();
+            uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
-                AssetProtocol Asset = AssetProtocol(address(module.registrar.assetAt(i)));
+                AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
                 uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
                 if (coreHoldings == 0) continue;
                 uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
@@ -255,13 +252,13 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     // Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    // Post: Token specific exchange as registered in registrar, approved to spend ofToken
+    // Post: Token specific exchange as registered in universe, approved to spend ofToken
     function approveSpending(uint approvalAmount, ERC20 ofToken)
         internal
         only_owner
     {
-        assert(module.registrar.availability(ofToken));
-        ofToken.approve(module.registrar.assignedExchange(ofToken), approvalAmount);
+        assert(module.universe.availability(ofToken));
+        ofToken.approve(module.universe.assignedExchange(ofToken), approvalAmount);
     }
 
     /// Place an Order on the selected Exchange
@@ -272,8 +269,8 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
         token_registered_to_exchange(sell_which_token, onExchange)
     {
-        assert(module.registrar.availability(sell_which_token));
-        assert(module.registrar.availability(buy_which_token));
+        assert(module.universe.availability(sell_which_token));
+        assert(module.universe.availability(buy_which_token));
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
