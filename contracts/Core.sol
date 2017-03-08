@@ -8,8 +8,8 @@ import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
-import "./calculations/ManagementFeeProtocol.sol";
-import "./calculations/PerformanceFeeProtocol.sol";
+import "./fees/ManagementFeeProtocol.sol";
+import "./fees/PerformanceFeeProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/Exchange.sol";
 
