@@ -25,14 +25,16 @@ contract BackupOwned is Assertive {
         _;
     }
 
-    modifier address_not_null(address owner) {
-        assert(owner != 0);
+    modifier address_not_null(address addr) {
+        assert(addr != 0);
         _;
     }
 
     // NON-CONSTANT METHODS
 
-    function BackupOwned(address ofBackupOwner) {
+    function BackupOwned(address ofBackupOwner)
+        address_not_null(ofBackupOwner)
+    {
         owner = msg.sender;
         backupOwner = ofBackupOwner;
     }

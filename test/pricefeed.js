@@ -8,7 +8,8 @@ const PriceFeed = artifacts.require('PriceFeed.sol');
 contract('PriceFeed', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
-  const NOT_OWNER = accounts[1];
+  const BACKUP_OWNER = accounts[1];
+  const NOT_OWNER = accounts[2];
   const assets = [
     '0x632a40acd4975295495f45190e612ef15c84ae91',
     '0xcb8d1b21f0ceb07959e47eb8152f25332939c0dc',
@@ -44,11 +45,16 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    PriceFeed.new().then((result) => {
+    console.log(BACKUP_OWNER)
+    PriceFeed.new(BACKUP_OWNER).then((result) => {
       priceFeedContract = result;
       return priceFeedContract.getFrequency();
     }).then((result) => {
       assert.equal(result.toNumber(), 120);
+      return priceFeedContract.backupOwner();
+    }).then((result) => {
+      assert.equal(result, BACKUP_OWNER);
+      console.log(result);
     }).then(() => {
       done();
     });
