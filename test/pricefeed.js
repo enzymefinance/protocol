@@ -45,7 +45,6 @@ contract('PriceFeed', (accounts) => {
   });
 
   it('Deploy smart contract', (done) => {
-    console.log(BACKUP_OWNER)
     PriceFeed.new(BACKUP_OWNER).then((result) => {
       priceFeedContract = result;
       return priceFeedContract.getFrequency();
@@ -54,7 +53,6 @@ contract('PriceFeed', (accounts) => {
       return priceFeedContract.backupOwner();
     }).then((result) => {
       assert.equal(result, BACKUP_OWNER);
-      console.log(result);
     }).then(() => {
       done();
     });

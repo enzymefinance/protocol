@@ -33,7 +33,6 @@ contract BackupOwned is Assertive {
     // NON-CONSTANT METHODS
 
     function BackupOwned(address ofBackupOwner)
-        address_not_null(ofBackupOwner)
     {
         owner = msg.sender;
         backupOwner = ofBackupOwner;
