@@ -10,12 +10,12 @@ const AssetProtocol = artifacts.require("./AssetProtocol.sol");
 
 // Price Feed
 
-// Pre: Asset Pair; Eg. ETH/BTC
-// Post: Inverted Asset Pair; Eg. BTC/ETH
+/// Pre: Asset Pair; Eg. ETH/BTC
+/// Post: Inverted Asset Pair; Eg. BTC/ETH
 function invertAssetPairPrice(price) { return 1.0 / price; }
 
-// Pre: Decimals meaning the number of decimals it takes to EURresent the atomized price
-// Post: Price in its smallest unit
+/// Pre: Decimals meaning the number of decimals it takes to EURresent the atomized price
+/// Post: Price in its smallest unit
 /** Ex:
  *  Let asset == EUR-T, let Value of 1 ETH = 8.45 EUR-T =: 8.45 EUR
  *  and let EUR-T decimals == 8,
@@ -23,8 +23,8 @@ function invertAssetPairPrice(price) { return 1.0 / price; }
  */
 function atomizeAssetPrice(price, decimals) { return Math.floor(price * (Math.pow(10, decimals))); }
 
-// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
-// Post: Prices in its smallest unit relative to Asset
+/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
+/// Post: Prices in its smallest unit relative to Asset
 function krakenPricesRelAsset(data) {
   // Prices Relative to Asset
   const ETHETT = 1.0; // By definition
@@ -40,8 +40,8 @@ function krakenPricesRelAsset(data) {
   ];
 }
 
-// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
-// Post: Prices in its smallest unit relative to Ether
+/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
+/// Post: Prices in its smallest unit relative to Ether
 function krakenPricesRelEther(data) {
   // Prices Relative to Ether
   const ETTETH = 1.0; // By definition
@@ -59,8 +59,8 @@ function krakenPricesRelEther(data) {
 
 // Exchange
 
-// Pre: Initialised offer object
-// Post: Executed offer as specified in offer object
+/// Pre: Initialised offer object
+/// Post: Executed offer as specified in offer object
 function approveAndOffer(offer, callback) {
   let exchangeAddress;
   Exchange.deployed()
@@ -81,12 +81,12 @@ function approveAndOffer(offer, callback) {
   });
 }
 
-// Pre:
-// Post:
+/// Pre:
+/// Post:
 function buyOffer(id, owner, callback) {}
 
-// Pre:
-// Post:
+/// Pre:
+/// Post:
 function cancelOffer(id, owner, callback) {
   Exchange.deployed().then(deployed => deployed.cancel(id, { from: owner }))
   .then((txHash) => {
@@ -96,8 +96,8 @@ function cancelOffer(id, owner, callback) {
   });
 }
 
-// Pre:
-// Post:
+/// Pre:
+/// Post:
 function cancelAllOffersOfOwner(owner, callback) {
   Exchange.deployed().then(deployed => deployed.lastOfferId())
   .then((result) => {
@@ -121,8 +121,8 @@ function cancelAllOffersOfOwner(owner, callback) {
 // Liquidity Provider
 
 // Note: Simple liquidity provider
-// Pre: Only owner of premined amount of assets. Always buying one Ether
-// Post: Multiple offers created
+/// Pre: Only owner of premined amount of assets. Always buying one Ether
+/// Post: Multiple offers created
 function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
   let offers = [];
   let etherTokenAddress;

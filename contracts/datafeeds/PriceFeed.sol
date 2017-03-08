@@ -1,13 +1,13 @@
 pragma solidity ^0.4.8;
 
-import "../dependencies/Owned.sol";
+import "../dependencies/BackupOwned.sol";
 import "../dependencies/SafeMath.sol";
 import "./PriceFeedProtocol.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
+contract PriceFeed is PriceFeedProtocol, BackupOwned, SafeMath {
 
     // TYPES
 
@@ -19,11 +19,9 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
     // FIELDS
 
     // Constant fields
-
     /// Note: Frequency is purely self imposed and for information purposes only
     uint constant frequency = 120; // Frequency of updates in seconds
     uint constant validity = 60; // Time in seconds data is considered valid
-
     // Fields that can be changed by functions
     mapping (address => Data) data; // Address of asset => price of asset
 
@@ -54,8 +52,8 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
 
-    // Pre: Checks for initialisation and inactivity
-    // Post: Price of asset, where last updated not longer than `validity` seconds ago
+    /// Pre: Checks for initialisation and inactivity
+    /// Post: Price of asset, where last updated not longer than `validity` seconds ago
     function getPrice(address ofAsset)
         constant
         data_initialised(ofAsset)
@@ -66,8 +64,8 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
         return data[ofAsset].price;
     }
 
-    // Pre: Checks for initialisation and inactivity
-    // Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+    /// Pre: Checks for initialisation and inactivity
+    /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
     function getData(address ofAsset)
         constant
         data_initialised(ofAsset)
@@ -79,10 +77,12 @@ contract PriceFeed is PriceFeedProtocol, Owned, SafeMath {
 
     // NON-CONSTANT METHODS
 
-    function PriceFeed() {}
+    function PriceFeed(address ofBackupOwner)
+        BackupOwner(ofBackupOwner)
+    {}
 
-    /// Pre: Only Owner; Same sized input arrays
-    /// Post: Update price of asset relative to Ether
+    //// Pre: Only Owner; Same sized input arrays
+    //// Post: Update price of asset relative to Ether
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,

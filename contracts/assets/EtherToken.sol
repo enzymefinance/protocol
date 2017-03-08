@@ -34,10 +34,10 @@ contract EtherToken is Asset, SafeMath {
         Asset(name, symbol, decimals)
     {}
 
-    // Post: Exchanged Ether against Token
+    /// Post: Exchanged Ether against Token
     function() payable { deposit(); }
 
-    // Post: Exchanged Ether against Token
+    /// Post: Exchanged Ether against Token
     function deposit()
         payable
         returns (bool)
@@ -47,7 +47,7 @@ contract EtherToken is Asset, SafeMath {
         return true;
     }
 
-    // Post: Exchanged Token against Ether
+    /// Post: Exchanged Token against Ether
     function withdraw(uint amount)
         balances_msg_sender_at_least(amount)
         returns (bool)

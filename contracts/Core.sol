@@ -100,11 +100,11 @@ contract Core is Shares, SafeMath, Owned {
 
     function getUniverseAddress() constant returns (address) { return module.universe; }
 
-    // Post: Calculate Share Price in Wei
+    /// Post: Calculate Share Price in Wei
     function calcSharePrice() constant returns (uint) { return calcDelta(); }
 
-    // Pre:
-    // Post: Delta as a result of current and previous NAV
+    /// Pre:
+    /// Post: Delta as a result of current and previous NAV
     function calcDelta() constant returns (uint delta) {
         uint nav = calcNAV();
         // Set Delta
@@ -119,16 +119,16 @@ contract Core is Shares, SafeMath, Owned {
         analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
     }
 
-    // Pre:
-    // Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
+    /// Pre:
+    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
     function calcNAV() constant returns (uint nav) {
         uint managementFee = 0;
         uint performanceFee = 0;
         nav = calcGAV() - managementFee - performanceFee;
     }
 
-    // Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
-    // Post: Portfolio Gross Asset Value in Wei
+    /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
         /* Rem 1:
          *  All prices are relative to the reference asset price. For this version,
@@ -171,13 +171,13 @@ contract Core is Shares, SafeMath, Owned {
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
     }
 
-    // Pre: Needed to receive Ether from EtherToken Contract
-    // Post: Receive Either directly
+    /// Pre: Needed to receive Ether from EtherToken Contract
+    /// Post: Receive Either directly
     function() payable {}
 
-    // Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
+    /// Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
     //  Creating Shares only possible with Ether
-    // Post: Invest in a fund by creating shares
+    /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
         msg_value_past(0)
@@ -214,8 +214,8 @@ contract Core is Shares, SafeMath, Owned {
         }
     }
 
-    // Pre: Investment made by msg sender
-    // Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
+    /// Pre: Investment made by msg sender
+    /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateShares(uint offeredShares, uint wantedValue)
         balances_msg_sender_at_least(offeredShares)
         not_zero(offeredShares)
@@ -251,8 +251,8 @@ contract Core is Shares, SafeMath, Owned {
       }
     }
 
-    // Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    // Post: Token specific exchange as registered in universe, approved to spend ofToken
+    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
     function approveSpending(uint approvalAmount, ERC20 ofToken)
         internal
         only_owner

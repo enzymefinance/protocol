@@ -6,8 +6,8 @@ const Exchange = artifacts.require('Exchange.sol');
 
 // Offers
 
-// Pre:
-// Post:
+/// Pre:
+/// Post:
 function syncOffer(id, callback) {
   let exchangeContract;
   Exchange.deployed()
@@ -44,8 +44,8 @@ function syncOffer(id, callback) {
   });
 }
 
-// Pre:
-// Post:
+/// Pre:
+/// Post:
 function sync(callback) {
   let exchangeContract;
   Exchange.deployed()

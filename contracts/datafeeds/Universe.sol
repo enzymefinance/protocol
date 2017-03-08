@@ -45,7 +45,7 @@ contract Universe is UniverseProtocol, SafeMath, Owned {
 
     // NON-CONSTANT METHODS
 
-    // Pre: Assign EtherToken at index 0 of "ofAssets"
+    /// Pre: Assign EtherToken at index 0 of "ofAssets"
     function Universe(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
         arrays_equal(ofAssets, ofPriceFeeds, ofExchanges)
         array_not_empty(ofAssets)
