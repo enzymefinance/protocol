@@ -1,13 +1,12 @@
 pragma solidity ^0.4.8;
 
-import "../dependencies/BackupOwned.sol";
-import "../dependencies/SafeMath.sol";
 import "./PriceFeedProtocol.sol";
+import "../dependencies/BackupOwned.sol";
 
 /// @title Price Feed Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedProtocol, BackupOwned, SafeMath {
+contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     // TYPES
 
@@ -78,7 +77,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned, SafeMath {
     // NON-CONSTANT METHODS
 
     function PriceFeed(address ofBackupOwner)
-        BackupOwner(ofBackupOwner)
+        BackupOwned(ofBackupOwner)
     {}
 
     //// Pre: Only Owner; Same sized input arrays
@@ -93,8 +92,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned, SafeMath {
         arrays_equal(ofAssets, newPrices)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
-            // Intended to prevent several updates w/in one block, eg w different prices
-            assert(data[ofAssets[i]].timestamp != now);
+            assert(data[ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
             data[ofAssets[i]] = Data( now, newPrices[i] );
             PriceUpdated(ofAssets[i], now, newPrices[i]);
         }
