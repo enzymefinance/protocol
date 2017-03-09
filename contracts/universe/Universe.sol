@@ -12,7 +12,7 @@ contract Universe is UniverseProtocol, SafeMath, Owned {
     // FIELDS
 
     // Constant fields
-    uint public constant ETHER_TOKEN_INDEX = 0;
+    uint public constant ETHER_TOKEN_INDEX_IN_UNIVERSE = 0;
 
     // Fields that can be changed by functions
     address[] public assets;
@@ -36,11 +36,14 @@ contract Universe is UniverseProtocol, SafeMath, Owned {
     }
     // CONSTANT METHDOS
 
+    function etherTokenAtIndex() constant returns (uint) { return ETHER_TOKEN_INDEX_IN_UNIVERSE; }
     function numAssignedAssets() constant returns (uint) { return assets.length; }
+
     function assetAt(uint index) constant returns (address) { return assets[index]; }
-    function priceFeedsAt(uint index) constant returns (address) { return priceFeeds[index]; }
-    function exchangesAt(uint index) constant returns (address) { return exchanges[index]; }
-    function availability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
+    function priceFeedAt(uint index) constant returns (address) { return priceFeeds[index]; }
+    function exchangeAt(uint index) constant returns (address) { return exchanges[index]; }
+
+    function assetAvailability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
     function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
 
     // NON-CONSTANT METHODS

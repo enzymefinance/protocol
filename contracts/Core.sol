@@ -16,7 +16,7 @@ import "./exchange/Exchange.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple core where REFERENCE_ASSET_INDEX_IN_REGISTRAR is EtherToken and
+/// @notice Simple core where REFERENCE_ASSET_INDEX_IN_UNIVERSE is EtherToken and
 ///   Creation and Annihilation of Shares is done with Ether
 contract Core is Shares, SafeMath, Owned {
 
@@ -46,7 +46,7 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant decimals = 18;
 
     // Constant fields
-    uint public constant REFERENCE_ASSET_INDEX_IN_REGISTRAR = 0; // Needs to be equal as set in Universe Module
+    uint public constant REFERENCE_ASSET_INDEX_IN_UNIVERSE = 0; // Needs to be equal as set in Universe Module
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
     uint public constant BASE_UNIT_OF_SHARES = 1 ether;
 
@@ -147,7 +147,7 @@ contract Core is Shares, SafeMath, Owned {
             AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint assetDecimals = Asset.getDecimals();
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedsAt(i)));
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
             uint assetPrice = Price.getPrice(address(module.universe.assetAt(i))); // Asset price relative to reference asset price
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
         }
@@ -165,7 +165,8 @@ contract Core is Shares, SafeMath, Owned {
         owner = ofManager;
         analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
-        module.ether_token = EtherToken(address(module.universe.assetAt(REFERENCE_ASSET_INDEX_IN_REGISTRAR)));
+        uint etherTokenIndex = module.universe.etherTokenAtIndex();
+        module.ether_token = EtherToken(address(module.universe.assetAt(etherTokenIndex)));
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
@@ -175,7 +176,7 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Receive Either directly
     function() payable {}
 
-    /// Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_REGISTRAR
+    /// Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_UNIVERSE
     //  Creating Shares only possible with Ether
     /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
@@ -257,7 +258,7 @@ contract Core is Shares, SafeMath, Owned {
         internal
         only_owner
     {
-        assert(module.universe.availability(ofToken));
+        assert(module.universe.assetAvailability(ofToken));
         ofToken.approve(module.universe.assignedExchange(ofToken), approvalAmount);
     }
 
@@ -269,8 +270,8 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
         token_registered_to_exchange(sell_which_token, onExchange)
     {
-        assert(module.universe.availability(sell_which_token));
-        assert(module.universe.availability(buy_which_token));
+        assert(module.universe.assetAvailability(sell_which_token));
+        assert(module.universe.assetAvailability(buy_which_token));
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 

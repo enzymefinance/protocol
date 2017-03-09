@@ -24,7 +24,7 @@ contract Governance is Owned {
 
     function versionAt(uint index) constant returns (address) { return versions[index]; }
 
-    function availability(address ofVersion) constant returns (bool) { return versionAvailabilities[ofVersion]; }
+    function assetAvailability(address ofVersion) constant returns (bool) { return versionAvailabilities[ofVersion]; }
 
     function updateVersion(address nextVersion) only_owner returns (bool) {
         // TODO: Assert stakeholder consensus
