@@ -6,6 +6,7 @@ pragma solidity ^0.4.8;
 /// Universe Contract
 contract UniverseProtocol {
 
+    function etherTokenAtIndex() constant returns (uint) {}
     function numAssignedAssets() constant returns (uint) {}
     function assetAt(uint index) constant returns (address) {}
     function priceFeedAt(uint index) constant returns (address) {}
