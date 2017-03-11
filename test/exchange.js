@@ -1,5 +1,6 @@
 const assert = require('assert');
 const constants = require('../utils/constants.js');
+const specs = require('../utils/specs.js');
 const functions = require('../utils/functions.js');
 const collections = require('../utils/collections.js');
 
@@ -30,7 +31,7 @@ contract('Exchange', (accounts) => {
 
   before('Check accounts, exchange and premined amount', (done) => {
     assert.equal(accounts.length, 10);
-    Exchange.deployed().then(deployed => deployed.lastOfferId())
+    Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
       return BitcoinToken.deployed().then(deployed => deployed.totalSupply({ from: OWNER }));
@@ -46,40 +47,15 @@ contract('Exchange', (accounts) => {
   });
 
   it('Create one side of the orderbook', (done) => {
-    let bitcoinTokenAddress;
-    BitcoinToken.deployed()
-    .then((deployed) => {
-      bitcoinTokenAddress = deployed.address;
-      functions.buyOneEtherFor(
-        pricesRelEther[1],
-        bitcoinTokenAddress,
-        OWNER,
-        NUM_OFFERS,
-        (err) => {
-          if (!err) {
-            done();
-          } else {
-            console.log(err);
-          }
-        });
-    });
-  });
-
-  it('Check if orders created', (done) => {
-    Exchange.deployed().then(deployed => deployed.lastOfferId({ from: OWNER }))
-    .then((result) => {
-      const lastOfferId = result.toNumber();
-      assert.equal(lastOfferId, NUM_OFFERS);
-      done();
-    });
-  });
-
-  it('Check orders information', (done) => {
-    collections.sync(
-      (err, result) => {
+    const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
+    console.log(bitcoinTokenAddress)
+    functions.buyOneEtherFor(
+      pricesRelEther[1],
+      bitcoinTokenAddress,
+      OWNER,
+      NUM_OFFERS,
+      (err) => {
         if (!err) {
-          offers = result;
-          console.log(offers);
           done();
         } else {
           console.log(err);
@@ -87,30 +63,52 @@ contract('Exchange', (accounts) => {
       });
   });
 
-  it('Cancel one side of the orderbook', (done) => {
-    functions.cancelAllOffersOfOwner(
-      OWNER,
-      (err, result) => {
-        if (!err) {
-          done();
-        } else {
-          console.log(err);
-        }
-      }
-    );
+  it('Check if orders created', (done) => {
+    Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
+    .then((result) => {
+      const lastOfferId = result.toNumber();
+      assert.equal(lastOfferId, NUM_OFFERS);
+      done();
+    });
   });
 
-  it('Check orders information', (done) => {
-    collections.sync(
-      (err, result) => {
-        if (!err) {
-          offers = result;
-          console.log(offers);
-          done();
-        } else {
-          console.log(err);
-        }
-      }
-    );
-  });
+  // it('Check orders information', (done) => {
+  //   collections.sync(
+  //     (err, result) => {
+  //       if (!err) {
+  //         offers = result;
+  //         console.log(offers);
+  //         done();
+  //       } else {
+  //         console.log(err);
+  //       }
+  //     });
+  // });
+  //
+  // it('Cancel one side of the orderbook', (done) => {
+  //   functions.cancelAllOffersOfOwner(
+  //     OWNER,
+  //     (err, result) => {
+  //       if (!err) {
+  //         done();
+  //       } else {
+  //         console.log(err);
+  //       }
+  //     }
+  //   );
+  // });
+  //
+  // it('Check orders information', (done) => {
+  //   collections.sync(
+  //     (err, result) => {
+  //       if (!err) {
+  //         offers = result;
+  //         console.log(offers);
+  //         done();
+  //       } else {
+  //         console.log(err);
+  //       }
+  //     }
+  //   );
+  // });
 });

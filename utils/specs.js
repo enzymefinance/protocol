@@ -64,24 +64,24 @@ const tokens = {
 // http://numeraljs.com/ for formats
 const tokenSpecs = {
   // Melonport
-  'ETH-T': { precision: constants.ETHERTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
-  'BTC-T': { precision: constants.BITCOINTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
-  'REP-T': { precision: constants.REPTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
-  'EUR-T': { precision: constants.EUROTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
+  'ETH-T': { decimals: constants.ETHERTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
+  'BTC-T': { decimals: constants.BITCOINTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
+  'REP-T': { decimals: constants.REPTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
+  'EUR-T': { decimals: constants.EUROTOKEN_DECIMALS, format: '0,0.00[0000000000000000]' },
   // Maker
-  'W-ETH': { precision: 18, format: '0,0.00[0000000000000000]' },
-  DAI: { precision: 18, format: '0,0.00[0000000000000000]' },
-  MKR: { precision: 18, format: '0,0.00[0000000000000000]' },
-  DGD: { precision: 9, format: '0,0.00[0000000]' },
-  GNT: { precision: 18, format: '0,0.00[0000000000000000]' },
-  'W-GNT': { precision: 18, format: '0,0.00[0000000000000000]' },
-  REP: { precision: 18, format: '0,0.00[0000000000000000]' },
-  ICN: { precision: 18, format: '0,0.00[0000000000000000]' },
-  '1ST': { precision: 18, format: '0,0.00[0000000000000000]' },
-  SNGLS: { precision: 0, format: '0,0' },
-  VSL: { precision: 18, format: '0,0.00[0000000000000000]' },
-  PLU: { precision: 18, format: '0,0.00[0000000000000000]' },
-  MLN: { precision: 18, format: '0,0.00[0000000000000000]' },
+  'W-ETH': { decimals: 18, format: '0,0.00[0000000000000000]' },
+  DAI: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  MKR: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  DGD: { decimals: 9, format: '0,0.00[0000000]' },
+  GNT: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  'W-GNT': { decimals: 18, format: '0,0.00[0000000000000000]' },
+  REP: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  ICN: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  '1ST': { decimals: 18, format: '0,0.00[0000000000000000]' },
+  SNGLS: { decimals: 0, format: '0,0' },
+  VSL: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  PLU: { decimals: 18, format: '0,0.00[0000000000000000]' },
+  MLN: { decimals: 18, format: '0,0.00[0000000000000000]' },
 };
 
 function getTokenSpecs() {
@@ -105,16 +105,19 @@ function getTokenSpecs() {
   };
 }
 
+function invert (obj) {
+  var new_obj = {};
+  for (var prop in obj) {
+    if(obj.hasOwnProperty(prop)) {
+      new_obj[obj[prop]] = prop;
+    }
+  }
+  return new_obj;
+};
+
+
 function getTokenDecimalsByAddress(address) {
-  console.log(getTokenSpecs())
-  // for (let i = 0; i < 4) {
-  //
-  // }
-  // if (address === EtherToken.deployed().then(deployed => deployed.address)) return constants.ETHERTOKEN_DECIMALS;
-  // if (address === BitcoinToken.deployed().then(deployed => deployed.address)) return constants.BITCOINTOKEN_DECIMALS;
-  // if (address === RepToken.deployed().then(deployed => deployed.address)) return constants.REPTOKEN_DECIMALS;
-  // if (address === EuroToken.deployed().then(deployed => deployed.address)) return constants.EUROTOKEN_DECIMALS;
-  // return false;
+  return invert(tokens[network])[address];
 }
 
 function getTokenSymbolByAddress(address) {
@@ -144,6 +147,9 @@ function getTokenByAddress(address) { _.invert(tokens.ropsten)[address] };
 
 
 module.exports = {
+  network,
+  tokens,
+  tokenSpecs,
   getTokenDecimalsByAddress,
   getTokenSymbolByAddress,
   getTokenAddressBySymbol,

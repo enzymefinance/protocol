@@ -13,6 +13,8 @@ const EUROTOKEN_DECIMALS = 8;
 
 // Exchange
 
+const EXCHANGE_ADDRESS = '0x50396a51a81b938ccb2d1466de9eebc49d5564f5'
+
 // Solidity constants
 const ether = new BigNumber(Math.pow(10, 18));
 
@@ -22,5 +24,6 @@ module.exports = {
   BITCOINTOKEN_DECIMALS,
   REPTOKEN_DECIMALS,
   EUROTOKEN_DECIMALS,
+  EXCHANGE_ADDRESS,
   ether,
 };

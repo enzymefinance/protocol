@@ -9,12 +9,7 @@ const Exchange = artifacts.require('Exchange.sol');
 /// Pre:
 /// Post:
 function syncOffer(id, callback) {
-  let exchangeContract;
-  Exchange.deployed()
-  .then((result) => {
-    exchangeContract = result;
-    return exchangeContract.offers(id);
-  })
+  Exchange.at(constants.EXCHANGE_ADDRESS).offers(id)
   .then((res) => {
     const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = res;
     if (active) {
@@ -47,12 +42,7 @@ function syncOffer(id, callback) {
 /// Pre:
 /// Post:
 function sync(callback) {
-  let exchangeContract;
-  Exchange.deployed()
-  .then((result) => {
-    exchangeContract = result;
-    return exchangeContract.lastOfferId();
-  })
+  Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
   .then((result) => {
     const numOffers = result.toNumber();
     async.times(numOffers, (id, callbackMap) => {
