@@ -1,4 +1,5 @@
 const assert = require('assert');
+const EtherToken = artifacts.require("assets/EtherToken.sol");
 
 contract('Version', (accounts) => {
   // Test constants
