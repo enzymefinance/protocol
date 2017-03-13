@@ -4,6 +4,15 @@ const BigNumber = require('bignumber.js');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
 
+const EtherToken = artifacts.require("./EtherToken.sol");
+const BitcoinToken = artifacts.require("./BitcoinToken.sol");
+const RepToken = artifacts.require("./RepToken.sol");
+const EuroToken = artifacts.require("./EuroToken.sol");
+const PriceFeed = artifacts.require("PriceFeed.sol");
+const Exchange = artifacts.require("Exchange.sol");
+const Universe = artifacts.require("Universe.sol");
+const RiskMgmt = artifacts.require("RiskMgmt.sol");
+const Core = artifacts.require("Core.sol");
 
 contract('Net Asset Value', (accounts) => {
   // Test constants
