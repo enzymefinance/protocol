@@ -63,12 +63,10 @@ function krakenPricesRelEther(data) {
 /// Post: Executed offer as specified in offer object
 function approveAndOffer(offer, callback) {
   const exchangeAddress = constants.EXCHANGE_ADDRESS;
-  const exchagneContract = Exchange.at(exchangeAddress);
-  // console.log(exchagneContract)
   // Approve spending of selling amount at selling token
   AssetProtocol.at(offer.sell_which_token).approve(exchangeAddress, offer.sell_how_much)
   // Offer selling amount of selling token for buying amount of buying token
-  .then(() => exchagneContract.offer(
+  .then(() => Exchange.at(exchangeAddress).offer(
       offer.sell_how_much,
       offer.sell_which_token,
       offer.buy_how_much,
@@ -76,11 +74,11 @@ function approveAndOffer(offer, callback) {
       { from: offer.owner }))
   .then((txHash) => {
     // callback(null, txHash);
-    return exchagneContract.getLastOfferId();
+    return Exchange.at(exchangeAddress).getLastOfferId();
   })
   .then((result) => {
     console.log(result.toNumber())
-    callback(null, result);
+    callback(null, txHash);
     return Exchange.at(exchangeAddress).getLastOfferId();
   });
 }
