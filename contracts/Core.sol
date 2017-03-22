@@ -50,6 +50,9 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
     uint public constant BASE_UNIT_OF_SHARES = 1 ether;
 
+    // Fields that are only changed in constructor
+    address baseAsset;
+
     // Fields that can be changed by functions
     Analytics analytics;
     Modules module;
@@ -98,6 +101,7 @@ contract Core is Shares, SafeMath, Owned {
 
     // CONSTANT METHDOS
 
+    function getBaseAsset() constant returns (address) { return baseAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
 
     /// Post: Calculate Share Price in Wei
@@ -148,7 +152,14 @@ contract Core is Shares, SafeMath, Owned {
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint assetDecimals = Asset.getDecimals();
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            uint assetPrice = Price.getPrice(address(module.universe.assetAt(i))); // Asset price relative to reference asset price
+            address baseAssetAddr = Price.getBaseAsset();
+            address assetAddr = address(module.universe.assetAt(i));
+            uint assetPrice;
+            if (baseAssetAddr == assetAddr) {
+              assetPrice = 1; // By definition
+            } else {
+              assetPrice = Price.getPrice(assetAddr); // Asset price relative to reference asset price
+            }
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
         }
     }
