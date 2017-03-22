@@ -1,4 +1,5 @@
 const EtherToken = artifacts.require("./EtherToken.sol");
+const MelonToken = artifacts.require("./MelonToken.sol");
 const BitcoinToken = artifacts.require("./BitcoinToken.sol");
 const RepToken = artifacts.require("./RepToken.sol");
 const EuroToken = artifacts.require("./EuroToken.sol");
@@ -10,6 +11,7 @@ module.exports = (deployer) => {
   // Deploy contracts
   deployer.deploy([
     [EtherToken, { gas: 4000000, data: EtherToken.unlinked_binary }],
+    [MelonToken, { gas: 4000000, data: MelonToken.unlinked_binary }],    
     [BitcoinToken, { gas: 4000000, data: BitcoinToken.unlinked_binary }],
     [RepToken, { gas: 4000000, data: RepToken.unlinked_binary }],
     [EuroToken, { gas: 4000000, data: EuroToken.unlinked_binary }],
