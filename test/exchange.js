@@ -30,7 +30,6 @@ contract('Exchange', (accounts) => {
   const pricesRelEther = functions.krakenPricesRelEther(data);
 
   before('Check accounts, exchange and premined amount', (done) => {
-    assert.equal(accounts.length, 10);
     Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
@@ -48,7 +47,7 @@ contract('Exchange', (accounts) => {
 
   it('Create one side of the orderbook', (done) => {
     const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
-    console.log(bitcoinTokenAddress)
+    console.log(bitcoinTokenAddress);
     functions.buyOneEtherFor(
       pricesRelEther[1],
       bitcoinTokenAddress,

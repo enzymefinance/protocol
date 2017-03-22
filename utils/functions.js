@@ -73,14 +73,9 @@ function approveAndOffer(offer, callback) {
       offer.buy_which_token,
       { from: offer.owner }))
   .then((txHash) => {
-    // callback(null, txHash);
-    return Exchange.at(exchangeAddress).getLastOfferId();
-  })
-  .then((result) => {
-    console.log(result.toNumber())
     callback(null, txHash);
     return Exchange.at(exchangeAddress).getLastOfferId();
-  });
+  })
 }
 
 /// Pre:

@@ -3,7 +3,7 @@ pragma solidity ^0.4.8;
 import "./PriceFeedProtocol.sol";
 import "../dependencies/BackupOwned.sol";
 
-/// @title Price Feed Contract
+/// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 contract PriceFeed is PriceFeedProtocol, BackupOwned {
@@ -12,7 +12,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     struct Data {
         uint timestamp; // Timestamp of last price update of this asset
-        uint price; // Price of asset relative to Ether with decimals of this asset
+        uint price; // Quote price of asset relative to base (Ether) times ten to the power of {decimals of this asset}
     }
 
     // FIELDS
@@ -21,6 +21,11 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     /// Note: Frequency is purely self imposed and for information purposes only
     uint constant frequency = 120; // Frequency of updates in seconds
     uint constant validity = 60; // Time in seconds data is considered valid
+
+    // Fields that are only changed in constructor
+    /// Note: By definition the price of the base asset against itself (base asset) is always equals one
+    address baseAsset; // Is the base asset of a portfolio against which all other assets are priced against
+
     // Fields that can be changed by functions
     mapping (address => Data) data; // Address of asset => price of asset
 
@@ -48,8 +53,9 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     // CONSTANT METHODS
 
-    function getFrequency() constant returns (uint) { return frequency; }
-    function getValidity() constant returns (uint) { return validity; }
+    function getBaseAsset() constant returns (address) { return baseAsset; }
+    function getFrequency(address ofAsset) constant returns (uint) { return frequency; }
+    function getValidity(address ofAsset) constant returns (uint) { return validity; }
 
     /// Pre: Checks for initialisation and inactivity
     /// Post: Price of asset, where last updated not longer than `validity` seconds ago
@@ -76,12 +82,16 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     // NON-CONSTANT METHODS
 
-    function PriceFeed(address ofBackupOwner)
-        BackupOwned(ofBackupOwner)
-    {}
+    /// Pre: Define a base asset against which all prices are measured/quoted against
+    /// Post: Price Feed contract w Backup Owner
+    function PriceFeed(address setBackupOwner, address setBaseAsset)
+        BackupOwned(setBackupOwner)
+    {
+        baseAsset = setBaseAsset;
+    }
 
-    //// Pre: Only Owner; Same sized input arrays
-    //// Post: Update price of asset relative to Ether
+    /// Pre: Only Owner; Same sized input arrays
+    /// Post: Update price of asset relative to Ether
     /** Ex:
      *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
@@ -93,7 +103,10 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
             assert(data[ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
-            data[ofAssets[i]] = Data( now, newPrices[i] );
+            data[ofAssets[i]] = Data({
+                timestamp: now,
+                price: newPrices[i],
+            });
             PriceUpdated(ofAssets[i], now, newPrices[i]);
         }
     }
