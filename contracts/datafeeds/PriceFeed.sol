@@ -54,8 +54,8 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     // CONSTANT METHODS
 
     function getBaseAsset() constant returns (address) { return baseAsset; }
-    function getFrequency(address ofAsset) constant returns (uint) { return frequency; }
-    function getValidity(address ofAsset) constant returns (uint) { return validity; }
+    function getFrequency() constant returns (uint) { return frequency; }
+    function getValidity() constant returns (uint) { return validity; }
 
     /// Pre: Checks for initialisation and inactivity
     /// Post: Price of asset, where last updated not longer than `validity` seconds ago

@@ -3,6 +3,8 @@ const assert = require('assert');
 const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
+const EtherToken = artifacts.require("./EtherToken.sol");
+const BitcoinToken = artifacts.require("./BitcoinToken.sol");
 const PriceFeed = artifacts.require('PriceFeed.sol');
 
 contract('PriceFeed', (accounts) => {
@@ -36,16 +38,18 @@ contract('PriceFeed', (accounts) => {
   }
 
   // Test globals
+  let etherTokenContract;
+  let bitcoinTokenContract;
   let priceFeedContract;
 
 
-  before('Check accounts set asset addresses', (done) => {
-    assert.equal(accounts.length, 10);
-    done();
+  before('Init contract instances', () => {
+    EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
+    BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
   });
 
   it('Deploy smart contract', (done) => {
-    PriceFeed.new(BACKUP_OWNER).then((result) => {
+    PriceFeed.new(BACKUP_OWNER, etherTokenContract.address).then((result) => {
       priceFeedContract = result;
       return priceFeedContract.getFrequency();
     }).then((result) => {
@@ -53,11 +57,10 @@ contract('PriceFeed', (accounts) => {
       return priceFeedContract.backupOwner();
     }).then((result) => {
       assert.equal(result, BACKUP_OWNER);
-    }).then(() => {
       done();
     });
   });
-
+  
   it('Get not existent price', (done) => {
     priceFeedContract.getPrice('', { from: NOT_OWNER })
     .then(() => console.log('If this gets executed then previous contract did not throw error.'))

@@ -29,14 +29,14 @@ contract('Exchange', (accounts) => {
   // Atomize Prices realtive to Asset
   const pricesRelEther = functions.krakenPricesRelEther(data);
 
-  let exchangeContract;
   let etherTokenContract;
   let bitcoinTokenContract;
+  let exchangeContract;
 
   before('Init contract instances', () => {
-    Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
     EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
     BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+    Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
   });
 
   it('Check accounts, exchange and premined amount', (done) => {

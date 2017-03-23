@@ -9,8 +9,8 @@ contract PriceFeedProtocol {
     // CONSTANT METHODS
 
     function getBaseAsset() constant returns (address) {}
-    function getFrequency(address ofAsset) constant returns (uint) {}
-    function getValidity(address ofAsset) constant returns (uint) {}
+    function getFrequency() constant returns (uint) {}
+    function getValidity() constant returns (uint) {}
     function getPrice(address ofAsset) constant returns (uint) {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
