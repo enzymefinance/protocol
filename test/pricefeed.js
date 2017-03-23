@@ -3,8 +3,8 @@ const assert = require('assert');
 const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
-const EtherToken = artifacts.require("./EtherToken.sol");
-const BitcoinToken = artifacts.require("./BitcoinToken.sol");
+const EtherToken = artifacts.require('./EtherToken.sol');
+const BitcoinToken = artifacts.require('./BitcoinToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 
 contract('PriceFeed', (accounts) => {
@@ -60,7 +60,7 @@ contract('PriceFeed', (accounts) => {
       done();
     });
   });
-  
+
   it('Get not existent price', (done) => {
     priceFeedContract.getPrice('', { from: NOT_OWNER })
     .then(() => console.log('If this gets executed then previous contract did not throw error.'))

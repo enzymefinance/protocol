@@ -2,11 +2,11 @@ const constants = require('./constants.js');
 const specs = require('../utils/specs.js');
 const async = require('async');
 const Exchange = artifacts.require('Exchange.sol');
-const EtherToken = artifacts.require("./EtherToken.sol");
-const BitcoinToken = artifacts.require("./BitcoinToken.sol");
-const RepToken = artifacts.require("./RepToken.sol");
-const EuroToken = artifacts.require("./EuroToken.sol");
-const AssetProtocol = artifacts.require("./AssetProtocol.sol");
+const EtherToken = artifacts.require('./EtherToken.sol');
+const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const RepToken = artifacts.require('./RepToken.sol');
+const EuroToken = artifacts.require('./EuroToken.sol');
+const AssetProtocol = artifacts.require('./AssetProtocol.sol');
 
 // Price Feed
 

@@ -4,15 +4,15 @@ const BigNumber = require('bignumber.js');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
 
-const EtherToken = artifacts.require("./EtherToken.sol");
-const BitcoinToken = artifacts.require("./BitcoinToken.sol");
-const RepToken = artifacts.require("./RepToken.sol");
-const EuroToken = artifacts.require("./EuroToken.sol");
-const PriceFeed = artifacts.require("PriceFeed.sol");
-const Exchange = artifacts.require("Exchange.sol");
-const Universe = artifacts.require("Universe.sol");
-const RiskMgmt = artifacts.require("RiskMgmt.sol");
-const Core = artifacts.require("Core.sol");
+const EtherToken = artifacts.require('./EtherToken.sol');
+const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const RepToken = artifacts.require('./RepToken.sol');
+const EuroToken = artifacts.require('./EuroToken.sol');
+const PriceFeed = artifacts.require('PriceFeed.sol');
+const Exchange = artifacts.require('Exchange.sol');
+const Universe = artifacts.require('Universe.sol');
+const RiskMgmt = artifacts.require('RiskMgmt.sol');
+const Core = artifacts.require('Core.sol');
 
 contract('Net Asset Value', (accounts) => {
   // Test constants
@@ -64,7 +64,7 @@ contract('Net Asset Value', (accounts) => {
   let assetList;
   let priceFeedContract;
   let exchangeContract;
-  let registrarContract;
+  let universeContract;
   let riskmgmtContract;
   let priceFeedTestCases;
   let exchangeTestCases;
@@ -131,7 +131,7 @@ contract('Net Asset Value', (accounts) => {
           ], { from: OWNER });
       })
       .then((result) => {
-        registrarContract = result;
+        universeContract = result;
         return RiskMgmt.new(exchangeContract.address, { from: OWNER });
       })
       .then((result) => {
@@ -142,7 +142,7 @@ contract('Net Asset Value', (accounts) => {
 
   it('Deploy smart contract', (done) => {
     Core.new(OWNER,
-      registrarContract.address,
+      universeContract.address,
       riskmgmtContract.address,
       ADDRESS_PLACEHOLDER,
       ADDRESS_PLACEHOLDER,

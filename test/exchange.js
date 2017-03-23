@@ -5,10 +5,10 @@ const functions = require('../utils/functions.js');
 const collections = require('../utils/collections.js');
 
 const Exchange = artifacts.require('Exchange.sol');
-const EtherToken = artifacts.require("./EtherToken.sol");
-const BitcoinToken = artifacts.require("./BitcoinToken.sol");
-const RepToken = artifacts.require("./RepToken.sol");
-const EuroToken = artifacts.require("./EuroToken.sol");
+const EtherToken = artifacts.require('./EtherToken.sol');
+const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const RepToken = artifacts.require('./RepToken.sol');
+const EuroToken = artifacts.require('./EuroToken.sol');
 
 let offers = [];  // Offers collections
 

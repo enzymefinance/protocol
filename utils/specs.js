@@ -1,9 +1,9 @@
 const constants = require('./constants.js');
 
-const EtherToken = artifacts.require("./EtherToken.sol");
-const BitcoinToken = artifacts.require("./BitcoinToken.sol");
-const RepToken = artifacts.require("./RepToken.sol");
-const EuroToken = artifacts.require("./EuroToken.sol");
+const EtherToken = artifacts.require('./EtherToken.sol');
+const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const RepToken = artifacts.require('./RepToken.sol');
+const EuroToken = artifacts.require('./EuroToken.sol');
 
 const network = 'kovan';
 

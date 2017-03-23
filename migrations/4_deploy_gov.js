@@ -1,5 +1,5 @@
-const Version = artifacts.require("./Version.sol");
-const Governance = artifacts.require("./Governance.sol");
+const Version = artifacts.require('./Version.sol');
+const Governance = artifacts.require('./Governance.sol');
 
 module.exports = (deployer) => {
   // Deploy meta strucutre

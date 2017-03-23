@@ -1,5 +1,9 @@
 const assert = require('assert');
-const EtherToken = artifacts.require("assets/EtherToken.sol");
+const Universe = artifacts.require('./Universe.sol');
+const RiskMgmt = artifacts.require('./RiskMgmt.sol');
+const Version = artifacts.require('./Version.sol');
+const Core = artifacts.require('./Core.sol');
+
 
 contract('Version', (accounts) => {
   // Test constants
@@ -7,68 +11,15 @@ contract('Version', (accounts) => {
   const ADDRESS_PLACEHOLDER = '0x0';
 
   // Test globals
+  let universeContract;
+  let riskmgmtContract;
   let versionContract;
   let coreContract;
-  let etherTokenContract;
-  let bitcoinTokenContract;
-  let dollarTokenContract;
-  let euroTokenContract;
-  let priceFeedContract;
-  let exchangeContract;
-  let registrarContract;
-  let riskmgmtContract;
 
-  before('Check accounts, deploy modules, set testcase', (done) => {
-    assert.equal(accounts.length, 10);
-    EtherToken.new({ from: OWNER })
-    .then((result) => {
-      etherTokenContract = result;
-      return BitcoinToken.new({ from: OWNER });
-    })
-    .then((result) => {
-      bitcoinTokenContract = result;
-      return RepToken.new({ from: OWNER });
-    })
-    .then((result) => {
-      dollarTokenContract = result;
-      return EuroToken.new({ from: OWNER });
-    })
-    .then((result) => {
-      euroTokenContract = result;
-      return PriceFeed.new({ from: OWNER });
-    })
-    .then((result) => {
-      priceFeedContract = result;
-      return Exchange.new({ from: OWNER });
-    })
-    .then((result) => {
-      exchangeContract = result;
-      return Universe.new(
-        [
-          etherTokenContract.address,
-          bitcoinTokenContract.address,
-          dollarTokenContract.address,
-          euroTokenContract.address,
-        ], [
-          priceFeedContract.address,
-          priceFeedContract.address,
-          priceFeedContract.address,
-          priceFeedContract.address,
-        ], [
-          exchangeContract.address,
-          exchangeContract.address,
-          exchangeContract.address,
-          exchangeContract.address,
-        ], { from: OWNER });
-    })
-    .then((result) => {
-      registrarContract = result;
-      return RiskMgmt.new(exchangeContract.address, { from: OWNER });
-    })
-    .then((result) => {
-      riskmgmtContract = result;
-      done();
-    });
+  before('Init contract instances', () => {
+    Universe.deployed().then((deployed) => { universeContract = deployed; });
+    RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
+    Version.deployed().then((deployed) => { versionContract = deployed; });
   });
 
   it('Create a Core contract through the Version contract', (done) => {
@@ -76,7 +27,7 @@ contract('Version', (accounts) => {
     .then((result) => {
       versionContract = result;
       return versionContract.createCore(
-        registrarContract.address,
+        universeContract.address,
         riskmgmtContract.address,
         ADDRESS_PLACEHOLDER,
         ADDRESS_PLACEHOLDER,
@@ -91,11 +42,9 @@ contract('Version', (accounts) => {
       coreContract = Core.at(result);
       return coreContract.owner();
     })
-    .then(() => {
-      /* TODO Set Owner of Portfolio equal to Portfolio creator */
-      // assert.equal(OWNER, result, "Core.owner != OWNER!");
-    })
-    .then(done)
-    .catch(done);
+    .then((result) => {
+      assert.equal(OWNER, result, 'Core.owner != OWNER!');
+      done();
+    });
   });
 });
