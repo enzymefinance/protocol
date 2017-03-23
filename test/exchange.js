@@ -29,8 +29,18 @@ contract('Exchange', (accounts) => {
   // Atomize Prices realtive to Asset
   const pricesRelEther = functions.krakenPricesRelEther(data);
 
-  before('Check accounts, exchange and premined amount', (done) => {
-    Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
+  let exchangeContract;
+  let etherTokenContract;
+  let bitcoinTokenContract;
+
+  before('Init contract instances', () => {
+    Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
+    EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
+    BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+  });
+
+  it('Check accounts, exchange and premined amount', (done) => {
+    exchangeContract.getLastOfferId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
       return BitcoinToken.deployed().then(deployed => deployed.totalSupply({ from: OWNER }));
@@ -46,11 +56,10 @@ contract('Exchange', (accounts) => {
   });
 
   it('Create one side of the orderbook', (done) => {
-    const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
-    console.log(bitcoinTokenAddress);
+    // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
     functions.buyOneEtherFor(
       pricesRelEther[1],
-      bitcoinTokenAddress,
+      bitcoinTokenContract.address,
       OWNER,
       NUM_OFFERS,
       (err) => {
@@ -63,9 +72,10 @@ contract('Exchange', (accounts) => {
   });
 
   it('Check if orders created', (done) => {
-    Exchange.at(constants.EXCHANGE_ADDRESS).getLastOfferId()
+    exchangeContract.getLastOfferId()
     .then((result) => {
       const lastOfferId = result.toNumber();
+      console.log(lastOfferId)
       assert.equal(lastOfferId, NUM_OFFERS);
       done();
     });
