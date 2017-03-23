@@ -21,6 +21,14 @@ contract('Net Asset Value', (accounts) => {
   const ADDRESS_PLACEHOLDER = '0x0';
   const NUM_OFFERS = 1;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
+
+  const assets = [
+    '0x632a40acd4975295495f45190e612ef15c84ae91',
+    '0xcb8d1b21f0ceb07959e47eb8152f25332939c0dc',
+    '0x9265c634b43bafc5305fed65c157ee1d7b6b8b50',
+    '0x6d7e5ec3d87cbe5d6efa611f86ea27da53c9a360',
+  ];
+
   // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
   const data = {
     'error':[],
@@ -30,114 +38,33 @@ contract('Net Asset Value', (accounts) => {
       'XREPXETH': {'a':['0.435820','1','1.000'],'b':['0.430570','80','80.000'],'c':['0.435790','1.71736386'],'v':['483.41580154','569.06380459'],'p':['0.428581','0.429142'],'t':[36,48],'l':['0.421730','0.421730'],'h':['0.437000','0.437000'],'o':'0.423270'},
     }
   };
-  // Prices Relative to Asset
-  const eth_ett = 1.0; // By definition
-  const eth_xbt = functions.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
-  const eth_rep = functions.invertAssetPairPrice(data.result.XREPXETH.c[0]);
-  const eth_eur = functions.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
-  // Atomize Prices realtive to Asset
-  const pricesRelAsset = [
-    functions.atomizeAssetPrice(eth_ett, constants.ETHERTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(eth_xbt, constants.BITCOINTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(eth_rep, constants.REPTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(eth_eur, constants.EUROTOKEN_DECIMALS),
-  ];
-  // Prices Relative to Ether
-  const ett_eth = 1.0; // By definition
-  const xbt_eth = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
-  const rep_eth = data.result.XREPXETH.c[0]; // Price already relavtive to ether
-  const eur_eth = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
   // Atomize Prices realtive to Ether
-  const pricesRelEther = [
-    functions.atomizeAssetPrice(ett_eth, constants.ETHERTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(xbt_eth, constants.BITCOINTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(rep_eth, constants.REPTOKEN_DECIMALS),
-    functions.atomizeAssetPrice(eur_eth, constants.EUROTOKEN_DECIMALS),
-  ];
+  const pricesRelEther = functions.krakenPricesRelEther(data);
+
+  let priceFeedTestCases = [];
+
+  // Atomize Prices realtive to Asset
+  const pricesRelAsset = functions.krakenPricesRelAsset(data);
 
   // Test globals
   let coreContract;
   let etherTokenContract;
   let bitcoinTokenContract;
-  let dollarTokenContract;
   let euroTokenContract;
-  let assetList;
   let priceFeedContract;
   let exchangeContract;
   let universeContract;
   let riskmgmtContract;
-  let priceFeedTestCases;
   let exchangeTestCases;
   let riskmgmtTestCases;
-  let lastOfferId = 0;
 
-  before('Check accounts, deploy modules, set testcase', (done) => {
-    assert.equal(accounts.length, 10);
-
-    // Setup Asset
-    assetList = [];
-    priceFeedTestCases = [];
-    EtherToken.new({ from: OWNER })
-      .then((result) => {
-        etherTokenContract = result;
-        assetList.push(result.address)
-        return BitcoinToken.new({ from: OWNER });
-      })
-      .then((result) => {
-        bitcoinTokenContract = result;
-        assetList.push(result.address)
-        return RepToken.new({ from: OWNER });
-      })
-      .then((result) => {
-        dollarTokenContract = result;
-        assetList.push(result.address)
-        return EuroToken.new({ from: OWNER });
-      })
-      .then((result) => {
-        euroTokenContract = result;
-        assetList.push(result.address)
-        return PriceFeed.new({ from: OWNER });
-      })
-      .then((result) => {
-        priceFeedContract = result;
-        for (let i = 0; i < pricesRelEther.length; i += 1) {
-          priceFeedTestCases.push(
-            {
-              address: assetList[i],
-              price: pricesRelEther[i],
-            }
-          );
-        }
-        return Exchange.new({ from: OWNER });
-      })
-      .then((result) => {
-        exchangeContract = result;
-        return Universe.new(
-          [
-            assetList[0],
-            assetList[1],
-            assetList[2],
-            assetList[3],
-          ], [
-            priceFeedContract.address,
-            priceFeedContract.address,
-            priceFeedContract.address,
-            priceFeedContract.address,
-          ], [
-            exchangeContract.address,
-            exchangeContract.address,
-            exchangeContract.address,
-            exchangeContract.address,
-          ], { from: OWNER });
-      })
-      .then((result) => {
-        universeContract = result;
-        return RiskMgmt.new(exchangeContract.address, { from: OWNER });
-      })
-      .then((result) => {
-        riskmgmtContract = result;
-        done();
-      });
+  before('Check accounts, deploy modules, set testcase', () => {
+    EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
+    BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+    PriceFeed.deployed().then((deployed) => { priceFeedContract = deployed; });
+    Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
+    Universe.deployed().then((deployed) => { universeContract = deployed; });
+    RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
   });
 
   it('Deploy smart contract', (done) => {
@@ -157,26 +84,29 @@ contract('Net Asset Value', (accounts) => {
         });
   });
 
+  it('Define Price Feed testcase', () => {
+    assets[0] = etherTokenContract.address;
+    assets[1] = bitcoinTokenContract.address;
+    for (let i = 0; i < assets.length; i += 1) {
+      priceFeedTestCases.push({ address: assets[i], price: pricesRelEther[i] });
+    }
+  });
+
   it('Set multiple price', (done) => {
-    // Price of EtherToken is constant for all times
-    const addresses = [
-      priceFeedTestCases[0].address,
-      priceFeedTestCases[1].address,
-      priceFeedTestCases[2].address,
-      priceFeedTestCases[3].address,
-    ];
-    const inverseAtomizedPrices = [
-      priceFeedTestCases[0].price,
-      priceFeedTestCases[1].price,
-      priceFeedTestCases[2].price,
-      priceFeedTestCases[3].price,
-    ];
-    priceFeedContract.updatePrice(addresses, inverseAtomizedPrices, { from: OWNER })
-      .then(() => priceFeedContract.getUpdateCounter())
-      .then((result) => {
-        assert.notEqual(result.toNumber(), 0);
-        done();
-      });
+    priceFeedContract.updatePrice(assets, pricesRelEther, { from: OWNER })
+    .then((result) => {
+      // Check Logs
+      assert.notEqual(result.logs.length, 0);
+      for (let i = 0; i < result.logs.length; i += 1) {
+        // console.log(result);
+        assert.equal(result.logs[i].event, 'PriceUpdated');
+        assert.equal(result.logs[i].args.ofAsset, assets[i]);
+        // TODO test against actual block.time
+        assert.notEqual(result.logs[i].args.atTimestamp.toNumber(), 0);
+        assert.equal(result.logs[i].args.ofPrice, pricesRelEther[i]);
+      }
+      done();
+    });
   });
 
   it('Get multiple existent prices', (done) => {
@@ -184,16 +114,15 @@ contract('Net Asset Value', (accounts) => {
       priceFeedTestCases,
       (testCase, callbackMap) => {
         priceFeedContract.getPrice(testCase.address, { from: NOT_OWNER })
-          .then((result) => {
-            console.log(`Price: ${result}, \t TestCase: ${testCase.price}`);
-            assert.equal(result.toNumber(), testCase.price);
-            callbackMap(null, testCase);
-          });
+        .then((result) => {
+          assert.equal(result.toNumber(), testCase.price);
+          callbackMap(null, testCase);
+        });
       },
-      (err, results) => {
-        priceFeedTestCases = results;
-        done();
-      });
+    (err, results) => {
+      priceFeedTestCases = results;
+      done();
+    });
   });
 
   it('Set up test cases', (done) => {
@@ -238,43 +167,25 @@ contract('Net Asset Value', (accounts) => {
   });
 
   it('Create one side of the orderbook', (done) => {
-    // exchangeContract.offer(
-    //   1000,
-    //   testCase.sell_which_token,
-    //   testCase.buy_how_much,
-    //   testCase.buy_which_token,
-    //   { from: OWNER }
-    // )
-    // .then((result) => {
-    //   done();
-    // });
-
-    // async.mapSeries(
-    //   exchangeTestCases,
-    //   (testCase, callbackMap) => {
-    //     console.log(OWNER)
-    //     exchangeContract.offer(
-    //       testCase.sell_how_much,
-    //       testCase.sell_which_token,
-    //       testCase.buy_how_much,
-    //       testCase.buy_which_token,
-    //       { from: OWNER }
-    //     ).then((txHash) => {
-    //       const result = Object.assign({ txHash }, testCase);
-    //       callbackMap(null, result);
-    //     });
-    //   },
-    //   (err, results) => {
-    //     exchangeTestCases = results;
-    //     done();
-    //   }
-    // );
+    // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
+    functions.buyOneEtherFor(
+      pricesRelAsset[1],
+      bitcoinTokenContract.address,
+      OWNER,
+      NUM_OFFERS,
+      (err) => {
+        if (!err) {
+          done();
+        } else {
+          console.log(err);
+        }
+      });
   });
 
   it('Check if orders created', (done) => {
-    exchangeContract.lastOfferId({ from: OWNER })
+    exchangeContract.getLastOfferId()
     .then((result) => {
-      lastOfferId = result.toNumber();
+      const lastOfferId = result.toNumber();
       assert.equal(lastOfferId, NUM_OFFERS);
       done();
     });

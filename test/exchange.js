@@ -27,7 +27,7 @@ contract('Exchange', (accounts) => {
     }};
 
   // Atomize Prices realtive to Asset
-  const pricesRelEther = functions.krakenPricesRelEther(data);
+  const pricesRelAsset = functions.krakenPricesRelAsset(data);
 
   let etherTokenContract;
   let bitcoinTokenContract;
@@ -58,7 +58,7 @@ contract('Exchange', (accounts) => {
   it('Create one side of the orderbook', (done) => {
     // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
     functions.buyOneEtherFor(
-      pricesRelEther[1],
+      pricesRelAsset[1],
       bitcoinTokenContract.address,
       OWNER,
       NUM_OFFERS,

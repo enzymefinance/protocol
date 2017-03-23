@@ -145,7 +145,6 @@ function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
       this.approveAndOffer(offer,
         (err, hash) => {
           if (!err) {
-            console.log(hash);
             callbackMap(null, Object.assign({ txHash: hash }, offer));
           } else {
             callbackMap(err, undefined);
