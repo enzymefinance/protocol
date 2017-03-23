@@ -75,49 +75,48 @@ contract('Exchange', (accounts) => {
     exchangeContract.getLastOfferId()
     .then((result) => {
       const lastOfferId = result.toNumber();
-      console.log(lastOfferId)
       assert.equal(lastOfferId, NUM_OFFERS);
       done();
     });
   });
 
-  // it('Check orders information', (done) => {
-  //   collections.sync(
-  //     (err, result) => {
-  //       if (!err) {
-  //         offers = result;
-  //         console.log(offers);
-  //         done();
-  //       } else {
-  //         console.log(err);
-  //       }
-  //     });
-  // });
-  //
-  // it('Cancel one side of the orderbook', (done) => {
-  //   functions.cancelAllOffersOfOwner(
-  //     OWNER,
-  //     (err, result) => {
-  //       if (!err) {
-  //         done();
-  //       } else {
-  //         console.log(err);
-  //       }
-  //     }
-  //   );
-  // });
-  //
-  // it('Check orders information', (done) => {
-  //   collections.sync(
-  //     (err, result) => {
-  //       if (!err) {
-  //         offers = result;
-  //         console.log(offers);
-  //         done();
-  //       } else {
-  //         console.log(err);
-  //       }
-  //     }
-  //   );
-  // });
+  it('Check orders information', (done) => {
+    collections.sync(
+      (err, result) => {
+        if (!err) {
+          offers = result;
+          console.log(offers);
+          done();
+        } else {
+          console.log(err);
+        }
+      });
+  });
+
+  it('Cancel one side of the orderbook', (done) => {
+    functions.cancelAllOffersOfOwner(
+      OWNER,
+      (err, result) => {
+        if (!err) {
+          done();
+        } else {
+          console.log(err);
+        }
+      }
+    );
+  });
+
+  it('Check orders information', (done) => {
+    collections.sync(
+      (err, result) => {
+        if (!err) {
+          offers = result;
+          console.log(offers);
+          done();
+        } else {
+          console.log(err);
+        }
+      }
+    );
+  });
 });
