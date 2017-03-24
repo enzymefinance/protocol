@@ -7,7 +7,7 @@ const PriceFeed = artifacts.require('./PriceFeed.sol');
 const Exchange = artifacts.require('./Exchange.sol');
 const Universe = artifacts.require('./Universe.sol');
 
-module.exports = (deployer) => {
+module.exports = (deployer, network, accounts) => {
   // Deploy contracts
   deployer.deploy([
     [EtherToken, { gas: 4000000, data: EtherToken.unlinked_binary }],
@@ -15,13 +15,14 @@ module.exports = (deployer) => {
     [BitcoinToken, { gas: 4000000, data: BitcoinToken.unlinked_binary }],
     [RepToken, { gas: 4000000, data: RepToken.unlinked_binary }],
     [EuroToken, { gas: 4000000, data: EuroToken.unlinked_binary }],
-    [PriceFeed, { gas: 4000000, data: PriceFeed.unlinked_binary }],
     [Exchange, { gas: 4000000, data: Exchange.unlinked_binary }],
   ]).then(() =>
+    deployer.deploy(PriceFeed, accounts[1], EtherToken.address)
+  ).then(() =>
     deployer.deploy(Universe,
-      [EtherToken.address, BitcoinToken.address, RepToken.address, EuroToken.address],
-      [PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address],
-      [Exchange.address, Exchange.address, Exchange.address, Exchange.address],
+      [EtherToken.address, MelonToken.address, BitcoinToken.address, RepToken.address, EuroToken.address],
+      [PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address, PriceFeed.address],
+      [Exchange.address, Exchange.address, Exchange.address, Exchange.address, Exchange.address],
       { gas: 4000000, data: Universe.unlinked_binary }
     )
   );

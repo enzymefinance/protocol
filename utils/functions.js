@@ -23,36 +23,40 @@ function invertAssetPairPrice(price) { return 1.0 / price; }
  */
 function atomizeAssetPrice(price, decimals) { return Math.floor(price * (Math.pow(10, decimals))); }
 
-/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
+/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
 /// Post: Prices in its smallest unit relative to Asset
 function krakenPricesRelAsset(data) {
   // Prices Relative to Asset
   const ETHETT = 1.0; // By definition
   const ETHXBT = this.invertAssetPairPrice(data.result.XETHXXBT.c[0]);
   const ETHREP = data.result.XREPXETH.c[0]; // Price already relavtive to ether
+  const ETHMLN = data.result.XMLNXETH.c[0]; // Price already relavtive to ether
   const ETHEUR = this.invertAssetPairPrice(data.result.XETHZEUR.c[0]);
   // Atomize Prices realtive to Asset
   return [
     this.atomizeAssetPrice(ETHETT, constants.ETHERTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHXBT, constants.BITCOINTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHREP, constants.REPTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHEUR, constants.EUROTOKEN_DECIMALS),
   ];
 }
 
-/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
+/// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
 /// Post: Prices in its smallest unit relative to Ether
 function krakenPricesRelEther(data) {
   // Prices Relative to Ether
   const ETTETH = 1.0; // By definition
   const XBTETH = data.result.XETHXXBT.c[0]; // Price already relavtive to ether
   const REPETH = this.invertAssetPairPrice(data.result.XREPXETH.c[0]);
+  const ETHMLN = this.invertAssetPairPrice(data.result.XMLNXETH.c[0]);
   const EURETH = data.result.XETHZEUR.c[0]; // Price already relavtive to ether
   // Atomize Prices realtive to Ether
   return [
     this.atomizeAssetPrice(ETTETH, constants.ETHERTOKEN_DECIMALS),
     this.atomizeAssetPrice(XBTETH, constants.BITCOINTOKEN_DECIMALS),
     this.atomizeAssetPrice(REPETH, constants.REPTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(EURETH, constants.EUROTOKEN_DECIMALS),
   ];
 }

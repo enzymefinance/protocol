@@ -22,25 +22,21 @@ contract('Net Asset Value', (accounts) => {
   const NUM_OFFERS = 1;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
 
-  const assets = [
-    '0x632a40acd4975295495f45190e612ef15c84ae91',
-    '0xcb8d1b21f0ceb07959e47eb8152f25332939c0dc',
-    '0x9265c634b43bafc5305fed65c157ee1d7b6b8b50',
-    '0x6d7e5ec3d87cbe5d6efa611f86ea27da53c9a360',
-  ];
-
-  // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=ETHXBT,REPETH,ETHEUR
+  // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
   const data = {
     'error':[],
     'result': {
-      'XETHXXBT': {'a':['0.011558','135','135.000'],'b':['0.011550','376','376.000'],'c':['0.011550','0.47405000'],'v':['100153.86921002','112421.66650936'],'p':['0.011477','0.010527'],'t':[1980,2248],'l':['0.011318','0.011318'],'h':['0.011651','0.011710'],'o':'0.011521'},
-      'XETHZEUR': {'a':['9.83249','23','23.000'],'b':['9.79000','72','72.000'],'c':['9.80510','16.54860000'],'v':['33417.76252715','39085.89051588'],'p':['9.72591','9.70190'],'t':[1384,1601],'l':['9.53300','9.51171'],'h':['9.84900','9.84900'],'o':'9.68796'},
-      'XREPXETH': {'a':['0.435820','1','1.000'],'b':['0.430570','80','80.000'],'c':['0.435790','1.71736386'],'v':['483.41580154','569.06380459'],'p':['0.428581','0.429142'],'t':[36,48],'l':['0.421730','0.421730'],'h':['0.437000','0.437000'],'o':'0.423270'},
+      'XETHXXBT':{'a':['0.048000','871','871.000'],'b':['0.047805','38','38.000'],'c':['0.048000','25.00000000'],'v':['114473.71344905','228539.93878035'],'p':['0.044567','0.031312'],'t':[4425,8621],'l':['0.041600','0.038900'],'h':['0.048700','0.048700'],'o':'0.041897'},
+      'XETHZEUR':{'a':['43.65000','167','167.000'],'b':['43.51021','1','1.000'],'c':['43.60000','10.00000000'],'v':['138408.66847600','245710.71986448'],'p':['41.96267','40.67496'],'t':[6247,11473],'l':['39.27000','37.42000'],'h':['44.96998','44.96998'],'o':'39.98679'},
+      'XMLNXETH':{'a':['0.59890000','36','36.000'],'b':['0.56119000','205','205.000'],'c':['0.56000000','0.00022300'],'v':['1621.65161884','2098.74750661'],'p':['0.60344695','0.61624131'],'t':[175,264],'l':['0.56000000','0.56000000'],'h':['0.65929000','0.67800000'],'o':'0.65884000'},
+      'XREPXETH':{'a':['0.202450','70','70.000'],'b':['0.200200','50','50.000'],'c':['0.199840','1.81418400'],'v':['2898.19114399','5080.16762561'],'p':['0.197919','0.208634'],'t':[219,382],'l':['0.182120','0.182120'],'h':['0.215080','0.239990'],'o':'0.214740'}
     }
   };
+
   // Atomize Prices realtive to Ether
   const pricesRelEther = functions.krakenPricesRelEther(data);
 
+  let assets = [];
   let priceFeedTestCases = [];
 
   // Atomize Prices realtive to Asset
@@ -67,6 +63,19 @@ contract('Net Asset Value', (accounts) => {
     RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
   });
 
+  it('Define Price Feed testcase', () => {
+    universeContract.numAssignedAssets()
+    .then((numAssets) => {
+      for (let i = 0; i < numAssets; i += 1) {
+        universeContract.assetAt(i)
+        .then((assetAddr) => {
+          assets.push(assetAddr);
+          priceFeedTestCases.push({ address: assetAddr, price: pricesRelEther[i] });
+        })
+      }
+    });
+  });
+
   it('Deploy smart contract', (done) => {
     Core.new(OWNER,
       universeContract.address,
@@ -82,14 +91,6 @@ contract('Net Asset Value', (accounts) => {
           assert.equal(result.toNumber(), 0);
           done();
         });
-  });
-
-  it('Define Price Feed testcase', () => {
-    assets[0] = etherTokenContract.address;
-    assets[1] = bitcoinTokenContract.address;
-    for (let i = 0; i < assets.length; i += 1) {
-      priceFeedTestCases.push({ address: assets[i], price: pricesRelEther[i] });
-    }
   });
 
   it('Set multiple price', (done) => {
@@ -140,20 +141,6 @@ contract('Net Asset Value', (accounts) => {
         }
       );
     }
-    // riskmgmtTestCases = [];
-    // for (let i = 0; i < NUM_OFFERS; i += 1) {
-    //   riskmgmtTestCases.push(
-    //     {
-    //       sell_how_much: Math.floor(pricesRelAsset[1] * (1 - (i * 0.1))),
-    //       sell_which_token: bitcoinTokenContract.address,
-    //       buy_how_much: 1 * constants.ether,
-    //       buy_which_token: etherTokenContract.address,
-    //       id: i + 1,
-    //       owner: OWNER,
-    //       active: true,
-    //     },
-    //   );
-    // }
     done();
   });
 
@@ -209,36 +196,19 @@ contract('Net Asset Value', (accounts) => {
 
   // MAIN TESTING
 
-  it('Create and Annihilate Shares by investing and withdrawing in a Core and ' +
-      'calculate performance', (done) => {
-    /* Investing and redeeming:
-     *  Round 1 & 4: Exact
-     *  Rount 2 & 5: Overpaid
-     *  Round 3 & 6: Underpaid
-     */
-    const wantedShares = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-    const investFunds = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
-    const correctPriceToBePaid = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-    // const withdrawFunds = [2*999999999999977800, new BigNumber(1e+18), new BigNumber(7e+18)];
-    const offeredShares = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
-    const redeemFunds = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
-    // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+  /* Investing and redeeming:
+   *  Round 1 & 4: Exact
+   *  Rount 2 & 5: Overpaid
+   *  Round 3 & 6: Underpaid
+   */
+  const wantedShares = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+  const investFunds = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
+  const correctPriceToBePaid = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+  const withdrawFunds = [2*999999999999977800, new BigNumber(1e+18), new BigNumber(7e+18)];
+  const offeredShares = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
+  const redeemFunds = [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
 
-
-    // const correctPriceToBeReceived =
-    //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
-
-    /* Managing
-     *  Round 1:
-     */
-    const buy = [
-      {
-        exchange: exchangeContract.address,
-        buy_how_much: Math.floor(pricesRelAsset[1]),
-        id: 1,
-      }
-    ];
-
+  it('Invest Ether into Fund', () => {
     coreContract.totalSupply()
     .then((result) => {
       assert.strictEqual(result.toNumber(), 0);
@@ -252,114 +222,184 @@ contract('Net Asset Value', (accounts) => {
     .then((result) => {
       assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
     })
-    .then(() => coreContract.sumInvested())
-    .then((result) => {
-      assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
-
-      // ROUND 2 0VERPAID
-      return coreContract.createShares(wantedShares[1],
-          { from: NOT_OWNER, value: investFunds[1].toNumber() });
-    })
-    // Check totalSupply and sumInvested
-    .then(() => coreContract.totalSupply())
-    .then((result) => {
-      assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-    })
-    .then(() => coreContract.sumInvested())
-    .then((result) => {
-      assert.strictEqual(result.toNumber(),
-        correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-
-      // ROUND 3 UNDERPAID
-      return coreContract.createShares(wantedShares[2],
-        { from: NOT_OWNER, value: investFunds[2].toNumber() });
-    })
-    // Check totalSupply and sumInvested
-    .then(() => coreContract.totalSupply())
-    .then((result) => {
-      // Paid to little, hence no shares received
-      assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-    })
-    .then(() => coreContract.sumInvested())
-    .then((result) => {
-      // Paid to little, hence no investment made
-      assert.strictEqual(result.toNumber(),
-          correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-      return coreContract.balanceOf(NOT_OWNER);
-    })
-    .then((result) => {
-      const balance = wantedShares[0].add(wantedShares[1]).toNumber();
-      assert.strictEqual(result.toNumber(), balance);
-
-      // ROUND 3 MANAGING
-      return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
-    })
-    .then(() => etherTokenContract.balanceOf(coreContract.address))
-    .then((result) => {
-      console.log(`EtherToken held: \t\t${result.toString()}`);
-      return bitcoinTokenContract.balanceOf(coreContract.address);
-    })
-    .then((result) => {
-      console.log(`BitcoinToken held: \t\t${result.toString()}`);
-      return coreContract.calcSharePrice();
-    })
-    .then((result) => {
-      console.log(`New share price is: \t\t${result.toString()}`);
-      //TODO Calculate more precise
-      const roundingError = 0.01;
-      console.log(`Round 4; Sell shares: \t\t${offeredShares[0]}`);
-      console.log(`Round 4; Funds to redeem: \t${redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError)}`);
-
-      // ROUND 4 EXACT
-      return coreContract.annihilateShares(offeredShares[0], redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError), { from: NOT_OWNER });
-    })
-    .then(() => coreContract.totalSupply())
-    .then((result) => {
-      const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
-      assert.strictEqual(result.toNumber(), balance);
-    })
-    .then(() => coreContract.sumWithdrawn())
-    .then((result) => {
-      // TODO: calculate outside w commission etc.
-      console.log(`Round 4; Funds received: \t${result.toNumber()}`);
-      // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
-    })
-    .then(() => coreContract.balanceOf(NOT_OWNER))
-    .then((result) => {
-      const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
-      assert.strictEqual(result.toNumber(), balance);
-    })
-    // // ROUND 5 OVERPAID
-    // .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: NOT_OWNER }))
+    // .then(() => coreContract.sumInvested())
+    // .then((result) => {
+    //   assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
+    //
+    //   // ROUND 2 0VERPAID
+    //   return coreContract.createShares(wantedShares[1],
+    //       { from: NOT_OWNER, value: investFunds[1].toNumber() });
+    // })
+    // // Check totalSupply and sumInvested
     // .then(() => coreContract.totalSupply())
     // .then((result) => {
-    //   const balance = wantedShares[0]
-    //     .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
-    //   assert.strictEqual(result.toNumber(), balance);
+    //   assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
     // })
-    // // Check sumInvested
-    // .then(() => coreContract.sumWithdrawn())
-    // .then(() => {
-    //   // TODO: calculate outside w commission etc.
-    //   // console.log('Sold shares: ' + offeredShares[1]);
-    //   // console.log('Funds received (total): ' + result.toNumber());
-    //   // assert.strictEqual(result.toNumber(),
-    //   //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
+    // .then(() => coreContract.sumInvested())
+    // .then((result) => {
+    //   assert.strictEqual(result.toNumber(),
+    //     correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+    //
+    //   // ROUND 3 UNDERPAID
+    //   return coreContract.createShares(wantedShares[2],
+    //     { from: NOT_OWNER, value: investFunds[2].toNumber() });
     // })
-    // .then(() => {
-    //   // TODO: calculate outside w commission, performance gains, loses etc.
-    //   // for (i = 0; i < numAccounts; ++i) {
-    //   //   // Actual Balance
-    //   //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
-    //   //   // >=, since actual balance has a gas cost for sending the tx.
-    //   //   // TODO: Estimate Gas cost
-    //   //   console.log(' Gas cost of Account ' + i + ':',
-    //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
-    //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
-    //   //       "One of the Accounts has wrong balance!")
-    //   // };
+    // // Check totalSupply and sumInvested
+    // .then(() => coreContract.totalSupply())
+    // .then((result) => {
+    //   // Paid to little, hence no shares received
+    //   assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
     // })
-    .then(done)
-    .catch(done);
+    // .then(() => coreContract.sumInvested())
+    // .then((result) => {
+    //   // Paid to little, hence no investment made
+    //   assert.strictEqual(result.toNumber(),
+    //       correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+    //   return coreContract.balanceOf(NOT_OWNER);
+    // });
   });
+
+  // it('Create and Annihilate Shares by investing and withdrawing in a Core and ' +
+  //     'calculate performance', (done) => {
+  //
+  //   // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+  //
+  //
+  //   // const correctPriceToBeReceived =
+  //   //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+  //
+  //   /* Managing
+  //    *  Round 1:
+  //    */
+  //   const buy = [
+  //     {
+  //       exchange: exchangeContract.address,
+  //       buy_how_much: Math.floor(pricesRelAsset[1]),
+  //       id: 1,
+  //     }
+  //   ];
+  //
+  //   coreContract.totalSupply()
+  //   .then((result) => {
+  //     assert.strictEqual(result.toNumber(), 0);
+  //
+  //     // ROUND 1 EXACT
+  //     return coreContract.createShares(wantedShares[0],
+  //       { from: NOT_OWNER, value: investFunds[0].toNumber() });
+  //   })
+  //   // Check totalSupply and sumInvested
+  //   .then(() => coreContract.totalSupply())
+  //   .then((result) => {
+  //     assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
+  //   })
+  //   .then(() => coreContract.sumInvested())
+  //   .then((result) => {
+  //     assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
+  //
+  //     // ROUND 2 0VERPAID
+  //     return coreContract.createShares(wantedShares[1],
+  //         { from: NOT_OWNER, value: investFunds[1].toNumber() });
+  //   })
+  //   // Check totalSupply and sumInvested
+  //   .then(() => coreContract.totalSupply())
+  //   .then((result) => {
+  //     assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+  //   })
+  //   .then(() => coreContract.sumInvested())
+  //   .then((result) => {
+  //     assert.strictEqual(result.toNumber(),
+  //       correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+  //
+  //     // ROUND 3 UNDERPAID
+  //     return coreContract.createShares(wantedShares[2],
+  //       { from: NOT_OWNER, value: investFunds[2].toNumber() });
+  //   })
+  //   // Check totalSupply and sumInvested
+  //   .then(() => coreContract.totalSupply())
+  //   .then((result) => {
+  //     // Paid to little, hence no shares received
+  //     assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+  //   })
+  //   .then(() => coreContract.sumInvested())
+  //   .then((result) => {
+  //     // Paid to little, hence no investment made
+  //     assert.strictEqual(result.toNumber(),
+  //         correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+  //     return coreContract.balanceOf(NOT_OWNER);
+  //   })
+  //   .then((result) => {
+  //     const balance = wantedShares[0].add(wantedShares[1]).toNumber();
+  //     assert.strictEqual(result.toNumber(), balance);
+  //
+  //     // ROUND 3 MANAGING
+  //     return coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER });
+  //   })
+  //   .then(() => etherTokenContract.balanceOf(coreContract.address))
+  //   .then((result) => {
+  //     console.log(`EtherToken held: \t\t${result.toString()}`);
+  //     return bitcoinTokenContract.balanceOf(coreContract.address);
+  //   })
+  //   .then((result) => {
+  //     console.log(`BitcoinToken held: \t\t${result.toString()}`);
+  //     return coreContract.calcSharePrice();
+  //   })
+  //   .then((result) => {
+  //     console.log(`New share price is: \t\t${result.toString()}`);
+  //     //TODO Calculate more precise
+  //     const roundingError = 0.01;
+  //     console.log(`Round 4; Sell shares: \t\t${offeredShares[0]}`);
+  //     console.log(`Round 4; Funds to redeem: \t${redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError)}`);
+  //
+  //     // ROUND 4 EXACT
+  //     return coreContract.annihilateShares(offeredShares[0], redeemFunds[0] * result.toString() / constants.ether * (1.0 - roundingError), { from: NOT_OWNER });
+  //   })
+  //   .then(() => coreContract.totalSupply())
+  //   .then((result) => {
+  //     const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+  //     assert.strictEqual(result.toNumber(), balance);
+  //   })
+  //   .then(() => coreContract.sumWithdrawn())
+  //   .then((result) => {
+  //     // TODO: calculate outside w commission etc.
+  //     console.log(`Round 4; Funds received: \t${result.toNumber()}`);
+  //     // assert.strictEqual(result.toNumber(), correctPriceToBeReceived[0].toNumber());
+  //   })
+  //   .then(() => coreContract.balanceOf(NOT_OWNER))
+  //   .then((result) => {
+  //     const balance = wantedShares[0].add(wantedShares[1]).minus(offeredShares[0]).toNumber();
+  //     assert.strictEqual(result.toNumber(), balance);
+  //   })
+  //   // // ROUND 5 OVERPAID
+  //   // .then(() => coreContract.annihilateShares(offeredShares[1], 10000, { from: NOT_OWNER }))
+  //   // .then(() => coreContract.totalSupply())
+  //   // .then((result) => {
+  //   //   const balance = wantedShares[0]
+  //   //     .add(wantedShares[1]).minus(offeredShares[0]).minus(offeredShares[1]).toNumber();
+  //   //   assert.strictEqual(result.toNumber(), balance);
+  //   // })
+  //   // // Check sumInvested
+  //   // .then(() => coreContract.sumWithdrawn())
+  //   // .then(() => {
+  //   //   // TODO: calculate outside w commission etc.
+  //   //   // console.log('Sold shares: ' + offeredShares[1]);
+  //   //   // console.log('Funds received (total): ' + result.toNumber());
+  //   //   // assert.strictEqual(result.toNumber(),
+  //   //   //     correctPriceToBeReceived[0].add(correctPriceToBeReceived[1]).toNumber());
+  //   // })
+  //   // .then(() => {
+  //   //   // TODO: calculate outside w commission, performance gains, loses etc.
+  //   //   // for (i = 0; i < numAccounts; ++i) {
+  //   //   //   // Actual Balance
+  //   //   //   var balance = web3.eth.getBalance(web3.eth.accounts[i],'ether');
+  //   //   //   // >=, since actual balance has a gas cost for sending the tx.
+  //   //   //   // TODO: Estimate Gas cost
+  //   //   //   console.log(' Gas cost of Account ' + i + ':',
+  //   //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
+  //   //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
+  //   //   //       "One of the Accounts has wrong balance!")
+  //   //   // };
+  //   // })
+  //   .then(done)
+  //   .catch(done);
+  // });
 });

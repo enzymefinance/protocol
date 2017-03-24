@@ -5,6 +5,7 @@ const BigNumber = require('bignumber.js');
 // Constants as defined in the token contracts
 const PREMINED_AMOUNT = new BigNumber(Math.pow(10, 18));
 const ETHERTOKEN_DECIMALS = 18;
+const MELONTOKEN_DECIMALS = 18;
 const BITCOINTOKEN_DECIMALS = 8;
 const REPTOKEN_DECIMALS = 8;
 const EUROTOKEN_DECIMALS = 8;
@@ -21,6 +22,7 @@ const ether = new BigNumber(Math.pow(10, 18));
 module.exports = {
   PREMINED_AMOUNT,
   ETHERTOKEN_DECIMALS,
+  MELONTOKEN_DECIMALS,
   BITCOINTOKEN_DECIMALS,
   REPTOKEN_DECIMALS,
   EUROTOKEN_DECIMALS,

@@ -26,6 +26,8 @@ contract Core is Shares, SafeMath, Owned {
         uint nav;
         uint delta;
         uint timestamp;
+        // bool hasReceivedInitialInvestment; // Whether first invested has been made
+        // bool areAllInvestedFundsWithdrawn; // First investment made; All funds withdrawn
     }
 
     struct Modules {
