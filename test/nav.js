@@ -218,16 +218,19 @@ contract('Net Asset Value', (accounts) => {
       .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Portfolio Content');
+        console.log('Initial Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
             console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
           }
           if (result.logs[i].event === 'NetAssetValue') {
-            console.log(result.logs[i].args);
             console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
           }
         }
+        return etherTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
         return coreContract.totalSupply();
       })
       .then((result) => {
@@ -240,43 +243,61 @@ contract('Net Asset Value', (accounts) => {
       });
     });
 
-    // it('Wanted Shares < Offered Value (overpaid)', () => {
-    //   coreContract.createShares(wantedShares[1], { from: NOT_OWNER, value: investFunds[1] })
-    //   .then((result) => {
-    //     console.log(`NAV: ${result.logs[0].args.nav.toNumber()}`);
-    //     console.log(result.logs[1].args);
-    //     return coreContract.totalSupply();
-    //   })
-    //   .then((result) => {
-    //     assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-    //     return coreContract.sumInvested();
-    //   })
-    //   .then((result) => {
-    //     assert.strictEqual(result.toNumber(),
-    //       correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-    //     done();
-    //   });
-    // });
-    //
-    // it('Wanted Shares > Offered Value (underpaid)', () => {
-    //   coreContract.createShares(wantedShares[2], { from: NOT_OWNER, value: investFunds[2] })
-    //   .then((result) => {
-    //     console.log(`NAV: ${result.logs[0].args.nav.toNumber()}`);
-    //     console.log(result.logs[1].args);
-    //     return coreContract.totalSupply();
-    //   })
-    //   .then((result) => {
-    //     // Paid to little, hence no shares received
-    //     assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-    //     return coreContract.sumInvested();
-    //   })
-    //   .then((result) => {
-    //     // Paid to little, hence no investment made
-    //     assert.strictEqual(result.toNumber(),
-    //         correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
-    //     done();
-    //   });
-    // });
+    it('Wanted Shares < Offered Value (overpaid)', (done) => {
+      coreContract.createShares(wantedShares[1], { from: NOT_OWNER, value: investFunds[1] })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Initial Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
+          }
+          if (result.logs[i].event === 'NetAssetValue') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
+          }
+        }
+        return coreContract.totalSupply();
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        return coreContract.sumInvested();
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(),
+          correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        done();
+      });
+    });
+
+    it('Wanted Shares > Offered Value (underpaid)', (done) => {
+      coreContract.createShares(wantedShares[2], { from: NOT_OWNER, value: investFunds[2] })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Initial Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
+          }
+          if (result.logs[i].event === 'NetAssetValue') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
+          }
+        }
+        return coreContract.totalSupply();
+      })
+      .then((result) => {
+        // Paid to little, hence no shares received
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        return coreContract.sumInvested();
+      })
+      .then((result) => {
+        // Paid to little, hence no investment made
+        assert.strictEqual(result.toNumber(),
+            correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        done();
+      });
+    });
   });
 
   describe('MANAGING POSITIONS OF A PORTFOLIO', () => {
