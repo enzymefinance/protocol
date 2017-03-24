@@ -68,6 +68,8 @@ contract Core is Shares, SafeMath, Owned {
     event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
+    event PortfolioContent(uint index, uint assetHoldings, uint assetPrice);
+    event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
 
     // MODIFIERS
 
@@ -131,6 +133,7 @@ contract Core is Shares, SafeMath, Owned {
         uint managementFee = 0;
         uint performanceFee = 0;
         nav = calcGAV() - managementFee - performanceFee;
+        NetAssetValue(nav, managementFee, performanceFee);
     }
 
     /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
@@ -158,11 +161,12 @@ contract Core is Shares, SafeMath, Owned {
             address assetAddr = address(module.universe.assetAt(i));
             uint assetPrice;
             if (baseAssetAddr == assetAddr) {
-              assetPrice = 1; // By definition
+              assetPrice = 1 ether; // By definition
             } else {
               assetPrice = Price.getPrice(assetAddr); // Asset price relative to reference asset price
             }
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
+            PortfolioContent(i, assetHoldings, assetPrice);
         }
     }
 
