@@ -57,20 +57,29 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
 
-    /// Pre: Checks for initialisation and inactivity
-    /// Post: Price of asset, where last updated not longer than `validity` seconds ago
+    // Pre: Asset has been initialised
+    // Post: Returns boolean if data is valid
+    function getStatus(address ofAsset)
+        constant
+        data_initialised(ofAsset)
+        returns (bool)
+    {
+        return now - data[ofAsset].timestamp <= validity;
+    }
+
+    // Pre: Asset has been initialised and is active
+    // Post: Price of asset, where last updated not longer than `validity` seconds ago
     function getPrice(address ofAsset)
         constant
         data_initialised(ofAsset)
         data_still_valid(ofAsset)
         returns (uint)
-
     {
         return data[ofAsset].price;
     }
 
-    /// Pre: Checks for initialisation and inactivity
-    /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+    // Pre: Asset has been initialised and is active
+    // Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
     function getData(address ofAsset)
         constant
         data_initialised(ofAsset)

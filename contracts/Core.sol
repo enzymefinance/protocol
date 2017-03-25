@@ -68,8 +68,11 @@ contract Core is Shares, SafeMath, Owned {
     event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
+    // Calcualtions
     event PortfolioContent(uint index, uint assetHoldings, uint assetPrice);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
+    // Manageing
+    event SpendingApproved(address ofToken, address ofApprovalExchange, uint approvalAmount);
 
     // MODIFIERS
 
@@ -276,7 +279,9 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
     {
         assert(module.universe.assetAvailability(ofToken));
+        address ofApprovalExchange = module.universe.assignedExchange(ofToken);
         ofToken.approve(module.universe.assignedExchange(ofToken), approvalAmount);
+        SpendingApproved(ofToken, ofApprovalExchange, approvalAmount);
     }
 
     /// Place an Order on the selected Exchange
