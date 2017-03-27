@@ -53,7 +53,7 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant BASE_UNIT_OF_SHARES = 1 ether;
 
     // Fields that are only changed in constructor
-    address baseAsset;
+    address referenceAsset;
 
     // Fields that can be changed by functions
     Analytics analytics;
@@ -81,8 +81,8 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier msg_value_past(uint x) {
-        assert(msg.value > x);
+    modifier msg_value_past_zero() {
+        assert(msg.value > 0);
         _;
     }
 
@@ -108,7 +108,7 @@ contract Core is Shares, SafeMath, Owned {
 
     // CONSTANT METHDOS
 
-    function getBaseAsset() constant returns (address) { return baseAsset; }
+    function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
 
     /// Post: Calculate Share Price in Wei
@@ -156,17 +156,19 @@ contract Core is Shares, SafeMath, Owned {
          */
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            // Holdings
+            address assetAddr = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(assetAddr);
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint assetDecimals = Asset.getDecimals();
+            // Price
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address baseAssetAddr = Price.getBaseAsset();
-            address assetAddr = address(module.universe.assetAt(i));
+            address quoteAssetAddr = Price.getQuoteAsset();
             uint assetPrice;
-            if (baseAssetAddr == assetAddr) {
-              assetPrice = 1 ether; // By definition
+            if (assetAddr == quoteAssetAddr) {
+              assetPrice = 1 * 10 ** assetDecimals; // By definition
             } else {
-              assetPrice = Price.getPrice(assetAddr); // Asset price relative to reference asset price
+              assetPrice = Price.getPrice(assetAddr); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
             PortfolioContent(i, assetHoldings, assetPrice);
@@ -185,6 +187,7 @@ contract Core is Shares, SafeMath, Owned {
         owner = ofManager;
         analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
+        // TODO assert(quoteAssetAddr == referenceAsset) for all  quoteAssetAddr's in all PriceFeed contracts
         uint etherTokenIndex = module.universe.etherTokenAtIndex();
         module.ether_token = EtherToken(address(module.universe.assetAt(etherTokenIndex)));
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
@@ -201,7 +204,7 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
-        msg_value_past(0)
+        msg_value_past_zero
         not_zero(wantedShares)
     {
         /* Rem:
