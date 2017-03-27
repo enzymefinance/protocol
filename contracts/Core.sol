@@ -108,72 +108,7 @@ contract Core is Shares, SafeMath, Owned {
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
-
-    /// Post: Calculate Share Price in Wei
-    function calcSharePrice() constant returns (uint) { return calcDelta(); }
-
-    /// Pre:
-    /// Post: Delta as a result of current and previous NAV
-    function calcDelta() constant returns (uint delta) {
-        uint nav = calcNAV();
-        // Define or calcualte delta
-        if (analytics.nav == 0) { // First investment not made
-            delta = 1 ether; // By definition
-        } else if (nav == 0) { // First investment made; All funds withdrawn
-            delta = 1 ether; // By definition
-        } else { // First investment made; Not all funds withdrawn
-            delta = (analytics.delta * nav) / analytics.nav;
-        }
-        // Update Analytics
-        analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
-        AnalyticsUpdated(now, nav, delta);
-    }
-
-    /// Pre:
-    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNAV() constant returns (uint nav) {
-        uint managementFee = 0;
-        uint performanceFee = 0;
-        nav = calcGAV() - managementFee - performanceFee;
-        NetAssetValue(nav, managementFee, performanceFee);
-    }
-
-    /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Portfolio Gross Asset Value in Wei
-    function calcGAV() constant returns (uint gav) {
-        /* Rem 1:
-         *  All prices are relative to the referenceAsset price. The referenceAsset must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the referenceAsset is set as EtherToken.
-         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
-         *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
-         *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
-        uint numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint i = 0; i < numAssignedAssets; ++i) {
-            // Holdings
-            address ofAsset = address(module.universe.assetAt(i));
-            AssetProtocol Asset = AssetProtocol(ofAsset);
-            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-            uint assetDecimals = Asset.getDecimals();
-            // Price
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            assert(referenceAsset == quoteAsset); // See Remark 1
-            uint assetPrice;
-            if (ofAsset == quoteAsset) {
-              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
-            } else {
-              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
-            }
-            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
-        }
-    }
+    function getSharePrice() constant returns (uint) { return sharePrice; }
 
     // NON-CONSTANT METHODS
 
@@ -317,7 +252,7 @@ contract Core is Shares, SafeMath, Owned {
         // TODO insert Risk Management restrictions
 
         // Execute Trade
-        approveSpending(sell_which_token, onExchange, quantity);
+        approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.buy(id, quantity);
     }
 
@@ -326,5 +261,71 @@ contract Core is Shares, SafeMath, Owned {
     {
         // TODO: assert token of orderId is registered to onExchange
         onExchange.cancel(id);
+    }
+
+    /// Post: Calculate Share Price in Wei and update analytics struct
+    function calcSharePrice() returns (uint) { return calcDelta(); }
+
+    /// Pre:
+    /// Post: Delta as a result of current and previous NAV
+    function calcDelta() returns (uint delta) {
+        uint nav = calcNAV();
+        // Define or calcualte delta
+        if (analytics.nav == 0) { // First investment not made
+            delta = 1 ether; // By definition
+        } else if (nav == 0) { // First investment made; All funds withdrawn
+            delta = 1 ether; // By definition
+        } else { // First investment made; Not all funds withdrawn
+            delta = (analytics.delta * nav) / analytics.nav;
+        }
+        // Update Analytics
+        analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
+        AnalyticsUpdated(now, nav, delta);
+    }
+
+    /// Pre:
+    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
+    function calcNAV() returns (uint nav) {
+        uint managementFee = 0;
+        uint performanceFee = 0;
+        nav = calcGAV() - managementFee - performanceFee;
+        NetAssetValue(nav, managementFee, performanceFee);
+    }
+
+    /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Portfolio Gross Asset Value in Wei
+    function calcGAV() returns (uint gav) {
+        /* Rem 1:
+         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the referenceAsset is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
+         *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
+         *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
+         */
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssignedAssets; ++i) {
+            // Holdings
+            address ofAsset = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(ofAsset);
+            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            uint assetDecimals = Asset.getDecimals();
+            // Price
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
+            address quoteAsset = Price.getQuoteAsset();
+            assert(referenceAsset == quoteAsset); // See Remark 1
+            uint assetPrice;
+            if (ofAsset == quoteAsset) {
+              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
+            } else {
+              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
+            }
+            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
     }
 }

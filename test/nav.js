@@ -22,7 +22,7 @@ contract('Net Asset Value', (accounts) => {
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
 
   // Kraken example for: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
-  const data = {
+  let data = {
     'error':[],
     'result': {
       'XETHXXBT':{'a':['0.048000','871','871.000'],'b':['0.047805','38','38.000'],'c':['0.048000','25.00000000'],'v':['114473.71344905','228539.93878035'],'p':['0.044567','0.031312'],'t':[4425,8621],'l':['0.041600','0.038900'],'h':['0.048700','0.048700'],'o':'0.041897'},
@@ -33,13 +33,13 @@ contract('Net Asset Value', (accounts) => {
   };
 
   // Atomize Prices realtive to Ether
-  const pricesRelEther = functions.krakenPricesRelEther(data);
+  let pricesRelEther = functions.krakenPricesRelEther(data);
 
   let assets = [];
   let priceFeedTestCases = [];
 
   // Atomize Prices realtive to Asset
-  const pricesRelAsset = functions.krakenPricesRelAsset(data);
+  let pricesRelAsset = functions.krakenPricesRelAsset(data);
 
   // Test globals
   let coreContract;
@@ -217,16 +217,19 @@ contract('Net Asset Value', (accounts) => {
 
       coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Initial Portfolio Content');
+        console.log('Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
+          if (result.logs[i].event === 'AnalyticsUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return coreContract.sharePrice();
@@ -252,16 +255,19 @@ contract('Net Asset Value', (accounts) => {
 
       coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Initial Portfolio Content');
+        console.log('Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
+          if (result.logs[i].event === 'AnalyticsUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return coreContract.sharePrice();
@@ -287,16 +293,19 @@ contract('Net Asset Value', (accounts) => {
 
       coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Initial Portfolio Content');
+        console.log('Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
+          if (result.logs[i].event === 'AnalyticsUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return coreContract.sharePrice();
@@ -322,22 +331,12 @@ contract('Net Asset Value', (accounts) => {
       let buyHowMuch;
 
       exchangeContract.getOffer(offerId).then((result) => {
-        console.log(result);
         buyHowMuch = result[0].toNumber();
+        const quantity = Math.min(buyHowMuch)
         return coreContract.buy(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
       })
       .then((result) => {
-        // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Buying Events');
-        for (let i = 0; i < result.logs.length; i += 1) {
-          if (result.logs[i].event === 'SpendingApproved') {
-            console.log(result.logs[i].args.ofToken)
-            console.log(result.logs[i].args.quantity.toNumber())
-            console.log(result.logs[i].args.ofApprovalExchange)
-          }
-        }
-
         return etherTokenContract.allowance(coreContract.address, exchangeContract.address);
       })
       .then((result) => {
@@ -345,41 +344,65 @@ contract('Net Asset Value', (accounts) => {
         return coreContract.calcSharePrice();
       })
       .then((result) => {
-        // // Check Logs
-        // assert.notEqual(result.logs.length, 0);
-        // console.log('Initial Portfolio Content');
-        // for (let i = 0; i < result.logs.length; i += 1) {
-        //   if (result.logs[i].event === 'PortfolioContent') {
-        //     const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-        //     console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-        //   }
-        //   if (result.logs[i].event === 'NetAssetValue') {
-        //     console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
-        //   }
-        // }
-
-        console.log(`New share price is: ${result.toNumber() / (constants.ether)} Ether or ${result.toNumber()} Wei`);
-        done();
-      });
-    });
-
-    it('Wanted Shares == Offered Value', (done) => {
-      const wantedShares = new BigNumber(2e+17);
-      const offeredValue = new BigNumber(2e+17);
-      const expectedValue = new BigNumber(5e+17);
-
-      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
-      .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
-        console.log('Initial Portfolio Content');
+        console.log('Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
+          if (result.logs[i].event === 'AnalyticsUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+          }
+        }
+        done();
+      });
+    });
+
+    it('Update multiple price', (done) => {
+      data = {
+        'error':[],
+        'result': {
+          'XETHXXBT':{'a':['0.047173','72','72.000'],'b':['0.046958','57','57.000'],'c':['0.047188','3.02722723'],'v':['148452.56032886','161336.30511514'],'p':['0.049600','0.028460'],'t':[7341,8030],'l':['0.045908','0.045908'],'h':['0.053630','0.053990'],'o':'0.052219'},
+          'XETHZEUR':{'a':['44.79995','22','22.000'],'b':['44.62121','51','51.000'],'c':['44.62120','0.12288403'],'v':['112264.40153999','114942.25454119'],'p':['45.62662','45.24065'],'t':[7531,7826],'l':['44.00000','44.00000'],'h':['47.10043','47.10043'],'o':'45.98999'},
+          'XMLNXETH':{'a':['0.64490000','1','1.000'],'b':['0.63679000','1','1.000'],'c':['0.64970000','0.08935121'],'v':['2339.26736089','2365.26736089'],'p':['0.59371313','0.59307630'],'t':[283,286],'l':['0.53245000','0.53245000'],'h':['0.64990000','0.64990000'],'o':'0.53295000'},
+          'XREPXETH':{'a':['0.188070','80','80.000'],'b':['0.183050','73','73.000'],'c':['0.185320','26.95100000'],'v':['2405.87940845','2443.98986545'],'p':['0.181354','0.180358'],'t':[193,195],'l':['0.170000','0.170000'],'h':['0.185460','0.185460'],'o':'0.173250'}
+        }
+      };
+
+      // Atomize Prices realtive to Asset
+      pricesRelAsset = functions.krakenPricesRelAsset(data);
+
+      priceFeedContract.updatePrice(assets, pricesRelAsset, { from: OWNER })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        for (let i = 0; i < result.logs.length; i += 1) {
+          // console.log(result);
+          assert.equal(result.logs[i].event, 'PriceUpdated');
+          assert.equal(result.logs[i].args.ofAsset, assets[i]);
+          // TODO test against actual block.time
+          assert.notEqual(result.logs[i].args.atTimestamp.toNumber(), 0);
+          assert.equal(result.logs[i].args.ofPrice, pricesRelAsset[i]);
+        }
+        done();
+      });
+    });
+
+    it('Calculate sharePrice according to updated prices', (done) => {
+      coreContract.calcSharePrice()
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'AnalyticsUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
         done();
@@ -438,7 +461,7 @@ contract('Net Asset Value', (accounts) => {
     // //   //   console.log(' Gas cost of Account ' + i + ':',
     // //   //       balances[i].minus(balance).dividedBy('10e+18').toNumber());
     // //   //   assert.isTrue(balances[i].greaterThanOrEqualTo(balance),
-    // //   //       "One of the Accounts has wrong balance!")
+    // //   //       'One of the Accounts has wrong balance!')
     // //   // };
     // // })
   });
