@@ -148,11 +148,11 @@ contract('Net Asset Value', (accounts) => {
 
     it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
       bitcoinTokenContract.approve(exchangeContract.address, ALLOWANCE_AMOUNT, { from: OWNER })
-        .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
-        .then((result) => {
-          assert.equal(result, ALLOWANCE_AMOUNT);
-          done();
-        });
+      .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
+      .then((result) => {
+        assert.equal(result, ALLOWANCE_AMOUNT);
+        done();
+      });
     });
 
     it('Create one side of the orderbook', (done) => {
@@ -201,10 +201,6 @@ contract('Net Asset Value', (accounts) => {
 
   describe('INVESTING IN PORTFOLIO', () => {
 
-    const wantedShares = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-    const investFunds = [new BigNumber(2e+18), new BigNumber(5e+18), new BigNumber(6e+18)];
-    const correctPriceToBePaid = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-
     before('Check initial supply of portfolio', (done) => {
       coreContract.totalSupply()
       .then((result) => {
@@ -214,7 +210,11 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Wanted Shares == Offered Value', (done) => {
-      coreContract.createShares(wantedShares[0], { from: NOT_OWNER, value: investFunds[0] })
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(2e+17);
+      const expectedValue = new BigNumber(2e+17);
+
+      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
@@ -228,24 +228,28 @@ contract('Net Asset Value', (accounts) => {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
+        return coreContract.sharePrice();
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
         return etherTokenContract.balanceOf(coreContract.address);
       })
       .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         return coreContract.balanceOf(NOT_OWNER);
       })
       .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
-        return coreContract.sumInvested();
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].toNumber());
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         done();
       });
     });
 
     it('Wanted Shares < Offered Value (overpaid)', (done) => {
-      coreContract.createShares(wantedShares[1], { from: NOT_OWNER, value: investFunds[1] })
+      const wantedShares = new BigNumber(1e+17);
+      const offeredValue = new BigNumber(2e+17);
+      const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
+
+      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
@@ -259,24 +263,28 @@ contract('Net Asset Value', (accounts) => {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
-        return coreContract.totalSupply();
+        return coreContract.sharePrice();
       })
       .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+        return etherTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         return coreContract.balanceOf(NOT_OWNER);
       })
       .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-        return coreContract.sumInvested();
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         done();
       });
     });
 
     it('Wanted Shares > Offered Value (underpaid)', (done) => {
-      coreContract.createShares(wantedShares[2], { from: NOT_OWNER, value: investFunds[2] })
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(1e+17);
+      const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
+
+      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
       .then((result) => {
         // Check Logs
         assert.notEqual(result.logs.length, 0);
@@ -290,66 +298,63 @@ contract('Net Asset Value', (accounts) => {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
-        return coreContract.totalSupply();
+        return coreContract.sharePrice();
       })
       .then((result) => {
-        // Paid too little, hence no shares created
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+        return etherTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         return coreContract.balanceOf(NOT_OWNER);
       })
       .then((result) => {
-        // Paid too little, hence no shares received
-        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
-        return coreContract.sumInvested();
-      })
-      .then((result) => {
-        // Paid too little, hence no investment happened
-        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         done();
       });
     });
   });
 
   describe('MANAGING POSITIONS OF A PORTFOLIO', () => {
-    // it('Manage Postion', (done) => {
-    //   // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-    //   // const correctPriceToBeReceived =
-    //   //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
-    //
-    //   /* Managing
-    //    *  Round 1:
-    //    */
-    //   const buy = [
-    //     {
-    //       exchange: exchangeContract.address,
-    //       buy_how_much: Math.floor(pricesRelAsset[1]),
-    //       id: 1,
-    //     }
-    //   ];
-    //
-    //   console.log(buy);
-    //
-    //   // ROUND 3 MANAGING
-    //   coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER })
-    //   .then((result) => {
-    //     // Check Logs
-    //     assert.notEqual(result.logs.length, 0);
-    //     console.log('Initial Portfolio Content');
-    //     for (let i = 0; i < result.logs.length; i += 1) {
-    //       if (result.logs[i].event === 'SpendingApproved') {
-    //         console.log(result.logs[i].args.ofToken)
-    //         console.log(result.logs[i].args.ofApprovalExchange)
-    //         console.log(result.logs[i].args.approvalAmount.toNumber())
-    //       }
-    //     }
-    //     return coreContract.calcSharePrice();
-    //   })
-    //   .then((result) => {
-    //     console.log(result);
-    //     console.log(`New share price is: \t\t${result.toString()}`);
-    //     done();
-    //   });
-    // });
+    it('Manage Postion', (done) => {
+      // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+      // const correctPriceToBeReceived =
+      //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+
+      /* Managing
+       *  Round 1:
+       */
+      const buy = [
+        {
+          exchange: exchangeContract.address,
+          buy_how_much: Math.floor(pricesRelAsset[1]),
+          id: 1,
+        }
+      ];
+
+      console.log(buy);
+
+      // ROUND 3 MANAGING
+      coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Initial Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'SpendingApproved') {
+            console.log(result.logs[i].args.ofToken)
+            console.log(result.logs[i].args.ofApprovalExchange)
+            console.log(result.logs[i].args.approvalAmount.toNumber())
+          }
+        }
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        console.log(result);
+        console.log(`New share price is: \t\t${result.toString()}`);
+        done();
+      });
+    });
   });
 
   describe('WITHDRAWING FROM PORTFOLIO', () => {
