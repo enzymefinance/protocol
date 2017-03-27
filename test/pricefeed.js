@@ -4,7 +4,7 @@ const functions = require('../utils/functions.js');
 const constants = require('../utils/constants.js');
 
 const EtherToken = artifacts.require('./EtherToken.sol');
-const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const MelonToken = artifacts.require('./MelonToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Universe = artifacts.require('Universe.sol');
 
@@ -34,14 +34,14 @@ contract('PriceFeed', (accounts) => {
 
   // Test globals
   let etherTokenContract;
-  let bitcoinTokenContract;
+  let melonTokenContract;
   let priceFeedContract;
   let universeContract;
 
 
   before('Init contract instances', () => {
     EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
-    BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+    MelonToken.deployed().then((deployed) => { melonTokenContract = deployed; });
     PriceFeed.deployed().then((deployed) => { priceFeedContract = deployed; });
     Universe.deployed().then((deployed) => { universeContract = deployed; });
   });

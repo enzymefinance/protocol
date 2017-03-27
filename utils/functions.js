@@ -127,37 +127,39 @@ function cancelAllOffersOfOwner(owner, callback) {
 /// Post: Multiple offers created
 function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
   let offers = [];
-  const etherTokenAddress = specs.tokens[specs.network]['ETH-T'];
-  // Reduce sell amount by 0.1 on each order
-  for (let i = 0; i < depth; i += 1) {
-    // console.log((Math.random() - 0.5) * 0.1)
-    offers.push({
-      sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
-      sell_which_token: sellWhichToken,
-      buy_how_much: 1 * constants.ether,
-      buy_which_token: etherTokenAddress,
-      id: i + 1,
-      owner,
-      active: true,
-    });
-  }
-
-  // Execute all above created offers
-  async.mapSeries(
-    offers,
-    (offer, callbackMap) => {
-      this.approveAndOffer(offer,
-        (err, hash) => {
-          if (!err) {
-            callbackMap(null, Object.assign({ txHash: hash }, offer));
-          } else {
-            callbackMap(err, undefined);
-          }
-        });
-    }, (err, results) => {
-      offers = results;
-      callback(null, offers);
-    });
+  let etherTokenAddress;
+  EtherToken.deployed().then((deployed) => {
+    etherTokenAddress = deployed.address;
+    // Reduce sell amount by 0.1 on each order
+    for (let i = 0; i < depth; i += 1) {
+      // console.log((Math.random() - 0.5) * 0.1)
+      offers.push({
+        sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
+        sell_which_token: sellWhichToken,
+        buy_how_much: 1 * constants.ether,
+        buy_which_token: etherTokenAddress,
+        id: i + 1,
+        owner,
+        active: true,
+      });
+    }
+    // Execute all above created offers
+    async.mapSeries(
+      offers,
+      (offer, callbackMap) => {
+        this.approveAndOffer(offer,
+          (err, hash) => {
+            if (!err) {
+              callbackMap(null, Object.assign({ txHash: hash }, offer));
+            } else {
+              callbackMap(err, undefined);
+            }
+          });
+      }, (err, results) => {
+        offers = results;
+        callback(null, offers);
+      });
+  });
 }
 
 module.exports = {

@@ -6,7 +6,7 @@ const functions = require('../utils/functions.js');
 
 const AssetProtocol = artifacts.require('./AssetProtocol.sol');
 const EtherToken = artifacts.require('./EtherToken.sol');
-const BitcoinToken = artifacts.require('./BitcoinToken.sol');
+const MelonToken = artifacts.require('./MelonToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Exchange = artifacts.require('Exchange.sol');
 const Universe = artifacts.require('Universe.sol');
@@ -44,7 +44,7 @@ contract('Net Asset Value', (accounts) => {
   // Test globals
   let coreContract;
   let etherTokenContract;
-  let bitcoinTokenContract;
+  let melonTokenContract;
   let priceFeedContract;
   let exchangeContract;
   let universeContract;
@@ -56,7 +56,7 @@ contract('Net Asset Value', (accounts) => {
   describe('PREPARATIONS', () => {
     before('Check accounts, deploy modules, set testcase', () => {
       EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
-      BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+      MelonToken.deployed().then((deployed) => { melonTokenContract = deployed; });
       PriceFeed.deployed().then((deployed) => { priceFeedContract = deployed; });
       Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
       Universe.deployed().then((deployed) => { universeContract = deployed; });
@@ -71,6 +71,7 @@ contract('Net Asset Value', (accounts) => {
           .then((assetAddr) => {
             assets.push(assetAddr);
             AssetProtocol.at(assetAddr).getSymbol().then((symbol) => {
+              console.log(` ${symbol}: ${assetAddr}`);
               priceFeedTestCases.push({ address: assetAddr, price: pricesRelEther[i], symbol });
             })
           })
@@ -133,8 +134,8 @@ contract('Net Asset Value', (accounts) => {
       for (let i = 0; i < NUM_OFFERS; i += 1) {
         exchangeTestCases.push(
           {
-            sell_how_much: Math.floor(pricesRelAsset[2] * (1 - (i * 0.1))),
-            sell_which_token: bitcoinTokenContract.address,
+            sell_how_much: Math.floor(pricesRelAsset[1] * (1 - (i * 0.1))),
+            sell_which_token: melonTokenContract.address,
             buy_how_much: 1 * constants.ether,
             buy_which_token: etherTokenContract.address,
             id: i + 1,
@@ -146,9 +147,9 @@ contract('Net Asset Value', (accounts) => {
       done();
     });
 
-    it('OWNER approves exchange to hold funds of bitcoinTokenContract', (done) => {
-      bitcoinTokenContract.approve(exchangeContract.address, ALLOWANCE_AMOUNT, { from: OWNER })
-      .then(() => bitcoinTokenContract.allowance(OWNER, exchangeContract.address))
+    it('OWNER approves exchange to hold funds of melonTokenContract', (done) => {
+      melonTokenContract.approve(exchangeContract.address, ALLOWANCE_AMOUNT, { from: OWNER })
+      .then(() => melonTokenContract.allowance(OWNER, exchangeContract.address))
       .then((result) => {
         assert.equal(result, ALLOWANCE_AMOUNT);
         done();
@@ -156,10 +157,10 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Create one side of the orderbook', (done) => {
-      // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
+      // const melonTokenAddress = specs.tokens[specs.network]['BTC-T'];
       functions.buyOneEtherFor(
-        pricesRelAsset[2],
-        bitcoinTokenContract.address,
+        pricesRelAsset[1],
+        melonTokenContract.address,
         OWNER,
         NUM_OFFERS,
         (err) => {
@@ -316,45 +317,49 @@ contract('Net Asset Value', (accounts) => {
   });
 
   describe('MANAGING POSITIONS OF A PORTFOLIO', () => {
-    it('Manage Postion', (done) => {
-      // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
-      // const correctPriceToBeReceived =
-      //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
-
-      /* Managing
-       *  Round 1:
-       */
-      const buy = [
-        {
-          exchange: exchangeContract.address,
-          buy_how_much: Math.floor(pricesRelAsset[2]),
-          id: 1,
-        }
-      ];
-
-      console.log(buy);
-
-      // ROUND 3 MANAGING
-      coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER })
-      .then((result) => {
-        // Check Logs
-        assert.notEqual(result.logs.length, 0);
-        console.log('Initial Portfolio Content');
-        for (let i = 0; i < result.logs.length; i += 1) {
-          if (result.logs[i].event === 'SpendingApproved') {
-            console.log(result.logs[i].args.ofToken)
-            console.log(result.logs[i].args.ofApprovalExchange)
-            console.log(result.logs[i].args.approvalAmount.toNumber())
-          }
-        }
-        return coreContract.calcSharePrice();
-      })
-      .then((result) => {
-        console.log(result);
-        console.log(`New share price is: \t\t${result.toString()}`);
-        done();
-      });
-    });
+    // it('Manage Postion', (done) => {
+    //   // const correctPriceToBeReceived = [new BigNumber(2e+18), new BigNumber(3e+18), new BigNumber(7e+18)];
+    //   // const correctPriceToBeReceived =
+    //   //     [new BigNumber(2e+18), new BigNumber(1e+18), new BigNumber(7e+18)];
+    //
+    //   /* Managing
+    //    *  Round 1:
+    //    */
+    //   const buy = [
+    //     {
+    //       exchange: exchangeContract.address,
+    //       buy_how_much: Math.floor(pricesRelAsset[1]),
+    //       id: 1,
+    //     }
+    //   ];
+    //
+    //   console.log(buy);
+    //   exchangeContract.getOffer(1).then((result) => {
+    //       console.log(result);
+    //   })
+    //
+    //
+    //   // ROUND 3 MANAGING
+    //   coreContract.buy(buy[0].exchange, buy[0].id, buy[0].buy_how_much, { from: OWNER })
+    //   .then((result) => {
+    //     // Check Logs
+    //     assert.notEqual(result.logs.length, 0);
+    //     console.log('Initial Portfolio Content');
+    //     for (let i = 0; i < result.logs.length; i += 1) {
+    //       if (result.logs[i].event === 'SpendingApproved') {
+    //         console.log(result.logs[i].args.ofToken)
+    //         console.log(result.logs[i].args.ofApprovalExchange)
+    //         console.log(result.logs[i].args.approvalAmount.toNumber())
+    //       }
+    //     }
+    //     return coreContract.calcSharePrice();
+    //   })
+    //   .then((result) => {
+    //     console.log(result);
+    //     console.log(`New share price is: \t\t${result.toString()}`);
+    //     done();
+    //   });
+    // });
   });
 
   describe('WITHDRAWING FROM PORTFOLIO', () => {

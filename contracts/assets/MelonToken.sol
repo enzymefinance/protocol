@@ -13,7 +13,7 @@ contract MelonToken is PreminedAsset {
     string public constant name = "Melon Token";
     string public constant symbol = "MLN";
     uint public constant decimals = 18;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 

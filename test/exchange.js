@@ -6,9 +6,7 @@ const collections = require('../utils/collections.js');
 
 const Exchange = artifacts.require('Exchange.sol');
 const EtherToken = artifacts.require('./EtherToken.sol');
-const BitcoinToken = artifacts.require('./BitcoinToken.sol');
-const RepToken = artifacts.require('./RepToken.sol');
-const EuroToken = artifacts.require('./EuroToken.sol');
+const MelonToken = artifacts.require('./MelonToken.sol');
 
 let offers = [];  // Offers collections
 
@@ -32,12 +30,12 @@ contract('Exchange', (accounts) => {
   const pricesRelAsset = functions.krakenPricesRelAsset(data);
 
   let etherTokenContract;
-  let bitcoinTokenContract;
+  let melonTokenContract;
   let exchangeContract;
 
   before('Init contract instances', () => {
     EtherToken.deployed().then((deployed) => { etherTokenContract = deployed; });
-    BitcoinToken.deployed().then((deployed) => { bitcoinTokenContract = deployed; });
+    MelonToken.deployed().then((deployed) => { melonTokenContract = deployed; });
     Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
   });
 
@@ -45,23 +43,22 @@ contract('Exchange', (accounts) => {
     exchangeContract.getLastOfferId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
-      return BitcoinToken.deployed().then(deployed => deployed.totalSupply({ from: OWNER }));
+      return MelonToken.deployed().then(deployed => deployed.totalSupply({ from: OWNER }));
     })
     .then((result) => {
-      assert.equal(result.toNumber(), constants.PREMINED_AMOUNT.toNumber());
-      return BitcoinToken.deployed().then(deployed => deployed.balanceOf(OWNER));
+      assert.equal(result.toNumber(), constants.PREMINED_MELON_AMOUNT.toNumber());
+      return MelonToken.deployed().then(deployed => deployed.balanceOf(OWNER));
     })
     .then((result) => {
-      assert.equal(result.toNumber(), constants.PREMINED_AMOUNT.toNumber());
+      assert.equal(result.toNumber(), constants.PREMINED_MELON_AMOUNT.toNumber());
       done();
     });
   });
 
   it('Create one side of the orderbook', (done) => {
-    // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
     functions.buyOneEtherFor(
       pricesRelAsset[1],
-      bitcoinTokenContract.address,
+      melonTokenContract.address,
       OWNER,
       NUM_OFFERS,
       (err) => {
