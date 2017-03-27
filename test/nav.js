@@ -133,7 +133,7 @@ contract('Net Asset Value', (accounts) => {
       for (let i = 0; i < NUM_OFFERS; i += 1) {
         exchangeTestCases.push(
           {
-            sell_how_much: Math.floor(pricesRelAsset[1] * (1 - (i * 0.1))),
+            sell_how_much: Math.floor(pricesRelAsset[2] * (1 - (i * 0.1))),
             sell_which_token: bitcoinTokenContract.address,
             buy_how_much: 1 * constants.ether,
             buy_which_token: etherTokenContract.address,
@@ -158,7 +158,7 @@ contract('Net Asset Value', (accounts) => {
     it('Create one side of the orderbook', (done) => {
       // const bitcoinTokenAddress = specs.tokens[specs.network]['BTC-T'];
       functions.buyOneEtherFor(
-        pricesRelAsset[1],
+        pricesRelAsset[2],
         bitcoinTokenContract.address,
         OWNER,
         NUM_OFFERS,
@@ -327,7 +327,7 @@ contract('Net Asset Value', (accounts) => {
       const buy = [
         {
           exchange: exchangeContract.address,
-          buy_how_much: Math.floor(pricesRelAsset[1]),
+          buy_how_much: Math.floor(pricesRelAsset[2]),
           id: 1,
         }
       ];
