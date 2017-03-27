@@ -205,16 +205,6 @@ contract Core is Shares, SafeMath, Owned {
       }
     }
 
-    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    function approveSpending(ERC20 ofToken, address onExchange, uint quantity)
-        internal
-        only_owner
-    {
-        ofToken.approve(onExchange, quantity);
-        SpendingApproved(ofToken, onExchange, quantity);
-    }
-
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
     function isWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
@@ -228,24 +218,34 @@ contract Core is Shares, SafeMath, Owned {
         // Exchange assigned to tokens in Universe
         assert(onExchange == module.universe.assignedExchange(buy_which_token));
         assert(onExchange == module.universe.assignedExchange(sell_which_token));
+        return true;
     }
 
-    /// Place an Order on the selected Exchange
+    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
+    function approveSpending(ERC20 ofToken, address onExchange, uint quantity)
+        internal
+    {
+        assert(ofToken.approve(onExchange, quantity));
+        SpendingApproved(ofToken, onExchange, quantity);
+    }
+
+    /// Pre: Sufficient balance and spending has been approved
+    /// Post: Make offer on selected Exchange
     function offer(Exchange onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
         only_owner
     {
-        isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
-        // Restrict trade volume
+        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
         assert(module.riskmgmt.isTradeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
-        // Execute Offer
+        approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     /// Pre: Active offer (id) and valid quantity on selected Exchange
-    /// Post: Take offer on the selected Exchange
+    /// Post: Take offer on selected Exchange
     function buy(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
@@ -253,25 +253,21 @@ contract Core is Shares, SafeMath, Owned {
         var (buy_how_much, buy_which_token,
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
         assert(quantity <= buy_how_much);
-        isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
-        // Restrict trade volume
+        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
         assert(module.riskmgmt.isTradeExecutionPermitted(onExchange, buy_which_token, sell_which_token, quantity));
-        // Approve spending and execute
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.buy(id, quantity);
     }
 
-    function cancel(Exchange onExchange, uint id)
-        only_owner
-    {
-        // TODO: assert token of orderId is registered to onExchange
-        onExchange.cancel(id);
-    }
+    /// Pre: Active offer (id) with owner of this contract on selected Exchange
+    /// Post: Cancel offer on selected Exchange
+    function cancel(Exchange onExchange, uint id) only_owner { onExchange.cancel(id); }
 
+    /// Pre: Valid price feed data
     /// Post: Calculate Share Price in Wei and update analytics struct
     function calcSharePrice() returns (uint) { return calcDelta(); }
 
-    /// Pre:
+    /// Pre: Valid price feed data
     /// Post: Delta as a result of current and previous NAV
     function calcDelta() returns (uint delta) {
         uint nav = calcNAV();
@@ -288,7 +284,7 @@ contract Core is Shares, SafeMath, Owned {
         AnalyticsUpdated(now, nav, delta);
     }
 
-    /// Pre:
+    /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
     function calcNAV() returns (uint nav) {
         uint managementFee = 0;
