@@ -16,7 +16,7 @@ import "./exchange/Exchange.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple core where REFERENCE_ASSET_INDEX_IN_UNIVERSE is EtherToken and
+/// @notice Simple core where referenceAsset is EtherToken and
 ///   Creation and Annihilation of Shares is done with Ether
 contract Core is Shares, SafeMath, Owned {
 
@@ -26,8 +26,6 @@ contract Core is Shares, SafeMath, Owned {
         uint nav;
         uint delta;
         uint timestamp;
-        // bool hasReceivedInitialInvestment; // Whether first invested has been made
-        // bool areAllInvestedFundsWithdrawn; // First investment made; All funds withdrawn
     }
 
     struct Modules {
@@ -48,9 +46,8 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant decimals = 18;
 
     // Constant fields
-    uint public constant REFERENCE_ASSET_INDEX_IN_UNIVERSE = 0; // Needs to be equal as set in Universe Module
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
-    uint public constant BASE_UNIT_OF_SHARES = 1 ether;
+    uint public constant BASE_UNIT_OF_SHARES = 10 ** decimals;
 
     // Fields that are only changed in constructor
     address referenceAsset;
@@ -60,7 +57,7 @@ contract Core is Shares, SafeMath, Owned {
     Modules module;
     uint public sumInvested; // Sum of all investments in Ether
     uint public sumWithdrawn; // Sum of all withdrawals in Ether
-    uint public sharePrice = 1 ether;
+    uint public sharePrice = 1 * BASE_UNIT_OF_SHARES;
 
     // EVENTS
 
@@ -70,8 +67,9 @@ contract Core is Shares, SafeMath, Owned {
     event NotAllocated(address to, uint value);
     // Calcualtions
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals);
+    event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
-    // Manageing
+    // Managing
     event SpendingApproved(address ofToken, address ofApprovalExchange, uint approvalAmount);
 
     // MODIFIERS
@@ -118,16 +116,17 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Delta as a result of current and previous NAV
     function calcDelta() constant returns (uint delta) {
         uint nav = calcNAV();
-        // Set Delta
-        if (analytics.nav == 0) {
-            delta = 1 ether; // First investment not made
-        } else if (nav == 0) {
-            delta = 1 ether; // First investment made; All funds withdrawn
-        } else {
-            delta = (analytics.delta * nav) / analytics.nav; // First investment made; Not all funds withdrawn
+        // Define or calcualte delta
+        if (analytics.nav == 0) { // First investment not made
+            delta = 1 ether; // By definition
+        } else if (nav == 0) { // First investment made; All funds withdrawn
+            delta = 1 ether; // By definition
+        } else { // First investment made; Not all funds withdrawn
+            delta = (analytics.delta * nav) / analytics.nav;
         }
         // Update Analytics
         analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
+        AnalyticsUpdated(now, nav, delta);
     }
 
     /// Pre:
@@ -199,7 +198,7 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Receive Either directly
     function() payable {}
 
-    /// Pre: EtherToken as Asset in Universe at index REFERENCE_ASSET_INDEX_IN_UNIVERSE
+    /// Pre: EtherToken as Asset in Universe
     //  Creating Shares only possible with Ether
     /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
