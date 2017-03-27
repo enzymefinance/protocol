@@ -70,7 +70,7 @@ contract Core is Shares, SafeMath, Owned {
     event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
     // Managing
-    event SpendingApproved(address ofToken, address ofApprovalExchange, uint approvalAmount);
+    event SpendingApproved(address ofToken, uint quantity, address ofApprovalExchange);
 
     // MODIFIERS
 
@@ -208,7 +208,7 @@ contract Core is Shares, SafeMath, Owned {
     {
         /* Rem:
          *  This is can be seen as a none persistent all or nothing limit order, where:
-         *  quantity == quantitiyShares and
+         *  quantity == quantityShares and
          *  amount == msg.value (amount investor is willing to pay for the req. quantity)
          */
         sharePrice = calcSharePrice();
@@ -276,15 +276,13 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    function approveSpending(uint approvalAmount, ERC20 ofToken)
+    /*function approveSpendingOf(uint quantity, address atThisExchange)
         internal
         only_owner
     {
-        assert(module.universe.assetAvailability(ofToken));
-        address ofApprovalExchange = module.universe.assignedExchange(ofToken);
-        ofToken.approve(module.universe.assignedExchange(ofToken), approvalAmount);
-        SpendingApproved(ofToken, ofApprovalExchange, approvalAmount);
-    }
+        ofToken.approve(atThisExchange, quantity);
+        SpendingApproved(ofToken, atThisExchange, quantity);
+    }*/
 
     /// Place an Order on the selected Exchange
     function offer(Exchange onExchange,
@@ -305,8 +303,19 @@ contract Core is Shares, SafeMath, Owned {
         // Buying what another person is selling. Inverse variable terminology!
         var (buy_how_much, buy_which_token,
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
-        approveSpending(sell_how_much, sell_which_token);
-        // TODO: assert token of orderId is registred to onExchange
+
+        assert(quantity <= buy_how_much);
+        // TODO Assert asset pair must include ethertoken to restrict possible asset pairs
+        assert(module.universe.assetAvailability(buy_which_token));
+        assert(module.universe.assetAvailability(sell_which_token));
+        // Exchange where
+        assert(address(onExchange) == module.universe.assignedExchange(buy_which_token));
+        assert(address(onExchange) == module.universe.assignedExchange(sell_which_token));
+
+        ERC20 ofToken = ERC20(sell_which_token);
+        ofToken.approve(onExchange, quantity);
+        SpendingApproved(sell_which_token, quantity, onExchange);
+
         onExchange.buy(id, quantity);
     }
 
