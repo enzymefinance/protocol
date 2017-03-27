@@ -69,7 +69,7 @@ contract Core is Shares, SafeMath, Owned {
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
     // Calcualtions
-    event PortfolioContent(uint index, uint assetHoldings, uint assetPrice);
+    event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
     // Manageing
     event SpendingApproved(address ofToken, address ofApprovalExchange, uint approvalAmount);
@@ -171,7 +171,7 @@ contract Core is Shares, SafeMath, Owned {
               assetPrice = Price.getPrice(assetAddr); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
-            PortfolioContent(i, assetHoldings, assetPrice);
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
 

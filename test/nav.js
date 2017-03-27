@@ -4,10 +4,9 @@ const BigNumber = require('bignumber.js');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
 
+const AssetProtocol = artifacts.require('./AssetProtocol.sol');
 const EtherToken = artifacts.require('./EtherToken.sol');
 const BitcoinToken = artifacts.require('./BitcoinToken.sol');
-const RepToken = artifacts.require('./RepToken.sol');
-const EuroToken = artifacts.require('./EuroToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Exchange = artifacts.require('Exchange.sol');
 const Universe = artifacts.require('Universe.sol');
@@ -46,7 +45,6 @@ contract('Net Asset Value', (accounts) => {
   let coreContract;
   let etherTokenContract;
   let bitcoinTokenContract;
-  let euroTokenContract;
   let priceFeedContract;
   let exchangeContract;
   let universeContract;
@@ -72,7 +70,9 @@ contract('Net Asset Value', (accounts) => {
           universeContract.assetAt(i)
           .then((assetAddr) => {
             assets.push(assetAddr);
-            priceFeedTestCases.push({ address: assetAddr, price: pricesRelEther[i] });
+            AssetProtocol.at(assetAddr).getSymbol().then((symbol) => {
+              priceFeedTestCases.push({ address: assetAddr, price: pricesRelEther[i], symbol });
+            })
           })
         }
       });
@@ -221,10 +221,11 @@ contract('Net Asset Value', (accounts) => {
         console.log('Initial Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
-            console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider}`);
           }
           if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return etherTokenContract.balanceOf(coreContract.address);
@@ -255,10 +256,11 @@ contract('Net Asset Value', (accounts) => {
         console.log('Initial Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
-            console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider}`);
           }
           if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return coreContract.totalSupply();
@@ -282,10 +284,11 @@ contract('Net Asset Value', (accounts) => {
         console.log('Initial Portfolio Content');
         for (let i = 0; i < result.logs.length; i += 1) {
           if (result.logs[i].event === 'PortfolioContent') {
-            console.log(` ${result.logs[i].args.index}: ${result.logs[i].args.assetHoldings} @ ${result.logs[i].args.assetPrice}`);
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider}`);
           }
           if (result.logs[i].event === 'NetAssetValue') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber()}`);
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)}`);
           }
         }
         return coreContract.totalSupply();

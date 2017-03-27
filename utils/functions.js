@@ -35,9 +35,9 @@ function krakenPricesRelAsset(data) {
   // Atomize Prices realtive to Asset
   return [
     this.atomizeAssetPrice(ETHETT, constants.ETHERTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHXBT, constants.BITCOINTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHREP, constants.REPTOKEN_DECIMALS),
-    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(ETHEUR, constants.EUROTOKEN_DECIMALS),
   ];
 }
@@ -54,9 +54,9 @@ function krakenPricesRelEther(data) {
   // Atomize Prices realtive to Ether
   return [
     this.atomizeAssetPrice(ETTETH, constants.ETHERTOKEN_DECIMALS),
+    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(XBTETH, constants.BITCOINTOKEN_DECIMALS),
     this.atomizeAssetPrice(REPETH, constants.REPTOKEN_DECIMALS),
-    this.atomizeAssetPrice(ETHMLN, constants.MELONTOKEN_DECIMALS),
     this.atomizeAssetPrice(EURETH, constants.EUROTOKEN_DECIMALS),
   ];
 }
