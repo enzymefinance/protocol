@@ -8,7 +8,7 @@ contract PriceFeedProtocol {
 
     // CONSTANT METHODS
 
-    function getBaseAsset() constant returns (address) {}
+    function getQuoteAsset() constant returns (address) {}
     function getFrequency() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
     function getStatus(address ofAsset) constant returns (bool) {}

@@ -12,7 +12,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     struct Data {
         uint timestamp; // Timestamp of last price update of this asset
-        uint price; // Quote price of asset relative to base (Ether) times ten to the power of {decimals of this asset}
+        uint price; // Price of asset quoted against `quoteAsset` times ten to the power of {decimals of this asset}
     }
 
     // FIELDS
@@ -23,8 +23,8 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     uint constant validity = 60; // Time in seconds data is considered valid
 
     // Fields that are only changed in constructor
-    /// Note: By definition the price of the base asset against itself (base asset) is always equals one
-    address baseAsset; // Is the base asset of a portfolio against which all other assets are priced against
+    /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
+    address quoteAsset; // Is the quote asset of a portfolio against which all other assets are priced against
 
     // Fields that can be changed by functions
     mapping (address => Data) data; // Address of asset => price of asset
@@ -53,7 +53,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     // CONSTANT METHODS
 
-    function getBaseAsset() constant returns (address) { return baseAsset; }
+    function getQuoteAsset() constant returns (address) { return quoteAsset; }
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
 
@@ -91,20 +91,20 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
 
     // NON-CONSTANT METHODS
 
-    /// Pre: Define a base asset against which all prices are measured/quoted against
+    /// Pre: Define a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(address setBackupOwner, address setBaseAsset)
+    function PriceFeed(address setBackupOwner, address setQuoteAsset)
         BackupOwned(setBackupOwner)
     {
-        baseAsset = setBaseAsset;
+        quoteAsset = setQuoteAsset;
     }
 
     /// Pre: Only Owner; Same sized input arrays
-    /// Post: Update price of asset relative to Ether
+    /// Post: Update price of asset relative to quoteAsset
     /** Ex:
-     *  Let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
+     *  Let quoteAsset == ETH, let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
-     *  => data[EUR-T].price = 8045678
+     *  => data[EUR-T].price = 8045678 [10**8 * ETH/EUR-T]
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
         only_owner
