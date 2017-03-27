@@ -70,7 +70,7 @@ contract Core is Shares, SafeMath, Owned {
     event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
     // Managing
-    event SpendingApproved(address ofToken, uint quantity, address ofApprovalExchange);
+    event SpendingApproved(address ofToken, address onExchange, uint quantity);
 
     // MODIFIERS
 
@@ -142,32 +142,33 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Portfolio Gross Asset Value in Wei
     function calcGAV() constant returns (uint gav) {
         /* Rem 1:
-         *  All prices are relative to the reference asset price. For this version,
-         *  the reference asset is set as the EtherToken. The price of the EtherToken
-         *  relative to Ether is defined to always be equal to one.
+         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
          * Rem 2:
-         *  All assets need to be linked to the right price feed
+         *  For this version, the referenceAsset is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
          * Rem 3:
-         *  Price Input Unit: [Wei/(Asset * 10**(uint(decimals)))] == Base unit amount of reference asset per base unit amout of asset
-         *  Holdings Input Unit: [Asset * 10**(uint(decimals)))] == Base unit amount of asset this core holds
-         *    ==> coreHoldings * price == value of asset holdings of this core relative to reference asset price.
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
+         *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
+         *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             // Holdings
-            address assetAddr = address(module.universe.assetAt(i));
-            AssetProtocol Asset = AssetProtocol(assetAddr);
+            address ofAsset = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(ofAsset);
             uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint assetDecimals = Asset.getDecimals();
             // Price
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAssetAddr = Price.getQuoteAsset();
+            address quoteAsset = Price.getQuoteAsset();
+            assert(referenceAsset == quoteAsset); // See Remark 1
             uint assetPrice;
-            if (assetAddr == quoteAssetAddr) {
-              assetPrice = 1 * 10 ** assetDecimals; // By definition
+            if (ofAsset == quoteAsset) {
+              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
             } else {
-              assetPrice = Price.getPrice(assetAddr); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
+              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
@@ -186,12 +187,13 @@ contract Core is Shares, SafeMath, Owned {
         owner = ofManager;
         analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
-        // TODO assert(quoteAssetAddr == referenceAsset) for all  quoteAssetAddr's in all PriceFeed contracts
         uint etherTokenIndex = module.universe.etherTokenAtIndex();
-        module.ether_token = EtherToken(address(module.universe.assetAt(etherTokenIndex)));
+        address etherToken = address(module.universe.assetAt(etherTokenIndex));
+        module.ether_token = EtherToken(etherToken);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
+        referenceAsset = etherToken; // By definition initial version of core has EtherToken as ReferenceAsset
     }
 
     /// Pre: Needed to receive Ether from EtherToken Contract
@@ -276,13 +278,13 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    /*function approveSpendingOf(uint quantity, address atThisExchange)
+    function approveSpending(ERC20 ofToken, address onExchange, uint quantity)
         internal
         only_owner
     {
-        ofToken.approve(atThisExchange, quantity);
-        SpendingApproved(ofToken, atThisExchange, quantity);
-    }*/
+        ofToken.approve(onExchange, quantity);
+        SpendingApproved(ofToken, onExchange, quantity);
+    }
 
     /// Place an Order on the selected Exchange
     function offer(Exchange onExchange,
@@ -300,22 +302,22 @@ contract Core is Shares, SafeMath, Owned {
     function buy(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
-        // Buying what another person is selling. Inverse variable terminology!
+        // Inverse variable terminology! Buying what another person is selling
         var (buy_how_much, buy_which_token,
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
 
         assert(quantity <= buy_how_much);
-        // TODO Assert asset pair must include ethertoken to restrict possible asset pairs
+        // Assetpair defined in Universe and contains referenceAsset
         assert(module.universe.assetAvailability(buy_which_token));
         assert(module.universe.assetAvailability(sell_which_token));
-        // Exchange where
+        assert(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
+        // Exchange defined in Universe
         assert(address(onExchange) == module.universe.assignedExchange(buy_which_token));
         assert(address(onExchange) == module.universe.assignedExchange(sell_which_token));
+        // TODO insert Risk Management restrictions
 
-        ERC20 ofToken = ERC20(sell_which_token);
-        ofToken.approve(onExchange, quantity);
-        SpendingApproved(sell_which_token, quantity, onExchange);
-
+        // Execute Trade
+        approveSpending(sell_which_token, onExchange, quantity);
         onExchange.buy(id, quantity);
     }
 
