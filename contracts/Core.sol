@@ -249,9 +249,9 @@ contract Core is Shares, SafeMath, Owned {
         // Exchange defined in Universe
         assert(address(onExchange) == module.universe.assignedExchange(buy_which_token));
         assert(address(onExchange) == module.universe.assignedExchange(sell_which_token));
-        // TODO insert Risk Management restrictions
-
-        // Execute Trade
+        // Exchange defined in Universe
+        assert(module.riskmgmt.isTradeExecutionPermitted(onExchange, buy_which_token, sell_which_token, quantity));
+        // Trade execution
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.buy(id, quantity);
     }
