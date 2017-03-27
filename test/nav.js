@@ -236,10 +236,6 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
-        return coreContract.totalSupply();
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), wantedShares[0].toNumber());
         return coreContract.sumInvested();
       })
       .then((result) => {
@@ -267,11 +263,14 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        return coreContract.balanceOf(NOT_OWNER);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
         return coreContract.sumInvested();
       })
       .then((result) => {
-        assert.strictEqual(result.toNumber(),
-          correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
         done();
       });
     });
@@ -294,14 +293,18 @@ contract('Net Asset Value', (accounts) => {
         return coreContract.totalSupply();
       })
       .then((result) => {
-        // Paid to little, hence no shares received
+        // Paid too little, hence no shares created
+        assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
+        return coreContract.balanceOf(NOT_OWNER);
+      })
+      .then((result) => {
+        // Paid too little, hence no shares received
         assert.strictEqual(result.toNumber(), wantedShares[0].add(wantedShares[1]).toNumber());
         return coreContract.sumInvested();
       })
       .then((result) => {
-        // Paid to little, hence no investment made
-        assert.strictEqual(result.toNumber(),
-            correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
+        // Paid too little, hence no investment happened
+        assert.strictEqual(result.toNumber(), correctPriceToBePaid[0].add(correctPriceToBePaid[1]).toNumber());
         done();
       });
     });
