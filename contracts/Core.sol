@@ -99,11 +99,6 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier token_registered_to_exchange(ERC20 token, Exchange exchange) {
-        assert(exchange == Exchange(module.universe.assignedExchange(token)));
-        _;
-    }
-
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
@@ -136,7 +131,6 @@ contract Core is Shares, SafeMath, Owned {
     function() payable {}
 
     /// Pre: EtherToken as Asset in Universe
-    //  Creating Shares only possible with Ether
     /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
@@ -221,37 +215,48 @@ contract Core is Shares, SafeMath, Owned {
         SpendingApproved(ofToken, onExchange, quantity);
     }
 
+    /// Pre: Universe has been defined
+    /// Post: Whether buying and selling of tokens are allowed at given exchange
+    function isWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
+        internal
+        returns (bool)
+    {
+        // Assetpair defined in Universe and contains referenceAsset
+        assert(module.universe.assetAvailability(buy_which_token));
+        assert(module.universe.assetAvailability(sell_which_token));
+        assert(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
+        // Exchange assigned to tokens in Universe
+        assert(onExchange == module.universe.assignedExchange(buy_which_token));
+        assert(onExchange == module.universe.assignedExchange(sell_which_token));
+    }
+
     /// Place an Order on the selected Exchange
     function offer(Exchange onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
         only_owner
-        token_registered_to_exchange(sell_which_token, onExchange)
     {
-        assert(module.universe.assetAvailability(sell_which_token));
-        assert(module.universe.assetAvailability(buy_which_token));
+        isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
+        // Restrict trade volume
+        assert(module.riskmgmt.isTradeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
+        // Execute Offer
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
+    /// Pre: Active offer (id) and valid quantity on selected Exchange
+    /// Post: Take offer on the selected Exchange
     function buy(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
         // Inverse variable terminology! Buying what another person is selling
         var (buy_how_much, buy_which_token,
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
-
         assert(quantity <= buy_how_much);
-        // Assetpair defined in Universe and contains referenceAsset
-        assert(module.universe.assetAvailability(buy_which_token));
-        assert(module.universe.assetAvailability(sell_which_token));
-        assert(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
-        // Exchange defined in Universe
-        assert(address(onExchange) == module.universe.assignedExchange(buy_which_token));
-        assert(address(onExchange) == module.universe.assignedExchange(sell_which_token));
-        // Exchange defined in Universe
+        isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
+        // Restrict trade volume
         assert(module.riskmgmt.isTradeExecutionPermitted(onExchange, buy_which_token, sell_which_token, quantity));
-        // Trade execution
+        // Approve spending and execute
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.buy(id, quantity);
     }

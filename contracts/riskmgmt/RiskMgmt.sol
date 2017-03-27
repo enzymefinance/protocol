@@ -12,8 +12,6 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     // FIELDS
 
-    Exchange exchange;
-
     // EVENTS
 
     // MODIFIERS
@@ -24,16 +22,26 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     function RiskMgmt() {}
 
-    function isTradeExecutionPermitted(
-      address onExchange,
-      address buy_which_token,
-      address sell_which_token,
-      uint quantity
+    function isTradeOfferPermitted(
+        address onExchange,
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
     )
-      returns (bool)
+        returns (bool)
     {
-      // TODO restrict trading depending on market impact of trade
-      return true;
+        // TODO restrict trading depending on market impact of trade
+        return true;
     }
 
+    function isTradeExecutionPermitted(
+        address onExchange,
+        ERC20 buy_which_token,
+        ERC20 sell_which_token,
+        uint quantity
+    )
+        returns (bool)
+    {
+        // TODO restrict trading depending on market impact of trade
+        return true;
+    }
 }
