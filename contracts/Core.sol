@@ -171,10 +171,17 @@ contract Core is Shares, SafeMath, Owned {
     /// Pre: Investment made by msg sender
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateShares(uint offeredShares, uint wantedValue)
-        balances_msg_sender_at_least(offeredShares)
-        not_zero(offeredShares)
     {
         sharePrice = calcSharePrice();
+        annihilateSharesAt(sharePrice, offeredShares, wantedValue);
+    }
+
+    /// Pre: Investment made by msg sender
+    /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
+    function annihilateSharesAt(uint sharePrice, uint offeredShares, uint wantedValue)
+        internal
+        balances_msg_sender_at_least(offeredShares)
+    {
         // Check if enough shares offered for requested amount of funds.
         uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
         if (offeredValue >= wantedValue) {
