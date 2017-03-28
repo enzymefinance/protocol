@@ -4,20 +4,21 @@ const BigNumber = require('bignumber.js');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
 
-const AssetProtocol = artifacts.require('./AssetProtocol.sol');
-const EtherToken = artifacts.require('./EtherToken.sol');
-const MelonToken = artifacts.require('./MelonToken.sol');
+const AssetProtocol = artifacts.require('AssetProtocol.sol');
+const EtherToken = artifacts.require('EtherToken.sol');
+const MelonToken = artifacts.require('MelonToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Exchange = artifacts.require('Exchange.sol');
 const Universe = artifacts.require('Universe.sol');
 const RiskMgmt = artifacts.require('RiskMgmt.sol');
+const ManagementFee = artifacts.require('ManagementFee.sol');
+const PerformanceFee = artifacts.require('PerformanceFee.sol');
 const Core = artifacts.require('Core.sol');
 
 contract('Net Asset Value', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
-  const ADDRESS_PLACEHOLDER = '0x0';
   const NUM_OFFERS = 1;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
 
@@ -49,6 +50,8 @@ contract('Net Asset Value', (accounts) => {
   let exchangeContract;
   let universeContract;
   let riskmgmtContract;
+  let managementFeeContract;
+  let performanceFeeContract;
   let exchangeTestCases;
   let riskmgmtTestCases;
 
@@ -61,6 +64,8 @@ contract('Net Asset Value', (accounts) => {
       Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
       Universe.deployed().then((deployed) => { universeContract = deployed; });
       RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
+      ManagementFee.deployed().then((deployed) => { managementFeeContract = deployed; });
+      PerformanceFee.deployed().then((deployed) => { performanceFeeContract = deployed; });
     });
 
     it('Define Price Feed testcase', () => {
@@ -83,8 +88,8 @@ contract('Net Asset Value', (accounts) => {
       Core.new(OWNER,
         universeContract.address,
         riskmgmtContract.address,
-        ADDRESS_PLACEHOLDER,
-        ADDRESS_PLACEHOLDER,
+        managementFeeContract.address,
+        performanceFeeContract.address,
         { from: OWNER })
           .then((result) => {
             coreContract = result;

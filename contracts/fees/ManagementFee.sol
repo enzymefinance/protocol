@@ -19,7 +19,11 @@ contract ManagementFee is ManagementFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
-    function calculateFee() only_owner constant returns (uint) { return fee; }
+    function calculateFee(uint timeDifference)
+        constant returns (uint)
+    {
+        return timeDifference * fee;
+    }
 
     // NON-CONSTANT METHODS
 
