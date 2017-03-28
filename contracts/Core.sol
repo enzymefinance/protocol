@@ -297,6 +297,11 @@ contract Core is Shares, SafeMath, Owned {
         uint timeDifference = now - analytics.timestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference);
         uint performanceFee = 0;
+        if (analytics.nav != 0) {
+          uint delta = (analytics.delta * nav) / analytics.nav;
+          uint relativeDelta = (delta - analytics.delta) / analytics.delta;
+          performanceFee = module.performance_fee.calculateFee(relativeDelta);
+        }
         nav = calcGAV() - managementFee - performanceFee;
         NetAssetValue(nav, managementFee, performanceFee);
     }

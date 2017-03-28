@@ -6,12 +6,12 @@ import "../dependencies/Owned.sol";
 
 /// @title ManagementFee Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static ManagementFee.
+/// @notice Simple time based ManagementFee.
 contract ManagementFee is ManagementFeeProtocol, Owned {
 
     // FIELDS
 
-    uint public fee = 0;
+    uint public fee = 0; // Fee in Ether per managed seconds
 
     // EVENTS
 

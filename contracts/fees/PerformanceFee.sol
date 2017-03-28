@@ -11,7 +11,7 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // FIELDS
 
-    uint public fee = 0;
+    uint public fee = 0; // Fee in Ether per delta improvment (TODO define better)
 
     // EVENTS
 
@@ -19,7 +19,11 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
-    function calculateFee() only_owner constant returns (uint) { return fee; }
+    function calculateFee(uint relativeDelta)
+        constant returns (uint)
+    {
+        return relativeDelta * fee;
+    }
 
     // NON-CONSTANT METHODS
 
