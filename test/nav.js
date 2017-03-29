@@ -18,6 +18,7 @@ const Core = artifacts.require('Core.sol');
 contract('Net Asset Value', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
+  const PORTFOLIO_NAME = 'Melon Portfolio';
   const NOT_OWNER = accounts[1];
   const NUM_OFFERS = 1;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
@@ -85,7 +86,9 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Deploy smart contract', (done) => {
-      Core.new(OWNER,
+      Core.new(
+        PORTFOLIO_NAME,
+        OWNER,
         universeContract.address,
         riskmgmtContract.address,
         managementFeeContract.address,

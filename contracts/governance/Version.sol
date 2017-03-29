@@ -28,6 +28,7 @@ contract Version is Owned {
     function Version(address ofGovernance) { addrGovernance = ofGovernance; }
 
     function createCore(
+        string withName,
         address ofUniverse,
         address ofRiskMgmt,
         address ofManagmentFee,
@@ -37,6 +38,7 @@ contract Version is Owned {
     {
         // Create new Core
         address createAddr = address(new Core(
+            withName,
             msg.sender,
             ofUniverse,
             ofRiskMgmt,

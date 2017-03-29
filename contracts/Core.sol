@@ -40,18 +40,14 @@ contract Core is Shares, SafeMath, Owned {
     // FIELDS
 
     // Constant token specific fields
-    // TODO set in constructor - similar to EtherToken
-    string public constant name = "Melon Portfolio";
+    string public name;
     string public constant symbol = "MLN-P";
     uint public constant decimals = 18;
-
     // Constant fields
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
     uint public constant BASE_UNIT_OF_SHARES = 10 ** decimals;
-
     // Fields that are only changed in constructor
     address referenceAsset;
-
     // Fields that can be changed by functions
     Analytics analytics;
     Modules module;
@@ -61,16 +57,14 @@ contract Core is Shares, SafeMath, Owned {
 
     // EVENTS
 
-    event SharesCreated(address buyer, uint numShares, uint sharePrice);
+    event SharesCreated(address buyer, uint numShares, uint sharePrice); // Participation
     event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
-    // Calcualtions
-    event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals);
+    event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
     event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
-    // Managing
-    event SpendingApproved(address ofToken, address onExchange, uint quantity);
+    event SpendingApproved(address ofToken, address onExchange, uint quantity); // Managing
 
     // MODIFIERS
 
@@ -108,12 +102,14 @@ contract Core is Shares, SafeMath, Owned {
     // NON-CONSTANT METHODS
 
     function Core(
+        string withName,
         address ofManager,
         address ofUniverse,
         address ofRiskMgmt,
         address ofManagmentFee,
         address ofPerformanceFee
     ) {
+        name = withName;
         owner = ofManager;
         analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
         module.universe = UniverseProtocol(ofUniverse);

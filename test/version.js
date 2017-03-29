@@ -10,6 +10,7 @@ const Core = artifacts.require('./Core.sol');
 contract('Version', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
+  const PORTFOLIO_NAME = 'Melon Portfolio';
   const ADDRESS_PLACEHOLDER = '0x0';
 
   // Test globals
@@ -33,6 +34,7 @@ contract('Version', (accounts) => {
     .then((result) => {
       versionContract = result;
       return versionContract.createCore(
+        PORTFOLIO_NAME,
         universeContract.address,
         riskmgmtContract.address,
         managementFeeContract.address,
