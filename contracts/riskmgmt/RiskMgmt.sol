@@ -22,7 +22,7 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     function RiskMgmt() {}
 
-    function isTradeOfferPermitted(
+    function isExchangeOfferPermitted(
         address onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
@@ -33,7 +33,7 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
         return true;
     }
 
-    function isTradeExecutionPermitted(
+    function isExchangeBuyPermitted(
         address onExchange,
         ERC20 buy_which_token,
         ERC20 sell_which_token,

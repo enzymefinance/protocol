@@ -134,16 +134,23 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Invest in a fund by creating shares
     function createShares(uint wantedShares)
         payable
-        msg_value_past_zero
-        not_zero(wantedShares)
     {
         /* Rem:
          *  This is can be seen as a none persistent all or nothing limit order, where:
-         *  quantity == quantityShares and
-         *  amount == msg.value (amount investor is willing to pay for the req. quantity)
+         *  quantity == quantityShares and amount == msg.value
          */
         sharePrice = calcSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
+        createSharesAt(sharePrice, offeredValue, wantedShares);
+    }
+
+    /// Pre: EtherToken as Asset in Universe
+    /// Post: Invest in a fund by creating shares
+    function createSharesAt(uint sharePrice, uint offeredValue, uint wantedShares)
+        internal
+        msg_value_past_zero
+        not_zero(wantedShares)
+    {
         // Check if enough funds sent for requested quantity of shares.
         uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
         if (wantedValue <= offeredValue) {
@@ -168,7 +175,7 @@ contract Core is Shares, SafeMath, Owned {
         }
     }
 
-    /// Pre: Investment made by msg sender
+    /// Pre: Sender owns shares, actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateShares(uint offeredShares, uint wantedValue)
     {
@@ -176,7 +183,7 @@ contract Core is Shares, SafeMath, Owned {
         annihilateSharesAt(sharePrice, offeredShares, wantedValue);
     }
 
-    /// Pre: Investment made by msg sender
+    /// Pre: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateSharesAt(uint sharePrice, uint offeredShares, uint wantedValue)
         internal
@@ -201,14 +208,6 @@ contract Core is Shares, SafeMath, Owned {
             balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
             totalSupply = safeSub(totalSupply, offeredShares);
             SharesAnnihilated(msg.sender, offeredShares, sharePrice);
-      }
-      // Refund excessOfferedValue
-      else if (offeredValue > wantedValue) {
-          uint excessOfferedValue = offeredValue - wantedValue;
-          NotAllocated(msg.sender, excessOfferedValue);
-      // Valuation of Shares to low, refund all
-      } else {
-          NotAllocated(msg.sender, offeredValue);
       }
     }
 
@@ -246,7 +245,7 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
     {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isTradeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
+        assert(module.riskmgmt.isExchangeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
@@ -261,7 +260,7 @@ contract Core is Shares, SafeMath, Owned {
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
         assert(quantity <= buy_how_much);
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isTradeExecutionPermitted(onExchange, buy_which_token, sell_which_token, quantity));
+        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, buy_which_token, sell_which_token, quantity));
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.buy(id, quantity);
     }
