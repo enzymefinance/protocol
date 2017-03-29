@@ -35,9 +35,8 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     function isExchangeBuyPermitted(
         address onExchange,
-        ERC20 buy_which_token,
-        ERC20 sell_which_token,
-        uint quantity
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
     )
         returns (bool)
     {

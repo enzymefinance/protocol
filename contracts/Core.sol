@@ -225,16 +225,16 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    function approveSpending(ERC20 ofToken, address onExchange, uint quantity)
+    function approveSpending(ERC20 ofToken, address onExchange, uint amount)
         internal
     {
-        assert(ofToken.approve(onExchange, quantity));
-        SpendingApproved(ofToken, onExchange, quantity);
+        assert(ofToken.approve(onExchange, amount));
+        SpendingApproved(ofToken, onExchange, amount);
     }
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function offer(Exchange onExchange,
+    function makeOffer(Exchange onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
@@ -246,18 +246,20 @@ contract Core is Shares, SafeMath, Owned {
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
-    /// Pre: Active offer (id) and valid quantity on selected Exchange
+    /// Pre: Active offer (id) and valid buy quantity on selected Exchange
     /// Post: Take offer on selected Exchange
-    function buy(Exchange onExchange, uint id, uint quantity)
+    function takeOffer(Exchange onExchange, uint id, uint quantity)
         only_owner
     {
         // Inverse variable terminology! Buying what another person is selling
         var (buy_how_much, buy_which_token,
                 sell_how_much, sell_which_token) = onExchange.getOffer(id);
+        // Inferred quantity that the buyer wishes to spend
+        uint spend = safeMul(quantity, sell_how_much) / buy_how_much;
         assert(quantity <= buy_how_much);
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, buy_which_token, sell_which_token, quantity));
-        approveSpending(sell_which_token, onExchange, sell_how_much);
+        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, sell_how_much, sell_which_token,buy_how_much, buy_which_token));
+        approveSpending(sell_which_token, onExchange, spend);
         onExchange.buy(id, quantity);
     }
 

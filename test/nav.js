@@ -341,14 +341,14 @@ contract('Net Asset Value', (accounts) => {
       exchangeContract.getOffer(offerId).then((result) => {
         buyHowMuch = result[0].toNumber();
         const quantity = Math.min(buyHowMuch)
-        return coreContract.buy(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
+        return coreContract.takeOffer(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
       })
       .then((result) => {
         assert.notEqual(result.logs.length, 0);
         return etherTokenContract.allowance(coreContract.address, exchangeContract.address);
       })
       .then((result) => {
-        console.log(`Allowance: ${result.toNumber() / (constants.ether)}`);
+        console.log(`Remaining Allowance: ${result.toNumber() / (constants.ether)}`);
         return coreContract.calcSharePrice();
       })
       .then((result) => {
