@@ -63,7 +63,7 @@ contract Core is Shares, SafeMath, Owned {
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
     event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
     event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
-    event SpendingApproved(address ofToken, address onExchange, uint quantity); // Managing
+    event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
 
     // MODIFIERS
 
@@ -125,15 +125,17 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Receive Either directly
     function() payable {}
 
+    // NON-CONSTANT METHODS - PARTICIPATION
+
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
+    /* Rem:
+     *  This is can be seen as a none persistent all or nothing limit order, where:
+     *  amount == amountShares and amount == msg.value
+     */
     function createShares(uint wantedShares)
         payable
     {
-        /* Rem:
-         *  This is can be seen as a none persistent all or nothing limit order, where:
-         *  quantity == quantityShares and amount == msg.value
-         */
         sharePrice = calcSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
         createSharesAt(sharePrice, offeredValue, wantedShares);
@@ -146,7 +148,7 @@ contract Core is Shares, SafeMath, Owned {
         msg_value_past_zero
         not_zero(wantedShares)
     {
-        // Check if enough funds sent for requested quantity of shares.
+        // Check if enough value sent for wanted amount of shares.
         uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
         if (wantedValue <= offeredValue) {
             // Acount for investment amount and deposit Ether
@@ -184,7 +186,7 @@ contract Core is Shares, SafeMath, Owned {
         internal
         balances_msg_sender_at_least(offeredShares)
     {
-        // Check if enough shares offered for requested amount of funds.
+        // Check if enough shares offered for wanted value.
         uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
         if (offeredValue >= wantedValue) {
             // Transfer ownedHoldings of Assets
@@ -206,13 +208,48 @@ contract Core is Shares, SafeMath, Owned {
       }
     }
 
+    // NON-CONSTANT METHODS - EXCHANGE
+
+    /// Pre: Sufficient balance and spending has been approved
+    /// Post: Make offer on selected Exchange
+    function makeOffer(Exchange onExchange,
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
+    )
+        only_owner
+    {
+        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
+        assert(module.riskmgmt.isExchangeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
+        approveSpending(sell_which_token, onExchange, sell_how_much);
+        onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+    }
+
+    /// Pre: Active offer (id) and valid buy amount on selected Exchange
+    /// Post: Take offer on selected Exchange
+    function takeOffer(Exchange onExchange, uint id, uint wantedBuyAmount)
+        only_owner
+    {
+        // Inverse variable terminology! Buying what another person is selling
+        var (offeredBuyAmount, offeredBuyToken, offeredSellAmount, offeredSellToken) = onExchange.getOffer(id);
+        uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
+        assert(wantedBuyAmount <= offeredBuyAmount);
+        assert(isWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken));
+        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, offeredSellAmount, offeredSellToken, offeredBuyAmount, offeredBuyToken));
+        approveSpending(offeredSellToken, onExchange, wantedSellAmount);
+        onExchange.buy(id, wantedBuyAmount);
+    }
+
+    /// Pre: Active offer (id) with owner of this contract on selected Exchange
+    /// Post: Cancel offer on selected Exchange
+    function cancel(Exchange onExchange, uint id) only_owner { onExchange.cancel(id); }
+
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
     function isWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
         internal
         returns (bool)
     {
-        // Assetpair defined in Universe and contains referenceAsset
+        // Asset pair defined in Universe and contains referenceAsset
         assert(module.universe.assetAvailability(buy_which_token));
         assert(module.universe.assetAvailability(sell_which_token));
         assert(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
@@ -231,40 +268,7 @@ contract Core is Shares, SafeMath, Owned {
         SpendingApproved(ofToken, onExchange, amount);
     }
 
-    /// Pre: Sufficient balance and spending has been approved
-    /// Post: Make offer on selected Exchange
-    function makeOffer(Exchange onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
-    )
-        only_owner
-    {
-        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isExchangeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
-        approveSpending(sell_which_token, onExchange, sell_how_much);
-        onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
-    }
-
-    /// Pre: Active offer (id) and valid buy quantity on selected Exchange
-    /// Post: Take offer on selected Exchange
-    function takeOffer(Exchange onExchange, uint id, uint quantity)
-        only_owner
-    {
-        // Inverse variable terminology! Buying what another person is selling
-        var (buy_how_much, buy_which_token,
-                sell_how_much, sell_which_token) = onExchange.getOffer(id);
-        // Inferred quantity that the buyer wishes to spend
-        uint spend = safeMul(quantity, sell_how_much) / buy_how_much;
-        assert(quantity <= buy_how_much);
-        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, sell_how_much, sell_which_token,buy_how_much, buy_which_token));
-        approveSpending(sell_which_token, onExchange, spend);
-        onExchange.buy(id, quantity);
-    }
-
-    /// Pre: Active offer (id) with owner of this contract on selected Exchange
-    /// Post: Cancel offer on selected Exchange
-    function cancel(Exchange onExchange, uint id) only_owner { onExchange.cancel(id); }
+    // NON-CONSTANT METHODS - CORE
 
     /// Pre: Valid price feed data
     /// Post: Calculate Share Price in Wei and update analytics struct
@@ -272,7 +276,7 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Valid price feed data
     /// Post: Delta as a result of current and previous NAV
-    function calcDelta() returns (uint delta) {
+    function calcDelta() internal returns (uint delta) {
         uint nav = calcNAV();
         // Define or calcualte delta
         if (analytics.nav == 0) { // First investment not made
@@ -289,7 +293,7 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNAV() returns (uint nav) {
+    function calcNAV() internal returns (uint nav) {
         uint timeDifference = now - analytics.timestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference);
         uint performanceFee = 0;
@@ -304,19 +308,19 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
     /// Post: Portfolio Gross Asset Value in Wei
-    function calcGAV() returns (uint gav) {
-        /* Rem 1:
-         *  All prices are relative to the referenceAsset price. The referenceAsset must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the referenceAsset is set as EtherToken.
-         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
-         *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
-         *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
+    /* Rem 1:
+     *  All prices are relative to the referenceAsset price. The referenceAsset must be
+     *  equal to quoteAsset of corresponding PriceFeed.
+     * Rem 2:
+     *  For this version, the referenceAsset is set as EtherToken.
+     *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+     * Rem 3:
+     *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
+     *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
+     *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
+     *  where 0 <= decimals <= 18 and decimals is a natural number.
+     */
+    function calcGAV() internal returns (uint gav) {
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             // Holdings

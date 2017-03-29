@@ -345,10 +345,6 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         assert.notEqual(result.logs.length, 0);
-        return etherTokenContract.allowance(coreContract.address, exchangeContract.address);
-      })
-      .then((result) => {
-        console.log(`Remaining Allowance: ${result.toNumber() / (constants.ether)}`);
         return coreContract.calcSharePrice();
       })
       .then((result) => {
