@@ -427,6 +427,7 @@ contract('Net Asset Value', (accounts) => {
       coreContract.calcSharePrice().then(() => coreContract.sharePrice())
       .then((result) => {
         sharePrice = result.toNumber();
+        console.log(`Initial sharePrice ${sharePrice}`);
         return coreContract.annihilateShares(offeredShares, wantedValue, { from: NOT_OWNER });
       })
       .then((result) => {
