@@ -5,6 +5,11 @@
   "directories": {
     "test": "test"
   },
+  "scripts": {
+    "test": "truffle test",
+    "lint": "eslint .",
+    "pretest": ""
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/melonproject/protocol.git"
@@ -15,7 +20,7 @@
     "Melon"
   ],
   "author": "“Reto Trinkler <“rt@melonport.com”>",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/melonproject/protocol/issues"
   },
@@ -41,9 +46,5 @@
     "babel-core": "^6.20.0",
     "bignumber.js": "^2.4.0"
   },
-  "scripts": {
-    "test": "mocha --reporter spec",
-    "lint": "eslint .",
-    "pretest": "npm run lint --silent"
-  }
+  "main": "truffle.js"
 }
