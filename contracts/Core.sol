@@ -150,25 +150,20 @@ contract Core is Shares, SafeMath, Owned {
     {
         // Check if enough value sent for wanted amount of shares.
         uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
-        if (wantedValue <= offeredValue) {
-            // Acount for investment amount and deposit Ether
-            sumInvested = safeAdd(sumInvested, wantedValue);
-            analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
-            assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
-            // Create Shares
-            balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-            totalSupply = safeAdd(totalSupply, wantedShares);
-            SharesCreated(msg.sender, wantedShares, sharePrice);
-        }
+        assert(wantedValue <= offeredValue);
+        // Acount for investment amount and deposit Ether
+        sumInvested = safeAdd(sumInvested, wantedValue);
+        analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
+        assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
+        // Create Shares
+        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
+        totalSupply = safeAdd(totalSupply, wantedShares);
+        SharesCreated(msg.sender, wantedShares, sharePrice);
         // Refund excessOfferedValue
         if (wantedValue < offeredValue) {
             uint excessOfferedValue = offeredValue - wantedValue;
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
-        // Valuation of Shares to low, refund all
-        } else {
-            assert(msg.sender.send(offeredValue));
-            Refund(msg.sender, offeredValue);
         }
     }
 
