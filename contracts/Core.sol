@@ -131,7 +131,7 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Invest in a fund by creating shares
     /* Rem:
      *  This is can be seen as a none persistent all or nothing limit order, where:
-     *  amount == amountShares and amount == msg.value
+     *  amount == amountShares and price == amountShares/msg.value [Shares/ETH]
      */
     function createShares(uint wantedShares)
         payable
@@ -161,7 +161,7 @@ contract Core is Shares, SafeMath, Owned {
             SharesCreated(msg.sender, wantedShares, sharePrice);
         }
         // Refund excessOfferedValue
-        else if (wantedValue < offeredValue) {
+        if (wantedValue < offeredValue) {
             uint excessOfferedValue = offeredValue - wantedValue;
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
