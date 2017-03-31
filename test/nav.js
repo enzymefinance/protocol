@@ -297,38 +297,38 @@ contract('Net Asset Value', (accounts) => {
     it('Wanted Shares > Offered Value (underpaid)', (done) => {
       const wantedShares = new BigNumber(2e+17);
       const offeredValue = new BigNumber(1e+17);
-      const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
+      const expectedValue = new BigNumber(3e+17); // 0.3 from previous test
 
       coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
-      .then((result) => {
-        return coreContract.calcSharePrice();
-      })
-      .then((result) => {
-        // Check Logs
-        assert.notEqual(result.logs.length, 0);
-        console.log('Portfolio Content');
-        for (let i = 0; i < result.logs.length; i += 1) {
-          if (result.logs[i].event === 'PortfolioContent') {
-            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+      .catch(() => {
+        // Gets executed if contract throws exception
+        coreContract.calcSharePrice().then((result) => {
+          // Check Logs
+          assert.notEqual(result.logs.length, 0);
+          console.log('Portfolio Content');
+          for (let i = 0; i < result.logs.length; i += 1) {
+            if (result.logs[i].event === 'PortfolioContent') {
+              const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+              console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+            }
+            if (result.logs[i].event === 'AnalyticsUpdated') {
+              console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+            }
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
-            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-          }
-        }
-        return coreContract.sharePrice();
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
-        return etherTokenContract.balanceOf(coreContract.address);
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-        return coreContract.balanceOf(NOT_OWNER);
-      })
-      .then((result) => {
-        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-        done();
+          return coreContract.sharePrice();
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+          return etherTokenContract.balanceOf(coreContract.address);
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+          return coreContract.balanceOf(NOT_OWNER);
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+          done();
+        })
       });
     });
   });

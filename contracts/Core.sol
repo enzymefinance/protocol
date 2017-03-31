@@ -183,24 +183,23 @@ contract Core is Shares, SafeMath, Owned {
     {
         // Check if enough shares offered for wanted value.
         uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
-        if (offeredValue >= wantedValue) {
-            // Transfer ownedHoldings of Assets
-            uint numAssignedAssets = module.universe.numAssignedAssets();
-            for (uint i = 0; i < numAssignedAssets; ++i) {
-                AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
-                uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-                if (coreHoldings == 0) continue;
-                uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
-                assert(Asset.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
-            }
-            // Acount for withdrawal amount
-            sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
-            analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
-            // Annihilate Shares
-            balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
-            totalSupply = safeSub(totalSupply, offeredShares);
-            SharesAnnihilated(msg.sender, offeredShares, sharePrice);
-      }
+        assert(offeredValue >= wantedValue);
+        // Transfer ownedHoldings of Assets
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssignedAssets; ++i) {
+            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            if (coreHoldings == 0) continue;
+            uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
+            assert(Asset.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
+        }
+        // Acount for withdrawal amount
+        sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
+        analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
+        // Annihilate Shares
+        balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
+        totalSupply = safeSub(totalSupply, offeredShares);
+        SharesAnnihilated(msg.sender, offeredShares, sharePrice);
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
