@@ -294,14 +294,14 @@ contract Core is Shares, SafeMath, Owned {
     /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
     function calcNAV() internal returns (uint nav) {
+        uint gav = calcGAV(); // Reflects value indepentent of managment and performance fee
         uint timeDifference = now - analytics.timestamp;
-        uint managementFee = module.management_fee.calculateFee(timeDifference);
+        uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
         uint performanceFee = 0;
-        uint gav = calcGAV(); // Reflects performance indepentent of managment and performance fee
-        if (analytics.nav != 0) {
-          uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) before fees are taken
-          uint relativeDeltaGross = (deltaGross - analytics.delta) / analytics.delta;
-          performanceFee = module.performance_fee.calculateFee(relativeDeltaGross);
+        if (analytics.nav != 0 && analytics.delta != 0) {
+          uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) indepentent of managment and performance fees
+          uint deltaDifference = deltaGross - analytics.delta;
+          performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
         }
         nav = gav - managementFee - performanceFee;
         NetAssetValueCalculated(nav, managementFee, performanceFee);

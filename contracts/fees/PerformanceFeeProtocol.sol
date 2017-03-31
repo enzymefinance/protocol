@@ -4,7 +4,7 @@ pragma solidity ^0.4.8;
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying PerformanceFee Contract
 contract PerformanceFeeProtocol {
-    function calculateFee(uint relativeDelta)
-        constant returns (uint)
-    {}
+  function calculateFee(uint deltaDifference, uint gav)
+      constant returns (uint)
+  {}
 }

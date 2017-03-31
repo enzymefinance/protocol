@@ -11,7 +11,8 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // FIELDS
 
-    uint public fee = 0; // Fee in Ether per delta improvment (TODO define better)
+    uint public fee = 0; // Fee in Ether per delta improvment
+    uint public constant DIVISOR_FEE = 10000; // Fees are divided by this number; Results to one basis point
 
     // EVENTS
 
@@ -19,10 +20,12 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
-    function calculateFee(uint relativeDelta)
+    function calculateFee(uint deltaDifference, uint gav)
         constant returns (uint)
     {
-        return relativeDelta * fee;
+        if (deltaDifference <= 0) return 0;
+        uint absoluteChange = (deltaDifference) * gav;
+        return absoluteChange * fee / DIVISOR_FEE;
     }
 
     // NON-CONSTANT METHODS

@@ -12,6 +12,7 @@ contract ManagementFee is ManagementFeeProtocol, Owned {
     // FIELDS
 
     uint public fee = 0; // Fee in Ether per managed seconds
+    uint public constant DIVISOR_FEE = 10 ** 15; // Fees are divided by this number
 
     // EVENTS
 
@@ -19,10 +20,11 @@ contract ManagementFee is ManagementFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
-    function calculateFee(uint timeDifference)
+    function calculateFee(uint timeDifference, uint gav)
         constant returns (uint)
     {
-        return timeDifference * fee;
+        uint absoluteChange = timeDifference * gav;
+        return absoluteChange * fee / DIVISOR_FEE;
     }
 
     // NON-CONSTANT METHODS
