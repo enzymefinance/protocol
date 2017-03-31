@@ -62,7 +62,7 @@ contract Core is Shares, SafeMath, Owned {
     event NotAllocated(address to, uint value);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
     event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
-    event NetAssetValue(uint nav, uint managementFee, uint performanceFee);
+    event NetAssetValueCalculated(uint nav, uint managementFee, uint performanceFee);
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
 
     // MODIFIERS
@@ -297,13 +297,14 @@ contract Core is Shares, SafeMath, Owned {
         uint timeDifference = now - analytics.timestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference);
         uint performanceFee = 0;
+        uint gav = calcGAV(); // Reflects performance indepentent of previously taken management and performance fee
         if (analytics.nav != 0) {
-          uint delta = (analytics.delta * nav) / analytics.nav;
-          uint relativeDelta = (delta - analytics.delta) / analytics.delta;
-          performanceFee = module.performance_fee.calculateFee(relativeDelta);
+          uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) before fees are taken
+          uint relativeDeltaGross = (deltaGross - analytics.delta) / analytics.delta;
+          performanceFee = module.performance_fee.calculateFee(relativeDeltaGross);
         }
-        nav = calcGAV() - managementFee - performanceFee;
-        NetAssetValue(nav, managementFee, performanceFee);
+        nav = gav - managementFee - performanceFee;
+        NetAssetValueCalculated(nav, managementFee, performanceFee);
     }
 
     /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
