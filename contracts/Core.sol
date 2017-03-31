@@ -310,7 +310,7 @@ contract Core is Shares, SafeMath, Owned {
      *  For this version, the referenceAsset is set as EtherToken.
      *  The price of the EtherToken relative to Ether is defined to always be equal to one.
      * Rem 3:
-     *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit amout of asset
+     *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
      *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
      *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
      *  where 0 <= decimals <= 18 and decimals is a natural number.
