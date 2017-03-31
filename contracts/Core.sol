@@ -292,7 +292,7 @@ contract Core is Shares, SafeMath, Owned {
         uint timeDifference = now - analytics.timestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
         uint performanceFee = 0;
-        if (analytics.nav != 0 && analytics.delta != 0) {
+        if (analytics.nav != 0) {
           uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) indepentent of managment and performance fees
           uint deltaDifference = deltaGross - analytics.delta;
           performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
