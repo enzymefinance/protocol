@@ -92,6 +92,11 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
+    modifier is_greater_or_equal_than(uint x, uint y) {
+        assert(x <= y);
+        _;
+    }
+
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
@@ -114,11 +119,11 @@ contract Core is Shares, SafeMath, Owned {
         module.universe = UniverseProtocol(ofUniverse);
         uint etherTokenIndex = module.universe.etherTokenAtIndex();
         address etherToken = address(module.universe.assetAt(etherTokenIndex));
+        referenceAsset = etherToken; // By definition initial version of core has EtherToken as ReferenceAsset
         module.ether_token = EtherToken(etherToken);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
-        referenceAsset = etherToken; // By definition initial version of core has EtherToken as ReferenceAsset
     }
 
     /// Pre: Needed to receive Ether from EtherToken Contract
@@ -133,35 +138,34 @@ contract Core is Shares, SafeMath, Owned {
      *  This is can be seen as a none persistent all or nothing limit order, where:
      *  amount == amountShares and price == amountShares/msg.value [Shares/ETH]
      */
-    function createShares(uint wantedShares)
+    function createShares(uint shareAmount)
         payable
+        msg_value_past_zero
     {
         sharePrice = calcSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
-        createSharesAt(sharePrice, offeredValue, wantedShares);
+        uint totalPrice = sharePrice * shareAmount / BASE_UNIT_OF_SHARES; // Price for shareAmount of shares
+        assert(module.ether_token.deposit.value(totalPrice)()); // Deposit Ether in EtherToken contract
+        createSharesAt(totalPrice, offeredValue, shareAmount);
+        SharesCreated(msg.sender, shareAmount, sharePrice);
     }
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
-    function createSharesAt(uint sharePrice, uint offeredValue, uint wantedShares)
+    function createSharesAt(uint totalPrice, uint offeredValue, uint shareAmount)
         internal
-        msg_value_past_zero
-        not_zero(wantedShares)
+        is_greater_or_equal_than(totalPrice, offeredValue)
+        not_zero(shareAmount)
     {
-        // Check if enough value sent for wanted amount of shares.
-        uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
-        assert(wantedValue <= offeredValue);
         // Acount for investment amount and deposit Ether
-        sumInvested = safeAdd(sumInvested, wantedValue);
-        analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
-        assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
+        sumInvested = safeAdd(sumInvested, totalPrice);
+        analytics.nav = safeAdd(analytics.nav, totalPrice); // Bookkeeping
         // Create Shares
-        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-        totalSupply = safeAdd(totalSupply, wantedShares);
-        SharesCreated(msg.sender, wantedShares, sharePrice);
+        balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
+        totalSupply = safeAdd(totalSupply, shareAmount);
         // Refund excessOfferedValue
-        if (wantedValue < offeredValue) {
-            uint excessOfferedValue = offeredValue - wantedValue;
+        if (totalPrice < offeredValue) {
+            uint excessOfferedValue = offeredValue - totalPrice;
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
         }
@@ -172,18 +176,18 @@ contract Core is Shares, SafeMath, Owned {
     function annihilateShares(uint offeredShares, uint wantedValue)
     {
         sharePrice = calcSharePrice();
-        annihilateSharesAt(sharePrice, offeredShares, wantedValue);
+        uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
+        annihilateSharesAt(offeredValue, offeredShares, wantedValue);
+        SharesAnnihilated(msg.sender, offeredShares, sharePrice);
     }
 
     /// Pre: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
-    function annihilateSharesAt(uint sharePrice, uint offeredShares, uint wantedValue)
+    function annihilateSharesAt(uint offeredValue, uint offeredShares, uint wantedValue)
         internal
         balances_msg_sender_at_least(offeredShares)
+        is_greater_or_equal_than(wantedValue, offeredValue)
     {
-        // Check if enough shares offered for wanted value.
-        uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
-        assert(offeredValue >= wantedValue);
         // Transfer ownedHoldings of Assets
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
@@ -199,7 +203,6 @@ contract Core is Shares, SafeMath, Owned {
         // Annihilate Shares
         balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
         totalSupply = safeSub(totalSupply, offeredShares);
-        SharesAnnihilated(msg.sender, offeredShares, sharePrice);
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
@@ -213,7 +216,7 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
     {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
-        assert(module.riskmgmt.isExchangeOfferPermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
+        assert(module.riskmgmt.isExchangeMakePermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
         approveSpending(sell_which_token, onExchange, sell_how_much);
         onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
@@ -227,7 +230,7 @@ contract Core is Shares, SafeMath, Owned {
         var (offeredBuyAmount, offeredBuyToken, offeredSellAmount, offeredSellToken) = onExchange.getOffer(id);
         assert(wantedBuyAmount <= offeredBuyAmount);
         assert(isWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken));
-        assert(module.riskmgmt.isExchangeBuyPermitted(onExchange, offeredSellAmount, offeredSellToken, offeredBuyAmount, offeredBuyToken));
+        assert(module.riskmgmt.isExchangeTakePermitted(onExchange, offeredSellAmount, offeredSellToken, offeredBuyAmount, offeredBuyToken));
         uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
         approveSpending(offeredSellToken, onExchange, wantedSellAmount);
         onExchange.buy(id, wantedBuyAmount);
@@ -293,9 +296,9 @@ contract Core is Shares, SafeMath, Owned {
         uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
         uint performanceFee = 0;
         if (analytics.nav != 0) {
-          uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) indepentent of managment and performance fees
-          uint deltaDifference = deltaGross - analytics.delta;
-          performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
+            uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) indepentent of managment and performance fees
+            uint deltaDifference = deltaGross - analytics.delta;
+            performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
         }
         nav = gav - managementFee - performanceFee;
         NetAssetValueCalculated(nav, managementFee, performanceFee);

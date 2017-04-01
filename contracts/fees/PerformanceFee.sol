@@ -20,6 +20,9 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
+    /* Required invariant
+     *  for deltaDifference == 0 => returns 0
+     */
     function calculateFee(uint deltaDifference, uint gav)
         constant returns (uint)
     {
