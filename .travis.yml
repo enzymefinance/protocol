@@ -1,4 +1,23 @@
 language: node_js
 node_js:
-  - "7"
-before_install:
+- '7'
+compiler:
+- gcc
+- clang
+os:
+- linux
+env:
+- CXX=g++-4.8
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+    - g++-4.8
+    - clang
+cache: yarn
+before_script:
+- npm run testrpc > testrpc.log &
+after_script:
+- cat testrpc.log
