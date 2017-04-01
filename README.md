@@ -5,7 +5,7 @@ Melon Protocol Specification
 
 See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more information.
 
-[![Slack Status](http://chat.melonport.com/badge.svg)](http://chat.melonport.com) [![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Slack Status](http://chat.melonport.com/badge.svg)](http://chat.melonport.com) [![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
 
 [wiki-url]: https://github.com/melonproject/protocol/wiki
 [whitepaper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
