@@ -18,6 +18,6 @@ addons:
     - clang
 cache: yarn
 before_script:
-- npm run testrpc > testrpc.log &
+- testrpc > testrpc.log &
 after_script:
 - cat testrpc.log
