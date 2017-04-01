@@ -51,7 +51,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 1. Launch a ethereum client. For example something similar to this:
     ```
-    parity --chain ropsten --author <some address> --unlock <some address> --password <some password file>
+    parity --chain kovan --author <some address> --unlock <some address> --password <some password file>
     ```
 
 2. Open a second terminal and deploy contracts using truffle
