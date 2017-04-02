@@ -73,4 +73,4 @@ After installation is complete, go to the above `protocol` directory, open a ter
 - [CryptoCompare](https://github.com/vcealicu/melonport-price-feed)
 
 ### Exchanges
-- [OasisDex](https://github.com/OasisDEX/oasis-pro) derived implementation [0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4](https://kovan.etherscan.io/address/0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4) 
+- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4](https://kovan.etherscan.io/address/0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4) 
