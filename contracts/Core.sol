@@ -22,10 +22,10 @@ contract Core is Shares, SafeMath, Owned {
 
     // TYPES
 
-    struct Analytics { // last time creation/annihilation of shares happened.
+    struct CalculatedValues { // last time creation/annihilation of shares happened.
         uint nav;
         uint delta;
-        uint timestamp;
+        uint atTimestamp;
     }
 
     struct Modules {
@@ -49,7 +49,7 @@ contract Core is Shares, SafeMath, Owned {
     // Fields that are only changed in constructor
     address referenceAsset;
     // Fields that can be changed by functions
-    Analytics analytics;
+    CalculatedValues calculated;
     Modules module;
     uint public sumInvested; // Sum of all investments in Ether
     uint public sumWithdrawn; // Sum of all withdrawals in Ether
@@ -62,7 +62,7 @@ contract Core is Shares, SafeMath, Owned {
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
-    event AnalyticsUpdated(uint timestamp, uint nav, uint delta);
+    event CalculatedValuesUpdated(uint atTimestamp, uint nav, uint delta);
     event NetAssetValueCalculated(uint nav, uint managementFee, uint performanceFee);
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
 
@@ -116,7 +116,7 @@ contract Core is Shares, SafeMath, Owned {
     ) {
         name = withName;
         owner = ofManager;
-        analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
+        calculated = CalculatedValues({ nav: 0, delta: 1 ether, atTimestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
         // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
@@ -144,7 +144,7 @@ contract Core is Shares, SafeMath, Owned {
         sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
         uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
         assert(actualValue <= wantedValue); // Protection against price movement/manipulation
-        if (analytics.nav == 0) {
+        if (calculated.nav == 0) {
           assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue)); // Transfer Ownership of Asset from core to investor
         } else {
           portfolioSlice(shareAmount, true);
@@ -190,12 +190,12 @@ contract Core is Shares, SafeMath, Owned {
     {
         if (isAllocation) {
           sumInvested = safeAdd(sumInvested, actualValue);
-          analytics.nav = safeAdd(analytics.nav, actualValue);
+          calculated.nav = safeAdd(calculated.nav, actualValue);
           balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
           totalSupply = safeAdd(totalSupply, shareAmount);
         } else {
           sumWithdrawn = safeAdd(sumWithdrawn, actualValue);
-          analytics.nav = safeSub(analytics.nav, actualValue);
+          calculated.nav = safeSub(calculated.nav, actualValue);
           balances[msg.sender] = safeSub(balances[msg.sender], shareAmount);
           totalSupply = safeSub(totalSupply, shareAmount);
         }
@@ -273,7 +273,7 @@ contract Core is Shares, SafeMath, Owned {
     // NON-CONSTANT METHODS - CORE
 
     /// Pre: Valid price feed data
-    /// Post: Calculate Share Price in Wei and update analytics struct
+    /// Post: Calculate Share Price in Wei and update calculated struct
     function calcSharePrice() returns (uint) { return calcDelta(); }
 
     /// Pre: Valid price feed data
@@ -281,26 +281,26 @@ contract Core is Shares, SafeMath, Owned {
     function calcDelta() internal returns (uint delta) {
         uint nav = calcNAV();
         // Define or calcualte delta
-        if (analytics.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
+        if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
             delta = 1 ether; // By definition
         } else { // First investment made; Not all funds withdrawn
-            delta = (analytics.delta * nav) / analytics.nav;
+            delta = (calculated.delta * nav) / calculated.nav;
         }
-        // Update Analytics
-        analytics = Analytics({ nav: nav, delta: delta, timestamp: now });
-        AnalyticsUpdated(now, nav, delta);
+        // Update CalculatedValues
+        calculated = CalculatedValues({ nav: nav, delta: delta, atTimestamp: now });
+        CalculatedValuesUpdated(now, nav, delta);
     }
 
     /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
     function calcNAV() internal returns (uint nav) {
         uint gav = calcGAV(); // Reflects value indepentent of managment and performance fee
-        uint timeDifference = now - analytics.timestamp;
+        uint timeDifference = now - calculated.atTimestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
         uint performanceFee = 0;
-        if (analytics.nav != 0) {
-            uint deltaGross = (analytics.delta * gav) / analytics.nav; // Performance (delta) indepentent of managment and performance fees
-            uint deltaDifference = deltaGross - analytics.delta;
+        if (calculated.nav != 0) {
+            uint deltaGross = (calculated.delta * gav) / calculated.nav; // Performance (delta) indepentent of managment and performance fees
+            uint deltaDifference = deltaGross - calculated.delta;
             performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
         }
         nav = gav - managementFee - performanceFee;
