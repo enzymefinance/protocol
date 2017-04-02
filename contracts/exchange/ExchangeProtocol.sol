@@ -9,10 +9,10 @@ contract ExchangeProtocol {
 
     // CONSTANT METHODS
 
-    function getLastOfferId() constant returns (uint) {}
+    function getLastOrderId() constant returns (uint) {}
     function isActive(uint id) constant returns (bool active) {}
     function getOwner(uint id) constant returns (address owner) {}
-    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {}
+    function getOrder(uint id) constant returns (uint, ERC20, uint, ERC20) {}
 
     // NON-CONSTANT METHODS
 
@@ -27,7 +27,7 @@ contract ExchangeProtocol {
 
     // EVENTS
 
-    event ItemUpdate(uint id);
+    event OrderUpdate(uint id);
     event Trade(uint sell_how_much, address indexed sell_which_token,
         uint buy_how_much, address indexed buy_which_token);
 

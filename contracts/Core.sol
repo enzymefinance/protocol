@@ -227,7 +227,7 @@ contract Core is Shares, SafeMath, Owned {
         only_owner
     {
         // Inverse variable terminology! Buying what another person is selling
-        var (offeredBuyAmount, offeredBuyToken, offeredSellAmount, offeredSellToken) = onExchange.getOffer(id);
+        var (offeredBuyAmount, offeredBuyToken, offeredSellAmount, offeredSellToken) = onExchange.getOrder(id);
         assert(wantedBuyAmount <= offeredBuyAmount);
         assert(isWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken));
         assert(module.riskmgmt.isExchangeTakePermitted(onExchange, offeredSellAmount, offeredSellToken, offeredBuyAmount, offeredBuyToken));

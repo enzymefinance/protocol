@@ -42,7 +42,7 @@ function syncOffer(id, callback) {
 /// Pre:
 /// Post:
 function sync(callback) {
-  Exchange.deployed().then(deployed => deployed.getLastOfferId())
+  Exchange.deployed().then(deployed => deployed.getLastOrderId())
   .then((result) => {
     const numOffers = result.toNumber();
     async.times(numOffers, (id, callbackMap) => {

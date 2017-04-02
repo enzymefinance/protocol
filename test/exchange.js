@@ -40,7 +40,7 @@ contract('Exchange', (accounts) => {
   });
 
   it('Check accounts, exchange and premined amount', (done) => {
-    exchangeContract.getLastOfferId()
+    exchangeContract.getLastOrderId()
     .then((result) => {
       assert.equal(result.toNumber(), INITIAL_OFFER_ID);
       return MelonToken.deployed().then(deployed => deployed.totalSupply({ from: OWNER }));
@@ -71,7 +71,7 @@ contract('Exchange', (accounts) => {
   });
 
   it('Check if orders created', (done) => {
-    exchangeContract.getLastOfferId()
+    exchangeContract.getLastOrderId()
     .then((result) => {
       const lastOfferId = result.toNumber();
       assert.equal(lastOfferId, NUM_OFFERS);

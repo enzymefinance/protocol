@@ -1,9 +1,9 @@
 pragma solidity ^0.4.8;
 
-import "./ExchangeProtocol.sol";
 import '../dependencies/ERC20.sol';
 import '../dependencies/SafeMath.sol';
 import '../dependencies/MutexUser.sol';
+import "./ExchangeProtocol.sol";
 
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
@@ -55,7 +55,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // CONSTANT METHODS
 
-    function getLastOfferId() constant returns (uint) { return lastOfferId; }
+    function getLastOrderId() constant returns (uint) { return lastOfferId; }
 
     function isActive(uint id) constant returns (bool active) {
         return orders[id].active;
@@ -65,7 +65,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         return orders[id].owner;
     }
 
-    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
+    function getOrder(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = orders[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
@@ -113,7 +113,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         id = next_id();
         orders[id] = info;
         assert(sell_which_token.transferFrom( msg.sender, this, info.sell_how_much));
-        ItemUpdate(id);
+        OrderUpdate(id);
     }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
@@ -137,7 +137,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
             delete orders[id];
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
-            ItemUpdate(id);
+            OrderUpdate(id);
             return true;
         }
         if (spend > 0 && quantity > 0) {
@@ -146,7 +146,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
             orders[id].buy_how_much = safeSub(offer.buy_how_much, spend);
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
-            ItemUpdate(id);
+            OrderUpdate(id);
             return true;
         }
         // buyer wants an unsatisfiable amount (less than 1 integer)
@@ -164,7 +164,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         OfferInfo memory offer = orders[id];
         delete orders[id];
         assert(offer.sell_which_token.transfer(offer.owner, offer.sell_how_much));
-        ItemUpdate(id);
+        OrderUpdate(id);
         return true;
     }
 }

@@ -181,7 +181,7 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Check if orders created', (done) => {
-      exchangeContract.getLastOfferId()
+      exchangeContract.getLastOrderId()
       .then((result) => {
         const lastOfferId = result.toNumber();
         assert.equal(lastOfferId, NUM_OFFERS);
@@ -338,7 +338,7 @@ contract('Net Asset Value', (accounts) => {
       const offerId = 1;
       let buyHowMuch;
 
-      exchangeContract.getOffer(offerId).then((result) => {
+      exchangeContract.getOrder(offerId).then((result) => {
         buyHowMuch = result[0].toNumber();
         const quantity = Math.min(buyHowMuch)
         return coreContract.takeOffer(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });

@@ -78,7 +78,7 @@ function approveAndOffer(offer, callback) {
         { from: offer.owner }))
     .then((txHash) => {
       callback(null, txHash);
-      return deployed.getLastOfferId();
+      return deployed.getLastOrderId();
     })
   })
 }
@@ -101,7 +101,7 @@ function cancelOffer(id, owner, callback) {
 /// Pre:
 /// Post:
 function cancelAllOffersOfOwner(owner, callback) {
-  Exchange.deployed().then(deployed => deployed.getLastOfferId())
+  Exchange.deployed().then(deployed => deployed.getLastOrderId())
   .then((result) => {
     const numOffers = result.toNumber();
 
