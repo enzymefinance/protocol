@@ -1,17 +1,18 @@
 pragma solidity ^0.4.8;
 
-import "./assets/EtherToken.sol";
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./assets/AssetProtocol.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
+import "./participation/SubscribeProtocol.sol";
+import "./participation/RedeemProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
 import "./fees/ManagementFeeProtocol.sol";
 import "./fees/PerformanceFeeProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
-import "./exchange/Exchange.sol";
+import "./exchange/ExchangeProtocol.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
@@ -28,12 +29,12 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     struct Modules {
-        EtherToken ether_token;
         UniverseProtocol universe;
+        SubscribeProtocol subcribe;
+        RedeemProtocol redeem;
+        RiskMgmtProtocol riskmgmt;
         ManagementFeeProtocol management_fee;
         PerformanceFeeProtocol performance_fee;
-        RiskMgmtProtocol riskmgmt;
-        Exchange exchange;
     }
 
     // FIELDS
@@ -117,10 +118,7 @@ contract Core is Shares, SafeMath, Owned {
         owner = ofManager;
         analytics = Analytics({ nav: 0, delta: 1 ether, timestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
-        // TODO replace etherToken w referenceAsset concept
-        uint etherTokenIndex = module.universe.etherTokenAtIndex();
-        address etherToken = address(module.universe.assetAt(etherTokenIndex));
-        referenceAsset = etherToken; // By definition initial version of core has EtherToken as ReferenceAsset
+        referenceAsset = module.universe.getReferenceAsset();
         // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
@@ -128,7 +126,6 @@ contract Core is Shares, SafeMath, Owned {
             address quoteAsset = Price.getQuoteAsset();
             assert(referenceAsset == quoteAsset);
         }
-        module.ether_token = EtherToken(etherToken);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
@@ -208,7 +205,7 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makeOffer(Exchange onExchange,
+    function makeOffer(ExchangeProtocol onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
@@ -225,7 +222,7 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOffer(Exchange onExchange, uint id, uint wantedBuyAmount)
+    function takeOffer(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
         only_owner
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -246,7 +243,7 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
-    function cancel(Exchange onExchange, uint id) only_owner { onExchange.cancel(id); }
+    function cancel(ExchangeProtocol onExchange, uint id) only_owner { onExchange.cancel(id); }
 
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
