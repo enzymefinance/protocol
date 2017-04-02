@@ -4,6 +4,7 @@ pragma solidity ^0.4.0;
 /// @author Gav Wood (Ethcore), 2016.
 /// @notice Released under the Apache Licence 2.
 /// @notice Taken from https://github.com/paritytech/contracts/blob/master/TokenReg.sol
+contract Owned {
 	modifier only_owner { if (msg.sender != owner) return; _; }
 
 	event NewOwner(address indexed old, address indexed current);
