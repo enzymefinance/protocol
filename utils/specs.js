@@ -7,12 +7,21 @@ const EuroToken = artifacts.require('./EuroToken.sol');
 
 const network = 'kovan';
 
+const assets = [
+  '0x7506c7BfED179254265d443856eF9bda19221cD7',
+  '0x4dffea52b0b4b48c71385ae25de41ce6ad0dd5a7',
+  '0x9E4C56a633DD64a2662bdfA69dE4FDE33Ce01bdd',
+  '0xF61b8003637E5D5dbB9ca8d799AB54E5082CbdBc',
+  '0xC151b622fDeD233111155Ec273BFAf2882f13703',
+]
+
 const tokens = {
   kovan: {
-    'ETH-T': '0x016557c51a54aff68a6c4a06a895a3e89ed4cc63',
-    'BTC-T': '0x71f9cd6ad66d319a94ffd5b538fd4c8aafe6fa6f',
-    'REP-T': '0xdc567937862159c5767284ce20445129f8d9dddb',
-    'EUR-T': '0x2f66c32f89f28bfbd60a85d481b3c9eaf2fb2e90',
+    'ETH-T': '0x7506c7BfED179254265d443856eF9bda19221cD7',
+    'MLN-T': '0x4dffea52b0b4b48c71385ae25de41ce6ad0dd5a7',
+    'BTC-T': '0x9E4C56a633DD64a2662bdfA69dE4FDE33Ce01bdd',
+    'EUR-T': '0xF61b8003637E5D5dbB9ca8d799AB54E5082CbdBc',
+    'REP-T': '0xC151b622fDeD233111155Ec273BFAf2882f13703',
   },
   ropsten: {
     'W-ETH': '0xece9fa304cc965b00afc186f5d0281a00d3dbbfd',
