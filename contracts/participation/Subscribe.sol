@@ -20,5 +20,4 @@ contract Subscribe is SubscribeProtocol, Owned {
     // NON-CONSTANT METHODS
 
     function Subscribe() {}
-
 }

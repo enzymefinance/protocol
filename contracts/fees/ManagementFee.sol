@@ -20,7 +20,7 @@ contract ManagementFee is ManagementFeeProtocol, Owned {
 
     // CONSTANT METHODS
 
-    /* Required invariant
+    /* Function invariant
      *  for timeDifference == 0 => returns 0
      */
     function calculateFee(uint timeDifference, uint gav)

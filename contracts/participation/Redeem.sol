@@ -20,5 +20,4 @@ contract Redeem is RedeemProtocol, Owned {
     // NON-CONSTANT METHODS
 
     function Redeem() {}
-
 }

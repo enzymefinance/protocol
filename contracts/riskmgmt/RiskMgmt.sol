@@ -22,6 +22,12 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
 
     function RiskMgmt() {}
 
+    /* Remark: Checks for:
+     *  1) Liquidity: All positions have to be fairly simple to liquidate.
+     *    E.g. Cap at percentage of 30 day average trading volume of this pair
+     *  2) Market Impact: If w/in above liquidity restrictions, trade size also
+     *    restricted to have market impact below certain threshold
+     */
     function isExchangeMakePermitted(
         address onExchange,
         uint sell_how_much, ERC20 sell_which_token,
@@ -33,6 +39,12 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
         return true;
     }
 
+    /* Remark: Checks for:
+     *  1) Liquidity: All positions have to be fairly simple to liquidate.
+     *    E.g. Cap at percentage of 30 day average trading volume of this pair
+     *  2) Market Impact: If w/in above liquidity restrictions, trade size also
+     *    restricted to have market impact below certain threshold
+     */
     function isExchangeTakePermitted(
         address onExchange,
         uint sell_how_much, ERC20 sell_which_token,

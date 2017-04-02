@@ -37,5 +37,4 @@ contract Governance is Owned {
     // NON-CONSTANT METHODS
 
     function Governance() {}
-
 }
