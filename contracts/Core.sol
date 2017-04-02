@@ -139,8 +139,9 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
-    function createShares(uint shareAmount, uint wantedValue)
-    {
+    function createShares(uint shareAmount, uint wantedValue) { createSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
+
+    function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue) {
         sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
         uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
         assert(actualValue <= wantedValue); // Protection against price movement/manipulation
@@ -155,7 +156,9 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: Sender owns shares, actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate shareAmount.
-    function annihilateShares(uint shareAmount, uint wantedValue)
+    function annihilateShares(uint shareAmount, uint wantedValue) { annihilateSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
+
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
         balances_msg_sender_at_least(shareAmount)
     {
         sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
@@ -189,15 +192,15 @@ contract Core is Shares, SafeMath, Owned {
         internal
     {
         if (isAllocation) {
-          sumInvested = safeAdd(sumInvested, actualValue);
-          calculated.nav = safeAdd(calculated.nav, actualValue);
-          balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
-          totalSupply = safeAdd(totalSupply, shareAmount);
+            sumInvested = safeAdd(sumInvested, actualValue);
+            calculated.nav = safeAdd(calculated.nav, actualValue);
+            balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
+            totalSupply = safeAdd(totalSupply, shareAmount);
         } else {
-          sumWithdrawn = safeAdd(sumWithdrawn, actualValue);
-          calculated.nav = safeSub(calculated.nav, actualValue);
-          balances[msg.sender] = safeSub(balances[msg.sender], shareAmount);
-          totalSupply = safeSub(totalSupply, shareAmount);
+            sumWithdrawn = safeAdd(sumWithdrawn, actualValue);
+            calculated.nav = safeSub(calculated.nav, actualValue);
+            balances[msg.sender] = safeSub(balances[msg.sender], shareAmount);
+            totalSupply = safeSub(totalSupply, shareAmount);
         }
     }
 
@@ -227,14 +230,14 @@ contract Core is Shares, SafeMath, Owned {
     {
         // Inverse variable terminology! Buying what another person is selling
         var (
-          offeredBuyAmount, offeredBuyToken,
-          offeredSellAmount, offeredSellToken
+            offeredBuyAmount, offeredBuyToken,
+            offeredSellAmount, offeredSellToken
         ) = onExchange.getOrder(id);
         assert(wantedBuyAmount <= offeredBuyAmount);
         assert(isWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken));
         assert(module.riskmgmt.isExchangeTakePermitted(onExchange,
-          offeredSellAmount, offeredSellToken,
-          offeredBuyAmount, offeredBuyToken)
+            offeredSellAmount, offeredSellToken,
+            offeredBuyAmount, offeredBuyToken)
         );
         uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
         approveSpending(offeredSellToken, onExchange, wantedSellAmount);
