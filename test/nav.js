@@ -220,10 +220,16 @@ contract('Net Asset Value', (accounts) => {
 
     it('Wanted Shares == Offered Value', (done) => {
       const wantedShares = new BigNumber(2e+17);
-      const offeredValue = new BigNumber(2e+17);
+      const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(2e+17);
 
-      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+      })
       .then((result) => {
         return coreContract.calcSharePrice();
       })
@@ -258,10 +264,16 @@ contract('Net Asset Value', (accounts) => {
 
     it('Wanted Shares < Offered Value (overpaid)', (done) => {
       const wantedShares = new BigNumber(1e+17);
-      const offeredValue = new BigNumber(2e+17);
+      const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
 
-      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+      })
       .then((result) => {
         return coreContract.calcSharePrice();
       })
@@ -296,10 +308,16 @@ contract('Net Asset Value', (accounts) => {
 
     it('Wanted Shares > Offered Value (underpaid)', (done) => {
       const wantedShares = new BigNumber(2e+17);
-      const offeredValue = new BigNumber(1e+17);
+      const wantedValue = new BigNumber(1e+17);
       const expectedValue = new BigNumber(3e+17); // 0.3 from previous test
 
-      coreContract.createShares(wantedShares, { from: NOT_OWNER, value: offeredValue })
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+      })
       .catch(() => {
         // Gets executed if contract throws exception
         coreContract.calcSharePrice().then((result) => {
@@ -416,10 +434,11 @@ contract('Net Asset Value', (accounts) => {
   });
 
   describe('WITHDRAWING FROM PORTFOLIO', () => {
-
     it('Wanted Shares == Offered Value', (done) => {
+      // TODO parse from contract directly
+      const currentDelta = 1029899999999999990;
       const offeredShares = new BigNumber(2e+17);
-      const wantedValue = new BigNumber(2e+17);
+      const wantedValue = (new BigNumber(2e+17)).div(currentDelta);
       const expectedValue = new BigNumber(2e+17);
 
       let sharePrice;
@@ -427,6 +446,7 @@ contract('Net Asset Value', (accounts) => {
       coreContract.calcSharePrice().then(() => coreContract.sharePrice())
       .then((result) => {
         sharePrice = result.toNumber();
+        // TODO fix inital sharePrice value == 1 eth
         console.log(`Initial sharePrice ${sharePrice}`);
         return coreContract.annihilateShares(offeredShares, wantedValue, { from: NOT_OWNER });
       })

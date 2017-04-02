@@ -92,7 +92,7 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier is_greater_or_equal_than(uint x, uint y) {
+    modifier less_than_or_equl_to(uint x, uint y) {
         assert(x <= y);
         _;
     }
@@ -142,58 +142,55 @@ contract Core is Shares, SafeMath, Owned {
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
-    /* Rem:
-     *  This is can be seen as a none persistent all or nothing limit order, where:
-     *  amount == amountShares and price == amountShares/msg.value [Shares/ETH]
-     */
-    function createShares(uint wantedShares)
-        payable
-        msg_value_past_zero
+    function createShares(uint wantedShares, uint wantedValue)
     {
-        sharePrice = calcSharePrice();
-        uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
-        uint wantedValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // Price for wantedShares of shares
-        allocateEtherInvestment(wantedValue, offeredValue, wantedShares);
+        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
+        uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES;
+        // Value of request is less than wanted value
+        assert(actualValue <= wantedValue); // Protection against price movement/manipulation
+        if (analytics.nav == 0) {
+          assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue)); // Transfer Ownership of Asset from core to investor
+        } else {
+          allocatePortolfioSlice(wantedShares);
+        }
+        accounting(actualValue, wantedShares, true);
+        SharesCreated(msg.sender, wantedShares, sharePrice);
     }
 
-    /// Pre: EtherToken as Asset in Universe
-    /// Post: Invest in a fund by creating shares
-    function allocateEtherInvestment(uint wantedValue, uint offeredValue, uint wantedShares)
+    /// Pre: Approve spending for all non empty coreHoldings of Assets
+    function allocatePortolfioSlice(uint wantedShares)
         internal
-        is_greater_or_equal_than(wantedValue, offeredValue)
-        not_zero(wantedShares)
     {
-        assert(module.ether_token.deposit.value(wantedValue)()); // Deposit Ether in EtherToken contract
-        // Acount for investment amount and deposit Ether
-        sumInvested = safeAdd(sumInvested, wantedValue);
-        analytics.nav = safeAdd(analytics.nav, wantedValue); // Bookkeeping
-        // Create Shares
-        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-        totalSupply = safeAdd(totalSupply, wantedShares);
-        // Refund excessOfferedValue
-        if (wantedValue < offeredValue) {
-            uint excessOfferedValue = offeredValue - wantedValue;
-            assert(msg.sender.send(excessOfferedValue));
-            Refund(msg.sender, excessOfferedValue);
+        // Transfer ownedHoldings of Assets
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssignedAssets; ++i) {
+            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            if (coreHoldings == 0) continue;
+            // TODO prove calculation for share creation
+            uint ownedHoldings = coreHoldings * wantedShares / (totalSupply); // ownership amount of msg.sender
+            assert(Asset.transferFrom(msg.sender, this, ownedHoldings)); // Transfer Ownership of Asset from core to investor
         }
-        SharesCreated(msg.sender, wantedShares, sharePrice);
     }
 
     /// Pre: Sender owns shares, actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
     function annihilateShares(uint offeredShares, uint wantedValue)
     {
-        sharePrice = calcSharePrice();
-        uint offeredValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
-        separatePortolfioSlice(offeredValue, offeredShares, wantedValue);
+        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
+        uint actualValue = sharePrice * offeredShares / BASE_UNIT_OF_SHARES;
+        // Value of offering is less than wanted value
+        assert(actualValue >= wantedValue); // Protection against price movement/manipulation
+        separatePortolfioSlice(offeredShares);
+        accounting(actualValue, offeredShares, false);
+        SharesAnnihilated(msg.sender, offeredShares, sharePrice);
     }
 
     /// Pre: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
-    function separatePortolfioSlice(uint offeredValue, uint offeredShares, uint wantedValue)
+    function separatePortolfioSlice(uint offeredShares)
         internal
         balances_msg_sender_at_least(offeredShares)
-        is_greater_or_equal_than(wantedValue, offeredValue)
     {
         // Transfer ownedHoldings of Assets
         uint numAssignedAssets = module.universe.numAssignedAssets();
@@ -204,13 +201,26 @@ contract Core is Shares, SafeMath, Owned {
             uint ownedHoldings = coreHoldings * offeredShares / totalSupply; // ownership amount of msg.sender
             assert(Asset.transfer(msg.sender, ownedHoldings)); // Transfer Ownership of Asset from core to investor
         }
-        // Acount for withdrawal amount
-        sumWithdrawn = safeAdd(sumWithdrawn, offeredValue);
-        analytics.nav = safeSub(analytics.nav, offeredValue); // Bookkeeping
-        // Annihilate Shares
-        balances[msg.sender] = safeSub(balances[msg.sender], offeredShares);
-        totalSupply = safeSub(totalSupply, offeredShares);
-        SharesAnnihilated(msg.sender, offeredShares, sharePrice);
+    }
+
+    function accounting(uint actualValue, uint forShareAmount, bool isCreation)
+        internal
+    {
+        if (isCreation) {
+          // Acount for investment amount
+          sumInvested = safeAdd(sumInvested, actualValue);
+          analytics.nav = safeAdd(analytics.nav, actualValue);
+          // Create Shares
+          balances[msg.sender] = safeAdd(balances[msg.sender], forShareAmount);
+          totalSupply = safeAdd(totalSupply, forShareAmount);
+        } else {
+          // Acount for withdrawal amount
+          sumWithdrawn = safeAdd(sumWithdrawn, actualValue);
+          analytics.nav = safeSub(analytics.nav, actualValue);
+          // Annihilate Shares
+          balances[msg.sender] = safeSub(balances[msg.sender], forShareAmount);
+          totalSupply = safeSub(totalSupply, forShareAmount);
+        }
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
