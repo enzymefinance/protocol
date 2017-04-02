@@ -69,7 +69,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
 - RepToken [0xC151b622fDeD233111155Ec273BFAf2882f13703](https://kovan.etherscan.io/address/0xc151b622fded233111155ec273bfaf2882f13703)
 
 ### Price Feeds
-- [Oraclize](https://github.com/vcealicu/melonport-price-feed)
+- [Oraclize](https://github.com/oraclize/melonport)
 - [CryptoCompare](https://github.com/vcealicu/melonport-price-feed)
 
 ### Exchanges
