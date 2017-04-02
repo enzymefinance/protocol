@@ -67,5 +67,10 @@ After installation is complete, go to the above `protocol` directory, open a ter
 - BitcoinToken [0x9E4C56a633DD64a2662bdfA69dE4FDE33Ce01bdd](https://kovan.etherscan.io/address/0x9e4c56a633dd64a2662bdfa69de4fde33ce01bdd)
 - EuroToken [0xF61b8003637E5D5dbB9ca8d799AB54E5082CbdBc](https://kovan.etherscan.io/address/0xf61b8003637e5d5dbb9ca8d799ab54e5082cbdbc)
 - RepToken [0xC151b622fDeD233111155Ec273BFAf2882f13703](https://kovan.etherscan.io/address/0xc151b622fded233111155ec273bfaf2882f13703)
+
+### Price Feeds
+- [Oraclize](https://github.com/vcealicu/melonport-price-feed)
+- [CryptoCompare](https://github.com/vcealicu/melonport-price-feed)
+
 ### Exchanges
 - Exchange [0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4](https://kovan.etherscan.io/address/0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4)
