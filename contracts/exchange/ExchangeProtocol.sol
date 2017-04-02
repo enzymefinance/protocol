@@ -16,13 +16,13 @@ contract ExchangeProtocol {
 
     // NON-CONSTANT METHODS
 
-    function offer(
+    function make(
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
         returns (uint id)
     {}
-    function buy(uint id, uint quantity) returns (bool) {}
+    function take(uint id, uint quantity) returns (bool) {}
     function cancel(uint id) returns (bool) {}
 
     // EVENTS

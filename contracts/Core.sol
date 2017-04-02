@@ -218,7 +218,7 @@ contract Core is Shares, SafeMath, Owned {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
         assert(module.riskmgmt.isExchangeMakePermitted(onExchange, sell_how_much, sell_which_token, buy_how_much, buy_which_token));
         approveSpending(sell_which_token, onExchange, sell_how_much);
-        onExchange.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
@@ -233,7 +233,7 @@ contract Core is Shares, SafeMath, Owned {
         assert(module.riskmgmt.isExchangeTakePermitted(onExchange, offeredSellAmount, offeredSellToken, offeredBuyAmount, offeredBuyToken));
         uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
         approveSpending(offeredSellToken, onExchange, wantedSellAmount);
-        onExchange.buy(id, wantedBuyAmount);
+        onExchange.take(id, wantedBuyAmount);
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange

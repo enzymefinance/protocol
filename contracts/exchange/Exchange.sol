@@ -23,7 +23,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // FIELDS
 
-    mapping( uint => OfferInfo ) public offers;
+    mapping( uint => OfferInfo ) public orders;
     uint public lastOfferId;
 
     // METHODS
@@ -58,15 +58,15 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     function getLastOfferId() constant returns (uint) { return lastOfferId; }
 
     function isActive(uint id) constant returns (bool active) {
-        return offers[id].active;
+        return orders[id].active;
     }
 
     function getOwner(uint id) constant returns (address owner) {
-        return offers[id].owner;
+        return orders[id].owner;
     }
 
     function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
-      var offer = offers[id];
+      var offer = orders[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
     }
@@ -91,7 +91,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     // NON-CONSTANT PUBLIC METHODS
 
     // Make a new offer. Takes funds from the caller into exchnage escrow.
-    function offer(
+    function make(
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
@@ -111,20 +111,20 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         info.owner = msg.sender;
         info.active = true;
         id = next_id();
-        offers[id] = info;
+        orders[id] = info;
         assert(sell_which_token.transferFrom( msg.sender, this, info.sell_how_much));
         ItemUpdate(id);
     }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
-    function buy(uint id, uint quantity)
+    function take(uint id, uint quantity)
         exclusive
         is_offer_active(id)
         returns (bool)
     {
-        // read-only offer. Modify an offer by directly accessing offers[id]
-        OfferInfo memory offer = offers[id];
+        // read-only offer. Modify an offer by directly accessing orders[id]
+        OfferInfo memory offer = orders[id];
 
         // inferred quantity that the buyer wishes to spend
         uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
@@ -134,7 +134,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         }
         if (spend == offer.buy_how_much && quantity == offer.sell_how_much) {
             // buyer wants exactly what is available
-            delete offers[id];
+            delete orders[id];
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
             ItemUpdate(id);
@@ -142,8 +142,8 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         }
         if (spend > 0 && quantity > 0) {
             // buyer wants a fraction of what is available
-            offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
-            offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);
+            orders[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
+            orders[id].buy_how_much = safeSub(offer.buy_how_much, spend);
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
             ItemUpdate(id);
@@ -160,9 +160,9 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         only_offer_owner(id)
         returns (bool)
     {
-        // read-only offer. Modify an offer by directly accessing offers[id]
-        OfferInfo memory offer = offers[id];
-        delete offers[id];
+        // read-only offer. Modify an offer by directly accessing orders[id]
+        OfferInfo memory offer = orders[id];
+        delete orders[id];
         assert(offer.sell_which_token.transfer(offer.owner, offer.sell_how_much));
         ItemUpdate(id);
         return true;

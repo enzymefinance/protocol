@@ -8,7 +8,7 @@ const Exchange = artifacts.require('Exchange.sol');
 const EtherToken = artifacts.require('./EtherToken.sol');
 const MelonToken = artifacts.require('./MelonToken.sol');
 
-let offers = [];  // Offers collections
+let orders = [];  // Offers collections
 
 contract('Exchange', (accounts) => {
   // Test constants
@@ -56,7 +56,7 @@ contract('Exchange', (accounts) => {
   });
 
   it('Create one side of the orderbook', (done) => {
-    functions.buyOneEtherFor(
+    functions.takeOneEtherFor(
       pricesRelAsset[1],
       melonTokenContract.address,
       OWNER,
@@ -83,8 +83,8 @@ contract('Exchange', (accounts) => {
     collections.sync(
       (err, result) => {
         if (!err) {
-          offers = result;
-          // console.log(offers);
+          orders = result;
+          // console.log(orders);
           done();
         } else {
           console.log(err);
@@ -109,8 +109,8 @@ contract('Exchange', (accounts) => {
     collections.sync(
       (err, result) => {
         if (!err) {
-          offers = result;
-          // console.log(offers);
+          orders = result;
+          // console.log(orders);
           done();
         } else {
           console.log(err);

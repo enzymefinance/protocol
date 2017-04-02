@@ -9,7 +9,7 @@ const Exchange = artifacts.require('Exchange.sol');
 /// Pre:
 /// Post:
 function syncOffer(id, callback) {
-  Exchange.deployed().then(deployed => deployed.offers(id))
+  Exchange.deployed().then(deployed => deployed.orders(id))
   .then((res) => {
     const [sellHowMuch, sellWhichTokenAddress, buyHowMuch, buyWhichTokenAddress, owner, active] = res;
     if (active) {
@@ -55,8 +55,8 @@ function sync(callback) {
           callbackMap(err, undefined);
         }
       });
-    }, (err, offers) => {
-      callback(null, offers);
+    }, (err, orders) => {
+      callback(null, orders);
     });
   });
 }

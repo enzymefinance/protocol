@@ -166,7 +166,7 @@ contract('Net Asset Value', (accounts) => {
 
     it('Create one side of the orderbook', (done) => {
       // const melonTokenAddress = specs.tokens[specs.network]['BTC-T'];
-      functions.buyOneEtherFor(
+      functions.takeOneEtherFor(
         pricesRelEther[1],
         melonTokenContract.address,
         OWNER,
@@ -193,7 +193,7 @@ contract('Net Asset Value', (accounts) => {
       async.mapSeries(
         exchangeTestCases,
         (testCase, callbackMap) => {
-          exchangeContract.offers(testCase.id)
+          exchangeContract.orders(testCase.id)
           .then(() => {
             callbackMap(null, testCase);
           });

@@ -70,7 +70,7 @@ function approveAndOffer(offer, callback) {
     // Approve spending of selling amount at selling token
     AssetProtocol.at(offer.sell_which_token).approve(deployed.address, offer.sell_how_much)
     // Offer selling amount of selling token for buying amount of buying token
-    .then(() => deployed.offer(
+    .then(() => deployed.make(
         offer.sell_how_much,
         offer.sell_which_token,
         offer.buy_how_much,
@@ -85,7 +85,7 @@ function approveAndOffer(offer, callback) {
 
 /// Pre:
 /// Post:
-function buyOffer(id, owner, callback) {}
+function takeOffer(id, owner, callback) {}
 
 /// Pre:
 /// Post:
@@ -124,16 +124,16 @@ function cancelAllOffersOfOwner(owner, callback) {
 
 // Note: Simple liquidity provider
 /// Pre: Only owner of premined amount of assets. Always buying one Ether
-/// Post: Multiple offers created
-function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
-  let offers = [];
+/// Post: Multiple orders created
+function takeOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
+  let orders = [];
   let etherTokenAddress;
   EtherToken.deployed().then((deployed) => {
     etherTokenAddress = deployed.address;
     // Reduce sell amount by 0.1 on each order
     for (let i = 0; i < depth; i += 1) {
       // console.log((Math.random() - 0.5) * 0.1)
-      offers.push({
+      orders.push({
         sell_how_much: Math.floor(sellHowMuch * (1 - (i * 0.1))),
         sell_which_token: sellWhichToken,
         buy_how_much: 1 * constants.ether,
@@ -143,9 +143,9 @@ function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
         active: true,
       });
     }
-    // Execute all above created offers
+    // Execute all above created orders
     async.mapSeries(
-      offers,
+      orders,
       (offer, callbackMap) => {
         this.approveAndOffer(offer,
           (err, hash) => {
@@ -156,8 +156,8 @@ function buyOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
             }
           });
       }, (err, results) => {
-        offers = results;
-        callback(null, offers);
+        orders = results;
+        callback(null, orders);
       });
   });
 }
@@ -168,8 +168,8 @@ module.exports = {
   krakenPricesRelAsset,
   krakenPricesRelEther,
   approveAndOffer,
-  buyOffer,
+  takeOffer,
   cancelOffer,
   cancelAllOffersOfOwner,
-  buyOneEtherFor,
+  takeOneEtherFor,
 };
