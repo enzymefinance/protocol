@@ -137,7 +137,7 @@ contract Core is Shares, SafeMath, Owned {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: EtherToken as Asset in Universe
+    /// Pre: Approved spending of all assets with non-empty asset holdings
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount, uint wantedValue) { createSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
 
@@ -169,9 +169,9 @@ contract Core is Shares, SafeMath, Owned {
         SharesAnnihilated(msg.sender, shareAmount, sharePrice);
     }
 
-    /// Pre: Approve spending for all non empty coreHoldings of Assets
-    /// Pre: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
-    /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate offered shares.
+    /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
+    /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
+    /// Post: Transfer ownership percentage of all assets to/from Core
     function portfolioSlice(uint shareAmount, bool isAllocation)
         internal
     {
