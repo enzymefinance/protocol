@@ -44,7 +44,6 @@ contract Core is Shares, SafeMath, Owned {
     string public constant symbol = "MLN-P";
     uint public constant decimals = 18;
     // Constant fields
-    uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1; // By definition always equal one
     uint public constant BASE_UNIT_OF_SHARES = 10 ** decimals;
     // Fields that are only changed in constructor
     address referenceAsset;
@@ -98,6 +97,16 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
+    modifier only_owner_or_subscribe_module() {
+        assert(msg.sender == owner || msg.sender == address(module.subcribe));
+        _;
+    }
+
+    modifier only_owner_or_redeem_module() {
+        assert(msg.sender == owner || msg.sender == address(module.redeem));
+        _;
+    }
+
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
@@ -141,14 +150,15 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount, uint wantedValue) { createSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
 
-    function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue) {
+    function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
+    {
         sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
         uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
         assert(actualValue <= wantedValue); // Protection against price movement/manipulation
-        if (calculated.nav == 0) {
-          assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue)); // Transfer Ownership of Asset from core to investor
+        if (calculated.nav == 0) { // Iff all coreHoldings are zero
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue)); // Transfer Ownership of Asset from core to investor
         } else {
-          portfolioSlice(shareAmount, true);
+            portfolioSlice(shareAmount, true);
         }
         accounting(actualValue, shareAmount, true);
         SharesCreated(msg.sender, shareAmount, sharePrice);
