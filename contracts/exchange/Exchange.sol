@@ -12,7 +12,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // TYPES
 
-    struct OfferInfo {
+    struct OrderInfo {
         uint sell_how_much;
         ERC20 sell_which_token;
         uint buy_how_much;
@@ -23,8 +23,8 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // FIELDS
 
-    mapping( uint => OfferInfo ) public orders;
-    uint public lastOfferId;
+    mapping( uint => OrderInfo ) public orders;
+    uint public lastOrderId;
 
     // METHODS
 
@@ -55,7 +55,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
 
     // CONSTANT METHODS
 
-    function getLastOrderId() constant returns (uint) { return lastOfferId; }
+    function getLastOrderId() constant returns (uint) { return lastOrderId; }
 
     function isActive(uint id) constant returns (bool active) {
         return orders[id].active;
@@ -74,7 +74,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     // NON-CONSTANT INTERNAL METHODS
 
     function next_id() internal returns (uint) {
-        lastOfferId++; return lastOfferId;
+        lastOrderId++; return lastOrderId;
     }
 
     function trade(
@@ -103,7 +103,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         ERC20_not_equal(sell_which_token, buy_which_token)
         returns (uint id)
     {
-        OfferInfo memory info;
+        OrderInfo memory info;
         info.sell_how_much = sell_how_much;
         info.sell_which_token = sell_which_token;
         info.buy_how_much = buy_how_much;
@@ -124,7 +124,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         returns (bool)
     {
         // read-only offer. Modify an offer by directly accessing orders[id]
-        OfferInfo memory offer = orders[id];
+        OrderInfo memory offer = orders[id];
 
         // inferred quantity that the buyer wishes to spend
         uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
@@ -161,7 +161,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         returns (bool)
     {
         // read-only offer. Modify an offer by directly accessing orders[id]
-        OfferInfo memory offer = orders[id];
+        OrderInfo memory offer = orders[id];
         delete orders[id];
         assert(offer.sell_which_token.transfer(offer.owner, offer.sell_how_much));
         OrderUpdate(id);
