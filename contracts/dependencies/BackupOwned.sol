@@ -21,7 +21,7 @@ contract BackupOwned is Assertive {
     }
 
     modifier only_backup_owner {
-        assert(msg.sender == owner);
+        assert(msg.sender == backupOwner);
         _;
     }
 
