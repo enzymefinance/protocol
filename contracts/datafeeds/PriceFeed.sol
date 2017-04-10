@@ -102,9 +102,9 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     /// Pre: Only Owner; Same sized input arrays
     /// Post: Update price of asset relative to quoteAsset
     /** Ex:
-     *  Let quoteAsset == ETH, let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
+     *  Let quoteAsset == ETH (in Wei), let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
-     *  => data[EUR-T].price = 8045678 [ETH/ (EUR-T * 10**8)]
+     *  => data[EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
         only_owner
