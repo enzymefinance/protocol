@@ -25,6 +25,8 @@ contract Core is Shares, SafeMath, Owned {
     struct CalculatedValues { // last time creation/annihilation of shares happened.
         uint nav;
         uint delta;
+        /*TODO: prev totalSupply*/
+        /*uint totalSupply;*/
         uint atTimestamp;
     }
 
@@ -44,20 +46,18 @@ contract Core is Shares, SafeMath, Owned {
     string public constant symbol = "MLN-P";
     uint public constant decimals = 18;
     // Constant fields
-    uint public constant BASE_UNIT_OF_SHARES = 10 ** decimals;
+    uint public constant INITIAL_SHARE_PRICE = 10 ** decimals;
     // Fields that are only changed in constructor
     address referenceAsset;
     // Fields that can be changed by functions
     CalculatedValues calculated;
     Modules module;
-    uint public sumInvested; // Sum of all investments in Ether
-    uint public sumWithdrawn; // Sum of all withdrawals in Ether
-    uint public sharePrice = 1 * BASE_UNIT_OF_SHARES;
+    uint public sharePrice = 1 * INITIAL_SHARE_PRICE;
 
     // EVENTS
 
-    event SharesCreated(address buyer, uint numShares, uint sharePrice); // Participation
-    event SharesAnnihilated(address seller, uint numShares, uint sharePrice);
+    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
+    event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
     event Refund(address to, uint value);
     event NotAllocated(address to, uint value);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
@@ -125,7 +125,7 @@ contract Core is Shares, SafeMath, Owned {
     ) {
         name = withName;
         owner = ofManager;
-        calculated = CalculatedValues({ nav: 0, delta: 1 ether, atTimestamp: now });
+        calculated = CalculatedValues({ nav: 0, delta: INITIAL_SHARE_PRICE, atTimestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
         // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
@@ -146,43 +146,60 @@ contract Core is Shares, SafeMath, Owned {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings
+    /// Pre: Approved spending of all assets with non-empty asset holdings; PriceFeed is running
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
-    function createShares(uint shareAmount, uint wantedValue) { createSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
+    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
 
-    function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
+    function createSharesOnBehalf(address recipient, uint shareAmount)
     {
-        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
-        uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
-        assert(actualValue <= wantedValue); // Protection against price movement/manipulation
-        if (calculated.nav == 0) { // Iff all coreHoldings are zero
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue)); // Transfer Ownership of Asset from core to investor
+        /*TODO recipient*/
+        if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
+            // Assumption sharePrice === INITIAL_SHARE_PRICE
+            //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Transfer Ownership of Asset from core to investor
         } else {
-            portfolioSlice(shareAmount, true);
+            allocateSlice(shareAmount);
         }
-        accounting(actualValue, shareAmount, true);
-        SharesCreated(msg.sender, shareAmount, sharePrice);
-    }
-
-    /// Pre: Sender owns shares, actively running price feed
-    /// Post: Transfer ownership percentage of all assets from Core to Investor and annihilate shareAmount.
-    function annihilateShares(uint shareAmount, uint wantedValue) { annihilateSharesOnBehalf(msg.sender, shareAmount, wantedValue); }
-
-    function annihilateSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
-        balances_msg_sender_at_least(shareAmount)
-    {
-        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
-        uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
-        assert(actualValue >= wantedValue); // Protection against price movement/manipulation
-        portfolioSlice(shareAmount, false);
-        accounting(actualValue, shareAmount, false);
-        SharesAnnihilated(msg.sender, shareAmount, sharePrice);
+        accounting(shareAmount, true);
+        SharesCreated(msg.sender, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
     /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets to/from Core
-    function portfolioSlice(uint shareAmount, bool isAllocation)
+    function allocateSlice(uint shareAmount)
+        internal
+    {
+        // Transfer ownershipPercentage of Assets
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssignedAssets; ++i) {
+            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            uint allocationPercentage = coreHoldings * shareAmount / (totalSupply); // ownership percentage of msg.sender
+            if (coreHoldings == 0) continue;
+            assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Transfer Ownership of Asset from core to investor
+        }
+    }
+
+    /// Pre: Sender owns shares
+    /// Post: Transfer owner, bool isAllocationship percentage of all assets from Core to Investor and annihilate shareAmount.
+    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
+
+    /// Pre: No need for running price feed
+    /// Post: No protection against price movements
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
+        balances_msg_sender_at_least(shareAmount)
+    {
+        /*TODO recipient*/
+        separateSlice(shareAmount);
+        accounting(shareAmount, false);
+        SharesAnnihilated(msg.sender, now, shareAmount);
+    }
+
+    /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
+    /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
+    /// Post: Transfer ownership percentage of all assets to/from Core
+    function separateSlice(uint shareAmount)
         internal
     {
         // Transfer ownershipPercentage of Assets
@@ -192,23 +209,18 @@ contract Core is Shares, SafeMath, Owned {
             uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint ownershipPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
             if (coreHoldings == 0) continue;
-            if (isAllocation) assert(Asset.transferFrom(msg.sender, this, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
-            else assert(Asset.transfer(msg.sender, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
+            assert(Asset.transfer(msg.sender, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
         }
     }
 
     /// Post: Acount for investment/withdrawal amount; Create/Annihilate Shares
-    function accounting(uint actualValue, uint shareAmount, bool isAllocation)
+    function accounting(uint shareAmount, bool isAllocation)
         internal
     {
         if (isAllocation) {
-            sumInvested = safeAdd(sumInvested, actualValue);
-            calculated.nav = safeAdd(calculated.nav, actualValue);
             balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
             totalSupply = safeAdd(totalSupply, shareAmount);
         } else {
-            sumWithdrawn = safeAdd(sumWithdrawn, actualValue);
-            calculated.nav = safeSub(calculated.nav, actualValue);
             balances[msg.sender] = safeSub(balances[msg.sender], shareAmount);
             totalSupply = safeSub(totalSupply, shareAmount);
         }
@@ -293,6 +305,22 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Delta as a result of current and previous NAV
     function calcDelta() internal returns (uint delta) {
         uint nav = calcNAV();
+
+        // TODO
+        // Account for Annihilation and creation
+        /*calculated.nav = safeAdd(calculated.nav, actualValue);*/
+
+        /*calculated.nav = safeSub(calculated.nav, actualValue);*/
+
+
+        /*uint actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE;
+        calculated.nav = safeAdd(calculated.nav, actualValue);*/
+        /* Note:
+         *  1) Difference in accounted for Shareamount and actual Share amount
+         *  2)
+         */
+
+
         // Define or calcualte delta
         if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
             delta = 1 ether; // By definition

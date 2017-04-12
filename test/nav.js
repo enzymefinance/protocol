@@ -96,7 +96,7 @@ contract('Net Asset Value', (accounts) => {
         { from: OWNER })
           .then((result) => {
             coreContract = result;
-            return coreContract.sumInvested();
+            return coreContract.totalSupply();
           })
           .then((result) => {
             assert.equal(result.toNumber(), 0);
@@ -228,7 +228,7 @@ contract('Net Asset Value', (accounts) => {
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
       .then((result) => {
         assert.equal(result.toNumber(), wantedValue.toNumber());
-        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
       })
       .then((result) => {
         return coreContract.calcSharePrice();
@@ -272,7 +272,7 @@ contract('Net Asset Value', (accounts) => {
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
       .then((result) => {
         assert.equal(result.toNumber(), wantedValue.toNumber());
-        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
       })
       .then((result) => {
         return coreContract.calcSharePrice();
@@ -316,7 +316,7 @@ contract('Net Asset Value', (accounts) => {
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
       .then((result) => {
         assert.equal(result.toNumber(), wantedValue.toNumber());
-        return coreContract.createShares(wantedShares, wantedValue, { from: NOT_OWNER });
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
       })
       .catch(() => {
         // Gets executed if contract throws exception

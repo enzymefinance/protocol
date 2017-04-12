@@ -47,6 +47,17 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     function Subscribe() {}
 
+    // Limit order
+    /*function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
+    {
+        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
+        uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
+        assert(actualValue <= wantedValue); // Protection against price movement/manipulation
+        allocateSlice(shareAmount);
+        accounting(actualValue, shareAmount, true);
+        SharesCreated(msg.sender, shareAmount, sharePrice);
+    }*/
+
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
     /* Rem:
