@@ -242,7 +242,7 @@ contract('Net Asset Value', (accounts) => {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
@@ -286,7 +286,7 @@ contract('Net Asset Value', (accounts) => {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
@@ -329,7 +329,7 @@ contract('Net Asset Value', (accounts) => {
               const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
               console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
             }
-            if (result.logs[i].event === 'AnalyticsUpdated') {
+            if (result.logs[i].event === 'CalculatedValuesUpdated') {
               console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
             }
           }
@@ -374,7 +374,7 @@ contract('Net Asset Value', (accounts) => {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
@@ -423,7 +423,7 @@ contract('Net Asset Value', (accounts) => {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
@@ -462,7 +462,7 @@ contract('Net Asset Value', (accounts) => {
             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
           }
-          if (result.logs[i].event === 'AnalyticsUpdated') {
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
             sharePrice = result.logs[i].args.delta.toNumber();
           }

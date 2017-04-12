@@ -162,11 +162,10 @@ contract Core is Shares, SafeMath, Owned {
         not_zero(shareAmount)
     {
         allocateSlice(recipient, shareAmount);
-        SharesCreated(msg.sender, now, shareAmount);
+        SharesCreated(recipient, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
-    /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
         internal
@@ -210,11 +209,10 @@ contract Core is Shares, SafeMath, Owned {
         balances_of_holder_at_least(recipient, shareAmount)
     {
         separateSlice(recipient, shareAmount);
-        SharesAnnihilated(msg.sender, now, shareAmount);
+        SharesAnnihilated(recipient, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
-    /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets to/from Core
     function separateSlice(address recipient, uint shareAmount)
         internal
