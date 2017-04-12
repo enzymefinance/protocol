@@ -146,9 +146,17 @@ contract Core is Shares, SafeMath, Owned {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings; PriceFeed is running
+    /// Pre: Approved spending of all assets with non-empty asset holdings; Independent of running price feed!
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
+
+    /// Pre: Only pre-specified redeem module; Recipient holds shares
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+    function createSharesViaSubscribeModule(address recipient, uint shareAmount)
+        only_subscribe_module
+    {
+        annihilateSharesOnBehalf(recipient, shareAmount);
+    }
 
     function createSharesOnBehalf(address recipient, uint shareAmount)
         not_zero(shareAmount)
@@ -183,7 +191,7 @@ contract Core is Shares, SafeMath, Owned {
         totalSupply = safeAdd(totalSupply, shareAmount);
     }
 
-    /// Pre: Sender owns shares
+    /// Pre: Every holder of shares at any time; Independent of running price feed!
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
 
@@ -195,9 +203,8 @@ contract Core is Shares, SafeMath, Owned {
         annihilateSharesOnBehalf(recipient, shareAmount);
     }
 
-    /// Pre: No need for running price feed
+    /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
-    /// Note: Only shareHolder can annihilate his/her shares
     function annihilateSharesOnBehalf(address recipient, uint shareAmount)
         internal
         balances_of_holder_at_least(recipient, shareAmount)
