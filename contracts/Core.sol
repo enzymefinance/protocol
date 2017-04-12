@@ -82,8 +82,8 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier balances_msg_sender_at_least(uint x) {
-        assert(balances[msg.sender] >= x);
+    modifier balances_of_holder_at_least(address ofHolder, uint x) {
+        assert(balances[ofHolder] >= x);
         _;
     }
 
@@ -97,13 +97,13 @@ contract Core is Shares, SafeMath, Owned {
         _;
     }
 
-    modifier only_owner_or_subscribe_module() {
-        assert(msg.sender == owner || msg.sender == address(module.subcribe));
+    modifier only_subscribe_module() {
+        assert(msg.sender == address(module.subcribe));
         _;
     }
 
-    modifier only_owner_or_redeem_module() {
-        assert(msg.sender == owner || msg.sender == address(module.redeem));
+    modifier only_redeem_module() {
+        assert(msg.sender == address(module.redeem));
         _;
     }
 
@@ -151,55 +151,65 @@ contract Core is Shares, SafeMath, Owned {
     function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
 
     function createSharesOnBehalf(address recipient, uint shareAmount)
+        not_zero(shareAmount)
     {
-        /*TODO recipient*/
-        if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
-            // Assumption sharePrice === INITIAL_SHARE_PRICE
-            //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Transfer Ownership of Asset from core to investor
-        } else {
-            allocateSlice(shareAmount);
-        }
-        accounting(shareAmount, true);
+        allocateSlice(recipient, shareAmount);
         SharesCreated(msg.sender, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
     /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets to/from Core
-    function allocateSlice(uint shareAmount)
+    function allocateSlice(address recipient, uint shareAmount)
         internal
     {
-        // Transfer ownershipPercentage of Assets
-        uint numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
-            uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-            uint allocationPercentage = coreHoldings * shareAmount / (totalSupply); // ownership percentage of msg.sender
-            if (coreHoldings == 0) continue;
-            assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Transfer Ownership of Asset from core to investor
+        if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
+            // Assumption sharePrice === INITIAL_SHARE_PRICE
+            //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Transfer Ownership of Asset from core to investor
+        } else {
+            // Transfer ownershipPercentage of Assets
+            uint numAssignedAssets = module.universe.numAssignedAssets();
+            for (uint i = 0; i < numAssignedAssets; ++i) {
+                AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+                uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+                uint allocationPercentage = coreHoldings * shareAmount / (totalSupply); // ownership percentage of msg.sender
+                if (coreHoldings == 0) continue;
+                assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Transfer Ownership of Asset from core to investor
+            }
         }
+        // Accounting
+        balances[recipient] = safeAdd(balances[recipient], shareAmount);
+        totalSupply = safeAdd(totalSupply, shareAmount);
     }
 
     /// Pre: Sender owns shares
-    /// Post: Transfer owner, bool isAllocationship percentage of all assets from Core to Investor and annihilate shareAmount.
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
 
-    /// Pre: No need for running price feed
-    /// Post: No protection against price movements
-    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        balances_msg_sender_at_least(shareAmount)
+    /// Pre: Only pre-specified redeem module; Recipient holds shares
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+    function annihilateSharesViaRedeemModule(address recipient, uint shareAmount)
+        only_redeem_module
     {
-        /*TODO recipient*/
-        separateSlice(shareAmount);
-        accounting(shareAmount, false);
+        annihilateSharesOnBehalf(recipient, shareAmount);
+    }
+
+    /// Pre: No need for running price feed
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+    /// Note: Only shareHolder can annihilate his/her shares
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
+        internal
+        balances_of_holder_at_least(recipient, shareAmount)
+    {
+        separateSlice(recipient, shareAmount);
         SharesAnnihilated(msg.sender, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
     /// Pre: Separation: Sender owns shares, sharePrice input only needed for accounting purposes, redeem indepent of actively running price feed
     /// Post: Transfer ownership percentage of all assets to/from Core
-    function separateSlice(uint shareAmount)
+    function separateSlice(address recipient, uint shareAmount)
         internal
     {
         // Transfer ownershipPercentage of Assets
@@ -209,21 +219,11 @@ contract Core is Shares, SafeMath, Owned {
             uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint ownershipPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
             if (coreHoldings == 0) continue;
-            assert(Asset.transfer(msg.sender, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
+            assert(Asset.transfer(recipient, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
         }
-    }
-
-    /// Post: Acount for investment/withdrawal amount; Create/Annihilate Shares
-    function accounting(uint shareAmount, bool isAllocation)
-        internal
-    {
-        if (isAllocation) {
-            balances[msg.sender] = safeAdd(balances[msg.sender], shareAmount);
-            totalSupply = safeAdd(totalSupply, shareAmount);
-        } else {
-            balances[msg.sender] = safeSub(balances[msg.sender], shareAmount);
-            totalSupply = safeSub(totalSupply, shareAmount);
-        }
+        // Accounting
+        balances[recipient] = safeSub(balances[recipient], shareAmount);
+        totalSupply = safeSub(totalSupply, shareAmount);
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
