@@ -25,8 +25,7 @@ contract Core is Shares, SafeMath, Owned {
     struct CalculatedValues { // last time creation/annihilation of shares happened.
         uint nav;
         uint delta;
-        /*TODO: prev totalSupply*/
-        /*uint totalSupply;*/
+        uint sharesSupply;
         uint atTimestamp;
     }
 
@@ -125,7 +124,7 @@ contract Core is Shares, SafeMath, Owned {
     ) {
         name = withName;
         owner = ofManager;
-        calculated = CalculatedValues({ nav: 0, delta: INITIAL_SHARE_PRICE, atTimestamp: now });
+        calculated = CalculatedValues({ nav: 0, delta: INITIAL_SHARE_PRICE, sharesSupply: totalSupply, atTimestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
         // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
@@ -310,30 +309,14 @@ contract Core is Shares, SafeMath, Owned {
     /// Post: Delta as a result of current and previous NAV
     function calcDelta() internal returns (uint delta) {
         uint nav = calcNAV();
-
-        // TODO
-        // Account for Annihilation and creation
-        /*calculated.nav = safeAdd(calculated.nav, actualValue);*/
-
-        /*calculated.nav = safeSub(calculated.nav, actualValue);*/
-
-
-        /*uint actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE;
-        calculated.nav = safeAdd(calculated.nav, actualValue);*/
-        /* Note:
-         *  1) Difference in accounted for Shareamount and actual Share amount
-         *  2)
-         */
-
-
         // Define or calcualte delta
         if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
             delta = 1 ether; // By definition
         } else { // First investment made; Not all funds withdrawn
-            delta = (calculated.delta * nav) / calculated.nav;
+            delta = calculated.delta * (calculated.sharesSupply * nav) / (calculated.nav * totalSupply);
         }
         // Update CalculatedValues
-        calculated = CalculatedValues({ nav: nav, delta: delta, atTimestamp: now });
+        calculated = CalculatedValues({ nav: nav, delta: delta, sharesSupply: totalSupply, atTimestamp: now });
         CalculatedValuesUpdated(now, nav, delta);
     }
 
