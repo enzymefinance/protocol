@@ -48,15 +48,15 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
     function Subscribe() {}
 
     // Limit order
-    /*function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
+    function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
     {
-        sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
+        /*sharePrice = calcSharePrice(); // TODO Request delivery of new price, instead of historical data
         uint actualValue = sharePrice * shareAmount / BASE_UNIT_OF_SHARES;
         assert(actualValue <= wantedValue); // Protection against price movement/manipulation
         allocateSlice(shareAmount);
         accounting(actualValue, shareAmount, true);
-        SharesCreated(msg.sender, shareAmount, sharePrice);
-    }*/
+        SharesCreated(msg.sender, shareAmount, sharePrice);*/
+    }
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
@@ -64,14 +64,14 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
      *  This is can be seen as a none persistent all or nothing limit order, where:
      *  amount == amountShares and price == amountShares/msg.value [Shares/ETH]
      */
-    /*function createSharesWithEther(uint wantedShares)
+    function createSharesWithEther(uint wantedShares)
         payable
         msg_value_past_zero
     {
-        sharePrice = calcSharePrice();
+        /*sharePrice = calcSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
         uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // Price for wantedShares of shares
-        allocateEtherInvestment(actualValue, offeredValue, wantedShares);
+        allocateEtherInvestment(actualValue, offeredValue, wantedShares);*/
     }
 
     /// Pre: EtherToken as Asset in Universe
@@ -81,7 +81,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         less_than_or_equl_to(actualValue, offeredValue)
         not_zero(wantedShares)
     {
-        assert(module.ether_token.deposit.value(actualValue)()); // Deposit Ether in EtherToken contract
+        /*assert(module.ether_token.deposit.value(actualValue)()); // Deposit Ether in EtherToken contract
         // Acount for investment amount and deposit Ether
         sumInvested = safeAdd(sumInvested, actualValue);
         analytics.nav = safeAdd(analytics.nav, actualValue); // Bookkeeping
@@ -94,6 +94,6 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
         }
-        SharesCreated(msg.sender, wantedShares, sharePrice);
-    }*/
+        SharesCreated(msg.sender, wantedShares, sharePrice);*/
+    }
 }
