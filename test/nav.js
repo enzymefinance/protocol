@@ -10,6 +10,8 @@ const MelonToken = artifacts.require('MelonToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Exchange = artifacts.require('Exchange.sol');
 const Universe = artifacts.require('Universe.sol');
+const Subscribe = artifacts.require('./Subscribe.sol');
+const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('RiskMgmt.sol');
 const ManagementFee = artifacts.require('ManagementFee.sol');
 const PerformanceFee = artifacts.require('PerformanceFee.sol');
@@ -50,6 +52,8 @@ contract('Net Asset Value', (accounts) => {
   let priceFeedContract;
   let exchangeContract;
   let universeContract;
+  let subscribeContract;
+  let redeemContract;
   let riskmgmtContract;
   let managementFeeContract;
   let performanceFeeContract;
@@ -64,6 +68,8 @@ contract('Net Asset Value', (accounts) => {
       PriceFeed.deployed().then((deployed) => { priceFeedContract = deployed; });
       Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
       Universe.deployed().then((deployed) => { universeContract = deployed; });
+      Subscribe.deployed().then((deployed) => { subscribeContract = deployed; });
+      Redeem.deployed().then((deployed) => { redeemContract = deployed; });
       RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
       ManagementFee.deployed().then((deployed) => { managementFeeContract = deployed; });
       PerformanceFee.deployed().then((deployed) => { performanceFeeContract = deployed; });
@@ -90,6 +96,8 @@ contract('Net Asset Value', (accounts) => {
         PORTFOLIO_NAME,
         OWNER,
         universeContract.address,
+        subscribeContract.address,
+        redeemContract.address,        
         riskmgmtContract.address,
         managementFeeContract.address,
         performanceFeeContract.address,

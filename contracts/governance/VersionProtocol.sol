@@ -6,5 +6,15 @@ pragma solidity ^0.4.8;
 contract VersionProtocol {
   function numCreatedCores() constant returns (uint) {}
   function coreAt(uint index) constant returns (address) {}
-  function createCore(string withName, address ofUniverse, address ofRiskMgmt, address ofManagmentFee, address ofPerformanceFee) returns (address) {}
+  function createCore(
+      string withName,
+      address ofUniverse,
+      address ofSubscribe,
+      address ofRedeem,
+      address ofRiskMgmt,
+      address ofManagmentFee,
+      address ofPerformanceFee
+  )
+      returns (address)
+  {}
 }

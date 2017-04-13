@@ -1,5 +1,7 @@
 const assert = require('assert');
 const Universe = artifacts.require('./Universe.sol');
+const Subscribe = artifacts.require('./Subscribe.sol');
+const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('./RiskMgmt.sol');
 const ManagementFee = artifacts.require('ManagementFee.sol');
 const PerformanceFee = artifacts.require('PerformanceFee.sol');
@@ -15,6 +17,8 @@ contract('Version', (accounts) => {
 
   // Test globals
   let universeContract;
+  let subscribeContract;
+  let redeemContract;
   let riskmgmtContract;
   let managementFeeContract;
   let performanceFeeContract;
@@ -23,6 +27,8 @@ contract('Version', (accounts) => {
 
   before('Init contract instances', () => {
     Universe.deployed().then((deployed) => { universeContract = deployed; });
+    Subscribe.deployed().then((deployed) => { subscribeContract = deployed; });
+    Redeem.deployed().then((deployed) => { redeemContract = deployed; });
     RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
     ManagementFee.deployed().then((deployed) => { managementFeeContract = deployed; });
     PerformanceFee.deployed().then((deployed) => { performanceFeeContract = deployed; });
@@ -36,6 +42,8 @@ contract('Version', (accounts) => {
       return versionContract.createCore(
         PORTFOLIO_NAME,
         universeContract.address,
+        subscribeContract.address,
+        redeemContract.address,
         riskmgmtContract.address,
         managementFeeContract.address,
         performanceFeeContract.address,

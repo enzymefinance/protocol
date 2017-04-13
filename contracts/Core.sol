@@ -31,7 +31,7 @@ contract Core is Shares, SafeMath, Owned {
 
     struct Modules {
         UniverseProtocol universe;
-        SubscribeProtocol subcribe;
+        SubscribeProtocol subscribe;
         RedeemProtocol redeem;
         RiskMgmtProtocol riskmgmt;
         ManagementFeeProtocol management_fee;
@@ -97,7 +97,7 @@ contract Core is Shares, SafeMath, Owned {
     }
 
     modifier only_subscribe_module() {
-        assert(msg.sender == address(module.subcribe));
+        assert(msg.sender == address(module.subscribe));
         _;
     }
 
@@ -118,6 +118,8 @@ contract Core is Shares, SafeMath, Owned {
         string withName,
         address ofManager,
         address ofUniverse,
+        address ofSubscribe,
+        address ofRedeem,
         address ofRiskMgmt,
         address ofManagmentFee,
         address ofPerformanceFee
@@ -134,6 +136,8 @@ contract Core is Shares, SafeMath, Owned {
             address quoteAsset = Price.getQuoteAsset();
             assert(referenceAsset == quoteAsset);
         }
+        module.subscribe = SubscribeProtocol(ofSubscribe);
+        module.redeem = RedeemProtocol(ofRedeem);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.management_fee = ManagementFeeProtocol(ofManagmentFee);
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);

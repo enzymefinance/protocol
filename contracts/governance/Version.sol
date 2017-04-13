@@ -30,6 +30,8 @@ contract Version is Owned {
     function createCore(
         string withName,
         address ofUniverse,
+        address ofSubscribe,
+        address ofRedeem,
         address ofRiskMgmt,
         address ofManagmentFee,
         address ofPerformanceFee
@@ -41,6 +43,8 @@ contract Version is Owned {
             withName,
             msg.sender,
             ofUniverse,
+            ofSubscribe,
+            ofRedeem,
             ofRiskMgmt,
             ofManagmentFee,
             ofPerformanceFee
