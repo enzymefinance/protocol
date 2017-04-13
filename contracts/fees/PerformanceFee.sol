@@ -23,6 +23,7 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
     /* Function invariant
      *  for deltaDifference == 0 => returns 0
      */
+    // Fee measured in referenceAsset
     function calculateFee(uint deltaDifference, uint gav)
         constant returns (uint)
     {

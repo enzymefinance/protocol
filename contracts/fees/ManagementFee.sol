@@ -23,6 +23,7 @@ contract ManagementFee is ManagementFeeProtocol, Owned {
     /* Function invariant
      *  for timeDifference == 0 => returns 0
      */
+    // Fee measured in referenceAsset
     function calculateFee(uint timeDifference, uint gav)
         constant returns (uint)
     {

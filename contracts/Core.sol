@@ -48,9 +48,11 @@ contract Core is Shares, SafeMath, Owned {
     uint public constant INITIAL_SHARE_PRICE = 10 ** decimals;
     // Fields that are only changed in constructor
     address referenceAsset;
+    address melonAsset;
     // Fields that can be changed by functions
     CalculatedValues calculated;
     Modules module;
+    uint public feesEarned; // Combined total of Management and Performance fees earned by portfolio manager
     uint public sharePrice = 1 * INITIAL_SHARE_PRICE;
 
     // EVENTS
@@ -129,6 +131,7 @@ contract Core is Shares, SafeMath, Owned {
         calculated = CalculatedValues({ nav: 0, delta: INITIAL_SHARE_PRICE, sharesSupply: totalSupply, atTimestamp: now });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
+        melonAsset = module.universe.getMelonAsset();
         // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
@@ -303,6 +306,22 @@ contract Core is Shares, SafeMath, Owned {
         SpendingApproved(ofToken, onExchange, amount);
     }
 
+    // NON-CONSTANT METHODS - FEES
+
+    /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
+    /// Post: Equivalent value of feesEarned sent in MelonToken to Manager
+    function payoutEarnings()
+        only_owner
+        not_zero(feesEarned)
+    {
+        // Price of referenceAsset to melonAsset
+        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.assignedPriceFeed(melonAsset)));
+        uint assetPrice = Price.getPrice(melonAsset); // Asset price given quoted in referenceAsset / melonAsset
+        assert(assetPrice != 0);
+        // Earnings in referenceAsset, hence feesEarned / assetPrice = [melonAsset]
+        assert(AssetProtocol(melonAsset).transfer(msg.sender, feesEarned / assetPrice)); // Transfer Ownership of Melon from core to manager
+    }
+
     // NON-CONSTANT METHODS - CORE
 
     /// Pre: Valid price feed data
@@ -336,7 +355,8 @@ contract Core is Shares, SafeMath, Owned {
             uint deltaDifference = deltaGross - calculated.delta;
             performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
         }
-        nav = gav - managementFee - performanceFee;
+        feesEarned = safeAdd(feesEarned, safeAdd(managementFee, performanceFee));
+        nav = gav - feesEarned;
         NetAssetValueCalculated(nav, managementFee, performanceFee);
     }
 
