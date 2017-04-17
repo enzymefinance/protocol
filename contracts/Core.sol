@@ -13,12 +13,13 @@ import "./fees/ManagementFeeProtocol.sol";
 import "./fees/PerformanceFeeProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/ExchangeProtocol.sol";
+import "./CoreProtocol.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple core where referenceAsset is EtherToken and
 ///   Creation of Shares is done with Ether
-contract Core is Shares, SafeMath, Owned {
+contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     // TYPES
 
