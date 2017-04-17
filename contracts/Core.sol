@@ -13,6 +13,7 @@ import "./fees/ManagementFeeProtocol.sol";
 import "./fees/PerformanceFeeProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/ExchangeProtocol.sol";
+import "./CoreProtocol.sol"
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
