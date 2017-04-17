@@ -18,7 +18,7 @@ import "./exchange/ExchangeProtocol.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple core where referenceAsset is EtherToken and
 ///   Creation of Shares is done with Ether
-contract Core is Shares, SafeMath, Owned {
+contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     // TYPES
 
