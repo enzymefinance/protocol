@@ -2,10 +2,10 @@ pragma solidity ^0.4.8;
 
 import "./PreminedAsset.sol";
 
-/// @title RepToken Contract.
+/// @title DigixGoldToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract RepToken is PreminedAsset {
+contract DigixGoldToken is PreminedAsset {
 
     // FIELDS
 
@@ -17,7 +17,7 @@ contract RepToken is PreminedAsset {
 
     // NON-CONSTANT METHODS
 
-    function RepToken()
+    function DigixGoldToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 }
