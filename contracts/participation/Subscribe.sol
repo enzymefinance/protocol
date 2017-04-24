@@ -3,6 +3,8 @@ pragma solidity ^0.4.8;
 import "./SubscribeProtocol.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/SafeMath.sol";
+import "../CoreProtocol.sol";
+
 
 
 /// @title Subscribe Contract
@@ -11,6 +13,12 @@ import "../dependencies/SafeMath.sol";
 contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     // FIELDS
+
+    // Constant fields
+    uint public constant decimals = 18;
+    uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1;
+    uint public constant BASE_UNIT_OF_SHARES = 1;
+    uint public constant INITIAL_SHARE_PRICE = 10 ** decimals;
 
     // EVENTS
 
@@ -64,14 +72,16 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
      *  This is can be seen as a none persistent all or nothing limit order, where:
      *  amount == amountShares and price == amountShares/msg.value [Shares/ETH]
      */
-    function createSharesWithEther(uint wantedShares)
+    function createSharesWithEther(uint wantedShares, address ofCore)
         payable
         msg_value_past_zero
     {
-        /*sharePrice = calcSharePrice();
+        //TODO implement using current shareprice
+        CoreProtocol Core = CoreProtocol(ofCore);
+        uint sharePrice = Core.getSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
         uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // Price for wantedShares of shares
-        allocateEtherInvestment(actualValue, offeredValue, wantedShares);*/
+        allocateEtherInvestment(actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe

@@ -34,6 +34,7 @@ contract Universe is UniverseProtocol, SafeMath, Owned {
         assert(x.length >= 1);
         _;
     }
+    
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
