@@ -3,6 +3,7 @@ pragma solidity ^0.4.8;
 import "./SubscribeProtocol.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/SafeMath.sol";
+import "../assets/EtherToken.sol";
 import "../CoreProtocol.sol";
 
 
@@ -19,8 +20,14 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
     uint public constant PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET = 1;
     uint public constant BASE_UNIT_OF_SHARES = 1;
     uint public constant INITIAL_SHARE_PRICE = 10 ** decimals;
+    // Fields that can be changed by functions
+    EtherToken etherToken;
 
     // EVENTS
+
+    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
+    event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Refund(address to, uint value);
 
     // MODIFIERS
 
@@ -53,7 +60,10 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     // NON-CONSTANT METHODS
 
-    function Subscribe() {}
+    function Subscribe(address setEtherToken)
+    {
+        etherToken = EtherToken(setEtherToken);
+    }
 
     // Limit order
     function createSharesOnBehalf(address recipient, uint shareAmount, uint wantedValue)
@@ -81,29 +91,31 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         uint sharePrice = Core.getSharePrice();
         uint offeredValue = msg.value * PRICE_OF_ETHER_RELATIVE_TO_REFERENCE_ASSET; // Offered value relative to reference token
         uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // Price for wantedShares of shares
-        allocateEtherInvestment(actualValue, offeredValue, wantedShares);
+        assert(offeredValue >= actualValue);
+        allocateEtherInvestment(actualValue, offeredValue, wantedShares, ofCore);
     }
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
-    function allocateEtherInvestment(uint actualValue, uint offeredValue, uint wantedShares)
+    function allocateEtherInvestment(
+        uint actualValue,
+        uint offeredValue,
+        uint wantedShares,
+        address ofCore
+    )
         internal
         less_than_or_equl_to(actualValue, offeredValue)
         not_zero(wantedShares)
     {
-        /*assert(module.ether_token.deposit.value(actualValue)()); // Deposit Ether in EtherToken contract
-        // Acount for investment amount and deposit Ether
-        sumInvested = safeAdd(sumInvested, actualValue);
-        analytics.nav = safeAdd(analytics.nav, actualValue); // Bookkeeping
-        // Create Shares
-        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-        totalSupply = safeAdd(totalSupply, wantedShares);
+        assert(etherToken.deposit.value(actualValue)()); // Deposit Ether in EtherToken contract
+        CoreProtocol Core = CoreProtocol(ofCore);
+        Core.createSharesViaSubscribeModule(msg.sender, wantedShares);
         // Refund excessOfferedValue
         if (actualValue < offeredValue) {
             uint excessOfferedValue = offeredValue - actualValue;
             assert(msg.sender.send(excessOfferedValue));
             Refund(msg.sender, excessOfferedValue);
         }
-        SharesCreated(msg.sender, wantedShares, sharePrice);*/
+        SharesCreated(msg.sender, now, wantedShares);
     }
 }

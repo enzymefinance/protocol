@@ -17,8 +17,7 @@ import "./CoreProtocol.sol";
 
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple core where referenceAsset is EtherToken and
-///   Creation of Shares is done with Ether
+/// @notice Simple core
 contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     // TYPES
@@ -55,7 +54,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     Modules module;
     uint public feesEarned; // Combined total of Management and Performance fees earned by portfolio manager
     uint public sharePrice = 1 * INITIAL_SHARE_PRICE;
-
     // EVENTS
 
     event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
@@ -69,16 +67,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     // MODIFIERS
 
-    modifier msg_value_at_least(uint x) {
-        assert(msg.value >= x);
-        _;
-    }
-
-    modifier msg_value_past_zero() {
-        assert(msg.value > 0);
-        _;
-    }
-
     modifier not_zero(uint x) {
         assert(x != 0);
         _;
@@ -86,16 +74,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     modifier balances_of_holder_at_least(address ofHolder, uint x) {
         assert(balances[ofHolder] >= x);
-        _;
-    }
-
-    modifier this_balance_at_least(uint x) {
-        assert(this.balance >= x);
-        _;
-    }
-
-    modifier less_than_or_equl_to(uint x, uint y) {
-        assert(x <= y);
         _;
     }
 
@@ -166,6 +144,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     }
 
     function createSharesOnBehalf(address recipient, uint shareAmount)
+        internal
         not_zero(shareAmount)
     {
         allocateSlice(recipient, shareAmount);
