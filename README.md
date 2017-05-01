@@ -25,7 +25,7 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
 - [CryptoCompare](https://github.com/vcealicu/melonport-price-feed)
 
 ### Exchanges
-- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4](https://kovan.etherscan.io/address/0x7c7B4904e37C71845FDC1c75D20FF6ee3c80eCB4) 
+- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0x1b468875d2b8f2d2c56981db446fbb911b1b16e3](https://kovan.etherscan.io/address/0x1b468875d2b8f2d2c56981db446fbb911b1b16e3) 
 
 
 ## Installation
