@@ -299,7 +299,9 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         uint assetPrice = Price.getPrice(melonAsset); // Asset price given quoted in referenceAsset / melonAsset
         assert(assetPrice != 0);
         // Earnings in referenceAsset, hence feesEarned / assetPrice = [melonAsset]
-        assert(AssetProtocol(melonAsset).transfer(msg.sender, feesEarned / assetPrice)); // Transfer Ownership of Melon from core to manager
+        uint feesToBePaid = feesEarned;
+        feesEarned = 0; // Accounting
+        assert(AssetProtocol(melonAsset).transfer(msg.sender, feesToBePaid / assetPrice)); // Transfer Ownership of Melon from core to manager
     }
 
     // NON-CONSTANT METHODS - CORE
