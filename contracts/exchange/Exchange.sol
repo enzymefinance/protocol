@@ -32,10 +32,10 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         assert(0 < x);
         _;
     }
-
-    modifier ERC20_initialized(ERC20 x) {
-        assert(x != ERC20(0x0));
-        _;
+    
+    modifier is_set(address x){
+    	assert(x != 0);
+    	_;
     }
 
     modifier ERC20_not_equal(ERC20 x, ERC20 y) {
@@ -98,8 +98,8 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         exclusive
         is_past_zero(sell_how_much)
         is_past_zero(buy_how_much)
-        ERC20_initialized(sell_which_token)
-        ERC20_initialized(buy_which_token)
+        is_set(sell_which_token)
+        is_set(buy_which_token)
         ERC20_not_equal(sell_which_token, buy_which_token)
         returns (uint id)
     {

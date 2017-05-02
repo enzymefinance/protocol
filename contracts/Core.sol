@@ -140,7 +140,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function createSharesViaSubscribeModule(address recipient, uint shareAmount)
         only_subscribe_module
     {
-        annihilateSharesOnBehalf(recipient, shareAmount);
+        createSharesOnBehalf(recipient, shareAmount);
     }
 
     function createSharesOnBehalf(address recipient, uint shareAmount)
@@ -159,7 +159,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
             // Assumption sharePrice === INITIAL_SHARE_PRICE
             //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / INITIAL_SHARE_PRICE
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Transfer Ownership of Asset from core to investor
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send funds from core to investor
         } else {
             // Transfer ownershipPercentage of Assets
             uint numAssignedAssets = module.universe.numAssignedAssets();
@@ -168,7 +168,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
                 uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
                 uint allocationPercentage = coreHoldings * shareAmount / (totalSupply); // ownership percentage of msg.sender
                 if (coreHoldings == 0) continue;
-                assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Transfer Ownership of Asset from core to investor
+                assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Send funds from investor to core
             }
         }
         // Accounting
@@ -210,7 +210,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
             uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
             uint ownershipPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
             if (coreHoldings == 0) continue;
-            assert(Asset.transfer(recipient, ownershipPercentage)); // Transfer Ownership of Asset from core to investor
+            assert(Asset.transfer(recipient, ownershipPercentage)); // Send funds from core to investor
         }
         // Accounting
         balances[recipient] = safeSub(balances[recipient], shareAmount);
