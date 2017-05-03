@@ -16,40 +16,18 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     // FIELDS
 
-    // Constant fields
-    uint public constant decimals = 18;
-    uint public constant BASE_UNIT_OF_SHARES = 1;
-    uint public constant INITIAL_SHARE_PRICE = 10 ** decimals;
-
     // EVENTS
 
-    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
-    event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Refund(address to, uint value);
+    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares);
 
     // MODIFIERS
-
-    modifier msg_value_at_least(uint x) {
-        assert(msg.value >= x);
-        _;
-    }
-
-    modifier msg_value_past_zero() {
-        assert(msg.value > 0);
-        _;
-    }
 
     modifier past_zero(uint x) {
         assert(x > 0);
         _;
     }
 
-    modifier this_balance_at_least(uint x) {
-        assert(this.balance >= x);
-        _;
-    }
-
-    modifier is_at_least(uint x, uint y) {
+    modifier at_least(uint x, uint y) {
         assert(x >= y);
         _;
     }
@@ -71,6 +49,8 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
     {
         CoreProtocol Core = CoreProtocol(ofCore);
         uint sharePrice = Core.calcSharePrice(); // Denoted in [referenceAsset / share]
+        uint coreDecimals = Core.getDecimals();
+        uint BASE_UNIT_OF_SHARES = 10 ** coreDecimals;
         uint offeredValue = offeredAmount; // Offered value relative to reference token
         uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // [referenceAsset / share] * [Base unit amount of shares] / [Base unit of shares]
         allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
@@ -85,11 +65,11 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         uint wantedShares
     )
         internal
-        is_at_least(offeredValue, actualValue)
+        at_least(offeredValue, actualValue)
     {
         //TODO check recipient
         address referenceAsset = Core.getReferenceAsset();
-        AssetProtocol Asset = AssetProtocol(address(referenceAsset));        
+        AssetProtocol Asset = AssetProtocol(address(referenceAsset));
         assert(Asset.transferFrom(msg.sender, this, actualValue)); // Send funds from investor to owner
         CoreProtocol Core = CoreProtocol(ofCore);
         Core.createSharesViaSubscribeModule(msg.sender, wantedShares);

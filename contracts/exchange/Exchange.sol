@@ -32,7 +32,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         assert(0 < x);
         _;
     }
-    
+
     modifier is_set(address x){
     	assert(x != 0);
     	_;

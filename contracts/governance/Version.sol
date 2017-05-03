@@ -22,7 +22,7 @@ contract Version is Owned {
     // CONSTANT METHODS
 
     function numCreatedCores() constant returns (uint) { return cores.length; }
-    function coreAt(uint index) constant returns (address) { return cores[index]; }
+    function getCore(uint atIndex) constant returns (address) { return cores[atIndex]; }
 
     // NON-CONSTANT METHODS
     function Version(address ofGovernance) { addrGovernance = ofGovernance; }
@@ -59,5 +59,8 @@ contract Version is Owned {
     }
 
     // Dereference Core and trigger selfdestruct
-    function annihilateCore() returns (address) {}
+    function annihilateCore(uint atIndex) returns (address) {
+        // TODO also refund and selfdestruct core contract
+        delete cores[atIndex];
+    }
 }

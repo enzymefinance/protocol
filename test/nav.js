@@ -97,7 +97,7 @@ contract('Net Asset Value', (accounts) => {
         OWNER,
         universeContract.address,
         subscribeContract.address,
-        redeemContract.address,        
+        redeemContract.address,
         riskmgmtContract.address,
         managementFeeContract.address,
         performanceFeeContract.address,
@@ -217,7 +217,6 @@ contract('Net Asset Value', (accounts) => {
   // MAIN TESTING
 
   describe('INVESTING IN PORTFOLIO', () => {
-
     before('Check initial supply of portfolio', (done) => {
       coreContract.totalSupply()
       .then((result) => {

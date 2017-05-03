@@ -92,6 +92,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getSharePrice() constant returns (uint) { return sharePrice; }
+    function getDecimals() constant returns (uint) { return decimals; }
 
     // NON-CONSTANT METHODS
 

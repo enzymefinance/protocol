@@ -5,7 +5,7 @@ pragma solidity ^0.4.8;
 /// @notice This is to be considered as a protocol on how to access the underlying Version Contract
 contract VersionProtocol {
   function numCreatedCores() constant returns (uint) {}
-  function coreAt(uint index) constant returns (address) {}
+  function getCore(uint atIndex) constant returns (address) {}
   function createCore(
       string withName,
       address ofUniverse,

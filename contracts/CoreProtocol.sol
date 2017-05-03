@@ -12,6 +12,7 @@ contract CoreProtocol is AssetProtocol {
     function getReferenceAsset() constant returns (address) {}
     function getUniverseAddress() constant returns (address) {}
     function getSharePrice() constant returns (uint) {}
+    function getDecimals() constant returns (uint) {}
     function createSharesViaSubscribeModule(address recipient, uint shareAmount) {}
 
     // NON-CONSTANT METHODS
