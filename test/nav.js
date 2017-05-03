@@ -366,7 +366,7 @@ contract('Net Asset Value', (accounts) => {
       exchangeContract.getOrder(offerId).then((result) => {
         buyHowMuch = result[0].toNumber();
         const quantity = Math.min(buyHowMuch)
-        return coreContract.takeOffer(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
+        return coreContract.takeOrder(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
       })
       .then((result) => {
         assert.notEqual(result.logs.length, 0);

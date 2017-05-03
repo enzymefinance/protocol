@@ -222,7 +222,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makeOffer(ExchangeProtocol onExchange,
+    function makerder(ExchangeProtocol onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
@@ -239,7 +239,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOffer(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
+    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
         only_owner
     {
         // Inverse variable terminology! Buying what another person is selling

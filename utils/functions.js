@@ -85,7 +85,7 @@ function approveAndOffer(offer, callback) {
 
 /// Pre:
 /// Post:
-function takeOffer(id, owner, callback) {}
+function takeOrder(id, owner, callback) {}
 
 /// Pre:
 /// Post:
@@ -168,7 +168,7 @@ module.exports = {
   krakenPricesRelAsset,
   krakenPricesRelEther,
   approveAndOffer,
-  takeOffer,
+  takeOrder,
   cancelOffer,
   cancelAllOffersOfOwner,
   takeOneEtherFor,
