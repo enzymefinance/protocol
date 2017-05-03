@@ -14,6 +14,7 @@ contract('Version', (accounts) => {
   const OWNER = accounts[0];
   const PORTFOLIO_NAME = 'Melon Portfolio';
   const ADDRESS_PLACEHOLDER = '0x0';
+  const INITIAL_CORE_INDEX = 0;
 
   // Test globals
   let universeContract;
@@ -52,7 +53,7 @@ contract('Version', (accounts) => {
     .then(() => versionContract.numCreatedCores())
     .then((result) => {
       assert.strictEqual(result.toNumber(), 1);
-      return versionContract.coreAt(0);
+      return versionContract.getCore(INITIAL_CORE_INDEX);
     })
     .then((result) => {
       coreContract = Core.at(result);
