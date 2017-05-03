@@ -222,7 +222,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makerder(ExchangeProtocol onExchange,
+    function makeOrder(ExchangeProtocol onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
