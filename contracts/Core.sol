@@ -136,16 +136,16 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
 
-    /// Pre: Only pre-specified redeem module; Recipient holds shares
-    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+
     function createSharesViaSubscribeModule(address recipient, uint shareAmount)
         only_subscribe_module
     {
         createSharesOnBehalf(recipient, shareAmount);
     }
 
+    /// Pre: Approved spending of all assets with non-empty asset holdings;
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function createSharesOnBehalf(address recipient, uint shareAmount)
-        internal
         not_zero(shareAmount)
     {
         allocateSlice(recipient, shareAmount);
@@ -155,7 +155,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
-        internal
+        /*internal*/
     {
         if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
             // Assumption sharePrice === INITIAL_SHARE_PRICE
@@ -181,18 +181,9 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
 
-    /// Pre: Only pre-specified redeem module; Recipient holds shares
-    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
-    function annihilateSharesViaRedeemModule(address recipient, uint shareAmount)
-        only_redeem_module
-    {
-        annihilateSharesOnBehalf(recipient, shareAmount);
-    }
-
     /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        internal
         balances_of_holder_at_least(recipient, shareAmount)
     {
         separateSlice(recipient, shareAmount);
@@ -227,6 +218,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         uint buy_how_much,  ERC20 buy_which_token
     )
         only_owner
+        returns (uint id)
     {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
         assert(module.riskmgmt.isExchangeMakePermitted(onExchange,
@@ -234,13 +226,14 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
             buy_how_much, buy_which_token)
         );
         approveSpending(sell_which_token, onExchange, sell_how_much);
-        onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        id = onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
     function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
         only_owner
+        returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
         var (
@@ -255,12 +248,17 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         );
         uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
         approveSpending(offeredSellToken, onExchange, wantedSellAmount);
-        onExchange.take(id, wantedBuyAmount);
+        return onExchange.take(id, wantedBuyAmount);
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
-    function cancel(ExchangeProtocol onExchange, uint id) only_owner { onExchange.cancel(id); }
+    function cancelOrder(ExchangeProtocol onExchange, uint id)
+        only_owner
+        returns (bool)
+    {
+        return onExchange.cancel(id);
+    }
 
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange

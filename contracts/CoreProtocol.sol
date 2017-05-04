@@ -1,6 +1,8 @@
 pragma solidity ^0.4.8;
 
 import "./assets/AssetProtocol.sol";
+import './dependencies/ERC20.sol';
+import './exchange/ExchangeProtocol.sol';
 
 /// @title Core Protocol Contract
 /// @author Melonport AG <team@melonport.com>
@@ -13,9 +15,24 @@ contract CoreProtocol is AssetProtocol {
     function getUniverseAddress() constant returns (address) {}
     function getSharePrice() constant returns (uint) {}
     function getDecimals() constant returns (uint) {}
-    function createSharesViaSubscribeModule(address recipient, uint shareAmount) {}
 
     // NON-CONSTANT METHODS
 
     function calcSharePrice() returns (uint) {}
+    function makeOrder(ExchangeProtocol onExchange,
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
+    )
+        returns (uint id)
+    {}
+    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
+        returns (bool)
+    {}
+    function cancelOrder(ExchangeProtocol onExchange, uint id)
+        returns (bool)
+    {}
+
+    // EVENTS
+
+    event OrderUpdate(uint id);
 }

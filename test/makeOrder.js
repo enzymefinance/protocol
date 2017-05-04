@@ -207,6 +207,14 @@ contract('Net Asset Value', (accounts) => {
       })
       .then((result) => {
         console.log(result);
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Make Order Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'OrderUpdate') {
+            console.log(`Order id: ${result.logs[i].args.id.toNumber()}`);
+          }
+        }
         done();
       });
     });
