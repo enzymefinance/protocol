@@ -136,13 +136,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
 
-
-    function createSharesViaSubscribeModule(address recipient, uint shareAmount)
-        only_subscribe_module
-    {
-        createSharesOnBehalf(recipient, shareAmount);
-    }
-
     /// Pre: Approved spending of all assets with non-empty asset holdings;
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function createSharesOnBehalf(address recipient, uint shareAmount)

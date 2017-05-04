@@ -19,6 +19,8 @@ contract CoreProtocol is AssetProtocol {
     // NON-CONSTANT METHODS
 
     function calcSharePrice() returns (uint) {}
+    function createSharesOnBehalf(address recipient, uint shareAmount) {}
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount) {}
     function makeOrder(ExchangeProtocol onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token

@@ -72,7 +72,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         AssetProtocol Asset = AssetProtocol(address(referenceAsset));
         assert(Asset.transferFrom(msg.sender, this, actualValue)); // Send funds from investor to owner
         CoreProtocol Core = CoreProtocol(ofCore);
-        Core.createSharesViaSubscribeModule(msg.sender, wantedShares);
+        Core.createSharesOnBehalf(msg.sender, wantedShares);
         SharesCreated(msg.sender, now, wantedShares);
     }
 }
