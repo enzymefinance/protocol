@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 /// @title ERC20 Token Protocol
 /// @author Melonport AG <team@melonport.com>

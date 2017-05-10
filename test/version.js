@@ -12,9 +12,10 @@ const Core = artifacts.require('./Core.sol');
 contract('Version', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
+  const NOT_OWNER = accounts[1];
   const PORTFOLIO_NAME = 'Melon Portfolio';
   const ADDRESS_PLACEHOLDER = '0x0';
-  const INITIAL_CORE_INDEX = 0;
+  const INITIAL_CORE_INDEX = 1;
 
   // Test globals
   let universeContract;
@@ -50,17 +51,25 @@ contract('Version', (accounts) => {
         performanceFeeContract.address,
         { from: OWNER });
     })
-    .then(() => versionContract.numCreatedCores())
+    .then(() => versionContract.getLastCoreId())
     .then((result) => {
-      assert.strictEqual(result.toNumber(), 1);
+      assert.strictEqual(result.toNumber(), INITIAL_CORE_INDEX);
       return versionContract.getCore(INITIAL_CORE_INDEX);
     })
     .then((result) => {
-      coreContract = Core.at(result);
+      const [coreAddress, ownerAddress, isActive] = result;
+      assert.strictEqual(isActive, true);
+      coreContract = Core.at(coreAddress);
       return coreContract.owner();
     })
     .then((result) => {
-      assert.equal(OWNER, result, 'Core.owner != OWNER!');
+      assert.equal(result, OWNER, 'Core.owner != OWNER!');
+      return versionContract.annihilateCore(INITIAL_CORE_INDEX, { from: OWNER });
+    })
+    .then(() => versionContract.getCore(INITIAL_CORE_INDEX))
+    .then((result) => {
+      const [coreAddress, ownerAddress, isActive] = result;
+      assert.strictEqual(isActive, false);
       done();
     });
   });

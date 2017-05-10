@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 /// @title PerformanceFee Protocol Contract
 /// @author Melonport AG <team@melonport.com>

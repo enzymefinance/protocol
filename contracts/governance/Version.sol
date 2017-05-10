@@ -1,6 +1,7 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 import "../Core.sol";
+import "../CoreProtocol.sol";
 import "../dependencies/Owned.sol";
 
 /// @title Version Contract
@@ -8,10 +9,27 @@ import "../dependencies/Owned.sol";
 /// @notice Simple and static Management Fee.
 contract Version is Owned {
 
+    // TYPES
+
+    struct CoreInfo {
+        address core;
+        address owner;
+        bool active;
+    }
+
+    struct ModuleUsageCounter {
+        uint ofUniverse;
+        uint ofRiskMgmt;
+        uint ofManagementFee;
+        uint ofPerformanceFee;
+    }
+
     // FIELDS
 
     address public addrGovernance;
-    address[] public cores;
+    mapping( uint => CoreInfo ) public cores;
+    mapping( uint => ModuleUsageCounter ) public usage;     
+    uint public lastCoreId;
 
     // EVENTS
 
@@ -19,12 +37,28 @@ contract Version is Owned {
 
     // MODIFIERS
 
+    modifier only_core_owner(uint atIndex) {
+        var (, owner, ) = getCore(atIndex);
+        assert(owner == msg.sender);
+        _;
+    }
+
     // CONSTANT METHODS
 
-    function numCreatedCores() constant returns (uint) { return cores.length; }
-    function getCore(uint atIndex) constant returns (address) { return cores[atIndex]; }
+    function getLastCoreId() constant returns (uint) { return lastCoreId; }
+    function getCore(uint atIndex) constant returns (address, address, bool) {
+        var core = cores[atIndex];
+        return (core.core, core.owner, core.active);
+    }
+
+    // NON-CONSTANT INTERNAL METHODS
+
+    function next_id() internal returns (uint) {
+        lastCoreId++; return lastCoreId;
+    }
 
     // NON-CONSTANT METHODS
+
     function Version(address ofGovernance) { addrGovernance = ofGovernance; }
 
     function createCore(
@@ -36,10 +70,11 @@ contract Version is Owned {
         address ofManagmentFee,
         address ofPerformanceFee
     )
-        returns (address)
+        returns (uint id)
     {
-        // Create new Core
-        address createAddr = address(new Core(
+        // Create and register new Core
+        CoreInfo memory info;
+        info.core = new Core(
             withName,
             msg.sender,
             ofUniverse,
@@ -48,20 +83,21 @@ contract Version is Owned {
             ofRiskMgmt,
             ofManagmentFee,
             ofPerformanceFee
-        ));
-
-        // Change owner to msg.sender
-
-        // Register Core
-        cores.push(createAddr);
-        uint id = cores.length;
+        );
+        info.owner = msg.sender;
+        info.active = true;
+        id = next_id();
+        cores[id] = info;
         CoreUpdate(id);
-        return createAddr;
     }
 
     // Dereference Core and trigger selfdestruct
-    function annihilateCore(uint atIndex) returns (address) {
+    function annihilateCore(uint atIndex)
+        only_core_owner(atIndex)
+        returns (address)
+    {
         // TODO also refund and selfdestruct core contract
         delete cores[atIndex];
+        CoreUpdate(atIndex);
     }
 }
