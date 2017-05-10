@@ -487,6 +487,16 @@ contract('Net Asset Value', (accounts) => {
       // })
       // .then((result) => {
       //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+
+
+        return coreContract.calcNAV();
+      })
+      .then((result) => {
+        console.log(result)
+        return coreContract.calcDelta();
+      })
+      .then((result) => {
+        console.log(result)
         done();
       });
     });

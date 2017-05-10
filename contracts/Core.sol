@@ -307,7 +307,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Valid price feed data
     /// Post: Delta as a result of current and previous NAV
-    function calcDelta() internal returns (uint delta) {
+    function calcDelta() constant returns (uint delta) {
         uint nav = calcNAV();
         // Define or calcualte delta
         if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
