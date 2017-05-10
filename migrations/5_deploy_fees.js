@@ -3,7 +3,7 @@ const PerformanceFee = artifacts.require('./PerformanceFee.sol');
 
 module.exports = (deployer) => {
   deployer.deploy([
-    [ManagementFee],
-    [PerformanceFee],
+    ManagementFee,
+    PerformanceFee,
   ]);
 };

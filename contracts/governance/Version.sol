@@ -15,7 +15,7 @@ contract Version is Owned {
 
     // EVENTS
 
-    event CoreCreated(address _fundAddress, uint indexed _id);
+    event CoreUpdate(uint id);
 
     // MODIFIERS
 
@@ -54,7 +54,8 @@ contract Version is Owned {
 
         // Register Core
         cores.push(createAddr);
-        CoreCreated(createAddr, cores.length);
+        uint id = cores.length;
+        CoreUpdate(id);
         return createAddr;
     }
 

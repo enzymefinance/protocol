@@ -148,7 +148,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
-        /*internal*/
+        internal
     {
         if (calculated.nav == 0 && calculated.delta == INITIAL_SHARE_PRICE) { // Iff all coreHoldings are zero
             // Assumption sharePrice === INITIAL_SHARE_PRICE
@@ -160,7 +160,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
             for (uint i = 0; i < numAssignedAssets; ++i) {
                 AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
                 uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-                uint allocationPercentage = coreHoldings * shareAmount / (totalSupply); // ownership percentage of msg.sender
+                uint allocationPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
                 if (coreHoldings == 0) continue;
                 assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Send funds from investor to core
             }
@@ -293,6 +293,9 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         // Earnings in referenceAsset, hence feesEarned / assetPrice = [melonAsset]
         uint feesToBePaid = feesEarned;
         feesEarned = 0; // Accounting
+        // TODO Payout Earnings
+        // Payout earnings in the form a Slice
+        // call separateSlice
         assert(AssetProtocol(melonAsset).transfer(msg.sender, feesToBePaid / assetPrice)); // Transfer Ownership of Melon from core to manager
     }
 
@@ -319,7 +322,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNAV() internal returns (uint nav) {
+    function calcNAV() constant returns (uint nav) {
         uint gav = calcGAV(); // Reflects value indepentent of managment and performance fee
         uint timeDifference = now - calculated.atTimestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
@@ -348,7 +351,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
      *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
      *  where 0 <= decimals <= 18 and decimals is a natural number.
      */
-    function calcGAV() internal returns (uint gav) {
+    function calcGAV() constant returns (uint gav) {
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             // Holdings
