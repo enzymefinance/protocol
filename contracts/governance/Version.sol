@@ -39,7 +39,7 @@ contract Version is Owned {
     // MODIFIERS
 
     modifier only_core_owner(uint atIndex) {
-        var (, owner, ) = getCore(atIndex);
+        var (, owner, ,) = getCore(atIndex);
         assert(owner == msg.sender);
         _;
     }
@@ -47,7 +47,7 @@ contract Version is Owned {
     // CONSTANT METHODS
 
     function getLastCoreId() constant returns (uint) { return lastCoreId; }
-    function getCore(uint atIndex) constant returns (address, address, bool) {
+    function getCore(uint atIndex) constant returns (address, address, string, bool) {
         var core = cores[atIndex];
         return (core.core, core.owner, core.name, core.active);
     }
