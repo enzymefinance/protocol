@@ -160,6 +160,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function createSharesOnBehalf(address recipient, uint shareAmount)
         not_zero(shareAmount)
     {
+        calcSharePrice();
         allocateSlice(recipient, shareAmount);
         SharesCreated(recipient, now, shareAmount);
     }
@@ -169,7 +170,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function allocateSlice(address recipient, uint shareAmount)
         internal
     {
-        calcSharePrice();
         if (calculated.nav == 0 && calculated.delta == initialSharePrice) { // Iff all coreHoldings are zero
             // Assumption sharePrice === initialSharePrice
             //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / initialSharePrice
@@ -208,7 +208,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function separateSlice(address recipient, uint shareAmount)
         internal
     {
-        calcSharePrice();
         // Transfer ownershipPercentage of Assets
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
@@ -339,7 +338,6 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
             delta = calculated.delta * (calculated.sharesSupply * nav) / (calculated.nav * totalSupply);
         }
         // Update Calculations
-        // TODO fix sharePrice
         calculated = Calculations({ nav: nav, delta: delta, sharePrice: delta, sharesSupply: totalSupply, atTimestamp: now });
         // Logs
         FeeUpdate(now, managementFee, performanceFee);
