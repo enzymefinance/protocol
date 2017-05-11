@@ -14,6 +14,8 @@ contract('Version', (accounts) => {
   const OWNER = accounts[0];
   const NOT_OWNER = accounts[1];
   const PORTFOLIO_NAME = 'Melon Portfolio';
+  const PORTFOLIO_SYMBOL = 'MLN-P';
+  const PORTFOLIO_DECIMALS = 18;
   const ADDRESS_PLACEHOLDER = '0x0';
   const INITIAL_CORE_INDEX = 1;
 
@@ -43,6 +45,8 @@ contract('Version', (accounts) => {
       versionContract = result;
       return versionContract.createCore(
         PORTFOLIO_NAME,
+        PORTFOLIO_SYMBOL,
+        PORTFOLIO_DECIMALS,
         universeContract.address,
         subscribeContract.address,
         redeemContract.address,
@@ -56,10 +60,10 @@ contract('Version', (accounts) => {
       assert.strictEqual(result.toNumber(), INITIAL_CORE_INDEX);
       return versionContract.getCore(INITIAL_CORE_INDEX);
     })
-    .then((result) => {
-      const [coreAddress, ownerAddress, isActive] = result;
+    .then((info) => {
+      const [address, owner, name, symbol, decimals, isActive] = info;
       assert.strictEqual(isActive, true);
-      coreContract = Core.at(coreAddress);
+      coreContract = Core.at(address);
       return coreContract.owner();
     })
     .then((result) => {
@@ -67,8 +71,8 @@ contract('Version', (accounts) => {
       return versionContract.annihilateCore(INITIAL_CORE_INDEX, { from: OWNER });
     })
     .then(() => versionContract.getCore(INITIAL_CORE_INDEX))
-    .then((result) => {
-      const [coreAddress, ownerAddress, isActive] = result;
+    .then((info) => {
+      const [address, owner, name, symbol, decimals, isActive] = info;
       assert.strictEqual(isActive, false);
       done();
     });

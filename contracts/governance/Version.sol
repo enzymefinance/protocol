@@ -15,6 +15,8 @@ contract Version is Owned {
         address core;
         address owner;
         string name;
+        string symbol;
+        uint decimals;
         bool active;
     }
 
@@ -39,7 +41,7 @@ contract Version is Owned {
     // MODIFIERS
 
     modifier only_core_owner(uint atIndex) {
-        var (, owner, ,) = getCore(atIndex);
+        var (, owner, , , ,) = getCore(atIndex);
         assert(owner == msg.sender);
         _;
     }
@@ -47,9 +49,9 @@ contract Version is Owned {
     // CONSTANT METHODS
 
     function getLastCoreId() constant returns (uint) { return lastCoreId; }
-    function getCore(uint atIndex) constant returns (address, address, string, bool) {
+    function getCore(uint atIndex) constant returns (address, address, string, string, uint, bool) {
         var core = cores[atIndex];
-        return (core.core, core.owner, core.name, core.active);
+        return (core.core, core.owner, core.name, core.symbol, core.decimals, core.active);
     }
 
     // NON-CONSTANT INTERNAL METHODS
@@ -64,6 +66,8 @@ contract Version is Owned {
 
     function createCore(
         string withName,
+        string withSymbol,
+        uint withDecimals,
         address ofUniverse,
         address ofSubscribe,
         address ofRedeem,
@@ -76,8 +80,10 @@ contract Version is Owned {
         // Create and register new Core
         CoreInfo memory info;
         info.core = address(new Core(
-            withName,
             msg.sender,
+            withName,
+            withSymbol,
+            withDecimals,
             ofUniverse,
             ofSubscribe,
             ofRedeem,
@@ -87,6 +93,8 @@ contract Version is Owned {
         ));
         info.owner = msg.sender;
         info.name = withName;
+        info.symbol = withSymbol;
+        info.decimals = withDecimals;
         info.active = true;
         id = next_id();
         cores[id] = info;
