@@ -14,6 +14,7 @@ contract Version is Owned {
     struct CoreInfo {
         address core;
         address owner;
+        string name;
         bool active;
     }
 
@@ -28,7 +29,7 @@ contract Version is Owned {
 
     address public addrGovernance;
     mapping( uint => CoreInfo ) public cores;
-    mapping( uint => ModuleUsageCounter ) public usage;     
+    mapping( uint => ModuleUsageCounter ) public usage;
     uint public lastCoreId;
 
     // EVENTS
@@ -48,7 +49,7 @@ contract Version is Owned {
     function getLastCoreId() constant returns (uint) { return lastCoreId; }
     function getCore(uint atIndex) constant returns (address, address, bool) {
         var core = cores[atIndex];
-        return (core.core, core.owner, core.active);
+        return (core.core, core.owner, core.name, core.active);
     }
 
     // NON-CONSTANT INTERNAL METHODS
@@ -74,7 +75,7 @@ contract Version is Owned {
     {
         // Create and register new Core
         CoreInfo memory info;
-        info.core = new Core(
+        info.core = address(new Core(
             withName,
             msg.sender,
             ofUniverse,
@@ -83,8 +84,9 @@ contract Version is Owned {
             ofRiskMgmt,
             ofManagmentFee,
             ofPerformanceFee
-        );
+        ));
         info.owner = msg.sender;
+        info.name = withName;
         info.active = true;
         id = next_id();
         cores[id] = info;

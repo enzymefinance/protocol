@@ -496,7 +496,7 @@ contract('Net Asset Value', (accounts) => {
         return coreContract.calcDelta();
       })
       .then((result) => {
-        console.log(result)
+        console.log(`calcDelta is: ${result / Math.pow(10, 18)}`)
         done();
       });
     });

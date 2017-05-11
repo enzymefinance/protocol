@@ -93,6 +93,9 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getSharePrice() constant returns (uint) { return sharePrice; }
     function getDecimals() constant returns (uint) { return decimals; }
+    function getLastCalculatedValues() constant returns (uint, uint, uint, uint) {
+        return (calculated.nav, calculated.delta, calculated.sharesSupply, calculated.atTimestamp);
+    }
 
     // NON-CONSTANT METHODS
 
@@ -303,11 +306,14 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Valid price feed data
     /// Post: Calculate Share Price in Wei and update calculated struct
-    function calcSharePrice() returns (uint) { return calcDelta(); }
+    function calcSharePrice() returns (uint) {
+        sharePrice = calcDelta();
+        return sharePrice;
+    }
 
     /// Pre: Valid price feed data
     /// Post: Delta as a result of current and previous NAV
-    function calcDelta() constant returns (uint delta) {
+    function calcDelta() returns (uint delta) {
         uint nav = calcNAV();
         // Define or calcualte delta
         if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
@@ -322,7 +328,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
 
     /// Pre: Valid price feed data
     /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNAV() constant returns (uint nav) {
+    function calcNAV() returns (uint nav) {
         uint gav = calcGAV(); // Reflects value indepentent of managment and performance fee
         uint timeDifference = now - calculated.atTimestamp;
         uint managementFee = module.management_fee.calculateFee(timeDifference, gav);
