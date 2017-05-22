@@ -20,6 +20,8 @@ contract('Subscribe', (accounts) => {
   const INVESTOR = accounts[0];
   const OWNER = accounts[1];
   const PORTFOLIO_NAME = 'Melon Portfolio';
+  const PORTFOLIO_SYMBOL = 'MLN-P';
+  const PORTFOLIO_DECIMALS = 18;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
 
   // Test globals
@@ -53,8 +55,10 @@ contract('Subscribe', (accounts) => {
 
     it('Deploy smart contract', (done) => {
       Core.new(
-        PORTFOLIO_NAME,
         OWNER,
+        PORTFOLIO_NAME,
+        PORTFOLIO_SYMBOL,
+        PORTFOLIO_DECIMALS,
         universeContract.address,
         subscribeContract.address,
         redeemContract.address,
