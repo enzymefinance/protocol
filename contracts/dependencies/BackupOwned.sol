@@ -1,11 +1,9 @@
 pragma solidity ^0.4.11;
 
-import "./Assertive.sol";
-
 /// @title Backup Owned Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Specifies an Owner as well as a secondary or backup Owner which can change owner
-contract BackupOwned is Assertive {
+contract BackupOwned {
 
     // FIELDS
 
