@@ -1,46 +1,40 @@
 pragma solidity ^0.4.11;
 
+import "./DBC.sol";
+import "./Owned.sol";
+
+
 /// @title Backup Owned Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Specifies an Owner as well as a secondary or backup Owner which can change owner
-contract BackupOwned {
+contract BackupOwned is DBC, Owned {
 
     // FIELDS
 
     // Fields that are only changed in constructor
-    address public owner;
     address public backupOwner;
 
-    // MODIFIERS
+    // DBC INTERNALS
 
-    modifier only_owner {
-        assert(msg.sender == owner);
-        _;
-    }
-
-    modifier only_backup_owner {
-        assert(msg.sender == backupOwner);
-        _;
-    }
-
-    modifier address_not_null(address addr) {
-        assert(addr != 0);
-        _;
-    }
+    function isBackupOwner() internal returns (bool) { return msg.sender == backupOwner; }
+    function backupOwnerIs(address x) internal returns (bool) { return backupOwner == x; }
+    function isNotNullAddress(address x) internal returns (bool) { return x != 0; }
 
     // NON-CONSTANT METHODS
 
     function BackupOwned(address ofBackupOwner)
+        Owned()
     {
-        owner = msg.sender;
         backupOwner = ofBackupOwner;
     }
 
     /// Pre: Only Backup Owner; Non-null new Backup Owner
     /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
     function useBackup(address ofNewBackupOwner)
-        only_backup_owner
-        address_not_null(ofNewBackupOwner)
+        precond(isBackupOwner())
+        precond(isNotNullAddress(ofNewBackupOwner))
+        postcond(isOwner())
+        postcond(backupOwnerIs(ofNewBackupOwner))
     {
         owner = msg.sender;
         backupOwner = ofNewBackupOwner;
@@ -49,8 +43,9 @@ contract BackupOwned {
     /// Pre: Only Owner; Non-null new Backup Owner
     /// Post: New backup Owner
     function setNewBackup(address ofNewBackupOwner)
-        only_owner
-        address_not_null(ofNewBackupOwner)
+        precond(isOwner())
+        precond(isNotNullAddress(ofNewBackupOwner))
+        postcond(backupOwnerIs(ofNewBackupOwner))
     {
         backupOwner = ofNewBackupOwner;
     }
