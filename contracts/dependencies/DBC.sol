@@ -7,12 +7,12 @@ contract DBC {
 
     // MODIFIERS
 
-    modifier precond(bool condition) {
+    modifier pre_cond(bool condition) {
         require(condition);
         _;
     }
 
-    modifier postcond(bool condition) {
+    modifier post_cond(bool condition) {
         _;
         assert(condition);
     }
