@@ -1,9 +1,9 @@
 pragma solidity ^0.4.11;
 
-/// @title Hoare (logic) contract
+/// @title Desing by contract (Hoare logic) contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Gives deriving contract design by contract-style assertions
-contract Hoare {
+library DBC {
 
   modifier precond(bool condition) {
       require(condition);
@@ -20,6 +20,5 @@ contract Hoare {
       _;
       assert(condition);
   }
-
 
 }
