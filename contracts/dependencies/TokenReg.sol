@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.11;
 
 /// @title Token Registry contract.
 /// @author Gav Wood (Ethcore), 2016.

@@ -11,7 +11,7 @@ contract AddIncentive {
     uint public fee;
     address public owner;
 
-    // CONDITIONS
+    // DBC INTERNALS
 
     function msg_value_at_least(uint x)
         internal
