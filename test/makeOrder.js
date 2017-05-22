@@ -21,6 +21,8 @@ contract('Net Asset Value', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
   const PORTFOLIO_NAME = 'Melon Portfolio';
+  const PORTFOLIO_SYMBOL = 'MLN-P';
+  const PORTFOLIO_DECIMALS = 18;
   const NOT_OWNER = accounts[1];
   const NUM_OFFERS = 1;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
@@ -93,8 +95,10 @@ contract('Net Asset Value', (accounts) => {
 
     it('Deploy smart contract', (done) => {
       Core.new(
-        PORTFOLIO_NAME,
         OWNER,
+        PORTFOLIO_NAME,
+        PORTFOLIO_SYMBOL,
+        PORTFOLIO_DECIMALS,
         universeContract.address,
         subscribeContract.address,
         redeemContract.address,
