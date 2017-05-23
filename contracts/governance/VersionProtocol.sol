@@ -17,4 +17,5 @@ contract VersionProtocol {
   )
       returns (address)
   {}
+  function annihilateCore(uint atIndex) {}    
 }

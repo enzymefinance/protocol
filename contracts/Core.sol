@@ -3,6 +3,7 @@ pragma solidity ^0.4.11;
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./assets/AssetProtocol.sol";
+import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
@@ -18,7 +19,7 @@ import "./CoreProtocol.sol";
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple core
-contract Core is Shares, SafeMath, Owned, CoreProtocol {
+contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     // TYPES
 
@@ -230,7 +231,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
-        only_owner
+        pre_cond(isOwner())
         returns (uint id)
     {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
@@ -245,7 +246,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
     function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
-        only_owner
+        pre_cond(isOwner())
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -267,7 +268,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
     function cancelOrder(ExchangeProtocol onExchange, uint id)
-        only_owner
+        pre_cond(isOwner())
         returns (bool)
     {
         return onExchange.cancel(id);
@@ -303,7 +304,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
     /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
     function payoutEarnings()
-        only_owner
+        pre_cond(isOwner())
         not_zero(unclaimedFees)
     {
         // Price of referenceAsset to melonAsset

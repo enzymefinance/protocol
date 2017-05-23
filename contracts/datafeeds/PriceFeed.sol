@@ -1,12 +1,13 @@
 pragma solidity ^0.4.11;
 
 import "./PriceFeedProtocol.sol";
+import "../dependencies/DBC.sol";
 import "../dependencies/BackupOwned.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedProtocol, BackupOwned {
+contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
 
     // TYPES
 
@@ -107,7 +108,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
      *  => data[EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
-        only_owner
+        pre_cond(isOwner())
         arrays_equal(ofAssets, newPrices)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {

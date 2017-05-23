@@ -1,8 +1,8 @@
 pragma solidity ^0.4.11;
 
-/// @title Desing by contract (Hoare logic) contract
+/// @title Desing by contract (Hoare logic)
 /// @author Melonport AG <team@melonport.com>
-/// @notice Gives deriving contract design by contract-style assertions
+/// @notice Gives deriving contracts _design by contract_ assertions
 contract DBC {
 
     // MODIFIERS
