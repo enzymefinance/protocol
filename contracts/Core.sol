@@ -70,27 +70,10 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     event FeeUpdate(uint atTimestamp, uint managementFee, uint performanceFee);
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
 
-    // MODIFIERS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier not_zero(uint x) {
-        assert(x != 0);
-        _;
-    }
-
-    modifier balances_of_holder_at_least(address ofHolder, uint x) {
-        assert(balances[ofHolder] >= x);
-        _;
-    }
-
-    modifier only_subscribe_module() {
-        assert(msg.sender == address(module.subscribe));
-        _;
-    }
-
-    modifier only_redeem_module() {
-        assert(msg.sender == address(module.redeem));
-        _;
-    }
+    function notZero(uint x) internal returns (bool) { return x != 0; }
+    function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
 
     // CONSTANT METHDOS
 
@@ -159,7 +142,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     /// Pre: Approved spending of all assets with non-empty asset holdings;
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function createSharesOnBehalf(address recipient, uint shareAmount)
-        not_zero(shareAmount)
+        pre_cond(notZero(shareAmount))
     {
         calcSharePrice();
         allocateSlice(recipient, shareAmount);
@@ -198,7 +181,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        balances_of_holder_at_least(recipient, shareAmount)
+        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
     {
         separateSlice(recipient, shareAmount);
         SharesAnnihilated(recipient, now, shareAmount);
@@ -305,7 +288,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
     function payoutEarnings()
         pre_cond(isOwner())
-        not_zero(unclaimedFees)
+        pre_cond(notZero(unclaimedFees))
     {
         // Price of referenceAsset to melonAsset
         PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.assignedPriceFeed(melonAsset)));

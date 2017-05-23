@@ -29,8 +29,8 @@ contract Governance is DBC, Owned {
 
     function Governance() {}
 
-    // Pre: Only Owner
-    // Post: Updates Melon protocol version:
+    /// Pre: Only Owner
+    /// Post: Updates Melon protocol version:
     function updateVersion(address nextVersion)
         pre_cond(isOwner())
     {

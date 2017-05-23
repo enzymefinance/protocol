@@ -14,7 +14,6 @@ contract CoreProtocol is AssetProtocol {
     function getReferenceAsset() constant returns (address) {}
     function getUniverseAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
-
     function calcGAV() constant returns (uint gav) {}
     function calcNAV() constant returns (uint nav, uint managementFee, uint perfermanceFee, uint unclaimedFees) {}
 
