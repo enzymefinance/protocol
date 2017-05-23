@@ -8,7 +8,7 @@ import "../dependencies/Owned.sol";
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
+contract RiskMgmt is SafeMath, Owned {
 
     // FIELDS
 
@@ -35,7 +35,7 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
     )
         returns (bool)
     {
-        // TODO restrict trading depending on market impact of trade
+        // For testing purposes
         return true;
     }
 
@@ -48,11 +48,12 @@ contract RiskMgmt is RiskMgmtProtocol, SafeMath, Owned {
     function isExchangeTakePermitted(
         address onExchange,
         uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
+        uint buy_how_much,  ERC20 buy_which_token,
+        address orderOwner
     )
         returns (bool)
     {
-        // TODO restrict trading depending on market impact of trade
+        // For testing purposes
         return true;
     }
 }

@@ -217,7 +217,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         pre_cond(isOwner())
         returns (uint id)
     {
-        assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
+        assertIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
         assert(module.riskmgmt.isExchangeMakePermitted(onExchange,
             sell_how_much, sell_which_token,
             buy_how_much, buy_which_token)
@@ -238,10 +238,12 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
             offeredSellAmount, offeredSellToken
         ) = onExchange.getOrder(id);
         assert(wantedBuyAmount <= offeredBuyAmount);
-        assert(isWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken));
+        assertIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
+        var orderOwner = onExchange.getOwner(id);
         assert(module.riskmgmt.isExchangeTakePermitted(onExchange,
             offeredSellAmount, offeredSellToken,
-            offeredBuyAmount, offeredBuyToken)
+            offeredBuyAmount, offeredBuyToken,
+            orderOwner)
         );
         uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
         approveSpending(offeredSellToken, onExchange, wantedSellAmount);
@@ -259,9 +261,8 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
-    function isWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
+    function assertIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
         internal
-        returns (bool)
     {
         // Asset pair defined in Universe and contains referenceAsset
         assert(module.universe.assetAvailability(buy_which_token));
@@ -270,7 +271,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         // Exchange assigned to tokens in Universe
         assert(onExchange == module.universe.assignedExchange(buy_which_token));
         assert(onExchange == module.universe.assignedExchange(sell_which_token));
-        return true;
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
