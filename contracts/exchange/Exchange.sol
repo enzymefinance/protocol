@@ -18,13 +18,14 @@ contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
         ERC20 sell_which_token;
         uint buy_how_much;
         ERC20 buy_which_token;
+        uint timestamp;
         address owner;
         bool active;
     }
 
     // FIELDS
 
-    mapping( uint => OrderInfo ) public orders;
+    mapping (uint => OrderInfo) public orders;
     uint public lastOrderId;
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -83,6 +84,7 @@ contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
         info.sell_which_token = sell_which_token;
         info.buy_how_much = buy_how_much;
         info.buy_which_token = buy_which_token;
+        info.timestamp = now;
         info.owner = msg.sender;
         info.active = true;
         id = next_id();
