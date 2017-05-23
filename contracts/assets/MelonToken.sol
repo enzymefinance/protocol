@@ -20,4 +20,5 @@ contract MelonToken is PreminedAsset {
     function MelonToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
+      
 }

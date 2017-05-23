@@ -23,4 +23,5 @@ contract PreminedAsset is Asset, SafeMath {
         balances[msg.sender] = safeAdd(balances[msg.sender], _amount);
         totalSupply = safeAdd(totalSupply, _amount);
     }
+    
 }

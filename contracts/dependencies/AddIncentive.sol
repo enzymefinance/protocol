@@ -11,14 +11,9 @@ contract AddIncentive {
     uint public fee;
     address public owner;
 
-    // DBC INTERNALS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    function msg_value_at_least(uint x)
-        internal
-        returns (bool)
-    {
-        return msg.value >= x;
-    }
+    function msgValueAtLeast(uint x) internal returns (bool) { return msg.value >= x; }
 
     // NON-CONSTANT METHODS
 

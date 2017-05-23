@@ -20,4 +20,5 @@ contract EuroToken is PreminedAsset {
     function EuroToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
+
 }

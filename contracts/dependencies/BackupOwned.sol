@@ -14,7 +14,7 @@ contract BackupOwned is DBC, Owned {
     // Fields that are only changed in constructor
     address public backupOwner;
 
-    // DBC INTERNALS
+    // PRE, POST, INVARIANT CONDITIONS
 
     function isBackupOwner() internal returns (bool) { return msg.sender == backupOwner; }
     function backupOwnerIs(address x) internal returns (bool) { return backupOwner == x; }

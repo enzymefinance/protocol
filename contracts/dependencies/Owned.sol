@@ -6,7 +6,7 @@ contract Owned {
 
     address public owner;
 
-    // DBC INTERNALS
+    // PRE, POST, INVARIANT CONDITIONS
 
     function isOwner()
         internal
