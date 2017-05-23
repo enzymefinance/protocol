@@ -22,8 +22,6 @@ contract RiskMgmtV1 is RiskMgmtProtocol {
 
       // NON-CONSTANT METHODS
 
-      function RiskMgmt() {}
-
       /* Remark: Checks for:
        *  1) Liquidity: All positions have to be fairly simple to liquidate.
        *    E.g. Cap at percentage of 30 day average trading volume of this pair
