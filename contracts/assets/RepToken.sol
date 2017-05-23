@@ -20,4 +20,5 @@ contract RepToken is PreminedAsset {
     function RepToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
+      
 }

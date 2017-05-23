@@ -1,12 +1,13 @@
 pragma solidity ^0.4.11;
 
 import "./PriceFeedProtocol.sol";
+import "../dependencies/DBC.sol";
 import "../dependencies/BackupOwned.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedProtocol, BackupOwned {
+contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
 
     // TYPES
 
@@ -57,8 +58,8 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
 
-    // Pre: Asset has been initialised
-    // Post: Returns boolean if data is valid
+    /// Pre: Asset has been initialised
+    /// Post: Returns boolean if data is valid
     function getStatus(address ofAsset)
         constant
         data_initialised(ofAsset)
@@ -67,8 +68,8 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
         return now - data[ofAsset].timestamp <= validity;
     }
 
-    // Pre: Asset has been initialised and is active
-    // Post: Price of asset, where last updated not longer than `validity` seconds ago
+    /// Pre: Asset has been initialised and is active
+    /// Post: Price of asset, where last updated not longer than `validity` seconds ago
     function getPrice(address ofAsset)
         constant
         data_initialised(ofAsset)
@@ -78,8 +79,8 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
         return data[ofAsset].price;
     }
 
-    // Pre: Asset has been initialised and is active
-    // Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+    /// Pre: Asset has been initialised and is active
+    /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
     function getData(address ofAsset)
         constant
         data_initialised(ofAsset)
@@ -107,7 +108,7 @@ contract PriceFeed is PriceFeedProtocol, BackupOwned {
      *  => data[EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
-        only_owner
+        pre_cond(isOwner())
         arrays_equal(ofAssets, newPrices)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {

@@ -28,4 +28,5 @@ contract Asset is ERC20 {
         symbol = _symbol; // Set the symbol for display purposes
         decimals = _decimals; // Defined in price feed protocol
     }
+    
 }

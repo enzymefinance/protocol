@@ -3,6 +3,7 @@ pragma solidity ^0.4.11;
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./assets/AssetProtocol.sol";
+import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
@@ -18,7 +19,7 @@ import "./CoreProtocol.sol";
 /// @title Core Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple core
-contract Core is Shares, SafeMath, Owned, CoreProtocol {
+contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     // TYPES
 
@@ -69,27 +70,10 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     event FeeUpdate(uint atTimestamp, uint managementFee, uint performanceFee);
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
 
-    // MODIFIERS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier not_zero(uint x) {
-        assert(x != 0);
-        _;
-    }
-
-    modifier balances_of_holder_at_least(address ofHolder, uint x) {
-        assert(balances[ofHolder] >= x);
-        _;
-    }
-
-    modifier only_subscribe_module() {
-        assert(msg.sender == address(module.subscribe));
-        _;
-    }
-
-    modifier only_redeem_module() {
-        assert(msg.sender == address(module.redeem));
-        _;
-    }
+    function notZero(uint x) internal returns (bool) { return x != 0; }
+    function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
 
     // CONSTANT METHDOS
 
@@ -158,7 +142,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Approved spending of all assets with non-empty asset holdings;
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function createSharesOnBehalf(address recipient, uint shareAmount)
-        not_zero(shareAmount)
+        pre_cond(notZero(shareAmount))
     {
         calcSharePrice();
         allocateSlice(recipient, shareAmount);
@@ -197,7 +181,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
     function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        balances_of_holder_at_least(recipient, shareAmount)
+        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
     {
         separateSlice(recipient, shareAmount);
         SharesAnnihilated(recipient, now, shareAmount);
@@ -230,7 +214,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
-        only_owner
+        pre_cond(isOwner())
         returns (uint id)
     {
         assert(isWithinKnownUniverse(onExchange, sell_which_token, buy_which_token));
@@ -245,7 +229,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
     function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
-        only_owner
+        pre_cond(isOwner())
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -267,7 +251,7 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
     function cancelOrder(ExchangeProtocol onExchange, uint id)
-        only_owner
+        pre_cond(isOwner())
         returns (bool)
     {
         return onExchange.cancel(id);
@@ -303,8 +287,8 @@ contract Core is Shares, SafeMath, Owned, CoreProtocol {
     /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
     /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
     function payoutEarnings()
-        only_owner
-        not_zero(unclaimedFees)
+        pre_cond(isOwner())
+        pre_cond(notZero(unclaimedFees))
     {
         // Price of referenceAsset to melonAsset
         PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.assignedPriceFeed(melonAsset)));

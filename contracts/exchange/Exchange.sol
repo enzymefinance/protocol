@@ -1,6 +1,7 @@
 pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
+import "../dependencies/DBC.sol";
 import '../dependencies/SafeMath.sol';
 import '../dependencies/MutexUser.sol';
 import "./ExchangeProtocol.sol";
@@ -8,7 +9,7 @@ import "./ExchangeProtocol.sol";
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
-contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
+contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
 
     // TYPES
 
@@ -26,45 +27,19 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     mapping( uint => OrderInfo ) public orders;
     uint public lastOrderId;
 
-    // METHODS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier is_past_zero(uint x) {
-        assert(0 < x);
-        _;
-    }
-
-    modifier is_set(address x){
-    	assert(x != 0);
-    	_;
-    }
-
-    modifier ERC20_not_equal(ERC20 x, ERC20 y) {
-        assert(x != y);
-        _;
-    }
-
-    modifier is_offer_active(uint id) {
-        assert(isActive(id));
-        _;
-    }
-
-    modifier only_offer_owner(uint id) {
-        assert(msg.sender == getOwner(id));
-        _;
-    }
+    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
+    function isSet(address x) internal returns (bool) { return x != 0; }
+    function notEqual(address x, address y) internal returns (bool) { return x != y; }
+    function isOfferActive(uint id) internal returns (bool) { return isActive(id); }
+    function onlyOfferOwner(uint id) internal returns (bool) { return msg.sender == getOwner(id); }
 
     // CONSTANT METHODS
 
     function getLastOrderId() constant returns (uint) { return lastOrderId; }
-
-    function isActive(uint id) constant returns (bool active) {
-        return orders[id].active;
-    }
-
-    function getOwner(uint id) constant returns (address owner) {
-        return orders[id].owner;
-    }
-
+    function isActive(uint id) constant returns (bool) { return orders[id].active; }
+    function getOwner(uint id) constant returns (address) { return orders[id].owner; }
     function getOrder(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = orders[id];
       return (offer.sell_how_much, offer.sell_which_token,
@@ -96,11 +71,11 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
         uint buy_how_much,  ERC20 buy_which_token
     )
         exclusive
-        is_past_zero(sell_how_much)
-        is_past_zero(buy_how_much)
-        is_set(sell_which_token)
-        is_set(buy_which_token)
-        ERC20_not_equal(sell_which_token, buy_which_token)
+        pre_cond(isPastZero(sell_how_much))
+        pre_cond(isPastZero(buy_how_much))
+        pre_cond(isSet(sell_which_token))
+        pre_cond(isSet(buy_which_token))
+        pre_cond(notEqual(sell_which_token, buy_which_token))
         returns (uint id)
     {
         OrderInfo memory info;
@@ -120,7 +95,7 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     // offer maker, and from market to caller.
     function take(uint id, uint quantity)
         exclusive
-        is_offer_active(id)
+        pre_cond(isOfferActive(id))
         returns (bool)
     {
         // read-only offer. Modify an offer by directly accessing orders[id]
@@ -156,8 +131,8 @@ contract Exchange is ExchangeProtocol, SafeMath, MutexUser {
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
         exclusive
-        is_offer_active(id)
-        only_offer_owner(id)
+        pre_cond(isOfferActive(id))
+        pre_cond(onlyOfferOwner(id))
         returns (bool)
     {
         // read-only offer. Modify an offer by directly accessing orders[id]

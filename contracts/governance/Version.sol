@@ -2,12 +2,13 @@ pragma solidity ^0.4.11;
 
 import "../Core.sol";
 import "../CoreProtocol.sol";
+import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is Owned {
+contract Version is DBC, Owned {
 
     // TYPES
 
@@ -30,20 +31,19 @@ contract Version is Owned {
     // FIELDS
 
     address public addrGovernance;
-    mapping( uint => CoreInfo ) public cores;
-    mapping( uint => ModuleUsageCounter ) public usage;
+    mapping (uint => CoreInfo) public cores;
+    mapping (uint => ModuleUsageCounter) public usage;
     uint public lastCoreId;
 
     // EVENTS
 
     event CoreUpdate(uint id);
 
-    // MODIFIERS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier only_core_owner(uint atIndex) {
+    function isCoreOwner(uint atIndex) internal returns (bool) {
         var (, owner, , , ,) = getCore(atIndex);
-        assert(owner == msg.sender);
-        _;
+        return owner == msg.sender;
     }
 
     // CONSTANT METHODS
@@ -103,8 +103,7 @@ contract Version is Owned {
 
     // Dereference Core and trigger selfdestruct
     function annihilateCore(uint atIndex)
-        only_core_owner(atIndex)
-        returns (address)
+        pre_cond(isCoreOwner(atIndex))
     {
         // TODO also refund and selfdestruct core contract
         delete cores[atIndex];
