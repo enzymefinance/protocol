@@ -12,7 +12,7 @@ contract RiskMgmtV1 is RiskMgmtProtocol {
 
       // FIELDS
 
-      address public constant LIQUIDITY_PROVIDER = 0x00e0b33cdb3af8b55cd8467d6d13bc0ba8035acf;
+      address public constant LIQUIDITY_PROVIDER = 0x00E0B33cDb3AF8B55CD8467d6d13BC0Ba8035acF;
 
       // EVENTS
 

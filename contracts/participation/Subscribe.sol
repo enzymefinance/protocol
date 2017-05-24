@@ -48,12 +48,9 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         past_zero(wantedShares)
     {
         CoreProtocol Core = CoreProtocol(ofCore);
-        uint sharePrice = Core.calcSharePrice(); // Denoted in [referenceAsset / share]
         uint coreDecimals = Core.getDecimals();
         uint BASE_UNIT_OF_SHARES = 10 ** coreDecimals;
         uint offeredValue = offeredAmount; // Offered value relative to reference token
-        uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // [referenceAsset / share] * [Base unit amount of shares] / [Base unit of shares]
-        allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe
