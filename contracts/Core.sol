@@ -43,20 +43,17 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         PerformanceFeeProtocol performance_fee;
     }
 
-    struct Properties {}
-
     // FIELDS
 
-    // Constant token specific fields
+    // Constant asset specific fields
     string public name;
     string public symbol;
     uint public decimals;
     // Fields that are only changed in constructor
-    address referenceAsset;
-    address melonAsset;
+    address public referenceAsset;
+    address public melonAsset;
     // Fields that can be changed by functions
-    Modules module;
-    Properties properties;
+    Modules public module;
     Calculations public atLastPayout;
 
     // EVENTS
@@ -79,12 +76,82 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getDecimals() constant returns (uint) { return decimals; }
 
-    UniverseProtocol universe;
-    SubscribeProtocol subscribe;
-    RedeemProtocol redeem;
-    RiskMgmtProtocol riskmgmt;
-    ManagementFeeProtocol management_fee;
-    PerformanceFeeProtocol performance_fee;
+    // CONSTANT METHODS - ACCOUNTING
+
+    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Gross asset value denominated in referenceAsset in baseunit of [10 ** decimals]
+    function calcGav() constant returns (uint gav) {
+        /* Rem 1:
+         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the referenceAsset is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
+         *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
+         *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
+         */
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssignedAssets; ++i) {
+            // Holdings
+            address ofAsset = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(ofAsset);
+            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
+            uint assetDecimals = Asset.getDecimals();
+            // Price
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
+            address quoteAsset = Price.getQuoteAsset();
+            assert(referenceAsset == quoteAsset); // See Remark 1
+            uint assetPrice;
+            if (ofAsset == quoteAsset) {
+              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
+            } else {
+              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
+            }
+            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
+    }
+
+    /// Pre: Non-zero share supply,
+    /// Post: Share price denominated in referenceAsset in baseunit of [10 ** decimals] per Share
+    function calcValuePerShare(uint value)
+        constant
+        pre_cond(notZero(totalSupply))
+        returns (uint sharePrice)
+    {
+        sharePrice = 10 ** decimals * value / totalSupply;
+    }
+
+    /// Pre: Gross asset value has been calculated
+    /// Post: The sum and its individual parts of all applicable fees denominated in referenceAsset in baseunit of [10 ** decimals]
+    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
+        uint timeDifference = safeSub(now, atLastPayout.timestamp);
+        managementFee = module.management_fee.calculateFee(timeDifference, gav);
+        performanceFee = 0;
+        if (totalSupply != 0) {
+            uint currSharePrice = calcValuePerShare(gav);
+            if (currSharePrice - atLastPayout.sharePrice > 0)
+              performanceFee = module.performance_fee.calculateFee(currSharePrice - atLastPayout.sharePrice, totalSupply);
+        }
+        unclaimedFees = safeAdd(managementFee, performanceFee);
+    }
+
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Post: Net asset value denominated in referenceAsset in baseunit of [10 ** decimals]
+    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
+
+    /// Pre: Non-zero share supply,
+    /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in referenceAsset in baseunit of [10 ** decimals]
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
+        uint gav = calcGav(); // Reflects value indepentent of fees
+        var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
+        uint nav = calcNav(gav, unclaimedFees);
+        uint sharePrice = calcValuePerShare(nav);
+        return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
+    }
 
     // NON-CONSTANT METHODS
 
@@ -105,14 +172,14 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         symbol = withSymbol;
         decimals = withDecimals;
         atLastPayout = Calculations({
-          gav: 0,
-          managementFee: 0,
-          performanceFee: 0,
-          unclaimedFees: 0,
-          nav: 0,
-          sharePrice: 10 ** decimals, // initialSharePrice
-          totalSupply: totalSupply,
-          timestamp: now,
+            gav: 0,
+            managementFee: 0,
+            performanceFee: 0,
+            unclaimedFees: 0,
+            nav: 0,
+            sharePrice: 10 ** decimals, // initialSharePrice
+            totalSupply: totalSupply,
+            timestamp: now,
         });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
@@ -131,15 +198,15 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
     }
 
-    /// Pre: Needed to receive Ether from EtherToken Contract
-    /// Post: Receive Either directly
-    function() payable {}
-
     // NON-CONSTANT METHODS - PARTICIPATION
 
     /// Pre: Approved spending of all assets with non-empty asset holdings; Independent of running price feed!
     /// Post: Transfer ownership percentage of all assets from Investor to Core and create shareAmount.
     function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
+
+    /// Pre: Every holder of shares at any time; Independent of running price feed!
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings;
     /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
@@ -148,6 +215,15 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     {
         allocateSlice(recipient, shareAmount);
         SharesCreated(recipient, now, shareAmount);
+    }
+
+    /// Pre: Recipient owns shares
+    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
+        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
+    {
+        separateSlice(recipient, shareAmount);
+        SharesAnnihilated(recipient, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
@@ -177,19 +253,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         // Accounting
         balances[recipient] = safeAdd(balances[recipient], shareAmount);
         totalSupply = safeAdd(totalSupply, shareAmount);
-    }
-
-    /// Pre: Every holder of shares at any time; Independent of running price feed!
-    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
-    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
-
-    /// Pre: Recipient owns shares
-    /// Post: Transfer percentage of all assets from Core to Investor and annihilate shareAmount of shares.
-    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
-    {
-        separateSlice(recipient, shareAmount);
-        SharesAnnihilated(recipient, now, shareAmount);
     }
 
     /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
@@ -291,92 +354,16 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         SpendingApproved(ofToken, onExchange, amount);
     }
 
-    /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Portfolio Gross Asset Value in Wei
-    /* Rem 1:
-     *  All prices are relative to the referenceAsset price. The referenceAsset must be
-     *  equal to quoteAsset of corresponding PriceFeed.
-     * Rem 2:
-     *  For this version, the referenceAsset is set as EtherToken.
-     *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-     * Rem 3:
-     *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
-     *  coreHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this core holds
-     *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
-     *  where 0 <= decimals <= 18 and decimals is a natural number.
-     */
-    function calcGav() constant returns (uint gav) {
-        uint numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint i = 0; i < numAssignedAssets; ++i) {
-            // Holdings
-            address ofAsset = address(module.universe.assetAt(i));
-            AssetProtocol Asset = AssetProtocol(ofAsset);
-            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-            uint assetDecimals = Asset.getDecimals();
-            // Price
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            assert(referenceAsset == quoteAsset); // See Remark 1
-            uint assetPrice;
-            if (ofAsset == quoteAsset) {
-              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
-            } else {
-              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
-            }
-            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
-        }
-    }
-
-    /// Pre: Valid price feed data
-    /// Post: Calculate Share Price in Wei and update atLastPayout struct
-    function calcValuePerShare(uint value, uint decimals)
-        constant
-        pre_cond(notZero(totalSupply))
-        pre_cond(6 <= decimals && decimals <= 18)
-        returns (uint sharePrice)
-    {
-        sharePrice = 10**decimals * value / totalSupply ;
-    }
-
-    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
-        uint timeDifference = safeSub(now, atLastPayout.timestamp);
-        managementFee = module.management_fee.calculateFee(timeDifference, gav);
-        performanceFee = 0;
-        if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav, decimals);
-            if (currSharePrice - atLastPayout.sharePrice > 0)
-              performanceFee = module.performance_fee.calculateFee(currSharePrice - atLastPayout.sharePrice, totalSupply);
-        }
-        // Combined total of Management and Performance fees earned by portfolio manager
-        unclaimedFees = safeAdd(managementFee, performanceFee);
-    }
-
-    /// Pre: Valid price feed data
-    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
-
-    // NON-CONSTANT METHODS - CORE
-
-    function performCalculations() returns (uint, uint, uint, uint, uint, uint) {
-        uint gav = calcGav(); // Reflects value indepentent of fees
-        var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
-        uint nav = calcNav(gav, unclaimedFees);
-        uint sharePrice = calcValuePerShare(nav, decimals);
-        return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
-    }
-
     // NON-CONSTANT METHODS - FEES
 
-    /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
-    /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
-    function payoutEarnings()
+    /// Pre: Only owner
+    /// Post: Unclaimed fees of manager are converted into shares of this fund.
+    function convertUnclaimedFees()
         pre_cond(isOwner())
     {
         var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
 
-        // Allocate unclaimedFees to owner
-        // Accounting
+        // Accounting: Allocate unclaimedFees to owner
         uint shareAmount = totalSupply * unclaimedFees / gav;
         balances[owner] = safeAdd(balances[owner], shareAmount);
         totalSupply = safeAdd(totalSupply, shareAmount);
