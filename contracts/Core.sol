@@ -23,12 +23,15 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     // TYPES
 
-    struct Calculations { // last time creation/annihilation of shares happened.
+    struct Calculations {
+        uint gav;
+        uint managementFee;
+        uint performanceFee;
+        uint unclaimedFees;
         uint nav;
-        uint delta;
         uint sharePrice;
-        uint sharesSupply;
-        uint atTimestamp;
+        uint totalSupply;
+        uint timestamp;
     }
 
     struct Modules {
@@ -48,27 +51,22 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     string public name;
     string public symbol;
     uint public decimals;
-    uint public initialSharePrice;
-    uint public sharePrice;
-    uint public unclaimedFees; // Combined total of Management and Performance fees earned by portfolio manager
     // Fields that are only changed in constructor
     address referenceAsset;
     address melonAsset;
     // Fields that can be changed by functions
     Modules module;
     Properties properties;
-    Calculations calculated;
+    Calculations public atLastPayout;
 
     // EVENTS
 
     event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
     event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Refund(address to, uint value);
-    event NotAllocated(address to, uint value);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
-    event CalculationUpdate(uint atTimestamp, uint nav, uint delta);
-    event FeeUpdate(uint atTimestamp, uint managementFee, uint performanceFee);
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
+    event FeeUpdate(uint atTimestamp, uint managementFee, uint performanceFee);
+    event CalculationUpdate(uint atTimestamp, uint nav, uint sharePrice);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -80,9 +78,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getDecimals() constant returns (uint) { return decimals; }
-    function getLastCalculations() constant returns (uint, uint, uint, uint, uint) {
-        return (calculated.nav, calculated.delta, calculated.sharePrice, calculated.sharesSupply, calculated.atTimestamp);
-    }
 
     UniverseProtocol universe;
     SubscribeProtocol subscribe;
@@ -109,9 +104,16 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
-        initialSharePrice = 10 ** decimals;
-        sharePrice = initialSharePrice;
-        calculated = Calculations({ nav: 0, delta: initialSharePrice, sharePrice: initialSharePrice, sharesSupply: totalSupply, atTimestamp: now });
+        atLastPayout = Calculations({
+          gav: 0,
+          managementFee: 0,
+          performanceFee: 0,
+          unclaimedFees: 0,
+          nav: 0,
+          sharePrice: 10 ** decimals, // initialSharePrice
+          totalSupply: totalSupply,
+          timestamp: now,
+        });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
         melonAsset = module.universe.getMelonAsset();
@@ -273,7 +275,8 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         // Asset pair defined in Universe and contains referenceAsset
         require(module.universe.assetAvailability(buy_which_token));
         require(module.universe.assetAvailability(sell_which_token));
-        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
+        require(buy_which_token != referenceAsset); // Pair must consists of diffrent assets
+        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
         // Exchange assigned to tokens in Universe
         require(onExchange == module.universe.assignedExchange(buy_which_token));
         require(onExchange == module.universe.assignedExchange(sell_which_token));
@@ -286,69 +289,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     {
         assert(ofToken.approve(onExchange, amount));
         SpendingApproved(ofToken, onExchange, amount);
-    }
-
-    // NON-CONSTANT METHODS - FEES
-
-    /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
-    /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
-    function payoutEarnings()
-        pre_cond(isOwner())
-        pre_cond(notZero(unclaimedFees))
-    {
-        // Price of referenceAsset to melonAsset
-        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.assignedPriceFeed(melonAsset)));
-        uint assetPrice = Price.getPrice(melonAsset); // Asset price given quoted in referenceAsset / melonAsset
-        assert(assetPrice != 0);
-        // Earnings in referenceAsset, hence unclaimedFees / assetPrice = [melonAsset]
-        uint feesToBePaid = unclaimedFees;
-        unclaimedFees = 0; // Accounting
-        // TODO Payout Earnings
-        // Payout earnings in the form a Slice
-        // call separateSlice
-        assert(AssetProtocol(melonAsset).transfer(msg.sender, feesToBePaid / assetPrice)); // Transfer Ownership of Melon from core to manager
-    }
-
-    // NON-CONSTANT METHODS - CORE
-
-    /// Pre: Valid price feed data
-    /// Post: Calculate Share Price in Wei and update calculated struct
-    function calcSharePrice() returns (uint) {
-        return calcDelta();
-    }
-
-    /// Pre: Valid price feed data
-    /// Post: Delta as a result of current and previous NAV
-    function calcDelta() returns (uint delta) {
-        var (nav, managementFee, performanceFee, unclaimedFees) = calcNAV();
-        // Define or calcualte delta
-        if (calculated.nav == 0 || nav == 0) { // First investment not made || First investment made; All funds withdrawn
-            delta = 1 ether; // By definition
-        } else { // First investment made; Not all funds withdrawn
-            delta = calculated.delta * (calculated.sharesSupply * nav) / (calculated.nav * totalSupply);
-        }
-        // Update Calculations
-        calculated = Calculations({ nav: nav, delta: delta, sharePrice: delta, sharesSupply: totalSupply, atTimestamp: now });
-        // Logs
-        FeeUpdate(now, managementFee, performanceFee);
-        CalculationUpdate(now, nav, delta);
-    }
-
-    /// Pre: Valid price feed data
-    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
-    function calcNAV() constant returns (uint nav, uint managementFee, uint performanceFee, uint unclaimedFees) {
-        uint gav = calcGAV(); // Reflects value indepentent of managment and performance fee
-        uint timeDifference = now - calculated.atTimestamp;
-        managementFee = module.management_fee.calculateFee(timeDifference, gav);
-        performanceFee = 0;
-        if (calculated.nav != 0) {
-            uint deltaGross = (calculated.delta * gav) / calculated.nav; // Performance (delta) indepentent of managment and performance fees
-            uint deltaDifference = deltaGross - calculated.delta;
-            performanceFee = module.performance_fee.calculateFee(deltaDifference, gav);
-        }
-        unclaimedFees = safeAdd(unclaimedFees, safeAdd(managementFee, performanceFee));
-        nav = gav - unclaimedFees;
-        return (nav, managementFee, performanceFee, unclaimedFees);
     }
 
     /// Pre: Decimals in Token must be equal to decimals in PriceFeed for all entries in Universe
@@ -365,7 +305,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
      *    ==> coreHoldings * price == value of asset holdings of this core relative to referenceAsset price.
      *  where 0 <= decimals <= 18 and decimals is a natural number.
      */
-    function calcGAV() constant returns (uint gav) {
+    function calcGav() constant returns (uint gav) {
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             // Holdings
@@ -386,5 +326,74 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
             gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this core and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
+    }
+
+    /// Pre: Valid price feed data
+    /// Post: Calculate Share Price in Wei and update atLastPayout struct
+    function calcValuePerShare(uint value, uint decimals)
+        constant
+        pre_cond(notZero(totalSupply))
+        pre_cond(6 <= decimals && decimals <= 18)
+        returns (uint sharePrice)
+    {
+        sharePrice = 10**decimals * value / totalSupply ;
+    }
+
+    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
+        uint timeDifference = safeSub(now, atLastPayout.timestamp);
+        managementFee = module.management_fee.calculateFee(timeDifference, gav);
+        performanceFee = 0;
+        if (totalSupply != 0) {
+            uint currSharePrice = calcValuePerShare(gav, decimals);
+            if (currSharePrice - atLastPayout.sharePrice > 0)
+              performanceFee = module.performance_fee.calculateFee(currSharePrice - atLastPayout.sharePrice, totalSupply);
+        }
+        // Combined total of Management and Performance fees earned by portfolio manager
+        unclaimedFees = safeAdd(managementFee, performanceFee);
+    }
+
+    /// Pre: Valid price feed data
+    /// Post: Portfolio Net Asset Value in Wei, managment and performance fee allocated
+    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
+
+    // NON-CONSTANT METHODS - CORE
+
+    function performCalculations() returns (uint, uint, uint, uint, uint, uint) {
+        uint gav = calcGav(); // Reflects value indepentent of fees
+        var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
+        uint nav = calcNav(gav, unclaimedFees);
+        uint sharePrice = calcValuePerShare(nav, decimals);
+        return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
+    }
+
+    // NON-CONSTANT METHODS - FEES
+
+    /// Pre: Price of referenceAsset to melonAsset defined; Manager generated fees
+    /// Post: Equivalent value of unclaimedFees sent in MelonToken to Manager
+    function payoutEarnings()
+        pre_cond(isOwner())
+    {
+        var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
+
+        // Allocate unclaimedFees to owner
+        // Accounting
+        uint shareAmount = totalSupply * unclaimedFees / gav;
+        balances[owner] = safeAdd(balances[owner], shareAmount);
+        totalSupply = safeAdd(totalSupply, shareAmount);
+
+        // Update Calculations
+        atLastPayout = Calculations({
+          gav: gav,
+          managementFee: managementFee,
+          performanceFee: managementFee,
+          unclaimedFees: unclaimedFees,
+          nav: nav,
+          sharePrice: sharePrice,
+          totalSupply: totalSupply,
+          timestamp: now,
+        });
+
+        FeeUpdate(now, managementFee, performanceFee);
+        CalculationUpdate(now, nav, sharePrice);
     }
 }
