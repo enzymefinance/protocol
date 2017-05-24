@@ -161,11 +161,11 @@ contract('Net Asset Value', (accounts) => {
       });
     });
 
-    it('Create an initial order', (done) => {
+    it.skip('Create an initial order', (done) => {
       const wantedShares = new BigNumber(2e+17);
       const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(2e+17);
-
+    
       etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
       .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))

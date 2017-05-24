@@ -220,7 +220,7 @@ contract('Net Asset Value', (accounts) => {
 
   // MAIN TESTING
 
-  describe('INVESTING IN PORTFOLIO', () => {
+  describe.skip('INVESTING IN PORTFOLIO', () => {
     before('Check initial supply of portfolio', (done) => {
       coreContract.totalSupply()
       .then((result) => {
@@ -228,12 +228,12 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
     it('Wanted Shares == Offered Value', (done) => {
       const wantedShares = new BigNumber(2e+17);
       const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(2e+17);
-
+  
       etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
       .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
@@ -272,12 +272,12 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
     it('Wanted Shares < Offered Value (overpaid)', (done) => {
       const wantedShares = new BigNumber(1e+17);
       const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
-
+  
       etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
       .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
@@ -316,12 +316,12 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
     it('Wanted Shares > Offered Value (underpaid)', (done) => {
       const wantedShares = new BigNumber(2e+17);
       const wantedValue = new BigNumber(1e+17);
       const expectedValue = new BigNumber(3e+17); // 0.3 from previous test
-
+  
       etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
       .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
       .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
@@ -362,11 +362,11 @@ contract('Net Asset Value', (accounts) => {
     });
   });
 
-  describe('MANAGING POSITIONS OF A PORTFOLIO', () => {
+  describe.skip('MANAGING POSITIONS OF A PORTFOLIO', () => {
     it('Manage Postion', (done) => {
       const offerId = 1;
       let buyHowMuch;
-
+  
       exchangeContract.getOrder(offerId).then((result) => {
         buyHowMuch = result[0].toNumber();
         const quantity = Math.min(buyHowMuch)
@@ -392,7 +392,7 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
     it('Update multiple price', (done) => {
       data = {
         'error':[],
@@ -403,10 +403,10 @@ contract('Net Asset Value', (accounts) => {
           'XREPXETH':{'a':['0.188070','80','80.000'],'b':['0.183050','73','73.000'],'c':['0.185320','26.95100000'],'v':['2405.87940845','2443.98986545'],'p':['0.181354','0.180358'],'t':[193,195],'l':['0.170000','0.170000'],'h':['0.185460','0.185460'],'o':'0.173250'}
         }
       };
-
+  
       // Atomize Prices realtive to Asset
       pricesRelAsset = functions.krakenPricesRelAsset(data);
-
+  
       priceFeedContract.updatePrice(assets, pricesRelAsset, { from: OWNER })
       .then((result) => {
         // Check Logs
@@ -422,7 +422,7 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
     it('Calculate sharePrice according to updated prices', (done) => {
       coreContract.calcSharePrice()
       .then((result) => {
@@ -441,17 +441,17 @@ contract('Net Asset Value', (accounts) => {
         done();
       });
     });
-
+  
   });
 
-  describe('WITHDRAWING FROM PORTFOLIO', () => {
+  describe.skip('WITHDRAWING FROM PORTFOLIO', () => {
     it('Wanted Shares == Offered Value', (done) => {
       // TODO parse from contract directly
       const currentDelta = 1029899999999999990;
       const offeredShares = new BigNumber(2e+17);
       const wantedValue = (new BigNumber(2e+17)).div(currentDelta);
       const expectedValue = new BigNumber(2e+17);
-
+  
       let sharePrice;
       // TODO fix inital sharePrice value == 1 eth
       coreContract.calcSharePrice().then(() => coreContract.sharePrice())
@@ -491,8 +491,8 @@ contract('Net Asset Value', (accounts) => {
       // })
       // .then((result) => {
       //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-
-
+  
+  
         return coreContract.calcNAV();
       })
       .then((result) => {

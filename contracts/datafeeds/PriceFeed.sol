@@ -30,27 +30,11 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
     // Fields that can be changed by functions
     mapping (address => Data) data; // Address of asset => price of asset
 
-    // MODIFIERS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier msg_value_at_least(uint x) {
-        assert(msg.value >= x);
-        _;
-    }
-
-    modifier data_initialised(address ofAsset) {
-        assert(data[ofAsset].timestamp > 0);
-        _;
-    }
-
-    modifier data_still_valid(address ofAsset) {
-        assert(now - data[ofAsset].timestamp <= validity);
-        _;
-    }
-
-    modifier arrays_equal(address[] x, uint[] y) {
-        assert(x.length == y.length);
-        _;
-    }
+    function isDataSet(address ofAsset) internal returns (bool) { return data[ofAsset].timestamp > 0; }
+    function isDataValid(address ofAsset) internal returns (bool) { return now - data[ofAsset].timestamp <= validity; }
+    function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
 
     // CONSTANT METHODS
 
@@ -62,7 +46,7 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
     /// Post: Returns boolean if data is valid
     function getStatus(address ofAsset)
         constant
-        data_initialised(ofAsset)
+        pre_cond(isDataSet(ofAsset))
         returns (bool)
     {
         return now - data[ofAsset].timestamp <= validity;
@@ -72,8 +56,8 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
     /// Post: Price of asset, where last updated not longer than `validity` seconds ago
     function getPrice(address ofAsset)
         constant
-        data_initialised(ofAsset)
-        data_still_valid(ofAsset)
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
         returns (uint)
     {
         return data[ofAsset].price;
@@ -83,8 +67,8 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
     /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
     function getData(address ofAsset)
         constant
-        data_initialised(ofAsset)
-        data_still_valid(ofAsset)
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
         returns (uint, uint)
     {
         return (data[ofAsset].timestamp, data[ofAsset].price);
@@ -109,7 +93,7 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
      */
     function updatePrice(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())
-        arrays_equal(ofAssets, newPrices)
+        pre_cond(isEqualLength(ofAssets, newPrices))
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
             assert(data[ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices

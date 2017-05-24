@@ -14,12 +14,17 @@ contract CoreProtocol is AssetProtocol {
     function getReferenceAsset() constant returns (address) {}
     function getUniverseAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
-    function calcGAV() constant returns (uint gav) {}
-    function calcNAV() constant returns (uint nav, uint managementFee, uint perfermanceFee, uint unclaimedFees) {}
+    function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}
+    function calcGav() constant returns (uint gav) {}
+    function calcValuePerShare(uint value) constant returns (uint sharePrice) {}
+    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {}
+    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) {}
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
 
     // NON-CONSTANT METHODS
 
-    function calcSharePrice() returns (uint) {}
+    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
+    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
     function createSharesOnBehalf(address recipient, uint shareAmount) {}
     function annihilateSharesOnBehalf(address recipient, uint shareAmount) {}
     function makeOrder(ExchangeProtocol onExchange,
@@ -34,6 +39,7 @@ contract CoreProtocol is AssetProtocol {
     function cancelOrder(ExchangeProtocol onExchange, uint id)
         returns (bool)
     {}
+    function convertUnclaimedFees() {}
 
     // EVENTS
 

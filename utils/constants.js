@@ -13,6 +13,10 @@ const EUROTOKEN_DECIMALS = 8;
 
 // Price Feed
 
+// Liquidity Provider
+
+const LIQUIDITY_PROVIDER = '0x00e0b33cdb3af8b55cd8467d6d13bc0ba8035acf';
+
 // Exchange
 
 const EXCHANGE_ADDRESS = '0x50396a51a81b938ccb2d1466de9eebc49d5564f5'

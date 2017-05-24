@@ -24,11 +24,11 @@ contract PerformanceFee is PerformanceFeeProtocol, Owned {
      *  for deltaDifference == 0 => returns 0
      */
     // Fee measured in referenceAsset
-    function calculateFee(uint deltaDifference, uint gav)
+    function calculateFee(uint sharePriceDifference, uint totalSupply)
         constant returns (uint)
     {
-        if (deltaDifference <= 0) return 0;
-        uint absoluteChange = (deltaDifference) * gav;
+        if (sharePriceDifference <= 0) return 0;
+        uint absoluteChange = sharePriceDifference * totalSupply;
         return absoluteChange * fee / DIVISOR_FEE;
     }
 

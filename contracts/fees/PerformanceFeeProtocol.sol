@@ -6,8 +6,8 @@ pragma solidity ^0.4.11;
 contract PerformanceFeeProtocol {
   /* Function invariant
    *  for deltaDifference == 0 => returns 0
-   */  
-  function calculateFee(uint deltaDifference, uint gav)
+   */
+  function calculateFee(uint sharePriceDifference, uint totalSupply)
       constant returns (uint)
   {}
 }
