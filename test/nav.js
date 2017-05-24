@@ -220,289 +220,289 @@ contract('Net Asset Value', (accounts) => {
 
   // MAIN TESTING
 
-  // describe('INVESTING IN PORTFOLIO', () => {
-  //   before('Check initial supply of portfolio', (done) => {
-  //     coreContract.totalSupply()
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), 0);
-  //       done();
-  //     });
-  //   });
-  //
-  //   it('Wanted Shares == Offered Value', (done) => {
-  //     const wantedShares = new BigNumber(2e+17);
-  //     const wantedValue = new BigNumber(2e+17);
-  //     const expectedValue = new BigNumber(2e+17);
-  //
-  //     etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
-  //     .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
-  //     .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
-  //     .then((result) => {
-  //       assert.equal(result.toNumber(), wantedValue.toNumber());
-  //       return coreContract.createShares(wantedShares, { from: NOT_OWNER });
-  //     })
-  //     .then((result) => {
-  //       return coreContract.calcSharePrice();
-  //     })
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       console.log('Portfolio Content');
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         if (result.logs[i].event === 'PortfolioContent') {
-  //           const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //           console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //         }
-  //         if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //           console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //         }
-  //       }
-  //       return coreContract.sharePrice();
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), constants.ether.toNumber());
-  //       return etherTokenContract.balanceOf(coreContract.address);
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //       return coreContract.balanceOf(NOT_OWNER);
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //       done();
-  //     });
-  //   });
-  //
-  //   it('Wanted Shares < Offered Value (overpaid)', (done) => {
-  //     const wantedShares = new BigNumber(1e+17);
-  //     const wantedValue = new BigNumber(2e+17);
-  //     const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
-  //
-  //     etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
-  //     .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
-  //     .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
-  //     .then((result) => {
-  //       assert.equal(result.toNumber(), wantedValue.toNumber());
-  //       return coreContract.createShares(wantedShares, { from: NOT_OWNER });
-  //     })
-  //     .then((result) => {
-  //       return coreContract.calcSharePrice();
-  //     })
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       console.log('Portfolio Content');
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         if (result.logs[i].event === 'PortfolioContent') {
-  //           const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //           console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //         }
-  //         if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //           console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //         }
-  //       }
-  //       return coreContract.sharePrice();
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), constants.ether.toNumber());
-  //       return etherTokenContract.balanceOf(coreContract.address);
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //       return coreContract.balanceOf(NOT_OWNER);
-  //     })
-  //     .then((result) => {
-  //       assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //       done();
-  //     });
-  //   });
-  //
-  //   it('Wanted Shares > Offered Value (underpaid)', (done) => {
-  //     const wantedShares = new BigNumber(2e+17);
-  //     const wantedValue = new BigNumber(1e+17);
-  //     const expectedValue = new BigNumber(3e+17); // 0.3 from previous test
-  //
-  //     etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
-  //     .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
-  //     .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
-  //     .then((result) => {
-  //       assert.equal(result.toNumber(), wantedValue.toNumber());
-  //       return coreContract.createShares(wantedShares, { from: NOT_OWNER });
-  //     })
-  //     .catch(() => {
-  //       // Gets executed if contract throws exception
-  //       coreContract.calcSharePrice().then((result) => {
-  //         // Check Logs
-  //         assert.notEqual(result.logs.length, 0);
-  //         console.log('Portfolio Content');
-  //         for (let i = 0; i < result.logs.length; i += 1) {
-  //           if (result.logs[i].event === 'PortfolioContent') {
-  //             const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //             console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //           }
-  //           if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //           }
-  //         }
-  //         return coreContract.sharePrice();
-  //       })
-  //       .then((result) => {
-  //         assert.strictEqual(result.toNumber(), constants.ether.toNumber());
-  //         return etherTokenContract.balanceOf(coreContract.address);
-  //       })
-  //       .then((result) => {
-  //         assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //         return coreContract.balanceOf(NOT_OWNER);
-  //       })
-  //       .then((result) => {
-  //         assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //         done();
-  //       })
-  //     });
-  //   });
-  // });
+  describe.skip('INVESTING IN PORTFOLIO', () => {
+    before('Check initial supply of portfolio', (done) => {
+      coreContract.totalSupply()
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), 0);
+        done();
+      });
+    });
+  
+    it('Wanted Shares == Offered Value', (done) => {
+      const wantedShares = new BigNumber(2e+17);
+      const wantedValue = new BigNumber(2e+17);
+      const expectedValue = new BigNumber(2e+17);
+  
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
+      })
+      .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+          }
+        }
+        return coreContract.sharePrice();
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+        return etherTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+        return coreContract.balanceOf(NOT_OWNER);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+        done();
+      });
+    });
+  
+    it('Wanted Shares < Offered Value (overpaid)', (done) => {
+      const wantedShares = new BigNumber(1e+17);
+      const wantedValue = new BigNumber(2e+17);
+      const expectedValue = new BigNumber(3e+17); // 0.2 from previous test
+  
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
+      })
+      .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+          }
+        }
+        return coreContract.sharePrice();
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+        return etherTokenContract.balanceOf(coreContract.address);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+        return coreContract.balanceOf(NOT_OWNER);
+      })
+      .then((result) => {
+        assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+        done();
+      });
+    });
+  
+    it('Wanted Shares > Offered Value (underpaid)', (done) => {
+      const wantedShares = new BigNumber(2e+17);
+      const wantedValue = new BigNumber(1e+17);
+      const expectedValue = new BigNumber(3e+17); // 0.3 from previous test
+  
+      etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
+      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then((result) => {
+        assert.equal(result.toNumber(), wantedValue.toNumber());
+        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
+      })
+      .catch(() => {
+        // Gets executed if contract throws exception
+        coreContract.calcSharePrice().then((result) => {
+          // Check Logs
+          assert.notEqual(result.logs.length, 0);
+          console.log('Portfolio Content');
+          for (let i = 0; i < result.logs.length; i += 1) {
+            if (result.logs[i].event === 'PortfolioContent') {
+              const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+              console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+            }
+            if (result.logs[i].event === 'CalculatedValuesUpdated') {
+              console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+            }
+          }
+          return coreContract.sharePrice();
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), constants.ether.toNumber());
+          return etherTokenContract.balanceOf(coreContract.address);
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+          return coreContract.balanceOf(NOT_OWNER);
+        })
+        .then((result) => {
+          assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+          done();
+        })
+      });
+    });
+  });
 
-  // describe('MANAGING POSITIONS OF A PORTFOLIO', () => {
-  //   it('Manage Postion', (done) => {
-  //     const offerId = 1;
-  //     let buyHowMuch;
-  //
-  //     exchangeContract.getOrder(offerId).then((result) => {
-  //       buyHowMuch = result[0].toNumber();
-  //       const quantity = Math.min(buyHowMuch)
-  //       return coreContract.takeOrder(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
-  //     })
-  //     .then((result) => {
-  //       assert.notEqual(result.logs.length, 0);
-  //       return coreContract.calcSharePrice();
-  //     })
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       console.log('Portfolio Content');
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         if (result.logs[i].event === 'PortfolioContent') {
-  //           const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //           console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //         }
-  //         if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //           console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //         }
-  //       }
-  //       done();
-  //     });
-  //   });
-  //
-  //   it('Update multiple price', (done) => {
-  //     data = {
-  //       'error':[],
-  //       'result': {
-  //         'XETHXXBT':{'a':['0.047173','72','72.000'],'b':['0.046958','57','57.000'],'c':['0.047188','3.02722723'],'v':['148452.56032886','161336.30511514'],'p':['0.049600','0.028460'],'t':[7341,8030],'l':['0.045908','0.045908'],'h':['0.053630','0.053990'],'o':'0.052219'},
-  //         'XETHZEUR':{'a':['44.79995','22','22.000'],'b':['44.62121','51','51.000'],'c':['44.62120','0.12288403'],'v':['112264.40153999','114942.25454119'],'p':['45.62662','45.24065'],'t':[7531,7826],'l':['44.00000','44.00000'],'h':['47.10043','47.10043'],'o':'45.98999'},
-  //         'XMLNXETH':{'a':['0.64490000','1','1.000'],'b':['0.63679000','1','1.000'],'c':['0.64970000','0.08935121'],'v':['2339.26736089','2365.26736089'],'p':['0.59371313','0.59307630'],'t':[283,286],'l':['0.53245000','0.53245000'],'h':['0.64990000','0.64990000'],'o':'0.53295000'},
-  //         'XREPXETH':{'a':['0.188070','80','80.000'],'b':['0.183050','73','73.000'],'c':['0.185320','26.95100000'],'v':['2405.87940845','2443.98986545'],'p':['0.181354','0.180358'],'t':[193,195],'l':['0.170000','0.170000'],'h':['0.185460','0.185460'],'o':'0.173250'}
-  //       }
-  //     };
-  //
-  //     // Atomize Prices realtive to Asset
-  //     pricesRelAsset = functions.krakenPricesRelAsset(data);
-  //
-  //     priceFeedContract.updatePrice(assets, pricesRelAsset, { from: OWNER })
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         // console.log(result);
-  //         assert.equal(result.logs[i].event, 'PriceUpdated');
-  //         assert.equal(result.logs[i].args.ofAsset, assets[i]);
-  //         // TODO test against actual block.time
-  //         assert.notEqual(result.logs[i].args.atTimestamp.toNumber(), 0);
-  //         assert.equal(result.logs[i].args.ofPrice, pricesRelAsset[i]);
-  //       }
-  //       done();
-  //     });
-  //   });
-  //
-  //   it('Calculate sharePrice according to updated prices', (done) => {
-  //     coreContract.calcSharePrice()
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       console.log('Portfolio Content');
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         if (result.logs[i].event === 'PortfolioContent') {
-  //           const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //           console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //         }
-  //         if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //           console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //         }
-  //       }
-  //       done();
-  //     });
-  //   });
-  //
-  // });
+  describe.skip('MANAGING POSITIONS OF A PORTFOLIO', () => {
+    it('Manage Postion', (done) => {
+      const offerId = 1;
+      let buyHowMuch;
+  
+      exchangeContract.getOrder(offerId).then((result) => {
+        buyHowMuch = result[0].toNumber();
+        const quantity = Math.min(buyHowMuch)
+        return coreContract.takeOrder(exchangeContract.address, offerId, 100000000000000000, { from: OWNER });
+      })
+      .then((result) => {
+        assert.notEqual(result.logs.length, 0);
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+          }
+        }
+        done();
+      });
+    });
+  
+    it('Update multiple price', (done) => {
+      data = {
+        'error':[],
+        'result': {
+          'XETHXXBT':{'a':['0.047173','72','72.000'],'b':['0.046958','57','57.000'],'c':['0.047188','3.02722723'],'v':['148452.56032886','161336.30511514'],'p':['0.049600','0.028460'],'t':[7341,8030],'l':['0.045908','0.045908'],'h':['0.053630','0.053990'],'o':'0.052219'},
+          'XETHZEUR':{'a':['44.79995','22','22.000'],'b':['44.62121','51','51.000'],'c':['44.62120','0.12288403'],'v':['112264.40153999','114942.25454119'],'p':['45.62662','45.24065'],'t':[7531,7826],'l':['44.00000','44.00000'],'h':['47.10043','47.10043'],'o':'45.98999'},
+          'XMLNXETH':{'a':['0.64490000','1','1.000'],'b':['0.63679000','1','1.000'],'c':['0.64970000','0.08935121'],'v':['2339.26736089','2365.26736089'],'p':['0.59371313','0.59307630'],'t':[283,286],'l':['0.53245000','0.53245000'],'h':['0.64990000','0.64990000'],'o':'0.53295000'},
+          'XREPXETH':{'a':['0.188070','80','80.000'],'b':['0.183050','73','73.000'],'c':['0.185320','26.95100000'],'v':['2405.87940845','2443.98986545'],'p':['0.181354','0.180358'],'t':[193,195],'l':['0.170000','0.170000'],'h':['0.185460','0.185460'],'o':'0.173250'}
+        }
+      };
+  
+      // Atomize Prices realtive to Asset
+      pricesRelAsset = functions.krakenPricesRelAsset(data);
+  
+      priceFeedContract.updatePrice(assets, pricesRelAsset, { from: OWNER })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        for (let i = 0; i < result.logs.length; i += 1) {
+          // console.log(result);
+          assert.equal(result.logs[i].event, 'PriceUpdated');
+          assert.equal(result.logs[i].args.ofAsset, assets[i]);
+          // TODO test against actual block.time
+          assert.notEqual(result.logs[i].args.atTimestamp.toNumber(), 0);
+          assert.equal(result.logs[i].args.ofPrice, pricesRelAsset[i]);
+        }
+        done();
+      });
+    });
+  
+    it('Calculate sharePrice according to updated prices', (done) => {
+      coreContract.calcSharePrice()
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+          }
+        }
+        done();
+      });
+    });
+  
+  });
 
-  // describe('WITHDRAWING FROM PORTFOLIO', () => {
-  //   it('Wanted Shares == Offered Value', (done) => {
-  //     // TODO parse from contract directly
-  //     const currentDelta = 1029899999999999990;
-  //     const offeredShares = new BigNumber(2e+17);
-  //     const wantedValue = (new BigNumber(2e+17)).div(currentDelta);
-  //     const expectedValue = new BigNumber(2e+17);
-  //
-  //     let sharePrice;
-  //     // TODO fix inital sharePrice value == 1 eth
-  //     coreContract.calcSharePrice().then(() => coreContract.sharePrice())
-  //     .then((result) => {
-  //       sharePrice = result.toNumber();
-  //       // TODO fix inital sharePrice value == 1 eth
-  //       console.log(`Initial sharePrice ${sharePrice}`);
-  //       return coreContract.annihilateShares(offeredShares, wantedValue, { from: NOT_OWNER });
-  //     })
-  //     .then((result) => {
-  //       return coreContract.calcSharePrice();
-  //     })
-  //     .then((result) => {
-  //       // Check Logs
-  //       assert.notEqual(result.logs.length, 0);
-  //       console.log('Portfolio Content');
-  //       for (let i = 0; i < result.logs.length; i += 1) {
-  //         if (result.logs[i].event === 'PortfolioContent') {
-  //           const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
-  //           console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
-  //         }
-  //         if (result.logs[i].event === 'CalculatedValuesUpdated') {
-  //           console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
-  //           sharePrice = result.logs[i].args.delta.toNumber();
-  //         }
-  //       }
-  //       //TODO fix sharePrice
-  //     //   return coreContract.sharePrice();
-  //     // })
-  //     // .then((result) => {
-  //     //   assert.strictEqual(result.toNumber(), sharePrice);
-  //     //   return etherTokenContract.balanceOf(coreContract.address);
-  //     // })
-  //     // .then((result) => {
-  //     //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //     //   return coreContract.balanceOf(NOT_OWNER);
-  //     // })
-  //     // .then((result) => {
-  //     //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-  //
-  //
-  //       return coreContract.calcNAV();
-  //     })
-  //     .then((result) => {
-  //       console.log(result)
-  //       return coreContract.calcDelta();
-  //     })
-  //     .then((result) => {
-  //       console.log(`calcDelta is: ${result / Math.pow(10, 18)}`)
-  //       done();
-  //     });
-  //   });
-  // });
+  describe.skip('WITHDRAWING FROM PORTFOLIO', () => {
+    it('Wanted Shares == Offered Value', (done) => {
+      // TODO parse from contract directly
+      const currentDelta = 1029899999999999990;
+      const offeredShares = new BigNumber(2e+17);
+      const wantedValue = (new BigNumber(2e+17)).div(currentDelta);
+      const expectedValue = new BigNumber(2e+17);
+  
+      let sharePrice;
+      // TODO fix inital sharePrice value == 1 eth
+      coreContract.calcSharePrice().then(() => coreContract.sharePrice())
+      .then((result) => {
+        sharePrice = result.toNumber();
+        // TODO fix inital sharePrice value == 1 eth
+        console.log(`Initial sharePrice ${sharePrice}`);
+        return coreContract.annihilateShares(offeredShares, wantedValue, { from: NOT_OWNER });
+      })
+      .then((result) => {
+        return coreContract.calcSharePrice();
+      })
+      .then((result) => {
+        // Check Logs
+        assert.notEqual(result.logs.length, 0);
+        console.log('Portfolio Content');
+        for (let i = 0; i < result.logs.length; i += 1) {
+          if (result.logs[i].event === 'PortfolioContent') {
+            const divider = Math.pow(10, result.logs[i].args.assetDecimals.toNumber());
+            console.log(` ${i}: ${result.logs[i].args.assetHoldings / divider} Asset @ ${result.logs[i].args.assetPrice / divider} ETH/Asset`);
+          }
+          if (result.logs[i].event === 'CalculatedValuesUpdated') {
+            console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
+            sharePrice = result.logs[i].args.delta.toNumber();
+          }
+        }
+        //TODO fix sharePrice
+      //   return coreContract.sharePrice();
+      // })
+      // .then((result) => {
+      //   assert.strictEqual(result.toNumber(), sharePrice);
+      //   return etherTokenContract.balanceOf(coreContract.address);
+      // })
+      // .then((result) => {
+      //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+      //   return coreContract.balanceOf(NOT_OWNER);
+      // })
+      // .then((result) => {
+      //   assert.strictEqual(result.toNumber(), expectedValue.toNumber());
+  
+  
+        return coreContract.calcNAV();
+      })
+      .then((result) => {
+        console.log(result)
+        return coreContract.calcDelta();
+      })
+      .then((result) => {
+        console.log(`calcDelta is: ${result / Math.pow(10, 18)}`)
+        done();
+      });
+    });
+  });
 });
