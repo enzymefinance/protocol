@@ -41,16 +41,17 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
     /// Pre: Investor approves spending of reference asset of core to this contract
     /// Post: Invest in a fund by creating shares
     /* Rem:
-     *  This is can be seen as a none persistent all or nothing limit order, where:
+     *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]
      */
-    function createSharesWithReferenceAsset(address ofCore, uint wantedShares, uint offeredAmount)
+    function createSharesWithReferenceAsset(address ofCore, uint wantedShares, uint offeredValue)
         past_zero(wantedShares)
     {
         CoreProtocol Core = CoreProtocol(ofCore);
         uint coreDecimals = Core.getDecimals();
         uint BASE_UNIT_OF_SHARES = 10 ** coreDecimals;
-        uint offeredValue = offeredAmount; // Offered value relative to reference token
+        uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // [referenceAsset / share] * [Base unit amount of shares] / [Base unit of shares]
+        allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe
@@ -65,11 +66,10 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         at_least(offeredValue, actualValue)
     {
         //TODO check recipient
-        address referenceAsset = Core.getReferenceAsset();
-        AssetProtocol Asset = AssetProtocol(address(referenceAsset));
-        assert(Asset.transferFrom(msg.sender, this, actualValue)); // Send funds from investor to owner
         CoreProtocol Core = CoreProtocol(ofCore);
+        AssetProtocol RefAsset = AssetProtocol(address(Core.getReferenceAsset()));
+        assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to owner
         Core.createSharesOnBehalf(msg.sender, wantedShares);
-        SharesCreated(msg.sender, now, wantedShares);
+        //sharesCreated(msg.sender, now, wantedShares);
     }
 }

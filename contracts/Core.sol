@@ -380,6 +380,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
           timestamp: now,
         });
 
+
         FeeUpdate(now, managementFee, performanceFee);
         CalculationUpdate(now, nav, sharePrice);
     }
