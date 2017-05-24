@@ -120,7 +120,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         for (uint i = 0; i < numAssignedAssets; ++i) {
             PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
             address quoteAsset = Price.getQuoteAsset();
-            assert(referenceAsset == quoteAsset);
+            require(referenceAsset == quoteAsset);
         }
         module.subscribe = SubscribeProtocol(ofSubscribe);
         module.redeem = RedeemProtocol(ofRedeem);
@@ -144,7 +144,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function createSharesOnBehalf(address recipient, uint shareAmount)
         pre_cond(notZero(shareAmount))
     {
-        calcSharePrice();
         allocateSlice(recipient, shareAmount);
         SharesCreated(recipient, now, shareAmount);
     }
@@ -154,19 +153,23 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function allocateSlice(address recipient, uint shareAmount)
         internal
     {
-        if (calculated.nav == 0 && calculated.delta == initialSharePrice) { // Iff all coreHoldings are zero
-            // Assumption sharePrice === initialSharePrice
-            //  hence actualValue == shareAmount with actualValue = sharePrice * shareAmount / initialSharePrice
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send funds from core to investor
+        if (totalSupply == 0) { // Iff all coreHoldings are zero
+            /* By definition for zero totalSupply of shares:
+             *  sharePrice == initialSharePrice (1)
+             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount unsing (1) above
+             */
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send msg.sender to this core
         } else {
-            // Transfer ownershipPercentage of Assets
             uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
                 AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
                 uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-                uint allocationPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
                 if (coreHoldings == 0) continue;
-                assert(Asset.transferFrom(msg.sender, this, allocationPercentage)); // Send funds from investor to core
+                uint allocationAmount = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
+                uint investorHoldings = Asset.balanceOf(msg.sender); // Amount of asset base units this core holds
+                require(investorHoldings >= allocationAmount);
+                // Transfer allocationAmount of Assets
+                assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to core
             }
         }
         // Accounting
@@ -192,18 +195,21 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function separateSlice(address recipient, uint shareAmount)
         internal
     {
-        // Transfer ownershipPercentage of Assets
+        // Current Value
+        uint oldTotalSupply = totalSupply;
+        // Update accounting before external calls to prevent reentrancy
+        balances[recipient] = safeSub(balances[recipient], shareAmount);
+        totalSupply = safeSub(totalSupply, shareAmount);
+        // Transfer separationAmount of Assets
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
-            uint coreHoldings = Asset.balanceOf(this); // Amount of asset base units this core holds
-            uint ownershipPercentage = coreHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
+            uint coreHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this core holds
+            uint separationAmount = coreHoldings * shareAmount / oldTotalSupply; // ownership percentage of msg.sender
             if (coreHoldings == 0) continue;
-            assert(Asset.transfer(recipient, ownershipPercentage)); // Send funds from core to investor
+            // EXTERNAL CALL
+            assert(Asset.transfer(recipient, separationAmount)); // EXTERNAL CALL: Send funds from core to investor
         }
-        // Accounting
-        balances[recipient] = safeSub(balances[recipient], shareAmount);
-        totalSupply = safeSub(totalSupply, shareAmount);
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
@@ -215,13 +221,13 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         uint buy_how_much,  ERC20 buy_which_token
     )
         pre_cond(isOwner())
-        returns (uint id)
-    {
-        assertIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
-        assert(module.riskmgmt.isExchangeMakePermitted(onExchange,
+        pre_cond(module.riskmgmt.isExchangeMakePermitted(onExchange,
             sell_how_much, sell_which_token,
             buy_how_much, buy_which_token)
-        );
+        )
+        returns (uint id)
+    {
+        requireIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
         approveSpending(sell_which_token, onExchange, sell_how_much);
         id = onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
@@ -237,10 +243,10 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
         ) = onExchange.getOrder(id);
-        assert(wantedBuyAmount <= offeredBuyAmount);
-        assertIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
+        require(wantedBuyAmount <= offeredBuyAmount);
+        requireIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
         var orderOwner = onExchange.getOwner(id);
-        assert(module.riskmgmt.isExchangeTakePermitted(onExchange,
+        require(module.riskmgmt.isExchangeTakePermitted(onExchange,
             offeredSellAmount, offeredSellToken,
             offeredBuyAmount, offeredBuyToken,
             orderOwner)
@@ -261,16 +267,16 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
-    function assertIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
+    function requireIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
         internal
     {
         // Asset pair defined in Universe and contains referenceAsset
-        assert(module.universe.assetAvailability(buy_which_token));
-        assert(module.universe.assetAvailability(sell_which_token));
-        assert(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
+        require(module.universe.assetAvailability(buy_which_token));
+        require(module.universe.assetAvailability(sell_which_token));
+        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset);
         // Exchange assigned to tokens in Universe
-        assert(onExchange == module.universe.assignedExchange(buy_which_token));
-        assert(onExchange == module.universe.assignedExchange(sell_which_token));
+        require(onExchange == module.universe.assignedExchange(buy_which_token));
+        require(onExchange == module.universe.assignedExchange(sell_which_token));
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
