@@ -226,7 +226,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         SharesAnnihilated(recipient, now, shareAmount);
     }
 
-    /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
+    /// Pre: Allocation: Pre-approve spending for all non empty coreHoldings of Assets
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
         internal
@@ -234,9 +234,9 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         if (totalSupply == 0) { // Iff all coreHoldings are zero
             /* By definition for zero totalSupply of shares:
              *  sharePrice == initialSharePrice (1)
-             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount unsing (1) above
+             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
              */
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send msg.sender to this core
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {

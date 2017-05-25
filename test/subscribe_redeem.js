@@ -17,7 +17,7 @@ const Core = artifacts.require('Core.sol');
 
 
 
-describe.only('Working here',() => {
+describe.skip('Working here',() => {
 contract('Subscribe', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
@@ -142,21 +142,23 @@ contract('Subscribe', (accounts) => {
       .then(() => etherTokenContract.balanceOf(INVESTOR))
       .then(res => assert.equal(res, depositAmt));
     })
-    it('Creates shares using the reference asset', () => {
+    it.skip('Creates shares using the reference asset', () => {
       let offeredAmount = web3.toWei(1, 'ether');
       return etherTokenContract.approve(
         subscribeContract.address, offeredAmount, {from: INVESTOR}
       )
       .then(() => subscribeContract.createSharesWithReferenceAsset(
-        coreContract.address, 2, offeredAmount, {from: INVESTOR}
+        coreContract.address, NUM_SHARES, offeredAmount, {from: INVESTOR}
       ))
-      //.then(res => {
-      //  for(let logN of res.logs){
-      //    console.log(logN);
-      //  }
-      //})
+      .then(() => coreContract.balanceOf(INVESTOR))
+      .then(res => assert.equal(res, NUM_SHARES))
     })
-    it('Annihilates shares on request')
+    it.skip('Annihilates shares on request', () => {
+      return redeemContract.redeemShares(coreContract.address, NUM_SHARES, {from: INVESTOR})
+      .then(() => coreContract.balanceOf(INVESTOR))
+      .then(res => assert.equal(res, 0))
+      .then(() => {}) //TODO: check assets were returned
+    })
   });
 });
 });

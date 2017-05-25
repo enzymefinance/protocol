@@ -38,7 +38,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     function Subscribe() {}
 
-    /// Pre: Investor approves spending of reference asset of core to this contract
+    /// Pre: Investor pre-approves spending of core's reference asset to this contract
     /// Post: Invest in a fund by creating shares
     /* Rem:
      *  This can be seen as a non-persistent all or nothing limit order, where:
@@ -48,10 +48,8 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         past_zero(wantedShares)
     {
         CoreProtocol Core = CoreProtocol(ofCore);
-        uint coreDecimals = Core.getDecimals();
-        uint BASE_UNIT_OF_SHARES = 10 ** coreDecimals;
-        uint actualValue = sharePrice * wantedShares / BASE_UNIT_OF_SHARES; // [referenceAsset / share] * [Base unit amount of shares] / [Base unit of shares]
-        allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
+        uint actualValue = Core.calcValuePerShare(wantedShares);
+        //allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe
@@ -68,8 +66,8 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         //TODO check recipient
         CoreProtocol Core = CoreProtocol(ofCore);
         AssetProtocol RefAsset = AssetProtocol(address(Core.getReferenceAsset()));
-        assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to owner
+        assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
         Core.createSharesOnBehalf(msg.sender, wantedShares);
-        //sharesCreated(msg.sender, now, wantedShares);
+        SharesCreated(msg.sender, now, wantedShares);
     }
 }
