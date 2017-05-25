@@ -16,7 +16,7 @@ contract CoreProtocol is AssetProtocol {
     function getDecimals() constant returns (uint) {}
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}
     function calcGav() constant returns (uint gav) {}
-    function calcValuePerShare(uint value) constant returns (uint sharePrice) {}
+    function calcValuePerShare(uint value) constant returns (uint valuePerShare) {}
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {}
     function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) {}
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
@@ -33,12 +33,8 @@ contract CoreProtocol is AssetProtocol {
     )
         returns (uint id)
     {}
-    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
-        returns (bool)
-    {}
-    function cancelOrder(ExchangeProtocol onExchange, uint id)
-        returns (bool)
-    {}
+    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
+    function cancelOrder(ExchangeProtocol onExchange, uint id) returns (bool) {}
     function convertUnclaimedFees() {}
 
     // EVENTS

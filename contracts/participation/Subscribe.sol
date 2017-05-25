@@ -2,6 +2,7 @@ pragma solidity ^0.4.11;
 
 import "./SubscribeProtocol.sol";
 import "../assets/AssetProtocol.sol";
+import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/SafeMath.sol";
 import "../assets/EtherToken.sol";
@@ -12,7 +13,7 @@ import "../CoreProtocol.sol";
 /// @title Subscribe Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Subscribe Module.
-contract Subscribe is SubscribeProtocol, SafeMath, Owned {
+contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
 
     // FIELDS
 
@@ -20,17 +21,10 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
 
     event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares);
 
-    // MODIFIERS
+    // PRE, POST, INVARIANT CONDITIONS
 
-    modifier past_zero(uint x) {
-        assert(x > 0);
-        _;
-    }
-
-    modifier at_least(uint x, uint y) {
-        assert(x >= y);
-        _;
-    }
+    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
+    function isAtLeast(uint x, uint y) internal returns (bool) { return x >= y; }
 
     // CONSTANT METHODS
 
@@ -45,7 +39,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
      *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]
      */
     function createSharesWithReferenceAsset(address ofCore, uint wantedShares, uint offeredValue)
-        past_zero(wantedShares)
+        pre_cond(isPastZero(wantedShares))
     {
         CoreProtocol Core = CoreProtocol(ofCore);
         uint actualValue = Core.calcValuePerShare(wantedShares);
@@ -61,7 +55,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         uint wantedShares
     )
         internal
-        at_least(offeredValue, actualValue)
+        pre_cond(isAtLeast(offeredValue, actualValue))
     {
         //TODO check recipient
         CoreProtocol Core = CoreProtocol(ofCore);
