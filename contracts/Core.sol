@@ -120,9 +120,9 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function calcValuePerShare(uint value)
         constant
         pre_cond(notZero(totalSupply))
-        returns (uint sharePrice)
+        returns (uint valuePerShare)
     {
-        sharePrice = 10 ** decimals * value / totalSupply;
+        valuePerShare = 10 ** decimals * value / totalSupply;
     }
 
     /// Pre: None
