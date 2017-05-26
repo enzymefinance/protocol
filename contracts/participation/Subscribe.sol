@@ -42,7 +42,8 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
         pre_cond(isPastZero(wantedShares))
     {
         CoreProtocol Core = CoreProtocol(ofCore);
-        uint actualValue = Core.getSharePrice();
+        var (, , , , , sharePrice) = Core.performCalculations();
+        uint actualValue = sharePrice * wantedShares;
         allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
     }
 

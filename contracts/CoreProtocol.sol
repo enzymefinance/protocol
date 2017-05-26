@@ -17,7 +17,6 @@ contract CoreProtocol is AssetProtocol {
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}
     function calcGav() constant returns (uint gav) {}
     function calcValuePerShare(uint value) constant returns (uint sharePrice) {}
-    function getSharePrice() constant returns (uint price) {}
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {}
     function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) {}
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}

@@ -50,6 +50,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     string public symbol;
     uint public decimals;
     // Fields that are only changed in constructor
+    uint public initialSharePrice;
     address public referenceAsset;
     address public melonAsset;
     // Fields that can be changed by functions
@@ -125,10 +126,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         valuePerShare = 10 ** decimals * value / totalSupply;
     }
 
-    /// Pre: None
-    /// Post: Share price denominated in referenceAsset in baseunit of [10 ** decimals] per Share
-    function getSharePrice() constant returns (uint price){price = atLastPayout.sharePrice;}
-
     /// Pre: Gross asset value has been calculated
     /// Post: The sum and its individual parts of all applicable fees denominated in referenceAsset in baseunit of [10 ** decimals]
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
@@ -153,7 +150,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
         uint nav = calcNav(gav, unclaimedFees);
-        uint sharePrice = calcValuePerShare(nav);
+        uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : initialSharePrice; // Pot division through zero requires defined amount
         return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
     }
 
@@ -175,13 +172,14 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        initialSharePrice = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
             managementFee: 0,
             performanceFee: 0,
             unclaimedFees: 0,
             nav: 0,
-            sharePrice: 10 ** decimals, // initialSharePrice
+            sharePrice: initialSharePrice,
             totalSupply: totalSupply,
             timestamp: now,
         });
@@ -240,7 +238,8 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
              *  sharePrice == initialSharePrice (1)
              *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
              */
-             uint totalCost = shareAmount * getSharePrice();
+             var (, , , , , sharePrice) = performCalculations();
+             uint totalCost = shareAmount * sharePrice;
              assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
