@@ -25,8 +25,8 @@ contract Redeem is RedeemProtocol, Owned {
     /// Pre:  Redeemer has at least `numShares` shares
     /// Post: Redeemer lost `numShares`, and gained a slice of each asset (`coreAssetAmt * (numShares/totalShares)`)
     function redeemShares(address ofCore, uint numShares)
-        past_zero(numShares)
     {
+        assert(numShares > 0);
         CoreProtocol Core = CoreProtocol(ofCore);
         //uint sharesValue = Core.calcValuePerShare(numShares);
         Core.annihilateSharesOnBehalf(msg.sender, numShares);

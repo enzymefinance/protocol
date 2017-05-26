@@ -17,7 +17,7 @@ const Core = artifacts.require('Core.sol');
 
 
 
-describe.skip('Working here',() => {
+describe('Subscribe and Redeem modules',() => {
 contract('Subscribe', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
@@ -26,7 +26,7 @@ contract('Subscribe', (accounts) => {
   const PORTFOLIO_SYMBOL = 'MLN-P';
   const PORTFOLIO_DECIMALS = 18;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
-  const NUM_SHARES = 10;
+  const NUM_SHARES = 1;
 
   // Test globals
   let coreContract;
@@ -136,28 +136,30 @@ contract('Subscribe', (accounts) => {
   // MAIN TESTING
 
   describe('SUBSCRIBE TO PORTFOLIO', () => {
+    let depositAmt = web3.toWei(80,'ether');
     it('adds ETH-T to investor\'s balance', () => {
-      let depositAmt = web3.toWei(5,'ether');
       return etherTokenContract.deposit({from: INVESTOR, value: depositAmt})
-      .then(() => etherTokenContract.balanceOf(INVESTOR))
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res, depositAmt));
     })
-    it.skip('Creates shares using the reference asset', () => {
-      let offeredAmount = web3.toWei(1, 'ether');
+    it('Creates shares using the reference asset', () => {
+      let offeredAmount = web3.toWei(80, 'ether');
       return etherTokenContract.approve(
-        subscribeContract.address, offeredAmount, {from: INVESTOR}
+        coreContract.address, offeredAmount, {from: INVESTOR}
       )
+      .then(() => etherTokenContract.approve(subscribeContract.address, offeredAmount, {from: INVESTOR}))
       .then(() => subscribeContract.createSharesWithReferenceAsset(
         coreContract.address, NUM_SHARES, offeredAmount, {from: INVESTOR}
       ))
-      .then(() => coreContract.balanceOf(INVESTOR))
+      .then(() => coreContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res, NUM_SHARES))
     })
-    it.skip('Annihilates shares on request', () => {
+    it('Annihilates shares on request, and returns assets', () => {
       return redeemContract.redeemShares(coreContract.address, NUM_SHARES, {from: INVESTOR})
       .then(() => coreContract.balanceOf(INVESTOR))
       .then(res => assert.equal(res, 0))
-      .then(() => {}) //TODO: check assets were returned
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), depositAmt));
     })
   });
 });

@@ -48,8 +48,8 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         past_zero(wantedShares)
     {
         CoreProtocol Core = CoreProtocol(ofCore);
-        uint actualValue = Core.calcValuePerShare(wantedShares);
-        //allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
+        uint actualValue = Core.getSharePrice();
+        allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe
@@ -67,6 +67,7 @@ contract Subscribe is SubscribeProtocol, SafeMath, Owned {
         CoreProtocol Core = CoreProtocol(ofCore);
         AssetProtocol RefAsset = AssetProtocol(address(Core.getReferenceAsset()));
         assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
+        RefAsset.approve(ofCore, actualValue);
         Core.createSharesOnBehalf(msg.sender, wantedShares);
         SharesCreated(msg.sender, now, wantedShares);
     }
