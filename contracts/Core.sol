@@ -70,7 +70,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function notZero(uint x) internal returns (bool) { return x != 0; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
 
-    // CONSTANT METHDOS
+    // CONSTANT METHODS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
@@ -124,6 +124,10 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     {
         sharePrice = 10 ** decimals * value / totalSupply;
     }
+
+    /// Pre: None
+    /// Post: Share price denominated in referenceAsset in baseunit of [10 ** decimals] per Share
+    function getSharePrice() constant returns (uint price){price = atLastPayout.sharePrice;}
 
     /// Pre: Gross asset value has been calculated
     /// Post: The sum and its individual parts of all applicable fees denominated in referenceAsset in baseunit of [10 ** decimals]
@@ -236,7 +240,8 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
              *  sharePrice == initialSharePrice (1)
              *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
              */
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send from msg.sender to core
+             uint totalCost = shareAmount * getSharePrice();
+             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
