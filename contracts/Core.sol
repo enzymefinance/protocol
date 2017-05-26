@@ -50,6 +50,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     string public symbol;
     uint public decimals;
     // Fields that are only changed in constructor
+    uint public initialSharePrice;
     address public referenceAsset;
     address public melonAsset;
     // Fields that can be changed by functions
@@ -70,7 +71,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function notZero(uint x) internal returns (bool) { return x != 0; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
 
-    // CONSTANT METHDOS
+    // CONSTANT METHODS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
@@ -120,9 +121,9 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     function calcValuePerShare(uint value)
         constant
         pre_cond(notZero(totalSupply))
-        returns (uint sharePrice)
+        returns (uint valuePerShare)
     {
-        sharePrice = 10 ** decimals * value / totalSupply;
+        valuePerShare = 10 ** decimals * value / totalSupply;
     }
 
     /// Pre: Gross asset value has been calculated
@@ -149,7 +150,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
         uint nav = calcNav(gav, unclaimedFees);
-        uint sharePrice = calcValuePerShare(nav);
+        uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : initialSharePrice; // Pot division through zero requires defined amount
         return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
     }
 
@@ -171,13 +172,14 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        initialSharePrice = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
             managementFee: 0,
             performanceFee: 0,
             unclaimedFees: 0,
             nav: 0,
-            sharePrice: 10 ** decimals, // initialSharePrice
+            sharePrice: initialSharePrice,
             totalSupply: totalSupply,
             timestamp: now,
         });
@@ -226,7 +228,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         SharesAnnihilated(recipient, now, shareAmount);
     }
 
-    /// Pre: Allocation: Approve spending for all non empty coreHoldings of Assets
+    /// Pre: Allocation: Pre-approve spending for all non empty coreHoldings of Assets
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
         internal
@@ -234,9 +236,11 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         if (totalSupply == 0) { // Iff all coreHoldings are zero
             /* By definition for zero totalSupply of shares:
              *  sharePrice == initialSharePrice (1)
-             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount unsing (1) above
+             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
              */
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, shareAmount)); // Send msg.sender to this core
+             var (, , , , , sharePrice) = performCalculations();
+             uint totalCost = shareAmount * sharePrice;
+             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
@@ -379,6 +383,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
           totalSupply: totalSupply,
           timestamp: now,
         });
+
 
         FeeUpdate(now, managementFee, performanceFee);
         CalculationUpdate(now, nav, sharePrice);
