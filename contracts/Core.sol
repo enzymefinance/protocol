@@ -239,7 +239,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
              *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
              */
              var (, , , , , sharePrice) = performCalculations();
-             uint totalCost = shareAmount * sharePrice;
+             uint totalCost = shareAmount * sharePrice / initialSharePrice;
              assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
@@ -342,7 +342,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         // Asset pair defined in Universe and contains referenceAsset
         require(module.universe.assetAvailability(buy_which_token));
         require(module.universe.assetAvailability(sell_which_token));
-        require(buy_which_token != referenceAsset); // Pair must consists of diffrent assets
+        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
         require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
         // Exchange assigned to tokens in Universe
         require(onExchange == module.universe.assignedExchange(buy_which_token));

@@ -1,13 +1,12 @@
 pragma solidity ^0.4.11;
 
-import "./Asset.sol";
-import "../dependencies/SafeMath.sol";
+import "./PreminedAsset.sol";
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
-contract EtherToken is Asset, SafeMath {
+contract EtherToken is PreminedAsset {
 
     // FIELDS
 
@@ -15,6 +14,7 @@ contract EtherToken is Asset, SafeMath {
     string public constant name = "Ether Token";
     string public constant symbol = "ETH-T";
     uint public constant decimals = 18;
+    uint public constant preminedAmount = 10**18;
 
     // EVENTS
 
@@ -31,7 +31,7 @@ contract EtherToken is Asset, SafeMath {
     // NON-CONSTANT METHODS
 
     function EtherToken()
-        Asset(name, symbol, decimals)
+        PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 
     /// Post: Exchanged Ether against Token

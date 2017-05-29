@@ -89,7 +89,7 @@ contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
         info.active = true;
         id = next_id();
         orders[id] = info;
-        assert(sell_which_token.transferFrom( msg.sender, this, info.sell_how_much));
+        assert(sell_which_token.transferFrom(msg.sender, this, info.sell_how_much));
         OrderUpdate(id);
     }
 
