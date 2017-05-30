@@ -362,7 +362,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
 
     /// Pre: Only owner
     /// Post: Unclaimed fees of manager are converted into shares of this fund.
-    function convertUnclaimedFees()
+    function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
         var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
@@ -383,7 +383,6 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
           totalSupply: totalSupply,
           timestamp: now,
         });
-
 
         FeeUpdate(now, managementFee, performanceFee);
         CalculationUpdate(now, nav, sharePrice);
