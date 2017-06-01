@@ -3,7 +3,7 @@ const BigNumber = require('bignumber.js');
 // Tokens
 
 // Constants as defined in the token contracts
-const PREMINED_AMOUNT = new BigNumber(Math.pow(10, 18));
+const PREMINED_AMOUNT = new BigNumber(Math.pow(10, 28));
 const PREMINED_MELON_AMOUNT = new BigNumber(Math.pow(10, 28));
 const ETHERTOKEN_DECIMALS = 18;
 const MELONTOKEN_DECIMALS = 18;

@@ -4,7 +4,7 @@ import "./RiskMgmtProtocol.sol";
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RiskMgmt is SafeMath, Owned {
+contract RiskMgmt {
 
     // FIELDS
 
