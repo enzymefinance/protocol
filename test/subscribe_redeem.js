@@ -155,11 +155,14 @@ contract('Subscribe', (accounts) => {
       .then(res => assert.equal(res, NUM_SHARES))
     })
     it('Annihilates shares on request, and returns assets', () => {
+      let sharePrice;
       return redeemContract.redeemShares(coreContract.address, NUM_SHARES, {from: INVESTOR})
       .then(() => coreContract.balanceOf(INVESTOR))
       .then(res => assert.equal(res, 0))
+      .then(() => coreContract.performCalculations())
+      .then((res) => [, , , , , sharePrice] = res) // Assumption: Price feed data has not been updated in the meantime
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res.toNumber(), depositAmt));
+      .then(res => assert.equal(res.toNumber(), depositAmt - NUM_SHARES * sharePrice));
     })
   });
 });

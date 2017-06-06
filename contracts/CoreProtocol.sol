@@ -35,7 +35,7 @@ contract CoreProtocol is AssetProtocol {
     {}
     function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
     function cancelOrder(ExchangeProtocol onExchange, uint id) returns (bool) {}
-    function convertUnclaimedFees() {}
+    function convertUnclaimedRewards() {}
 
     // EVENTS
 
