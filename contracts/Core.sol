@@ -50,7 +50,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     string public symbol;
     uint public decimals;
     // Fields that are only changed in constructor
-    uint public initialSharePrice;
+    uint public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
     address public referenceAsset;
     address public melonAsset;
     // Fields that can be changed by functions
@@ -80,7 +80,7 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     // CONSTANT METHODS - ACCOUNTING
 
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in referenceAsset in baseunit of [10 ** decimals]
+    /// Post: Gross asset value denominated in [base unit of referenceAsset]
     function calcGav() constant returns (uint gav) {
         /* Rem 1:
          *  All prices are relative to the referenceAsset price. The referenceAsset must be
@@ -116,18 +116,18 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         }
     }
 
-    /// Pre: Non-zero share supply,
-    /// Post: Share price denominated in referenceAsset in baseunit of [10 ** decimals] per Share
+    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
+    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
     function calcValuePerShare(uint value)
         constant
         pre_cond(notZero(totalSupply))
         returns (uint valuePerShare)
     {
-        valuePerShare = 10 ** decimals * value / totalSupply;
+        valuePerShare = value * baseUnitsPerShare / totalSupply;
     }
 
     /// Pre: Gross asset value has been calculated
-    /// Post: The sum and its individual parts of all applicable fees denominated in referenceAsset in baseunit of [10 ** decimals]
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
         uint timeDifference = safeSub(now, atLastPayout.timestamp);
         managementFee = module.management_fee.calculateFee(timeDifference, gav);
@@ -141,16 +141,16 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
     }
 
     /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in referenceAsset in baseunit of [10 ** decimals]
+    /// Post: Net asset value denominated in [base unit of referenceAsset]
     function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
 
     /// Pre: Non-zero share supply,
-    /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in referenceAsset in baseunit of [10 ** decimals]
+    /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in [base unit of referenceAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
         uint nav = calcNav(gav, unclaimedFees);
-        uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : initialSharePrice; // Pot division through zero requires defined amount
+        uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
         return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
     }
 
@@ -172,14 +172,14 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
-        initialSharePrice = 10 ** decimals;
+        baseUnitsPerShare = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
             managementFee: 0,
             performanceFee: 0,
             unclaimedFees: 0,
             nav: 0,
-            sharePrice: initialSharePrice,
+            sharePrice: baseUnitsPerShare,
             totalSupply: totalSupply,
             timestamp: now,
         });
@@ -228,18 +228,18 @@ contract Core is DBC, Owned, Shares, SafeMath, CoreProtocol {
         SharesAnnihilated(recipient, now, shareAmount);
     }
 
-    /// Pre: Allocation: Pre-approve spending for all non empty coreHoldings of Assets
+    /// Pre: Allocation: Pre-approve spending for all non empty coreHoldings of Assets, shareAmount denominated in [base units ]
     /// Post: Transfer ownership percentage of all assets to/from Core
     function allocateSlice(address recipient, uint shareAmount)
         internal
     {
         if (totalSupply == 0) { // Iff all coreHoldings are zero
-            /* By definition for zero totalSupply of shares:
-             *  sharePrice == initialSharePrice (1)
-             *  hence for actualValue == sharePrice * shareAmount / initialSharePrice == shareAmount using (1) above
+            /* By definition for zero totalSupply of shares the initial share price is defined as:
+             *  sharePrice == baseUnitsPerShare (1)
+             *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
              */
              var (, , , , , sharePrice) = performCalculations();
-             uint totalCost = shareAmount * sharePrice / initialSharePrice;
+             uint totalCost = shareAmount;
              assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to core
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
