@@ -15,7 +15,7 @@ const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('RiskMgmt.sol');
 const ManagementFee = artifacts.require('ManagementFee.sol');
 const PerformanceFee = artifacts.require('PerformanceFee.sol');
-const Core = artifacts.require('Core.sol');
+const Vault = artifacts.require('Vault.sol');
 
 contract('Net Asset Value', (accounts) => {
   // Test constants
@@ -94,7 +94,7 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Deploy smart contract', (done) => {
-      Core.new(
+      Vault.new(
         OWNER,
         PORTFOLIO_NAME,
         PORTFOLIO_SYMBOL,

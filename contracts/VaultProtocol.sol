@@ -4,10 +4,10 @@ import "./assets/AssetProtocol.sol";
 import './dependencies/ERC20.sol';
 import './exchange/ExchangeProtocol.sol';
 
-/// @title Core Protocol Contract
+/// @title Vault Protocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying Core Contract
-contract CoreProtocol is AssetProtocol {
+/// @notice This is to be considered as a protocol on how to access the underlying Vault Contract
+contract VaultProtocol is AssetProtocol {
 
     // CONSTANT METHODS
 

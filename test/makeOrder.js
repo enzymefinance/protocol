@@ -15,7 +15,7 @@ const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('RiskMgmt.sol');
 const ManagementFee = artifacts.require('ManagementFee.sol');
 const PerformanceFee = artifacts.require('PerformanceFee.sol');
-const Core = artifacts.require('Core.sol');
+const Vault = artifacts.require('Vault.sol');
 
 contract('Net Asset Value', (accounts) => {
   // Test constants
@@ -48,7 +48,7 @@ contract('Net Asset Value', (accounts) => {
   let pricesRelAsset = functions.krakenPricesRelAsset(data);
 
   // Test globals
-  let coreContract;
+  let vaultContract;
   let etherTokenContract;
   let melonTokenContract;
   let priceFeedContract;
@@ -94,7 +94,7 @@ contract('Net Asset Value', (accounts) => {
     });
 
     it('Deploy smart contract', (done) => {
-      Core.new(
+      Vault.new(
         OWNER,
         PORTFOLIO_NAME,
         PORTFOLIO_SYMBOL,
@@ -107,8 +107,8 @@ contract('Net Asset Value', (accounts) => {
         performanceFeeContract.address,
         { from: OWNER })
           .then((result) => {
-            coreContract = result;
-            return coreContract.totalSupply();
+            vaultContract = result;
+            return vaultContract.totalSupply();
           })
           .then((result) => {
             assert.equal(result.toNumber(), 0);
@@ -154,7 +154,7 @@ contract('Net Asset Value', (accounts) => {
 
   describe('MAKE ORDERS VIA PORTFOLIO', () => {
     before('Check initial supply of portfolio', (done) => {
-      coreContract.totalSupply()
+      vaultContract.totalSupply()
       .then((result) => {
         assert.strictEqual(result.toNumber(), 0);
         done();
@@ -166,14 +166,14 @@ contract('Net Asset Value', (accounts) => {
       const wantedValue = new BigNumber(2e+17);
       const expectedValue = new BigNumber(2e+17);
       etherTokenContract.deposit({ from: NOT_OWNER, value: wantedValue })
-      .then(() => etherTokenContract.approve(coreContract.address, wantedValue, { from: NOT_OWNER }))
-      .then(() => etherTokenContract.allowance(NOT_OWNER, coreContract.address))
+      .then(() => etherTokenContract.approve(vaultContract.address, wantedValue, { from: NOT_OWNER }))
+      .then(() => etherTokenContract.allowance(NOT_OWNER, vaultContract.address))
       .then((result) => {
         assert.equal(result.toNumber(), wantedValue.toNumber());
-        return coreContract.createShares(wantedShares, { from: NOT_OWNER });
+        return vaultContract.createShares(wantedShares, { from: NOT_OWNER });
       })
       .then((result) => {
-        return coreContract.calcSharePrice({ from: NOT_OWNER });
+        return vaultContract.calcSharePrice({ from: NOT_OWNER });
       })
       .then((result) => {
         // Check Logs
@@ -188,20 +188,20 @@ contract('Net Asset Value', (accounts) => {
             console.log(`NAV: ${result.logs[i].args.nav.toNumber() / Math.pow(10, 18)} Delta: ${result.logs[i].args.delta.toNumber() / Math.pow(10, 18)}`);
           }
         }
-        return coreContract.sharePrice();
+        return vaultContract.sharePrice();
       })
       .then((result) => {
         assert.strictEqual(result.toNumber(), constants.ether.toNumber());
-        return etherTokenContract.balanceOf(coreContract.address);
+        return etherTokenContract.balanceOf(vaultContract.address);
       })
       .then((result) => {
         assert.strictEqual(result.toNumber(), expectedValue.toNumber());
-        return coreContract.balanceOf(NOT_OWNER);
+        return vaultContract.balanceOf(NOT_OWNER);
       })
       .then((result) => {
         assert.strictEqual(result.toNumber(), expectedValue.toNumber());
         // TODO change values of sellHowMuch and buyHowMuch below
-        return coreContract.makeOrder(exchangeContract.address,
+        return vaultContract.makeOrder(exchangeContract.address,
           1,
           etherTokenContract.address,
           1,

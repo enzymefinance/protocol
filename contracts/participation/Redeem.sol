@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import "./RedeemProtocol.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
-import "../CoreProtocol.sol";
+import "../VaultProtocol.sol";
 
 
 /// @title Redeem Contract
@@ -27,15 +27,15 @@ contract Redeem is RedeemProtocol, DBC, Owned {
 
     /// Pre:  Redeemer has at least `numShares` shares
     /// Post: Redeemer lost `numShares`, and gained a slice of each asset (`coreAssetAmt * (numShares/totalShares)`)
-    function redeemShares(address ofCore, uint numShares)
+    function redeemShares(address ofVault, uint numShares)
     {
         assert(numShares > 0);
-        CoreProtocol Core = CoreProtocol(ofCore);
-        //uint sharesValue = Core.calcValuePerShare(numShares);
-        Core.annihilateSharesOnBehalf(msg.sender, numShares);
+        VaultProtocol Vault = VaultProtocol(ofVault);
+        //uint sharesValue = Vault.calcValuePerShare(numShares);
+        Vault.annihilateSharesOnBehalf(msg.sender, numShares);
     }
 
     /// Pre:  Redeemer has at least `numShares` shares
     /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    function redeemSharesForReferenceAsset(address ofCore, uint numShares) {}
+    function redeemSharesForReferenceAsset(address ofVault, uint numShares) {}
 }

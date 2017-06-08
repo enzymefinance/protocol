@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import "../Core.sol";
-import "../CoreProtocol.sol";
+import "../Vault.sol";
+import "../VaultProtocol.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 
@@ -12,8 +12,8 @@ contract Version is DBC, Owned {
 
     // TYPES
 
-    struct CoreInfo {
-        address core;
+    struct VaultInfo {
+        address vault;
         address owner;
         string name;
         string symbol;
@@ -31,40 +31,40 @@ contract Version is DBC, Owned {
     // FIELDS
 
     address public addrGovernance;
-    mapping (uint => CoreInfo) public cores;
+    mapping (uint => VaultInfo) public vaults;
     mapping (uint => ModuleUsageCounter) public usage;
-    uint public lastCoreId;
+    uint public lastVaultId;
 
     // EVENTS
 
-    event CoreUpdate(uint id);
+    event VaultUpdate(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isCoreOwner(uint atIndex) internal returns (bool) {
-        var (, owner, , , ,) = getCore(atIndex);
+    function isVaultOwner(uint atIndex) internal returns (bool) {
+        var (, owner, , , ,) = getVault(atIndex);
         return owner == msg.sender;
     }
 
     // CONSTANT METHODS
 
-    function getLastCoreId() constant returns (uint) { return lastCoreId; }
-    function getCore(uint atIndex) constant returns (address, address, string, string, uint, bool) {
-        var core = cores[atIndex];
-        return (core.core, core.owner, core.name, core.symbol, core.decimals, core.active);
+    function getLastVaultId() constant returns (uint) { return lastVaultId; }
+    function getVault(uint atIndex) constant returns (address, address, string, string, uint, bool) {
+        var vault = vaults[atIndex];
+        return (vault.vault, vault.owner, vault.name, vault.symbol, vault.decimals, vault.active);
     }
 
     // NON-CONSTANT INTERNAL METHODS
 
     function next_id() internal returns (uint) {
-        lastCoreId++; return lastCoreId;
+        lastVaultId++; return lastVaultId;
     }
 
     // NON-CONSTANT METHODS
 
     function Version(address ofGovernance) { addrGovernance = ofGovernance; }
 
-    function createCore(
+    function createVault(
         string withName,
         string withSymbol,
         uint withDecimals,
@@ -77,9 +77,9 @@ contract Version is DBC, Owned {
     )
         returns (uint id)
     {
-        // Create and register new Core
-        CoreInfo memory info;
-        info.core = address(new Core(
+        // Create and register new Vault
+        VaultInfo memory info;
+        info.vault = address(new Vault(
             msg.sender,
             withName,
             withSymbol,
@@ -97,16 +97,16 @@ contract Version is DBC, Owned {
         info.decimals = withDecimals;
         info.active = true;
         id = next_id();
-        cores[id] = info;
-        CoreUpdate(id);
+        vaults[id] = info;
+        VaultUpdate(id);
     }
 
-    // Dereference Core and trigger selfdestruct
-    function annihilateCore(uint atIndex)
-        pre_cond(isCoreOwner(atIndex))
+    // Dereference Vault and trigger selfdestruct
+    function annihilateVault(uint atIndex)
+        pre_cond(isVaultOwner(atIndex))
     {
-        // TODO also refund and selfdestruct core contract
-        delete cores[atIndex];
-        CoreUpdate(atIndex);
+        // TODO also refund and selfdestruct vault contract
+        delete vaults[atIndex];
+        VaultUpdate(atIndex);
     }
 }
