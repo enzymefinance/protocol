@@ -239,7 +239,6 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
              *  sharePrice == baseUnitsPerShare (1)
              *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
              */
-             var (, , , , , sharePrice) = performCalculations();
              uint totalCost = shareAmount;
              assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
         } else {
