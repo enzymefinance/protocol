@@ -6,7 +6,7 @@ const RiskMgmt = artifacts.require('./RiskMgmt.sol');
 const ManagementFee = artifacts.require('ManagementFee.sol');
 const PerformanceFee = artifacts.require('PerformanceFee.sol');
 const Version = artifacts.require('./Version.sol');
-const Core = artifacts.require('./Core.sol');
+const Vault = artifacts.require('./Vault.sol');
 
 
 contract('Version', (accounts) => {
@@ -39,11 +39,11 @@ contract('Version', (accounts) => {
     Version.deployed().then((deployed) => { versionContract = deployed; });
   });
 
-  it('Create a Core contract through the Version contract', (done) => {
+  it('Create a Vault contract through the Version contract', (done) => {
     Version.new(ADDRESS_PLACEHOLDER)
     .then((result) => {
       versionContract = result;
-      return versionContract.createCore(
+      return versionContract.createVault(
         PORTFOLIO_NAME,
         PORTFOLIO_SYMBOL,
         PORTFOLIO_DECIMALS,
@@ -55,22 +55,22 @@ contract('Version', (accounts) => {
         performanceFeeContract.address,
         { from: OWNER });
     })
-    .then(() => versionContract.getLastCoreId())
+    .then(() => versionContract.getLastVaultId())
     .then((result) => {
       assert.strictEqual(result.toNumber(), INITIAL_CORE_INDEX);
-      return versionContract.getCore(INITIAL_CORE_INDEX);
+      return versionContract.getVault(INITIAL_CORE_INDEX);
     })
     .then((info) => {
       const [address, owner, name, symbol, decimals, isActive] = info;
       assert.strictEqual(isActive, true);
-      coreContract = Core.at(address);
+      coreContract = Vault.at(address);
       return coreContract.owner();
     })
     .then((result) => {
-      assert.equal(result, OWNER, 'Core.owner != OWNER!');
-      return versionContract.annihilateCore(INITIAL_CORE_INDEX, { from: OWNER });
+      assert.equal(result, OWNER, 'Vault.owner != OWNER!');
+      return versionContract.annihilateVault(INITIAL_CORE_INDEX, { from: OWNER });
     })
-    .then(() => versionContract.getCore(INITIAL_CORE_INDEX))
+    .then(() => versionContract.getVault(INITIAL_CORE_INDEX))
     .then((info) => {
       const [address, owner, name, symbol, decimals, isActive] = info;
       assert.strictEqual(isActive, false);

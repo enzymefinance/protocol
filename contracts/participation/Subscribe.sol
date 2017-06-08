@@ -6,7 +6,7 @@ import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/SafeMath.sol";
 import "../assets/EtherToken.sol";
-import "../CoreProtocol.sol";
+import "../VaultProtocol.sol";
 
 
 
@@ -38,19 +38,19 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
      *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]
      */
-    function createSharesWithReferenceAsset(address ofCore, uint wantedShares, uint offeredValue)
+    function createSharesWithReferenceAsset(address ofVault, uint wantedShares, uint offeredValue)
         pre_cond(isPastZero(wantedShares))
     {
-        CoreProtocol Core = CoreProtocol(ofCore);
-        var (, , , , , sharePrice) = Core.performCalculations();
+        VaultProtocol Vault = VaultProtocol(ofVault);
+        var (, , , , , sharePrice) = Vault.performCalculations();
         uint actualValue = sharePrice * wantedShares;
-        allocateEtherInvestment(ofCore, actualValue, offeredValue, wantedShares);
+        allocateEtherInvestment(ofVault, actualValue, offeredValue, wantedShares);
     }
 
     /// Pre: EtherToken as Asset in Universe
     /// Post: Invest in a fund by creating shares
     function allocateEtherInvestment(
-        address ofCore,
+        address ofVault,
         uint actualValue,
         uint offeredValue,
         uint wantedShares
@@ -59,11 +59,11 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
         pre_cond(isAtLeast(offeredValue, actualValue))
     {
         //TODO check recipient
-        CoreProtocol Core = CoreProtocol(ofCore);
-        AssetProtocol RefAsset = AssetProtocol(address(Core.getReferenceAsset()));
+        VaultProtocol Vault = VaultProtocol(ofVault);
+        AssetProtocol RefAsset = AssetProtocol(address(Vault.getReferenceAsset()));
         assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
-        RefAsset.approve(ofCore, actualValue);
-        Core.createSharesOnBehalf(msg.sender, wantedShares);
+        RefAsset.approve(ofVault, actualValue);
+        Vault.createSharesOnBehalf(msg.sender, wantedShares);
         SharesCreated(msg.sender, now, wantedShares);
     }
 }

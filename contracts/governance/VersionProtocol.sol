@@ -4,9 +4,9 @@ pragma solidity ^0.4.11;
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying Version Contract
 contract VersionProtocol {
-  function numCreatedCores() constant returns (uint) {}
-  function getCore(uint atIndex) constant returns (address) {}
-  function createCore(
+  function numCreatedVaults() constant returns (uint) {}
+  function getVault(uint atIndex) constant returns (address) {}
+  function createVault(
       string withName,
       address ofUniverse,
       address ofSubscribe,
@@ -17,5 +17,5 @@ contract VersionProtocol {
   )
       returns (address)
   {}
-  function annihilateCore(uint atIndex) {}    
+  function annihilateVault(uint atIndex) {}    
 }
