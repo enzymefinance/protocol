@@ -1,6 +1,7 @@
 const assert = require('assert');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
+const BigNumber = require('bignumber.js')
 
 const AssetProtocol = artifacts.require('AssetProtocol.sol');
 const EtherToken = artifacts.require('EtherToken.sol');
@@ -26,10 +27,9 @@ contract('Subscribe', (accounts) => {
   const PORTFOLIO_SYMBOL = 'MLN-P';
   const PORTFOLIO_DECIMALS = 18;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
-  const NUM_SHARES = 1;
 
   // Test globals
-  let coreContract;
+  let vaultContract;
   let etherTokenContract;
   let melonTokenContract;
   let priceFeedContract;
@@ -98,8 +98,8 @@ contract('Subscribe', (accounts) => {
         { from: OWNER }
       )
       .then((result) => {
-        coreContract = result;
-        return coreContract.totalSupply();
+        vaultContract = result;
+        return vaultContract.totalSupply();
       })
       .then((result) => {
         assert.equal(result.toNumber(), 0);
@@ -136,33 +136,56 @@ contract('Subscribe', (accounts) => {
   // MAIN TESTING
 
   describe('SUBSCRIBE TO PORTFOLIO', () => {
-    let depositAmt = web3.toWei(80,'ether');
+    const depositAmt = web3.toWei(10,'ether');  // give ourselves lots of ETH-T
     it('adds ETH-T to investor\'s balance', () => {
       return etherTokenContract.deposit({from: INVESTOR, value: depositAmt})
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res, depositAmt));
     })
+
     it('Creates shares using the reference asset', () => {
-      let offeredAmount = web3.toWei(80, 'ether');
+      const wantedShares = new BigNumber(1e+17);
+      const offeredValue = new BigNumber(1e+17);
       return etherTokenContract.approve(
-        coreContract.address, offeredAmount, {from: INVESTOR}
+        vaultContract.address, offeredValue, {from: INVESTOR}
       )
-      .then(() => etherTokenContract.approve(subscribeContract.address, offeredAmount, {from: INVESTOR}))
-      .then(() => subscribeContract.createSharesWithReferenceAsset(
-        coreContract.address, NUM_SHARES, offeredAmount, {from: INVESTOR}
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
       ))
-      .then(() => coreContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res, NUM_SHARES))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
     })
+
+    it('Creates shares again after initial share creation', () => {
+      let prevShares;
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(2e+17);
+      return vaultContract.balanceOf.call(INVESTOR)
+      .then((res) => { prevShares = res; })
+      .then(() => etherTokenContract.approve(
+        vaultContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.plus(prevShares).toNumber()))
+    })
+
     it('Annihilates shares on request, and returns assets', () => {
-      let sharePrice;
-      return redeemContract.redeemShares(coreContract.address, NUM_SHARES, {from: INVESTOR})
-      .then(() => coreContract.balanceOf(INVESTOR))
+      const redeemShares = new BigNumber(3e+17);  // all of the shares
+      const originalAmt = web3.toWei(10,'ether');  // all of the token
+      return redeemContract.redeemShares(vaultContract.address, redeemShares, {from: INVESTOR})
+      .then(() => vaultContract.balanceOf(INVESTOR))
       .then(res => assert.equal(res, 0))
-      .then(() => coreContract.performCalculations())
-      .then((res) => [, , , , , sharePrice] = res) // Assumption: Price feed data has not been updated in the meantime
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res.toNumber(), depositAmt - NUM_SHARES * sharePrice));
+      .then(res => assert.equal(res.toNumber(), originalAmt));
     })
   });
 });

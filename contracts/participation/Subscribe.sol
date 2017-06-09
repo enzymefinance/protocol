@@ -32,7 +32,7 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
 
     function Subscribe() {}
 
-    /// Pre: Investor pre-approves spending of core's reference asset to this contract
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract
     /// Post: Invest in a fund by creating shares
     /* Rem:
      *  This can be seen as a non-persistent all or nothing limit order, where:
@@ -42,24 +42,11 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
         pre_cond(isPastZero(wantedShares))
     {
         VaultProtocol Vault = VaultProtocol(ofVault);
-        var (, , , , , sharePrice) = Vault.performCalculations();
-        uint actualValue = sharePrice * wantedShares;
-        allocateEtherInvestment(ofVault, actualValue, offeredValue, wantedShares);
-    }
-
-    /// Pre: EtherToken as Asset in Universe
-    /// Post: Invest in a fund by creating shares
-    function allocateEtherInvestment(
-        address ofVault,
-        uint actualValue,
-        uint offeredValue,
-        uint wantedShares
-    )
-        internal
-        pre_cond(isAtLeast(offeredValue, actualValue))
-    {
+        //var (, , , , , sharePrice) = Vault.performCalculations();
+        //uint actualValue = sharePrice * wantedShares;
+        uint actualValue = wantedShares;
+        assert(isAtLeast(offeredValue, actualValue));
         //TODO check recipient
-        VaultProtocol Vault = VaultProtocol(ofVault);
         AssetProtocol RefAsset = AssetProtocol(address(Vault.getReferenceAsset()));
         assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
         RefAsset.approve(ofVault, actualValue);
