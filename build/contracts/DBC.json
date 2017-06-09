@@ -1,0 +1,8 @@
+{
+  "contract_name": "DBC",
+  "abi": [],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a723058206dfe0f510abe2a9cd59d8c429f076a119c677717b04889f41b66e18e3a58a3900029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1497017672859
+}
