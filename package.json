@@ -1,14 +1,16 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "truffle test",
-    "lint": "eslint .",
-    "publish": "npm publish --access=public"
+    "lint": "eslint ."
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "repository": {
     "type": "git",
