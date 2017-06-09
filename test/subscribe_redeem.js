@@ -134,7 +134,6 @@ contract('Subscribe', (accounts) => {
   });
 
   // MAIN TESTING
-
   describe('SUBSCRIBE TO PORTFOLIO', () => {
     const depositAmt = web3.toWei(10,'ether');  // give ourselves lots of ETH-T
     it('adds ETH-T to investor\'s balance', () => {

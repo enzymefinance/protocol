@@ -41,16 +41,26 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
     function createSharesWithReferenceAsset(address ofVault, uint wantedShares, uint offeredValue)
         pre_cond(isPastZero(wantedShares))
     {
-        VaultProtocol Vault = VaultProtocol(ofVault);
-        //var (, , , , , sharePrice) = Vault.performCalculations();
-        //uint actualValue = sharePrice * wantedShares;
-        uint actualValue = wantedShares;
+        VaultProtocol vault = VaultProtocol(ofVault);
+        // get price of base share units from Vault
+        var (, , , , , sharePrice) = vault.performCalculations();
+        uint shareBaseUnitPrice = sharePrice / vault.getBaseUnitsPerShare();
+        uint actualValue = wantedShares * shareBaseUnitPrice;
         assert(isAtLeast(offeredValue, actualValue));
-        //TODO check recipient
-        AssetProtocol RefAsset = AssetProtocol(address(Vault.getReferenceAsset()));
-        assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
-        RefAsset.approve(ofVault, actualValue);
-        Vault.createSharesOnBehalf(msg.sender, wantedShares);
+        // transfer requried amount [ref] from investor to this contract
+        AssetProtocol refAsset = AssetProtocol(address(vault.getReferenceAsset()));
+        assert(refAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
+        if(isPastZero(vault.totalSupply())){  // we need to approve slice in proportion to Vault allocation
+            var (assetList, amountList, numAssets) = vault.getSliceForNumShares(wantedShares);
+            for (uint ii = 0; ii < numAssets; ii++){
+                AssetProtocol thisAsset = AssetProtocol(assetList[ii]);
+                thisAsset.approve(ofVault, amountList[ii]);
+            }
+        } else {    // we will just buy the shares with reference asset
+            //TODO: check recipient
+            refAsset.approve(ofVault, actualValue);
+        }
+        vault.createSharesOnBehalf(msg.sender, wantedShares);
         SharesCreated(msg.sender, now, wantedShares);
     }
 }

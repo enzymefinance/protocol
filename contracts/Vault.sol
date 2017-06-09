@@ -77,6 +77,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getDecimals() constant returns (uint) { return decimals; }
+    function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -124,7 +125,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         pre_cond(notZero(totalSupply))
         returns (uint valuePerShare)
     {
-        valuePerShare = value * baseUnitsPerShare / totalSupply;
+        valuePerShare = (value * baseUnitsPerShare) / totalSupply;
     }
 
     /// Pre: Gross asset value has been calculated
@@ -145,7 +146,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     /// Post: Net asset value denominated in [base unit of referenceAsset]
     function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
 
-    /// Pre: Non-zero share supply,
+    /// Pre: None
     /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in [base unit of referenceAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
@@ -153,6 +154,22 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         uint nav = calcNav(gav, unclaimedFees);
         uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
         return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
+    }
+
+    /// Pre:  numShares : number of shares in base units
+    /// Post: Returns addresses and required amounts required for each asset in slice
+    function getSliceForNumShares(uint numShares) constant
+        pre_cond(notZero(totalSupply))
+        returns (address[200] assets, uint[200] amounts, uint numAssets)
+    {
+        numAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i < numAssets; ++i) {
+            address assetAddr = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(assetAddr);
+            assets[i] = assetAddr;
+            uint vaultHoldings = Asset.balanceOf(this);
+            amounts[i] = vaultHoldings * (numShares / totalSupply);
+        }
     }
 
     // NON-CONSTANT METHODS
@@ -236,20 +253,20 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     {
         if (totalSupply == 0) { // Iff all vaultHoldings are zero
             /* By definition for zero totalSupply of shares the initial share price is defined as:
-             *  sharePrice == baseUnitsPerShare (1)
-             *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
-             */
-             uint totalCost = shareAmount;
-             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
+            *  sharePrice == baseUnitsPerShare (1)
+            *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
+            */
+            uint totalCost = shareAmount;
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
             for (uint i = 0; i < numAssignedAssets; ++i) {
                 AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
                 uint vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
                 if (vaultHoldings == 0) continue;
-                uint allocationAmount = vaultHoldings * shareAmount / totalSupply; // ownership percentage of msg.sender
-                uint investorHoldings = Asset.balanceOf(msg.sender); // Amount of asset base units this vault holds
-                require(investorHoldings >= allocationAmount);
+                uint allocationAmount = (vaultHoldings * shareAmount) / totalSupply; // ownership percentage of msg.sender
+                uint senderHoldings = Asset.balanceOf(msg.sender); // Amount of asset sender holds
+                require(senderHoldings >= allocationAmount);
                 // Transfer allocationAmount of Assets
                 assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to vault
             }
