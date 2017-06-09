@@ -1,0 +1,68 @@
+{
+  "contract_name": "Redeem",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "ofVault",
+          "type": "address"
+        },
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemSharesForReferenceAsset",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "ofVault",
+          "type": "address"
+        },
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemShares",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "payable": false,
+      "type": "constructor"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000c57fe5b5b5b60008054600160a060020a03191633600160a060020a03161790555b5b5b6101598061003b6000396000f300606060405263ffffffff60e060020a6000350416637c5b38f581146100375780638da5cb5b14610058578063b8aa377514610084575bfe5b341561003f57fe5b610056600160a060020a03600435166024356100a5565b005b341561006057fe5b6100686100aa565b60408051600160a060020a039092168252519081900360200190f35b341561008c57fe5b610056600160a060020a03600435166024356100b9565b005b5b5050565b600054600160a060020a031681565b60008082116100c457fe5b506040805160e460020a630f3de4d1028152600160a060020a033381166004830152602482018490529151849283169163f3de4d1091604480830192600092919082900301818387803b151561011657fe5b6102c65a03f1151561012457fe5b5050505b5050505600a165627a7a723058202b06661dab4f87037e7f21238a06cd44c5f703530dd462c7a1fd2a21c27486c20029",
+  "networks": {
+    "42": {
+      "events": {},
+      "links": {},
+      "address": "0xec65734da2e235ae7d13bd5bbb0ebeaa88cb1317",
+      "updated_at": 1497017936641
+    }
+  },
+  "schema_version": "0.0.5",
+  "updated_at": 1497017936641
+}
