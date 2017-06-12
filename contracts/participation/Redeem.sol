@@ -41,9 +41,7 @@ contract Redeem is RedeemProtocol, DBC, Owned {
         assert(numShares > 0);
         VaultProtocol vault = VaultProtocol(ofVault);
         AssetProtocol refAsset = AssetProtocol(address(vault.getReferenceAsset()));
-        var (, , , , , sharePrice) = vault.performCalculations(); // get value of the slice that will be returned (in [ref])
-        uint shareBaseUnitPrice = sharePrice / vault.getBaseUnitsPerShare();
-        uint redeemValue = numShares * shareBaseUnitPrice;
+        uint redeemValue = vault.getRefPriceForNumShares(numShares);
         assert(vault.transferFrom(msg.sender, this, numShares)); // transfer shares to this contract's ownership
         vault.annihilateShares(numShares); // get the slice back to this contract
         assert(refAsset.transfer(msg.sender, redeemValue));

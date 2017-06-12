@@ -187,7 +187,7 @@ contract('Subscribe', (accounts) => {
       .then(res => assert.equal(res.toNumber(), originalAmt));
     })
 
-    it('Creates shares when there are multiple assets in portfolio', () => {
+    it('Creates shares when there are two assets in portfolio', () => {
       const wantedShares = new BigNumber(2e+17);
       const offeredValue = new BigNumber(2e+17);
       const mlnAmt = 10000;
@@ -229,6 +229,26 @@ contract('Subscribe', (accounts) => {
       .then(res => {
         assert.equal(res, 2 * wantedShares.toNumber());
       })
+    })
+
+    it('Redeems shares for ref asset when two assets in portfolio', () => {
+      const ethAmt = new BigNumber(1e+18);  // eth to start redeem contract with
+      let initialBal; // initial ref balance of investor
+      let redeemShares;
+      let investorShareVal;
+      return etherTokenContract.transfer(redeemContract.address, ethAmt, {from:OWNER})
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => redeemShares = res)
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
+      .then(res => initialBal = res)
+      .then(() => vaultContract.getRefPriceForNumShares.call(redeemShares))
+      .then(res => investorShareVal = res)
+      .then(() => vaultContract.approve(redeemContract.address, redeemShares, {from: INVESTOR}))
+      .then(() => redeemContract.redeemSharesForReferenceAsset(vaultContract.address, redeemShares, {from: INVESTOR}))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res, 0))  // no shares left
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), investorShareVal.plus(initialBal))) // refAsset returned
     })
   });
 });
