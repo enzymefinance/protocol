@@ -172,6 +172,15 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         }
     }
 
+    /// Pre:  None
+    /// Post: Price in [refAsset] of numShares whole shares
+    function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef)
+    {
+        var (, , , , , sharePrice) = performCalculations();
+        priceInRef = numShares * sharePrice / baseUnitsPerShare;
+    }
+
+
     // NON-CONSTANT METHODS
 
     function Vault(

@@ -177,7 +177,7 @@ contract('Subscribe', (accounts) => {
       .then(res => assert.equal(res.toNumber(), wantedShares.plus(prevShares).toNumber()))
     })
 
-    it('Annihilates shares on request, and returns assets', () => {
+    it('Annihilates shares when only ETH invested, and returns assets', () => {
       const redeemShares = new BigNumber(3e+17);  // all of the shares
       const originalAmt = web3.toWei(10,'ether');  // all of the token
       return redeemContract.redeemShares(vaultContract.address, redeemShares, {from: INVESTOR})
@@ -185,6 +185,50 @@ contract('Subscribe', (accounts) => {
       .then(res => assert.equal(res, 0))
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res.toNumber(), originalAmt));
+    })
+
+    it('Creates shares when there are multiple assets in portfolio', () => {
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(2e+17);
+      const mlnAmt = 10000;
+      const ethAmt = 20000;
+      let refPrice;
+      return etherTokenContract.approve(
+        vaultContract.address, offeredValue, {from: INVESTOR}
+      )
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
+      .then(() => melonTokenContract.approve(exchangeContract.address, mlnAmt))
+      .then(() => exchangeContract.make(
+        mlnAmt, melonTokenContract.address, ethAmt, etherTokenContract.address, {from: OWNER}
+      ))
+      .then(() => melonTokenContract.transfer(subscribeContract.address, mlnAmt, {from:OWNER}))
+      .then(() => vaultContract.takeOrder(exchangeContract.address, 1, mlnAmt))
+      .then(success => {
+        assert(success);  // trade occurred
+        return melonTokenContract.balanceOf.call(vaultContract.address);
+      })
+      .then(mlnBalance => assert.equal(mlnBalance, mlnAmt))
+      .then(() => vaultContract.getRefPriceForNumShares.call(wantedShares))
+      .then(res => refPrice = res)
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, refPrice, {from: INVESTOR}
+      ))
+      .then(() => {
+       return subscribeContract.createSharesWithReferenceAsset(
+         vaultContract.address, wantedShares, refPrice, {from: INVESTOR}
+       )
+      })
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => {
+        assert.equal(res, 2 * wantedShares.toNumber());
+      })
     })
   });
 });
