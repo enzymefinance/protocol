@@ -32,7 +32,7 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
 
     function Subscribe() {}
 
-    /// Pre: Investor pre-approves spending of core's reference asset to this contract
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract
     /// Post: Invest in a fund by creating shares
     /* Rem:
      *  This can be seen as a non-persistent all or nothing limit order, where:
@@ -41,29 +41,25 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
     function createSharesWithReferenceAsset(address ofVault, uint wantedShares, uint offeredValue)
         pre_cond(isPastZero(wantedShares))
     {
-        VaultProtocol Vault = VaultProtocol(ofVault);
-        var (, , , , , sharePrice) = Vault.performCalculations();
-        uint actualValue = sharePrice * wantedShares;
-        allocateEtherInvestment(ofVault, actualValue, offeredValue, wantedShares);
-    }
-
-    /// Pre: EtherToken as Asset in Universe
-    /// Post: Invest in a fund by creating shares
-    function allocateEtherInvestment(
-        address ofVault,
-        uint actualValue,
-        uint offeredValue,
-        uint wantedShares
-    )
-        internal
-        pre_cond(isAtLeast(offeredValue, actualValue))
-    {
-        //TODO check recipient
-        VaultProtocol Vault = VaultProtocol(ofVault);
-        AssetProtocol RefAsset = AssetProtocol(address(Vault.getReferenceAsset()));
-        assert(RefAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
-        RefAsset.approve(ofVault, actualValue);
-        Vault.createSharesOnBehalf(msg.sender, wantedShares);
+        VaultProtocol vault = VaultProtocol(ofVault);
+        AssetProtocol refAsset = AssetProtocol(address(vault.getReferenceAsset()));
+        // get price of the shares we want in baseUnits of reftoken
+        uint actualValue = vault.getRefPriceForNumShares(wantedShares);
+        // transfer requried amount [ref] from investor to this contract
+        assert(refAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to this contract
+        if(isPastZero(vault.totalSupply())){  // we need to approve slice in proportion to Vault allocation
+            var (assetList, amountList, numAssets) = vault.getSliceForNumShares(wantedShares);
+            for (uint ii = 0; ii < numAssets; ii++){
+                if(!isPastZero(amountList[ii]))
+                    continue;
+                AssetProtocol thisAsset = AssetProtocol(assetList[ii]);
+                thisAsset.approve(ofVault, amountList[ii]);
+            }
+        } else {    // we will just buy the shares with reference asset
+            //TODO: check recipient
+            refAsset.approve(ofVault, actualValue);
+        }
+        vault.createSharesOnBehalf(msg.sender, wantedShares);
         SharesCreated(msg.sender, now, wantedShares);
     }
 }

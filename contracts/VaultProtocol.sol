@@ -15,6 +15,9 @@ contract VaultProtocol is AssetProtocol {
     function getUniverseAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}
+    function getSliceForNumShares(uint numShares) constant returns (address[200] assets, uint[200] amounts, uint numAssets) {}
+    function getBaseUnitsPerShare() constant returns (uint) {}
+    function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef) {}
     function calcGav() constant returns (uint gav) {}
     function calcValuePerShare(uint value) constant returns (uint sharePrice) {}
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {}

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const constants = require('../utils/constants.js');
 const functions = require('../utils/functions.js');
+const BigNumber = require('bignumber.js')
 
 const AssetProtocol = artifacts.require('AssetProtocol.sol');
 const EtherToken = artifacts.require('EtherToken.sol');
@@ -26,10 +27,9 @@ contract('Subscribe', (accounts) => {
   const PORTFOLIO_SYMBOL = 'MLN-P';
   const PORTFOLIO_DECIMALS = 18;
   const ALLOWANCE_AMOUNT = constants.PREMINED_AMOUNT / 10;
-  const NUM_SHARES = 1;
 
   // Test globals
-  let coreContract;
+  let vaultContract;
   let etherTokenContract;
   let melonTokenContract;
   let priceFeedContract;
@@ -98,8 +98,8 @@ contract('Subscribe', (accounts) => {
         { from: OWNER }
       )
       .then((result) => {
-        coreContract = result;
-        return coreContract.totalSupply();
+        vaultContract = result;
+        return vaultContract.totalSupply();
       })
       .then((result) => {
         assert.equal(result.toNumber(), 0);
@@ -134,35 +134,121 @@ contract('Subscribe', (accounts) => {
   });
 
   // MAIN TESTING
-
   describe('SUBSCRIBE TO PORTFOLIO', () => {
-    let depositAmt = web3.toWei(80,'ether');
+    const depositAmt = web3.toWei(10,'ether');  // give ourselves lots of ETH-T
     it('adds ETH-T to investor\'s balance', () => {
       return etherTokenContract.deposit({from: INVESTOR, value: depositAmt})
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res, depositAmt));
     })
+
     it('Creates shares using the reference asset', () => {
-      let offeredAmount = web3.toWei(80, 'ether');
+      const wantedShares = new BigNumber(1e+17);
+      const offeredValue = new BigNumber(1e+17);
       return etherTokenContract.approve(
-        coreContract.address, offeredAmount, {from: INVESTOR}
+        vaultContract.address, offeredValue, {from: INVESTOR}
       )
-      .then(() => etherTokenContract.approve(subscribeContract.address, offeredAmount, {from: INVESTOR}))
-      .then(() => subscribeContract.createSharesWithReferenceAsset(
-        coreContract.address, NUM_SHARES, offeredAmount, {from: INVESTOR}
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
       ))
-      .then(() => coreContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res, NUM_SHARES))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
     })
-    it('Annihilates shares on request, and returns assets', () => {
-      let sharePrice;
-      return redeemContract.redeemShares(coreContract.address, NUM_SHARES, {from: INVESTOR})
-      .then(() => coreContract.balanceOf(INVESTOR))
+
+    it('Creates shares again after initial share creation', () => {
+      let prevShares;
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(2e+17);
+      return vaultContract.balanceOf.call(INVESTOR)
+      .then((res) => { prevShares = res; })
+      .then(() => etherTokenContract.approve(
+        vaultContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.plus(prevShares).toNumber()))
+    })
+
+    it('Annihilates shares when only ETH invested, and returns assets', () => {
+      const redeemShares = new BigNumber(3e+17);  // all of the shares
+      const originalAmt = web3.toWei(10,'ether');  // all of the token
+      return redeemContract.redeemShares(vaultContract.address, redeemShares, {from: INVESTOR})
+      .then(() => vaultContract.balanceOf(INVESTOR))
       .then(res => assert.equal(res, 0))
-      .then(() => coreContract.performCalculations())
-      .then((res) => [, , , , , sharePrice] = res) // Assumption: Price feed data has not been updated in the meantime
       .then(() => etherTokenContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res.toNumber(), depositAmt - NUM_SHARES * sharePrice));
+      .then(res => assert.equal(res.toNumber(), originalAmt));
+    })
+
+    it('Creates shares when there are two assets in portfolio', () => {
+      const wantedShares = new BigNumber(2e+17);
+      const offeredValue = new BigNumber(2e+17);
+      const mlnAmt = 10000;
+      const ethAmt = 20000;
+      let refPrice;
+      return etherTokenContract.approve(
+        vaultContract.address, offeredValue, {from: INVESTOR}
+      )
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => subscribeContract.createSharesWithReferenceAsset(
+        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+      ))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
+      .then(() => melonTokenContract.approve(exchangeContract.address, mlnAmt))
+      .then(() => exchangeContract.make(
+        mlnAmt, melonTokenContract.address, ethAmt, etherTokenContract.address, {from: OWNER}
+      ))
+      .then(() => melonTokenContract.transfer(subscribeContract.address, mlnAmt, {from:OWNER}))
+      .then(() => vaultContract.takeOrder(exchangeContract.address, 1, mlnAmt))
+      .then(success => {
+        assert(success);  // trade occurred
+        return melonTokenContract.balanceOf.call(vaultContract.address);
+      })
+      .then(mlnBalance => assert.equal(mlnBalance, mlnAmt))
+      .then(() => vaultContract.getRefPriceForNumShares.call(wantedShares))
+      .then(res => refPrice = res)
+      .then(() => etherTokenContract.approve(
+        subscribeContract.address, refPrice, {from: INVESTOR}
+      ))
+      .then(() => {
+       return subscribeContract.createSharesWithReferenceAsset(
+         vaultContract.address, wantedShares, refPrice, {from: INVESTOR}
+       )
+      })
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => {
+        assert.equal(res, 2 * wantedShares.toNumber());
+      })
+    })
+
+    it('Redeems shares for ref asset when two assets in portfolio', () => {
+      const ethAmt = new BigNumber(1e+18);  // eth to start redeem contract with
+      let initialBal; // initial ref balance of investor
+      let redeemShares;
+      let investorShareVal;
+      return etherTokenContract.transfer(redeemContract.address, ethAmt, {from:OWNER})
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => redeemShares = res)
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
+      .then(res => initialBal = res)
+      .then(() => vaultContract.getRefPriceForNumShares.call(redeemShares))
+      .then(res => investorShareVal = res)
+      .then(() => vaultContract.approve(redeemContract.address, redeemShares, {from: INVESTOR}))
+      .then(() => redeemContract.redeemSharesForReferenceAsset(vaultContract.address, redeemShares, {from: INVESTOR}))
+      .then(() => vaultContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res, 0))  // no shares left
+      .then(() => etherTokenContract.balanceOf.call(INVESTOR))
+      .then(res => assert.equal(res.toNumber(), investorShareVal.plus(initialBal))) // refAsset returned
     })
   });
 });

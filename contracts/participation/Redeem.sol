@@ -26,16 +26,24 @@ contract Redeem is RedeemProtocol, DBC, Owned {
     function Redeem() {}
 
     /// Pre:  Redeemer has at least `numShares` shares
-    /// Post: Redeemer lost `numShares`, and gained a slice of each asset (`coreAssetAmt * (numShares/totalShares)`)
+    /// Post: Redeemer lost `numShares`, and gained a slice of assets
     function redeemShares(address ofVault, uint numShares)
     {
         assert(numShares > 0);
-        VaultProtocol Vault = VaultProtocol(ofVault);
-        //uint sharesValue = Vault.calcValuePerShare(numShares);
-        Vault.annihilateSharesOnBehalf(msg.sender, numShares);
+        VaultProtocol vault = VaultProtocol(ofVault);
+        vault.annihilateSharesOnBehalf(msg.sender, numShares);
     }
 
-    /// Pre:  Redeemer has at least `numShares` shares
+    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
     /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    function redeemSharesForReferenceAsset(address ofVault, uint numShares) {}
+    function redeemSharesForReferenceAsset(address ofVault, uint numShares)
+    {
+        assert(numShares > 0);
+        VaultProtocol vault = VaultProtocol(ofVault);
+        AssetProtocol refAsset = AssetProtocol(address(vault.getReferenceAsset()));
+        uint redeemValue = vault.getRefPriceForNumShares(numShares);
+        assert(vault.transferFrom(msg.sender, this, numShares)); // transfer shares to this contract's ownership
+        vault.annihilateShares(numShares); // get the slice back to this contract
+        assert(refAsset.transfer(msg.sender, redeemValue));
+    }
 }
