@@ -146,16 +146,12 @@ contract('Subscribe', (accounts) => {
       const wantedShares = new BigNumber(1e+17);
       const offeredValue = new BigNumber(1e+17);
       return etherTokenContract.approve(
-        vaultContract.address, offeredValue, {from: INVESTOR}
-      )
-      .then(() => etherTokenContract.approve(
         subscribeContract.address, offeredValue, {from: INVESTOR}
-      ))
+      )
       .then(() => subscribeContract.createSharesWithReferenceAsset(
         vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
       ))
-      .then(() => vaultContract.balanceOf.call(INVESTOR))
-      .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
+      .then(() => vaultContract.balanceOf.call(INVESTOR)) .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
     })
 
     it('Creates shares again after initial share creation', () => {
@@ -164,9 +160,6 @@ contract('Subscribe', (accounts) => {
       const offeredValue = new BigNumber(2e+17);
       return vaultContract.balanceOf.call(INVESTOR)
       .then((res) => { prevShares = res; })
-      .then(() => etherTokenContract.approve(
-        vaultContract.address, offeredValue, {from: INVESTOR}
-      ))
       .then(() => etherTokenContract.approve(
         subscribeContract.address, offeredValue, {from: INVESTOR}
       ))
@@ -193,18 +186,19 @@ contract('Subscribe', (accounts) => {
       const mlnAmt = 10000;
       const ethAmt = 20000;
       let refPrice;
-      return etherTokenContract.approve(
-        vaultContract.address, offeredValue, {from: INVESTOR}
-      )
-      .then(() => etherTokenContract.approve(
-        subscribeContract.address, offeredValue, {from: INVESTOR}
-      ))
+      return vaultContract.getRefPriceForNumShares.call(wantedShares)
+      .then(res => {
+        refPrice = res;
+        return etherTokenContract.approve(
+          subscribeContract.address, refPrice, {from: INVESTOR}
+        )
+      })
       .then(() => subscribeContract.createSharesWithReferenceAsset(
-        vaultContract.address, wantedShares, offeredValue, {from: INVESTOR}
+        vaultContract.address, wantedShares, refPrice, {from: INVESTOR}
       ))
       .then(() => vaultContract.balanceOf.call(INVESTOR))
       .then(res => assert.equal(res.toNumber(), wantedShares.toNumber()))
-      .then(() => melonTokenContract.approve(exchangeContract.address, mlnAmt))
+      .then(() => melonTokenContract.approve(exchangeContract.address, mlnAmt, {from: OWNER}))
       .then(() => exchangeContract.make(
         mlnAmt, melonTokenContract.address, ethAmt, etherTokenContract.address, {from: OWNER}
       ))
@@ -221,8 +215,8 @@ contract('Subscribe', (accounts) => {
         subscribeContract.address, refPrice, {from: INVESTOR}
       ))
       .then(() => {
-       return subscribeContract.createSharesWithReferenceAsset(
-         vaultContract.address, wantedShares, refPrice, {from: INVESTOR}
+        return subscribeContract.createSharesWithReferenceAsset(
+          vaultContract.address, wantedShares, refPrice, {from: INVESTOR}
        )
       })
       .then(() => vaultContract.balanceOf.call(INVESTOR))
