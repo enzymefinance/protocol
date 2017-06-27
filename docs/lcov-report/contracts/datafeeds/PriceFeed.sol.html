@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/datafeeds/PriceFeed.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/datafeeds/</a> PriceFeed.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">78.57% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>11/14</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">72.73% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>8/11</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">71.43% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>5/7</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.11;
+&nbsp;
+import "./PriceFeedProtocol.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/BackupOwned.sol";
+&nbsp;
+/// @title Price Feed Template
+/// @author Melonport AG &lt;team@melonport.com&gt;
+/// @notice Routes external data to smart contracts
+contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
+&nbsp;
+    // TYPES
+&nbsp;
+    struct Data {
+        uint timestamp; // Timestamp of last price update of this asset
+        uint price; // Price of asset quoted against `quoteAsset` times ten to the power of {decimals of this asset}
+    }
+&nbsp;
+    // FIELDS
+&nbsp;
+    // Constant fields
+    /// Note: Frequency is purely self imposed and for information purposes only
+    uint constant frequency = 120; // Frequency of updates in seconds
+    uint constant validity = 60; // Time in seconds data is considered valid
+&nbsp;
+    // Fields that are only changed in constructor
+    /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
+    address quoteAsset; // Is the quote asset of a portfolio against which all other assets are priced against
+&nbsp;
+    // Fields that can be changed by functions
+    mapping (address =&gt; Data) data; // Address of asset =&gt; price of asset
+&nbsp;
+    // PRE, POST, INVARIANT CONDITIONS
+&nbsp;
+    function isDataSet(address ofAsset) internal returns (bool) { return data[ofAsset].timestamp &gt; 0; }
+    function isDataValid(address ofAsset) internal returns (bool) { return now - data[ofAsset].timestamp &lt;= validity; }
+    function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
+&nbsp;
+    // CONSTANT METHODS
+&nbsp;
+    function getQuoteAsset() constant returns (address) { return quoteAsset; }
+    function getFrequency() constant returns (uint) { return frequency; }
+<span class="fstat-no" title="function not covered" >    function getValidity() constant returns (uint)</span> { <span class="cstat-no" title="statement not covered" >return validity;</span> }
+&nbsp;
+    /// Pre: Asset has been initialised
+    /// Post: Returns boolean if data is valid
+<span class="fstat-no" title="function not covered" >    function getStatus(address ofAsset)</span>
+        constant
+        pre_cond(isDataSet(ofAsset))
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        return now - data[ofAsset].timestamp &lt;= validity;</span>
+    }
+&nbsp;
+    /// Pre: Asset has been initialised and is active
+    /// Post: Price of asset, where last updated not longer than `validity` seconds ago
+    function getPrice(address ofAsset)
+        constant
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
+        returns (uint)
+    {
+        return data[ofAsset].price;
+    }
+&nbsp;
+    /// Pre: Asset has been initialised and is active
+    /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+<span class="fstat-no" title="function not covered" >    function getData(address ofAsset)</span>
+        constant
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
+        returns (uint, uint)
+    {
+<span class="cstat-no" title="statement not covered" >        return (data[ofAsset].timestamp, data[ofAsset].price);</span>
+    }
+&nbsp;
+    // NON-CONSTANT METHODS
+&nbsp;
+    /// Pre: Define a quote asset against which all prices are measured/based against
+    /// Post: Price Feed contract w Backup Owner
+    function PriceFeed(address setBackupOwner, address setQuoteAsset)
+        BackupOwned(setBackupOwner)
+    {
+        quoteAsset = setQuoteAsset;
+    }
+&nbsp;
+    /// Pre: Only Owner; Same sized input arrays
+    /// Post: Update price of asset relative to quoteAsset
+    /** Ex:
+     *  Let quoteAsset == ETH (in Wei), let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
+     *  and let EUR-T decimals == 8,
+     *  =&gt; data[EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
+     */
+    function updatePrice(address[] ofAssets, uint[] newPrices)
+        pre_cond(isOwner())
+        pre_cond(isEqualLength(ofAssets, newPrices))
+    {
+        for (uint i = 0; i &lt; ofAssets.length; ++i) {
+            assert(data[ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
+            data[ofAssets[i]] = Data({
+                timestamp: now,
+                price: newPrices[i],
+            });
+            PriceUpdated(ofAssets[i], now, newPrices[i]);
+        }
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jun 26 2017 17:32:46 GMT-0700 (PDT)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

@@ -1,0 +1,1313 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/Vault.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> Vault.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">88.33% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>106/120</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>14/14</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">76.92% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>20/26</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">88.42% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>84/95</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.11;
+&nbsp;
+import "./dependencies/ERC20.sol";
+import {ERC20 as Shares} from "./dependencies/ERC20.sol";
+import "./assets/AssetProtocol.sol";
+import "./dependencies/DBC.sol";
+import "./dependencies/Owned.sol";
+import "./dependencies/SafeMath.sol";
+import "./universe/UniverseProtocol.sol";
+import "./participation/SubscribeProtocol.sol";
+import "./participation/RedeemProtocol.sol";
+import "./datafeeds/PriceFeedProtocol.sol";
+import "./fees/ManagementFeeProtocol.sol";
+import "./fees/PerformanceFeeProtocol.sol";
+import "./riskmgmt/RiskMgmtProtocol.sol";
+import "./exchange/ExchangeProtocol.sol";
+import "./VaultProtocol.sol";
+&nbsp;
+/// @title Vault Contract
+/// @author Melonport AG &lt;team@melonport.com&gt;
+/// @notice Simple vault
+contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
+&nbsp;
+    // TYPES
+&nbsp;
+    struct Calculations {
+        uint gav;
+        uint managementFee;
+        uint performanceFee;
+        uint unclaimedFees;
+        uint nav;
+        uint sharePrice;
+        uint totalSupply;
+        uint timestamp;
+    }
+&nbsp;
+    struct Modules {
+        UniverseProtocol universe;
+        SubscribeProtocol subscribe;
+        RedeemProtocol redeem;
+        RiskMgmtProtocol riskmgmt;
+        ManagementFeeProtocol management_fee;
+        PerformanceFeeProtocol performance_fee;
+    }
+&nbsp;
+    // FIELDS
+&nbsp;
+    // Constant asset specific fields
+    string public name;
+    string public symbol;
+    uint public decimals;
+    // Fields that are only changed in constructor
+    uint public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
+    address public referenceAsset;
+    address public melonAsset;
+    // Fields that can be changed by functions
+    Modules public module;
+    Calculations public atLastPayout;
+&nbsp;
+    // EVENTS
+&nbsp;
+    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
+    event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
+    event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
+    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint numUnclaimedFees);
+    event RewardsPayedOut(uint atTimestamp, uint numSharesPayedOut, uint atSharePrice);
+    event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
+&nbsp;
+    // PRE, POST, INVARIANT CONDITIONS
+&nbsp;
+    function notZero(uint x) internal returns (bool) { return x != 0; }
+    function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] &gt;= x; }
+&nbsp;
+    // CONSTANT METHODS
+&nbsp;
+    function getReferenceAsset() constant returns (address) { return referenceAsset; }
+<span class="fstat-no" title="function not covered" >    function getUniverseAddress() constant returns (address)</span> { <span class="cstat-no" title="statement not covered" >return module.universe;</span> }
+<span class="fstat-no" title="function not covered" >    function getDecimals() constant returns (uint)</span> { <span class="cstat-no" title="statement not covered" >return decimals;</span> }
+<span class="fstat-no" title="function not covered" >    function getBaseUnitsPerShare() constant returns (uint)</span> { <span class="cstat-no" title="statement not covered" >return baseUnitsPerShare;</span> }
+&nbsp;
+    // CONSTANT METHODS - ACCOUNTING
+&nbsp;
+    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    function calcGav() constant returns (uint gav) {
+        /* Rem 1:
+         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the referenceAsset is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
+         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
+         *    ==&gt; vaultHoldings * price == value of asset holdings of this vault relative to referenceAsset price.
+         *  where 0 &lt;= decimals &lt;= 18 and decimals is a natural number.
+         */
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i &lt; numAssignedAssets; ++i) {
+            // Holdings
+            address ofAsset = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(ofAsset);
+            uint assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
+            uint assetDecimals = Asset.getDecimals();
+            // Price
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
+            address quoteAsset = Price.getQuoteAsset();
+            assert(referenceAsset == quoteAsset); // See Remark 1
+            uint assetPrice;
+            if (ofAsset == quoteAsset) {
+              assetPrice = 1 * 10 ** assetDecimals; // See Remark 2
+            } else {
+              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
+            }
+            gav = safeAdd(gav, assetHoldings * assetPrice / (10 ** assetDecimals)); // Sum up product of asset holdings of this vault and asset prices
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
+    }
+&nbsp;
+    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
+    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
+    function calcValuePerShare(uint value)
+        constant
+        pre_cond(notZero(totalSupply))
+        returns (uint valuePerShare)
+    {
+        valuePerShare = (value * baseUnitsPerShare) / totalSupply;
+    }
+&nbsp;
+    /// Pre: Gross asset value has been calculated
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
+    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
+        uint timeDifference = safeSub(now, atLastPayout.timestamp);
+        managementFee = module.management_fee.calculateFee(timeDifference, gav);
+        performanceFee = 0;
+        if (totalSupply != 0) {
+            uint currSharePrice = calcValuePerShare(gav);
+            if (currSharePrice - atLastPayout.sharePrice &gt; 0)
+              performanceFee = module.performance_fee.calculateFee(currSharePrice - atLastPayout.sharePrice, totalSupply);
+        }
+        unclaimedFees = safeAdd(managementFee, performanceFee);
+    }
+&nbsp;
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Post: Net asset value denominated in [base unit of referenceAsset]
+    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
+&nbsp;
+    /// Pre: None
+    /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in [base unit of referenceAsset]
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
+        uint gav = calcGav(); // Reflects value indepentent of fees
+        var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
+        uint nav = calcNav(gav, unclaimedFees);
+        uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
+        return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
+    }
+&nbsp;
+    /// Pre:  numShares : number of shares in base units
+    /// Post: Returns addresses and required amounts required for each asset in slice
+    function getSliceForNumShares(uint numShares) constant
+        pre_cond(notZero(totalSupply))
+        returns (address[200] assets, uint[200] amounts, uint numAssets)
+    {
+        numAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i &lt; numAssets; ++i) {
+            address assetAddr = address(module.universe.assetAt(i));
+            AssetProtocol Asset = AssetProtocol(assetAddr);
+            assets[i] = assetAddr;
+            uint vaultHoldings = Asset.balanceOf(this);
+            amounts[i] = vaultHoldings * (numShares / totalSupply);
+        }
+    }
+&nbsp;
+    /// Pre:  None
+    /// Post: Price in [refAsset] of numShares whole shares
+    function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef)
+    {
+        var (, , , , , sharePrice) = performCalculations();
+        priceInRef = numShares * sharePrice / baseUnitsPerShare;
+    }
+&nbsp;
+&nbsp;
+    // NON-CONSTANT METHODS
+&nbsp;
+    function Vault(
+        address ofManager,
+        string withName,
+        string withSymbol,
+        uint withDecimals,
+        address ofUniverse,
+        address ofSubscribe,
+        address ofRedeem,
+        address ofRiskMgmt,
+        address ofManagmentFee,
+        address ofPerformanceFee
+    ) {
+        owner = ofManager;
+        name = withName;
+        symbol = withSymbol;
+        decimals = withDecimals;
+        baseUnitsPerShare = 10 ** decimals;
+        atLastPayout = Calculations({
+            gav: 0,
+            managementFee: 0,
+            performanceFee: 0,
+            unclaimedFees: 0,
+            nav: 0,
+            sharePrice: baseUnitsPerShare,
+            totalSupply: totalSupply,
+            timestamp: now,
+        });
+        module.universe = UniverseProtocol(ofUniverse);
+        referenceAsset = module.universe.getReferenceAsset();
+        melonAsset = module.universe.getMelonAsset();
+        // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i &lt; numAssignedAssets; ++i) {
+            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
+            address quoteAsset = Price.getQuoteAsset();
+            require(referenceAsset == quoteAsset);
+        }
+        module.subscribe = SubscribeProtocol(ofSubscribe);
+        module.redeem = RedeemProtocol(ofRedeem);
+        module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
+        module.management_fee = ManagementFeeProtocol(ofManagmentFee);
+        module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
+    }
+&nbsp;
+    // NON-CONSTANT METHODS - PARTICIPATION
+&nbsp;
+    /// Pre: Approved spending of all assets with non-empty asset holdings; Independent of running price feed!
+    /// Post: Transfer ownership percentage of all assets from Investor to Vault and create shareAmount.
+    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
+&nbsp;
+    /// Pre: Every holder of shares at any time; Independent of running price feed!
+    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
+    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
+&nbsp;
+    /// Pre: Approved spending of all assets with non-empty asset holdings;
+    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
+    function createSharesOnBehalf(address recipient, uint shareAmount)
+        pre_cond(notZero(shareAmount))
+    {
+        allocateSlice(recipient, shareAmount);
+        SharesCreated(recipient, now, shareAmount);
+    }
+&nbsp;
+    /// Pre: Recipient owns shares
+    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
+    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
+        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
+    {
+        separateSlice(recipient, shareAmount);
+        SharesAnnihilated(recipient, now, shareAmount);
+    }
+&nbsp;
+    /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, shareAmount denominated in [base units ]
+    /// Post: Transfer ownership percentage of all assets to/from Vault
+    function allocateSlice(address recipient, uint shareAmount)
+        internal
+    {
+        if (totalSupply == 0) { // Iff all vaultHoldings are zero
+            /* By definition for zero totalSupply of shares the initial share price is defined as:
+            *  sharePrice == baseUnitsPerShare (1)
+            *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
+            */
+            uint totalCost = shareAmount;
+            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
+        } else {
+            uint numAssignedAssets = module.universe.numAssignedAssets();
+            for (uint i = 0; i &lt; numAssignedAssets; ++i) {
+                AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+                uint vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
+                if (vaultHoldings == 0) continue;
+                uint allocationAmount = (vaultHoldings * shareAmount) / totalSupply; // ownership percentage of msg.sender
+                uint senderHoldings = Asset.balanceOf(msg.sender); // Amount of asset sender holds
+                require(senderHoldings &gt;= allocationAmount);
+                // Transfer allocationAmount of Assets
+                assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to vault
+            }
+        }
+        // Accounting
+        balances[recipient] = safeAdd(balances[recipient], shareAmount);
+        totalSupply = safeAdd(totalSupply, shareAmount);
+    }
+&nbsp;
+    /// Pre: Allocation: Approve spending for all non empty vaultHoldings of Assets
+    /// Post: Transfer ownership percentage of all assets to/from Vault
+    function separateSlice(address recipient, uint shareAmount)
+        internal
+    {
+        // Current Value
+        uint oldTotalSupply = totalSupply;
+        // Update accounting before external calls to prevent reentrancy
+        balances[recipient] = safeSub(balances[recipient], shareAmount);
+        totalSupply = safeSub(totalSupply, shareAmount);
+        // Transfer separationAmount of Assets
+        uint numAssignedAssets = module.universe.numAssignedAssets();
+        for (uint i = 0; i &lt; numAssignedAssets; ++i) {
+            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            uint vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
+            uint separationAmount = vaultHoldings * shareAmount / oldTotalSupply; // ownership percentage of msg.sender
+            if (vaultHoldings == 0) continue;
+            // EXTERNAL CALL
+            assert(Asset.transfer(recipient, separationAmount)); // EXTERNAL CALL: Send funds from vault to investor
+        }
+    }
+&nbsp;
+    // NON-CONSTANT METHODS - EXCHANGE
+&nbsp;
+    /// Pre: Sufficient balance and spending has been approved
+    /// Post: Make offer on selected Exchange
+<span class="fstat-no" title="function not covered" >    function makeOrder(ExchangeProtocol onExchange,</span>
+        uint sell_how_much, ERC20 sell_which_token,
+        uint buy_how_much,  ERC20 buy_which_token
+    )
+        pre_cond(isOwner())
+        pre_cond(module.riskmgmt.isExchangeMakePermitted(onExchange,
+            sell_how_much, sell_which_token,
+            buy_how_much, buy_which_token)
+        )
+        returns (uint id)
+    {
+<span class="cstat-no" title="statement not covered" >        requireIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token)</span>;
+<span class="cstat-no" title="statement not covered" >        approveSpending(sell_which_token, onExchange, sell_how_much)</span>;
+<span class="cstat-no" title="statement not covered" >        id = onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token)</span>;
+    }
+&nbsp;
+    /// Pre: Active offer (id) and valid buy amount on selected Exchange
+    /// Post: Take offer on selected Exchange
+    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount)
+        pre_cond(isOwner())
+        returns (bool)
+    {
+        // Inverse variable terminology! Buying what another person is selling
+        var (
+            offeredBuyAmount, offeredBuyToken,
+            offeredSellAmount, offeredSellToken
+        ) = onExchange.getOrder(id);
+        require(wantedBuyAmount &lt;= offeredBuyAmount);
+        requireIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
+        var orderOwner = onExchange.getOwner(id);
+        require(module.riskmgmt.isExchangeTakePermitted(onExchange,
+            offeredSellAmount, offeredSellToken,
+            offeredBuyAmount, offeredBuyToken,
+            orderOwner)
+        );
+        uint wantedSellAmount = safeMul(wantedBuyAmount, offeredSellAmount) / offeredBuyAmount;
+        approveSpending(offeredSellToken, onExchange, wantedSellAmount);
+        return onExchange.take(id, wantedBuyAmount);
+    }
+&nbsp;
+    /// Pre: Active offer (id) with owner of this contract on selected Exchange
+    /// Post: Cancel offer on selected Exchange
+<span class="fstat-no" title="function not covered" >    function cancelOrder(ExchangeProtocol onExchange, uint id)</span>
+        pre_cond(isOwner())
+        returns (bool)
+    {
+<span class="cstat-no" title="statement not covered" >        return onExchange.cancel(id);</span>
+    }
+&nbsp;
+    /// Pre: Universe has been defined
+    /// Post: Whether buying and selling of tokens are allowed at given exchange
+    function requireIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
+        internal
+    {
+        // Asset pair defined in Universe and contains referenceAsset
+        require(module.universe.assetAvailability(buy_which_token));
+        require(module.universe.assetAvailability(sell_which_token));
+        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
+        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
+        // Exchange assigned to tokens in Universe
+        require(onExchange == module.universe.assignedExchange(buy_which_token));
+        require(onExchange == module.universe.assignedExchange(sell_which_token));
+    }
+&nbsp;
+    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
+    function approveSpending(ERC20 ofToken, address onExchange, uint amount)
+        internal
+    {
+        assert(ofToken.approve(onExchange, amount));
+        SpendingApproved(ofToken, onExchange, amount);
+    }
+&nbsp;
+    // NON-CONSTANT METHODS - FEES
+&nbsp;
+    /// Pre: Only owner
+    /// Post: Unclaimed fees of manager are converted into shares of this fund.
+<span class="fstat-no" title="function not covered" >    function convertUnclaimedRewards()</span>
+        pre_cond(isOwner())
+    {
+<span class="cstat-no" title="statement not covered" >        var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();</span>
+&nbsp;
+        // Accounting: Allocate unclaimedFees to this fund
+<span class="cstat-no" title="statement not covered" >        uint shareAmount = totalSupply * unclaimedFees / gav</span>;
+<span class="cstat-no" title="statement not covered" >        balances[this] = safeAdd(balances[this], shareAmount)</span>;
+<span class="cstat-no" title="statement not covered" >        totalSupply = safeAdd(totalSupply, shareAmount)</span>;
+&nbsp;
+        // Update Calculations
+<span class="cstat-no" title="statement not covered" >        atLastPayout = Calculations({</span>
+          gav: gav,
+          managementFee: managementFee,
+          performanceFee: managementFee,
+          unclaimedFees: unclaimedFees,
+          nav: nav,
+          sharePrice: sharePrice,
+          totalSupply: totalSupply,
+          timestamp: now,
+        });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        RewardsConverted(now, shareAmount, unclaimedFees)</span>;
+<span class="cstat-no" title="statement not covered" >        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply)</span>;
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jun 26 2017 17:32:46 GMT-0700 (PDT)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>
