@@ -7,7 +7,8 @@
   },
   "scripts": {
     "test": "truffle test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "coverage": "./node_modules/.bin/solidity-coverage"
   },
   "publishConfig": {
     "access": "public"
@@ -41,6 +42,7 @@
     "eslint-plugin-react": "^6.8.0",
     "ethereumjs-testrpc": "^3.0.3",
     "js-sha256": "^0.3.2",
+    "solidity-coverage": "git+https://github.com/sc-forks/solidity-coverage.git",
     "truffle": "3.2.2"
   },
   "dependencies": {

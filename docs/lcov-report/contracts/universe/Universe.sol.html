@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/universe/Universe.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/universe/</a> Universe.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">88.24% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>15/17</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">83.33% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>10/12</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>13/13</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.11;
+&nbsp;
+import "./UniverseProtocol.sol";
+import "../dependencies/SafeMath.sol";
+import "../dependencies/Owned.sol";
+&nbsp;
+/// @title Universe Contract
+/// @author Melonport AG &lt;team@melonport.com&gt;
+/// @notice Simple Universe Contract, no adding of assets, no asset specific functionality.
+contract Universe is UniverseProtocol, SafeMath, Owned {
+&nbsp;
+    // FIELDS
+&nbsp;
+    // Fields that can be changed by functions
+    address referenceAsset;
+    address melonAsset;
+    address[] public assets;
+    address[] public priceFeeds;
+    address[] public exchanges;
+    mapping (address =&gt; bool) assetAvailabilities;
+    mapping (address =&gt; address) assignedPriceFeeds; // pricefeed available for certain asset
+    mapping (address =&gt; address) assignedExchanges; // exchange available for certain asset
+&nbsp;
+    // EVENTS
+&nbsp;
+    // MODIFIERS
+&nbsp;
+    modifier arrays_equal(address[] x, address[] y, address[] z) {
+        assert(x.length == y.length &amp;&amp; y.length == z.length);
+        _;
+    }
+&nbsp;
+    modifier array_not_empty(address[] x) {
+        assert(x.length &gt;= 1);
+        _;
+    }
+    
+    // CONSTANT METHDOS
+&nbsp;
+    function getReferenceAsset() constant returns (address) { return referenceAsset; }
+    function getMelonAsset() constant returns (address) { return melonAsset; }
+    function numAssignedAssets() constant returns (uint) { return assets.length; }
+    function assetAt(uint index) constant returns (address) { return assets[index]; }
+    function priceFeedAt(uint index) constant returns (address) { return priceFeeds[index]; }
+<span class="fstat-no" title="function not covered" >    function exchangeAt(uint index) constant returns (address)</span> { <span class="cstat-no" title="statement not covered" >return exchanges[index];</span> }
+    function assetAvailability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
+<span class="fstat-no" title="function not covered" >    function assignedPriceFeed(address ofAsset) constant returns (address)</span> { <span class="cstat-no" title="statement not covered" >return assignedPriceFeeds[ofAsset];</span> }
+    function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
+&nbsp;
+    // NON-CONSTANT METHODS
+&nbsp;
+    /// Pre: Assign ReferenceAsset at index 0 of "ofAssets"
+    function Universe(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
+        arrays_equal(ofAssets, ofPriceFeeds, ofExchanges)
+        array_not_empty(ofAssets)
+    {
+        referenceAsset = ofAssets[0];
+        melonAsset = ofAssets[1];
+        for (uint i = 0; i &lt; ofAssets.length; ++i) {
+            assetAvailabilities[ofAssets[i]] = true;
+            assets.push(ofAssets[i]);
+            priceFeeds.push(ofPriceFeeds[i]);
+            exchanges.push(ofExchanges[i]);
+            assignedPriceFeeds[ofAssets[i]] = ofPriceFeeds[i];
+            assignedExchanges[ofAssets[i]] = ofExchanges[i];
+        }
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jun 26 2017 17:32:46 GMT-0700 (PDT)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
