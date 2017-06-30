@@ -402,7 +402,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         atLastPayout = Calculations({
           gav: gav,
           managementFee: managementFee,
-          performanceFee: managementFee,
+          performanceFee: performanceFee,
           unclaimedFees: unclaimedFees,
           nav: nav,
           sharePrice: sharePrice,
