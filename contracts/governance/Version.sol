@@ -19,6 +19,8 @@ contract Version is DBC, Owned {
         string symbol;
         uint decimals;
         bool active;
+        bytes32 ipfsHash;
+        bytes32 swarmHash;
     }
 
     struct ModuleSelection {
