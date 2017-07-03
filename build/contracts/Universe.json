@@ -239,10 +239,10 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0x590ee778072e03e935b463ce84d0ba073b2b4fe1",
-      "updated_at": 1497386328851
+      "address": "0x946bf2f260b4a01dea02f5b396c69ebc5d0decce",
+      "updated_at": 1499107188937
     }
   },
   "schema_version": "0.0.5",
-  "updated_at": 1497386328851
+  "updated_at": 1499107188937
 }

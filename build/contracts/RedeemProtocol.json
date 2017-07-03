@@ -1,8 +1,43 @@
 {
   "contract_name": "RedeemProtocol",
-  "abi": [],
-  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a72305820b1ae514228d711d7b570c59da728005bd51bbb833a70b3fe677507d1efef8c880029",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "ofVault",
+          "type": "address"
+        },
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemSharesForReferenceAsset",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "ofVault",
+          "type": "address"
+        },
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemShares",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b609c8061001a6000396000f300606060405263ffffffff60e060020a6000350416637c5b38f58114602a578063b8aa377514602a575bfe5b3415603157fe5b6046600160a060020a03600435166024356066565b005b3415603157fe5b6046600160a060020a03600435166024356066565b005b5b5050565b5b50505600a165627a7a7230582084428e16743644f99800e7e79a0a9bb58f55c30f22f04184b5becbfbb0b5735c0029",
   "networks": {},
   "schema_version": "0.0.5",
-  "updated_at": 1497386297335
+  "updated_at": 1499107090222
 }
