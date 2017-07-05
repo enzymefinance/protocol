@@ -14,7 +14,7 @@ contract EtherToken is PreminedAsset {
     string public constant name = "Ether Token";
     string public constant symbol = "ETH-T";
     uint public constant decimals = 18;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // EVENTS
 

@@ -9,7 +9,7 @@ const Universe = artifacts.require('./Universe.sol');
 
 module.exports = (deployer, network, accounts) => {
   // Deploy contracts
-  if (network == "development") {
+  if (network === 'development') {
     deployer.deploy([
       EtherToken,
       MelonToken,
@@ -28,7 +28,7 @@ module.exports = (deployer, network, accounts) => {
     );
   }
 
-  if (network == "kovan") {
+  if (network === 'kovan') {
     deployer.deploy([
       Exchange,
       // Redeem,

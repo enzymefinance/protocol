@@ -9,7 +9,6 @@ import "../assets/EtherToken.sol";
 import "../VaultProtocol.sol";
 
 
-
 /// @title Subscribe Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Subscribe Module.
@@ -42,12 +41,13 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
         pre_cond(isPastZero(wantedShares))
     {
         VaultProtocol vault = VaultProtocol(ofVault);
-        AssetProtocol refAsset = AssetProtocol(address(vault.getReferenceAsset()));
+        AssetProtocol refAsset = AssetProtocol(vault.getReferenceAsset());
         // get price of the shares we want in baseUnits of reftoken
         uint actualValue = vault.getRefPriceForNumShares(wantedShares);
         // transfer requried amount [ref] from investor to this contract
         // Note: Security risk for Investor - no guarantee that slice gets actually alocated
         assert(refAsset.transferFrom(msg.sender, owner, actualValue)); // send funds from investor to owner contract
+        //TODO better to approve externally
         if(isPastZero(vault.totalSupply())){  // we need to approve slice in proportion to Vault allocation
             var (assetList, amountList, numAssets) = vault.getSliceForNumShares(wantedShares);
             for (uint i = 0; i < numAssets; i++) {

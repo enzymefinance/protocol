@@ -3,8 +3,8 @@ const BigNumber = require('bignumber.js');
 // Tokens
 
 // Constants as defined in the token contracts
-const PREMINED_AMOUNT = new BigNumber(Math.pow(10, 28));
-const PREMINED_MELON_AMOUNT = new BigNumber(Math.pow(10, 28));
+const PREMINED_AMOUNT = new BigNumber(1e+28);
+const PREMINED_MELON_AMOUNT = new BigNumber(1e+28);
 const ETHERTOKEN_DECIMALS = 18;
 const MELONTOKEN_DECIMALS = 18;
 const BITCOINTOKEN_DECIMALS = 8;
@@ -19,10 +19,10 @@ const LIQUIDITY_PROVIDER = '0x00e0b33cdb3af8b55cd8467d6d13bc0ba8035acf';
 
 // Exchange
 
-const EXCHANGE_ADDRESS = '0x50396a51a81b938ccb2d1466de9eebc49d5564f5'
+const EXCHANGE_ADDRESS = '0x50396a51a81b938ccb2d1466de9eebc49d5564f5';
 
 // Solidity constants
-const ether = new BigNumber(Math.pow(10, 18));
+const ether = new BigNumber(1e+18);
 
 module.exports = {
   PREMINED_AMOUNT,
