@@ -46,14 +46,15 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
         // get price of the shares we want in baseUnits of reftoken
         uint actualValue = vault.getRefPriceForNumShares(wantedShares);
         // transfer requried amount [ref] from investor to this contract
+        // Note: Security risk for Investor - no guarantee that slice gets actually alocated
         assert(refAsset.transferFrom(msg.sender, owner, actualValue)); // send funds from investor to owner contract
         if(isPastZero(vault.totalSupply())){  // we need to approve slice in proportion to Vault allocation
             var (assetList, amountList, numAssets) = vault.getSliceForNumShares(wantedShares);
-            for (uint ii = 0; ii < numAssets; ii++){
-                if(!isPastZero(amountList[ii]))
+            for (uint i = 0; i < numAssets; i++) {
+                if(!isPastZero(amountList[i]))
                     continue;
-                AssetProtocol thisAsset = AssetProtocol(assetList[ii]);
-                assert(thisAsset.transferFrom(this, ofVault, amountList[ii])); // Security risk for investor
+                AssetProtocol thisAsset = AssetProtocol(assetList[i]);
+                assert(thisAsset.approve(ofVault, amountList[i]));
             }
         } else { // we will just buy the shares with reference asset
             //TODO: check recipient
