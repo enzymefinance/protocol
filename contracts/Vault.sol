@@ -386,16 +386,16 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     // NON-CONSTANT METHODS - REWARDS
 
-    /// Pre: Only owner
+    /// Pre: Only this
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
         var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
 
-        // Accounting: Allocate unclaimedFees to the Owner of this fund
+        // Accounting: Allocate unclaimedFees to this fund
         uint shareAmount = totalSupply * unclaimedFees / gav;
-        balances[owner] = safeAdd(balances[owner], shareAmount);
+        balances[this] = safeAdd(balances[this], shareAmount);
         totalSupply = safeAdd(totalSupply, shareAmount);
 
         // Update Calculations
