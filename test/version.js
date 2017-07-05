@@ -1,10 +1,7 @@
 const assert = require('assert');
 const Universe = artifacts.require('./Universe.sol');
-const Subscribe = artifacts.require('./Subscribe.sol');
-const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('./RiskMgmt.sol');
-const ManagementFee = artifacts.require('ManagementFee.sol');
-const PerformanceFee = artifacts.require('PerformanceFee.sol');
+const Rewards = artifacts.require('./Rewards.sol');
 const Version = artifacts.require('./Version.sol');
 const Vault = artifacts.require('./Vault.sol');
 
@@ -24,18 +21,14 @@ contract('Version', (accounts) => {
   let subscribeContract;
   let redeemContract;
   let riskmgmtContract;
-  let managementFeeContract;
-  let performanceFeeContract;
+  let rewardsContract;
   let versionContract;
   let coreContract;
 
   before('Init contract instances', () => {
     Universe.deployed().then((deployed) => { universeContract = deployed; });
-    Subscribe.deployed().then((deployed) => { subscribeContract = deployed; });
-    Redeem.deployed().then((deployed) => { redeemContract = deployed; });
     RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
-    ManagementFee.deployed().then((deployed) => { managementFeeContract = deployed; });
-    PerformanceFee.deployed().then((deployed) => { performanceFeeContract = deployed; });
+    Rewards.deployed().then((deployed) => { rewardsContract = deployed; });
     Version.deployed().then((deployed) => { versionContract = deployed; });
   });
 
@@ -48,11 +41,8 @@ contract('Version', (accounts) => {
         PORTFOLIO_SYMBOL,
         PORTFOLIO_DECIMALS,
         universeContract.address,
-        subscribeContract.address,
-        redeemContract.address,
         riskmgmtContract.address,
-        managementFeeContract.address,
-        performanceFeeContract.address,
+        rewardsContract.address,
         { from: OWNER });
     })
     .then(() => versionContract.getLastVaultId())

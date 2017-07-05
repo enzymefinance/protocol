@@ -33,7 +33,7 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
     function Subscribe() {}
 
     /// Pre: Investor pre-approves spending of vault's reference asset to this contract
-    /// Post: Invest in a fund by creating shares
+    /// Post: Subscribe in a fund by creating shares
     /* Rem:
      *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]

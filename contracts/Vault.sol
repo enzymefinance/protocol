@@ -7,11 +7,8 @@ import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
-import "./participation/SubscribeProtocol.sol";
-import "./participation/RedeemProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
-import "./rewards/ManagementFeeProtocol.sol";
-import "./rewards/PerformanceFeeProtocol.sol";
+import "./rewards/RewardsProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/ExchangeProtocol.sol";
 import "./VaultProtocol.sol";
@@ -25,9 +22,9 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     struct Calculations {
         uint gav;
-        uint managementFee;
-        uint performanceFee;
-        uint unclaimedFees;
+        uint managementReward;
+        uint performanceReward;
+        uint unclaimedRewards;
         uint nav;
         uint sharePrice;
         uint totalSupply;
@@ -36,11 +33,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     struct Modules {
         UniverseProtocol universe;
-        SubscribeProtocol subscribe;
-        RedeemProtocol redeem;
         RiskMgmtProtocol riskmgmt;
-        ManagementFeeProtocol management_fee;
-        PerformanceFeeProtocol performance_fee;
+        RewardsProtocol rewards;
     }
 
     // FIELDS
@@ -63,9 +57,9 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
-    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint numUnclaimedFees);
+    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint numunclaimedRewards);
     event RewardsPayedOut(uint atTimestamp, uint numSharesPayedOut, uint atSharePrice);
-    event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
+    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -130,30 +124,30 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     /// Pre: Gross asset value has been calculated
     /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
-    function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {
+    function calcUnclaimedRewards(uint gav) constant returns (uint managementReward, uint performanceReward, uint unclaimedRewards) {
         uint timeDifference = safeSub(now, atLastPayout.timestamp);
-        managementFee = module.management_fee.calculateFee(timeDifference, gav);
-        performanceFee = 0;
+        managementReward = module.rewards.calculateManagementReward(timeDifference, gav);
+        performanceReward = 0;
         if (totalSupply != 0) {
             uint currSharePrice = calcValuePerShare(gav);
             if (currSharePrice - atLastPayout.sharePrice > 0)
-              performanceFee = module.performance_fee.calculateFee(currSharePrice - atLastPayout.sharePrice, totalSupply);
+              performanceReward = module.rewards.calculatePerformanceReward(currSharePrice - atLastPayout.sharePrice, totalSupply);
         }
-        unclaimedFees = safeAdd(managementFee, performanceFee);
+        unclaimedRewards = safeAdd(managementReward, performanceReward);
     }
 
     /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
     /// Post: Net asset value denominated in [base unit of referenceAsset]
-    function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) { nav = safeSub(gav, unclaimedFees); }
+    function calcNav(uint gav, uint unclaimedRewards) constant returns (uint nav) { nav = safeSub(gav, unclaimedRewards); }
 
     /// Pre: None
-    /// Post: Gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice denominated in [base unit of referenceAsset]
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
-        var (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
-        uint nav = calcNav(gav, unclaimedFees);
+        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedFees(gav);
+        uint nav = calcNav(gav, unclaimedRewards);
         uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
-        return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
+        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
     /// Pre: numShares : number of shares in base units
@@ -172,7 +166,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         }
     }
 
-    /// Pre: None, numShares denominated in [base unit of referenceAsset]
+    /// Pre: numShares denominated in [base unit of referenceAsset]
     /// Post: priceInRef denominated in [base unit of referenceAsset]
     function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef)
     {
@@ -189,11 +183,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         string withSymbol,
         uint withDecimals,
         address ofUniverse,
-        address ofSubscribe,
-        address ofRedeem,
         address ofRiskMgmt,
-        address ofManagmentFee,
-        address ofPerformanceFee
+        address ofRewards
     ) {
         owner = ofManager;
         name = withName;
@@ -202,9 +193,9 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         baseUnitsPerShare = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
-            managementFee: 0,
-            performanceFee: 0,
-            unclaimedFees: 0,
+            managementReward: 0,
+            performanceReward: 0,
+            unclaimedRewards: 0,
             nav: 0,
             sharePrice: baseUnitsPerShare,
             totalSupply: totalSupply,
@@ -220,11 +211,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
             address quoteAsset = Price.getQuoteAsset();
             require(referenceAsset == quoteAsset);
         }
-        module.subscribe = SubscribeProtocol(ofSubscribe);
-        module.redeem = RedeemProtocol(ofRedeem);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
-        module.management_fee = ManagementFeeProtocol(ofManagmentFee);
-        module.performance_fee = PerformanceFeeProtocol(ofPerformanceFee);
+        module.rewards = RewardsProtocol(ofRewards);
     }
 
     // NON-CONSTANT METHODS - PARTICIPATION
@@ -391,26 +379,26 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
-        var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
+        var (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice) = performCalculations();
 
-        // Accounting: Allocate unclaimedFees to this fund
-        uint shareAmount = totalSupply * unclaimedFees / gav;
+        // Accounting: Allocate unclaimedRewards to this fund
+        uint shareAmount = totalSupply * unclaimedRewards / gav;
         balances[this] = safeAdd(balances[this], shareAmount);
         totalSupply = safeAdd(totalSupply, shareAmount);
 
         // Update Calculations
         atLastPayout = Calculations({
           gav: gav,
-          managementFee: managementFee,
-          performanceFee: performanceFee,
-          unclaimedFees: unclaimedFees,
+          managementReward: managementReward,
+          performanceReward: performanceReward,
+          unclaimedRewards: unclaimedRewards,
           nav: nav,
           sharePrice: sharePrice,
           totalSupply: totalSupply,
           timestamp: now,
         });
 
-        RewardsConverted(now, shareAmount, unclaimedFees);
-        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply);
+        RewardsConverted(now, shareAmount, unclaimedRewards);
+        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 }

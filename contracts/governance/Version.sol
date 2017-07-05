@@ -48,11 +48,8 @@ contract Version is DBC, Owned {
         bool active,
         uint id,
         address ofUniverse,
-        address ofSubscribe,
-        address ofRedeem,
         address ofRiskMgmt,
-        address ofManagementFee,
-        address ofPerformanceFee
+        address ofRewards
     );
     event VaultUpdate(uint id);
 
@@ -86,11 +83,8 @@ contract Version is DBC, Owned {
         string withSymbol,
         uint withDecimals,
         address ofUniverse,
-        address ofSubscribe,
-        address ofRedeem,
         address ofRiskMgmt,
-        address ofManagmentFee,
-        address ofPerformanceFee
+        address ofRewards
     )
         returns (uint id)
     {
@@ -102,11 +96,8 @@ contract Version is DBC, Owned {
             withSymbol,
             withDecimals,
             ofUniverse,
-            ofSubscribe,
-            ofRedeem,
             ofRiskMgmt,
-            ofManagmentFee,
-            ofPerformanceFee
+            ofRewards
         ));
         info.owner = msg.sender;
         info.name = withName;
@@ -124,11 +115,8 @@ contract Version is DBC, Owned {
           info.active,
           id,
           ofUniverse,
-          ofSubscribe,
-          ofRedeem,
           ofRiskMgmt,
-          ofManagmentFee,
-          ofPerformanceFee
+          ofRewards
         );
     }
 

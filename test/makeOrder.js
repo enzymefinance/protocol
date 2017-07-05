@@ -13,8 +13,7 @@ const Universe = artifacts.require('Universe.sol');
 const Subscribe = artifacts.require('./Subscribe.sol');
 const Redeem = artifacts.require('./Redeem.sol');
 const RiskMgmt = artifacts.require('RiskMgmt.sol');
-const ManagementFee = artifacts.require('ManagementFee.sol');
-const PerformanceFee = artifacts.require('PerformanceFee.sol');
+const Rewards = artifacts.require('./Rewards.sol');
 const Vault = artifacts.require('Vault.sol');
 
 contract('Net Asset Value', (accounts) => {
@@ -54,11 +53,8 @@ contract('Net Asset Value', (accounts) => {
   let priceFeedContract;
   let exchangeContract;
   let universeContract;
-  let subscribeContract;
-  let redeemContract;
   let riskmgmtContract;
-  let managementFeeContract;
-  let performanceFeeContract;
+  let rewardsContract;
   let exchangeTestCases;
   let riskmgmtTestCases;
 
@@ -70,11 +66,8 @@ contract('Net Asset Value', (accounts) => {
       PriceFeed.deployed().then((deployed) => { priceFeedContract = deployed; });
       Exchange.deployed().then((deployed) => { exchangeContract = deployed; });
       Universe.deployed().then((deployed) => { universeContract = deployed; });
-      Subscribe.deployed().then((deployed) => { subscribeContract = deployed; });
-      Redeem.deployed().then((deployed) => { redeemContract = deployed; });
       RiskMgmt.deployed().then((deployed) => { riskmgmtContract = deployed; });
-      ManagementFee.deployed().then((deployed) => { managementFeeContract = deployed; });
-      PerformanceFee.deployed().then((deployed) => { performanceFeeContract = deployed; });
+      Rewards.deployed().then((deployed) => { rewardsContract = deployed; });
     });
 
     it('Define Price Feed testcase', () => {
@@ -100,11 +93,8 @@ contract('Net Asset Value', (accounts) => {
         PORTFOLIO_SYMBOL,
         PORTFOLIO_DECIMALS,
         universeContract.address,
-        subscribeContract.address,
-        redeemContract.address,
         riskmgmtContract.address,
-        managementFeeContract.address,
-        performanceFeeContract.address,
+        rewardsContract.address,
         { from: OWNER })
           .then((result) => {
             vaultContract = result;
