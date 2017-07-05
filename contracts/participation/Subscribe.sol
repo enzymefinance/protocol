@@ -55,7 +55,7 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
                 AssetProtocol thisAsset = AssetProtocol(assetList[ii]);
                 thisAsset.approve(ofVault, amountList[ii]);
             }
-        } else {    // we will just buy the shares with reference asset
+        } else { // we will just buy the shares with reference asset
             //TODO: check recipient
             refAsset.approve(ofVault, actualValue);
         }

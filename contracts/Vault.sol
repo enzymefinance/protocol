@@ -10,8 +10,8 @@ import "./universe/UniverseProtocol.sol";
 import "./participation/SubscribeProtocol.sol";
 import "./participation/RedeemProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
-import "./fees/ManagementFeeProtocol.sol";
-import "./fees/PerformanceFeeProtocol.sol";
+import "./rewards/ManagementFeeProtocol.sol";
+import "./rewards/PerformanceFeeProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/ExchangeProtocol.sol";
 import "./VaultProtocol.sol";
@@ -156,7 +156,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         return (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice);
     }
 
-    /// Pre:  numShares : number of shares in base units
+    /// Pre: numShares : number of shares in base units
     /// Post: Returns addresses and required amounts required for each asset in slice
     function getSliceForNumShares(uint numShares) constant
         pre_cond(notZero(totalSupply))
@@ -172,8 +172,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         }
     }
 
-    /// Pre:  None
-    /// Post: Price in [refAsset] of numShares whole shares
+    /// Pre: None, numShares denominated in [base unit of referenceAsset]
+    /// Post: priceInRef denominated in [base unit of referenceAsset]
     function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef)
     {
         var (, , , , , sharePrice) = performCalculations();
@@ -262,9 +262,9 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     {
         if (totalSupply == 0) { // Iff all vaultHoldings are zero
             /* By definition for zero totalSupply of shares the initial share price is defined as:
-            *  sharePrice == baseUnitsPerShare (1)
-            *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
-            */
+             *  sharePrice == baseUnitsPerShare (1)
+             *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
+             */
             uint totalCost = shareAmount;
             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
         } else {
@@ -368,8 +368,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         // Asset pair defined in Universe and contains referenceAsset
         require(module.universe.assetAvailability(buy_which_token));
         require(module.universe.assetAvailability(sell_which_token));
-        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
         require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
+        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
         // Exchange assigned to tokens in Universe
         require(onExchange == module.universe.assignedExchange(buy_which_token));
         require(onExchange == module.universe.assignedExchange(sell_which_token));
@@ -384,25 +384,25 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         SpendingApproved(ofToken, onExchange, amount);
     }
 
-    // NON-CONSTANT METHODS - FEES
+    // NON-CONSTANT METHODS - REWARDS
 
     /// Pre: Only owner
-    /// Post: Unclaimed fees of manager are converted into shares of this fund.
+    /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
         var (gav, managementFee, performanceFee, unclaimedFees, nav, sharePrice) = performCalculations();
 
-        // Accounting: Allocate unclaimedFees to this fund
+        // Accounting: Allocate unclaimedFees to the Owner of this fund
         uint shareAmount = totalSupply * unclaimedFees / gav;
-        balances[this] = safeAdd(balances[this], shareAmount);
+        balances[owner] = safeAdd(balances[owner], shareAmount);
         totalSupply = safeAdd(totalSupply, shareAmount);
 
         // Update Calculations
         atLastPayout = Calculations({
           gav: gav,
           managementFee: managementFee,
-          performanceFee: managementFee,
+          performanceFee: performanceFee,
           unclaimedFees: unclaimedFees,
           nav: nav,
           sharePrice: sharePrice,
