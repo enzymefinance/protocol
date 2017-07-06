@@ -5,6 +5,7 @@ const BigNumber = require('bignumber.js');
 
 const EtherToken = artifacts.require('EtherToken.sol');
 const MelonToken = artifacts.require('MelonToken.sol');
+const BitcoinToken = artifacts.require('BitcoinToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Exchange = artifacts.require('Exchange.sol');
 const Universe = artifacts.require('Universe.sol');
@@ -29,6 +30,7 @@ describe('Subscribe and Redeem modules', () => {
     let vaultContract;
     let etherTokenContract;
     let melonTokenContract;
+    let bitcoinTokenContract;
     let priceFeedContract;
     let exchangeContract;
     let universeContract;
@@ -60,6 +62,7 @@ describe('Subscribe and Redeem modules', () => {
         rewardsContract = await Rewards.deployed();
         etherTokenContract = await EtherToken.deployed();
         melonTokenContract = await MelonToken.deployed();
+        bitcoinTokenContract = await BitcoinToken.deployed();
       });
 
       it('Define Price Feed testcase', async () => {
@@ -90,9 +93,9 @@ describe('Subscribe and Redeem modules', () => {
         subscribeContract = await Subscribe.new({ from: MARKETMAKER });
         redeemContract = await Redeem.new({ from: MARKETMAKER });
         // Market Maker builds asset inventory for subscribe contract
-        //TODO better use approve instead of transfer
         await etherTokenContract.transfer(subscribeContract.address, ALLOWANCE_AMOUNT, { from: MARKETMAKER });
         await melonTokenContract.transfer(subscribeContract.address, ALLOWANCE_AMOUNT, { from: MARKETMAKER });
+        await bitcoinTokenContract.transfer(subscribeContract.address, ALLOWANCE_AMOUNT, { from: MARKETMAKER });
       });
 
       it('Set multiple prices', async () => {
@@ -124,7 +127,6 @@ describe('Subscribe and Redeem modules', () => {
         const prevShares = await vaultContract.balanceOf.call(INVESTOR);
         const wantedShares = new BigNumber(2e+17);
         const offeredValue = new BigNumber(2e+17);
-        await etherTokenContract.approve(vaultContract.address, offeredValue, { from: INVESTOR });
         await etherTokenContract.approve(subscribeContract.address, offeredValue, { from: INVESTOR });
         await subscribeContract.createSharesWithReferenceAsset(
           vaultContract.address, wantedShares, offeredValue, { from: INVESTOR },
@@ -145,7 +147,6 @@ describe('Subscribe and Redeem modules', () => {
         const offeredValue = new BigNumber(2e+17);
         const mlnAmt = 10000;
         const ethAmt = 20000;
-        await etherTokenContract.approve(vaultContract.address, offeredValue, { from: INVESTOR });
         await etherTokenContract.approve(subscribeContract.address, offeredValue, { from: INVESTOR });
         await subscribeContract.createSharesWithReferenceAsset(
           vaultContract.address, wantedShares, offeredValue, { from: INVESTOR },
