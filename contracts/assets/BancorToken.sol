@@ -5,7 +5,7 @@ import "./PreminedAsset.sol";
 /// @title Bancor network token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract BancorNetworkToken is PreminedAsset {
+contract BancorToken is PreminedAsset {
 
     // FIELDS
 
@@ -17,7 +17,7 @@ contract BancorNetworkToken is PreminedAsset {
 
     // NON-CONSTANT METHODS
 
-    function BancorNetworkToken()
+    function BancorToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 }
