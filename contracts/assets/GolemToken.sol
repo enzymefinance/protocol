@@ -13,7 +13,7 @@ contract GolemToken is PreminedAsset {
     string public constant name = "Golem Network Token";
     string public constant symbol = "GNT";
     uint public constant decimals = 18;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 

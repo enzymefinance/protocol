@@ -13,7 +13,7 @@ contract BancorToken is PreminedAsset {
     string public constant name = "Bancor Network Token";
     string public constant symbol = "BNT";
     uint public constant decimals = 18;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 

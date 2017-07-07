@@ -13,7 +13,7 @@ contract RippleToken is PreminedAsset {
     string public constant name = "Ripple Token";
     string public constant symbol = "XRP";
     uint public constant decimals = 6;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 

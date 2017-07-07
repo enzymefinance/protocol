@@ -13,7 +13,7 @@ contract EtherClassicToken is PreminedAsset {
     string public constant name = "Ether Classic Token";
     string public constant symbol = "ETC-T";
     uint public constant decimals = 18;
-    uint public constant preminedAmount = 10**18;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 
