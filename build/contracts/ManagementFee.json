@@ -73,10 +73,10 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0x6e34ebcd5284cf87696b71dae5ba68245f6efb18",
-      "updated_at": 1499363836349
+      "address": "0x8890a7544db2e2d143a5c85f4bfb5074c5a74703",
+      "updated_at": 1499452864694
     }
   },
   "schema_version": "0.0.5",
-  "updated_at": 1499363836349
+  "updated_at": 1499452864694
 }

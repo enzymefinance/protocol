@@ -315,10 +315,10 @@
           "type": "event"
         }
       },
-      "updated_at": 1499363796476,
-      "address": "0x96eab6f6906eb40f4ef551fd1bca38da0ab30f2d"
+      "updated_at": 1499452824846,
+      "address": "0xd11f05c2d0e0d1e4d7e7bc826f2401529d9c5765"
     }
   },
   "schema_version": "0.0.5",
-  "updated_at": 1499363796476
+  "updated_at": 1499452824846
 }

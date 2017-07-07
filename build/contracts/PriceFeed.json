@@ -250,10 +250,10 @@
           "type": "event"
         }
       },
-      "updated_at": 1499363796479,
-      "address": "0xef6e336d6bc67f1b0fa05448e65f58a3e6f06e6e"
+      "updated_at": 1499452824850,
+      "address": "0xa9fe7a672f8db9d4850e0c01360868192f5a33f0"
     }
   },
   "schema_version": "0.0.5",
-  "updated_at": 1499363796479
+  "updated_at": 1499452824850
 }
