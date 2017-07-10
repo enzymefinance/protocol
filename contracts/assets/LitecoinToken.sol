@@ -2,22 +2,22 @@ pragma solidity ^0.4.11;
 
 import "./PreminedAsset.sol";
 
-/// @title BitcoinToken Contract.
+/// @title Litecoin token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract BitcoinToken is PreminedAsset {
+contract LitecoinToken is PreminedAsset {
 
     // FIELDS
 
     // Constant token specific fields
-    string public constant name = "Bitcoin Token";
-    string public constant symbol = "BTC-T";
+    string public constant name = "Litecoin Token";
+    string public constant symbol = "LTC-T";
     uint public constant decimals = 8;
     uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 
-    function BitcoinToken()
+    function LitecoinToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 }

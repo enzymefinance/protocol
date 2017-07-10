@@ -18,7 +18,7 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
 
     // EVENTS
 
-    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -62,6 +62,6 @@ contract Subscribe is SubscribeProtocol, DBC, SafeMath, Owned {
             refAsset.approve(ofVault, actualValue);
         }
         vault.createSharesOnBehalf(msg.sender, wantedShares);
-        SharesCreated(msg.sender, now, wantedShares);
+        Subscribed(msg.sender, now, wantedShares);
     }
 }
