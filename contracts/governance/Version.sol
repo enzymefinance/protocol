@@ -19,24 +19,41 @@ contract Version is DBC, Owned {
         string symbol;
         uint decimals;
         bool active;
+        bytes32 ipfsHash;
+        bytes32 swarmHash;
     }
 
-    struct ModuleUsageCounter {
-        uint ofUniverse;
-        uint ofRiskMgmt;
-        uint ofManagementFee;
-        uint ofPerformanceFee;
+    struct ModuleSelection {
+        address ofUniverse;
+        address ofRiskMgmt;
+        address ofManagementFee;
+        address ofPerformanceFee;
     }
 
     // FIELDS
 
     address public addrGovernance;
     mapping (uint => VaultInfo) public vaults;
-    mapping (uint => ModuleUsageCounter) public usage;
+    mapping (uint => ModuleSelection) public usage;
     uint public lastVaultId;
 
     // EVENTS
 
+    event VaultAdded(
+        address vault,
+        address owner,
+        string name,
+        string symbol,
+        uint decimals,
+        bool active,
+        uint id,
+        address ofUniverse,
+        address ofSubscribe,
+        address ofRedeem,
+        address ofRiskMgmt,
+        address ofManagementFee,
+        address ofPerformanceFee
+    );
     event VaultUpdate(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -98,7 +115,21 @@ contract Version is DBC, Owned {
         info.active = true;
         id = next_id();
         vaults[id] = info;
-        VaultUpdate(id);
+        VaultAdded(
+          info.vault,
+          info.owner,
+          info.name,
+          info.symbol,
+          info.decimals,
+          info.active,
+          id,
+          ofUniverse,
+          ofSubscribe,
+          ofRedeem,
+          ofRiskMgmt,
+          ofManagmentFee,
+          ofPerformanceFee
+        );
     }
 
     // Dereference Vault and trigger selfdestruct
