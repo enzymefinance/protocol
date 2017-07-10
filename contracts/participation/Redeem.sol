@@ -14,6 +14,7 @@ contract Redeem is RedeemProtocol, DBC, Owned {
     // FIELDS
 
     // EVENTS
+    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -32,6 +33,7 @@ contract Redeem is RedeemProtocol, DBC, Owned {
         assert(numShares > 0);
         VaultProtocol vault = VaultProtocol(ofVault);
         vault.annihilateSharesOnBehalf(msg.sender, numShares);
+        Redeemed(msg.sender, now, numShares);
     }
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
@@ -45,5 +47,6 @@ contract Redeem is RedeemProtocol, DBC, Owned {
         assert(vault.transferFrom(msg.sender, this, numShares)); // transfer shares to this contract's ownership
         vault.annihilateShares(numShares); // get the slice back to this contract
         assert(refAsset.transfer(msg.sender, redeemValue));
+        Redeemed(msg.sender, now, numShares);
     }
 }

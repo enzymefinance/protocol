@@ -13,7 +13,7 @@ contract DigixDaoToken is PreminedAsset {
     string public constant name = "Digix Dao Token";
     string public constant symbol = "DGD";
     uint public constant decimals = 9;
-    uint public constant preminedAmount = 10**19;
+    uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
 
