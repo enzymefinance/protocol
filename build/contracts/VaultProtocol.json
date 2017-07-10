@@ -1,0 +1,601 @@
+{
+  "contract_name": "VaultProtocol",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_spender",
+          "type": "address"
+        },
+        {
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "gav",
+          "type": "uint256"
+        },
+        {
+          "name": "unclaimedFees",
+          "type": "uint256"
+        }
+      ],
+      "name": "calcNav",
+      "outputs": [
+        {
+          "name": "nav",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "shareAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "createShares",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getSymbol",
+      "outputs": [
+        {
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "name": "shareAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "createSharesOnBehalf",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getName",
+      "outputs": [
+        {
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "name": "totalSupply",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "onExchange",
+          "type": "address"
+        },
+        {
+          "name": "sell_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "sell_which_token",
+          "type": "address"
+        },
+        {
+          "name": "buy_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "buy_which_token",
+          "type": "address"
+        }
+      ],
+      "name": "makeOrder",
+      "outputs": [
+        {
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "getSliceForNumShares",
+      "outputs": [
+        {
+          "name": "assets",
+          "type": "address[200]"
+        },
+        {
+          "name": "amounts",
+          "type": "uint256[200]"
+        },
+        {
+          "name": "numAssets",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "shareAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "annihilateShares",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "calcGav",
+      "outputs": [
+        {
+          "name": "gav",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "calcValuePerShare",
+      "outputs": [
+        {
+          "name": "sharePrice",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getReferenceAsset",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "onExchange",
+          "type": "address"
+        },
+        {
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelOrder",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getUniverseAddress",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_owner",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "convertUnclaimedRewards",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "gav",
+          "type": "uint256"
+        }
+      ],
+      "name": "calcUnclaimedFees",
+      "outputs": [
+        {
+          "name": "managementFee",
+          "type": "uint256"
+        },
+        {
+          "name": "performanceFee",
+          "type": "uint256"
+        },
+        {
+          "name": "unclaimedFees",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "onExchange",
+          "type": "address"
+        },
+        {
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "name": "wantedBuyAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "takeOrder",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "performCalculations",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "numShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRefPriceForNumShares",
+      "outputs": [
+        {
+          "name": "priceInRef",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getBaseUnitsPerShare",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getCalculationsAtLastPayout",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "name": "_spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "name": "remaining",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getDecimals",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "name": "shareAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "annihilateSharesOnBehalf",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "OrderUpdate",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "_spender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Approval",
+      "type": "event"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000c57fe5b5b6108cf8061001c6000396000f3006060604052361561014e5763ffffffff60e060020a600035041663095ea7b381146101505780630a47185d14610183578063123c047a146101ab57806315070401146101c057806315ff3ace1461025057806317d7de7c146101c057806318160ddd1461030157806320f1b3241461032357806323b872dd146103655780634c43f83d1461039e57806352f71a02146101ab57806356cff99f14610301578063634a2d561461045f57806368b836a7146104845780636a20613714610150578063704ae8431461048457806370a082311461050f5780638a3a87181461053d5780639478ba471461054f578063a5bbe7bf14610580578063a759822b146105b6578063a9059cbb14610150578063b91507ee1461045f578063c79e7d4514610301578063dc391a0b14610673578063dd62ed3e146106ae578063f0141d8414610301578063f3de4d1014610250575bfe5b341561015857fe5b61016f600160a060020a0360043516602435610725565b604080519115158252519081900360200190f35b341561018b57fe5b610199600435602435610725565b60408051918252519081900360200190f35b34156101b357fe5b6101be600435610737565b005b34156101c857fe5b6101d0610745565b604080516020808252835181830152835191928392908301918501908083838215610216575b80518252602083111561021657601f1990920191602091820191016101f6565b505050905090810190601f1680156102425780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b341561025857fe5b6101be600160a060020a0360043516602435610751565b005b34156101c857fe5b6101d0610745565b604080516020808252835181830152835191928392908301918501908083838215610216575b80518252602083111561021657601f1990920191602091820191016101f6565b505050905090810190601f1680156102425780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b341561030957fe5b610199610762565b60408051918252519081900360200190f35b341561032b57fe5b610199600160a060020a03600435811690602435906044358116906064359060843516610768565b60408051918252519081900360200190f35b341561036d57fe5b61016f600160a060020a0360043581169060243516604435610774565b604080519115158252519081900360200190f35b34156103a657fe5b6103b160043561077e565b60405180846119008083835b8051825260208311156103dd57601f1990920191602091820191016103bd565b505050919091019050836119008083835b80518252602083111561040e57601f1990920191602091820191016103ee565b505050905001828152602001935050505060405180910390f35b34156101b357fe5b6101be600435610737565b005b341561030957fe5b610199610762565b60408051918252519081900360200190f35b341561046757fe5b6101996004356107ac565b60408051918252519081900360200190f35b341561048c57fe5b610494610762565b60408051600160a060020a039092168252519081900360200190f35b341561015857fe5b61016f600160a060020a0360043516602435610725565b604080519115158252519081900360200190f35b341561048c57fe5b610494610762565b60408051600160a060020a039092168252519081900360200190f35b341561051757fe5b610199600160a060020a03600435166107ac565b60408051918252519081900360200190f35b341561054557fe5b6101be6107d1565b005b341561055757fe5b6105626004356107d4565b60408051938452602084019290925282820152519081900360600190f35b341561058857fe5b61016f600160a060020a0360043516602435604435610774565b604080519115158252519081900360200190f35b34156105be57fe5b6105c66107ec565b604080519687526020870195909552858501939093526060850191909152608084015260a0830152519081900360c00190f35b341561015857fe5b61016f600160a060020a0360043516602435610725565b604080519115158252519081900360200190f35b341561046757fe5b6101996004356107ac565b60408051918252519081900360200190f35b341561030957fe5b610199610762565b60408051918252519081900360200190f35b341561067b57fe5b610683610818565b6040805195865260208601949094528484019290925260608401526080830152519081900360a00190f35b34156106b657fe5b610199600160a060020a0360043581169060243516610725565b60408051918252519081900360200190f35b341561030957fe5b610199610762565b60408051918252519081900360200190f35b341561025857fe5b6101be600160a060020a0360043516602435610751565b005b60005b92915050565b60005b92915050565b6107413382610751565b5b50565b61074d61083e565b5b90565b5b5050565b61074d61083e565b5b90565b60005b90565b60005b95945050505050565b60005b9392505050565b610786610850565b61078e61087a565b60005b9193909250565b6107413382610751565b5b50565b60005b90565b60005b919050565b60005b90565b60005b92915050565b60005b90565b60005b919050565b5b565b6000600060005b9193909250565b60005b9392505050565b6000600060006000600060005b909192939495565b60005b92915050565b60005b919050565b60005b90565b600060006000600060005b9091929394565b60005b92915050565b60005b90565b5b5050565b60408051602081019091526000815290565b6119006040519081016040528060c8905b6000815260001990910190602001816108615790505090565b6119006040519081016040528060c8905b600081526020019060019003908161088b57905050905600a165627a7a72305820955e4f044b9210be52677f84a26567f5cda9ff9cbbbcc90560b4ee605f54f4a90029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1498753136536
+}

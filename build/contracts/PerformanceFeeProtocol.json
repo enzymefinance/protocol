@@ -1,0 +1,31 @@
+{
+  "contract_name": "PerformanceFeeProtocol",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "sharePriceDifference",
+          "type": "uint256"
+        },
+        {
+          "name": "totalSupply",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateFee",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b607a8061001a6000396000f300606060405263ffffffff60e060020a60003504166334e7312281146020575bfe5b3415602757fe5b60336004356024356045565b60408051918252519081900360200190f35b60005b929150505600a165627a7a723058204868d9ebba7bf96ba409aa3ee1fecbe182198b080e3616131ece4c4ac89f37ca0029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1498753136536
+}

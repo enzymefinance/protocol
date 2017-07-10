@@ -34,7 +34,7 @@ contract Governance is DBC, Owned {
     function updateVersion(address nextVersion)
         pre_cond(isOwner())
     {
-        // TODO: Assert stakeholder consensus
+        // TODO: Assert Board Members consensus
         versions.push(nextVersion);
         versionAvailabilities[nextVersion] = true;
         VersionUpdated(nextVersion, versions.length);
