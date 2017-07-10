@@ -44,7 +44,7 @@
     "truffle": "3.2.2"
   },
   "dependencies": {
-    "babel": "^6.5.2",
+    "babel-cli": "^6.24.1",
     "babel-core": "^6.20.0",
     "bignumber.js": "^2.4.0"
   }
