@@ -19,7 +19,7 @@ contract Version is DBC, Owned {
         string symbol;
         uint8 decimals;
         bool active;
-        uint creationTime;
+        uint timestamp;
         bytes32 ipfsHash;
         bytes32 swarmHash;
     }
@@ -68,7 +68,7 @@ contract Version is DBC, Owned {
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
     function getVault(uint atIndex) constant returns (address, address, string, string, uint, bool, uint) {
         var vault = vaults[atIndex];
-        return (vault.vault, vault.owner, vault.name, vault.symbol, vault.decimals, vault.active, vault.creationTime);
+        return (vault.vault, vault.owner, vault.name, vault.symbol, vault.decimals, vault.active, vault.timestamp);
     }
 
     // NON-CONSTANT INTERNAL METHODS
@@ -109,7 +109,7 @@ contract Version is DBC, Owned {
         info.symbol = withSymbol;
         info.decimals = withDecimals;
         info.active = true;
-        info.creationTime = now;
+        info.timestamp = now;
         id = next_id();
         vaults[id] = info;
         VaultAdded(
