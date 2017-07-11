@@ -43,20 +43,19 @@ const assetList = [
   StatusToken,
 ];
 
-module.exports = async (deployer, network, accounts) => {
-  try {
-    let feedBackupOwner;
-    if (network === 'development') feedBackupOwner = accounts[1];
-    else if (network === 'kovan') feedBackupOwner = accounts[0];
-    await deployer.deploy(assetList.concat([Exchange]));
-    await deployer.deploy(PriceFeed, feedBackupOwner, EtherToken.address);
-    await deployer.deploy(
+module.exports = (deployer, network, accounts) => {
+  let feedBackupOwner;
+  if (network === 'development') feedBackupOwner = accounts[0];
+  else if (network === 'kovan') feedBackupOwner = accounts[0];
+  return deployer.deploy(assetList)
+  .then(() => deployer.deploy(Exchange))
+  .then(() => deployer.deploy(PriceFeed, feedBackupOwner, EtherToken.address))
+  .then(() =>
+    deployer.deploy(
       Universe,
       assetList.map(a => a.address),
       Array(assetList.length).fill(PriceFeed.address),
       Array(assetList.length).fill(Exchange.address),
-    );
-  } catch (e) {
-    throw e;
-  }
+    )
+  );
 };
