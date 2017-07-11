@@ -23,6 +23,13 @@ function invertAssetPairPrice(price) { return 1.0 / price; }
  */
 function atomizeAssetPrice(price, decimals) { return Math.floor(price * (Math.pow(10, decimals))); }
 
+/// Pre: CryptoCompare prices as in: https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=BTC,USD,EUR
+/// Post: Prices in its smallest unit relative to Asset
+function atomizePriceData(data) {
+  return Object.keys(data)
+    .map((key, index) => this.atomizeAssetPrice(data[key], this.getDecimals(key)));
+}
+
 /// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
 /// Post: Prices in its smallest unit relative to Asset
 function krakenPricesRelAsset(data) {
@@ -162,6 +169,52 @@ function takeOneEtherFor(sellHowMuch, sellWhichToken, owner, depth, callback) {
   });
 }
 
+// get decimal places by symbol
+const getDecimals = (sym) => {
+  switch (sym.toUpperCase()) {
+    case 'ANT':
+      return constants.ARAGONTOKEN_DECIMALS;
+    case 'AVT':
+      return constants.AVENTUSTOKEN_DECIMALS;
+    case 'BNT':
+      return constants.BANCORTOKEN_DECIMALS;
+    case 'BAT':
+      return constants.BASICATTENTIONTOKEN_DECIMALS;
+    case 'BTC':
+      return constants.BITCOINTOKEN_DECIMALS;
+    case 'DGD':
+      return constants.DIGIXDAOTOKEN_DECIMALS;
+    case 'DGX':
+      return constants.DIGIXGOLDTOKEN_DECIMALS;
+    case 'DOGE':
+      return constants.DOGECOINTOKEN_DECIMALS;
+    case 'ETC':
+      return constants.ETHERCLASSICTOKEN_DECIMALS;
+    case 'ETH':
+      return constants.ETHERTOKEN_DECIMALS;
+    case 'EUR':
+      return constants.EUROTOKEN_DECIMALS;
+    case 'GNO':
+      return constants.GNOSISTOKEN_DECIMALS;
+    case 'GNT':
+      return constants.GOLEMTOKEN_DECIMALS;
+    case 'ICN':
+      return constants.ICONOMITOKEN_DECIMALS;
+    case 'LTC':
+      return constants.LITECOINTOKEN_DECIMALS;
+    case 'MLN':
+      return constants.MELONTOKEN_DECIMALS;
+    case 'REP':
+      return constants.REPTOKEN_DECIMALS;
+    case 'XRP':
+      return constants.RIPPLETOKEN_DECIMALS;
+    case 'SNT':
+      return constants.STATUSTOKEN_DECIMALS;
+    default:
+      throw new Error('Invalid symbol');
+  }
+};
+
 module.exports = {
   invertAssetPairPrice,
   atomizeAssetPrice,
@@ -172,4 +225,6 @@ module.exports = {
   cancelOffer,
   cancelAllOffersOfOwner,
   takeOneEtherFor,
+  getDecimals,
+  atomizePriceData,
 };
