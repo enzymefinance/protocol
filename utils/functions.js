@@ -27,7 +27,7 @@ function atomizeAssetPrice(price, decimals) { return Math.floor(price * (Math.po
 /// Post: Prices in its smallest unit relative to Asset
 function atomizePriceData(data) {
   return Object.keys(data)
-    .map((key, index) => this.atomizeAssetPrice(data[key], this.getDecimals(key)));
+    .map((key) => this.atomizeAssetPrice(data[key], this.getDecimals(key)));
 }
 
 /// Pre: Kraken data as in: https://api.kraken.com/0/public/Ticker?pair=MLNETH,ETHXBT,REPETH,ETHEUR
