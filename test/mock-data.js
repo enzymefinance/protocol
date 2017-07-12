@@ -1,0 +1,22 @@
+// fake CryptoCompare price data
+exports.priceData = {
+  ANT: 116.9,
+  AVT: 120.2,
+  BNT: 98.98,
+  BAT: 2203.9,
+  BTC: 0.08928,
+  DGD: 3.77,
+  DGX: 8.33,
+  DOGE: 103813.95,
+  ETC: 14.2,
+  ETH: 1,
+  EUR: 186.3,
+  GNO: 0.8822,
+  GNT: 757.25,
+  ICN: 81.39,
+  LTC: 4.66,
+  MLN: 4.03,
+  REP: 12.11,
+  SNT: 2.11,
+  XRP: 1044.45,
+};
