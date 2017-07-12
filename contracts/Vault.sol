@@ -7,6 +7,7 @@ import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
+import "./participation/ParticipationProtocol.sol";
 import "./datafeeds/PriceFeedProtocol.sol";
 import "./rewards/RewardsProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
@@ -33,6 +34,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     struct Modules {
         UniverseProtocol universe;
+        ParticipationProtocol participation;
         RiskMgmtProtocol riskmgmt;
         RewardsProtocol rewards;
     }
@@ -167,6 +169,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         string withSymbol,
         uint withDecimals,
         address ofUniverse,
+        address ofParticipation,
         address ofRiskMgmt,
         address ofRewards
     ) {
@@ -195,11 +198,36 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
             address quoteAsset = Price.getQuoteAsset();
             require(referenceAsset == quoteAsset);
         }
+        module.participation = ParticipationProtocol(ofParticipation);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.rewards = RewardsProtocol(ofRewards);
     }
 
     // NON-CONSTANT METHODS - PARTICIPATION
+
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract
+    /// Post: Subscribe in this fund by creating shares
+    /* Rem:
+     *  This can be seen as a non-persistent all or nothing limit order, where:
+     *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]
+     */
+    function createSharesWithReferenceAsset(uint wantedShares, uint offeredValue)
+        pre_cond(isPastZero(wantedShares))
+        pre_cond(module.participation.isSubscribePermitted(msg.sender, wantedShares))
+    {
+        // Additional sanity check
+        AssetProtocol refAsset = AssetProtocol(referenceAsset);
+        // get price of the shares we want in baseUnits of reftoken
+        uint actualValue = getRefPriceForNumShares(wantedShares);
+        assert(offeredValue >= actualValue);
+        // Transfer requried amount [refAsset] from investor to this contract
+        assert(refAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to owner contract
+        // Create Shares
+        // TODO: execute using internal function
+        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
+        totalSupply = safeAdd(totalSupply, wantedShares);
+        Subscribed(msg.sender, now, wantedShares);
+    }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings; Independent of running price feed!
     /// Post: Transfer ownership percentage of all assets from Investor to Vault and create shareAmount.

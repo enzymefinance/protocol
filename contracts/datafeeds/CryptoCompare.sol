@@ -851,7 +851,6 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         PriceUpdated(assetAddress, now, price);
     }
 
-
     function setQuery(string query) pre_cond(isOwner()) { oraclizeQuery = query; }
 
     function updateKey(bytes _pubkey) pre_cond(isOwner()) { ds_pubkey = _pubkey; }
