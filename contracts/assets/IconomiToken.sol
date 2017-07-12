@@ -12,7 +12,7 @@ contract IconomiToken is PreminedAsset {
     // Constant token specific fields
     string public constant name = "Iconomi Token";
     string public constant symbol = "ICN";
-    uint public constant decimals = 18;
+    uint8 public constant decimals = 18;
     uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS

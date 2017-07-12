@@ -1,13 +1,11 @@
 pragma solidity ^0.4.11;
 
 import "./UniverseProtocol.sol";
-import "../dependencies/SafeMath.sol";
-import "../dependencies/Owned.sol";
 
 /// @title Universe Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Universe Contract, no adding of assets, no asset specific functionality.
-contract Universe is UniverseProtocol, SafeMath, Owned {
+contract Universe is UniverseProtocol {
 
     // FIELDS
 
@@ -34,7 +32,7 @@ contract Universe is UniverseProtocol, SafeMath, Owned {
         assert(x.length >= 1);
         _;
     }
-    
+
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }

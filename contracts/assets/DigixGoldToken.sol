@@ -12,7 +12,7 @@ contract DigixGoldToken is PreminedAsset {
     // Constant token specific fields
     string public constant name = "Digix Gold Token";
     string public constant symbol = "DGX";
-    uint public constant decimals = 9;
+    uint8 public constant decimals = 9;
     uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS
