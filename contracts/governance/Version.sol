@@ -17,7 +17,7 @@ contract Version is DBC, Owned {
         address owner;
         string name;
         string symbol;
-        uint decimals;
+        uint8 decimals;
         bool active;
         uint creationTime;
         bytes32 ipfsHash;
@@ -46,7 +46,7 @@ contract Version is DBC, Owned {
         address owner,
         string name,
         string symbol,
-        uint decimals,
+        uint8 decimals,
         bool active,
         uint id,
         address ofUniverse,
@@ -84,7 +84,7 @@ contract Version is DBC, Owned {
     function createVault(
         string withName,
         string withSymbol,
-        uint withDecimals,
+        uint8 withDecimals,
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,

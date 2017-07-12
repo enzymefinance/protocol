@@ -12,7 +12,7 @@ contract GnosisToken is PreminedAsset {
     // Constant token specific fields
     string public constant name = "Gnosis Token";
     string public constant symbol = "GNO";
-    uint public constant decimals = 18;
+    uint8 public constant decimals = 18;
     uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS

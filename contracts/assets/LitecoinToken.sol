@@ -12,7 +12,7 @@ contract LitecoinToken is PreminedAsset {
     // Constant token specific fields
     string public constant name = "Litecoin Token";
     string public constant symbol = "LTC-T";
-    uint public constant decimals = 8;
+    uint8 public constant decimals = 8;
     uint public constant preminedAmount = 10**28;
 
     // NON-CONSTANT METHODS

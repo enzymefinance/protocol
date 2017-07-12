@@ -4,7 +4,6 @@ import "../datafeeds/PriceFeedProtocol.sol";
 import "../dependencies/DBC.sol";
 import "../assets/Asset.sol";
 import "../dependencies/ERC20.sol";
-import "../dependencies/SafeMath.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/oraclizeAPI_0.4.sol";
 import "../dependencies/strings.sol";
@@ -626,7 +625,7 @@ contract ECVerify {
 
 }
 
-contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder, SafeMath , PriceFeedProtocol{
+contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder , PriceFeedProtocol{
     using strings for *;
     DateTime time = DateTime(0xe586cc86e5dfcf6e0578ea0dfcc0fcbe98ca988b);
 
