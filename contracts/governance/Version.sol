@@ -26,6 +26,7 @@ contract Version is DBC, Owned {
 
     struct ModuleSelection {
         address ofUniverse;
+        address ofParticipation;
         address ofRiskMgmt;
         address ofManagementFee;
         address ofPerformanceFee;
@@ -49,6 +50,7 @@ contract Version is DBC, Owned {
         bool active,
         uint id,
         address ofUniverse,
+        address ofParticitpation,
         address ofRiskMgmt,
         address ofRewards
     );
@@ -84,6 +86,7 @@ contract Version is DBC, Owned {
         string withSymbol,
         uint withDecimals,
         address ofUniverse,
+        address ofParticipation,
         address ofRiskMgmt,
         address ofRewards
     )
@@ -97,6 +100,7 @@ contract Version is DBC, Owned {
             withSymbol,
             withDecimals,
             ofUniverse,
+            ofParticipation,
             ofRiskMgmt,
             ofRewards
         ));
@@ -117,6 +121,7 @@ contract Version is DBC, Owned {
           info.active,
           id,
           ofUniverse,
+          ofParticipation,
           ofRiskMgmt,
           ofRewards
         );

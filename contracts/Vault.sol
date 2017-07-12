@@ -55,8 +55,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     // EVENTS
 
-    event SharesCreated(address indexed byParticipant, uint atTimestamp, uint numShares); // Participation
-    event SharesAnnihilated(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
     event PortfolioContent(uint assetHoldings, uint assetPrice, uint assetDecimals); // Calcualtions
     event SpendingApproved(address ofToken, address onExchange, uint amount); // Managing
     event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint numunclaimedRewards);
@@ -65,6 +65,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     // PRE, POST, INVARIANT CONDITIONS
 
+    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
     function notZero(uint x) internal returns (bool) { return x != 0; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
 
@@ -205,67 +206,45 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract
-    /// Post: Subscribe in this fund by creating shares
-    /* Rem:
-     *  This can be seen as a non-persistent all or nothing limit order, where:
-     *  amount == wantedShares and price == wantedShares/offeredAmount [Shares / Reference Asset]
-     */
-    function createSharesWithReferenceAsset(uint wantedShares, uint offeredValue)
-        pre_cond(isPastZero(wantedShares))
-        pre_cond(module.participation.isSubscribePermitted(msg.sender, wantedShares))
-    {
-        // Additional sanity check
-        AssetProtocol refAsset = AssetProtocol(referenceAsset);
-        // get price of the shares we want in baseUnits of reftoken
-        uint actualValue = getRefPriceForNumShares(wantedShares);
-        assert(offeredValue >= actualValue);
-        // Transfer requried amount [refAsset] from investor to this contract
-        assert(refAsset.transferFrom(msg.sender, this, actualValue)); // send funds from investor to owner contract
-        // Create Shares
-        // TODO: execute using internal function
-        balances[msg.sender] = safeAdd(balances[msg.sender], wantedShares);
-        totalSupply = safeAdd(totalSupply, wantedShares);
-        Subscribed(msg.sender, now, wantedShares);
-    }
+    /// Pre: Approved spending of all assets with non-empty asset holdings;
+    /// Post: Transfer ownership percentage of all assets from Investor to Vault and create numShares.
+    /// Note: Independent of running price feed!
+    function subscribe(uint numShares) { subscribeOnBehalf(msg.sender, numShares); }
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings; Independent of running price feed!
-    /// Post: Transfer ownership percentage of all assets from Investor to Vault and create shareAmount.
-    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
-
-    /// Pre: Every holder of shares at any time; Independent of running price feed!
-    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
-    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
+    /// Pre: Redeemer has at least `numShares` shares
+    /// Post: Redeemer lost `numShares`, and gained a slice of assets
+    /// Note: Independent of running price feed!
+    function redeem(uint numShares) { redeemOnBehalf(msg.sender, numShares); }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings;
-    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
-    function createSharesOnBehalf(address recipient, uint shareAmount)
-        pre_cond(notZero(shareAmount))
+    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
+    function subscribeOnBehalf(address recipient, uint numShares)
+        pre_cond(notZero(numShares))
     {
-        allocateSlice(recipient, shareAmount);
-        SharesCreated(recipient, now, shareAmount);
+        allocateSlice(recipient, numShares);
+        Subscribed(recipient, now, numShares);
     }
 
     /// Pre: Recipient owns shares
-    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate shareAmount of shares.
-    function annihilateSharesOnBehalf(address recipient, uint shareAmount)
-        pre_cond(balancesOfHolderAtLeast(recipient, shareAmount))
+    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
+    function redeemOnBehalf(address recipient, uint numShares)
+        pre_cond(balancesOfHolderAtLeast(recipient, numShares))
     {
-        separateSlice(recipient, shareAmount);
-        SharesAnnihilated(recipient, now, shareAmount);
+        separateSlice(recipient, numShares);
+        Redeemed(recipient, now, numShares);
     }
 
-    /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, shareAmount denominated in [base units ]
+    /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, numShares denominated in [base units ]
     /// Post: Transfer ownership percentage of all assets to/from Vault
-    function allocateSlice(address recipient, uint shareAmount)
+    function allocateSlice(address recipient, uint numShares)
         internal
     {
         if (totalSupply == 0) { // Iff all vaultHoldings are zero
             /* By definition for zero totalSupply of shares the initial share price is defined as:
              *  sharePrice == baseUnitsPerShare (1)
-             *  hence for totalCost == shareAmount * sharePrice / baseUnitsPerShare == shareAmount using (1) above
+             *  hence for totalCost == numShares * sharePrice / baseUnitsPerShare == numShares using (1) above
              */
-            uint totalCost = shareAmount;
+            uint totalCost = numShares;
             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, totalCost)); // Send from msg.sender to vault
         } else {
             uint numAssignedAssets = module.universe.numAssignedAssets();
@@ -273,38 +252,84 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
                 AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
                 uint vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
                 if (vaultHoldings == 0) continue;
-                uint allocationAmount = (vaultHoldings * shareAmount) / totalSupply; // ownership percentage of msg.sender
+                uint allocationAmount = (vaultHoldings * numShares) / totalSupply; // ownership percentage of msg.sender
                 uint senderHoldings = Asset.balanceOf(msg.sender); // Amount of asset sender holds
                 require(senderHoldings >= allocationAmount);
                 // Transfer allocationAmount of Assets
                 assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to vault
             }
         }
-        // Accounting
-        balances[recipient] = safeAdd(balances[recipient], shareAmount);
-        totalSupply = safeAdd(totalSupply, shareAmount);
+        // Issue _after_ external calls
+        createShares(recipient, numShares);
     }
 
     /// Pre: Allocation: Approve spending for all non empty vaultHoldings of Assets
     /// Post: Transfer ownership percentage of all assets to/from Vault
-    function separateSlice(address recipient, uint shareAmount)
+    function separateSlice(address recipient, uint numShares)
         internal
     {
         // Current Value
         uint oldTotalSupply = totalSupply;
-        // Update accounting before external calls to prevent reentrancy
-        balances[recipient] = safeSub(balances[recipient], shareAmount);
-        totalSupply = safeSub(totalSupply, shareAmount);
+        // Destroy _before_ external calls to prevent reentrancy
+        annihilateShares(recipient, numShares);
         // Transfer separationAmount of Assets
         uint numAssignedAssets = module.universe.numAssignedAssets();
         for (uint i = 0; i < numAssignedAssets; ++i) {
             AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
             uint vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
-            uint separationAmount = vaultHoldings * shareAmount / oldTotalSupply; // ownership percentage of msg.sender
+            uint separationAmount = vaultHoldings * numShares / oldTotalSupply; // ownership percentage of msg.sender
             if (vaultHoldings == 0) continue;
             // EXTERNAL CALL
             assert(Asset.transfer(recipient, separationAmount)); // EXTERNAL CALL: Send funds from vault to investor
         }
+    }
+
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of referenceAsset]
+    /// Post: Subscribe in this fund by creating shares
+    // TODO check comment
+    // TODO mitigate `spam` attack
+    /* Rem:
+     *  This can be seen as a non-persistent all or nothing limit order, where:
+     *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
+     */
+    function subscribeWithReferenceAsset(uint numShares, uint offeredValue)
+        pre_cond(isPastZero(numShares))
+        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+    {
+        uint actualValue = getRefPriceForNumShares(numShares); // [base unit of referenceAsset]
+        assert(offeredValue >= actualValue); // Sanity Check
+        assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+        createShares(msg.sender, numShares); // Accounting
+        Subscribed(msg.sender, now, numShares);
+    }
+
+    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
+    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
+    // TODO mitigate `spam` attack
+    function redeemWithReferenceAsset(uint numShares, uint requestedValue)
+        pre_cond(isPastZero(numShares))
+        pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
+
+    {
+        uint actualValue = getRefPriceForNumShares(numShares); // [base unit of referenceAsset]
+        assert(requestedValue <= actualValue); // Sanity Check
+        assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
+        annihilateShares(msg.sender, numShares); // Accounting
+        Redeemed(msg.sender, now, numShares);
+    }
+
+    function createShares(address recipient, uint numShares)
+        internal
+    {
+        balances[recipient] = safeAdd(balances[recipient], numShares);
+        totalSupply = safeAdd(totalSupply, numShares);
+    }
+
+    function annihilateShares(address recipient, uint numShares)
+        internal
+    {
+        balances[recipient] = safeSub(balances[recipient], numShares);
+        totalSupply = safeSub(totalSupply, numShares);
     }
 
     // NON-CONSTANT METHODS - EXCHANGE
@@ -394,9 +419,8 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         var (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice) = performCalculations();
 
         // Accounting: Allocate unclaimedRewards to this fund
-        uint shareAmount = totalSupply * unclaimedRewards / gav;
-        balances[this] = safeAdd(balances[this], shareAmount);
-        totalSupply = safeAdd(totalSupply, shareAmount);
+        uint numShares = totalSupply * unclaimedRewards / gav;
+        createShares(this, numShares);
 
         // Update Calculations
         atLastPayout = Calculations({
@@ -410,7 +434,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
           timestamp: now,
         });
 
-        RewardsConverted(now, shareAmount, unclaimedRewards);
+        RewardsConverted(now, numShares, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 }
