@@ -6,6 +6,7 @@ const Version = artifacts.require('./Version.sol');
 const Vault = artifacts.require('./Vault.sol');
 
 
+describe.skip('Old', () => {
 contract('Version', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
@@ -68,3 +69,4 @@ contract('Version', (accounts) => {
     });
   });
 });
+})

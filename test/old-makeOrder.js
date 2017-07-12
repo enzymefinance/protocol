@@ -16,6 +16,7 @@ const RiskMgmt = artifacts.require('RiskMgmt.sol');
 const Rewards = artifacts.require('./Rewards.sol');
 const Vault = artifacts.require('Vault.sol');
 
+describe.skip('Old', () => {
 contract('Net Asset Value', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
@@ -213,3 +214,4 @@ contract('Net Asset Value', (accounts) => {
     });
   });
 });
+})

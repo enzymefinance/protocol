@@ -8,6 +8,7 @@ const MelonToken = artifacts.require('./MelonToken.sol');
 const PriceFeed = artifacts.require('PriceFeed.sol');
 const Universe = artifacts.require('Universe.sol');
 
+describe.skip('Old', () => {
 contract('PriceFeed', (accounts) => {
   // Test constants
   const OWNER = accounts[0];
@@ -111,3 +112,4 @@ contract('PriceFeed', (accounts) => {
     });
   });
 });
+})

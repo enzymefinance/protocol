@@ -15,7 +15,7 @@ const RiskMgmt = artifacts.require('RiskMgmt.sol');
 const Rewards = artifacts.require('./Rewards.sol');
 const Vault = artifacts.require('Vault.sol');
 
-describe('Subscribe and Redeem modules', () => {
+describe.skip('Subscribe and Redeem modules', () => {
   contract('Subscribe', (accounts) => {
     // Test constants
     const OWNER = accounts[0];
