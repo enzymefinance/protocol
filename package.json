@@ -9,6 +9,9 @@
     "test": "truffle test",
     "lint": "eslint ."
   },
+  "files": [
+    "build"
+  ],
   "publishConfig": {
     "access": "public"
   },
