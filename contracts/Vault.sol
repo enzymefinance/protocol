@@ -144,7 +144,7 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
     /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
-        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedFees(gav);
+        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint nav = calcNav(gav, unclaimedRewards);
         uint sharePrice = notZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
