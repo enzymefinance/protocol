@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP
 
 ### Changed
+- Refactor and re-write tests to have better coverage
+
+### Changed
 - Fixed some code to use async/await instead of promises
 - Increase amount of premined token
 
