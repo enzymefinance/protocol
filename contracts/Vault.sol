@@ -150,22 +150,6 @@ contract Vault is DBC, Owned, Shares, SafeMath, VaultProtocol {
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
-    /// Pre: numShares : number of shares in base units
-    /// Post: Returns addresses and required amounts required for each asset in slice
-    function getSliceForNumShares(uint numShares) constant
-        pre_cond(notZero(totalSupply))
-        returns (address[200] assets, uint[200] amounts, uint numAssets)
-    {
-        numAssets = module.universe.numAssignedAssets();
-        for (uint i = 0; i < numAssets; ++i) {
-            address assetAddr = address(module.universe.assetAt(i));
-            AssetProtocol Asset = AssetProtocol(assetAddr);
-            assets[i] = assetAddr;
-            uint vaultHoldings = Asset.balanceOf(this);
-            amounts[i] = vaultHoldings * (numShares / totalSupply);
-        }
-    }
-
     /// Pre: numShares denominated in [base unit of referenceAsset]
     /// Post: priceInRef denominated in [base unit of referenceAsset]
     function getRefPriceForNumShares(uint numShares) constant returns (uint priceInRef)
