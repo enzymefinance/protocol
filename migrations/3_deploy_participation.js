@@ -1,9 +1,5 @@
-const Subscribe = artifacts.require('./Subscribe.sol');
-const Redeem = artifacts.require('./Redeem.sol');
+const Participation = artifacts.require('./Participation.sol');
 
 module.exports = (deployer) => {
-  deployer.deploy([
-    Subscribe,
-    Redeem,
-  ]);
+  deployer.deploy(Participation);
 };
