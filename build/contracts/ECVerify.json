@@ -1,0 +1,8 @@
+{
+  "contract_name": "ECVerify",
+  "abi": [],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a723058207ca34025f4d8db7b3631b1d9a900ec11c502c3c242f23f047c7427998effad330029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1499936564275
+}

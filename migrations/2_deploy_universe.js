@@ -18,7 +18,7 @@ const RepToken = artifacts.require('./RepToken.sol');
 const RippleToken = artifacts.require('./RippleToken.sol');
 const StatusToken = artifacts.require('./StatusToken.sol');
 const SingularDTVToken = artifacts.require('./SingularDTVToken.sol');
-const PriceFeed = artifacts.require('./PriceFeed.sol');
+const CryptoCompare = artifacts.require('./CryptoCompare.sol');
 const Exchange = artifacts.require('./Exchange.sol');
 const Universe = artifacts.require('./Universe.sol');
 
@@ -44,20 +44,25 @@ const assetList = [
   SingularDTVToken,
   StatusToken,
 ];
+const cryptoCompareQuery = 'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true';
 
-module.exports = (deployer, network, accounts) => {
-  let feedBackupOwner;
-  if (network === 'development') feedBackupOwner = accounts[0];
-  else if (network === 'kovan') feedBackupOwner = accounts[0];
-  return deployer.deploy(assetList)
-  .then(() => deployer.deploy(Exchange))
-  .then(() => deployer.deploy(PriceFeed, feedBackupOwner, EtherToken.address))
-  .then(() =>
-    deployer.deploy(
+
+module.exports = async (deployer, network, accounts) => {
+  try {
+    let feedBackupOwner;
+    if (network === 'development') feedBackupOwner = accounts[1];
+    else if (network === 'kovan') feedBackupOwner = accounts[0];
+    await deployer.deploy(assetList.concat([Exchange]));
+    await deployer.deploy(CryptoCompare);
+    await CryptoCompare.setQuery(cryptoCompareQuery, { from: feedBackupOwner });
+    await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
+    await deployer.deploy(
       Universe,
       assetList.map(a => a.address),
-      Array(assetList.length).fill(PriceFeed.address),
+      Array(assetList.length).fill(CryptoCompare.address),
       Array(assetList.length).fill(Exchange.address),
-    )
-  );
+    );
+  } catch (e) {
+    throw e;
+  }
 };

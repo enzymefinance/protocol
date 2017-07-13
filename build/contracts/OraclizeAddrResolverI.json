@@ -1,0 +1,22 @@
+{
+  "contract_name": "OraclizeAddrResolverI",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "getAddress",
+      "outputs": [
+        {
+          "name": "_addr",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1499936564281
+}

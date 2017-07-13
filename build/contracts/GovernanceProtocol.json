@@ -1,0 +1,8 @@
+{
+  "contract_name": "GovernanceProtocol",
+  "abi": [],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a72305820d98cf3b163adcd21c390cb8e667cb796cbedbdfad99dafeea286eff384aa9c510029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1499936564276
+}

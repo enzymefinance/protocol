@@ -1,0 +1,88 @@
+{
+  "contract_name": "RiskMgmt",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "onExchange",
+          "type": "address"
+        },
+        {
+          "name": "sell_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "sell_which_token",
+          "type": "address"
+        },
+        {
+          "name": "buy_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "buy_which_token",
+          "type": "address"
+        },
+        {
+          "name": "orderOwner",
+          "type": "address"
+        }
+      ],
+      "name": "isExchangeTakePermitted",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "onExchange",
+          "type": "address"
+        },
+        {
+          "name": "sell_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "sell_which_token",
+          "type": "address"
+        },
+        {
+          "name": "buy_how_much",
+          "type": "uint256"
+        },
+        {
+          "name": "buy_which_token",
+          "type": "address"
+        }
+      ],
+      "name": "isExchangeMakePermitted",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000c57fe5b5b60f78061001b6000396000f300606060405263ffffffff60e060020a600035041663ab374c9e8114602a578063baaeaf2a146071575bfe5b3415603157fe5b605d600160a060020a03600435811690602435906044358116906064359060843581169060a4351660b2565b604080519115158252519081900360200190f35b3415607857fe5b605d600160a060020a0360043581169060243590604435811690606435906084351660bf565b604080519115158252519081900360200190f35b60015b9695505050505050565b60015b959450505050505600a165627a7a72305820ec50aa81046e55b8eb3b888f029dda306796547eea19750f7a5430fd785e51820029",
+  "networks": {
+    "1499935057292": {
+      "events": {},
+      "links": {},
+      "address": "0xccbd7cef793e2ed8781bdeda4a39708a7b716dcc",
+      "updated_at": 1499936565388
+    }
+  },
+  "schema_version": "0.0.5",
+  "updated_at": 1499936565388
+}

@@ -5,7 +5,7 @@ import "./PreminedAsset.sol";
 /// @title Ripple token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
-contract RippleToken is PreminedAsset {
+contract SingularDTVToken is PreminedAsset {
 
     // FIELDS
 
@@ -17,7 +17,7 @@ contract RippleToken is PreminedAsset {
 
     // NON-CONSTANT METHODS
 
-    function RippleToken()
+    function SingularDTVToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 }

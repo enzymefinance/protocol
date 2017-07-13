@@ -1,0 +1,53 @@
+{
+  "contract_name": "ParticipationProtocol",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "byParticipant",
+          "type": "address"
+        },
+        {
+          "name": "wantedShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "isRedeemPermitted",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "byParticipant",
+          "type": "address"
+        },
+        {
+          "name": "wantedShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "isSubscribePermitted",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000c57fe5b5b60c88061001b6000396000f300606060405263ffffffff60e060020a6000350416634de7d4c68114602a5780637819bff014602a575bfe5b3415603157fe5b6046600160a060020a0360043516602435608a565b604080519115158252519081900360200190f35b3415603157fe5b6046600160a060020a0360043516602435608a565b604080519115158252519081900360200190f35b60005b92915050565b60005b929150505600a165627a7a723058205f5b3dc5a14b07bce41431b20ce9466f574fb43e1f9adb8510be041fd30498260029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1499936564276
+}
