@@ -748,7 +748,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         return ds_pubkey;
     }
 
-    function CryptoCompare() payable {
+    function ignite() payable {
         oraclize_setProof(240);
         quoteAsset = ETHER_TOKEN; // Is the quote asset of a portfolio against which all other assets are priced against
         /* Note:
@@ -759,7 +759,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
          *  3) EUR/ETH -> ETH/EUR
          *  4) REP/ETH -> ETH/REP
          */
-        //setQuery("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true");
+        setQuery("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true");
         ds_pubkey = hex"a0f4f688350018ad1b9785991c0bde5f704b005dc79972b114dbed4a615a983710bfc647ebe5a320daa28771dce6a2d104f5efa2e4a85ba3760b76d46f8571ca";
         //enableContinuousDelivery();
         //oraclize_query('URL', oraclizeQuery, 500000);

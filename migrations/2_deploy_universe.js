@@ -54,7 +54,7 @@ module.exports = async (deployer, network, accounts) => {
     else if (network === 'kovan') feedBackupOwner = accounts[0];
     await deployer.deploy(assetList.concat([Exchange]));
     await deployer.deploy(CryptoCompare);
-    await CryptoCompare.setQuery(cryptoCompareQuery, { from: feedBackupOwner });
+    await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
     await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
     await deployer.deploy(
       Universe,
