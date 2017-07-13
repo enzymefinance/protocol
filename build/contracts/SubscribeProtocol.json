@@ -1,0 +1,8 @@
+{
+  "contract_name": "SubscribeProtocol",
+  "abi": [],
+  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a723058205e7ea2bf702390caa4c7dc8cd69bcd2612daed3281aff51d75b9db4250a552540029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1499958588175
+}
