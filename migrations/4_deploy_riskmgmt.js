@@ -1,11 +1,11 @@
 const RiskMgmt = artifacts.require('./RiskMgmt.sol');
 const RiskMgmtV1 = artifacts.require('./RiskMgmtV1.sol');
 
-module.exports = (deployer, network) => {
+module.exports = aync (deployer, network) => {
   if (network == "development") {
-    deployer.deploy(RiskMgmt);
+    await deployer.deploy(RiskMgmt);
   }
   if (network == "kovan") {
-    deployer.deploy(RiskMgmtV1);
+    await deployer.deploy(RiskMgmtV1);
   }
 };

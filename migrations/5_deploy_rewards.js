@@ -1,5 +1,5 @@
 const Rewards = artifacts.require('./Rewards.sol');
 
-module.exports = (deployer) => {
-  deployer.deploy(Rewards, [0, 0]);
+module.exports = aync (deployer) => {
+  await deployer.deploy(Rewards, [0, 0]);
 };
