@@ -1,0 +1,55 @@
+{
+  "name": "@melonproject/protocol",
+  "version": "0.1.2-deploy.2",
+  "description": "Blockchain protocol for asset management",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "lint": "eslint ."
+  },
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melonproject/protocol.git"
+  },
+  "keywords": [
+    "Ethereum",
+    "Protocol",
+    "Melon"
+  ],
+  "author": "“Reto Trinkler <“rt@melonport.com”>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/melonproject/protocol/issues"
+  },
+  "homepage": "https://github.com/melonproject/protocol#readme",
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "async": "^2.4.0",
+    "babel-eslint": "^7.1.1",
+    "babel-preset-es2015": "^6.18.0",
+    "eslint": "^3.13.1",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-import-resolver-meteor": "^0.3.4",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-meteor": "^4.0.1",
+    "eslint-plugin-react": "^6.8.0",
+    "ethereumjs-testrpc": "^3.0.5",
+    "js-sha256": "^0.3.2",
+    "truffle": "3.2.5"
+  },
+  "dependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-core": "^6.20.0",
+    "bignumber.js": "^2.4.0",
+    "chai": "^4.0.2"
+  }
+}
