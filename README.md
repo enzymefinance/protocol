@@ -58,12 +58,6 @@ After installation is complete, go to the above `protocol` directory, open a ter
     node_modules/.bin/truffle test
     ```
 
-## Publish to [NPM](https://www.npmjs.com/package/@melonproject/protocol)
-
-After installation is complete, go to the above `protocol` directory, open a terminal and run:
-
-`npm run publish`
-
 ## Linting
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
