@@ -7,10 +7,11 @@
   },
   "scripts": {
     "test": "truffle test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "publish": "cp -r build/contracts/* protocol && npm publish"
   },
   "files": [
-    "build"
+    "protocol"
   ],
   "publishConfig": {
     "access": "public"

@@ -28,7 +28,7 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
 - Melon Universe [0x7e56AD30007801ABbD5595C6FA232E4FCF72F667](https://kovan.etherscan.io/address/0x7e56AD30007801ABbD5595C6FA232E4FCF72F667)
 
 ### Exchanges
-- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0xe4183415d59F0A619654fA1D9898472C5EA852Ab](https://kovan.etherscan.io/address/0xe4183415d59F0A619654fA1D9898472C5EA852Ab) 
+- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0xe4183415d59F0A619654fA1D9898472C5EA852Ab](https://kovan.etherscan.io/address/0xe4183415d59F0A619654fA1D9898472C5EA852Ab)
 
 
 ## Installation
@@ -57,7 +57,13 @@ After installation is complete, go to the above `protocol` directory, open a ter
     ```
     node_modules/.bin/truffle test
     ```
-    
+
+## Publish to [NPM](https://www.npmjs.com/package/@melonproject/protocol)
+
+After installation is complete, go to the above `protocol` directory, open a terminal and run:
+
+`npm run publish`
+
 ## Linting
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
