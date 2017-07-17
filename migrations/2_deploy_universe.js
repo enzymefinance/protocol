@@ -44,8 +44,6 @@ const assetList = [
   SingularDTVToken,
   StatusToken,
 ];
-const cryptoCompareQuery = 'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true';
-
 
 module.exports = async (deployer, network, accounts) => {
   try {
