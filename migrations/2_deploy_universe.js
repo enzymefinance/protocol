@@ -58,7 +58,7 @@ const newAssetsList = [
   BasicAttentionToken,
   BancorToken,
   DigixDaoToken,
-  DigixGoldToken,
+  // DigixGoldToken,
   DogecoinToken,
   EtherClassicToken,
   GnosisToken,
@@ -72,21 +72,28 @@ const newAssetsList = [
 
 module.exports = async (deployer, network, accounts) => {
   try {
-    // let feedBackupOwner;
-    // if (network === 'development') feedBackupOwner = accounts[1];
-    // else if (network === 'kovan') feedBackupOwner = accounts[0];
+    let feedBackupOwner;
+    if (network === 'development') feedBackupOwner = accounts[1];
+    else if (network === 'kovan') feedBackupOwner = accounts[0];
     await deployer.deploy(newAssetsList.concat([Exchange]));
-    // await deployer.deploy(CryptoCompare);
-    // await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
-    // await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
-    let newAssetAddresses = newAssetsList.map(a => a.address);
+    const newAssetAddresses = newAssetsList.map(a => a.address);
+    await deployer.deploy(
+      CryptoCompare,
+      ETHERTOKEN_ADDRESS,
+      [
+        MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+        EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
+      ].concat(newAssetAddresses),
+    );
+    await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
+    await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
     await deployer.deploy(
       Universe,
       [
         ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
         EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
       ].concat(newAssetAddresses),
-      Array(assetList.length).fill(PRICEFEED_ADDRESS),
+      Array(assetList.length).fill(CryptoCompare.address),
       Array(assetList.length).fill(Exchange.address),
     );
   } catch (e) {
