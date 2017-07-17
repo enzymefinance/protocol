@@ -1,8 +1,0 @@
-{
-  "contract_name": "b64",
-  "abi": [],
-  "unlinked_binary": "0x60606040523415600b57fe5b5b60338060196000396000f30060606040525bfe00a165627a7a723058203d478669eea18156c1bf6adc232cb5038141655f793e6723d55a3ed6256a7e2d0029",
-  "networks": {},
-  "schema_version": "0.0.5",
-  "updated_at": 1499938350038
-}
