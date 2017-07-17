@@ -22,24 +22,49 @@ const CryptoCompare = artifacts.require('./CryptoCompare.sol');
 const Exchange = artifacts.require('./Exchange.sol');
 const Universe = artifacts.require('./Universe.sol');
 
-const assetList = [
-  EtherToken,   // [0] refAsset token
-  MelonToken,   // [1] MLN token
-  AragonToken,  // rest alphabetical
+const PRICEFEED_ADDRESS = '0x442fd95c32162f914364c5feff27a0dc05214706';
+const BITCOINTOKEN_ADDRESS = '0x9e4c56a633dd64a2662bdfa69de4fde33ce01bdd';
+const ETHERTOKEN_ADDRESS = '0x7506c7bfed179254265d443856ef9bda19221cd7';
+const REPTOKEN_ADDRESS = '0xf61b8003637e5d5dbb9ca8d799ab54e5082cbdbc';
+const MELONTOKEN_ADDRESS = '0x4dffea52b0b4b48c71385ae25de41ce6ad0dd5a7';
+const EUROTOKEN_ADDRESS = '0xc151b622fded233111155ec273bfaf2882f13703';
+
+// const assetList = [
+//   EtherToken,   // [0] refAsset token
+//   MelonToken,   // [1] MLN token
+//   AragonToken,  // rest alphabetical
+//   AventusToken,
+//   BasicAttentionToken,
+//   BancorToken,
+//   BitcoinToken,
+//   DigixDaoToken,
+//   DigixGoldToken,
+//   DogecoinToken,
+//   EtherClassicToken,
+//   EuroToken,
+//   GnosisToken,
+//   GolemToken,
+//   IconomiToken,
+//   LitecoinToken,
+//   RepToken,
+//   RippleToken,
+//   SingularDTVToken,
+//   StatusToken,
+// ];
+
+const newAssetsList = [
+  AragonToken,
   AventusToken,
   BasicAttentionToken,
   BancorToken,
-  BitcoinToken,
   DigixDaoToken,
   DigixGoldToken,
   DogecoinToken,
   EtherClassicToken,
-  EuroToken,
   GnosisToken,
   GolemToken,
   IconomiToken,
   LitecoinToken,
-  RepToken,
   RippleToken,
   SingularDTVToken,
   StatusToken,
@@ -47,17 +72,21 @@ const assetList = [
 
 module.exports = async (deployer, network, accounts) => {
   try {
-    let feedBackupOwner;
-    if (network === 'development') feedBackupOwner = accounts[1];
-    else if (network === 'kovan') feedBackupOwner = accounts[0];
-    await deployer.deploy(assetList.concat([Exchange]));
-    await deployer.deploy(CryptoCompare);
-    await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
-    await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
+    // let feedBackupOwner;
+    // if (network === 'development') feedBackupOwner = accounts[1];
+    // else if (network === 'kovan') feedBackupOwner = accounts[0];
+    await deployer.deploy(newAssetsList.concat([Exchange]));
+    // await deployer.deploy(CryptoCompare);
+    // await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
+    // await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
+    let newAssetAddresses = newAssetsList.map(a => a.address);
     await deployer.deploy(
       Universe,
-      assetList.map(a => a.address),
-      Array(assetList.length).fill(CryptoCompare.address),
+      [
+        ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+        EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
+      ].concat(newAssetAddresses),
+      Array(assetList.length).fill(PRICEFEED_ADDRESS),
       Array(assetList.length).fill(Exchange.address),
     );
   } catch (e) {
