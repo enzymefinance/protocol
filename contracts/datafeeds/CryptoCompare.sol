@@ -642,11 +642,22 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     }
 
     // FIELDS
+
+    // Constant fields
+    // Token addresses on Kovan
+    address public constant ETHER_TOKEN = 0xfa8513D63417503e73B3EF13bD667130Fc6025F3;
+    address public constant MELON_TOKEN = 0x16ff2dC89cC6d609B0776f87b351AC812b37254B;
+    address public constant BITCOIN_TOKEN = 0xAb264ab27E26e30bbcae342A82547CC4fFc2d63B;
+    address public constant REP_TOKEN = 0xE5ED7874F022A1Cf72E8669cFA6ded1fe862a759;
+    address public constant EURO_TOKEN = 0x24B7765eed848b3C4C4f60F2E3688480788becdc;
+    address public constant DGX_TOKEN = 0xb8e99f1E8E96bF4659A6C852dF504DC066ed355E;
+    address public constant GNOSIS_TOKEN = 0x46B6d09867Ee4f35d403c898d9D9D91D1EfFB875;
+    address public constant GOLEM_TOKEN = 0x6577e3059B2c966dEe9E94F506a6e2525C4Ae519;
+    address public constant ICONOMI_TOKEN = 0x8CeF6Ee89F2934428eeF2Cf54C8305CDE78635ac;
+
     // Fields that are only changed in constructor
     /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
-    address quoteAsset;
-    address[] baseAssets;
-
+    address quoteAsset; // Is the quote asset of a portfolio against which all other assets are priced against
     // Fields that can be changed by functions
     uint frequency = 30; // Frequency of updates in seconds
     uint validity = 600; // Time in seconds data is considered valid
@@ -737,17 +748,9 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         return ds_pubkey;
     }
 
-    // NON-CONSTANT METHODS
-    function CryptoCompare(address quote, address[] bases)
-    {
-        quoteAsset = quote; // all other assets are priced against this
-        for (uint i = 0; i < bases.length; i++) {
-            baseAssets.push(bases[i]);
-        }
-    }
-
     function ignite() payable {
         oraclize_setProof(240);
+        quoteAsset = ETHER_TOKEN; // Is the quote asset of a portfolio against which all other assets are priced against
         /* Note:
          *  Sample response for below query {"MLN":1.36,"BTC":0.04695,"EUR":47.48,"REP":4.22}
          *  Prices shold be quoted in quoteAsset
@@ -756,11 +759,10 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
          *  3) EUR/ETH -> ETH/EUR
          *  4) REP/ETH -> ETH/REP
          */
-         // TODO: set query dynamically, based on baseAssets array
-        setQuery("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP,ANT,AVT,BAT,BNT,DGD,DOGE,ETC,GNO,GNT,ICN,LTC,XRP,SNGLS,SNT&sign=true");
+        setQuery("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true");
         ds_pubkey = hex"a0f4f688350018ad1b9785991c0bde5f704b005dc79972b114dbed4a615a983710bfc647ebe5a320daa28771dce6a2d104f5efa2e4a85ba3760b76d46f8571ca";
-        enableContinuousDelivery();
-        oraclize_query('URL', oraclizeQuery, 500000);
+        //enableContinuousDelivery();
+        //oraclize_query('URL', oraclizeQuery, 500000);
     }
 
     function () payable {}
@@ -772,7 +774,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     */
     function isFresh(string _dateHeader) internal constant returns(bool) {
         uint timestamp = time.parseDate(_dateHeader);
-        if (timestamp > data[baseAssets[0]].timestamp) {
+        if (timestamp > data[BITCOIN_TOKEN].timestamp) {
             return true;
         }
         return false;
