@@ -1,3 +1,4 @@
+const BigNumber = require('bignumber.js');
 const AragonToken = artifacts.require('./AragonToken.sol');
 const AventusToken = artifacts.require('./AventusToken.sol');
 const BasicAttentionToken = artifacts.require('./BasicAttentionToken.sol');
@@ -70,32 +71,47 @@ const newAssetsList = [
   StatusToken,
 ];
 
-module.exports = async (deployer, network, accounts) => {
+module.exports = (deployer, network, accounts) => {
   try {
     let feedBackupOwner;
     if (network === 'development') feedBackupOwner = accounts[1];
     else if (network === 'kovan') feedBackupOwner = accounts[0];
-    await deployer.deploy(newAssetsList.concat([Exchange]));
-    const newAssetAddresses = newAssetsList.map(a => a.address);
-    await deployer.deploy(
-      CryptoCompare,
-      ETHERTOKEN_ADDRESS,
-      [
-        MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
-        EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
-      ].concat(newAssetAddresses),
-    );
-    await CryptoCompare.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) });
-    await CryptoCompare.updatePriceOraclize({ from: feedBackupOwner });
-    await deployer.deploy(
-      Universe,
-      [
-        ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
-        EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
-      ].concat(newAssetAddresses),
-      Array(assetList.length).fill(CryptoCompare.address),
-      Array(assetList.length).fill(Exchange.address),
-    );
+    deployer.deploy(newAssetsList.concat([Exchange]))
+    .then(() => {
+      const newAssetAddresses = newAssetsList.map(a => a.address);
+      return deployer.deploy(
+        CryptoCompare,
+        // ETHERTOKEN_ADDRESS,
+        // [
+        //   MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+        //   EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
+        // ].concat(newAssetAddresses),
+        { gas: 4500000 }
+      )
+    })
+    // .then(() =>
+    //   CryptoCompare.deployed()
+    // )
+    // .then(res =>
+    //   res.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) })
+    // )
+    // .then(() =>
+    //   CryptoCompare.deployed()
+    // )
+    // .then(() =>
+    //   res.updatePriceOraclize({ from: feedBackupOwner })
+    // )
+    .then(() =>
+      deployer.deploy(
+        Universe,
+        [
+          ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+          EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
+        ].concat(newAssetAddresses),
+        Array(assetList.length).fill(CryptoCompare.address),
+        Array(assetList.length).fill(Exchange.address),
+      )
+    )
   } catch (e) {
     throw e;
   }

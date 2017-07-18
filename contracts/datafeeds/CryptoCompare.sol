@@ -741,7 +741,9 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     function CryptoCompare(address quote, address[] bases)
     {
         quoteAsset = quote; // all other assets are priced against this
-        baseAssets = bases; // other assets
+        for (uint i = 0; i < bases.length; i++) {
+            baseAssets.push(bases[i]);
+        }
     }
 
     function ignite() payable {
@@ -770,7 +772,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     */
     function isFresh(string _dateHeader) internal constant returns(bool) {
         uint timestamp = time.parseDate(_dateHeader);
-        if (timestamp > data[BITCOIN_TOKEN].timestamp) {
+        if (timestamp > data[baseAssets[0]].timestamp) {
             return true;
         }
         return false;
