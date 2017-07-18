@@ -749,7 +749,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     }
 
     function ignite() payable {
-        oraclize_setProof(240);
+        /*oraclize_setProof(240);*/
         quoteAsset = ETHER_TOKEN; // Is the quote asset of a portfolio against which all other assets are priced against
         /* Note:
          *  Sample response for below query {"MLN":1.36,"BTC":0.04695,"EUR":47.48,"REP":4.22}

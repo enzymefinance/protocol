@@ -74,7 +74,7 @@ const newAssetsList = [
 module.exports = (deployer, network, accounts) => {
   try {
     let feedBackupOwner;
-    if (network === 'development') feedBackupOwner = accounts[1];
+    if (network === 'development') feedBackupOwner = accounts[0];
     else if (network === 'kovan') feedBackupOwner = accounts[0];
     deployer.deploy(newAssetsList.concat([Exchange]))
     .then(() => {
@@ -86,32 +86,31 @@ module.exports = (deployer, network, accounts) => {
         //   MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
         //   EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
         // ].concat(newAssetAddresses),
-        { gas: 4500000 }
       )
     })
-    // .then(() =>
-    //   CryptoCompare.deployed()
-    // )
-    // .then(res =>
-    //   res.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 18)) })
-    // )
-    // .then(() =>
-    //   CryptoCompare.deployed()
-    // )
+    .then(() =>
+      CryptoCompare.deployed()
+    )
+    .then(res =>
+      res.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 16)) })
+    )
+    .then(() =>
+      CryptoCompare.deployed()
+    )
     // .then(() =>
     //   res.updatePriceOraclize({ from: feedBackupOwner })
     // )
-    .then(() =>
-      deployer.deploy(
-        Universe,
-        [
-          ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
-          EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
-        ].concat(newAssetAddresses),
-        Array(assetList.length).fill(CryptoCompare.address),
-        Array(assetList.length).fill(Exchange.address),
-      )
-    )
+    // .then(() =>
+    //   deployer.deploy(
+    //     Universe,
+    //     [
+    //       ETHERTOKEN_ADDRESS, MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+    //       EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS
+    //     ].concat(newAssetAddresses),
+    //     Array(assetList.length).fill(CryptoCompare.address),
+    //     Array(assetList.length).fill(Exchange.address),
+    //   )
+    // )
   } catch (e) {
     throw e;
   }
