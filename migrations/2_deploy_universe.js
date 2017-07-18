@@ -85,18 +85,19 @@ module.exports = (deployer, network, accounts) => {
         // [
         //   MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
         //   EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
-        // ].concat(newAssetAddresses),
+        // ],//.concat(newAssetAddresses),
+        {gas: 4500000}//, value: new BigNumber(1000000000000000000)},
       )
     })
-    .then(() =>
-      CryptoCompare.deployed()
-    )
-    .then(res =>
-      res.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 16)) })
-    )
-    .then(() =>
-      CryptoCompare.deployed()
-    )
+    // .then(() =>
+    //   CryptoCompare.deployed()
+    // )
+    // .then(res =>
+    //   res.ignite({ from: feedBackupOwner, value: new BigNumber(Math.pow(10, 16)) })
+    // )
+    // .then(() =>
+    //   CryptoCompare.deployed()
+    // )
     // .then(() =>
     //   res.updatePriceOraclize({ from: feedBackupOwner })
     // )

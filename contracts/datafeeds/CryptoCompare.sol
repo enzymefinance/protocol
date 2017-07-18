@@ -5,7 +5,7 @@ import "../dependencies/DBC.sol";
 import "../assets/Asset.sol";
 import "../dependencies/ERC20.sol";
 import "../dependencies/Owned.sol";
-import "../dependencies/oraclizeAPI_0.4.sol";
+import "../dependencies/usingOraclize.sol";
 import "../dependencies/strings.sol";
 
 
@@ -748,8 +748,10 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         return ds_pubkey;
     }
 
+    /*function CryptoCompare(address quoteToken, address[] baseTokens){}*/
+
     function ignite() payable {
-        /*oraclize_setProof(240);*/
+        oraclize_setProof(240);
         quoteAsset = ETHER_TOKEN; // Is the quote asset of a portfolio against which all other assets are priced against
         /* Note:
          *  Sample response for below query {"MLN":1.36,"BTC":0.04695,"EUR":47.48,"REP":4.22}
