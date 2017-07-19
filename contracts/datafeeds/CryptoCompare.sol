@@ -35,42 +35,26 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
 
     // FIELDS
 
-    // Constant fields
-    // Token addresses on Kovan
     address public constant ETHER_TOKEN = 0xfa8513D63417503e73B3EF13bD667130Fc6025F3;
-    address public constant MELON_TOKEN = 0x16ff2dC89cC6d609B0776f87b351AC812b37254B;
     address public constant BITCOIN_TOKEN = 0xAb264ab27E26e30bbcae342A82547CC4fFc2d63B;
-    address public constant REP_TOKEN = 0xE5ED7874F022A1Cf72E8669cFA6ded1fe862a759;
-    address public constant EURO_TOKEN = 0x24B7765eed848b3C4C4f60F2E3688480788becdc;
-    address public constant DGX_TOKEN = 0xb8e99f1E8E96bF4659A6C852dF504DC066ed355E;
-    address public constant GNOSIS_TOKEN = 0x46B6d09867Ee4f35d403c898d9D9D91D1EfFB875;
-    address public constant GOLEM_TOKEN = 0x6577e3059B2c966dEe9E94F506a6e2525C4Ae519;
-    address public constant ICONOMI_TOKEN = 0x8CeF6Ee89F2934428eeF2Cf54C8305CDE78635ac;
 
-    // Fields that are only changed in constructor
-    /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
     address quoteAsset; // Is the quote asset of a portfolio against which all other assets are priced against
-    // Fields that can be changed by functions
     uint frequency = 30; // Frequency of updates in seconds
     uint validity = 600; // Time in seconds data is considered valid
     uint gasLimit = 500000;
     bytes ds_pubkey;
 
-    AssetInfo[] public assets;
     mapping (address => Data) data; // Address of fungible => price of fungible
 
     // EVENTS
-
     event PriceUpdated(address indexed ofAsset, uint atTimestamp, uint ofPrice);
 
     // ORACLIZE DATA-STRUCTURES
-
     bool continuousDelivery;
     string oraclizeQuery;
 
     // MODIFIERS
-
-   modifier msg_value_at_least(uint x) {
+    modifier msg_value_at_least(uint x) {
         assert(msg.value >= x);
         _;
     }
@@ -96,7 +80,6 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     }
 
     // CONSTANT METHODS
-
     function getQuoteAsset() constant returns (address) { return quoteAsset; }
     function getFrequency() constant returns (uint) { return frequency; }
     function getValidity() constant returns (uint) { return validity; }
@@ -140,11 +123,23 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         return ds_pubkey;
     }
 
-    /*function CryptoCompare(address quoteToken, address[] baseTokens){}*/
+    AssetInfo[] public assets;
+    /*AssetInfo[10] public assets; // TODO: move to top when hardcoding (below) fixed*/
+    /*AssetInfo[1] storage assets = [AssetInfo(0xbbfbd7113dd4634cc42391a3fdb65ba7fdeaa55c, "ANT")];*/
+    /*uint[] public nn;*/
+    function CryptoCompare(address quote, address[] bases){
+        // even this below gives out of gas error
+        /*nn.push(22);*/
+        // TODO: remove hardcoding; make this dynamic
+        /*assets[0] = AssetInfo(0xbbfbd7113dd4634cc42391a3fdb65ba7fdeaa55c, "ANT");*/
+        // below causes an "out of gas" error
+        /*for (uint ii = 0; ii < 3; ii++) {
+            assets.push(AssetInfo(bases[ii], "abc"));
+        }*/
+    }
 
     function ignite() payable {
-        /*oraclize_setProof(240);*/
-        quoteAsset = ETHER_TOKEN; // Is the quote asset of a portfolio against which all other assets are priced against
+        oraclize_setProof(240);
         /* Note:
          *  Sample response for below query {"MLN":1.36,"BTC":0.04695,"EUR":47.48,"REP":4.22}
          *  Prices shold be quoted in quoteAsset
@@ -154,9 +149,9 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
          *  4) REP/ETH -> ETH/REP
          */
         setQuery("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=MLN,BTC,EUR,REP&sign=true");
-        /*ds_pubkey = hex"a0f4f688350018ad1b9785991c0bde5f704b005dc79972b114dbed4a615a983710bfc647ebe5a320daa28771dce6a2d104f5efa2e4a85ba3760b76d46f8571ca";*/
+        ds_pubkey = hex"a0f4f688350018ad1b9785991c0bde5f704b005dc79972b114dbed4a615a983710bfc647ebe5a320daa28771dce6a2d104f5efa2e4a85ba3760b76d46f8571ca";
         enableContinuousDelivery();
-        /*oraclize_query('URL', oraclizeQuery, 500000);*/
+        oraclize_query('URL', oraclizeQuery, 500000);
     }
 
     function () payable {}
@@ -222,6 +217,7 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
         return to;
     }
 
+
     function __callback(bytes32 oraclizeId, string result, bytes proof) only_oraclize {
         // Update prices only if native proof is verified
         if ((proof.length > 0) && (nativeProof_verify(result, proof, ds_pubkey))) {
@@ -245,38 +241,10 @@ contract CryptoCompare is DBC, Owned, usingOraclize, ECVerify, b64, JSON_Decoder
     }
 
     function setQuery(string query) pre_cond(isOwner()) { oraclizeQuery = query; }
-
     function updateKey(bytes _pubkey) pre_cond(isOwner()) { ds_pubkey = _pubkey; }
-
     function enableContinuousDelivery() pre_cond(isOwner()) { continuousDelivery = true; }
-
     function disableContinuousDelivery() pre_cond(isOwner()) { delete continuousDelivery; }
-
     function setGasLimit(uint _newGasLimit) pre_cond(isOwner()) { gasLimit = _newGasLimit; }
-
     function updatePriceOraclize() payable { bytes32 oraclizeId = oraclize_query(frequency,'URL', oraclizeQuery, gasLimit); }
-
-    function setFrequency(uint newFrequency) pre_cond(isOwner())
-    {
-        if (frequency > validity) throw;
-        frequency = newFrequency;
-    }
-
     function setValidity(uint _validity) pre_cond(isOwner()) { validity = _validity; }
-
-    function addAsset(string _ticker, address _newAsset) pre_cond(isOwner()) { assets.push(AssetInfo(_newAsset,_ticker)); }
-
-    function rmAsset(address _assetRemoved) pre_cond(isOwner())
-    {
-        uint length = assets.length;
-        for (uint i = 0; i < length; i++) {
-            if (assets[i].assetAddress == _assetRemoved) {
-                break;
-            }
-        }
-
-        assets[i] = assets[assets.length - 1];
-        assets.length--;
-    }
-
 }

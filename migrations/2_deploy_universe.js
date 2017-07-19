@@ -81,12 +81,14 @@ module.exports = (deployer, network, accounts) => {
       const newAssetAddresses = newAssetsList.map(a => a.address);
       return deployer.deploy(
         CryptoCompare,
-        // ETHERTOKEN_ADDRESS,
-        // [
-        //   MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
-        //   EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
-        // ],//.concat(newAssetAddresses),
-        {gas: 4500000}//, value: new BigNumber(1000000000000000000)},
+        ETHERTOKEN_ADDRESS,
+        [
+          MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+          EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
+        ],
+        {gas: 4500000}
+        //, value: new BigNumber(1000000000000000000)},
+        //.concat(newAssetAddresses),
       )
     })
     // .then(() =>
