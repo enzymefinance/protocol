@@ -1,7 +1,7 @@
 // const Exchange = artifacts.require('Exchange');
 // const EtherToken = artifacts.require('EtherToken');
 // const Asset = artifacts.require('Asset');
-const tokens = require('../migrations/config/token_info');
+// const tokens = require('../migrations/config/token_info').kovan;
 const chai = require('chai');
 
 const assert = chai.assert;

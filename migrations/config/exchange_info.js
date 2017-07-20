@@ -1,4 +1,4 @@
-export const exchangeInfo = {
+module.exports = {
   kovan: [
     {
       address: '',
