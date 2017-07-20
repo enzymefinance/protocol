@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.1.5-alpha.2",
+  "version": "0.1.5-alpha.3",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
@@ -10,7 +10,8 @@
     "lint": "eslint ."
   },
   "files": [
-    "build"
+    "build",
+    "Migrations/config/token_info.js"
   ],
   "publishConfig": {
     "access": "public"
