@@ -2,4 +2,7 @@
 /node_modules
 npm-debug.log
 *.orig
-package-lock.json
+
+# ignore built contracts
+build/
+protocol/

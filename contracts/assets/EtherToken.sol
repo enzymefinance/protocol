@@ -7,13 +7,14 @@ import "./PreminedAsset.sol";
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
 contract EtherToken is PreminedAsset {
+    using SafeMath for uint256;
 
     // FIELDS
 
     // Constant token specific fields
     string public constant name = "Ether Token";
     string public constant symbol = "ETH-T";
-    uint public constant decimals = 18;
+    uint8 public constant decimals = 18;
     uint public constant preminedAmount = 10**28;
 
     // EVENTS
@@ -42,7 +43,7 @@ contract EtherToken is PreminedAsset {
         payable
         returns (bool)
     {
-        balances[msg.sender] = safeAdd(balances[msg.sender], msg.value);
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
         Deposit(msg.sender, msg.value);
         return true;
     }
@@ -52,7 +53,7 @@ contract EtherToken is PreminedAsset {
         balances_msg_sender_at_least(amount)
         returns (bool)
     {
-        balances[msg.sender] = safeSub(balances[msg.sender], amount);
+        balances[msg.sender] = balances[msg.sender].add(amount);
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
         return true;

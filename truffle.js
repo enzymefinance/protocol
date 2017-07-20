@@ -1,21 +1,24 @@
 module.exports = {
   networks: {
     development: {
-      host: "localhost",
+      host: 'localhost',
       port: 8545,
-      network_id: "*" // Match any network id
-    },
-    ropsten: {
-      host: "localhost",
-      port: 8546,
-      network_id: 3
+      network_id: '*', // Match any network id
     },
     kovan: {
       host: 'localhost',
       port: 8545,
       gas: 4500000,
       network_id: 42,
-      from: '0x00E0B33cDb3AF8B55CD8467d6d13BC0Ba8035acF'
-    }
-  }
+    },
+    kovanUniverse: { // Deployment of Kovan auxillary parts such as Assets, PriceFeeds, Exchanges
+      host: 'localhost',
+      port: 8545,
+      gas: 4500000,
+      network_id: 42,
+    },
+  },
+  mocha: {
+    slow: 500,
+  },
 };

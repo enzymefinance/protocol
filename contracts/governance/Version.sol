@@ -17,7 +17,7 @@ contract Version is DBC, Owned {
         address owner;
         string name;
         string symbol;
-        uint decimals;
+        uint8 decimals;
         bool active;
         uint timestamp;
         bytes32 ipfsHash;
@@ -26,6 +26,7 @@ contract Version is DBC, Owned {
 
     struct ModuleSelection {
         address ofUniverse;
+        address ofParticipation;
         address ofRiskMgmt;
         address ofManagementFee;
         address ofPerformanceFee;
@@ -45,10 +46,11 @@ contract Version is DBC, Owned {
         address owner,
         string name,
         string symbol,
-        uint decimals,
+        uint8 decimals,
         bool active,
         uint id,
         address ofUniverse,
+        address ofParticitpation,
         address ofRiskMgmt,
         address ofRewards
     );
@@ -82,8 +84,9 @@ contract Version is DBC, Owned {
     function createVault(
         string withName,
         string withSymbol,
-        uint withDecimals,
+        uint8 withDecimals,
         address ofUniverse,
+        address ofParticipation,
         address ofRiskMgmt,
         address ofRewards
     )
@@ -97,6 +100,7 @@ contract Version is DBC, Owned {
             withSymbol,
             withDecimals,
             ofUniverse,
+            ofParticipation,
             ofRiskMgmt,
             ofRewards
         ));
@@ -117,6 +121,7 @@ contract Version is DBC, Owned {
           info.active,
           id,
           ofUniverse,
+          ofParticipation,
           ofRiskMgmt,
           ofRewards
         );
