@@ -17,7 +17,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x764ae227ad6a6e143546772169265d76aA9337c6',
       name: 'Bancor Network Token',
       symbol: 'BNT-T',
       decimals: 18,
@@ -25,7 +25,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xFEE1D0Dc0b5b6F2F20D8e9f7E95e9E367E4a61A7',
       name: 'Basic Attention Token',
       symbol: 'BAT-T',
       decimals: 18,
@@ -33,7 +33,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xF53E3B6c12f8c66324A64F31277260C06D869732',
       name: 'Bitcoin Token',
       symbol: 'BTC-T',
       decimals: 8,
@@ -41,7 +41,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x3b7c7C457D3aAe04a4631E4888AeEEDd08B24e41',
       name: 'Digix Dao Token',
       symbol: 'DGD-T',
       decimals: 9,
@@ -49,7 +49,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x804b7F797eEe4D51Fef29b3Ef7E525A3848A0c0F',
       name: 'Digix Gold Token',
       symbol: 'DGX-T',
       decimals: 9,
@@ -57,7 +57,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xC37cdFb70BD68f6FCF2aB0a97E1D6a12eaA9215f',
       name: 'Dogecoin Token',
       symbol: 'DOGE-T',
       decimals: 8,
@@ -65,7 +65,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x334559E91238f466C95Bb8241555f6AD27f5978B',
       name: 'Ether Classic Token',
       symbol: 'ETC-T',
       decimals: 18,
@@ -73,7 +73,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x13A85D4eF50745FF607001872b74F6Aa158a6434', // not actual token!!! no deposit/withdraw functionality
       name: 'Ether Token',
       symbol: 'ETH-T',
       decimals: 18,
@@ -81,15 +81,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
-      name: 'Aragon Network Token',
-      symbol: 'ANT-T',
-      decimals: 18,
-      url: '',
-      githubHint: '',
-    },
-    {
-      address: '',
+      address: '0xCAAC95AB4D30EE8D6162e55EB3430134FEc5aF50',
       name: 'Euro Token',
       symbol: 'EUR-T',
       decimals: 8,
@@ -97,7 +89,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xC73D78870bA5a3eAddC2BE371Af09B2c429CB2CA',
       name: 'Gnosis Token',
       symbol: 'GNO-T',
       decimals: 18,
@@ -105,7 +97,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x08C24283F0b6C07ff9793a1B8534A49B32C07e73',
       name: 'Golem Network Token',
       symbol: 'GNT-T',
       decimals: 18,
@@ -113,7 +105,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xc87BAD39aaDB70257E2417Bd8f4983361599394D',
       name: 'Iconomi Token',
       symbol: 'ICN-T',
       decimals: 18,
@@ -121,7 +113,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xF051264ab9046fd73cBd00df5E732d2cA78ee704',
       name: 'Litecoin Token',
       symbol: 'LTC-T',
       decimals: 8,
@@ -129,7 +121,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x2a20ff70596e431ab26C2365acab1b988DA8eCCF',
       name: 'Melon Token',
       symbol: 'MLN-T',
       decimals: 18,
@@ -137,7 +129,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xe1b25BCaE898ab228A13EAC49EBBA8D3df9add70',
       name: 'MakerDAO Token',
       symbol: 'MKR-T',
       decimals: 18,
