@@ -1,3 +1,5 @@
+pragma solidity ^0.4.11;
+
 contract b64 {
     function b64decode(bytes s) internal returns (bytes) {
         byte v1;

@@ -1,3 +1,5 @@
+pragma solidity ^0.4.11;
+
 contract ECVerify {
     // Duplicate Solidity's ecrecover, but catching the CALL return value
     function safer_ecrecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal returns (bool, address) {
