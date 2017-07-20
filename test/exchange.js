@@ -1,6 +1,7 @@
 const Exchange = artifacts.require('Exchange');
 const EtherToken = artifacts.require('EtherToken');
-const MelonToken = artifacts.require('MelonToken');
+const PreminedAsset = artifacts.require('PreminedAsset');
+const tokens = require('../migrations/config/token_info').kovan;
 const chai = require('chai');
 
 const assert = chai.assert;
@@ -10,10 +11,11 @@ contract('Exchange', (accounts) => {
   let mlnToken;
   let exchange;
 
-  before('Get contract instances', async () => {
-    ethToken = await EtherToken.deployed();
-    mlnToken = await MelonToken.deployed();
-    exchange = await Exchange.deployed();
+  before('Deploy contract instances', async () => {
+    const mln = tokens.find(t => t.symbol === 'MLN-T');
+    ethToken = await EtherToken.new();
+    mlnToken = await PreminedAsset.new(mln.name, mln.symbol, mln.decimals, Math.pow(10, 28)); // TODO: outsource deploying these to a util fn
+    exchange = await Exchange.new();
   });
 
   it('Empty exchange has zero orderId', async () => {

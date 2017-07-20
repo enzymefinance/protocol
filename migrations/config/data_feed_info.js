@@ -1,4 +1,4 @@
-export const dataFeedInfo = {
+module.exports = {
   kovan: [
     {
       address: '',
