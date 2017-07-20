@@ -1,7 +1,7 @@
-// const Exchange = artifacts.require('Exchange');
-// const EtherToken = artifacts.require('EtherToken');
-// const Asset = artifacts.require('Asset');
-// const tokens = require('../migrations/config/token_info').kovan;
+const Exchange = artifacts.require('Exchange');
+const EtherToken = artifacts.require('EtherToken');
+const PreminedAsset = artifacts.require('PreminedAsset');
+const tokens = require('../migrations/config/token_info').kovan;
 const chai = require('chai');
 
 const assert = chai.assert;
@@ -12,17 +12,18 @@ contract('Exchange', (accounts) => {
   let exchange;
 
   before('Deploy contract instances', async () => {
-    // ethToken = await EtherToken.new();
-    // mlnToken = await Asset.new();
-    // exchange = await Exchange.deployed();
+    const mln = tokens.find(t => t.symbol === 'MLN-T');
+    ethToken = await EtherToken.new();
+    mlnToken = await PreminedAsset.new(mln.name, mln.symbol, mln.decimals, Math.pow(10, 28)); // TODO: outsource deploying these to a util fn
+    exchange = await Exchange.new();
   });
 
-  it.skip('Empty exchange has zero orderId', async () => {
+  it('Empty exchange has zero orderId', async () => {
     const firstId = await exchange.getLastOrderId();
     assert.equal(firstId.toNumber(), 0);
   });
 
-  describe.skip('#make()', () => {
+  describe('#make()', () => {
     it('Calls without error', async () => {
       const amt = 1000;
       await mlnToken.approve(exchange.address, amt, { from: accounts[0] });
@@ -44,7 +45,7 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  describe.skip('#cancel()', () => {
+  describe('#cancel()', () => {
     it('Calls without error', async () => {
       const oId = await exchange.getLastOrderId();
       await exchange.cancel(oId);
@@ -57,7 +58,7 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  describe.skip('#take()', () => {
+  describe('#take()', () => {
     const maker = accounts[1];
     const taker = accounts[2];
     before(async () => {
