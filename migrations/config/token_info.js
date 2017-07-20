@@ -73,7 +73,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '0x13A85D4eF50745FF607001872b74F6Aa158a6434', // not actual token!!! no deposit/withdraw functionality
+      address: '0x1a825E9bF3BdC8ef8B975F97c78b5208a947d0EC', // not actual token!!! no deposit/withdraw functionality
       name: 'Ether Token',
       symbol: 'ETH-T',
       decimals: 18,
@@ -137,7 +137,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x64aF87A36a407732320c4dc1852dEBC60cd81c5E',
       name: 'Rep Token',
       symbol: 'REP-T',
       decimals: 18,
@@ -145,7 +145,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x3b43249De8Eee169Eea7226a48699FcBA8DF3686',
       name: 'Ripple Token',
       symbol: 'XRP-T',
       decimals: 6,
@@ -153,7 +153,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x4C4e2b285e446fb1974dcC3a665CAba7C189A96f',
       name: 'SingularDTV Token',
       symbol: 'SNGLS-T',
       decimals: 0,
@@ -161,7 +161,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0x64C4406C58C512f326d83065a72F12884105520b',
       name: 'Status Network Token',
       symbol: 'SNT-T',
       decimals: 18,
@@ -169,7 +169,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '',
+      address: '0xbb0449e9b66e2E1438522645caE6Cf9CD8595793',
       name: '0x Protocol Token',
       symbol: 'ZRX-T',
       decimals: 18,
