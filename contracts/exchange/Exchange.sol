@@ -9,7 +9,8 @@ import "./ExchangeProtocol.sol";
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
-contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
+contract Exchange is ExchangeProtocol, DBC, MutexUser {
+    using SafeMath for uint256;
 
     // TYPES
 
@@ -104,7 +105,7 @@ contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
         OrderInfo memory offer = orders[id];
 
         // inferred quantity that the buyer wishes to spend
-        uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
+        uint spend = quantity.mul(offer.buy_how_much).div(offer.sell_how_much);
         if (spend > offer.buy_how_much || quantity > offer.sell_how_much) {
             // buyer wants more than is available
             return false;
@@ -119,8 +120,8 @@ contract Exchange is ExchangeProtocol, DBC, SafeMath, MutexUser {
         }
         if (spend > 0 && quantity > 0) {
             // buyer wants a fraction of what is available
-            orders[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
-            orders[id].buy_how_much = safeSub(offer.buy_how_much, spend);
+            orders[id].sell_how_much = offer.sell_how_much.sub(quantity);
+            orders[id].buy_how_much = offer.buy_how_much.sub(spend);
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
             OrderUpdate(id);

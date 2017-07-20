@@ -6,12 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP
-- Parameter `timestamp` to `VaultInfo` struct in Version.sol contract
+- Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP, SNGLS incl addresses and verified on EtherScan
+- Second way to subscribe and redeem using referenceAsset directly in Vault
+- CryptoCompare price feed contract
 
 ### Changed
+- Refactor and re-write tests to have better coverage
 - Fixed some code to use async/await instead of promises
 - Increase amount of premined token
+- From SafeMath contract to SafeMath library
 
 ## [0.1.3] - 2017-06-13
 ### Added

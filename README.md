@@ -10,27 +10,6 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
 [wiki-url]: https://github.com/melonproject/protocol/wiki
 [whitepaper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
 
-
-## Kovan Deployed Contracts
-
-### Assets
-- EtherToken [0x7506c7BfED179254265d443856eF9bda19221cD7](https://kovan.etherscan.io/address/0x7506c7bfed179254265d443856ef9bda19221cd7)
-- MelonToken [0x4dffea52b0b4b48c71385ae25de41ce6ad0dd5a7](https://kovan.etherscan.io/address/0x4dffea52b0b4b48c71385ae25de41ce6ad0dd5a7)
-- BitcoinToken [0x9E4C56a633DD64a2662bdfA69dE4FDE33Ce01bdd](https://kovan.etherscan.io/address/0x9e4c56a633dd64a2662bdfa69de4fde33ce01bdd)
-- EuroToken [0xC151b622fDeD233111155Ec273BFAf2882f13703](https://kovan.etherscan.io/address/0xc151b622fded233111155ec273bfaf2882f13703)
-- RepToken [0xF61b8003637E5D5dbB9ca8d799AB54E5082CbdBc](https://kovan.etherscan.io/address/0xf61b8003637e5d5dbb9ca8d799ab54e5082cbdbc)
-
-### Price Feeds
-- [Oraclize](https://github.com/oraclize/melonport)
-- [CryptoCompare](https://github.com/vcealicu/melonport-price-feed)
-
-### Universe
-- Melon Universe [0x7e56AD30007801ABbD5595C6FA232E4FCF72F667](https://kovan.etherscan.io/address/0x7e56AD30007801ABbD5595C6FA232E4FCF72F667)
-
-### Exchanges
-- Melon version of original [OasisDex](https://github.com/OasisDEX/oasis-pro) implementation [0xe4183415d59F0A619654fA1D9898472C5EA852Ab](https://kovan.etherscan.io/address/0xe4183415d59F0A619654fA1D9898472C5EA852Ab) 
-
-
 ## Installation
 
 1. Clone this repository
@@ -57,7 +36,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
     ```
     node_modules/.bin/truffle test
     ```
-    
+
 ## Linting
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
