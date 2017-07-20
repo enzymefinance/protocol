@@ -1,6 +1,7 @@
-const Exchange = artifacts.require('Exchange');
-const EtherToken = artifacts.require('EtherToken');
-const MelonToken = artifacts.require('MelonToken');
+// const Exchange = artifacts.require('Exchange');
+// const EtherToken = artifacts.require('EtherToken');
+// const Asset = artifacts.require('Asset');
+//const tokens = require('../migrations/config/token_info');
 const chai = require('chai');
 
 const assert = chai.assert;
@@ -11,8 +12,8 @@ contract('Exchange', (accounts) => {
   let exchange;
 
   before('Deploy contract instances', async () => {
-    // ethToken = await EtherToken();
-    // mlnToken = await MelonToken.deployed();
+    ethToken = await EtherToken.new();
+    mlnToken = await Asset.new();
     // exchange = await Exchange.deployed();
   });
 
