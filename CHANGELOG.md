@@ -12,9 +12,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Refactor and re-write tests to have better coverage
-- New Liquidity Provider Address: 0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd
-
-### Changed
 - Fixed some code to use async/await instead of promises
 - Increase amount of premined token
 - From SafeMath contract to SafeMath library
