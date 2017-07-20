@@ -73,7 +73,7 @@ export const tokenInfo = {
       githubHint: '',
     },
     {
-      address: '0x1a825E9bF3BdC8ef8B975F97c78b5208a947d0EC', // not actual token!!! no deposit/withdraw functionality
+      address: '0x1a825E9bF3BdC8ef8B975F97c78b5208a947d0EC',
       name: 'Ether Token',
       symbol: 'ETH-T',
       decimals: 18,
