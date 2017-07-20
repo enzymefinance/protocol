@@ -5,7 +5,7 @@ export const tokenInfo = {
       name: 'Aragon Network Token',
       symbol: 'ANT-T',
       decimals: 18,
-      url: '',
+      url: 'https://aragon.one/',
       githubHint: '',
     },
     {
@@ -21,7 +21,7 @@ export const tokenInfo = {
       name: 'Bancor Network Token',
       symbol: 'BNT-T',
       decimals: 18,
-      url: '',
+      url: 'https://www.bancor.network/',
       githubHint: '',
     },
     {
@@ -29,7 +29,7 @@ export const tokenInfo = {
       name: 'Basic Attention Token',
       symbol: 'BAT-T',
       decimals: 18,
-      url: '',
+      url: 'https://www.basicattentiontoken.org/',
       githubHint: '',
     },
     {
@@ -37,7 +37,7 @@ export const tokenInfo = {
       name: 'Bitcoin Token',
       symbol: 'BTC-T',
       decimals: 8,
-      url: '',
+      url: 'https://bitcoin.org/en/',
       githubHint: '',
     },
     {
@@ -45,7 +45,7 @@ export const tokenInfo = {
       name: 'Digix Dao Token',
       symbol: 'DGD-T',
       decimals: 9,
-      url: '',
+      url: 'https://dgx.io/',
       githubHint: '',
     },
     {
@@ -53,7 +53,7 @@ export const tokenInfo = {
       name: 'Digix Gold Token',
       symbol: 'DGX-T',
       decimals: 9,
-      url: '',
+      url: 'https://dgx.io/',
       githubHint: '',
     },
     {
@@ -61,7 +61,7 @@ export const tokenInfo = {
       name: 'Dogecoin Token',
       symbol: 'DOGE-T',
       decimals: 8,
-      url: '',
+      url: 'http://dogecoin.com/',
       githubHint: '',
     },
     {
@@ -69,7 +69,7 @@ export const tokenInfo = {
       name: 'Ether Classic Token',
       symbol: 'ETC-T',
       decimals: 18,
-      url: '',
+      url: 'https://ethereumclassic.github.io/',
       githubHint: '',
     },
     {
@@ -77,7 +77,7 @@ export const tokenInfo = {
       name: 'Ether Token',
       symbol: 'ETH-T',
       decimals: 18,
-      url: '',
+      url: 'https://ethereum.org/',
       githubHint: '',
     },
     {
@@ -85,7 +85,7 @@ export const tokenInfo = {
       name: 'Euro Token',
       symbol: 'EUR-T',
       decimals: 8,
-      url: '',
+      url: 'https://www.decentralizedcapital.com/#!/',
       githubHint: '',
     },
     {
@@ -93,7 +93,7 @@ export const tokenInfo = {
       name: 'Gnosis Token',
       symbol: 'GNO-T',
       decimals: 18,
-      url: '',
+      url: 'https://gnosis.pm/',
       githubHint: '',
     },
     {
@@ -101,7 +101,7 @@ export const tokenInfo = {
       name: 'Golem Network Token',
       symbol: 'GNT-T',
       decimals: 18,
-      url: '',
+      url: 'https://golem.network/',
       githubHint: '',
     },
     {
@@ -109,7 +109,7 @@ export const tokenInfo = {
       name: 'Iconomi Token',
       symbol: 'ICN-T',
       decimals: 18,
-      url: '',
+      url: 'https://www.iconomi.net/',
       githubHint: '',
     },
     {
@@ -117,7 +117,7 @@ export const tokenInfo = {
       name: 'Litecoin Token',
       symbol: 'LTC-T',
       decimals: 8,
-      url: '',
+      url: 'https://litecoin.com/',
       githubHint: '',
     },
     {
@@ -125,7 +125,7 @@ export const tokenInfo = {
       name: 'Melon Token',
       symbol: 'MLN-T',
       decimals: 18,
-      url: '',
+      url: 'https://melon.network/',
       githubHint: '',
     },
     {
@@ -133,7 +133,7 @@ export const tokenInfo = {
       name: 'MakerDAO Token',
       symbol: 'MKR-T',
       decimals: 18,
-      url: '',
+      url: 'https://makerdao.com/',
       githubHint: '',
     },
     {
@@ -141,7 +141,7 @@ export const tokenInfo = {
       name: 'Rep Token',
       symbol: 'REP-T',
       decimals: 18,
-      url: '',
+      url: 'https://augur.net/',
       githubHint: '',
     },
     {
@@ -149,7 +149,7 @@ export const tokenInfo = {
       name: 'Ripple Token',
       symbol: 'XRP-T',
       decimals: 6,
-      url: '',
+      url: 'https://ripple.com/',
       githubHint: '',
     },
     {
@@ -157,7 +157,7 @@ export const tokenInfo = {
       name: 'SingularDTV Token',
       symbol: 'SNGLS-T',
       decimals: 0,
-      url: '',
+      url: 'https://singulardtv.com/',
       githubHint: '',
     },
     {
@@ -165,7 +165,7 @@ export const tokenInfo = {
       name: 'Status Network Token',
       symbol: 'SNT-T',
       decimals: 18,
-      url: '',
+      url: 'https://status.im/',
       githubHint: '',
     },
     {
@@ -173,7 +173,7 @@ export const tokenInfo = {
       name: '0x Protocol Token',
       symbol: 'ZRX-T',
       decimals: 18,
-      url: '',
+      url: 'https://0xproject.com/',
       githubHint: '',
     },
   ],

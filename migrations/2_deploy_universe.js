@@ -55,26 +55,28 @@ const newAssetsList = [
   StatusToken,
 ];
 
+console.log()
+
 module.exports = (deployer, network, accounts) => {
   try {
     let feedBackupOwner;
-    if (network === 'development') feedBackupOwner = accounts[0];
-    else if (network === 'kovan') feedBackupOwner = accounts[0];
-    deployer.deploy(newAssetsList.concat([Exchange]))
-    .then(() => {
-      const newAssetAddresses = newAssetsList.map(a => a.address);
-      return deployer.deploy(
-        CryptoCompare,
-        ETHERTOKEN_ADDRESS,
-        [
-          MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
-          EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
-        ],
-        {gas: 4500000}
-        //, value: new BigNumber(1000000000000000000)},
-        //.concat(newAssetAddresses),
-      )
-    })
+    // if (network === 'development') feedBackupOwner = accounts[0];
+    // else if (network === 'kovan') feedBackupOwner = accounts[0];
+    // deployer.deploy(newAssetsList.concat([Exchange]))
+    // .then(() => {
+    //   const newAssetAddresses = newAssetsList.map(a => a.address);
+    //   return deployer.deploy(
+    //     CryptoCompare,
+    //     ETHERTOKEN_ADDRESS,
+    //     [
+    //       MELONTOKEN_ADDRESS, BITCOINTOKEN_ADDRESS,
+    //       EUROTOKEN_ADDRESS, REPTOKEN_ADDRESS,
+    //     ],
+    //     {gas: 4500000}
+    //     //, value: new BigNumber(1000000000000000000)},
+    //     //.concat(newAssetAddresses),
+    //   )
+    // })
     // .then(() =>
     //   CryptoCompare.deployed()
     // )
