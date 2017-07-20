@@ -10,18 +10,18 @@ contract('Exchange', (accounts) => {
   let mlnToken;
   let exchange;
 
-  before('Get contract instances', async () => {
-    ethToken = await EtherToken.deployed();
-    mlnToken = await MelonToken.deployed();
-    exchange = await Exchange.deployed();
+  before('Deploy contract instances', async () => {
+    // ethToken = await EtherToken();
+    // mlnToken = await MelonToken.deployed();
+    // exchange = await Exchange.deployed();
   });
 
-  it('Empty exchange has zero orderId', async () => {
+  it.skip('Empty exchange has zero orderId', async () => {
     const firstId = await exchange.getLastOrderId();
     assert.equal(firstId.toNumber(), 0);
   });
 
-  describe('#make()', () => {
+  describe.skip('#make()', () => {
     it('Calls without error', async () => {
       const amt = 1000;
       await mlnToken.approve(exchange.address, amt, { from: accounts[0] });
@@ -43,7 +43,7 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  describe('#cancel()', () => {
+  describe.skip('#cancel()', () => {
     it('Calls without error', async () => {
       const oId = await exchange.getLastOrderId();
       await exchange.cancel(oId);
@@ -56,7 +56,7 @@ contract('Exchange', (accounts) => {
     });
   });
 
-  describe('#take()', () => {
+  describe.skip('#take()', () => {
     const maker = accounts[1];
     const taker = accounts[2];
     before(async () => {

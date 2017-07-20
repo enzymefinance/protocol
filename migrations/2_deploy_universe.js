@@ -37,27 +37,26 @@ const EUROTOKEN_ADDRESS = '0xc151b622fded233111155ec273bfaf2882f13703';
 //   StatusToken,
 // ];
 
-const newAssetsList = [
-  AragonToken,
-  AventusToken,
-  BasicAttentionToken,
-  BancorToken,
-  DigixDaoToken,
-  // DigixGoldToken,
-  DogecoinToken,
-  EtherClassicToken,
-  GnosisToken,
-  GolemToken,
-  IconomiToken,
-  LitecoinToken,
-  RippleToken,
-  SingularDTVToken,
-  StatusToken,
-];
-
-console.log()
+// const newAssetsList = [
+//   AragonToken,
+//   AventusToken,
+//   BasicAttentionToken,
+//   BancorToken,
+//   DigixDaoToken,
+//   // DigixGoldToken,
+//   DogecoinToken,
+//   EtherClassicToken,
+//   GnosisToken,
+//   GolemToken,
+//   IconomiToken,
+//   LitecoinToken,
+//   RippleToken,
+//   SingularDTVToken,
+//   StatusToken,
+// ];
 
 module.exports = (deployer, network, accounts) => {
+  if (network === "development") return;
   try {
     let feedBackupOwner;
     // if (network === 'development') feedBackupOwner = accounts[0];
