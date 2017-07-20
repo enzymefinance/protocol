@@ -1,4 +1,4 @@
-export const tokenInfo = {
+export default tokenInfo = {
   kovan: [
     {
       address: '0xD99aED09A65ee8377A2fFad8ED5407785c530869',
