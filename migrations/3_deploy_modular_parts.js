@@ -11,10 +11,10 @@ module.exports = async (deployer, network) => {
   try {
     await deployer.deploy(Participation);
     await deployer.deploy(Rewards, managementRewardRate, performanceRewardRate);
-    if (network == "development") {
+    if (network === 'development') {
       await deployer.deploy(RiskMgmt);
     }
-    if (network == "kovan") {
+    if (network === 'kovan') {
       await deployer.deploy(RiskMgmtV1);
     }
   } catch (e) {

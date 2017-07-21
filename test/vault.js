@@ -32,7 +32,7 @@ contract('Vault', (accounts) => {
     pricefeed = await PriceFeed.new(investor, ethToken.address);
     exchange = await Exchange.new();
     universe = await Universe.new(
-      [ethToken.address, mlnToken.address, eurToken.address],
+      mlnToken.address, ethToken.address, Array(eurToken.address),
       [pricefeed.address, pricefeed.address, pricefeed.address],
       [exchange.address, exchange.address, exchange.address],
     );
@@ -52,7 +52,7 @@ contract('Vault', (accounts) => {
     );
   });
 
-  describe.skip('#createShares()', () => {
+  describe('#createShares()', () => {
     const wantedShares = 10000;
     const offeredValue = 10000;
     it('Receives token from liquidity provider', async () => {

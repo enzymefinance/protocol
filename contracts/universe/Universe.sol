@@ -10,8 +10,8 @@ contract Universe is UniverseProtocol {
     // FIELDS
 
     // Fields that can be changed by functions
-    address referenceAsset;
     address melonAsset;
+    address referenceAsset;
     address[] public assets;
     address[] public priceFeeds;
     address[] public exchanges;
@@ -48,19 +48,18 @@ contract Universe is UniverseProtocol {
     // NON-CONSTANT METHODS
 
     /// Pre: Assign ReferenceAsset at index 0 of "ofAssets"
-    function Universe(address[] ofAssets, address[] ofPriceFeeds, address[] ofExchanges)
-        arrays_equal(ofAssets, ofPriceFeeds, ofExchanges)
-        array_not_empty(ofAssets)
+    function Universe(address ofMelonAsset, address ofReferenceAsset, address[] ofTradeableAsset, address[] ofPriceFeeds, address[] ofExchanges)
+        array_not_empty(ofTradeableAsset)
     {
-        referenceAsset = ofAssets[0];
-        melonAsset = ofAssets[1];
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            assetAvailabilities[ofAssets[i]] = true;
-            assets.push(ofAssets[i]);
+        melonAsset = ofMelonAsset;
+        referenceAsset = ofReferenceAsset;
+        for (uint i = 0; i < ofTradeableAsset.length; ++i) {
+            assetAvailabilities[ofTradeableAsset[i]] = true;
+            assets.push(ofTradeableAsset[i]);
             priceFeeds.push(ofPriceFeeds[i]);
             exchanges.push(ofExchanges[i]);
-            assignedPriceFeeds[ofAssets[i]] = ofPriceFeeds[i];
-            assignedExchanges[ofAssets[i]] = ofExchanges[i];
+            assignedPriceFeeds[ofTradeableAsset[i]] = ofPriceFeeds[i];
+            assignedExchanges[ofTradeableAsset[i]] = ofExchanges[i];
         }
     }
 }

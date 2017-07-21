@@ -9,13 +9,22 @@ const mlnTokenAddress = tokenInfo.kovan.find(t => t.symbol === 'MLN-T').address;
 const otherAddresses = tokenInfo.kovan.filter(t => t.symbol !== 'ETH-T' && t.symbol !== 'MLN-T').map(t => t.address);
 
 module.exports = async function (deployer, network) {
-  // if (network === "development") return;
+  if (network === 'development') return;
   try {
-    await deployer.deploy(Universe,
-      [ethTokenAddress].concat([mlnTokenAddress]).concat(otherAddresses),
-      Array(tokenInfo.kovan.length).fill(dataFeedInfo.kovan.find(info => info.name === 'CryptoCompare').address),
-      Array(tokenInfo.kovan.length).fill(exchangeInfo.kovan.find(info => info.name === 'OasisDex').address),
+    console.log(
+      mlnTokenAddress,
+      ethTokenAddress,
+      otherAddresses,
+      Array(tokenInfo.kovan.length).fill(dataFeedInfo.kovan.find(d => d.name === 'CryptoCompare').address),
+      Array(tokenInfo.kovan.length).fill(exchangeInfo.kovan.find(e => e.name === 'OasisDex').address),
     )
+    await deployer.deploy(Universe,
+      mlnTokenAddress,
+      ethTokenAddress,
+      otherAddresses,
+      Array(tokenInfo.kovan.length).fill(dataFeedInfo.kovan.find(d => d.name === 'CryptoCompare').address),
+      Array(tokenInfo.kovan.length).fill(exchangeInfo.kovan.find(e => e.name === 'OasisDex').address),
+    );
   } catch (e) {
     throw e;
   }
