@@ -41,8 +41,8 @@ contract('Version', (accounts) => {
     rewards = await Rewards.new();
   });
 
-  it('Can create a vault', () => {
-    version.createVault(
+  it('Can create a vault without error', async () => {
+    await version.createVault(
       'Cantaloot',    // name
       'CNLT',         // share symbol
       18,             // share decimals
@@ -52,5 +52,18 @@ contract('Version', (accounts) => {
       rewards.address,
       { from: accounts[0] },
     );
+  });
+
+  it.skip('Can retrieve vault from index', async () => {
+    let vaultId = await version.getLastVaultId();
+    let [, vaultOwner, , , , isActive] = await version.getVault(vaultId);
+    console.log(isActive);
+    assert(isActive);
+    assert.equal(vaultOwner, accounts[0]);
+  });
+
+  it.skip('Can remove a vault', async () => {
+    let vaultId = await version.getLastVaultId();
+    await version.annihilateVault(vaultId);
   });
 });
