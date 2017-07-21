@@ -66,6 +66,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // PRE, POST, INVARIANT CONDITIONS
 
+    function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
 
@@ -156,10 +157,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     /// Pre: numShares denominated in [base unit of referenceAsset]
     /// Post: priceInRef denominated in [base unit of referenceAsset]
-    function getRefPriceForNumShares(uint256 numShares) constant returns (uint256 priceInRef)
+    function getRefPriceForNumShares(uint256 numShares) constant returns (uint256)
     {
+        if (isZero(totalSupply)) return numShares;
         var (, , , , , sharePrice) = performCalculations();
-        priceInRef = numShares.mul(sharePrice).div(baseUnitsPerShare);
+        return numShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
     // NON-CONSTANT METHODS

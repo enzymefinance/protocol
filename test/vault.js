@@ -15,7 +15,8 @@ const assert = chai.assert;
 contract('Vault', (accounts) => {
   const premined = Math.pow(10, 28);
   const owner = accounts[0];
-  const investor = accounts[1];
+  const liquidityProvider = accounts[1];
+  const investor = accounts[2];
   let ethToken;
   let vault;
 
@@ -23,9 +24,11 @@ contract('Vault', (accounts) => {
     // TODO: outsource all of these deployments to util function(s)
     const mln = tokens.find(t => t.symbol === 'MLN-T');
     const eur = tokens.find(t => t.symbol === 'EUR-T');
-    mlnToken = await PreminedAsset.new(mln.name, mln.symbol, mln.decimals, premined);
-    eurToken = await PreminedAsset.new(eur.name, eur.symbol, eur.decimals, premined);
-    ethToken = await EtherToken.new();
+    mlnToken = await PreminedAsset.new(
+      mln.name, mln.symbol, mln.decimals, premined, { from: liquidityProvider });
+    eurToken = await PreminedAsset.new(
+      eur.name, eur.symbol, eur.decimals, premined, { from: liquidityProvider });
+    ethToken = await EtherToken.new({ from: liquidityProvider });
     pricefeed = await PriceFeed.new(investor, ethToken.address);
     exchange = await Exchange.new();
     universe = await Universe.new(
@@ -52,10 +55,14 @@ contract('Vault', (accounts) => {
   describe.skip('#createShares()', () => {
     const wantedShares = 10000;
     const offeredValue = 10000;
+    it('Receives token from liquidity provider', async () => {
+      await ethToken.transfer(investor, offeredValue, { from: liquidityProvider });
+      assert.equal((await ethToken.balanceOf(investor)).toNumber(), offeredValue);
+    });
     it('Creates shares of empty vault with reference asset', async () => {
       await ethToken.approve(vault.address, offeredValue, { from: investor });
-      await vault.subscribeWithReferenceAsset(wantedShares, offeredValue);
-      assert.equal(await vault.balanceOf(investor), wantedShares);
+      await vault.subscribeWithReferenceAsset(wantedShares, offeredValue, { from: investor });
+      assert.equal((await vault.balanceOf(investor)).toNumber(), wantedShares);
     });
   });
 
