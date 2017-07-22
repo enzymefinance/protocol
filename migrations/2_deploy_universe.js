@@ -6,7 +6,13 @@ const exchangeInfo = require('./config/exchange_info.js');
 
 const ethTokenAddress = tokenInfo.kovan.find(t => t.symbol === 'ETH-T').address;
 const mlnTokenAddress = tokenInfo.kovan.find(t => t.symbol === 'MLN-T').address;
-const tokenAddresses = tokenInfo.kovan.map(t => t.address);
+const tokenAddresses = tokenInfo.kovan.filter(
+  t => // Note: Must be subset of what data feeds provide data for
+    t.symbol !== 'AVT-T' &&
+    t.symbol !== 'DGX-T' &&
+    t.symbol !== 'MKR-T' &&
+    t.symbol !== 'ZRX-T'
+).map(t => t.address);
 
 module.exports = async function (deployer, network) {
   if (network === 'development') return;
