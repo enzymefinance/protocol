@@ -14,6 +14,7 @@ const assert = chai.assert;
 
 contract('Vault', (accounts) => {
   const premined = Math.pow(10, 28);
+  const decimals = 18;
   const owner = accounts[0];
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
@@ -43,7 +44,7 @@ contract('Vault', (accounts) => {
       owner,
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
-      18,                 // share decimals
+      decimals,                 // share decimals
       universe.address,
       participation.address,
       riskManagement.address,
@@ -55,6 +56,11 @@ contract('Vault', (accounts) => {
   describe('#createShares()', () => {
     const wantedShares = 10000;
     const offeredValue = 10000;
+    it('Vault has been initialised', async () => {
+      const baseUnitsPerShare = await vault.baseUnitsPerShare();
+      assert.equal(decimals, await vault.decimals());
+      assert.equal(baseUnitsPerShare, Math.pow(10, decimals));
+    });
     it('Receives token from liquidity provider', async () => {
       await ethToken.transfer(investor, offeredValue, { from: liquidityProvider });
       assert.equal((await ethToken.balanceOf(investor)).toNumber(), offeredValue);

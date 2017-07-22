@@ -45,7 +45,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     // Constant asset specific fields
     string public name;
     string public symbol;
-    uint8 public decimals;
+    uint public decimals;
     // Fields that are only changed in constructor
     uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
     address public referenceAsset;
@@ -170,7 +170,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         address ofManager,
         string withName,
         string withSymbol,
-        uint8 withDecimals,
+        uint withDecimals,
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
