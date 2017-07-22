@@ -11,13 +11,6 @@ const tokenAddresses = tokenInfo.kovan.map(t => t.address);
 module.exports = async function (deployer, network) {
   if (network === 'development') return;
   try {
-    console.log(
-      mlnTokenAddress,
-      ethTokenAddress,
-      tokenAddresses,
-      Array(tokenInfo.kovan.length).fill(dataFeedInfo.kovan.find(d => d.name === 'CryptoCompare').address),
-      Array(tokenInfo.kovan.length).fill(exchangeInfo.kovan.find(e => e.name === 'OasisDex').address),
-    )
     await deployer.deploy(Universe,
       mlnTokenAddress,
       ethTokenAddress,
