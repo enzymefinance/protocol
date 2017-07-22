@@ -32,7 +32,9 @@ contract('Version', (accounts) => {
     pricefeed = await PriceFeed.new(accounts[1], ethToken.address);
     exchange = await Exchange.new();
     universe = await Universe.new(
-      [ethToken.address, mlnToken.address, eurToken.address],
+      mlnToken.address,
+      ethToken.address,
+      [ethToken.address, eurToken.address, mlnToken.address],
       [pricefeed.address, pricefeed.address, pricefeed.address],
       [exchange.address, exchange.address, exchange.address],
     );
