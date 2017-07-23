@@ -107,11 +107,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             assert(referenceAsset == quoteAsset); // See Remark 1
             uint256 assetPrice;
             if (ofAsset == quoteAsset) {
-              assetPrice = 10 ** assetDecimals; // See Remark 2
+              assetPrice = 10 ** uint(assetDecimals); // See Remark 2
             } else {
               assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
-            gav.add(assetHoldings.mul(assetPrice).div(10 ** assetDecimals)); // Sum up product of asset holdings of this vault and asset prices
+            gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }

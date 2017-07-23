@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP, SNGLS incl addresses and verified on EtherScan
 - Second way to subscribe and redeem using referenceAsset directly in Vault
-- CryptoCompare price feed contract
 
 ### Changed
 - Refactor and re-write tests to have better coverage
