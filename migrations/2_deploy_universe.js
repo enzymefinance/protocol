@@ -11,7 +11,7 @@ const tokenAddresses = tokenInfo.kovan.filter(
     t.symbol !== 'AVT-T' &&
     t.symbol !== 'DGX-T' &&
     t.symbol !== 'MKR-T' &&
-    t.symbol !== 'ZRX-T'
+    t.symbol !== 'ZRX-T',
 ).map(t => t.address);
 
 module.exports = async function (deployer, network) {

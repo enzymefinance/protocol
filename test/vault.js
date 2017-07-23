@@ -31,9 +31,15 @@ contract('Vault', (accounts) => {
       eur.name, eur.symbol, eur.decimals, premined, { from: liquidityProvider });
     ethToken = await EtherToken.new({ from: liquidityProvider });
     pricefeed = await PriceFeed.new(investor, ethToken.address);
+    await pricefeed.updatePrice(
+      [ethToken.address, eurToken.address, mlnToken.address],
+      [1000000000000000000, 5091131249363608, 226244343891402714], // Mock data
+    );
     exchange = await Exchange.new();
     universe = await Universe.new(
-      mlnToken.address, ethToken.address, Array(eurToken.address),
+      mlnToken.address,
+      ethToken.address,
+      [ethToken.address, eurToken.address, mlnToken.address],
       [pricefeed.address, pricefeed.address, pricefeed.address],
       [exchange.address, exchange.address, exchange.address],
     );
@@ -44,7 +50,7 @@ contract('Vault', (accounts) => {
       owner,
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
-      decimals,                 // share decimals
+      decimals,           // share decimals
       universe.address,
       participation.address,
       riskManagement.address,
@@ -54,7 +60,8 @@ contract('Vault', (accounts) => {
   });
 
   describe('#createShares()', () => {
-    const wantedShares = 10000;
+    const numShares = 10000;
+    const resShares = 10000;
     const offeredValue = 10000;
     it('Vault has been initialised', async () => {
       const baseUnitsPerShare = await vault.baseUnitsPerShare();
@@ -67,12 +74,35 @@ contract('Vault', (accounts) => {
     });
     it('Creates shares of empty vault with reference asset', async () => {
       await ethToken.approve(vault.address, offeredValue, { from: investor });
-      await vault.subscribeWithReferenceAsset(wantedShares, offeredValue, { from: investor });
-      assert.equal((await vault.balanceOf(investor)).toNumber(), wantedShares);
+      await vault.subscribeWithReferenceAsset(numShares, offeredValue, { from: investor });
+      assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
+    });
+    it('Performs calculation correctly', async () => {
+      const [gav, , , unclaimedRewards, nav, sharePrice] =
+        await vault.performCalculations();
+      assert.equal(gav.toNumber(), offeredValue);
+      assert.equal(unclaimedRewards.toNumber(), 0);
+      assert.equal(nav.toNumber(), offeredValue);
+      assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
     });
   });
 
-  describe.skip('#annihilateShares()', () => {
-
+  describe('#annihilateShares()', () => {
+    const numShares = 10000;
+    const resShares = 0;
+    const requestedValue = 10000;
+    it('Annihilates shares of vault with reference asset', async () => {
+      await ethToken.approve(vault.address, requestedValue, { from: investor });
+      await vault.redeemWithReferenceAsset(numShares, requestedValue, { from: investor });
+      assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
+    });
+    it('Performs calculation correctly', async () => {
+      const [gav, , , unclaimedRewards, nav, sharePrice] =
+        await vault.performCalculations();
+      assert.equal(gav.toNumber(), 0);
+      assert.equal(unclaimedRewards.toNumber(), 0);
+      assert.equal(nav.toNumber(), 0);
+      assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
+    });
   });
 });
