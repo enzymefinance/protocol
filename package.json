@@ -45,7 +45,7 @@
     "eslint-plugin-react": "^6.8.0",
     "ethereumjs-testrpc": "^3.0.5",
     "js-sha256": "^0.3.2",
-    "truffle": "3.2.5"
+    "truffle": "^3.4.4"
   },
   "dependencies": {
     "babel-cli": "^6.24.1",
