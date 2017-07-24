@@ -11,7 +11,7 @@ module.exports = {
       gas: 4500000,
       network_id: 42,
     },
-    kovanUniverse: { // Deployment of Kovan auxillary parts such as Assets, PriceFeeds, Exchanges
+    staging: { // Deployment of Kovan auxillary parts such as Assets, PriceFeeds, Exchanges
       host: 'localhost',
       port: 8545,
       gas: 4500000,
