@@ -189,7 +189,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             nav: 0,
             sharePrice: baseUnitsPerShare,
             totalSupply: totalSupply,
-            timestamp: now,
+            timestamp: now
         });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
@@ -425,7 +425,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
           nav: nav,
           sharePrice: sharePrice,
           totalSupply: totalSupply,
-          timestamp: now,
+          timestamp: now
         });
 
         RewardsConverted(now, numShares, unclaimedRewards);

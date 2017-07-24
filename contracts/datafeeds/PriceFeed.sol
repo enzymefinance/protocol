@@ -99,7 +99,7 @@ contract PriceFeed is PriceFeedProtocol, DBC, BackupOwned {
             assert(data[ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
             data[ofAssets[i]] = Data({
                 timestamp: now,
-                price: newPrices[i],
+                price: newPrices[i]
             });
             PriceUpdated(ofAssets[i], now, newPrices[i]);
         }
