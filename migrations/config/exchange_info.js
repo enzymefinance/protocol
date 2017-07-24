@@ -8,4 +8,13 @@ module.exports = {
       githubHint: '',
     },
   ],
+  staging: [
+    {
+      address: '0x74b129d64dc1f861531c4d444f664d86f74106b7',
+      name: 'OasisDex',
+      data: '',
+      url: 'https://oasisdex.com',
+      githubHint: '',
+    },
+  ],
 };
