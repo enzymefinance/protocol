@@ -30,7 +30,7 @@ const STATUSTOKEN_DECIMALS = 18;
 
 // Liquidity Provider
 
-const LIQUIDITY_PROVIDER = '0x00e0b33cdb3af8b55cd8467d6d13bc0ba8035acf';
+const LIQUIDITY_PROVIDER = '0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd';
 
 // Exchange
 

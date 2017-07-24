@@ -45,7 +45,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     // Constant asset specific fields
     string public name;
     string public symbol;
-    uint8 public decimals;
+    uint public decimals;
     // Fields that are only changed in constructor
     uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
     address public referenceAsset;
@@ -66,6 +66,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // PRE, POST, INVARIANT CONDITIONS
 
+    function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
 
@@ -106,11 +107,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             assert(referenceAsset == quoteAsset); // See Remark 1
             uint256 assetPrice;
             if (ofAsset == quoteAsset) {
-              assetPrice = 10 ** assetDecimals; // See Remark 2
+              assetPrice = 10 ** uint(assetDecimals); // See Remark 2
             } else {
               assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
-            gav.add(assetHoldings.mul(assetPrice).div(10 ** assetDecimals)); // Sum up product of asset holdings of this vault and asset prices
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
@@ -156,10 +157,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     /// Pre: numShares denominated in [base unit of referenceAsset]
     /// Post: priceInRef denominated in [base unit of referenceAsset]
-    function getRefPriceForNumShares(uint256 numShares) constant returns (uint256 priceInRef)
+    function getRefPriceForNumShares(uint256 numShares) constant returns (uint256)
     {
+        if (isZero(totalSupply)) return numShares;
         var (, , , , , sharePrice) = performCalculations();
-        priceInRef = numShares.mul(sharePrice).div(baseUnitsPerShare);
+        return numShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
     // NON-CONSTANT METHODS
@@ -168,7 +170,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         address ofManager,
         string withName,
         string withSymbol,
-        uint8 withDecimals,
+        uint withDecimals,
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
@@ -187,7 +189,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             nav: 0,
             sharePrice: baseUnitsPerShare,
             totalSupply: totalSupply,
-            timestamp: now,
+            timestamp: now
         });
         module.universe = UniverseProtocol(ofUniverse);
         referenceAsset = module.universe.getReferenceAsset();
@@ -423,7 +425,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
           nav: nav,
           sharePrice: sharePrice,
           totalSupply: totalSupply,
-          timestamp: now,
+          timestamp: now
         });
 
         RewardsConverted(now, numShares, unclaimedRewards);
