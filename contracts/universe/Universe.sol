@@ -10,7 +10,6 @@ contract Universe is UniverseProtocol {
     // FIELDS
 
     // Fields that can be changed by functions
-    address melonAsset;
     address referenceAsset;
     address[] public assets;
     address[] public priceFeeds;
@@ -36,7 +35,6 @@ contract Universe is UniverseProtocol {
     // CONSTANT METHDOS
 
     function getReferenceAsset() constant returns (address) { return referenceAsset; }
-    function getMelonAsset() constant returns (address) { return melonAsset; }
     function numAssignedAssets() constant returns (uint) { return assets.length; }
     function assetAt(uint index) constant returns (address) { return assets[index]; }
     function priceFeedAt(uint index) constant returns (address) { return priceFeeds[index]; }
@@ -48,10 +46,9 @@ contract Universe is UniverseProtocol {
     // NON-CONSTANT METHODS
 
     /// Pre: Assign ReferenceAsset at index 0 of "ofAssets"
-    function Universe(address ofMelonAsset, address ofReferenceAsset, address[] ofTradeableAsset, address[] ofPriceFeeds, address[] ofExchanges)
+    function Universe(address ofReferenceAsset, address[] ofTradeableAsset, address[] ofPriceFeeds, address[] ofExchanges)
         array_not_empty(ofTradeableAsset)
     {
-        melonAsset = ofMelonAsset;
         referenceAsset = ofReferenceAsset;
         for (uint i = 0; i < ofTradeableAsset.length; ++i) {
             assetAvailabilities[ofTradeableAsset[i]] = true;

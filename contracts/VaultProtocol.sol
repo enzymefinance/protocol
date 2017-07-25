@@ -26,8 +26,8 @@ contract VaultProtocol is AssetProtocol {
 
     // NON-CONSTANT METHODS
 
-    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
-    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
+    function createShares(uint shareAmount) {}
+    function annihilateShares(uint shareAmount) {}
     function createSharesOnBehalf(address recipient, uint shareAmount) {}
     function annihilateSharesOnBehalf(address recipient, uint shareAmount) {}
     function makeOrder(ExchangeProtocol onExchange,

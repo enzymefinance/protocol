@@ -68,6 +68,7 @@ contract Version is DBC, Owned {
 
     // CONSTANT METHODS
 
+    function getMelonAsset() constant returns (address) { return melonAsset; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
     function getVault(uint atIndex) constant returns (address, address, string, string, uint, bool, uint) {
         var vault = vaults[atIndex];

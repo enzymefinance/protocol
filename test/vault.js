@@ -37,7 +37,6 @@ contract('Vault', (accounts) => {
     );
     exchange = await Exchange.new();
     universe = await Universe.new(
-      mlnToken.address,
       ethToken.address,
       [ethToken.address, eurToken.address, mlnToken.address],
       [pricefeed.address, pricefeed.address, pricefeed.address],

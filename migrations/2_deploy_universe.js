@@ -8,7 +8,6 @@ const exchangeInfo = require('./config/exchange_info.js');
 module.exports = async function (deployer, network) {
   if (network === 'development') return;
   const ethTokenAddress = tokenInfo[network].find(t => t.symbol === 'ETH-T').address;
-  const mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
   const tokenAddresses = tokenInfo[network].filter(
     t => // Note: Must be subset of what data feeds provide data for
       t.symbol !== 'AVT-T' &&
@@ -18,7 +17,6 @@ module.exports = async function (deployer, network) {
   ).map(t => t.address);
   try {
     await deployer.deploy(Universe,
-      mlnTokenAddress,
       ethTokenAddress,
       tokenAddresses,
       Array(tokenInfo[network].length).fill(dataFeedInfo[network].find(d => d.name === 'CryptoCompare').address),
