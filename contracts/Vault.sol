@@ -22,6 +22,20 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // TYPES
 
+    struct Prospectus { // Can be changed by Owner
+      bool subscriptionAllowed;
+      uint256 subscriptionFee;
+      bool redeemalAllow;
+      uint256 withdrawalFee;
+    }
+
+    struct Modules { // Can't be changed by Owner
+        UniverseProtocol universe;
+        ParticipationProtocol participation;
+        RiskMgmtProtocol riskmgmt;
+        RewardsProtocol rewards;
+    }
+
     struct Calculations {
         uint256 gav;
         uint256 managementReward;
@@ -33,24 +47,17 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         uint256 timestamp;
     }
 
-    struct Modules {
-        UniverseProtocol universe;
-        ParticipationProtocol participation;
-        RiskMgmtProtocol riskmgmt;
-        RewardsProtocol rewards;
-    }
-
     // FIELDS
 
-    // Constant asset specific fields
+    // Fields that are only changed in constructor
     string public name;
     string public symbol;
     uint public decimals;
-    // Fields that are only changed in constructor
     uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
-    address public referenceAsset;
     address public melonAsset;
+    address public referenceAsset; // Performance measured against value of this asset
     // Fields that can be changed by functions
+    Prospectus public prospectus;
     Modules public module;
     Calculations public atLastPayout;
 
@@ -78,6 +85,53 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
 
     // CONSTANT METHODS - ACCOUNTING
+
+    /// Pre: numShares denominated in [base unit of referenceAsset], baseUnitsPerShare not zero
+    /// Post: priceInRef denominated in [base unit of referenceAsset]
+    function priceForNumShares(uint256 numShares) constant returns (uint256 priceInRef)
+    {
+        var (, , , , , sharePrice) = performCalculations();
+        priceInRef = numShares.mul(sharePrice).div(baseUnitsPerShare);
+    }
+
+    /// Pre: None
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
+        uint256 gav = calcGav(); // Reflects value indepentent of fees
+        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
+        uint256 nav = calcNav(gav, unclaimedRewards);
+        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
+        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
+    }
+
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Post: Net asset value denominated in [base unit of referenceAsset]
+    function calcNav(uint256 gav, uint256 unclaimedRewards) constant returns (uint256 nav) { nav = gav.sub(unclaimedRewards); }
+
+    /// Pre: Gross asset value has been calculated
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
+    function calcUnclaimedRewards(uint256 gav) constant returns (uint256 managementReward, uint256 performanceReward, uint256 unclaimedRewards) {
+        uint256 timeDifference = now.sub(atLastPayout.timestamp);
+        managementReward = module.rewards.calculateManagementReward(timeDifference, gav);
+        performanceReward = 0;
+        if (totalSupply != 0) {
+            uint256 currSharePrice = calcValuePerShare(gav);
+            if (currSharePrice > atLastPayout.sharePrice) {
+              performanceReward = module.rewards.calculatePerformanceReward(currSharePrice - atLastPayout.sharePrice, totalSupply);
+            }
+        }
+        unclaimedRewards = managementReward.add(performanceReward);
+    }
+
+    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
+    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
+    function calcValuePerShare(uint256 value)
+        constant
+        pre_cond(isPastZero(totalSupply))
+        returns (uint256 valuePerShare)
+    {
+        valuePerShare = value.mul(baseUnitsPerShare).div(totalSupply);
+    }
 
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// Post: Gross asset value denominated in [base unit of referenceAsset]
@@ -116,54 +170,6 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         }
     }
 
-    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
-    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
-    function calcValuePerShare(uint256 value)
-        constant
-        pre_cond(isPastZero(totalSupply))
-        returns (uint256 valuePerShare)
-    {
-        valuePerShare = value.mul(baseUnitsPerShare).div(totalSupply);
-    }
-
-    /// Pre: Gross asset value has been calculated
-    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
-    function calcUnclaimedRewards(uint256 gav) constant returns (uint256 managementReward, uint256 performanceReward, uint256 unclaimedRewards) {
-        uint256 timeDifference = now.sub(atLastPayout.timestamp);
-        managementReward = module.rewards.calculateManagementReward(timeDifference, gav);
-        performanceReward = 0;
-        if (totalSupply != 0) {
-            uint256 currSharePrice = calcValuePerShare(gav);
-            if (currSharePrice > atLastPayout.sharePrice) {
-              performanceReward = module.rewards.calculatePerformanceReward(currSharePrice - atLastPayout.sharePrice, totalSupply);
-            }
-        }
-        unclaimedRewards = managementReward.add(performanceReward);
-    }
-
-    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in [base unit of referenceAsset]
-    function calcNav(uint256 gav, uint256 unclaimedRewards) constant returns (uint256 nav) { nav = gav.sub(unclaimedRewards); }
-
-    /// Pre: None
-    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
-        uint256 gav = calcGav(); // Reflects value indepentent of fees
-        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
-        uint256 nav = calcNav(gav, unclaimedRewards);
-        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
-        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
-    }
-
-    /// Pre: numShares denominated in [base unit of referenceAsset]
-    /// Post: priceInRef denominated in [base unit of referenceAsset]
-    function getRefPriceForNumShares(uint256 numShares) constant returns (uint256)
-    {
-        if (isZero(totalSupply)) return numShares;
-        var (, , , , , sharePrice) = performCalculations();
-        return numShares.mul(sharePrice).div(baseUnitsPerShare);
-    }
-
     // NON-CONSTANT METHODS
 
     function Vault(
@@ -171,6 +177,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         string withName,
         string withSymbol,
         uint withDecimals,
+        address ofMelonAsset,
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
@@ -180,6 +187,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        melonAsset = ofMelonAsset;
         baseUnitsPerShare = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
@@ -217,6 +225,40 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     /// Post: Redeemer lost `numShares`, and gained a slice of assets
     /// Note: Independent of running price feed!
     function redeem(uint256 numShares) { redeemOnBehalf(msg.sender, numShares); }
+
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of referenceAsset]
+    /// Post: Subscribe in this fund by creating shares
+    // TODO check comment
+    // TODO mitigate `spam` attack
+    /* Rem:
+     *  This can be seen as a non-persistent all or nothing limit order, where:
+     *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
+     */
+    function subscribeWithReferenceAsset(uint256 numShares, uint256 offeredValue)
+        pre_cond(isPastZero(numShares))
+        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+    {
+        uint256 actualValue = priceForNumShares(numShares); // [base unit of referenceAsset]
+        assert(offeredValue >= actualValue); // Sanity Check
+        assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+        createShares(msg.sender, numShares); // Accounting
+        Subscribed(msg.sender, now, numShares);
+    }
+
+    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
+    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
+    // TODO mitigate `spam` attack
+    function redeemWithReferenceAsset(uint256 numShares, uint256 requestedValue)
+        pre_cond(isPastZero(numShares))
+        pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
+
+    {
+        uint256 actualValue = priceForNumShares(numShares); // [base unit of referenceAsset]
+        assert(requestedValue <= actualValue); // Sanity Check
+        assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
+        annihilateShares(msg.sender, numShares); // Accounting
+        Redeemed(msg.sender, now, numShares);
+    }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings;
     /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
@@ -278,40 +320,6 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         }
     }
 
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of referenceAsset]
-    /// Post: Subscribe in this fund by creating shares
-    // TODO check comment
-    // TODO mitigate `spam` attack
-    /* Rem:
-     *  This can be seen as a non-persistent all or nothing limit order, where:
-     *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
-     */
-    function subscribeWithReferenceAsset(uint256 numShares, uint256 offeredValue)
-        pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
-    {
-        uint256 actualValue = getRefPriceForNumShares(numShares); // [base unit of referenceAsset]
-        assert(offeredValue >= actualValue); // Sanity Check
-        assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
-        createShares(msg.sender, numShares); // Accounting
-        Subscribed(msg.sender, now, numShares);
-    }
-
-    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
-    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    // TODO mitigate `spam` attack
-    function redeemWithReferenceAsset(uint256 numShares, uint256 requestedValue)
-        pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
-
-    {
-        uint256 actualValue = getRefPriceForNumShares(numShares); // [base unit of referenceAsset]
-        assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
-        annihilateShares(msg.sender, numShares); // Accounting
-        Redeemed(msg.sender, now, numShares);
-    }
-
     function createShares(address recipient, uint256 numShares)
         internal
     {
@@ -326,7 +334,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         totalSupply = totalSupply.sub(numShares);
     }
 
-    // NON-CONSTANT METHODS - EXCHANGE
+    // NON-CONSTANT METHODS - MANAGING
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
@@ -405,16 +413,24 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // NON-CONSTANT METHODS - REWARDS
 
-    /// Pre: Only this
+    /// Pre: Only Owner
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
-        var (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice) = performCalculations();
+        var (
+            gav,
+            managementReward,
+            performanceReward,
+            unclaimedRewards,
+            nav,
+            sharePrice
+        ) = performCalculations();
+        assert(notZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
         uint256 numShares = totalSupply.mul(unclaimedRewards).div(gav);
-        createShares(this, numShares);
+        createShares(owner, numShares);
 
         // Update Calculations
         atLastPayout = Calculations({
