@@ -54,7 +54,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     string public symbol;
     uint public decimals;
     uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
-    address public melonAsset;
+    address public melonAsset; // Adresss of Melon asset contract
     address public referenceAsset; // Performance measured against value of this asset
     // Fields that can be changed by functions
     Prospectus public prospectus;
@@ -426,7 +426,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             nav,
             sharePrice
         ) = performCalculations();
-        assert(notZero(gav));
+        assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
         uint256 numShares = totalSupply.mul(unclaimedRewards).div(gav);

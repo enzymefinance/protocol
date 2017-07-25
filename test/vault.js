@@ -51,6 +51,7 @@ contract('Vault', (accounts) => {
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       decimals,           // share decimals
+      mlnToken.address,
       universe.address,
       participation.address,
       riskManagement.address,

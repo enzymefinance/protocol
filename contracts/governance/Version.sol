@@ -34,7 +34,10 @@ contract Version is DBC, Owned {
 
     // FIELDS
 
-    address public addrGovernance;
+    // Fields that are only changed in constructor
+    address public melonAsset; // Adresss of Melon asset contract
+    address public governance; // Address of Melon protocol governance contract
+    // Fields that can be changed by functions
     mapping (uint => VaultInfo) public vaults;
     mapping (uint => ModuleSelection) public usage;
     uint public lastVaultId;
@@ -79,7 +82,13 @@ contract Version is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function Version(address ofGovernance) { addrGovernance = ofGovernance; }
+    function Version(
+        address ofMelonAsset,
+        address ofGovernance
+    ) {
+        melonAsset = ofMelonAsset;
+        governance = ofGovernance;
+    }
 
     function createVault(
         string withName,
@@ -99,6 +108,7 @@ contract Version is DBC, Owned {
             withName,
             withSymbol,
             withDecimals,
+            melonAsset,
             ofUniverse,
             ofParticipation,
             ofRiskMgmt,
