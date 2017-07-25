@@ -6,7 +6,7 @@ pragma solidity ^0.4.11;
 contract VersionProtocol {
   function numCreatedVaults() constant returns (uint) {}
   function getVault(uint atIndex) constant returns (address) {}
-  function createVault(
+  function setupVault(
       string withName,
       address ofUniverse,
       address ofSubscribe,
@@ -17,5 +17,5 @@ contract VersionProtocol {
   )
       returns (address)
   {}
-  function annihilateVault(uint atIndex) {}    
+  function decommissionVault(uint atIndex) {}    
 }

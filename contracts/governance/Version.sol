@@ -24,14 +24,6 @@ contract Version is DBC, Owned {
         bytes32 swarmHash;
     }
 
-    struct ModuleSelection {
-        address ofUniverse;
-        address ofParticipation;
-        address ofRiskMgmt;
-        address ofManagementFee;
-        address ofPerformanceFee;
-    }
-
     // FIELDS
 
     // Fields that are only changed in constructor
@@ -39,24 +31,10 @@ contract Version is DBC, Owned {
     address public governance; // Address of Melon protocol governance contract
     // Fields that can be changed by functions
     mapping (uint => VaultInfo) public vaults;
-    mapping (uint => ModuleSelection) public usage;
     uint public lastVaultId;
 
     // EVENTS
 
-    event VaultAdded(
-        address vault,
-        address owner,
-        string name,
-        string symbol,
-        uint decimals,
-        bool active,
-        uint id,
-        address ofUniverse,
-        address ofParticitpation,
-        address ofRiskMgmt,
-        address ofRewards
-    );
     event VaultUpdate(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -91,7 +69,7 @@ contract Version is DBC, Owned {
         governance = ofGovernance;
     }
 
-    function createVault(
+    function setupVault(
         string withName,
         string withSymbol,
         uint withDecimals,
@@ -123,23 +101,10 @@ contract Version is DBC, Owned {
         info.timestamp = now;
         id = next_id();
         vaults[id] = info;
-        VaultAdded(
-          info.vault,
-          info.owner,
-          info.name,
-          info.symbol,
-          info.decimals,
-          info.active,
-          id,
-          ofUniverse,
-          ofParticipation,
-          ofRiskMgmt,
-          ofRewards
-        );
     }
 
     // Dereference Vault and trigger selfdestruct
-    function annihilateVault(uint atIndex)
+    function decommissionVault(uint atIndex)
         pre_cond(isVaultOwner(atIndex))
     {
         // TODO also refund and selfdestruct vault contract

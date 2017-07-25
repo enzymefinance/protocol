@@ -15,7 +15,7 @@ contract Governance is DBC, Owned {
 
     // EVENTS
 
-    event VersionUpdated(address indexed nextVersion, uint indexed id);
+    event VersionUpdated(address indexed ofVersion, uint indexed id);
 
     // MODIFIERS
 
@@ -31,12 +31,19 @@ contract Governance is DBC, Owned {
 
     /// Pre: Only Owner
     /// Post: Updates Melon protocol version:
-    function updateVersion(address nextVersion)
+    function addVersion(address ofVersion)
+        // TODO: Assert Board Members consensus
         pre_cond(isOwner())
     {
+        versions.push(ofVersion);
+        versionAvailabilities[ofVersion] = true;
+        VersionUpdated(ofVersion, versions.length);
+    }
+
+    function decommissionVersion(address ofVersion)
         // TODO: Assert Board Members consensus
-        versions.push(nextVersion);
-        versionAvailabilities[nextVersion] = true;
-        VersionUpdated(nextVersion, versions.length);
+        pre_cond(isOwner())
+    {
+        // TODO decommissionVaults
     }
 }
