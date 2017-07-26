@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.2.1]
+
+### Changed
+- Naming in past tense for Events
+  - `OrderUpdate` -> `OrderUpdated`
+  - `VaultUpdate` -> `VaultUpdated`
+
 ## [0.2.0]
 ### Added
 - Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP, SNGLS incl addresses and verified on EtherScan

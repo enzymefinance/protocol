@@ -20,37 +20,43 @@ contract Version is DBC, Owned {
         uint decimals;
         bool active;
         uint timestamp;
-        bytes32 ipfsHash;
-        bytes32 swarmHash;
     }
 
     // FIELDS
 
     // Fields that are only changed in constructor
-    address public melonAsset; // Adresss of Melon asset contract
-    address public governance; // Address of Melon protocol governance contract
+    address public MELON_ASSET; // Adresss of Melon asset contract
+    address public GOVERNANCE; // Address of Melon protocol governance contract
     // Fields that can be changed by functions
     mapping (uint => VaultInfo) public vaults;
     uint public lastVaultId;
 
     // EVENTS
 
-    event VaultUpdate(uint id);
+    event VaultUpdated(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isVaultOwner(uint atIndex) internal returns (bool) {
-        var (, owner, , , , ,) = getVault(atIndex);
+    function isVaultOwner(uint id) internal returns (bool) {
+        var (, owner, , , , ,) = getVault(id);
         return owner == msg.sender;
     }
 
     // CONSTANT METHODS
 
-    function getMelonAsset() constant returns (address) { return melonAsset; }
+    function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint atIndex) constant returns (address, address, string, string, uint, bool, uint) {
-        var vault = vaults[atIndex];
-        return (vault.vault, vault.owner, vault.name, vault.symbol, vault.decimals, vault.active, vault.timestamp);
+    function getVault(uint id) constant returns (address, address, string, string, uint, bool, uint) {
+        var info = vaults[id];
+        return (
+            info.vault,
+            info.owner,
+            info.name,
+            info.symbol,
+            info.decimals,
+            info.active,
+            info.timestamp
+        );
     }
 
     // NON-CONSTANT INTERNAL METHODS
@@ -62,11 +68,10 @@ contract Version is DBC, Owned {
     // NON-CONSTANT METHODS
 
     function Version(
-        address ofMelonAsset,
-        address ofGovernance
+        address ofMelonAsset
     ) {
-        melonAsset = ofMelonAsset;
-        governance = ofGovernance;
+        GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
+        MELON_ASSET = ofMelonAsset;
     }
 
     function setupVault(
@@ -87,7 +92,7 @@ contract Version is DBC, Owned {
             withName,
             withSymbol,
             withDecimals,
-            melonAsset,
+            MELON_ASSET,
             ofUniverse,
             ofParticipation,
             ofRiskMgmt,
@@ -104,11 +109,11 @@ contract Version is DBC, Owned {
     }
 
     // Dereference Vault and trigger selfdestruct
-    function decommissionVault(uint atIndex)
-        pre_cond(isVaultOwner(atIndex))
+    function decommissionVault(uint id)
+        pre_cond(isVaultOwner(id))
     {
         // TODO also refund and selfdestruct vault contract
-        delete vaults[atIndex];
-        VaultUpdate(atIndex);
+        delete vaults[id];
+        VaultUpdated(id);
     }
 }

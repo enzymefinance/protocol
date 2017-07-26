@@ -5,7 +5,6 @@ const tokenInfo = require('./config/token_info.js');
 
 module.exports = async (deployer, network) => {
   if (network === 'development') return;
-  console.log(tokenInfo[network]);
   const mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
   await deployer.deploy(Governance)
       .then(() => deployer.deploy(Version, mlnTokenAddress, Governance.address));

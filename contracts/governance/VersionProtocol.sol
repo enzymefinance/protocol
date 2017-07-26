@@ -5,17 +5,17 @@ pragma solidity ^0.4.11;
 /// @notice This is to be considered as a protocol on how to access the underlying Version Contract
 contract VersionProtocol {
   function numCreatedVaults() constant returns (uint) {}
-  function getVault(uint atIndex) constant returns (address) {}
+  function getVault(uint id) constant returns (address) {}
   function setupVault(
       string withName,
+      string withSymbol,
+      uint withDecimals,
       address ofUniverse,
-      address ofSubscribe,
-      address ofRedeem,
+      address ofParticipation,
       address ofRiskMgmt,
-      address ofManagmentFee,
-      address ofPerformanceFee
+      address ofRewards
   )
-      returns (address)
+    returns (uint id)
   {}
-  function decommissionVault(uint atIndex) {}    
+  function decommissionVault(uint id) {}
 }

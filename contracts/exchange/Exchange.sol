@@ -91,7 +91,7 @@ contract Exchange is ExchangeProtocol, DBC, MutexUser {
         id = next_id();
         orders[id] = info;
         assert(sell_which_token.transferFrom(msg.sender, this, info.sell_how_much));
-        OrderUpdate(id);
+        OrderUpdated(id);
     }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
@@ -115,7 +115,7 @@ contract Exchange is ExchangeProtocol, DBC, MutexUser {
             delete orders[id];
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
-            OrderUpdate(id);
+            OrderUpdated(id);
             return true;
         }
         if (spend > 0 && quantity > 0) {
@@ -124,7 +124,7 @@ contract Exchange is ExchangeProtocol, DBC, MutexUser {
             orders[id].buy_how_much = offer.buy_how_much.sub(spend);
             trade(offer.owner, quantity, offer.sell_which_token,
                 msg.sender, spend, offer.buy_which_token);
-            OrderUpdate(id);
+            OrderUpdated(id);
             return true;
         }
         // buyer wants an unsatisfiable amount (less than 1 integer)
@@ -142,7 +142,7 @@ contract Exchange is ExchangeProtocol, DBC, MutexUser {
         OrderInfo memory offer = orders[id];
         delete orders[id];
         assert(offer.sell_which_token.transfer(offer.owner, offer.sell_how_much));
-        OrderUpdate(id);
+        OrderUpdated(id);
         return true;
     }
 }

@@ -42,5 +42,5 @@ contract VaultProtocol is AssetProtocol {
 
     // EVENTS
 
-    event OrderUpdate(uint id);
+    event OrderUpdated(uint id);
 }
