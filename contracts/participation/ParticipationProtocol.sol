@@ -7,5 +7,6 @@ contract ParticipationProtocol {
     // CONSTANT METHODS
 
     function isSubscribePermitted(address byParticipant, uint wantedShares) returns (bool) {}
+    function isSubscriberPermitted(address byParticipant, uint wantedShares) returns (bool) {}
     function isRedeemPermitted(address byParticipant, uint wantedShares) returns (bool) {}
 }

@@ -74,7 +74,7 @@ contract('Vault', (accounts) => {
     });
     it('Creates shares of empty vault with reference asset', async () => {
       await ethToken.approve(vault.address, offeredValue, { from: investor });
-      await vault.subscribeWithReferenceAsset(numShares, offeredValue, { from: investor });
+      await vault.subscribe(numShares, offeredValue, { from: investor });
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
     it('Performs calculation correctly', async () => {
@@ -93,7 +93,7 @@ contract('Vault', (accounts) => {
     const requestedValue = 10000;
     it('Annihilates shares of vault with reference asset', async () => {
       await ethToken.approve(vault.address, requestedValue, { from: investor });
-      await vault.redeemWithReferenceAsset(numShares, requestedValue, { from: investor });
+      await vault.redeem(numShares, requestedValue, { from: investor });
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
     it('Performs calculation correctly', async () => {

@@ -22,7 +22,15 @@ contract Participation is ParticipationProtocol, DBC {
 
     // NON-CONSTANT METHODS
 
+    // Pre:
+    // Post: Boolean dependent on market data
     function isSubscribePermitted(address byParticipant, uint wantedShares) returns (bool) {
+        // Restrict to certain addresses, amounts or timeintervalls
+        return true;
+    }
+
+    // Post: Boolean dependent on personel data; Compliance
+    function isSubscriberPermitted(address byParticipant, uint wantedShares) returns (bool) {
         // Restrict to certain addresses, amounts or timeintervalls
         return true;
     }
