@@ -7,7 +7,9 @@
   },
   "scripts": {
     "test": "truffle test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "coverage": "./node_modules/.bin/solidity-coverage",
+    "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "files": [
     "build",
@@ -36,6 +38,7 @@
     "async": "^2.4.0",
     "babel-eslint": "^7.1.1",
     "babel-preset-es2015": "^6.24.1",
+    "coveralls": "^2.13.1",
     "eslint": "^3.13.1",
     "eslint-config-airbnb": "^13.0.0",
     "eslint-import-resolver-meteor": "^0.3.4",
@@ -45,6 +48,8 @@
     "eslint-plugin-react": "^6.8.0",
     "ethereumjs-testrpc": "^3.0.5",
     "js-sha256": "^0.3.2",
+    "mocha-lcov-reporter": "^1.3.0",
+    "solidity-coverage": "^0.2.1",
     "truffle": "^3.4.4"
   },
   "dependencies": {
