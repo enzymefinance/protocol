@@ -6,3 +6,7 @@ npm-debug.log
 # ignore built contracts
 build/
 protocol/
+
+# ignore generated coverage data
+coverage.json
+coverage/

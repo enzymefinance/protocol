@@ -2,6 +2,7 @@ const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('PriceFeed');
 const Exchange = artifacts.require('Exchange');
+const Logger = artifacts.require('Logger');
 const Universe = artifacts.require('Universe');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
@@ -46,6 +47,7 @@ contract('Vault', (accounts) => {
     participation = await Participation.new();
     riskManagement = await RiskMgmt.new();
     rewards = await Rewards.new();
+    logger = await Logger.new();
     vault = await Vault.new(
       owner,
       'Melon Portfolio',  // name
@@ -56,6 +58,7 @@ contract('Vault', (accounts) => {
       participation.address,
       riskManagement.address,
       rewards.address,
+      logger.address,
       { from: owner },
     );
   });
@@ -86,6 +89,12 @@ contract('Vault', (accounts) => {
       assert.equal(nav.toNumber(), offeredValue);
       assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
     });
+    it('Logs share creation', async () => {
+      const subEvent = logger.Subscribed();
+      subEvent.get((err, events) => {
+        assert.equal(events.length, 1);
+      });
+    });
   });
 
   describe.skip('#annihilateShares()', () => {
@@ -97,7 +106,7 @@ contract('Vault', (accounts) => {
       await vault.redeem(numShares, requestedValue, { from: investor });
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
-    it('Performs calculation correctly', async () => {
+    it('Performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =
         await vault.performCalculations();
       assert.equal(gav.toNumber(), 0);

@@ -4,6 +4,7 @@ import "../Vault.sol";
 import "../VaultProtocol.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
+import "../dependencies/Logger.sol";
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
@@ -81,7 +82,8 @@ contract Version is DBC, Owned {
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofRewards
+        address ofRewards,
+        address ofLogger
     )
         returns (uint id)
     {
@@ -96,7 +98,8 @@ contract Version is DBC, Owned {
             ofUniverse,
             ofParticipation,
             ofRiskMgmt,
-            ofRewards
+            ofRewards,
+            ofLogger
         ));
         info.owner = msg.sender;
         info.name = withName;
