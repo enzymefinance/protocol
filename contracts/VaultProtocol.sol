@@ -11,7 +11,6 @@ contract VaultProtocol is AssetProtocol {
 
     // CONSTANT METHODS
 
-    function getReferenceAsset() constant returns (address) {}
     function getUniverseAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}

@@ -7,26 +7,36 @@ import "./UniverseProtocol.sol";
 /// @notice Simple Universe Contract, no adding of assets, no asset specific functionality.
 contract Universe is UniverseProtocol {
 
+    // TYPES
+
+    struct Molecule {
+        string name;
+        string symbol;
+        uint decimals;
+        bool active;
+    }
+
     // FIELDS
 
+    // Fields that are only changed in constructor
+    address public QUOTE_ASSET;
+    address public PRICE_FEED;
+    address public EXCHANGE;
+
     // Fields that can be changed by functions
-    address referenceAsset;
-    address[] public assets;
-    address[] public priceFeeds;
-    address[] public exchanges;
+    mapping (address => Molecule) public molecules; // Links asset to asset specific information
+    uint256 public numOfMolecules;
+    address[] public tradeableAssets;
+
     mapping (address => bool) assetAvailabilities;
-    mapping (address => address) assignedPriceFeeds; // pricefeed available for certain asset
+    mapping (address => address) getPriceFeeds; // pricefeed available for certain asset
     mapping (address => address) assignedExchanges; // exchange available for certain asset
 
     // EVENTS
 
     // MODIFIERS
 
-    modifier arrays_equal(address[] x, address[] y, address[] z) {
-        assert(x.length == y.length && y.length == z.length);
-        _;
-    }
-
+    // TODO DBC style
     modifier array_not_empty(address[] x) {
         assert(x.length >= 1);
         _;
@@ -34,29 +44,24 @@ contract Universe is UniverseProtocol {
 
     // CONSTANT METHDOS
 
-    function getReferenceAsset() constant returns (address) { return referenceAsset; }
-    function numAssignedAssets() constant returns (uint) { return assets.length; }
-    function assetAt(uint index) constant returns (address) { return assets[index]; }
-    function priceFeedAt(uint index) constant returns (address) { return priceFeeds[index]; }
-    function exchangeAt(uint index) constant returns (address) { return exchanges[index]; }
-    function assetAvailability(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
-    function assignedPriceFeed(address ofAsset) constant returns (address) { return assignedPriceFeeds[ofAsset]; }
-    function assignedExchange(address ofAsset) constant returns (address) { return assignedExchanges[ofAsset]; }
+    function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
+    function numAssignedAssets() constant returns (uint) { return tradeableAssets.length; }
+    function getAssetAt(uint id) constant returns (address) { return tradeableAssets[id]; }
+    function getPriceFeed() constant returns (address) { return PRICE_FEED; }
+    function getExchange() constant returns (address) { return EXCHANGE; }
+    function isAssetAvailable(address ofAsset) constant returns (bool) {
+        return molecules[ofAsset].active; // TODO test if return false
+    }
 
     // NON-CONSTANT METHODS
 
-    /// Pre: Assign ReferenceAsset at index 0 of "ofAssets"
-    function Universe(address ofReferenceAsset, address[] ofTradeableAsset, address[] ofPriceFeeds, address[] ofExchanges)
+    /// Pre: Assign ReferenceAsset at id 0 of "ofAssets"
+    function Universe(address ofQuoteAsset, address[] ofTradeableAsset, address ofPriceFeed, address ofExchange)
         array_not_empty(ofTradeableAsset)
     {
-        referenceAsset = ofReferenceAsset;
-        for (uint i = 0; i < ofTradeableAsset.length; ++i) {
-            assetAvailabilities[ofTradeableAsset[i]] = true;
-            assets.push(ofTradeableAsset[i]);
-            priceFeeds.push(ofPriceFeeds[i]);
-            exchanges.push(ofExchanges[i]);
-            assignedPriceFeeds[ofTradeableAsset[i]] = ofPriceFeeds[i];
-            assignedExchanges[ofTradeableAsset[i]] = ofExchanges[i];
-        }
+        QUOTE_ASSET = ofQuoteAsset;
+        PRICE_FEED = ofPriceFeed;
+        EXCHANGE = ofExchange;
+        tradeableAssets = ofTradeableAsset; // TODO use Molecules
     }
 }
