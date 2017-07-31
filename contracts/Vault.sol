@@ -67,14 +67,6 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // EVENTS
 
-    event Subscribed(address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
-    event Redeemed(address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
-    event PortfolioContent(uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals); // Calcualtions
-    event SpendingApproved(address ofToken, address onExchange, uint256 amount); // Managing
-    event RewardsConverted(uint256 atTimestamp, uint256 numSharesConverted, uint256 numunclaimedRewards);
-    event RewardsPayedOut(uint256 atTimestamp, uint256 numSharesPayedOut, uint256 atSharePrice);
-    event CalculationUpdate(uint256 atTimestamp, uint256 managementReward, uint256 performanceReward, uint256 nav, uint256 sharePrice, uint256 totalSupply);
-
     // PRE, POST, INVARIANT CONDITIONS
 
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
@@ -180,7 +172,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
               assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
             }
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+            logger.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
 
@@ -255,7 +247,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             assert(offeredValue >= actualValue); // Sanity Check
             assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
-            Subscribed(msg.sender, now, numShares);
+            logger.logSubscribed(msg.sender, now, numShares);
         }
     }
 
@@ -271,7 +263,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         assert(requestedValue <= actualValue); // Sanity Check
         assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
-        Redeemed(msg.sender, now, numShares);
+        logger.logRedeemed(msg.sender, now, numShares);
     }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings;
@@ -282,7 +274,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         pre_cond(isPastZero(numShares))
     {
         allocateSlice(numShares);
-        Subscribed(msg.sender, now, numShares);
+        logger.logSubscribed(msg.sender, now, numShares);
     }
 
     /// Pre: Recipient owns shares
@@ -292,7 +284,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
     {
         separateSlice(numShares);
-        Redeemed(msg.sender, now, numShares);
+        logger.logRedeemed(msg.sender, now, numShares);
     }
 
     /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, numShares denominated in [base units ]
@@ -433,7 +425,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         internal
     {
         assert(ofToken.approve(onExchange, amount));
-        SpendingApproved(ofToken, onExchange, amount);
+        logger.logSpendingApproved(ofToken, onExchange, amount);
     }
 
     // NON-CONSTANT METHODS - REWARDS
@@ -468,7 +460,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
           timestamp: now
         });
 
-        RewardsConverted(now, numShares, unclaimedRewards);
-        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+        logger.logRewardsConverted(now, numShares, unclaimedRewards);
+        logger.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 }

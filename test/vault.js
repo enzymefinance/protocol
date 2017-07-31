@@ -88,6 +88,12 @@ contract('Vault', (accounts) => {
       assert.equal(nav.toNumber(), offeredValue);
       assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
     });
+    it('Logs share creation', async () => {
+      const subEvent = logger.Subscribed();
+      subEvent.get((err, events) => {
+        assert.equal(events.length, 1);
+      });
+    });
   });
 
   describe('#annihilateShares()', () => {
@@ -99,7 +105,7 @@ contract('Vault', (accounts) => {
       await vault.redeem(numShares, requestedValue, { from: investor });
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
-    it('Performs calculation correctly', async () => {
+    it('Performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =
         await vault.performCalculations();
       assert.equal(gav.toNumber(), 0);
