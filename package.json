@@ -51,6 +51,6 @@
     "babel-cli": "^6.24.1",
     "babel-core": "^6.20.0",
     "bignumber.js": "^2.4.0",
-    "chai": "^4.0.2"
+    "chai": "^4.1.0"
   }
 }

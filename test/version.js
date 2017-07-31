@@ -1,6 +1,7 @@
 const EtherToken = artifacts.require('EtherToken');
 const Exchange = artifacts.require('Exchange');
 const Governance = artifacts.require('Governance');
+const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('PriceFeed');
@@ -31,6 +32,7 @@ contract('Version', (accounts) => {
     ethToken = await EtherToken.new();
     pricefeed = await PriceFeed.new(accounts[1], ethToken.address);
     exchange = await Exchange.new();
+    logger = await Logger.new();
     universe = await Universe.new(
       ethToken.address,
       [ethToken.address, eurToken.address, mlnToken.address],
@@ -51,6 +53,7 @@ contract('Version', (accounts) => {
       participation.address,
       riskManagement.address,
       rewards.address,
+      logger.address,
       { from: accounts[0] },
     );
   });

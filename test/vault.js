@@ -2,6 +2,7 @@ const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('PriceFeed');
 const Exchange = artifacts.require('Exchange');
+const Logger = artifacts.require('Logger');
 const Universe = artifacts.require('Universe');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
@@ -45,6 +46,7 @@ contract('Vault', (accounts) => {
     participation = await Participation.new();
     riskManagement = await RiskMgmt.new();
     rewards = await Rewards.new();
+    logger = await Logger.new();
     vault = await Vault.new(
       owner,
       'Melon Portfolio',  // name
@@ -55,6 +57,7 @@ contract('Vault', (accounts) => {
       participation.address,
       riskManagement.address,
       rewards.address,
+      logger.address,
       { from: owner },
     );
   });

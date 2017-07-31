@@ -13,6 +13,7 @@ import "./rewards/RewardsProtocol.sol";
 import "./riskmgmt/RiskMgmtProtocol.sol";
 import "./exchange/ExchangeProtocol.sol";
 import "./VaultProtocol.sol";
+import "./dependencies/Logger.sol";
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
@@ -62,6 +63,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     Prospectus public prospectus;
     Modules public module;
     Calculations public atLastPayout;
+    Logger public logger;
 
     // EVENTS
 
@@ -193,8 +195,10 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofRewards
+        address ofRewards,
+        address ofLogger
     ) {
+        logger = Logger(ofLogger);
         owner = ofManager;
         name = withName;
         symbol = withSymbol;
