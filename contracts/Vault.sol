@@ -82,32 +82,31 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // CONSTANT METHODS
 
-    function getReferenceAsset() constant returns (address) { return referenceAsset; }
     function getUniverseAddress() constant returns (address) { return module.universe; }
     function getDecimals() constant returns (uint) { return decimals; }
     function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre: numShares denominated in [base unit of referenceAsset], baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of referenceAsset]
+    /// Pre: numShares denominated in [base unit of melonAsset], baseUnitsPerShare not zero
+    /// Post: priceInRef denominated in [base unit of melonAsset]
     function priceForNumShares(uint256 numShares) constant returns (uint256)
     {
         var (, , , , , sharePrice) = performCalculations();
         return numShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
-    /// Pre: numShares denominated in [base unit of referenceAsset], baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of referenceAsset]
+    /// Pre: numShares denominated in [base unit of melonAsset], baseUnitsPerShare not zero
+    /// Post: priceInRef denominated in [base unit of melonAsset]
     function subscribePriceForNumShares(uint256 numShares) constant returns (uint256)
     {
         return priceForNumShares(numShares)
           .mul(SUBSCRIBE_FEE_DIVISOR.sub(prospectus.subscriptionFee))
-          .div(SUBSCRIBE_FEE_DIVISOR); // [base unit of referenceAsset]
+          .div(SUBSCRIBE_FEE_DIVISOR); // [base unit of melonAsset]
     }
 
     /// Pre: None
-    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint256 gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
@@ -117,11 +116,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     }
 
     /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in [base unit of referenceAsset]
+    /// Post: Net asset value denominated in [base unit of melonAsset]
     function calcNav(uint256 gav, uint256 unclaimedRewards) constant returns (uint256 nav) { nav = gav.sub(unclaimedRewards); }
 
     /// Pre: Gross asset value has been calculated
-    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint256 gav) constant returns (uint256 managementReward, uint256 performanceReward, uint256 unclaimedRewards) {
         uint256 timeDifference = now.sub(atLastPayout.timestamp);
         managementReward = module.rewards.calculateManagementReward(timeDifference, gav);
@@ -135,8 +134,8 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         unclaimedRewards = managementReward.add(performanceReward);
     }
 
-    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
-    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
+    /// Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// Post: Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint256 value)
         constant
         pre_cond(isPastZero(totalSupply))
@@ -146,36 +145,34 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     }
 
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    /// Post: Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint256 gav) {
         /* Rem 1:
-         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  All prices are relative to the melonAsset price. The melonAsset must be
          *  equal to quoteAsset of corresponding PriceFeed.
          * Rem 2:
-         *  For this version, the referenceAsset is set as EtherToken.
+         *  For this version, the melonAsset is set as EtherToken.
          *  The price of the EtherToken relative to Ether is defined to always be equal to one.
          * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of melonAsset per base unit of asset
          *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to referenceAsset price.
+         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to melonAsset price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
+        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.getPriceFeed()));
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
             // Holdings
-            address ofAsset = address(module.universe.assetAt(i));
+            address ofAsset = address(module.universe.getAssetAt(i));
             AssetProtocol Asset = AssetProtocol(ofAsset);
             uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             uint256 assetDecimals = Asset.getDecimals();
             // Price
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            assert(referenceAsset == quoteAsset); // See Remark 1
             uint256 assetPrice;
-            if (ofAsset == quoteAsset) {
+            if (ofAsset == melonAsset) { // See Remark 1
               assetPrice = 10 ** uint(assetDecimals); // See Remark 2
             } else {
-              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
+              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to melonAsset (and 'quoteAsset') price
             }
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
@@ -212,15 +209,12 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
             timestamp: now
         });
         module.universe = UniverseProtocol(ofUniverse);
-        referenceAsset = module.universe.getReferenceAsset();
-        melonAsset = module.universe.getMelonAsset();
-        // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
+        require(melonAsset == module.universe.getQuoteAsset());
+        // Assert melonAsset is equal to quoteAsset in all assigned PriceFeeds
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            require(referenceAsset == quoteAsset);
-        }
+        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.getPriceFeed()));
+        address quoteAsset = Price.getQuoteAsset();
+        require(melonAsset == quoteAsset); // See Remark 1
         module.participation = ParticipationProtocol(ofParticipation);
         module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
         module.rewards = RewardsProtocol(ofRewards);
@@ -232,7 +226,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     // Post: New subscription fee is set
     function setSubscriptionFee(uint256 newFee) pre_cond(atLeastThreshold(newFee)) { prospectus.subscriptionFee = newFee; }
 
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of referenceAsset]
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of melonAsset]
     /// Post: Subscribe in this fund by creating shares
     // TODO check comment
     // TODO mitigate `spam` attack
@@ -247,9 +241,9 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            uint256 actualValue = subscribePriceForNumShares(numShares); // [base unit of referenceAsset]
+            uint256 actualValue = subscribePriceForNumShares(numShares); // [base unit of melonAsset]
             assert(offeredValue >= actualValue); // Sanity Check
-            assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(AssetProtocol(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             Subscribed(msg.sender, now, numShares);
         }
@@ -263,9 +257,9 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
 
     {
-        uint256 actualValue = priceForNumShares(numShares); // [base unit of referenceAsset]
+        uint256 actualValue = priceForNumShares(numShares); // [base unit of melonAsset]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
+        assert(AssetProtocol(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         Redeemed(msg.sender, now, numShares);
     }
@@ -298,7 +292,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     {
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            AssetProtocol Asset = AssetProtocol(address(module.universe.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -324,7 +318,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         // Transfer separationAmount of Assets
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
+            AssetProtocol Asset = AssetProtocol(address(module.universe.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
@@ -413,14 +407,13 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     function requireIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
         internal
     {
-        // Asset pair defined in Universe and contains referenceAsset
-        require(module.universe.assetAvailability(buy_which_token));
-        require(module.universe.assetAvailability(sell_which_token));
-        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
-        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
+        // Asset pair defined in Universe and contains melonAsset
+        require(module.universe.isAssetAvailable(buy_which_token));
+        require(module.universe.isAssetAvailable(sell_which_token));
+        require(buy_which_token == melonAsset || sell_which_token == melonAsset); // One asset must be melonAsset
+        require(buy_which_token != melonAsset || sell_which_token != melonAsset); // Pair must consists of diffrent assets
         // Exchange assigned to tokens in Universe
-        require(onExchange == module.universe.assignedExchange(buy_which_token));
-        require(onExchange == module.universe.assignedExchange(sell_which_token));
+        require(onExchange == module.universe.getExchange());
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
