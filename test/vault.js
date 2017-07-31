@@ -21,6 +21,7 @@ contract('Vault', (accounts) => {
   const investor = accounts[2];
   let ethToken;
   let vault;
+  let logger;
 
   before('Set up new portfolio', async () => {
     // TODO: outsource all of these deployments to util function(s)
@@ -88,9 +89,10 @@ contract('Vault', (accounts) => {
       assert.equal(nav.toNumber(), offeredValue);
       assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
     });
-    it('Logs share creation', async () => {
+    it('Logs share creation', () => {
       const subEvent = logger.Subscribed();
       subEvent.get((err, events) => {
+        if (err) throw err;
         assert.equal(events.length, 1);
       });
     });
@@ -100,10 +102,18 @@ contract('Vault', (accounts) => {
     const numShares = 10000;
     const resShares = 0;
     const requestedValue = 10000;
-    it('Annihilates shares of vault with reference asset', async () => {
+    it('Annihilates shares of vault with reference asset', async (done) => {
       await ethToken.approve(vault.address, requestedValue, { from: investor });
       await vault.redeem(numShares, requestedValue, { from: investor });
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
+      done();
+    });
+    it('Logs redemption', () => {
+      const redeemEvent = logger.Redeemed();
+      redeemEvent.get((err, events) => {
+        if (err) throw err;
+        assert.equal(events.length, 1);
+      });
     });
     it('Performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =

@@ -191,6 +191,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         address ofLogger
     ) {
         logger = Logger(ofLogger);
+        logger.addPermission(this);
         owner = ofManager;
         name = withName;
         symbol = withSymbol;
