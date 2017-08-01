@@ -32,12 +32,12 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 1. Launch a testrpc client:
     ```
-    node_modules/.bin/testrpc -l 6713095
+    npm run localnode
     ```
 
 2. Open a second terminal and run the test framework:
     ```
-    node_modules/.bin/truffle test
+    npm test
     ```
 
 ## Linting
