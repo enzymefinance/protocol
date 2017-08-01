@@ -5,10 +5,15 @@ const assert = chai.assert;
 contract('Logger', (accounts) => {
   let logger;
   before('Setup contracts', async () => {
-    logger = await Logger.new();
+    logger = await Logger.new({ from: accounts[0] });
   });
 
-  it.skip('Logs correct parameters when called directly', async () => {
+  it('Add permission to ', async () => {
+    const errEvent = logger.Error();
+    await logger.addPermission(accounts[0], { from: accounts[0] });
+    assert.isTrue(await logger.isPermitted(accounts[0]));
+  });
+  it('Logs correct parameters when called directly', async () => {
     const errEvent = logger.Error();
     await logger.logError(accounts[0], 0, 'Some error', { from: accounts[0] });
     events = await errEvent.get();

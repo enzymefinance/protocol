@@ -7,11 +7,11 @@ import "./Owned.sol";
 contract Permissioned is DBC, Owned {
     mapping (address => bool) public permitted;
 
-    function isPermitted(address query) returns(bool) {
+    function isPermitted(address query) constant returns (bool) {
         return permitted[query];
     }
 
-    function senderPermitted() returns(bool) {
+    function senderPermitted() constant returns (bool) {
         return isPermitted(msg.sender);
     }
 
