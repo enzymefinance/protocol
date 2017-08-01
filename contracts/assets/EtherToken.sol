@@ -53,7 +53,7 @@ contract EtherToken is PreminedAsset {
         balances_msg_sender_at_least(amount)
         returns (bool)
     {
-        balances[msg.sender] = balances[msg.sender].add(amount);
+        balances[msg.sender] = balances[msg.sender].sub(amount);
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
         return true;

@@ -20,6 +20,6 @@ contract('Logger', (accounts) => {
   it('Errors when called from address without permissions', () => {
     return logger.logError(accounts[0], 1, 'Error', { from: accounts[1] })
       .then(() => assert(false, 'Nothing thrown'))
-      .catch(err => assert.include(err.message, 'invalid opcode'))
+      .catch(err => assert.include(err.message, 'invalid opcode'));
   });
 });
