@@ -22,9 +22,4 @@ contract Permissioned is DBC, Owned {
     function removePermission(address entry) pre_cond(isOwner()) {
         permitted[entry] = false;
     }
-
-    // Constructor
-    function Permissioned() {
-        addPermission(msg.sender); // owner permitted by default
-    }
 }

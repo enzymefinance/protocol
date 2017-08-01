@@ -90,7 +90,7 @@ contract('Vault', (accounts) => {
       assert.equal(nav.toNumber(), offeredValue);
       assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
     });
-    it('Logs share creation', () => {
+    it.skip('Logs share creation', () => {
       const subEvent = logger.Subscribed();
       subEvent.get((err, events) => {
         if (err) throw err;

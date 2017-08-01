@@ -21,6 +21,7 @@ contract('Version', (accounts) => {
   const performanceRewardRate = 0; // Reward rate in referenceAsset per managed seconds
 
   let governance;
+  let logger;
   let version;
   let mlnToken, eurToken, ethToken, pricefeed, exchange, universe, participation, riskManagement, rewards;
 
@@ -32,10 +33,10 @@ contract('Version', (accounts) => {
     eurToken = await PreminedAsset.new(eur.name, eur.symbol, eur.decimals, premined);
     ethToken = await EtherToken.new();
     governance = await Governance.new(mlnToken.address);
-    version = await Version.new(mlnToken.address);
+    logger = await Logger.new();
+    version = await Version.new(mlnToken.address, logger.address);
     pricefeed = await PriceFeed.new(accounts[1], ethToken.address);
     exchange = await Exchange.new();
-    logger = await Logger.new();
     universe = await Universe.new(
       mlnToken.address,
       [ethToken.address, eurToken.address, mlnToken.address],
@@ -56,7 +57,6 @@ contract('Version', (accounts) => {
       participation.address,
       riskManagement.address,
       rewards.address,
-      logger.address,
       { from: accounts[0] },
     );
   });
