@@ -2,23 +2,23 @@ pragma solidity ^0.4.11;
 
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
-import "./assets/AssetProtocol.sol";
+import "./assets/AssetInterface.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./universe/UniverseProtocol.sol";
-import "./participation/ParticipationProtocol.sol";
-import "./datafeeds/PriceFeedProtocol.sol";
+import "./participation/ParticipationAdaptor.sol";
+import "./datafeeds/PriceFeedAdaptor.sol";
 import "./rewards/RewardsProtocol.sol";
-import "./riskmgmt/RiskMgmtProtocol.sol";
-import "./exchange/ExchangeProtocol.sol";
-import "./VaultProtocol.sol";
+import "./riskmgmt/RiskMgmtAdaptor.sol";
+import "./exchange/ExchangeAdaptor.sol";
+import "./VaultInterface.sol";
 import "./dependencies/Logger.sol";
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple vault
-contract Vault is DBC, Owned, Shares, VaultProtocol {
+contract Vault is DBC, Owned, Shares, VaultInterface {
     using SafeMath for uint256;
 
     // TYPES
@@ -32,8 +32,8 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     struct Modules { // Can't be changed by Owner
         UniverseProtocol universe;
-        ParticipationProtocol participation;
-        RiskMgmtProtocol riskmgmt;
+        ParticipationAdaptor participation;
+        RiskMgmtAdaptor riskmgmt;
         RewardsProtocol rewards;
     }
 
@@ -154,11 +154,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.getPriceFeed()));
+        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.universe.getPriceFeed()));
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
             // Holdings
             address ofAsset = address(module.universe.getAssetAt(i));
-            AssetProtocol Asset = AssetProtocol(ofAsset);
+            AssetInterface Asset = AssetInterface(ofAsset);
             uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             uint256 assetDecimals = Asset.getDecimals();
             // Price
@@ -209,11 +209,11 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         require(melonAsset == module.universe.getQuoteAsset());
         // Assert melonAsset is equal to quoteAsset in all assigned PriceFeeds
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.getPriceFeed()));
+        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.universe.getPriceFeed()));
         address quoteAsset = Price.getQuoteAsset();
         require(melonAsset == quoteAsset); // See Remark 1
-        module.participation = ParticipationProtocol(ofParticipation);
-        module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
+        module.participation = ParticipationAdaptor(ofParticipation);
+        module.riskmgmt = RiskMgmtAdaptor(ofRiskMgmt);
         module.rewards = RewardsProtocol(ofRewards);
     }
 
@@ -240,7 +240,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         } else {
             uint256 actualValue = subscribePriceForNumShares(numShares); // [base unit of melonAsset]
             assert(offeredValue >= actualValue); // Sanity Check
-            assert(AssetProtocol(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(AssetInterface(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             logger.logSubscribed(msg.sender, now, numShares);
         }
@@ -256,7 +256,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     {
         uint256 actualValue = priceForNumShares(numShares); // [base unit of melonAsset]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetProtocol(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
+        assert(AssetInterface(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         logger.logRedeemed(msg.sender, now, numShares);
     }
@@ -289,7 +289,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     {
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.getAssetAt(i)));
+            AssetInterface Asset = AssetInterface(address(module.universe.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -315,7 +315,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         // Transfer separationAmount of Assets
         uint256 numAssignedAssets = module.universe.numAssignedAssets();
         for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.getAssetAt(i)));
+            AssetInterface Asset = AssetInterface(address(module.universe.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
@@ -350,7 +350,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makeOrder(ExchangeProtocol onExchange,
+    function makeOrder(ExchangeAdaptor onExchange,
         uint256 sell_how_much, ERC20 sell_which_token,
         uint256 buy_how_much,  ERC20 buy_which_token
     )
@@ -368,7 +368,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOrder(ExchangeProtocol onExchange, uint256 id, uint256 wantedBuyAmount)
+    function takeOrder(ExchangeAdaptor onExchange, uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
         returns (bool)
     {
@@ -392,7 +392,7 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
-    function cancelOrder(ExchangeProtocol onExchange, uint256 id)
+    function cancelOrder(ExchangeAdaptor onExchange, uint256 id)
         pre_cond(isOwner())
         returns (bool)
     {

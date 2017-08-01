@@ -4,12 +4,12 @@ import '../dependencies/ERC20.sol';
 import "../dependencies/DBC.sol";
 import '../dependencies/SafeMath.sol';
 import '../dependencies/MutexUser.sol';
-import "./ExchangeProtocol.sol";
+import "./ExchangeAdaptor.sol";
 
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
-contract Exchange is ExchangeProtocol, DBC, MutexUser {
+contract Exchange is ExchangeAdaptor, DBC, MutexUser {
     using SafeMath for uint256;
 
     // TYPES

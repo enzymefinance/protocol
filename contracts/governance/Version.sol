@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
 import "../Vault.sol";
-import "../VaultProtocol.sol";
+import "../VaultInterface.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/Logger.sol";
