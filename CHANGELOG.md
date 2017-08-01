@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Use Logging contract from Vault
 - `..Protocol.sol` renamed to either `..Interface.sol` or `..Adaptor.sol`
+- `RiskMgmtV1.sol` renamed to `RMLiquididtyProvider.sol`
 
 ## [0.2.1]
 
