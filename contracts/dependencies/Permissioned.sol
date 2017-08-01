@@ -15,16 +15,11 @@ contract Permissioned is DBC, Owned {
         return isPermitted(msg.sender);
     }
 
-    // TODO: remove tx.origin in favour of some other mechanism (for Serenity)
-    function ownerOrigin() returns(bool) {
-        return tx.origin == owner;
-    }
-
-    function addPermission(address entry) pre_cond(isOwner() || ownerOrigin()) {
+    function addPermission(address entry) pre_cond(isOwner()) {
         permitted[entry] = true;
     }
 
-    function removePermission(address entry) pre_cond(isOwner() || ownerOrigin()) {
+    function removePermission(address entry) pre_cond(isOwner()) {
         permitted[entry] = false;
     }
 

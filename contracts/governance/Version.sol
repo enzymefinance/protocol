@@ -28,6 +28,7 @@ contract Version is DBC, Owned {
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
+    address public LOGGER;
     // Fields that can be changed by functions
     mapping (uint => VaultInfo) public vaults;
     uint public lastVaultId;
@@ -73,6 +74,8 @@ contract Version is DBC, Owned {
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
+
+        LOGGER = new Logger()
     }
 
     function setupVault(
@@ -109,6 +112,7 @@ contract Version is DBC, Owned {
         info.timestamp = now;
         id = next_id();
         vaults[id] = info;
+        LOGGER.addPermission(info.vault);
     }
 
     // Dereference Vault and trigger selfdestruct
