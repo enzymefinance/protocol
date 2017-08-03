@@ -62,7 +62,7 @@ contract Exchange is ExchangeAdaptor, DBC, MutexUser {
     {
         assert(buy_which_token.transferFrom(buyer, seller, buy_how_much));
         assert(sell_which_token.transfer(buyer, sell_how_much));
-        Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        Trade(seller, sell_how_much, sell_which_token, buy_how_much, buy_which_token, buyer);
     }
 
     // NON-CONSTANT PUBLIC METHODS

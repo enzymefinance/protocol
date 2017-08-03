@@ -28,6 +28,6 @@ contract ExchangeAdaptor {
     // EVENTS
 
     event OrderUpdated(uint id);
-    event Trade(uint sell_how_much, address indexed sell_which_token,
-        uint buy_how_much, address indexed buy_which_token);
+    event Trade(address indexed seller, uint sell_how_much, address indexed sell_which_token,
+        address indexed buyer, uint buy_how_much, address indexed buy_which_token);
 }
