@@ -62,17 +62,6 @@ contract PriceFeed is PriceFeedAdaptor, DBC, Owned {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Price of asset, where last updated not longer than `VALIDITY` seconds ago
-    function getPrice(address ofAsset)
-        constant
-        pre_cond(isDataSet(ofAsset))
-        pre_cond(isDataValid(ofAsset))
-        returns (uint)
-    {
-        return data[ofAsset].price;
-    }
-
-    /// Pre: Asset has been initialised and is active
     /// Post: Timestamp, where last updated not longer than `VALIDITY` seconds ago
     function getPrice(address ofAsset)
         constant

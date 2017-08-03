@@ -8,7 +8,6 @@ const PriceFeed = artifacts.require('PriceFeed');
 const Rewards = artifacts.require('Rewards');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Universe = artifacts.require('Universe');
-const Vault = artifacts.require('Vault');
 const Version = artifacts.require('Version');
 const tokens = require('../migrations/config/token_info').kovan;
 const chai = require('chai');
@@ -34,8 +33,9 @@ contract('Version', (accounts) => {
     ethToken = await EtherToken.new();
     governance = await Governance.new(mlnToken.address);
     logger = await Logger.new();
-    version = await Version.new(mlnToken.address, logger.address);
-    pricefeed = await PriceFeed.new(accounts[1], ethToken.address);
+    version = await Version.deployed();
+    logger.addPermission(version.address);
+    pricefeed = await PriceFeed.new(mlnToken.address, [eurToken.address, ethToken.address]);
     exchange = await Exchange.new();
     universe = await Universe.new(
       mlnToken.address,

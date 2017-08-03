@@ -14,9 +14,7 @@ contract Exchange is ExchangeAdaptor, DBC, MutexUser {
 
     // TYPES
 
-    struct OrderInfo {
-        uint sell_how_much;
-        ERC20 sell_which_token;
+    struct OrderInfo { uint sell_how_much; ERC20 sell_which_token;
         uint buy_how_much;
         ERC20 buy_which_token;
         uint timestamp;
@@ -28,6 +26,13 @@ contract Exchange is ExchangeAdaptor, DBC, MutexUser {
 
     mapping (uint => OrderInfo) public orders;
     uint public lastOrderId;
+
+    // EVENTS
+    event Trade(
+        address indexed seller, address indexed buyer,
+        uint sell_how_much, address sell_which_token,
+        uint buy_how_much, address buy_which_token
+    );
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -62,7 +67,7 @@ contract Exchange is ExchangeAdaptor, DBC, MutexUser {
     {
         assert(buy_which_token.transferFrom(buyer, seller, buy_how_much));
         assert(sell_which_token.transfer(buyer, sell_how_much));
-        Trade(seller, sell_how_much, sell_which_token, buy_how_much, buy_which_token, buyer);
+        Trade(seller, buyer, sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     // NON-CONSTANT PUBLIC METHODS

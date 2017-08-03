@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Logging contract for errors and other events
+- Calculations library
 
 ### Changed
 - Use Logging contract from Vault

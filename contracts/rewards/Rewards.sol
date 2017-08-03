@@ -23,30 +23,6 @@ contract Rewards is DBC, RewardsProtocol {
 
     // CONSTANT METHODS
 
-    /* Function invariant
-     *  for timeDifference == 0 => returns 0
-     */
-    /// Post: Reward denominated in referenceAsset
-    function calculateManagementReward(uint timeDifference, uint gav)
-        constant returns (uint)
-    {
-        uint absoluteChange = timeDifference * gav;
-        return absoluteChange * managementRewardRate / DIVISOR_FEE;
-    }
-
-
-    /* Function invariant
-     *  for deltaDifference == 0 => returns 0
-     */
-    /// Post: Reward denominated in referenceAsset
-    function calculatePerformanceReward(uint sharePriceDifference, uint totalSupply)
-        constant returns (uint)
-    {
-        if (sharePriceDifference <= 0) return 0;
-        uint absoluteChange = sharePriceDifference * totalSupply;
-        return absoluteChange * performanceRewardRate / DIVISOR_FEE;
-    }
-
     // NON-CONSTANT METHODS
 
     function Rewards(uint withManagementRewardRate, uint withPerformanceRewardRate) {
