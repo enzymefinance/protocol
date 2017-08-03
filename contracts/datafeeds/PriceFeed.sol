@@ -2,45 +2,54 @@ pragma solidity ^0.4.11;
 
 import "./PriceFeedAdaptor.sol";
 import "../dependencies/DBC.sol";
-import "../dependencies/BackupOwned.sol";
+import "../dependencies/Owned.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedAdaptor, DBC, BackupOwned {
+contract PriceFeed is PriceFeedAdaptor, DBC, Owned {
 
     // TYPES
 
     struct Data {
         uint timestamp; // Timestamp of last price update of this asset
-        uint price; // Price of asset quoted against `quoteAsset` times ten to the power of {decimals of this asset}
+        uint price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
     }
 
     // FIELDS
 
     // Constant fields
     /// Note: Frequency is purely self imposed and for information purposes only
-    uint constant frequency = 120; // Frequency of updates in seconds
-    uint constant validity = 60; // Time in seconds data is considered valid
-
+    uint constant FREQUENCY = 120; // Frequency of updates in seconds
+    uint constant VALIDITY = 60; // Time in seconds data is considered valid
     // Fields that are only changed in constructor
     /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
-    address quoteAsset; // Is the quote asset of a portfolio against which all other assets are priced against
-
+    address public QUOTE_ASSET; // Is the quote asset of a portfolio against which all other assets are priced against
+    // Fields that can be changed by functions
+    address[] public availableAssets;
+    mapping (address => bool) assetAvailabilities;
     // Fields that can be changed by functions
     mapping (address => Data) data; // Address of asset => price of asset
 
     // PRE, POST, INVARIANT CONDITIONS
 
     function isDataSet(address ofAsset) internal returns (bool) { return data[ofAsset].timestamp > 0; }
-    function isDataValid(address ofAsset) internal returns (bool) { return now - data[ofAsset].timestamp <= validity; }
+    function isDataValid(address ofAsset) internal returns (bool) { return now - data[ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
+    function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }
+
 
     // CONSTANT METHODS
 
-    function getQuoteAsset() constant returns (address) { return quoteAsset; }
-    function getFrequency() constant returns (uint) { return frequency; }
-    function getValidity() constant returns (uint) { return validity; }
+    // Get price feed specific information
+    function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
+    function getFrequency() constant returns (uint) { return FREQUENCY; }
+    function getValidity() constant returns (uint) { return VALIDITY; }
+    // Get availability of assets
+    function numAvailableAssets() constant returns (uint) { return availableAssets.length; }
+    function getAssetAt(uint id) constant returns (address) { return availableAssets[id]; }
+    function isAssetAvailable(address ofAsset) constant returns (bool) { return assetAvailabilities[ofAsset]; }
+    // Get asset specific information
 
     /// Pre: Asset has been initialised
     /// Post: Returns boolean if data is valid
@@ -49,11 +58,11 @@ contract PriceFeed is PriceFeedAdaptor, DBC, BackupOwned {
         pre_cond(isDataSet(ofAsset))
         returns (bool)
     {
-        return now - data[ofAsset].timestamp <= validity;
+        return now - data[ofAsset].timestamp <= VALIDITY;
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Price of asset, where last updated not longer than `validity` seconds ago
+    /// Post: Price of asset, where last updated not longer than `VALIDITY` seconds ago
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -64,7 +73,18 @@ contract PriceFeed is PriceFeedAdaptor, DBC, BackupOwned {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Timestamp and price of asset, where last updated not longer than `validity` seconds ago
+    /// Post: Timestamp, where last updated not longer than `VALIDITY` seconds ago
+    function getPrice(address ofAsset)
+        constant
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
+        returns (uint)
+    {
+        return data[ofAsset].timestamp;
+    }
+
+    /// Pre: Asset has been initialised and is active
+    /// Post: Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
     function getData(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -78,16 +98,17 @@ contract PriceFeed is PriceFeedAdaptor, DBC, BackupOwned {
 
     /// Pre: Define a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(address setBackupOwner, address setQuoteAsset)
-        BackupOwned(setBackupOwner)
+    function PriceFeed(address ofQuoteAsset, address[] ofAvailableAssets)
+        pre_cond(arrayNotEmpty(ofAvailableAssets))
     {
-        quoteAsset = setQuoteAsset;
+        QUOTE_ASSET = ofQuoteAsset;
+        availableAssets = ofAvailableAssets; // TODO use Molecules
     }
 
     /// Pre: Only Owner; Same sized input arrays
-    /// Post: Update price of asset relative to quoteAsset
+    /// Post: Update price of asset relative to QUOTE_ASSET
     /** Ex:
-     *  Let quoteAsset == ETH (in Wei), let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
+     *  Let QUOTE_ASSET == ETH (in Wei), let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
      *  => data[EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
