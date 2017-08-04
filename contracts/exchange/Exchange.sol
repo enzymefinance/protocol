@@ -14,7 +14,9 @@ contract Exchange is ExchangeAdaptor, DBC, MutexUser {
 
     // TYPES
 
-    struct OrderInfo { uint sell_how_much; ERC20 sell_which_token;
+    struct OrderInfo {
+        uint sell_how_much;
+        ERC20 sell_which_token;
         uint buy_how_much;
         ERC20 buy_which_token;
         uint timestamp;

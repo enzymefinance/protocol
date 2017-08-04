@@ -381,9 +381,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function requireValidAssetData(address sell_which_token, address buy_which_token)
         internal
     {
-        // Asset pair defined in Universe and contains melonAsset
         require(module.pricefeed.isValid(buy_which_token));
         require(module.pricefeed.isValid(sell_which_token));
+        // Asset pair defined in Universe and contains melonAsset
         require(buy_which_token == melonAsset || sell_which_token == melonAsset); // One asset must be melonAsset
         require(buy_which_token != melonAsset || sell_which_token != melonAsset); // Pair must consists of diffrent assets
     }
@@ -419,14 +419,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         addShares(owner, numShares);
         // Update Calculations
         atLastPayout = Calculations({
-          gav: gav,
-          managementReward: managementReward,
-          performanceReward: performanceReward,
-          unclaimedRewards: unclaimedRewards,
-          nav: nav,
-          sharePrice: sharePrice,
-          totalSupply: totalSupply,
-          timestamp: now
+            gav: gav,
+            managementReward: managementReward,
+            performanceReward: performanceReward,
+            unclaimedRewards: unclaimedRewards,
+            nav: nav,
+            sharePrice: sharePrice,
+            totalSupply: totalSupply,
+            timestamp: now
         });
 
         logger.logRewardsConverted(now, numShares, unclaimedRewards);
