@@ -6,15 +6,14 @@ import "./assets/AssetInterface.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
-import "./universe/UniverseProtocol.sol";
+import "./dependencies/Logger.sol";
 import "./participation/ParticipationAdaptor.sol";
 import "./datafeeds/PriceFeedAdaptor.sol";
 import "./rewards/RewardsProtocol.sol";
 import "./riskmgmt/RiskMgmtAdaptor.sol";
 import "./exchange/ExchangeAdaptor.sol";
-import "./VaultInterface.sol";
-import "./dependencies/Logger.sol";
 import "./Calculate.sol";
+import "./VaultInterface.sol";
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
@@ -32,8 +31,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Modules { // Can't be changed by Owner
-        UniverseProtocol universe;
         ParticipationAdaptor participation;
+        PriceFeedAdaptor pricefeed;
+        ExchangeAdaptor exchange;
         RiskMgmtAdaptor riskmgmt;
         RewardsProtocol rewards;
     }
@@ -51,6 +51,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // FIELDS
 
+    // Constant asset specific fields
+    uint public MANAGEMENT_REWARD_RATE = 0; // Reward rate in referenceAsset per delta improvment
+    uint public PERFORMANCE_REWARD_RATE = 0; // Reward rate in referenceAsset per managed seconds
+    uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint256 public constant SUBSCRIBE_THRESHOLD = 1000;
     uint256 public constant SUBSCRIBE_FEE_DIVISOR = 100000; // << 10 ** decimals
     // Fields that are only changed in constructor
@@ -80,7 +84,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // CONSTANT METHODS
 
-    function getUniverseAddress() constant returns (address) { return module.universe; }
+    function getPriceFeedAddress() constant returns (address) { return module.pricefeed; }
+    function getExchangeAddress() constant returns (address) { return module.exchange; }
     function getDecimals() constant returns (uint) { return decimals; }
     function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
 
@@ -92,8 +97,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         string withSymbol,
         uint withDecimals,
         address ofMelonAsset,
-        address ofUniverse,
+        address ofPriceFeed,
         address ofParticipation,
+        address ofExchange,
         address ofRiskMgmt,
         address ofRewards,
         address ofLogger
@@ -116,14 +122,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        module.universe = UniverseProtocol(ofUniverse);
-        require(melonAsset == module.universe.getQuoteAsset());
-        // Assert melonAsset is equal to quoteAsset in all assigned PriceFeeds
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.universe.getPriceFeed()));
-        address quoteAsset = Price.getQuoteAsset();
-        require(melonAsset == quoteAsset); // See Remark 1
+        // Init module struct
+        module.pricefeed = PriceFeedAdaptor(ofPriceFeed);
+        require(melonAsset == module.pricefeed.getQuoteAsset());
         module.participation = ParticipationAdaptor(ofParticipation);
+        module.exchnage = ExchangeAdaptor(ofExchange);
         module.riskmgmt = RiskMgmtAdaptor(ofRiskMgmt);
         module.rewards = RewardsProtocol(ofRewards);
     }
@@ -147,11 +150,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         delete allHoldings;
         delete allPrices;
         delete allDecimals;
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.universe.getPriceFeed()));
-        for (uint256 i = 0; i < numAssignedAssets; i++) {
+        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
+        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.pricefeed));
+        for (uint256 i = 0; i < numAvailableAssets; i++) {
             // Holdings
-            address ofAsset = address(module.universe.getAssetAt(i));
+            address ofAsset = address(module.pricefeed.getAssetAt(i));
             AssetInterface Asset = AssetInterface(ofAsset);
             uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             uint256 assetDecimals = Asset.getDecimals();
@@ -256,9 +259,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function allocateSlice(uint256 numShares)
         internal
     {
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.universe.getAssetAt(i)));
+        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
+        for (uint256 i = 0; i < numAvailableAssets; ++i) {
+            AssetInterface Asset = AssetInterface(address(module.pricefeed.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -282,9 +285,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Destroy _before_ external calls to prevent reentrancy
         annihilateShares(msg.sender, numShares);
         // Transfer separationAmount of Assets
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.universe.getAssetAt(i)));
+        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
+        for (uint256 i = 0; i < numAvailableAssets; ++i) {
+            AssetInterface Asset = AssetInterface(address(module.pricefeed.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
@@ -374,8 +377,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         internal
     {
         // Asset pair defined in Universe and contains melonAsset
-        require(module.universe.isAssetAvailable(buy_which_token));
-        require(module.universe.isAssetAvailable(sell_which_token));
+        require(module.pricefeed.isAssetAvailable(buy_which_token));
+        require(module.pricefeed.isAssetAvailable(sell_which_token));
         require(buy_which_token == melonAsset || sell_which_token == melonAsset); // One asset must be melonAsset
         require(buy_which_token != melonAsset || sell_which_token != melonAsset); // Pair must consists of diffrent assets
         // Exchange assigned to tokens in Universe

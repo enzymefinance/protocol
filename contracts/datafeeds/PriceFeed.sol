@@ -16,6 +16,11 @@ contract PriceFeed is PriceFeedAdaptor, DBC, Owned {
         uint price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
     }
 
+    struct Input {
+        address asset; // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+        address price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+    }
+
     // FIELDS
 
     // Constant fields
