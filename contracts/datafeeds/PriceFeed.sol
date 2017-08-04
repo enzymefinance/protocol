@@ -49,7 +49,7 @@ contract PriceFeed is PriceFeedAdaptor, DBC, Owned {
     // Get price feed specific information
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getFrequency() constant returns (uint) { return FREQUENCY; }
-    function getValidityThreshold() constant returns (uint) { return VALIDITY; }
+    function isValid() constant returns (uint) { return VALIDITY; }
     // Get availability of assets
     function numAvailableAssets() constant returns (uint) { return availableAssets.length; }
     function getAssetAt(uint id) constant returns (address) { return availableAssets[id]; }

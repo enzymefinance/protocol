@@ -126,7 +126,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         module.pricefeed = PriceFeedAdaptor(ofPriceFeed);
         require(melonAsset == module.pricefeed.getQuoteAsset());
         module.participation = ParticipationAdaptor(ofParticipation);
-        module.exchnage = ExchangeAdaptor(ofExchange);
+        module.exchange = ExchangeAdaptor(ofExchange);
         module.riskmgmt = RiskMgmtAdaptor(ofRiskMgmt);
         module.rewards = RewardsProtocol(ofRewards);
     }
@@ -322,25 +322,25 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makeOrder(ExchangeAdaptor onExchange,
+    function makeOrder(
         uint256 sell_how_much, ERC20 sell_which_token,
         uint256 buy_how_much,  ERC20 buy_which_token
     )
         pre_cond(isOwner())
-        pre_cond(module.riskmgmt.isExchangeMakePermitted(onExchange,
+        pre_cond(module.riskmgmt.isExchangeMakePermitted(address(module.exchange),
             sell_how_much, sell_which_token,
             buy_how_much, buy_which_token)
         )
         returns (uint256 id)
     {
-        requireIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
-        approveSpending(sell_which_token, onExchange, sell_how_much);
-        id = onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        requireValidAssetData(sell_which_token, buy_which_token);
+        approveSpending(sell_which_token, address(module.exchange), sell_how_much);
+        id = module.exchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOrder(ExchangeAdaptor onExchange, uint256 id, uint256 wantedBuyAmount)
+    function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
         returns (bool)
     {
@@ -348,41 +348,39 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
-        ) = onExchange.getOrder(id);
+        ) = module.exchange.getOrder(id);
         require(wantedBuyAmount <= offeredBuyAmount);
-        requireIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
-        var orderOwner = onExchange.getOwner(id);
-        require(module.riskmgmt.isExchangeTakePermitted(onExchange,
+        requireValidAssetData(offeredSellToken, offeredBuyToken);
+        var orderOwner = module.exchange.getOwner(id);
+        require(module.riskmgmt.isExchangeTakePermitted(address(module.exchange),
             offeredSellAmount, offeredSellToken,
             offeredBuyAmount, offeredBuyToken,
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
-        approveSpending(offeredSellToken, onExchange, wantedSellAmount);
-        return onExchange.take(id, wantedBuyAmount);
+        approveSpending(offeredSellToken, address(module.exchange), wantedSellAmount);
+        return module.exchange.take(id, wantedBuyAmount);
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
-    function cancelOrder(ExchangeAdaptor onExchange, uint256 id)
+    function cancelOrder(uint256 id)
         pre_cond(isOwner())
         returns (bool)
     {
-        return onExchange.cancel(id);
+        return module.exchange.cancel(id);
     }
 
     /// Pre: Universe has been defined
     /// Post: Whether buying and selling of tokens are allowed at given exchange
-    function requireIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
+    function requireValidAssetData(address sell_which_token, address buy_which_token)
         internal
     {
         // Asset pair defined in Universe and contains melonAsset
-        require(module.pricefeed.isAssetAvailable(buy_which_token));
-        require(module.pricefeed.isAssetAvailable(sell_which_token));
+        require(module.pricefeed.isValid(buy_which_token));
+        require(module.pricefeed.isValid(sell_which_token));
         require(buy_which_token == melonAsset || sell_which_token == melonAsset); // One asset must be melonAsset
         require(buy_which_token != melonAsset || sell_which_token != melonAsset); // Pair must consists of diffrent assets
-        // Exchange assigned to tokens in Universe
-        require(onExchange == module.universe.getExchange());
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
