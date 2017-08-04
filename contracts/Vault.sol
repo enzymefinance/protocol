@@ -9,7 +9,6 @@ import "./dependencies/SafeMath.sol";
 import "./dependencies/Logger.sol";
 import "./participation/ParticipationAdaptor.sol";
 import "./datafeeds/PriceFeedAdaptor.sol";
-import "./rewards/RewardsProtocol.sol";
 import "./riskmgmt/RiskMgmtAdaptor.sol";
 import "./exchange/ExchangeAdaptor.sol";
 import "./Calculate.sol";
@@ -35,7 +34,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         PriceFeedAdaptor pricefeed;
         ExchangeAdaptor exchange;
         RiskMgmtAdaptor riskmgmt;
-        RewardsProtocol rewards;
     }
 
     struct Calculations {
@@ -101,7 +99,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address ofParticipation,
         address ofExchange,
         address ofRiskMgmt,
-        address ofRewards,
         address ofLogger
     ) {
         logger = Logger(ofLogger);
@@ -128,7 +125,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         module.participation = ParticipationAdaptor(ofParticipation);
         module.exchange = ExchangeAdaptor(ofExchange);
         module.riskmgmt = RiskMgmtAdaptor(ofRiskMgmt);
-        module.rewards = RewardsProtocol(ofRewards);
     }
 
     // TODO: integrate this further (e.g. is it only called in one place?)
@@ -179,12 +175,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
         gav = Calculate.grossAssetValue(allHoldings, allPrices, allDecimals);
-        (management, performance, unclaimed) = Calculate.rewards(
-            atLastPayout.timestamp, module.rewards.managementRewardRate(),
-            module.rewards.performanceRewardRate(), gav, atLastPayout.sharePrice,
-            totalSupply, baseUnitsPerShare, module.rewards.DIVISOR_FEE()
+        (
+            management,
+            performance,
+            unclaimed
+        ) = Calculate.rewards(
+            atLastPayout.timestamp,
+            MANAGEMENT_REWARD_RATE,
+            PERFORMANCE_REWARD_RATE,
+            gav,
+            atLastPayout.sharePrice,
+            totalSupply,
+            baseUnitsPerShare,
+            DIVISOR_FEE
         );
-        nav = Calculate.netAssetValue(1, unclaimed);
+        nav = Calculate.netAssetValue(gav, unclaimed);
         sharePrice = Calculate.pricePerShare(nav, baseUnitsPerShare, totalSupply);
     }
 
