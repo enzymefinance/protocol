@@ -22,7 +22,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // TYPES
 
-    struct OrderInfo {
+    struct Orders {
         uint sell_how_much;
         ERC20 sell_which_token;
         uint buy_how_much;
@@ -30,24 +30,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint timestamp;
         address owner;
         bool active;
-    }
-    struct OpenOrders {
-        uint sell_how_much;
-        ERC20 sell_which_token;
-        uint buy_how_much;
-        ERC20 buy_which_token;
-        uint timestamp;
-        address owner;
-        bool active;
-    }
-    struct ClosedOrders {
-        uint sell_how_much;
-        ERC20 sell_which_token;
-        uint buy_how_much;
-        ERC20 buy_which_token;
-        uint timestamp;
-        address owner;
-        bool active;
+        bool cancelled;
+        bool executed;
     }
 
     struct Prospectus { // Can be changed by Owner
@@ -110,8 +94,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // CONSTANT METHODS
 
-    function getPriceFeedAddress() constant returns (address) { return module.pricefeed; }
-    function getExchangeAddress() constant returns (address) { return module.exchange; }
+    function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
+    function getExchangeAddress() constant returns (address) { return address(module.exchange); }
     function getDecimals() constant returns (uint) { return decimals; }
     function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
 
@@ -426,6 +410,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     // NON-CONSTANT METHODS - REWARDS
+
     /// Pre: Only Owner
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
