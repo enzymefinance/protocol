@@ -1,10 +1,10 @@
 pragma solidity ^0.4.11;
 
-import "./RiskMgmtAdaptor.sol";
+import "./RiskMgmtAdapter.sol";
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RMLiquididtyProvider is RiskMgmtAdaptor {
+contract RMLiquididtyProvider is RiskMgmtAdapter {
 
       // FIELDS
 

@@ -1,19 +1,24 @@
 pragma solidity ^0.4.11;
 
-import "./PriceFeedAdaptor.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
+import "./PriceFeedAdapter.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedAdaptor, DBC, Owned {
+contract PriceFeed is PriceFeedAdapter, DBC, Owned {
 
     // TYPES
 
     struct Data {
         uint timestamp; // Timestamp of last price update of this asset
         uint price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+    }
+
+    struct Asset {
+        address asset;
+
     }
 
     struct Input {

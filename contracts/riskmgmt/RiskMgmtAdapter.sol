@@ -2,10 +2,10 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
 
-/// @title RiskMgmtAdaptor Contract
+/// @title RiskMgmtAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying RiskMgmt Contract
-contract RiskMgmtAdaptor {
+contract RiskMgmtAdapter {
     /* Remark: Checks for:
      *  1) Liquidity: All positions have to be fairly simple to liquidate.
      *    E.g. Cap at percentage of 30 day average trading volume of this pair

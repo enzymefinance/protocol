@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./ParticipationAdaptor.sol";
+import "./ParticipationAdapter.sol";
 import "../dependencies/DBC.sol";
 import "../assets/EtherToken.sol";
 import "../VaultInterface.sol";
@@ -9,7 +9,7 @@ import "../VaultInterface.sol";
 /// @title Participation Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
-contract Participation is ParticipationAdaptor, DBC {
+contract Participation is ParticipationAdapter, DBC {
 
     // FIELDS
 

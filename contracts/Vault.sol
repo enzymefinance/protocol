@@ -2,15 +2,15 @@ pragma solidity ^0.4.11;
 
 import "./dependencies/ERC20.sol";
 import {ERC20 as Shares} from "./dependencies/ERC20.sol";
-import "./assets/AssetInterface.sol";
+import "./assets/AssetAdapter.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./dependencies/SafeMath.sol";
 import "./dependencies/Logger.sol";
-import "./participation/ParticipationAdaptor.sol";
-import "./datafeeds/PriceFeedAdaptor.sol";
-import "./riskmgmt/RiskMgmtAdaptor.sol";
-import "./exchange/ExchangeAdaptor.sol";
+import "./participation/ParticipationAdapter.sol";
+import "./datafeeds/PriceFeedAdapter.sol";
+import "./riskmgmt/RiskMgmtAdapter.sol";
+import "./exchange/ExchangeAdapter.sol";
 import "./Calculate.sol";
 import "./VaultInterface.sol";
 
@@ -22,6 +22,34 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // TYPES
 
+    struct OrderInfo {
+        uint sell_how_much;
+        ERC20 sell_which_token;
+        uint buy_how_much;
+        ERC20 buy_which_token;
+        uint timestamp;
+        address owner;
+        bool active;
+    }
+    struct OpenOrders {
+        uint sell_how_much;
+        ERC20 sell_which_token;
+        uint buy_how_much;
+        ERC20 buy_which_token;
+        uint timestamp;
+        address owner;
+        bool active;
+    }
+    struct ClosedOrders {
+        uint sell_how_much;
+        ERC20 sell_which_token;
+        uint buy_how_much;
+        ERC20 buy_which_token;
+        uint timestamp;
+        address owner;
+        bool active;
+    }
+
     struct Prospectus { // Can be changed by Owner
       bool subscriptionAllowed;
       uint256 subscriptionFee; // Minimum threshold
@@ -30,10 +58,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Modules { // Can't be changed by Owner
-        ParticipationAdaptor participation;
-        PriceFeedAdaptor pricefeed;
-        ExchangeAdaptor exchange;
-        RiskMgmtAdaptor riskmgmt;
+        ParticipationAdapter participation;
+        PriceFeedAdapter pricefeed;
+        ExchangeAdapter exchange;
+        RiskMgmtAdapter riskmgmt;
     }
 
     struct Calculations {
@@ -120,11 +148,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             timestamp: now
         });
         // Init module struct
-        module.pricefeed = PriceFeedAdaptor(ofPriceFeed);
+        module.pricefeed = PriceFeedAdapter(ofPriceFeed);
         require(melonAsset == module.pricefeed.getQuoteAsset());
-        module.participation = ParticipationAdaptor(ofParticipation);
-        module.exchange = ExchangeAdaptor(ofExchange);
-        module.riskmgmt = RiskMgmtAdaptor(ofRiskMgmt);
+        module.participation = ParticipationAdapter(ofParticipation);
+        module.exchange = ExchangeAdapter(ofExchange);
+        module.riskmgmt = RiskMgmtAdapter(ofRiskMgmt);
     }
 
     // TODO: integrate this further (e.g. is it only called in one place?)
@@ -147,11 +175,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         delete allPrices;
         delete allDecimals;
         uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
-        PriceFeedAdaptor Price = PriceFeedAdaptor(address(module.pricefeed));
+        PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
         for (uint256 i = 0; i < numAvailableAssets; i++) {
             // Holdings
             address ofAsset = address(module.pricefeed.getAssetAt(i));
-            AssetInterface Asset = AssetInterface(ofAsset);
+            AssetAdapter Asset = AssetAdapter(ofAsset);
             uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             uint256 assetDecimals = Asset.getDecimals();
             // Price
@@ -217,7 +245,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         } else {
             uint256 actualValue = Calculate.subscribePriceForNumShares(numShares, prospectus.subscriptionFee, baseUnitsPerShare, SUBSCRIBE_FEE_DIVISOR, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
             assert(offeredValue >= actualValue); // Sanity Check
-            assert(AssetInterface(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(AssetAdapter(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             logger.logSubscribed(msg.sender, now, numShares);
         }
@@ -233,7 +261,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         uint256 actualValue = Calculate.priceForNumShares(numShares, baseUnitsPerShare, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetInterface(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
+        assert(AssetAdapter(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         logger.logRedeemed(msg.sender, now, numShares);
     }
@@ -266,7 +294,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
         for (uint256 i = 0; i < numAvailableAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.pricefeed.getAssetAt(i)));
+            AssetAdapter Asset = AssetAdapter(address(module.pricefeed.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -292,7 +320,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Transfer separationAmount of Assets
         uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
         for (uint256 i = 0; i < numAvailableAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.pricefeed.getAssetAt(i)));
+            AssetAdapter Asset = AssetAdapter(address(module.pricefeed.getAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
@@ -403,6 +431,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
+
+        // TODO Assert that all open orders are closed
+
         fetchPricefeedData(); //sync with pricefeed
         var (
             gav,

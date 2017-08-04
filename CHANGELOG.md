@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Use Logging contract from Vault
-- `..Protocol.sol` renamed to either `..Interface.sol` or `..Adaptor.sol`
+- `..Protocol.sol` renamed to either `..Interface.sol` or `..Adapter.sol`
 - `RiskMgmtV1.sol` renamed to `RMLiquididtyProvider.sol`
 - `numAssignedAssets` renamed to `numAvailableAssets`
 - `event Trade(uint sell_how_much, address indexed sell_which_token,
