@@ -5,20 +5,20 @@ import {ERC20 as Shares} from "./dependencies/ERC20.sol";
 import "./assets/AssetAdapter.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
-import "./dependencies/SafeMath.sol";
 import "./dependencies/Logger.sol";
+import "./libraries/safeMath.sol";
+import "./libraries/calculate.sol";
 import "./participation/ParticipationAdapter.sol";
 import "./datafeeds/PriceFeedAdapter.sol";
 import "./riskmgmt/RiskMgmtAdapter.sol";
 import "./exchange/ExchangeAdapter.sol";
-import "./Calculate.sol";
 import "./VaultInterface.sol";
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple vault
 contract Vault is DBC, Owned, Shares, VaultInterface {
-    using SafeMath for uint256;
+    using safeMath for uint256;
 
     // TYPES
 
@@ -186,12 +186,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         constant
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
-        gav = Calculate.grossAssetValue(allHoldings, allPrices, allDecimals);
+        gav = calculate.grossAssetValue(allHoldings, allPrices, allDecimals);
         (
             management,
             performance,
             unclaimed
-        ) = Calculate.rewards(
+        ) = calculate.rewards(
             atLastPayout.timestamp,
             MANAGEMENT_REWARD_RATE,
             PERFORMANCE_REWARD_RATE,
@@ -201,8 +201,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             baseUnitsPerShare,
             DIVISOR_FEE
         );
-        nav = Calculate.netAssetValue(gav, unclaimed);
-        sharePrice = Calculate.pricePerShare(nav, baseUnitsPerShare, totalSupply);
+        nav = calculate.netAssetValue(gav, unclaimed);
+        sharePrice = calculate.pricePerShare(nav, baseUnitsPerShare, totalSupply);
     }
 
 
@@ -227,7 +227,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            uint256 actualValue = Calculate.subscribePriceForNumShares(numShares, prospectus.subscriptionFee, baseUnitsPerShare, SUBSCRIBE_FEE_DIVISOR, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
+            uint256 actualValue = calculate.subscribePriceForNumShares(numShares, prospectus.subscriptionFee, baseUnitsPerShare, SUBSCRIBE_FEE_DIVISOR, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
             assert(offeredValue >= actualValue); // Sanity Check
             assert(AssetAdapter(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
@@ -243,7 +243,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
 
     {
-        uint256 actualValue = Calculate.priceForNumShares(numShares, baseUnitsPerShare, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
+        uint256 actualValue = calculate.priceForNumShares(numShares, baseUnitsPerShare, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
         assert(requestedValue <= actualValue); // Sanity Check
         assert(AssetAdapter(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting

@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
 import "../dependencies/DBC.sol";
-import '../dependencies/SafeMath.sol';
+import '../libraries/safeMath.sol';
 import '../dependencies/MutexUser.sol';
 import "./ExchangeAdapter.sol";
 
@@ -10,7 +10,7 @@ import "./ExchangeAdapter.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Inspired by https://github.com/makerdao/maker-otc/blob/master/contracts/simple_market.sol
 contract Exchange is ExchangeAdapter, DBC, MutexUser {
-    using SafeMath for uint256;
+    using safeMath for uint256;
 
     // TYPES
 

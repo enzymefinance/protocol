@@ -7,7 +7,7 @@ import "./PreminedAsset.sol";
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
 contract EtherToken is PreminedAsset {
-    using SafeMath for uint256;
+    using safeMath for uint256;
 
     // FIELDS
 

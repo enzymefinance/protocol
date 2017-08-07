@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
-import "../dependencies/strings.sol";
+import "../libraries/strings.sol";
 import "./PriceFeedAdapter.sol";
 
 contract DateTime {
@@ -627,9 +627,12 @@ contract PriceFeed is PriceFeedAdapter, DBC, ECVerify, b64, JSON_Decoder,Owned {
 
     // TYPES
 
-    struct Data {
+    struct Data  {
+        address asset; // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
         uint timestamp; // Timestamp of last price update of this asset
-        uint price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+        address price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+        string payload; // Of the CryptoCompare price feed call
+        bytes digest;
     }
 
     struct Asset {
@@ -641,14 +644,6 @@ contract PriceFeed is PriceFeedAdapter, DBC, ECVerify, b64, JSON_Decoder,Owned {
         address asset; // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
         address price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
     }
-
-    /*struct Data  {
-        address asset; // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
-        uint timestamp; // Timestamp of last price update of this asset
-        address price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
-        string payload;
-        bytes proof;
-    }*/
 
     // FIELDS
 

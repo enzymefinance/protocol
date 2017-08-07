@@ -1,4 +1,4 @@
-const Calculate = artifacts.require('./Calculate.sol');
+const Calculate = artifacts.require('./calculations.sol');
 const Governance = artifacts.require('./Governance.sol');
 const Logger = artifacts.require('./Logger.sol');
 const Version = artifacts.require('./Version.sol');

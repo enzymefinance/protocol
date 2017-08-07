@@ -1,9 +1,9 @@
 pragma solidity ^0.4.11;
 
-import "./dependencies/SafeMath.sol";
+import "./libraries/safeMath.sol";
 
-library Calculate {
-    using SafeMath for uint256;
+library calculate {
+    using safeMath for uint256;
     // CONSTANT METHODS - ACCOUNTING
 
     /// Pre: value denominated in [base unit of melonAsset]

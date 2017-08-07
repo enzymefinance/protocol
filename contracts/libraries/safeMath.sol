@@ -2,9 +2,9 @@ pragma solidity ^0.4.11;
 
 /// @title Math operations with safety checks
 /// @author Melonport AG <team@melonport.com>
-/// @notice From https://github.com/status-im/status-network-token/blob/master/contracts/SafeMath.sol
+/// @notice From https://github.com/status-im/status-network-token/blob/master/contracts/safeMath.sol
 
-library SafeMath {
+library safeMath {
   function mul(uint a, uint b) internal returns (uint) {
     uint c = a * b;
     assert(a == 0 || c / a == b);
