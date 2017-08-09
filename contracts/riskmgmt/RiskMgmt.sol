@@ -4,7 +4,7 @@ import "./RiskMgmtAdapter.sol";
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RiskMgmt {
+contract RiskMgmt is RiskMgmtAdapter {
 
     // FIELDS
 

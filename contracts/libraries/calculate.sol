@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./libraries/safeMath.sol";
+import "./safeMath.sol";
 
 library calculate {
     using safeMath for uint256;

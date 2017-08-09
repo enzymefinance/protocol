@@ -22,23 +22,53 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // TYPES
 
+    enum OrderStatus {
+        open,
+        closed,
+        resolved
+    }
+
+    enum VaultStatus { // Keep track of potentially conflicting state
+        setup,
+        funding,
+        managing,
+        locked,
+        payout
+    }
+
     struct Orders {
-        uint sell_how_much;
+        uint256 sell_quantitiy;
         ERC20 sell_which_token;
-        uint buy_how_much;
+        uint256 buy_quantity;
         ERC20 buy_which_token;
-        uint timestamp;
+        uint256 timestamp;
+        OrderStatus order_status;
+        uint256 quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
+    }
+
+    struct Info {
+
+      /*string public name;
+      string public symbol;
+      uint public decimals;
+      uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
+      address public melonAsset; // Adresss of Melon asset contract
+      address public referenceAsset; // Performance measured against value of this asset*/
+
+        address vault;
         address owner;
-        bool active;
-        bool cancelled;
-        bool executed;
+        string name;
+        string symbol;
+        uint decimals;
+        Status status;
+        uint timestamp;
     }
 
     struct Prospectus { // Can be changed by Owner
-      bool subscriptionAllowed;
-      uint256 subscriptionFee; // Minimum threshold
-      bool redeemalAllow;
-      uint256 withdrawalFee;
+        bool subscriptionAllowed;
+        uint256 subscriptionFee; // Minimum threshold
+        bool redeemalAllow;
+        uint256 withdrawalFee;
     }
 
     struct Modules { // Can't be changed by Owner
@@ -65,23 +95,19 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint public MANAGEMENT_REWARD_RATE = 0; // Reward rate in referenceAsset per delta improvment
     uint public PERFORMANCE_REWARD_RATE = 0; // Reward rate in referenceAsset per managed seconds
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
-    uint256 public constant SUBSCRIBE_THRESHOLD = 1000;
     uint256 public constant SUBSCRIBE_FEE_DIVISOR = 100000; // << 10 ** decimals
     // Fields that are only changed in constructor
-    string public name;
-    string public symbol;
-    uint public decimals;
-    uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
-    address public melonAsset; // Adresss of Melon asset contract
-    address public referenceAsset; // Performance measured against value of this asset
+
     // Fields that can be changed by functions
     Prospectus public prospectus;
     Modules public module;
     Calculations public atLastPayout;
     Logger public logger;
-    uint256[] public allHoldings;
-    uint256[] public allPrices;
-    uint256[] public allDecimals;
+
+    mapping (uint => Orders) public orders;
+    Info public info;
+
+
 
     // EVENTS
 
@@ -90,7 +116,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
-    function atLeastThreshold(uint256 x) internal returns (bool) { return x >= SUBSCRIBE_THRESHOLD; }
 
     // CONSTANT METHODS
 
@@ -140,44 +165,24 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     // TODO: integrate this further (e.g. is it only called in one place?)
-    function fetchPricefeedData ()
+    function fetchPricefeedData() returns (uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals)
     {
-        /* Rem 1:
-         *  All prices are relative to the melonAsset price. The melonAsset must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the melonAsset is set as EtherToken.
-         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of melonAsset per base unit of asset
-         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to melonAsset price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
-        // reset arrays
-        delete allHoldings;
-        delete allPrices;
-        delete allDecimals;
-        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
-        PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
-        for (uint256 i = 0; i < numAvailableAssets; i++) {
-            // Holdings
-            address ofAsset = address(module.pricefeed.getAssetAt(i));
-            AssetAdapter Asset = AssetAdapter(ofAsset);
-            uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
-            uint256 assetDecimals = Asset.getDecimals();
-            // Price
-            uint256 assetPrice;
-            if (ofAsset == melonAsset) { // See Remark 1
-              assetPrice = 10 ** uint(assetDecimals); // See Remark 2
-            } else {
-              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to melonAsset (and 'quoteAsset') price
-            }
-            allHoldings.push(assetHoldings);
-            allPrices.push(assetPrice);
-            allDecimals.push(assetDecimals);
-            logger.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        // Holdings
+        address ofAsset = address(module.pricefeed.getAssetAt(i));
+        AssetAdapter Asset = AssetAdapter(ofAsset);
+        uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
+        uint256 assetDecimals = Asset.getDecimals();
+        // Price
+        uint256 assetPrice;
+        if (ofAsset == melonAsset) { // See Remark 1
+          assetPrice = 10 ** uint(assetDecimals); // See Remark 2
+        } else {
+          assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to melonAsset (and 'quoteAsset') price
         }
+        holding.push(assetHoldings);
+        allPrices.push(assetPrice);
+        allDecimals.push(assetDecimals);
+        logger.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
     }
 
     /// Pre: None
@@ -207,10 +212,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
 
     // NON-CONSTANT METHODS - PARTICIPATION
-
-    // Pre: Fee multiplied by SUBSCRIBE_FEE_DIVISOR
-    // Post: New subscription fee is set
-    function setSubscriptionFee(uint256 newFee) pre_cond(atLeastThreshold(newFee)) { prospectus.subscriptionFee = newFee; }
 
     /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of melonAsset]
     /// Post: Subscribe in this fund by creating shares
@@ -418,8 +419,28 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
 
         // TODO Assert that all open orders are closed
+        /* Rem 1:
+         *  All prices are relative to the melonAsset price. The melonAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the melonAsset is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of melonAsset per base unit of asset
+         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
+         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to melonAsset price.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
+         */
+        // reset arrays
+        /*delete holding;
+        delete allPrices;
+        delete allDecimals;*/
 
-        fetchPricefeedData(); //sync with pricefeed
+        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
+        PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
+        for (uint256 i = 0; i < numAvailableAssets; i++) {
+          var (assetHoldings, assetPrice, assetDecimals) = fetchPricefeedData(); //sync with pricefeed
+        }
         var (
             gav,
             managementReward,

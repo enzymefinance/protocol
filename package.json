@@ -8,6 +8,7 @@
   "scripts": {
     "test": "truffle test",
     "localnode": "node_modules/.bin/testrpc -l 6713095",
+    "compile": "truffle compile",
     "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"

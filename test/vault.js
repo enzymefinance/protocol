@@ -34,7 +34,7 @@ contract('Vault', (accounts) => {
       eur.name, eur.symbol, eur.decimals, premined, { from: liquidityProvider });
     ethToken = await EtherToken.new({ from: liquidityProvider });
     pricefeed = await PriceFeed.new(investor, ethToken.address);
-    await pricefeed.updatePrice(
+    await pricefeed.update(
       [ethToken.address, eurToken.address, mlnToken.address],
       [1000000000000000000, 5091131249363608, 226244343891402714], // Mock data
     );

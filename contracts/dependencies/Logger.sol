@@ -13,6 +13,13 @@ contract Logger is DBC, Permissioned {
     }
 
     // Vault logs
+    event SubscribedRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
+    function logSubscribed(address byParticipant, uint256 atTimestamp, uint256 numShares)
+        pre_cond(isPermitted(msg.sender))
+    {
+        Subscribed(msg.sender, byParticipant, atTimestamp, numShares);
+    }
+
     event Subscribed(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
     function logSubscribed(address byParticipant, uint256 atTimestamp, uint256 numShares)
         pre_cond(isPermitted(msg.sender))

@@ -10,8 +10,10 @@ contract PriceFeedAdapter {
 
     // Get price feed specific information
     function getQuoteAsset() constant returns (address) {}
-    function getFrequency() constant returns (uint) {}
+    function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
+    function getLatestUpdateId() constant returns (uint) {}
+
     // Get availability of assets
     function numAvailableAssets() constant returns (uint) {}
     function getAssetAt(uint id) constant returns (address) {}
@@ -23,5 +25,5 @@ contract PriceFeedAdapter {
 
     // EVENTS
 
-    event PriceUpdated(address indexed ofAsset, uint atTimestamp, uint ofPrice);
+    event PriceUpdated(uint id);
 }

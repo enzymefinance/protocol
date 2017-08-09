@@ -13,14 +13,11 @@ contract Version is DBC, Owned {
 
     // TYPES
 
-    struct VaultInfo {
-        address vault;
-        address owner;
-        string name;
-        string symbol;
-        uint decimals;
-        bool active;
-        uint timestamp;
+    enum Status {
+        setup,
+        funding,
+        trading,
+        payout
     }
 
     // FIELDS
@@ -31,7 +28,7 @@ contract Version is DBC, Owned {
     address public LOGGER;
     Logger logger;
     // Fields that can be changed by functions
-    mapping (uint => VaultInfo) public vaults;
+    mapping (uint => address) public vaults; // Links identifier to vault addresses
     uint public lastVaultId;
 
     // EVENTS
@@ -49,7 +46,7 @@ contract Version is DBC, Owned {
 
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint id) constant returns (address, address, string, string, uint, bool, uint) {
+    function getVault(uint id) constant returns (address, address, string, string, uint, Status, uint) {
         var info = vaults[id];
         return (
             info.vault,
@@ -57,7 +54,7 @@ contract Version is DBC, Owned {
             info.name,
             info.symbol,
             info.decimals,
-            info.active,
+            info.status,
             info.timestamp
         );
     }
@@ -92,8 +89,7 @@ contract Version is DBC, Owned {
         returns (uint id)
     {
         // Create and register new Vault
-        VaultInfo memory info;
-        info.vault = address(new Vault(
+        address vault = address(new Vault(
             msg.sender,
             withName,
             withSymbol,
@@ -105,15 +101,9 @@ contract Version is DBC, Owned {
             ofRewards,
             LOGGER
         ));
-        info.owner = msg.sender;
-        info.name = withName;
-        info.symbol = withSymbol;
-        info.decimals = withDecimals;
-        info.active = true;
-        info.timestamp = now;
         id = next_id();
-        vaults[id] = info;
-        logger.addPermission(info.vault);
+        vaults[id] = vault;
+        logger.addPermission(vault);
     }
 
     // Dereference Vault and trigger selfdestruct
