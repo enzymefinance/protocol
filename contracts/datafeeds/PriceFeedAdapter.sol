@@ -14,8 +14,8 @@ contract PriceFeedAdapter {
     function getValidity() constant returns (uint) {}
     function getLatestUpdateId() constant returns (uint) {}
     // Get availability of assets
-    function numAvailableAssets() constant returns (uint) {}
-    function getAssetAt(uint id) constant returns (address) {}
+    function numDeliverableAssets() constant returns (uint) {}
+    function getDeliverableAssetAt(uint id) constant returns (address) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}

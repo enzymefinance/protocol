@@ -28,7 +28,7 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     // Fields that can be changed by functions
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
     uint public lastUpdateId;
-    address[] public availableAssets;
+    address[] public deliverableAssets;
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -45,8 +45,8 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     function getValidity() constant returns (uint) { return VALIDITY; }
     function getLatestUpdateId() constant returns (uint) { return lastUpdateId; }
     // Get availability of assets
-    function numAvailableAssets() constant returns (uint) { return availableAssets.length; }
-    function getAssetAt(uint id) constant returns (address) { return availableAssets[id]; }
+    function numDeliverableAssets() constant returns (uint) { return deliverableAssets.length; }
+    function getDeliverableAssetAt(uint id) constant returns (address) { return deliverableAssets[id]; }
 
     // Get asset specific information
     /// Pre: Asset has been initialised
@@ -94,11 +94,11 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
 
     /// Pre: Define a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(address ofQuoteAsset, address[] ofAvailableAssets)
-        pre_cond(arrayNotEmpty(ofAvailableAssets))
+    function PriceFeed(address ofQuoteAsset, address[] ofDeliverableAssets)
+        pre_cond(arrayNotEmpty(ofDeliverableAssets))
     {
         QUOTE_ASSET = ofQuoteAsset;
-        availableAssets = ofAvailableAssets;
+        deliverableAssets = ofDeliverableAssets;
     }
 
     /// Pre: Only Owner; Same sized input arrays
