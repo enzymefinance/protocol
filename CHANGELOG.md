@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Changed PriceUpdated Event
 - Simplified Tracking of Vaults in Version contract
 - PriceFeed contract; `getFrequncey` -> `getInterval`
+- Exchange Event `OrderUpdate` -> `ItemUpdate`
+- Exchange Interface `take(..)` -> `buy(..)`
 
 ## [0.2.1]
 

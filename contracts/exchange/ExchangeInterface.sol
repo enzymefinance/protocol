@@ -5,7 +5,7 @@ import '../dependencies/ERC20.sol';
 /// @title Exchange Protocol Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying Exchange Contract
-contract ExchangeAdapter {
+contract ExchangeInterface {
 
     // CONSTANT METHODS
 
@@ -17,12 +17,12 @@ contract ExchangeAdapter {
     // NON-CONSTANT METHODS
 
     function make(
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
-    )
-        returns (uint id)
-    {}
-    function take(uint id, uint quantity) returns (bool) {}
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount
+    ) returns (bytes32 id) {}
+    function buy(uint id, uint quantity) returns (bool success) {}
     function cancel(uint id) returns (bool) {}
 
     // EVENTS

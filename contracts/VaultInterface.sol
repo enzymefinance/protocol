@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import './assets/AssetAdapter.sol';
 import './dependencies/ERC20.sol';
-import './exchange/ExchangeAdapter.sol';
+import './exchange/ExchangeInterface.sol';
 
 /// @title Vault Protocol Contract
 /// @author Melonport AG <team@melonport.com>
@@ -30,14 +30,14 @@ contract VaultInterface is AssetAdapter {
     function annihilateShares(uint shareAmount) {}
     function createSharesOnBehalf(address recipient, uint shareAmount) {}
     function annihilateSharesOnBehalf(address recipient, uint shareAmount) {}
-    function makeOrder(ExchangeAdapter onExchange,
+    function makeOrder(ExchangeInterface onExchange,
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
         returns (uint id)
     {}
-    function takeOrder(ExchangeAdapter onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
-    function cancelOrder(ExchangeAdapter onExchange, uint id) returns (bool) {}
+    function takeOrder(ExchangeInterface onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
+    function cancelOrder(ExchangeInterface onExchange, uint id) returns (bool) {}
     function convertUnclaimedRewards() {}
 
     // EVENTS

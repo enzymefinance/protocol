@@ -17,9 +17,10 @@ contract RiskMgmt is RiskMgmtAdapter {
     // NON-CONSTANT METHODS
 
     function isExchangeMakePermitted(
-        address onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount
     )
         returns (bool)
     {
@@ -27,9 +28,10 @@ contract RiskMgmt is RiskMgmtAdapter {
     }
 
     function isExchangeTakePermitted(
-        address onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token,
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount,
         address orderOwner
     )
         returns (bool)

@@ -11,7 +11,7 @@ import './libraries/calculate.sol';
 import './participation/ParticipationAdapter.sol';
 import './datafeeds/PriceFeedAdapter.sol';
 import './riskmgmt/RiskMgmtAdapter.sol';
-import './exchange/ExchangeAdapter.sol';
+import './exchange/ExchangeInterface.sol';
 import './VaultInterface.sol';
 
 /// @title Vault Contract
@@ -55,7 +55,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     struct Modules { // Can't be changed by Owner
         ParticipationAdapter participation;
         PriceFeedAdapter pricefeed;
-        ExchangeAdapter exchange;
+        ExchangeInterface exchange;
         RiskMgmtAdapter riskmgmt;
     }
 
@@ -113,7 +113,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
-        internal
+        internal returns (bool)
     {
         return
             module.pricefeed.isValid(sell_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
@@ -168,7 +168,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
           TRADEABLE_ASSETS.push(module.pricefeed.getDeliverableAssetAt(id));
         }
         module.participation = ParticipationAdapter(ofParticipation);
-        module.exchange = ExchangeAdapter(ofExchange);
+        module.exchange = ExchangeInterface(ofExchange);
         module.riskmgmt = RiskMgmtAdapter(ofRiskMgmt);
     }
 
@@ -411,48 +411,48 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
     function makeOrder(
-        uint256 sell_how_much,
-        ERC20 sell_which_token,
-        uint256 buy_how_much,
-        ERC20 buy_which_token
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount
     )
         pre_cond(isOwner())
-        pre_cond(isValidAssetPair(sell_which_token, buy_which_token))
+        pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
-            address(module.exchange),
-            sell_how_much,
-            sell_which_token,
-            buy_how_much,
-            buy_which_token)
-        )
-        returns (uint256 id)
+            haveToken,
+            wantToken,
+            haveAmount,
+            wantAmount
+        ))
+        returns (bytes32 id)
     {
-        approveSpending(sell_which_token, address(module.exchange), sell_how_much);
-        id = module.exchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        approveSpending(haveToken, address(module.exchange), haveAmount);
+        id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
     function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
-        pre_cond(isValidAssetPair(sell_which_token, buy_which_token))
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
-        var (
+        // TODO uncomment
+        /*var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
         ) = module.exchange.getOrder(id);
+        require(isValidAssetPair(offeredBuyToken, offeredSellToken));
         require(wantedBuyAmount <= offeredBuyAmount);
         var orderOwner = module.exchange.getOwner(id);
-        require(module.riskmgmt.isExchangeTakePermitted(address(module.exchange),
+        require(module.riskmgmt.isExchangeTakePermitted(
             offeredSellAmount, offeredSellToken,
             offeredBuyAmount, offeredBuyToken,
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, address(module.exchange), wantedSellAmount);
-        return module.exchange.take(id, wantedBuyAmount);
+        return module.exchange.buy(id, wantedBuyAmount);*/
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
