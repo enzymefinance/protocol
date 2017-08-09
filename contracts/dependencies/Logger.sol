@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import "./DBC.sol";
-import "./Permissioned.sol";
+import './DBC.sol';
+import './Permissioned.sol';
 
 contract Logger is DBC, Permissioned {
     // Error logs

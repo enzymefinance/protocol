@@ -1,10 +1,10 @@
 pragma solidity ^0.4.11;
 
-import "../Vault.sol";
-import "../VaultInterface.sol";
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
-import "../dependencies/Logger.sol";
+import '../Vault.sol';
+import '../VaultInterface.sol';
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
+import '../dependencies/Logger.sol';
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.11;
 
-import "./ParticipationAdapter.sol";
-import "../dependencies/DBC.sol";
-import "../assets/EtherToken.sol";
-import "../VaultInterface.sol";
+import './ParticipationAdapter.sol';
+import '../dependencies/DBC.sol';
+import '../assets/EtherToken.sol';
+import '../VaultInterface.sol';
 
 
 /// @title Participation Contract

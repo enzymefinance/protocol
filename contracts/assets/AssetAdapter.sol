@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "../dependencies/ERC20Protocol.sol";
+import '../dependencies/ERC20Protocol.sol';
 
 /// @title Asset Protocol Contract
 /// @author Melonport AG <team@melonport.com>

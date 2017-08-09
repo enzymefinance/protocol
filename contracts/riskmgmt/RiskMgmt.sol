@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./RiskMgmtAdapter.sol";
+import './RiskMgmtAdapter.sol';
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>

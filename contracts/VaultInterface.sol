@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./assets/AssetAdapter.sol";
+import './assets/AssetAdapter.sol';
 import './dependencies/ERC20.sol';
 import './exchange/ExchangeAdapter.sol';
 

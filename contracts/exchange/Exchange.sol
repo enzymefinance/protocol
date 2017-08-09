@@ -1,10 +1,10 @@
 pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
-import "../dependencies/DBC.sol";
-import '../libraries/safeMath.sol';
+import '../dependencies/DBC.sol';
 import '../dependencies/MutexUser.sol';
-import "./ExchangeAdapter.sol";
+import '../libraries/safeMath.sol';
+import './ExchangeAdapter.sol';
 
 /// @title Ether Token Contract.
 /// @author Melonport AG <team@melonport.com>

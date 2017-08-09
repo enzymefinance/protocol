@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
 
 /// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>

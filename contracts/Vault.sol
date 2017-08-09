@@ -1,18 +1,18 @@
 pragma solidity ^0.4.11;
 
-import "./dependencies/ERC20.sol";
-import {ERC20 as Shares} from "./dependencies/ERC20.sol";
-import "./assets/AssetAdapter.sol";
-import "./dependencies/DBC.sol";
-import "./dependencies/Owned.sol";
-import "./dependencies/Logger.sol";
-import "./libraries/safeMath.sol";
-import "./libraries/calculate.sol";
-import "./participation/ParticipationAdapter.sol";
-import "./datafeeds/PriceFeedAdapter.sol";
-import "./riskmgmt/RiskMgmtAdapter.sol";
-import "./exchange/ExchangeAdapter.sol";
-import "./VaultInterface.sol";
+import './dependencies/ERC20.sol';
+import {ERC20 as Shares} from './dependencies/ERC20.sol';
+import './assets/AssetAdapter.sol';
+import './dependencies/DBC.sol';
+import './dependencies/Owned.sol';
+import './dependencies/Logger.sol';
+import './libraries/safeMath.sol';
+import './libraries/calculate.sol';
+import './participation/ParticipationAdapter.sol';
+import './datafeeds/PriceFeedAdapter.sol';
+import './riskmgmt/RiskMgmtAdapter.sol';
+import './exchange/ExchangeAdapter.sol';
+import './VaultInterface.sol';
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
@@ -350,13 +350,18 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
     function makeOrder(
-        uint256 sell_how_much, ERC20 sell_which_token,
-        uint256 buy_how_much,  ERC20 buy_which_token
+        uint256 sell_how_much,
+        ERC20 sell_which_token,
+        uint256 buy_how_much,
+        ERC20 buy_which_token
     )
         pre_cond(isOwner())
-        pre_cond(module.riskmgmt.isExchangeMakePermitted(address(module.exchange),
-            sell_how_much, sell_which_token,
-            buy_how_much, buy_which_token)
+        pre_cond(module.riskmgmt.isExchangeMakePermitted(
+            address(module.exchange),
+            sell_how_much,
+            sell_which_token,
+            buy_how_much,
+            buy_which_token)
         )
         returns (uint256 id)
     {

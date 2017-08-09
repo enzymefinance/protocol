@@ -1,8 +1,8 @@
 pragma solidity ^0.4.11;
 
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
-import "./PriceFeedAdapter.sol";
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
+import './PriceFeedAdapter.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
@@ -27,7 +27,8 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     address public QUOTE_ASSET; // Is the quote asset of a portfolio against which all other assets are priced against
     // Fields that can be changed by functions
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
-    uint public lastUpdateId;
+    uint256 public lastUpdateId;
+    uint256 public lastUpdateTimestamp;
     address[] public deliverableAssets;
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -44,6 +45,7 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
     function getLatestUpdateId() constant returns (uint) { return lastUpdateId; }
+    function getLatestUpdateTimestamp() constant returns (uint) { return lastUpdateTimestamp; }
     // Get availability of assets
     function numDeliverableAssets() constant returns (uint) { return deliverableAssets.length; }
     function getDeliverableAssetAt(uint id) constant returns (address) { return deliverableAssets[id]; }
@@ -119,6 +121,7 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
                 price: newPrices[i]
             });
         }
+        lastUpdateTimestamp = now;
         PriceUpdated(lastUpdateId);
     }
 }

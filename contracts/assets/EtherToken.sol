@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./PreminedAsset.sol";
+import './PreminedAsset.sol';
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
