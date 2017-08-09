@@ -35,29 +35,11 @@ contract Version is DBC, Owned {
 
     event VaultUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isVaultOwner(uint id) internal returns (bool) {
-        var (, owner, , , , ,) = getVault(id);
-        return owner == msg.sender;
-    }
-
     // CONSTANT METHODS
 
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint id) constant returns (address, address, string, string, uint, Status, uint) {
-        var info = vaults[id];
-        return (
-            info.vault,
-            info.owner,
-            info.name,
-            info.symbol,
-            info.decimals,
-            info.status,
-            info.timestamp
-        );
-    }
+    function getVault(uint id) constant returns (address) { return vaults[id]; }
 
     // NON-CONSTANT INTERNAL METHODS
 
@@ -108,7 +90,7 @@ contract Version is DBC, Owned {
 
     // Dereference Vault and trigger selfdestruct
     function decommissionVault(uint id)
-        pre_cond(isVaultOwner(id))
+        pre_cond(isOwner())
     {
         // TODO also refund and selfdestruct vault contract
         delete vaults[id];

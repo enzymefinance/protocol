@@ -12,8 +12,8 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     // TYPES
 
     struct Data  {
-        uint timestamp; // Timestamp of last price update of this asset
-        address price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
+        uint256 timestamp; // Timestamp of last price update of this asset
+        uint256 price; // Price of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset}
     }
 
     // FIELDS
@@ -76,7 +76,7 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint, uint)
+        returns (uint256, uint256)
     {
         return (
             dataHistory[lastUpdateId][ofAsset].timestamp,

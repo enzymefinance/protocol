@@ -56,9 +56,9 @@ library calculate {
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// Post: Gross asset value denominated in [base unit of melonAsset]
     function grossAssetValue(
-        uint256[] storage holdings,
-        uint256[] storage prices,
-        uint256[] storage decimals
+        uint256[] holdings,
+        uint256[] prices,
+        uint256[] decimals
     )
         constant
         returns (uint256 result)

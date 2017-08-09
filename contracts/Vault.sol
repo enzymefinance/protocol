@@ -179,12 +179,29 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre: None
     /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of MELON_ASSET]
-    function recalculateAll(uint256[] allHoldings, uint256[] allPrices, uint256[] allDecimals)
+    function recalculateAll()
         constant
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
-        gav = calculate.grossAssetValue(allHoldings, allPrices, allDecimals);
-        (
+        /* Rem 1:
+         *  All prices are relative to the MELON_ASSET price. The MELON_ASSET must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the MELON_ASSET is set as EtherToken.
+         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of MELON_ASSET per base unit of asset
+         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
+         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
+         */
+        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
+        PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
+        for (uint256 id = 0; id < numAvailableAssets; id++) { //sum(holdings * prices /decimals)
+          var (holding, price, decimal) = fetchPricefeedDataAt(id); //sync with pricefeed
+          gav = gav.add(holding.mul(price).div(10 ** uint(decimal)));
+        }
+        /*(
             management,
             performance,
             unclaimed
@@ -197,7 +214,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply,
             BASE_UNITS,
             DIVISOR_FEE
-        );
+        );*/
         nav = calculate.netAssetValue(gav, unclaimed);
         sharePrice = calculate.pricePerShare(nav, BASE_UNITS, totalSupply);
     }
@@ -421,32 +438,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function convertUnclaimedRewards()
         pre_cond(isOwner())
     {
-
         // TODO Assert that all open orders are closed
-        /* Rem 1:
-         *  All prices are relative to the MELON_ASSET price. The MELON_ASSET must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the MELON_ASSET is set as EtherToken.
-         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of MELON_ASSET per base unit of asset
-         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
-
-        uint256[] assetHoldings;
-        uint256[] assetPrices;
-        uint256[] assetDecimals;
-        uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
-        PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
-        for (uint256 id = 0; id < numAvailableAssets; id++) {
-          var (assetHolding, assetPrice, assetDecimal) = fetchPricefeedDataAt(id); //sync with pricefeed
-          assetHoldings.push(assetHolding);
-          assetPrices.push(assetPrice);
-          assetDecimals.push(assetDecimal);
-        }
         var (
             gav,
             managementReward,
@@ -454,7 +446,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             unclaimedRewards,
             nav,
             sharePrice
-        ) = recalculateAll(assetHoldings, assetPrices, assetDecimals);
+        ) = recalculateAll();
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
