@@ -237,6 +237,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             incentive, module.pricefeed.getLatestUpdateId(),
             module.pricefeed.getLatestUpdateTimestamp(), now
         );
+        LOGGER.logSubscribeRequested(msg.sender, now, numShares);
         return lastRequestId;
     }
 
