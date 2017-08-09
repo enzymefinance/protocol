@@ -112,6 +112,15 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
+    function isValidAssetPair(address sell_which_token, address buy_which_token)
+        internal
+    {
+        return
+            module.pricefeed.isValid(sell_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
+            module.pricefeed.isValid(buy_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
+            (buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET) && // One asset must be MELON_ASSET
+            (buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
+    }
 
     // CONSTANT METHODS
 
@@ -223,7 +232,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // NON-CONSTANT METHODS - PARTICIPATION
 
     function subscribeRequest(uint256 numShares, uint256 offeredValue)
-        payable
+        payable // TODO incentive in MLN
         pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
         pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
         pre_cond(msg.value > offeredValue)
@@ -408,6 +417,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ERC20 buy_which_token
     )
         pre_cond(isOwner())
+        pre_cond(isValidAssetPair(sell_which_token, buy_which_token))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
             address(module.exchange),
             sell_how_much,
@@ -417,7 +427,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         )
         returns (uint256 id)
     {
-        requireValidAssetData(sell_which_token, buy_which_token);
         approveSpending(sell_which_token, address(module.exchange), sell_how_much);
         id = module.exchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
@@ -426,6 +435,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Take offer on selected Exchange
     function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
+        pre_cond(isValidAssetPair(sell_which_token, buy_which_token))
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -434,7 +444,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             offeredSellAmount, offeredSellToken
         ) = module.exchange.getOrder(id);
         require(wantedBuyAmount <= offeredBuyAmount);
-        requireValidAssetData(offeredSellToken, offeredBuyToken);
         var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(address(module.exchange),
             offeredSellAmount, offeredSellToken,
@@ -453,18 +462,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns (bool)
     {
         return module.exchange.cancel(id);
-    }
-
-    /// Pre: Universe has been defined
-    /// Post: Whether buying and selling of tokens are allowed at given exchange
-    function requireValidAssetData(address sell_which_token, address buy_which_token)
-        internal
-    {
-        require(module.pricefeed.isValid(buy_which_token));
-        require(module.pricefeed.isValid(sell_which_token));
-        // Asset pair defined in Universe and contains MELON_ASSET
-        require(buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET); // One asset must be MELON_ASSET
-        require(buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
