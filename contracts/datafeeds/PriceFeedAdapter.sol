@@ -13,7 +13,6 @@ contract PriceFeedAdapter {
     function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
     function getLatestUpdateId() constant returns (uint) {}
-
     // Get availability of assets
     function numAvailableAssets() constant returns (uint) {}
     function getAssetAt(uint id) constant returns (address) {}

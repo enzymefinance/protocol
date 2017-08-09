@@ -47,21 +47,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Info {
-
-      /*string public name;
-      string public symbol;
-      uint public decimals;
-      uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
-      address public melonAsset; // Adresss of Melon asset contract
-      address public referenceAsset; // Performance measured against value of this asset*/
-
-        address vault;
-        address owner;
-        string name;
-        string symbol;
-        uint decimals;
-        Status status;
-        uint timestamp;
+      OrderStatus order_status;
+      VaultStatus vault_status;
+      uint timestamp;
     }
 
     struct Prospectus { // Can be changed by Owner
@@ -92,12 +80,17 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // FIELDS
 
     // Constant asset specific fields
-    uint public MANAGEMENT_REWARD_RATE = 0; // Reward rate in referenceAsset per delta improvment
-    uint public PERFORMANCE_REWARD_RATE = 0; // Reward rate in referenceAsset per managed seconds
+    uint public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
+    uint public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint256 public constant SUBSCRIBE_FEE_DIVISOR = 100000; // << 10 ** decimals
     // Fields that are only changed in constructor
-
+    string public name;
+    string public symbol;
+    uint public decimals;
+    uint256 public BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
+    address public MELON_ASSET; // Adresss of Melon asset contract
+    address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Fields that can be changed by functions
     Prospectus public prospectus;
     Modules public module;
@@ -122,7 +115,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
     function getDecimals() constant returns (uint) { return decimals; }
-    function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
+    function getBaseUnitsPerShare() constant returns (uint) { return BASE_UNITS; }
 
     // NON-CONSTANT METHODS
 
@@ -144,50 +137,49 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
-        melonAsset = ofMelonAsset;
-        baseUnitsPerShare = 10 ** decimals;
+        MELON_ASSET = ofMelonAsset;
+        BASE_UNITS = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
             managementReward: 0,
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            sharePrice: baseUnitsPerShare,
+            sharePrice: BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
         });
         // Init module struct
         module.pricefeed = PriceFeedAdapter(ofPriceFeed);
-        require(melonAsset == module.pricefeed.getQuoteAsset());
+        require(MELON_ASSET == module.pricefeed.getQuoteAsset());
         module.participation = ParticipationAdapter(ofParticipation);
         module.exchange = ExchangeAdapter(ofExchange);
         module.riskmgmt = RiskMgmtAdapter(ofRiskMgmt);
     }
 
     // TODO: integrate this further (e.g. is it only called in one place?)
-    function fetchPricefeedData() returns (uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals)
+    function fetchPricefeedDataAt(uint id) returns (uint256, uint256, uint256)
     {
         // Holdings
-        address ofAsset = address(module.pricefeed.getAssetAt(i));
+        address ofAsset = address(module.pricefeed.getAssetAt(id));
         AssetAdapter Asset = AssetAdapter(ofAsset);
+
         uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
         uint256 assetDecimals = Asset.getDecimals();
         // Price
         uint256 assetPrice;
-        if (ofAsset == melonAsset) { // See Remark 1
+        if (ofAsset == MELON_ASSET) { // See Remark 1
           assetPrice = 10 ** uint(assetDecimals); // See Remark 2
         } else {
-          assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to melonAsset (and 'quoteAsset') price
+          assetPrice = module.pricefeed.getPrice(ofAsset); // Asset price given quoted to MELON_ASSET (and 'quoteAsset') price
         }
-        holding.push(assetHoldings);
-        allPrices.push(assetPrice);
-        allDecimals.push(assetDecimals);
         logger.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        return (assetHoldings, assetPrice, assetDecimals);
     }
 
     /// Pre: None
-    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
-    function recalculateAll()
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of MELON_ASSET]
+    function recalculateAll(uint256[] allHoldings, uint256[] allPrices, uint256[] allDecimals)
         constant
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
@@ -203,17 +195,24 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             gav,
             atLastPayout.sharePrice,
             totalSupply,
-            baseUnitsPerShare,
+            BASE_UNITS,
             DIVISOR_FEE
         );
         nav = calculate.netAssetValue(gav, unclaimed);
-        sharePrice = calculate.pricePerShare(nav, baseUnitsPerShare, totalSupply);
+        sharePrice = calculate.pricePerShare(nav, BASE_UNITS, totalSupply);
     }
 
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of melonAsset]
+    function subscribeRequest(uint256 numShares, uint256 offeredValue)
+        pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
+        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+    {
+
+    }
+
+    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of MELON_ASSET]
     /// Post: Subscribe in this fund by creating shares
     // TODO check comment
     // TODO mitigate `spam` attack
@@ -221,16 +220,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
      *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
      */
-    function subscribe(uint256 numShares, uint256 offeredValue)
+    function subscribeAllocate(uint256 numShares, uint256 offeredValue)
         pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
         pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
     {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            uint256 actualValue = calculate.subscribePriceForNumShares(numShares, prospectus.subscriptionFee, baseUnitsPerShare, SUBSCRIBE_FEE_DIVISOR, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
+            uint256 actualValue = calculate.priceForNumShares(
+                numShares,
+                BASE_UNITS,
+                atLastPayout.nav,
+                totalSupply
+            ); // [base unit of MELON_ASSET]
             assert(offeredValue >= actualValue); // Sanity Check
-            assert(AssetAdapter(melonAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(AssetAdapter(MELON_ASSET).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             logger.logSubscribed(msg.sender, now, numShares);
         }
@@ -244,9 +248,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
 
     {
-        uint256 actualValue = calculate.priceForNumShares(numShares, baseUnitsPerShare, atLastPayout.nav, totalSupply); // [base unit of melonAsset]
+        uint256 actualValue = calculate.priceForNumShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetAdapter(melonAsset).transfer(msg.sender, actualValue)); // Transfer value
+        assert(AssetAdapter(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         logger.logRedeemed(msg.sender, now, numShares);
     }
@@ -396,9 +400,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         require(module.pricefeed.isValid(buy_which_token));
         require(module.pricefeed.isValid(sell_which_token));
-        // Asset pair defined in Universe and contains melonAsset
-        require(buy_which_token == melonAsset || sell_which_token == melonAsset); // One asset must be melonAsset
-        require(buy_which_token != melonAsset || sell_which_token != melonAsset); // Pair must consists of diffrent assets
+        // Asset pair defined in Universe and contains MELON_ASSET
+        require(buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET); // One asset must be MELON_ASSET
+        require(buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
@@ -420,26 +424,28 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
         // TODO Assert that all open orders are closed
         /* Rem 1:
-         *  All prices are relative to the melonAsset price. The melonAsset must be
+         *  All prices are relative to the MELON_ASSET price. The MELON_ASSET must be
          *  equal to quoteAsset of corresponding PriceFeed.
          * Rem 2:
-         *  For this version, the melonAsset is set as EtherToken.
+         *  For this version, the MELON_ASSET is set as EtherToken.
          *  The price of the EtherToken relative to Ether is defined to always be equal to one.
          * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of melonAsset per base unit of asset
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of MELON_ASSET per base unit of asset
          *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to melonAsset price.
+         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
-        // reset arrays
-        /*delete holding;
-        delete allPrices;
-        delete allDecimals;*/
 
+        uint256[] assetHoldings;
+        uint256[] assetPrices;
+        uint256[] assetDecimals;
         uint256 numAvailableAssets = module.pricefeed.numAvailableAssets();
         PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
-        for (uint256 i = 0; i < numAvailableAssets; i++) {
-          var (assetHoldings, assetPrice, assetDecimals) = fetchPricefeedData(); //sync with pricefeed
+        for (uint256 id = 0; id < numAvailableAssets; id++) {
+          var (assetHolding, assetPrice, assetDecimal) = fetchPricefeedDataAt(id); //sync with pricefeed
+          assetHoldings.push(assetHolding);
+          assetPrices.push(assetPrice);
+          assetDecimals.push(assetDecimal);
         }
         var (
             gav,
@@ -448,7 +454,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             unclaimedRewards,
             nav,
             sharePrice
-        ) = recalculateAll();
+        ) = recalculateAll(assetHoldings, assetPrices, assetDecimals);
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund

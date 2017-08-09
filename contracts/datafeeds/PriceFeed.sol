@@ -32,10 +32,10 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    /*function isDataSet(address ofAsset) internal returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
+    function isDataSet(address ofAsset) internal returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
     function isDataValid(address ofAsset) internal returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
-    function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }*/
+    function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }
 
     // CONSTANT METHODS
 
@@ -43,11 +43,12 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
+    function getLatestUpdateId() constant returns (uint) { return lastUpdateId; }
     // Get availability of assets
     function numAvailableAssets() constant returns (uint) { return availableAssets.length; }
     function getAssetAt(uint id) constant returns (address) { return availableAssets[id]; }
-    // Get asset specific information
 
+    // Get asset specific information
     /// Pre: Asset has been initialised
     /// Post: Returns boolean if data is valid
     function isValid(address ofAsset)
@@ -112,8 +113,8 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
         pre_cond(isEqualLength(ofAssets, newPrices))
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
-            assert(dataHistory[lastUpdateId][ofAsset[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
-            dataHistory[next_id()][ofAsset[i]] = Data({
+            assert(dataHistory[lastUpdateId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
+            dataHistory[next_id()][ofAssets[i]] = Data({
                 timestamp: now,
                 price: newPrices[i]
             });

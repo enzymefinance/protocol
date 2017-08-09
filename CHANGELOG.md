@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Logging contract for errors and other events
 - Calculations library
 - Libraries folder
+- Added dataHistory mapping in PriceFeed contract
+- Enum Status to Version contract
+- Enum OrderStatus, VaultStatus to Vault contract
+- Vault internal tracking of all orders
+- Function `subscribeRequest` in Vault
 
 ### Changed
 - Use Logging contract from Vault
@@ -20,6 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     uint buy_how_much, address indexed buy_which_token);`
     to `event Trade(address indexed seller, uint sell_how_much, address indexed sell_which_token,
     address indexed buyer, uint buy_how_much, address indexed buy_which_token);`
+- Changed PriceUpdated Event
+- Simplified Tracking of Vaults in Version contract
+- PriceFeed contract; `getFrequncey` -> `getInterval`
 
 ## [0.2.1]
 
