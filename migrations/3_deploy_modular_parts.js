@@ -9,12 +9,13 @@ const performanceRewardRate = 0; // Reward rate in referenceAsset per managed se
 
 module.exports = async (deployer, network) => {
   try {
-    await deployer.deploy(Participation);
-    await deployer.deploy(Rewards, managementRewardRate, performanceRewardRate);
     if (network === 'development') {
-      await deployer.deploy(RiskMgmt);
-    }
-    if (network === 'kovan') {
+      deployer.deploy(Participation)
+      .then(() => deployer.deploy(Rewards, managementRewardRate, performanceRewardRate))
+      .then(() => deployer.deploy(RiskMgmt))
+    } else if (network === 'kovan') {
+      await deployer.deploy(Participation);
+      await deployer.deploy(Rewards, managementRewardRate, performanceRewardRate);
       await deployer.deploy(RMLiquididtyProvider);
     }
   } catch (e) {

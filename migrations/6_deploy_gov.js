@@ -7,17 +7,18 @@ const tokenInfo = require('./config/token_info.js');
 
 module.exports = (deployer, network) => {
   let mlnTokenAddress;
-  let logger;
   if (network !== 'development') {
     mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
   } else {
-    deployer.deploy(Asset, 'MelonToken', 'MLN', 18)
-    .then(() => mlnTokenAddress = Asset.address)
-    .then(() => deployer.deploy(Governance))
+    mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
+    deployer.deploy(Governance)
     .then(() => deployer.deploy(Logger))
     .then(() => deployer.deploy(Calculate))
     .then(() => deployer.link(Calculate, Version))
-    .then(() => console.log(mlnTokenAddress))
-    .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address));
+    .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
+    .catch(e => { throw e; });
   }
 };
+
+// #1: very fragile. This assumes that the last deployed asset is MLN, which
+//    is not enforced. See also: trufflesuite/truffle/issues/517
