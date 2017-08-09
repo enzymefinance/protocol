@@ -36,7 +36,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         payout
     }
 
-    struct Orders {
+    struct Order {
         uint256 sell_quantitiy;
         ERC20 sell_which_token;
         uint256 buy_quantity;
@@ -70,6 +70,17 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 timestamp;
     }
 
+    struct Request {    // subscription request
+        address owner;
+        bool isOpen;
+        uint256 numShares;
+        uint256 offeredValue;
+        uint256 incentive;
+        uint256 lastFeedUpdateId;
+        uint256 lastFeedUpdateTime;
+        uint256 timestamp;
+    }
+
     // FIELDS
 
     // Constant asset specific fields
@@ -87,7 +98,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Logger public LOGGER;
     address[] public TRADEABLE_ASSETS;
     // Fields that can be changed by functions
-    mapping (uint256 => Orders) public orders;
+    mapping (uint256 => Order) public orders;
+    mapping (uint256 => Request) public requests;
+    uint256 lastRequestId;
     Info public info;
     Modules public module;
     Calculations public atLastPayout;
@@ -188,7 +201,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
           var (holding, price, decimal) = fetchPrices(id); //sync with pricefeed
           gav = gav.add(holding.mul(price).div(10 ** uint(decimal)));
         }
-
         /*(
             management,
             performance,
@@ -211,10 +223,45 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // NON-CONSTANT METHODS - PARTICIPATION
 
     function subscribeRequest(uint256 numShares, uint256 offeredValue)
+        payable
         pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
         pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+        pre_cond(msg.value > offeredValue)
+        returns(uint256)
     {
+        uint256 incentive = uint256(msg.value).sub(offeredValue);
+        AssetAdapter(MELON_ASSET).transferFrom(msg.sender, this, msg.value);
+        lastRequestId++;    // new ID
+        requests[lastRequestId] = Request(
+            msg.sender, true, numShares, offeredValue,
+            incentive, module.pricefeed.getLatestUpdateId(),
+            module.pricefeed.getLatestUpdateTimestamp(), now
+        );
+        return lastRequestId;
+    }
 
+    function checkRequest(uint256 requestId)
+        pre_cond(requests[requestId].isOpen)
+    {
+        Request request = requests[requestId];
+        AssetAdapter mln = AssetAdapter(MELON_ASSET);
+        bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
+        bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
+        if(intervalPassed && updatesPassed){  // time and updates have passed
+            uint256 actualValue = calculate.priceForNumShares(
+                request.numShares,
+                BASE_UNITS,
+                atLastPayout.nav,
+                totalSupply
+            ); // [base unit of MELON_ASSET]
+            request.isOpen = false;
+            assert(mln.transfer(msg.sender, request.incentive));
+            if(request.offeredValue >= actualValue) { // limit OK
+                subscribeAllocate(request.numShares, actualValue);
+            } else {    // outside limit; cancel order and return funds
+                assert(mln.transfer(request.owner, request.offeredValue));
+            }
+        }
     }
 
     /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of MELON_ASSET]
@@ -225,24 +272,28 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
      *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
      */
-    function subscribeAllocate(uint256 numShares, uint256 offeredValue)
+    function subscribeAllocate(uint256 numShares, uint256 actualValue)
         pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
         pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
     {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            uint256 actualValue = calculate.priceForNumShares(
-                numShares,
-                BASE_UNITS,
-                atLastPayout.nav,
-                totalSupply
-            ); // [base unit of MELON_ASSET]
-            assert(offeredValue >= actualValue); // Sanity Check
             assert(AssetAdapter(MELON_ASSET).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             LOGGER.logSubscribed(msg.sender, now, numShares);
         }
+    }
+
+    function cancelRequest(uint requestId)
+        pre_cond(requests[requestId].isOpen)
+        pre_cond(requests[requestId].owner == msg.sender)
+    {
+        Request request = requests[requestId];
+        AssetAdapter mln = AssetAdapter(MELON_ASSET);
+        request.isOpen = false;
+        assert(mln.transfer(msg.sender, request.incentive));
+        assert(mln.transfer(request.owner, request.offeredValue));
     }
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
