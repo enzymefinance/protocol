@@ -9,59 +9,70 @@ import '../dependencies/Owned.sol';
 /// @notice Chain independent asset registrar for the Melon protocol
 contract AssetRegistrar is DBC, Owned {
 
-    // FIELDS
-
-    // Fields that are only changed in constructor
-    address public backupOwner;
+    // TYPES
 
     struct Information {
-        address addr;
         string name;
         string symbol;
         uint256 decimal;
         address breakIn;
         address breakOut;
-        bytes32 chainId;
+        bytes32 hash;
     }
 
-    mapping (bytes32 => Information) public information; // InformationHash -> Information
+    // FIELDS
+
+    // Fields that are only changed in constructor
+    bytes32 public CHAIN_ID; // unique identifier on which chain we are located on
+    // Fields that can be changed by functions
+    mapping (address => Information) public information; // Asset specific information
+
     // PRE, POST, INVARIANT CONDITIONS
 
     function isNotNullAddress(address x) internal returns (bool) { return x != 0; }
-    function isUnique(bytes32 hash) internal returns (bool) { return isNotNullAddress(information[hash].addr); }
+    function isNotSet(address x) internal returns (bool) { return information[x].hash.length == 0; }
+    function isUnique(address x, bytes32 y) internal returns (bool) { return information[x].hash != y; }
 
     // CONSTANT METHODS
 
-    function getName() constant returns (string) {}
-    function getSymbol() constant returns (string) {}
-    function getDecimals() constant returns (uint) {}
+    function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
+    function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
+    function getDecimals(address ofAsset) constant returns (uint256) { return ; }
+    function getInformation(address ofAsset) constant returns (string, string, uint256, address, address) {
+        return (
+            information[ofAsset].name,
+            information[ofAsset].symbol,
+            information[ofAsset].decimal,
+            information[ofAsset].breakIn,
+            information[ofAsset].breakOut
+        );
+    }
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar() {}
+    function AssetRegistrar(bytes32 withChainId) {
+        CHAIN_ID = withChainId;
+    }
 
     /// Pre: Only Backup Owner; Non-null new Backup Owner
     /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
     function register(
-        address addr,
+        address ofAsset,
         string name,
         string symbol,
         uint256 decimal,
         address breakIn,
-        address breakOut,
-        bytes32 chainId
+        address breakOut
     )
-    pre_cond(isUnique(sha3(addr, name, symbol, decimal, breakIn, breakOut, chainId)))
+    pre_cond(isNotSet(ofAsset))
     {
-        bytes32 hash = sha3(addr, name, symbol, decimal, breakIn, breakOut, chainId);
-        information[hash] = Information({
-            addr: addr,
+        information[ofAsset] = Information({
             name: name,
             symbol: symbol,
             decimal: decimal,
             breakIn: breakIn,
             breakOut: breakOut,
-            chainId: chainId
+            hash: sha3(name, symbol, decimal, breakIn, breakOut)
         });
     }
 }
