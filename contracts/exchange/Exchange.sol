@@ -49,7 +49,7 @@ contract Exchange is ExchangeInterface, DBC, MutexUser {
     function getLastOrderId() constant returns (uint) { return lastOrderId; }
     function isActive(uint id) constant returns (bool) { return orders[id].active; }
     function getOwner(uint id) constant returns (address) { return orders[id].owner; }
-    function getOrder(uint id) constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = orders[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);

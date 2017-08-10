@@ -1,10 +1,10 @@
 pragma solidity ^0.4.11;
 
-import './RiskMgmtAdapter.sol';
+import './RiskMgmtInterface.sol';
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RMLiquididtyProvider is RiskMgmtAdapter {
+contract RMLiquididtyProvider is RiskMgmtInterface {
 
       // FIELDS
 
@@ -13,10 +13,10 @@ contract RMLiquididtyProvider is RiskMgmtAdapter {
       // NON-CONSTANT METHODS
 
       function isExchangeMakePermitted(
-          ERC20    haveToken,
-          ERC20    wantToken,
-          uint128  haveAmount,
-          uint128  wantAmount
+          ERC20   haveToken,
+          ERC20   wantToken,
+          uint    haveAmount,
+          uint    wantAmount
       )
           returns (bool)
       {
@@ -24,10 +24,10 @@ contract RMLiquididtyProvider is RiskMgmtAdapter {
       }
 
       function isExchangeTakePermitted(
-          ERC20    haveToken,
-          ERC20    wantToken,
-          uint128  haveAmount,
-          uint128  wantAmount,
+          ERC20   haveToken,
+          ERC20   wantToken,
+          uint    haveAmount,
+          uint    wantAmount,
           address orderOwner
       )
           returns (bool)

@@ -12,7 +12,7 @@ contract ExchangeInterface {
     function getLastOrderId() constant returns (uint) {}
     function isActive(uint id) constant returns (bool active) {}
     function getOwner(uint id) constant returns (address owner) {}
-    function getOrder(uint id) constant returns (uint, ERC20, uint, ERC20) {}
+    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {}
 
     // NON-CONSTANT METHODS
 

@@ -37,6 +37,7 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     function isDataValid(address ofAsset) internal returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
     function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }
+    function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastUpdateId; }
 
     // CONSTANT METHODS
 
@@ -49,6 +50,23 @@ contract PriceFeed is PriceFeedAdapter, DBC, Owned {
     // Get availability of assets
     function numDeliverableAssets() constant returns (uint) { return deliverableAssets.length; }
     function getDeliverableAssetAt(uint id) constant returns (address) { return deliverableAssets[id]; }
+    function getDataHistory(address ofAsset, uint withStartId)
+        constant
+        pre_cond(isHistory(withStartId))
+        returns (uint[1024], uint[1024])
+    {
+        uint256 indexCounter;
+        uint[1024] memory timestamps;
+        uint[1024] memory prices;
+        while (indexCounter != 1024 || withStartId + indexCounter <= lastUpdateId) {
+            timestamps[withStartId + indexCounter] =
+                dataHistory[withStartId + indexCounter][ofAsset].timestamp;
+            prices[withStartId + indexCounter] =
+                dataHistory[withStartId + indexCounter][ofAsset].price;
+            ++indexCounter;
+        }
+        return (timestamps, prices);
+    }
 
     // Get asset specific information
     /// Pre: Asset has been initialised

@@ -10,7 +10,7 @@ import './libraries/safeMath.sol';
 import './libraries/calculate.sol';
 import './participation/ParticipationAdapter.sol';
 import './datafeeds/PriceFeedAdapter.sol';
-import './riskmgmt/RiskMgmtAdapter.sol';
+import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
 import './VaultInterface.sol';
 
@@ -56,7 +56,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ParticipationAdapter participation;
         PriceFeedAdapter pricefeed;
         ExchangeInterface exchange;
-        RiskMgmtAdapter riskmgmt;
+        RiskMgmtInterface riskmgmt;
     }
 
     struct Calculations {
@@ -169,7 +169,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         }
         module.participation = ParticipationAdapter(ofParticipation);
         module.exchange = ExchangeInterface(ofExchange);
-        module.riskmgmt = RiskMgmtAdapter(ofRiskMgmt);
+        module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
     }
 
     // TODO: integrate this further (e.g. is it only called in one place?)
@@ -204,13 +204,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
          *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
-        uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
+        /*uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
         PriceFeedAdapter Price = PriceFeedAdapter(address(module.pricefeed));
         for (uint256 id = 0; id < numDeliverableAssets; id++) { //sum(holdings * prices /decimals)
           var (holding, price, decimal) = fetchPrices(id); //sync with pricefeed
           gav = gav.add(holding.mul(price).div(10 ** uint(decimal)));
-        }
-        /*(
+        }*/
+        gav = 0;
+        (
             management,
             performance,
             unclaimed
@@ -223,7 +224,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply,
             BASE_UNITS,
             DIVISOR_FEE
-        );*/
+        );
         nav = calculate.netAssetValue(gav, unclaimed);
         sharePrice = calculate.pricePerShare(nav, BASE_UNITS, totalSupply);
     }
@@ -438,21 +439,23 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         // Inverse variable terminology! Buying what another person is selling
         // TODO uncomment
-        /*var (
+        var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
-        ) = module.exchange.getOrder(id);
+        ) = module.exchange.getOffer(id);
         require(isValidAssetPair(offeredBuyToken, offeredSellToken));
         require(wantedBuyAmount <= offeredBuyAmount);
         var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(
-            offeredSellAmount, offeredSellToken,
-            offeredBuyAmount, offeredBuyToken,
+            offeredSellToken,
+            offeredBuyToken,
+            offeredSellAmount,
+            offeredBuyAmount,
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, address(module.exchange), wantedSellAmount);
-        return module.exchange.buy(id, wantedBuyAmount);*/
+        return module.exchange.buy(id, wantedBuyAmount);
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange

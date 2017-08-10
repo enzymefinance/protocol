@@ -2,10 +2,10 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
 
-/// @title RiskMgmtAdapter Contract
+/// @title RiskMgmtInterface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying RiskMgmt Contract
-contract RiskMgmtAdapter {
+contract RiskMgmtInterface {
     /* Remark: Checks for:
      *  1) Liquidity: All positions have to be fairly simple to liquidate.
      *    E.g. Cap at percentage of 30 day average trading volume of this pair
@@ -13,10 +13,10 @@ contract RiskMgmtAdapter {
      *    restricted to have market impact below certain threshold
      */
     function isExchangeMakePermitted(
-        ERC20    haveToken,
-        ERC20    wantToken,
-        uint128  haveAmount,
-        uint128  wantAmount
+        ERC20   haveToken,
+        ERC20   wantToken,
+        uint    haveAmount,
+        uint    wantAmount
     )
         returns (bool)
     {}
@@ -28,10 +28,10 @@ contract RiskMgmtAdapter {
      *    restricted to have market impact below certain threshold
      */
     function isExchangeTakePermitted(
-        ERC20    haveToken,
-        ERC20    wantToken,
-        uint128  haveAmount,
-        uint128  wantAmount,
+        ERC20   haveToken,
+        ERC20   wantToken,
+        uint    haveAmount,
+        uint    wantAmount,
         address orderOwner
     )
         returns (bool)

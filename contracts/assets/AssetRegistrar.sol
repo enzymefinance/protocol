@@ -15,6 +15,8 @@ contract AssetRegistrar is DBC, Owned {
         string name;
         string symbol;
         uint256 decimal;
+        string url;
+        bytes32 ipfsHash;
         address breakIn;
         address breakOut;
         bytes32 hash;
@@ -38,13 +40,15 @@ contract AssetRegistrar is DBC, Owned {
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) constant returns (uint256) { return ; }
-    function getInformation(address ofAsset) constant returns (string, string, uint256, address, address) {
+    function getDescriptiveInformation(address ofAsset)
+        constant
+        returns (string, string, uint256, string)
+    {
         return (
             information[ofAsset].name,
             information[ofAsset].symbol,
             information[ofAsset].decimal,
-            information[ofAsset].breakIn,
-            information[ofAsset].breakOut
+            information[ofAsset].url
         );
     }
 
@@ -61,6 +65,8 @@ contract AssetRegistrar is DBC, Owned {
         string name,
         string symbol,
         uint256 decimal,
+        string url,
+        bytes32 ipfsHash,
         address breakIn,
         address breakOut
     )
@@ -70,6 +76,8 @@ contract AssetRegistrar is DBC, Owned {
             name: name,
             symbol: symbol,
             decimal: decimal,
+            url: url,
+            ipfsHash: ipfsHash,
             breakIn: breakIn,
             breakOut: breakOut,
             hash: sha3(name, symbol, decimal, breakIn, breakOut)
