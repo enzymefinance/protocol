@@ -6,51 +6,23 @@ library calculate {
     using safeMath for uint256;
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre: value denominated in [base unit of melonAsset]
-    /// Post: Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
-    function pricePerShare(
+    /// Pre:  baseUnitsPerShare not zero
+    /// Post: priceInRef denominated in [base unit of melonAsset]
+    function priceForNumBaseShares(
+        uint256 numBaseShares,
+        uint256 baseUnitsPerShare,
         uint256 value,
-        uint256 baseUnitsPerShare,
         uint256 totalSupply
     )
         constant
         returns (uint256)
     {
-        if(totalSupply > 0) return value.mul(baseUnitsPerShare).div(totalSupply);
-        else return baseUnitsPerShare;
-    }
-
-    /// Pre: numShares denominated in [base unit of melonAsset], baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of melonAsset]
-    function priceForNumShares(
-        uint256 numShares,
-        uint256 baseUnitsPerShare,
-        uint256 nav,
-        uint256 totalSupply
-    )
-        constant
-        returns (uint256)
-    {
-        uint256 sharePrice = pricePerShare(nav, baseUnitsPerShare, totalSupply);
-        return numShares.mul(sharePrice).div(baseUnitsPerShare);
-    }
-
-    /// Pre: numShares denominated in [base unit of melonAsset], baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of melonAsset]
-    function subscribePriceForNumShares(
-        uint256 numShares,
-        uint256 baseUnitsPerShare,
-        uint256 subscriptionFee,
-        uint256 feeDivisor,
-        uint256 nav,
-        uint256 totalSupply
-    )
-        constant
-        returns (uint256)
-    {
-        return priceForNumShares(numShares, baseUnitsPerShare, nav, totalSupply)
-            .mul(feeDivisor.sub(subscriptionFee))
-            .div(feeDivisor); // [base unit of melonAsset]
+        uint256 sharePrice;
+        if(totalSupply > 0)
+            sharePrice = value.mul(baseUnitsPerShare).div(totalSupply);
+        else
+            sharePrice = baseUnitsPerShare;
+        return numBaseShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
@@ -103,15 +75,15 @@ library calculate {
     /// Post: Reward denominated in referenceAsset
     function performanceReward(
         uint performanceRewardRate,
-        uint sharePriceDifference,
+        int deltaPrice,
         uint totalSupply,
         uint divisorFee
     )
         constant
         returns (uint)
     {
-        if (sharePriceDifference <= 0) return 0;
-        uint absoluteChange = sharePriceDifference * totalSupply;
+        if (deltaPrice <= 0) return 0;
+        uint absoluteChange = uint(deltaPrice) * totalSupply;
         return absoluteChange * performanceRewardRate / divisorFee;
     }
 
@@ -119,6 +91,7 @@ library calculate {
     /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
     function rewards(
         uint256 lastPayoutTime,
+        uint256 currentTime,
         uint256 managementRewardRate,
         uint256 performanceRewardRate,
         uint256 gav,
@@ -134,15 +107,16 @@ library calculate {
             uint256 unclaimed
         )
     {
-        uint256 timeDifference = now.sub(lastPayoutTime);
+        uint256 timeDifference = currentTime.sub(lastPayoutTime);
         management = managementReward(managementRewardRate, timeDifference, gav, divisorFee);
         if (totalSupply != 0) {
-            uint256 currSharePrice = pricePerShare(gav, baseUnitsPerShare, totalSupply);
+            uint256 currSharePrice = priceForNumBaseShares(baseUnitsPerShare, baseUnitsPerShare, gav, totalSupply);
             if (currSharePrice > lastSharePrice) {
-                uint256 deltaPrice = currSharePrice - lastSharePrice;
+                int deltaPrice = int(currSharePrice - lastSharePrice);
                 performance = performanceReward(performanceRewardRate, deltaPrice, totalSupply, divisorFee);
             }
         }
         unclaimed = management.add(performance);
+        /*performance = uint(deltaPrice); //REMOVE*/
     }
 }

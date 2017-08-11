@@ -87,7 +87,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint256 public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
     uint256 public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
     uint256 public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
-    uint256 public constant SUBSCRIBE_FEE_DIVISOR = 100000; // << 10 ** decimals
     // Fields that are only changed in constructor
     string public name;
     string public symbol;
@@ -217,6 +216,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             unclaimed
         ) = calculate.rewards(
             atLastPayout.timestamp,
+            now,
             MANAGEMENT_REWARD_RATE,
             PERFORMANCE_REWARD_RATE,
             gav,
@@ -226,7 +226,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             DIVISOR_FEE
         );
         nav = calculate.netAssetValue(gav, unclaimed);
-        sharePrice = calculate.pricePerShare(nav, BASE_UNITS, totalSupply);
+        sharePrice = calculate.priceForNumBaseShares(BASE_UNITS, nav, BASE_UNITS, totalSupply);
     }
 
 
@@ -259,7 +259,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
         bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
         if(intervalPassed && updatesPassed){  // time and updates have passed
-            uint256 actualValue = calculate.priceForNumShares(
+            uint256 actualValue = calculate.priceForNumBaseShares(
                 request.numShares,
                 BASE_UNITS,
                 atLastPayout.nav,
@@ -315,7 +315,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
 
     {
-        uint256 actualValue = calculate.priceForNumShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
+        uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
         assert(AssetAdapter(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
