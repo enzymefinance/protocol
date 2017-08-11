@@ -33,8 +33,8 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isDataSet(address ofAsset) internal returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
-    function isDataValid(address ofAsset) internal returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
+    function isDataSet(address ofAsset) internal constant returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
+    function isDataValid(address ofAsset) internal constant returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
     function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }
     function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastUpdateId; }
@@ -80,14 +80,14 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Timestamp, where last updated not longer than `VALIDITY` seconds ago
+    /// Post: return price
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
         returns (uint)
     {
-        return dataHistory[lastUpdateId][ofAsset].timestamp;
+        return dataHistory[lastUpdateId][ofAsset].price;
     }
 
     /// Pre: Asset has been initialised and is active
@@ -106,7 +106,7 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
 
     // NON-CONSTANT INTERNAL METHODS
 
-    function next_id() internal returns (uint) {
+    function nextId() internal returns (uint) {
         lastUpdateId++; return lastUpdateId;
     }
 
@@ -124,7 +124,8 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
     /// Pre: Only Owner; Same sized input arrays
     /// Post: Update price of asset relative to QUOTE_ASSET
     /** Ex:
-     *  Let QUOTE_ASSET == ETH (in Wei), let asset == EUR-T, let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
+     *  Let QUOTE_ASSET == ETH (in Wei), let asset == EUR-T,
+     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
      *  => dataHistory[lastUpdateId][EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
@@ -132,14 +133,16 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
         pre_cond(isOwner())
         pre_cond(isEqualLength(ofAssets, newPrices))
     {
+        uint256 prevId = lastUpdateId;
+        uint256 newId = nextId();
         for (uint i = 0; i < ofAssets.length; ++i) {
-            assert(dataHistory[lastUpdateId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
-            dataHistory[next_id()][ofAssets[i]] = Data({
+            assert(dataHistory[prevId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
+            dataHistory[newId][ofAssets[i]] = Data({
                 timestamp: now,
                 price: newPrices[i]
             });
         }
         lastUpdateTimestamp = now;
-        PriceUpdated(lastUpdateId);
+        PriceUpdated(newId);
     }
 }
