@@ -2,12 +2,12 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import './PriceFeedAdapter.sol';
+import './PriceFeedInterface.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedAdapter, DBC, Owned {
+contract PriceFeed is PriceFeedInterface, DBC, Owned {
 
     // TYPES
 

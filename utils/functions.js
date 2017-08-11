@@ -6,7 +6,7 @@ const EtherToken = artifacts.require('./EtherToken.sol');
 const BitcoinToken = artifacts.require('./BitcoinToken.sol');
 const RepToken = artifacts.require('./RepToken.sol');
 const EuroToken = artifacts.require('./EuroToken.sol');
-const AssetAdapter = artifacts.require('./AssetAdapter.sol');
+const AssetInterface = artifacts.require('./AssetInterface.sol');
 
 // Price Feed
 
@@ -75,7 +75,7 @@ function krakenPricesRelEther(data) {
 function approveAndOffer(offer, callback) {
   Exchange.deployed().then((deployed) => {
     // Approve spending of selling amount at selling token
-    AssetAdapter.at(offer.sell_which_token).approve(deployed.address, offer.sell_how_much)
+    AssetInterface.at(offer.sell_which_token).approve(deployed.address, offer.sell_how_much)
     // Offer selling amount of selling token for buying amount of buying token
     .then(() => deployed.make(
         offer.sell_how_much,

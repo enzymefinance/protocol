@@ -116,7 +116,7 @@ contract('Vault', (accounts) => {
         assert.equal(events.length, 1);
       });
     });
-    it('Performs calculate correctly', async () => {
+    it('Performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =
         await vault.performCalculations();
       assert.equal(gav.toNumber(), 0);

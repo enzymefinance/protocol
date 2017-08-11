@@ -1,13 +1,13 @@
 pragma solidity ^0.4.11;
 
-import './assets/AssetAdapter.sol';
+import './assets/AssetInterface.sol';
 import './dependencies/ERC20.sol';
 import './exchange/ExchangeInterface.sol';
 
 /// @title Vault Protocol Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as a protocol on how to access the underlying Vault Contract
-contract VaultInterface is AssetAdapter {
+contract VaultInterface is AssetInterface {
 
     // CONSTANT METHODS
 

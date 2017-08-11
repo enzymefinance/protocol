@@ -2,8 +2,10 @@ pragma solidity ^0.4.11;
 
 import './safeMath.sol';
 
-library calculate {
+// Fully functional calculation library
+library calculations {
     using safeMath for uint256;
+
     // CONSTANT METHODS - ACCOUNTING
 
     /// Pre:  baseUnitsPerShare not zero
@@ -40,7 +42,7 @@ library calculate {
         }
     }
 
-    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculationsd
     /// Post: Net asset value denominated in [base unit of melonAsset]
     function netAssetValue(
         uint256 gav,
@@ -87,7 +89,7 @@ library calculate {
         return absoluteChange * performanceRewardRate / divisorFee;
     }
 
-    /// Pre: Gross asset value has been calculated
+    /// Pre: Gross asset value has been calculationsd
     /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
     function rewards(
         uint256 lastPayoutTime,
@@ -117,6 +119,5 @@ library calculate {
             }
         }
         unclaimed = management.add(performance);
-        /*performance = uint(deltaPrice); //REMOVE*/
     }
 }

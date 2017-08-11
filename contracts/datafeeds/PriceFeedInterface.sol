@@ -4,7 +4,7 @@ pragma solidity ^0.4.11;
 /// @author Melonport AG <team@melonport.com>
 /// @notice PriceFeed according to the Standard Data Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
 /// @notice This is to be considered as a protocol on how to access the underlying PriceFeed Contract
-contract PriceFeedAdapter {
+contract PriceFeedInterface {
 
     // CONSTANT METHODS
 
