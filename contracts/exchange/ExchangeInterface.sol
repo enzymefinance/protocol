@@ -21,7 +21,7 @@ contract ExchangeInterface {
         ERC20    wantToken,
         uint128  haveAmount,
         uint128  wantAmount
-    ) returns (bytes32 id) {}
+    ) returns (uint id) {}
     function buy(uint id, uint quantity) returns (bool success) {}
     function cancel(uint id) returns (bool) {}
 

@@ -8,7 +8,7 @@ import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
-import './libraries/calculations.sol';
+import './libraries/calculate.sol';
 import './libraries/accounting.sol';
 import './libraries/participate.sol';
 import './participation/ParticipationInterface.sol';
@@ -211,7 +211,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
         bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
         if(intervalPassed && updatesPassed){  // time and updates have passed
-            uint256 actualValue = calculations.priceForNumBaseShares(
+            uint256 actualValue = calculate.priceForNumBaseShares(
                 request.numShares,
                 BASE_UNITS,
                 atLastPayout.nav,
@@ -266,7 +266,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(module.participation.isRedeemRequestPermitted(msg.sender, numShares))
 
     {
-        uint256 actualValue = calculations.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
+        uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
         assert(AssetInterface(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
@@ -376,7 +376,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             haveAmount,
             wantAmount
         ))
-        returns (bytes32 id)
+        returns (uint id)
     {
         approveSpending(haveToken, address(module.exchange), haveAmount);
         id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
@@ -442,7 +442,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             unclaimedRewards,
             nav,
             sharePrice
-        ) = accounting.recalculationsAll(address(module.pricefeed));
+        ) = accounting.recalculateAll(address(module.pricefeed));
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund

@@ -1,5 +1,3 @@
-
-
 // TODO actually used compiler version: pragma solidity ^0.4.13;
 
 import '../dependencies/ERC20.sol';
@@ -144,7 +142,7 @@ contract SimpleMarket is EventfulMarket {
         return bytes32(offer(haveAmount, haveToken, wantAmount, wantToken));
     }
 
-    function take(bytes32 id, uint128 maxTakeAmount) {
+    function take(uint id, uint128 maxTakeAmount) {
         assert(buy(uint256(id), maxTakeAmount));
     }
 
@@ -221,7 +219,6 @@ contract SimpleMarket is EventfulMarket {
 
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
-
         // inferred quantity that the buyer wishes to spend
         uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
         assert(uint128(spend) == spend);
