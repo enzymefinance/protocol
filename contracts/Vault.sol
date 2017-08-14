@@ -187,6 +187,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function subscribeRequest(uint256 numShares, uint256 offeredValue)
         payable // TODO incentive in MLN
         pre_cond(msg.value > offeredValue)
+        pre_cond(module.participation.isSubscribeRequestPermitted(
+            msg.sender,
+            numShares,
+            offeredValue
+        ))
         returns(uint256)
     {
         uint256 incentive = uint256(msg.value).sub(offeredValue);
@@ -201,8 +206,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         return lastRequestId;
     }
 
+    /// Pre: Anyone can trigger this function
     function checkRequest(uint256 requestId)
-        pre_cond(module.participation.isSubscribeRequestPermitted(requestId))
         pre_cond(requests[requestId].isOpen)
     {
         Request request = requests[requestId];
@@ -262,7 +267,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // TODO mitigate `spam` attack
     function redeem(uint256 numShares, uint256 requestedValue)
         pre_cond(isPastZero(numShares))
-        /*pre_cond(module.participation.isRedeemRequestPermitted(msg.sender, numShares))*/
+        /*pre_cond(module.participation.isRedeemRequestPermitted(
+          msg.sender,
+          numShares,
+          offeredValue
+          ))*/
     {
         uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
