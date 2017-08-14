@@ -1,27 +1,15 @@
 pragma solidity ^0.4.11;
 
+import './ParticipationInterface.sol';
+import '../dependencies/DBC.sol';
+
+
 /// @title Participation Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
-library participate {
+contract Participation is ParticipationInterface, DBC {
 
-    struct Request {    // subscription request
-        address owner;
-        bool isOpen;
-        uint256 numShares;
-        uint256 offeredValue;
-        uint256 incentive;
-        uint256 lastFeedUpdateId;
-        uint256 lastFeedUpdateTime;
-        uint256 timestamp;
-    }
-
-    // FIELDS
-
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
-    function isAtLeast(uint x, uint y) internal returns (bool) { return x >= y; }
+    // NON-CONSTANT BOOLEAN METHODS
 
     /// Pre: Request ID
     /// Post: Boolean dependent on market data
@@ -36,5 +24,4 @@ library participate {
     function isRedeemRequestPermitted(uint id) returns (bool) {
         return true;
     }
-
 }

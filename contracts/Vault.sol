@@ -10,8 +10,6 @@ import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
 import './libraries/calculate.sol';
 import './libraries/accounting.sol';
-import './libraries/participate.sol';
-import './participation/ParticipationInterface.sol';
 import './datafeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
@@ -106,7 +104,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Logger public LOGGER;
     // Fields that can be changed by functions
     mapping (address => Asset) public assets;
-    mapping (uint256 => participate.Request) public requests;
+    mapping (uint256 => Request) public requests;
     mapping (uint256 => Order) public orders;
     uint256 lastRequestId;
     Information public info;
