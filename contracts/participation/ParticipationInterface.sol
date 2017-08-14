@@ -7,7 +7,7 @@ contract ParticipationInterface {
 
     // CONSTANT METHODS
 
-    function isSubscribePermitted(address byParticipant, uint wantedShares) returns (bool) {}
-    function isSubscriberPermitted(address byParticipant, uint wantedShares) returns (bool) {}
-    function isRedeemRequestPermitted(address byParticipant, uint wantedShares) returns (bool) {}
+    function isSubscribeRequestPermitted(uint id) returns (bool) {}
+    function isRedeemRequestPermitted(uint id) returns (bool) {}
+
 }

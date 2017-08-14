@@ -10,6 +10,7 @@ import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
 import './libraries/calculate.sol';
 import './libraries/accounting.sol';
+import './participation/ParticipationInterface.sol';
 import './datafeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
@@ -56,7 +57,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address breakOut;
     }
 
-    struct Request {    // subscription request
+    struct Request { // subscription request
         address owner;
         bool isOpen;
         uint256 numShares;
@@ -130,10 +131,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // CONSTANT METHODS
 
-    function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
-    function getExchangeAddress() constant returns (address) { return address(module.exchange); }
     function getDecimals() constant returns (uint) { return decimals; }
     function getBaseUnitsPerShare() constant returns (uint256) { return BASE_UNITS; }
+    function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
+    function getExchangeAddress() constant returns (address) { return address(module.exchange); }
 
     // NON-CONSTANT METHODS
 
@@ -185,7 +186,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function subscribeRequest(uint256 numShares, uint256 offeredValue)
         payable // TODO incentive in MLN
-        pre_cond(module.participation.isSubscribeRequestPermitted(msg.sender, numShares))
         pre_cond(msg.value > offeredValue)
         returns(uint256)
     {
@@ -202,6 +202,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function checkRequest(uint256 requestId)
+        pre_cond(module.participation.isSubscribeRequestPermitted(requestId))
         pre_cond(requests[requestId].isOpen)
     {
         Request request = requests[requestId];
@@ -234,7 +235,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
      *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
      */
     function subscribeAllocate(uint256 numShares, uint256 actualValue)
-        pre_cond(module.participation.isSubscribeRequestPermitted(msg.sender, numShares))
+        internal
     {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
@@ -261,8 +262,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // TODO mitigate `spam` attack
     function redeem(uint256 numShares, uint256 requestedValue)
         pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemRequestPermitted(msg.sender, numShares))
-
+        /*pre_cond(module.participation.isRedeemRequestPermitted(msg.sender, numShares))*/
     {
         uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
