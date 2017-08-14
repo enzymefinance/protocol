@@ -10,7 +10,7 @@ import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
 import './libraries/calculations.sol';
 import './libraries/accounting.sol';
-import './participation/ParticipationAdapter.sol';
+import './participation/ParticipationInterface.sol';
 import './datafeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
@@ -54,7 +54,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Modules { // Can't be changed by Owner
-        ParticipationAdapter participation;
+        ParticipationInterface participation;
         PriceFeedInterface pricefeed;
         ExchangeInterface exchange;
         RiskMgmtInterface riskmgmt;
@@ -178,7 +178,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
           // TODO add to assets mapping
           AssetRegistrar(ofAssetRegistrar).getSpecificInformation(ofAsset);
         }
-        module.participation = ParticipationAdapter(ofParticipation);
+        module.participation = ParticipationInterface(ofParticipation);
         module.exchange = ExchangeInterface(ofExchange);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
     }
