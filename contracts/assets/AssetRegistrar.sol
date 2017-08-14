@@ -83,7 +83,7 @@ contract AssetRegistrar is DBC, Owned {
         address breakIn,
         address breakOut
     )
-    pre_cond(isNotSet(ofAsset))
+        pre_cond(isNotSet(ofAsset))
     {
         information[ofAsset] = Information({
             name: name,

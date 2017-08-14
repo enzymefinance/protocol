@@ -10,6 +10,7 @@ import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
 import './libraries/calculations.sol';
 import './libraries/accounting.sol';
+import './libraries/participate.sol';
 import './participation/ParticipationInterface.sol';
 import './datafeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
@@ -38,19 +39,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         payout
     }
 
-    struct Order {
-        uint256 sell_quantitiy;
-        ERC20 sell_which_token;
-        uint256 buy_quantity;
-        ERC20 buy_which_token;
-        uint256 timestamp;
-        OrderStatus order_status;
-        uint256 quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
-    }
-
     struct Information {
-      VaultStatus vault_status;
-      uint timestamp;
+        VaultStatus vault_status;
+        uint timestamp;
     }
 
     struct Modules { // Can't be changed by Owner
@@ -60,15 +51,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         RiskMgmtInterface riskmgmt;
     }
 
-    struct Calculations {
-        uint256 gav;
-        uint256 managementReward;
-        uint256 performanceReward;
-        uint256 unclaimedRewards;
-        uint256 nav;
-        uint256 sharePrice;
-        uint256 totalSupply;
-        uint256 timestamp;
+    struct Asset {
+        uint256 decimal;
+        bytes32 chainId;
+        address breakIn;
+        address breakOut;
     }
 
     struct Request {    // subscription request
@@ -82,11 +69,25 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 timestamp;
     }
 
-    struct Asset {
-        uint256 decimal;
-        bytes32 chainId;
-        address breakIn;
-        address breakOut;
+    struct Order {
+        uint256 sell_quantitiy;
+        ERC20 sell_which_token;
+        uint256 buy_quantity;
+        ERC20 buy_which_token;
+        uint256 timestamp;
+        OrderStatus order_status;
+        uint256 quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
+    }
+
+    struct Calculations {
+        uint256 gav;
+        uint256 managementReward;
+        uint256 performanceReward;
+        uint256 unclaimedRewards;
+        uint256 nav;
+        uint256 sharePrice;
+        uint256 totalSupply;
+        uint256 timestamp;
     }
 
     // FIELDS
@@ -103,10 +104,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     Logger public LOGGER;
-    address[] public TRADEABLE_ASSETS;
     // Fields that can be changed by functions
     mapping (address => Asset) public assets;
-    mapping (uint256 => Request) public requests;
+    mapping (uint256 => participate.Request) public requests;
     mapping (uint256 => Order) public orders;
     uint256 lastRequestId;
     Information public info;
@@ -172,7 +172,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         });
         // Init module struct
         module.pricefeed = PriceFeedInterface(ofPriceFeed);
-        require(MELON_ASSET == module.pricefeed.getQuoteAsset());
+        require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         for (uint id = 0; id < module.pricefeed.numDeliverableAssets(); id++) {
           address ofAsset = module.pricefeed.getDeliverableAssetAt(id);
           // TODO add to assets mapping
@@ -187,8 +187,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function subscribeRequest(uint256 numShares, uint256 offeredValue)
         payable // TODO incentive in MLN
-        pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
-        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+        pre_cond(module.participation.isSubscribeRequestPermitted(msg.sender, numShares))
         pre_cond(msg.value > offeredValue)
         returns(uint256)
     {
@@ -237,8 +236,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
      *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
      */
     function subscribeAllocate(uint256 numShares, uint256 actualValue)
-        pre_cond(module.participation.isSubscriberPermitted(msg.sender, numShares))
-        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+        pre_cond(module.participation.isSubscribeRequestPermitted(msg.sender, numShares))
     {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
@@ -265,7 +263,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // TODO mitigate `spam` attack
     function redeem(uint256 numShares, uint256 requestedValue)
         pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
+        pre_cond(module.participation.isRedeemRequestPermitted(msg.sender, numShares))
 
     {
         uint256 actualValue = calculations.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]

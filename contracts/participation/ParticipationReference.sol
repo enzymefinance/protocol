@@ -2,8 +2,6 @@ pragma solidity ^0.4.11;
 
 import './ParticipationInterface.sol';
 import '../dependencies/DBC.sol';
-import '../assets/EtherToken.sol';
-import '../VaultInterface.sol';
 
 
 /// @title Participation Contract
@@ -35,7 +33,7 @@ contract ParticipationReference is ParticipationInterface, DBC {
         return true;
     }
 
-    function isRedeemPermitted(address byParticipant, uint wantedShares) returns (bool) {
+    function isRedeemRequestPermitted(address byParticipant, uint wantedShares) returns (bool) {
         // Restrict to certain addresses, amounts or timeintervalls
         return true;
     }

@@ -9,7 +9,7 @@ contract('Participation', (accounts) => {
   });
 
   it('subscription is always allowed', async () => {
-    const result = await ptcp.isSubscribePermitted(accounts[1], 10);
+    const result = await ptcp.isSubscribeRequestPermitted(accounts[1], 10);
     assert(result);
   });
   it('all subscribers are allowed', async () => {
@@ -17,7 +17,7 @@ contract('Participation', (accounts) => {
     assert(result);
   });
   it('redeem is always allowed', async () => {
-    const result = await ptcp.isRedeemPermitted(accounts[1], 10);
+    const result = await ptcp.isRedeemRequestPermitted(accounts[1], 10);
     assert(result);
   });
 });

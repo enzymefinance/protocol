@@ -9,5 +9,5 @@ contract ParticipationInterface {
 
     function isSubscribePermitted(address byParticipant, uint wantedShares) returns (bool) {}
     function isSubscriberPermitted(address byParticipant, uint wantedShares) returns (bool) {}
-    function isRedeemPermitted(address byParticipant, uint wantedShares) returns (bool) {}
+    function isRedeemRequestPermitted(address byParticipant, uint wantedShares) returns (bool) {}
 }

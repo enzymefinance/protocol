@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PriceFeed contract; `getFrequncey` -> `getInterval`
 - Exchange Event `OrderUpdate` -> `ItemUpdate`
 - Exchange Interface `take(..)` -> `buy(..)`
+- `isRedeemPermitted(..)` -> `isRedeemRequestPermitted(..)`
+- `isSubscribePermitted(..)` -> `isSubscribeRequestPermitted(..)`
 
 ## [0.2.1]
 
