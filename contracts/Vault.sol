@@ -3,6 +3,7 @@ pragma solidity ^0.4.11;
 import './dependencies/ERC20.sol';
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './assets/AssetInterface.sol';
+import './assets/AssetRegistrar.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
@@ -47,8 +48,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
     }
 
-    struct Info {
-      OrderStatus order_status;
+    struct Information {
       VaultStatus vault_status;
       uint timestamp;
     }
@@ -82,6 +82,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 timestamp;
     }
 
+    struct Asset {
+        uint256 decimal;
+        bytes32 chainId;
+        address breakIn;
+        address breakOut;
+    }
+
     // FIELDS
 
     // Constant asset specific fields
@@ -98,10 +105,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Logger public LOGGER;
     address[] public TRADEABLE_ASSETS;
     // Fields that can be changed by functions
-    mapping (uint256 => Order) public orders;
+    mapping (address => Asset) public assets;
     mapping (uint256 => Request) public requests;
+    mapping (uint256 => Order) public orders;
     uint256 lastRequestId;
-    Info public info;
+    Information public info;
     Modules public module;
     Calculations public atLastPayout;
 
@@ -136,6 +144,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         string withName,
         string withSymbol,
         uint withDecimals,
+        address ofAssetRegistrar,
         address ofMelonAsset,
         address ofPriceFeed,
         address ofParticipation,
@@ -165,7 +174,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         module.pricefeed = PriceFeedInterface(ofPriceFeed);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset());
         for (uint id = 0; id < module.pricefeed.numDeliverableAssets(); id++) {
-          TRADEABLE_ASSETS.push(module.pricefeed.getDeliverableAssetAt(id));
+          address ofAsset = module.pricefeed.getDeliverableAssetAt(id);
+          // TODO add to assets mapping
+          AssetRegistrar(ofAssetRegistrar).getSpecificInformation(ofAsset);
         }
         module.participation = ParticipationAdapter(ofParticipation);
         module.exchange = ExchangeInterface(ofExchange);

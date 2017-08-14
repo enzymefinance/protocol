@@ -12,26 +12,6 @@ library accounting {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre:  baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of melonAsset]
-    function priceForNumBaseShares(
-        uint256 numBaseShares,
-        uint256 baseUnitsPerShare,
-        uint256 value,
-        uint256 totalSupply
-    )
-        constant
-        returns (uint256)
-    {
-        uint256 sharePrice;
-        if(totalSupply > 0)
-            sharePrice = value.mul(baseUnitsPerShare).div(totalSupply);
-        else
-            sharePrice = baseUnitsPerShare;
-        return numBaseShares.mul(sharePrice).div(baseUnitsPerShare);
-    }
-
-
     // TODO: integrate this further (e.g. is it only called in one place?)
     function fetchPrices(address ofAssetRegistrar, address ofPriceFeed, uint256 assetId) returns (uint256, uint256, uint256)
     {

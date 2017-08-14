@@ -24,6 +24,7 @@ contract Version is DBC, Owned {
 
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
+    address public ASSET_REGISTRAR; // Address of Asset Registrar contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     address public LOGGER;
     Logger logger;
@@ -51,10 +52,12 @@ contract Version is DBC, Owned {
 
     function Version(
         address ofMelonAsset,
+        address ofAssetRegistrar,
         address ofLogger
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
+        ASSET_REGISTRAR = ofAssetRegistrar;
         LOGGER = ofLogger;
         logger = Logger(LOGGER);
     }
@@ -76,6 +79,7 @@ contract Version is DBC, Owned {
             withName,
             withSymbol,
             withDecimals,
+            ASSET_REGISTRAR,
             MELON_ASSET,
             ofUniverse,
             ofParticipation,

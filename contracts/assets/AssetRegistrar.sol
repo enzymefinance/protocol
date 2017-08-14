@@ -17,6 +17,7 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal;
         string url;
         bytes32 ipfsHash;
+        bytes32 chainId; // unique identifier on which chain we are located on
         address breakIn;
         address breakOut;
         bytes32 hash;
@@ -25,7 +26,7 @@ contract AssetRegistrar is DBC, Owned {
     // FIELDS
 
     // Fields that are only changed in constructor
-    bytes32 public CHAIN_ID; // unique identifier on which chain we are located on
+    bytes32 public CHAIN_ID;
     // Fields that can be changed by functions
     mapping (address => Information) public information; // Asset specific information
 
@@ -42,13 +43,25 @@ contract AssetRegistrar is DBC, Owned {
     function getDecimals(address ofAsset) constant returns (uint256) { return ; }
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, uint256, string)
+        returns (string, string, uint256, string, bytes32)
     {
         return (
             information[ofAsset].name,
             information[ofAsset].symbol,
             information[ofAsset].decimal,
-            information[ofAsset].url
+            information[ofAsset].url,
+            information[ofAsset].ipfsHash
+        );
+    }
+    function getSpecificInformation(address ofAsset)
+        constant
+        returns (uint256, bytes32, address, address)
+    {
+        return (
+            information[ofAsset].decimal,
+            information[ofAsset].chainId,
+            information[ofAsset].breakIn,
+            information[ofAsset].breakOut
         );
     }
 
@@ -78,6 +91,7 @@ contract AssetRegistrar is DBC, Owned {
             decimal: decimal,
             url: url,
             ipfsHash: ipfsHash,
+            chainId: CHAIN_ID,
             breakIn: breakIn,
             breakOut: breakOut,
             hash: sha3(name, symbol, decimal, breakIn, breakOut)
