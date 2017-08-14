@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import '../assets/AssetInterface.sol';
 import '../assets/AssetRegistrar.sol';
 import '../datafeeds/PriceFeedInterface.sol';
-import './calculations.sol';
+import './calculate.sol';
 import './safeMath.sol';
 
 // Non functional accounting library
@@ -28,7 +28,7 @@ library accounting {
 
     /// Pre: None
     /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of MELON_ASSET]
-    function recalculationsAll(address ofPriceFeed)
+    function recalculateAll(address ofPriceFeed)
         constant
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
@@ -54,7 +54,7 @@ library accounting {
             management,
             performance,
             unclaimed
-        ) = calculations.rewards(
+        ) = calculate.rewards(
             atLastPayout.timestamp,
             now,
             MANAGEMENT_REWARD_RATE,
@@ -65,7 +65,7 @@ library accounting {
             BASE_UNITS,
             DIVISOR_FEE
         );
-        nav = calculations.netAssetValue(gav, unclaimed);
-        sharePrice = calculations.priceForNumBaseShares(BASE_UNITS, nav, BASE_UNITS, totalSupply);*/
+        nav = calculate.netAssetValue(gav, unclaimed);
+        sharePrice = calculate.priceForNumBaseShares(BASE_UNITS, nav, BASE_UNITS, totalSupply);*/
     }
 }

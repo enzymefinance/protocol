@@ -17,5 +17,4 @@ contract PreminedAsset is Asset {
         balances[msg.sender] = balances[msg.sender].add(_amount);
         totalSupply = totalSupply.add(_amount);
     }
-
 }
