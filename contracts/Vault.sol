@@ -53,7 +53,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     struct Request { // subscription request
         address owner;
         bool isPending;
-        /*OrderStatus status;*/
         uint256 numShares;
         uint256 offeredValue;
         uint256 incentive;
@@ -315,12 +314,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint256 actualValue = calculate.priceForNumBaseShares( // TODO In general atLastPayout.nav not current
-            request.numShares,
-            BASE_UNITS,
-            atLastPayout.nav,
-            totalSupply
-        ); // [base unit of MELON_ASSET]
+        uint256 actualValue = request.numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
         request.isPending = false;
         assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
         isGreaterOrEqualThan(request.offeredValue, actualValue) ?
