@@ -187,7 +187,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
     /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
     /// Post: Pending subscription Request
-    function subscribeRequest(uint256 numShares, uint256 offeredValue, uint256 incentiveValue)
+    function subscribeRequest(
+        uint256 numShares,
+        uint256 offeredValue,
+        uint256 incentiveValue
+    )
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
@@ -436,7 +440,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         internal
     {
         assert(ofToken.approve(address(module.exchange), amount));
-        LOGGER.logSpendingApproved(ofToken, onExchange, amount);
+        LOGGER.logSpendingApproved(ofToken, address(module.exchange), amount);
     }
 
     // NON-CONSTANT METHODS - REWARDS

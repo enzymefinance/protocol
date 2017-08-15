@@ -6,6 +6,8 @@ import './DataFeedInterface.sol';
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
+/// @notice Where external data includes sharePrice of Melon funds
+/// @notice  DataFeed operator could be staked and sharePrice input valided on chain
 contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // TYPES
