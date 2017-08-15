@@ -15,8 +15,8 @@ contract PriceFeedInterface {
     function getLatestUpdateId() constant returns (uint) {}
     function getLatestUpdateTimestamp() constant returns (uint) {}
     // Get availability of assets
-    function numDeliverableAssets() constant returns (uint) {}
-    function getDeliverableAssetAt(uint id) constant returns (address) {}
+    function numRegisteredAssets() constant returns (uint) {}
+    function getRegisteredAssetAt(uint id) constant returns (address) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}

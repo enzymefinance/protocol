@@ -16,7 +16,7 @@ library accounting {
     function fetchPrices(address ofAssetRegistrar, address ofPriceFeed, uint256 assetId) returns (uint256, uint256, uint256)
     {
         // Holdings
-        address ofAsset = address(PriceFeedInterface(ofPriceFeed).getDeliverableAssetAt(assetId));
+        address ofAsset = address(PriceFeedInterface(ofPriceFeed).getRegisteredAssetAt(assetId));
         AssetInterface Asset = AssetInterface(ofAsset);
         uint256 holding = Asset.balanceOf(this); // Amount of asset base units this vault holds
         uint256 decimal = Asset.getDecimals(); // TODO use Registrar lookup call
@@ -44,8 +44,8 @@ library accounting {
          *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
-        /*uint256 numDeliverableAssets = PriceFeedInterface(ofPriceFeed).numDeliverableAssets();
-        for (uint256 id = 0; id < numDeliverableAssets; id++) { //sum(holdings * prices /decimals)
+        /*uint256 numRegisteredAssets = PriceFeedInterface(ofPriceFeed).numRegisteredAssets();
+        for (uint256 id = 0; id < numRegisteredAssets; id++) { //sum(holdings * prices /decimals)
           var (holding, price, decimal) = fetchPrices(id); //sync with pricefeed
           gav = gav.add(holding.mul(price).div(10 ** uint(decimal)));
         }
