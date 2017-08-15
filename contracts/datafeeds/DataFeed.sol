@@ -1,5 +1,7 @@
 pragma solidity ^0.4.11;
 
+import '../dependencies/ERC20.sol';
+import '../libraries/safeMath.sol';
 import '../assets/AssetRegistrar.sol';
 import './DataFeedInterface.sol';
 
@@ -9,6 +11,7 @@ import './DataFeedInterface.sol';
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice  DataFeed operator could be staked and sharePrice input valided on chain
 contract DataFeed is DataFeedInterface, AssetRegistrar {
+    using safeMath for uint256;
 
     // TYPES
 
@@ -100,6 +103,22 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         );
     }
 
+    // CONSTANT METHODS - ACCOUNTING
+
+    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    function calcGav(address ofVault) constant returns (uint256 gav) {
+        for (uint256 i = 0; i < numRegisteredAssets(); ++i) {
+            address ofAsset = address(getRegisteredAssetAt(i));
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(ofVault); // Amount of asset base units this vault holds
+            uint256 assetPrice = getPrice(ofAsset);
+            uint256 assetDecimals = getDecimals(ofAsset);
+            // Sum up product of asset holdings of this vault and asset prices
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals)));
+            PortfolioContent(ofVault, assetHoldings, assetPrice, assetDecimals);
+        }
+    }
+
     // NON-CONSTANT INTERNAL METHODS
 
     function nextId() internal returns (uint) {
@@ -159,6 +178,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             });
         }
         lastUpdateTimestamp = now;
-        PriceUpdated(newId);
+        DataUpdated(newId);
     }
 }

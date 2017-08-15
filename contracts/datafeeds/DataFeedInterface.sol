@@ -32,5 +32,7 @@ contract DataFeedInterface {
 
     // EVENTS
 
-    event PriceUpdated(uint id);
+    event DataUpdated(uint id);
+    event PortfolioContent(address ofVault, uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals);
+
 }

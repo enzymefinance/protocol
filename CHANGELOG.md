@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     uint buy_how_much, address indexed buy_which_token);`
     to `event Trade(address indexed seller, uint sell_how_much, address indexed sell_which_token,
     address indexed buyer, uint buy_how_much, address indexed buy_which_token);`
-- Changed PriceUpdated Event
+- Changed DataUpdated Event
 - Simplified Tracking of Vaults in Version contract
 - DataFeed contract; `getFrequncey` -> `getInterval`
 - Exchange Event `OrderUpdate` -> `ItemUpdate`
