@@ -11,7 +11,7 @@ contract VaultInterface is AssetInterface {
 
     // CONSTANT METHODS
 
-    function getPriceFeedAddress() constant returns (address) {}
+    function getDataFeedAddress() constant returns (address) {}
     function getExchangeAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}

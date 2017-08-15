@@ -10,7 +10,7 @@ import './libraries/safeMath.sol';
 import './libraries/calculate.sol';
 import './libraries/accounting.sol';
 import './participation/ParticipationInterface.sol';
-import './datafeeds/PriceFeedInterface.sol';
+import './datafeeds/DataFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
 import './VaultInterface.sol';
@@ -44,16 +44,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     struct Modules { // Can't be changed by Owner
         ParticipationInterface participation;
-        PriceFeedInterface pricefeed;
+        DataFeedInterface pricefeed;
         ExchangeInterface exchange;
         RiskMgmtInterface riskmgmt;
-    }
-
-    struct Asset {
-        uint256 decimal;
-        bytes32 chainId;
-        address breakIn;
-        address breakOut;
     }
 
     struct Request { // subscription request
@@ -106,7 +99,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     Logger public LOGGER;
     // Fields that can be changed by functions
-    mapping (address => Asset) public assets;
     mapping (uint256 => Request) public requests;
     mapping (uint256 => Order) public orders;
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
@@ -138,7 +130,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function getDecimals() constant returns (uint) { return decimals; }
     function getBaseUnitsPerShare() constant returns (uint256) { return BASE_UNITS; }
-    function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
+    function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
 
     // NON-CONSTANT INTERNAL METHODS
@@ -156,7 +148,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint withDecimals,
         address ofAssetRegistrar,
         address ofMelonAsset,
-        address ofPriceFeed,
+        address ofDataFeed,
         address ofParticipation,
         address ofExchange,
         address ofRiskMgmt,
@@ -182,13 +174,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             timestamp: now
         });
         // Init module struct
-        module.pricefeed = PriceFeedInterface(ofPriceFeed);
+        module.pricefeed = DataFeedInterface(ofDataFeed);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        for (uint id = 0; id < module.pricefeed.numRegisteredAssets(); id++) {
-          address ofAsset = module.pricefeed.getRegisteredAssetAt(id);
-          // TODO add to assets mapping
-          AssetRegistrar(ofAssetRegistrar).getSpecificInformation(ofAsset);
-        }
+        require(module.pricefeed.isSet(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.exchange = ExchangeInterface(ofExchange);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);

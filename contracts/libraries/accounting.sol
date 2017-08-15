@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import '../assets/AssetInterface.sol';
 import '../assets/AssetRegistrar.sol';
-import '../datafeeds/PriceFeedInterface.sol';
+import '../datafeeds/DataFeedInterface.sol';
 import './calculate.sol';
 import './safeMath.sol';
 
@@ -13,28 +13,28 @@ library accounting {
     // CONSTANT METHODS - ACCOUNTING
 
     // TODO: integrate this further (e.g. is it only called in one place?)
-    function fetchPrices(address ofAssetRegistrar, address ofPriceFeed, uint256 assetId) returns (uint256, uint256, uint256)
+    function fetchPrices(address ofAssetRegistrar, address ofDataFeed, uint256 assetId) returns (uint256, uint256, uint256)
     {
         // Holdings
-        address ofAsset = address(PriceFeedInterface(ofPriceFeed).getRegisteredAssetAt(assetId));
+        address ofAsset = address(DataFeedInterface(ofDataFeed).getRegisteredAssetAt(assetId));
         AssetInterface Asset = AssetInterface(ofAsset);
         uint256 holding = Asset.balanceOf(this); // Amount of asset base units this vault holds
         uint256 decimal = Asset.getDecimals(); // TODO use Registrar lookup call
         // Price
-        uint256 price = price = PriceFeedInterface(ofPriceFeed).getPrice(ofAsset); // Asset price given quoted to MELON_ASSET (and 'quoteAsset') price
+        uint256 price = price = DataFeedInterface(ofDataFeed).getPrice(ofAsset); // Asset price given quoted to MELON_ASSET (and 'quoteAsset') price
         /*LOGGER.logPortfolioContent(holding, price, decimal);*/
         return (holding, price, decimal);
     }
 
     /// Pre: None
     /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of MELON_ASSET]
-    function recalculateAll(address ofPriceFeed)
+    function recalculateAll(address ofDataFeed)
         constant
         returns (uint gav, uint management, uint performance, uint unclaimed, uint nav, uint sharePrice)
     {
         /* Rem 1:
          *  All prices are relative to the MELON_ASSET price. The MELON_ASSET must be
-         *  equal to quoteAsset of corresponding PriceFeed.
+         *  equal to quoteAsset of corresponding DataFeed.
          * Rem 2:
          *  For this version, the MELON_ASSET is set as EtherToken.
          *  The price of the EtherToken relative to Ether is defined to always be equal to one.
@@ -44,7 +44,7 @@ library accounting {
          *    ==> vaultHoldings * price == value of asset holdings of this vault relative to MELON_ASSET price.
          *  where 0 <= decimals <= 18 and decimals is a natural number.
          */
-        /*uint256 numRegisteredAssets = PriceFeedInterface(ofPriceFeed).numRegisteredAssets();
+        /*uint256 numRegisteredAssets = DataFeedInterface(ofDataFeed).numRegisteredAssets();
         for (uint256 id = 0; id < numRegisteredAssets; id++) { //sum(holdings * prices /decimals)
           var (holding, price, decimal) = fetchPrices(id); //sync with pricefeed
           gav = gav.add(holding.mul(price).div(10 ** uint(decimal)));
