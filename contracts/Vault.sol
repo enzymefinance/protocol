@@ -390,7 +390,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ))
         returns (uint id)
     {
-        approveSpending(haveToken, address(module.exchange), haveAmount);
+        approveSpending(haveToken, haveAmount);
         id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
     }
 
@@ -417,7 +417,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
-        approveSpending(offeredSellToken, address(module.exchange), wantedSellAmount);
+        approveSpending(offeredSellToken, wantedSellAmount);
         return module.exchange.buy(id, wantedBuyAmount);
     }
 
@@ -432,10 +432,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
     /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    function approveSpending(ERC20 ofToken, address onExchange, uint256 amount)
+    function approveSpending(ERC20 ofToken, uint256 amount)
         internal
     {
-        assert(ofToken.approve(onExchange, amount));
+        assert(ofToken.approve(address(module.exchange), amount));
         LOGGER.logSpendingApproved(ofToken, onExchange, amount);
     }
 
