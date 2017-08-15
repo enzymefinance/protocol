@@ -9,6 +9,7 @@ import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
 import './libraries/calculate.sol';
 import './libraries/accounting.sol';
+import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
 import './datafeeds/DataFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
@@ -135,29 +136,82 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // CONSTANT METHODS - ACCOUNTING
 
+    /// Pre: None
+    /// Post: sharePrice denominated in [base unit of referenceAsset]
+    function calcSharePrice() constant returns (uint256)
+    {
+        var (, , , , , sharePrice) = performCalculations();
+        return sharePrice;
+    }
+
+    /// Pre: None
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
+        uint256 gav = calcGav(); // Reflects value indepentent of fees
+        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
+        uint256 nav = calcNav(gav, unclaimedRewards);
+        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : getBaseUnitsPerShare(); // Handle potential division through zero by defining a default value
+        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
+    }
+
+    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
+    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
+    function calcValuePerShare(uint256 value)
+        constant
+        pre_cond(isPastZero(totalSupply))
+        returns (uint256 valuePerShare)
+    {
+        valuePerShare = value.mul(getBaseUnitsPerShare()).div(totalSupply);
+    }
+
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Post: Net asset value denominated in [base unit of referenceAsset]
+    function calcNav(uint256 gav, uint256 unclaimedRewards)
+        constant
+        returns (uint256 nav)
+    {
+        nav = gav.sub(unclaimedRewards);
+    }
+
+    /// Pre: Gross asset value has been calculated
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
+    function calcUnclaimedRewards(uint256 gav)
+        constant
+        returns (
+            uint256 managementReward,
+            uint256 performanceReward,
+            uint256 unclaimedRewards
+        )
+    {
+        uint256 timeDifference = now.sub(atLastPayout.timestamp);
+        managementReward = rewards.managementReward(
+            MANAGEMENT_REWARD_RATE,
+            timeDifference,
+            gav,
+            DIVISOR_FEE
+        );
+        performanceReward = 0;
+        if (totalSupply != 0) {
+            uint256 currSharePrice = calcValuePerShare(gav);
+            if (currSharePrice > atLastPayout.sharePrice) {
+              performanceReward = rewards.performanceReward(
+                  PERFORMANCE_REWARD_RATE,
+                  int(currSharePrice - atLastPayout.sharePrice),
+                  totalSupply,
+                  DIVISOR_FEE
+              );
+            }
+        }
+        unclaimedRewards = managementReward.add(performanceReward);
+    }
+
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// Post: Gross asset value denominated in [base unit of referenceAsset]
     function calcGav() constant returns (uint256 gav) {
-        /* Rem 1:
-         *  All prices are relative to the referenceAsset price. The referenceAsset must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the referenceAsset is set as MelonAsset.
-         *  The price of the MelonAsset relative to MelonAsset is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
-         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to referenceAsset price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
-        uint256 numAssignedAssets = module.pricefeed.numRegisteredAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
+        for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
-            // Holdings
             uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            // Price
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
-            // Decimals
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             LOGGER.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
@@ -489,7 +543,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             unclaimedRewards,
             nav,
             sharePrice
-        ) = accounting.recalculateAll(address(module.pricefeed));
+        ) = performCalculations();
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
