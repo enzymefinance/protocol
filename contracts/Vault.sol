@@ -101,11 +101,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     mapping (uint256 => Request) public requests;
     mapping (uint256 => Order) public orders;
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
-
     uint256 lastRequestId;
     Information public info;
     Modules public module;
     Calculations public atLastPayout;
+    bool public isDecommissioned;
 
     // EVENTS
 
@@ -275,6 +275,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 offeredValue,
         uint256 incentiveValue
     )
+        public
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
@@ -302,51 +303,33 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: Anyone can trigger this function; Id of request that is pending
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
+        public
         pre_cond(requests[requestId].isPending)
         pre_cond(isGreaterOrEqualThan(
-            now,
-            request.timestamp.add(module.pricefeed.getInterval())))
+                now,
+                requests[requestId].timestamp.add(module.pricefeed.getInterval())
+            ) || isDecommissioned
+        )
         pre_cond(isGreaterOrEqualThan(
-            module.pricefeed.getLatestUpdateId(),
-            request.lastFeedUpdateId + 2
-        ))
+                module.pricefeed.getLatestUpdateId(),
+                requests[requestId].lastFeedUpdateId + 2
+            ) || isDecommissioned
+        )
     {
         // Time and updates have passed
         Request request = requests[requestId];
         uint256 actualValue = request.numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
         request.isPending = false;
-        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
-        isGreaterOrEqualThan(request.offeredValue, actualValue) ?
-            subscribeAllocate(request.numShares, actualValue) : // Limit Order is OK
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue)); // Outside limit; cancel order and return funds
-    }
-
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of MELON_ASSET]
-    /// Post: Subscribe in this fund by creating shares
-    /* Rem:
-     *  This can be seen as a non-persistent all or nothing limit order, where:
-     *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
-     */
-    function subscribeAllocate(uint256 numShares, uint256 actualValue)
-        internal
-    {
-        if (isZero(numShares)) {
-            subscribeUsingSlice(numShares);
-        } else {
-            assert(MELON_CONTRACT.transferFrom(msg.sender, this, actualValue));  // Transfer value
-            createShares(msg.sender, numShares); // Accounting
-            LOGGER.logSubscribed(msg.sender, now, numShares);
+        assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
+        if (isGreaterOrEqualThan(request.offeredValue, actualValue)) { // Limit Order is OK
+            // Create Shares
+            assert(MELON_CONTRACT.transferFrom(request.owner, this, actualValue)); // Value tranfer
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue.sub(actualValue))); // Return remainder
+            createShares(msg.sender, request.numShares); // Accounting
+        } else { // Outside limit; cancel order and return funds
+            // Cancel Request
+            MELON_CONTRACT.transfer(request.owner, request.offeredValue);
         }
-    }
-
-    function cancelRequest(uint requestId)
-        pre_cond(requests[requestId].isPending)
-        pre_cond(requests[requestId].owner == msg.sender)
-    {
-        Request request = requests[requestId];
-        request.isPending = false;
-        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
-        assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
     }
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
@@ -363,7 +346,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         assert(requestedValue <= actualValue); // Sanity Check
         assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
-        LOGGER.logRedeemed(msg.sender, now, numShares);
     }
 
     /// Pre: Approved spending of all assets with non-empty asset holdings;
@@ -374,7 +356,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isPastZero(numShares))
     {
         allocateSlice(numShares);
-        LOGGER.logSubscribed(msg.sender, now, numShares);
     }
 
     /// Pre: Recipient owns shares
@@ -435,6 +416,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         totalSupply = totalSupply.add(numShares);
         addShares(recipient, numShares);
+        LOGGER.logSubscribed(msg.sender, now, numShares);
     }
 
     function annihilateShares(address recipient, uint256 numShares)
@@ -442,6 +424,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         totalSupply = totalSupply.sub(numShares);
         subShares(recipient, numShares);
+        LOGGER.logRedeemed(msg.sender, now, numShares);
     }
 
     function addShares(address recipient, uint256 numShares) internal {
