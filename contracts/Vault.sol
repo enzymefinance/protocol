@@ -101,6 +101,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint public decimals;
     uint256 public BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     address public MELON_ASSET; // Adresss of Melon asset contract
+    ERC20 public MELON_CONTRACT;
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     Logger public LOGGER;
     // Fields that can be changed by functions
@@ -166,6 +167,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         symbol = withSymbol;
         decimals = withDecimals;
         MELON_ASSET = ofMelonAsset;
+        MELON_CONTRACT = ERC20(MELON_ASSET);
         BASE_UNITS = 10 ** decimals;
         atLastPayout = Calculations({
             gav: 0,
@@ -203,7 +205,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ))
         returns(uint256)
     {
-        ERC20(MELON_ASSET).transferFrom(msg.sender, this, msg.value);
+        MELON_CONTRACT.transferFrom(msg.sender, this, msg.value);
         uint256 newId = nextId();
         requests[newId] = Request(
             msg.sender,
@@ -225,7 +227,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(requests[requestId].isPending)
     {
         Request request = requests[requestId];
-        ERC20 mln = ERC20(MELON_ASSET);
         bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
         bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
         if (intervalPassed && updatesPassed){  // time and updates have passed
@@ -236,11 +237,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
                 totalSupply
             ); // [base unit of MELON_ASSET]
             request.isPending = false;
-            assert(mln.transfer(msg.sender, request.incentive));
+            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
             if(request.offeredValue >= actualValue) { // limit OK
                 subscribeAllocate(request.numShares, actualValue);
             } else {    // outside limit; cancel order and return funds
-                assert(mln.transfer(request.owner, request.offeredValue));
+                assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
             }
         }
     }
@@ -259,7 +260,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            assert(ERC20(MELON_ASSET).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(MELON_CONTRACT.transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             LOGGER.logSubscribed(msg.sender, now, numShares);
         }
@@ -270,10 +271,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(requests[requestId].owner == msg.sender)
     {
         Request request = requests[requestId];
-        ERC20 mln = ERC20(MELON_ASSET);
         request.isPending = false;
-        assert(mln.transfer(msg.sender, request.incentive));
-        assert(mln.transfer(request.owner, request.offeredValue));
+        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
+        assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
     }
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
@@ -289,7 +289,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(ERC20(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
+        assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         LOGGER.logRedeemed(msg.sender, now, numShares);
     }
