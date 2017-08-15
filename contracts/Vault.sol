@@ -2,7 +2,6 @@ pragma solidity ^0.4.11;
 
 import './dependencies/ERC20.sol';
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
-import './assets/AssetInterface.sol';
 import './assets/AssetRegistrar.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
@@ -139,6 +138,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function getPriceFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
 
+    // NON-CONSTANT INTERNAL METHODS
+
+    function nextId() internal returns (uint) {
+        lastRequestId++; return lastRequestId;
+    }
+
     // NON-CONSTANT METHODS
 
     function Vault(
@@ -187,9 +192,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    function subscribeRequest(uint256 numShares, uint256 offeredValue)
-        payable // TODO incentive in MLN
-        pre_cond(msg.value > offeredValue)
+    function subscribeRequest(uint256 numShares, uint256 offeredValue, uint256 incentiveValue)
+        pre_cond(isPastZero(incentiveValue))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
             numShares,
@@ -197,16 +201,20 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ))
         returns(uint256)
     {
-        uint256 incentive = uint256(msg.value).sub(offeredValue);
-        AssetInterface(MELON_ASSET).transferFrom(msg.sender, this, msg.value);
-        lastRequestId++;    // new ID
-        requests[lastRequestId] = Request(
-            msg.sender, true, numShares, offeredValue,
-            incentive, module.pricefeed.getLatestUpdateId(),
-            module.pricefeed.getLatestUpdateTimestamp(), now
+        ERC20(MELON_ASSET).transferFrom(msg.sender, this, msg.value);
+        uint256 newId = nextId();
+        requests[newId] = Request(
+            msg.sender,
+            true,
+            numShares,
+            offeredValue,
+            incentiveValue,
+            module.pricefeed.getLatestUpdateId(),
+            module.pricefeed.getLatestUpdateTimestamp(),
+            now
         );
         LOGGER.logSubscribeRequested(msg.sender, now, numShares);
-        return lastRequestId;
+        return newId;
     }
 
     /// Pre: Anyone can trigger this function
@@ -214,7 +222,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(requests[requestId].isOpen)
     {
         Request request = requests[requestId];
-        AssetInterface mln = AssetInterface(MELON_ASSET);
+        ERC20 mln = ERC20(MELON_ASSET);
         bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
         bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
         if(intervalPassed && updatesPassed){  // time and updates have passed
@@ -248,7 +256,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         if (isZero(numShares)) {
             subscribeUsingSlice(numShares);
         } else {
-            assert(AssetInterface(MELON_ASSET).transferFrom(msg.sender, this, actualValue));  // Transfer value
+            assert(ERC20(MELON_ASSET).transferFrom(msg.sender, this, actualValue));  // Transfer value
             createShares(msg.sender, numShares); // Accounting
             LOGGER.logSubscribed(msg.sender, now, numShares);
         }
@@ -259,7 +267,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(requests[requestId].owner == msg.sender)
     {
         Request request = requests[requestId];
-        AssetInterface mln = AssetInterface(MELON_ASSET);
+        ERC20 mln = ERC20(MELON_ASSET);
         request.isOpen = false;
         assert(mln.transfer(msg.sender, request.incentive));
         assert(mln.transfer(request.owner, request.offeredValue));
@@ -278,7 +286,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetInterface(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
+        assert(ERC20(MELON_ASSET).transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
         LOGGER.logRedeemed(msg.sender, now, numShares);
     }
@@ -311,7 +319,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
         for (uint256 i = 0; i < numDeliverableAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.pricefeed.getDeliverableAssetAt(i)));
+            ERC20 Asset = ERC20(address(module.pricefeed.getDeliverableAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -337,7 +345,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Transfer separationAmount of Assets
         uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
         for (uint256 i = 0; i < numDeliverableAssets; ++i) {
-            AssetInterface Asset = AssetInterface(address(module.pricefeed.getDeliverableAssetAt(i)));
+            ERC20 Asset = ERC20(address(module.pricefeed.getDeliverableAssetAt(i)));
             // Decimals from module.pricefeed
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
