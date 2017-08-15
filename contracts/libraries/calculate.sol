@@ -25,7 +25,7 @@ library calculate {
         return numBaseShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
-    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// Pre: Decimals in assets must be equal to decimals in DataFeed for all entries in Universe
     /// Post: Gross asset value denominated in [base unit of melonAsset]
     function grossAssetValue(
         uint256[] holdings,

@@ -1,12 +1,12 @@
 pragma solidity ^0.4.11;
 
 import '../assets/AssetRegistrar.sol';
-import './PriceFeedInterface.sol';
+import './DataFeedInterface.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedInterface, AssetRegistrar {
+contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // TYPES
 
@@ -108,7 +108,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
 
     /// Pre: Define and register a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(
+    function DataFeed(
         bytes32 withChainId,
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         string name,

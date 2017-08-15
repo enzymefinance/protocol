@@ -40,7 +40,7 @@ contract AssetRegistrar is DBC, Owned {
     // CONSTANT METHODS
 
     // Get registartion specific information
-    function isSet(address ofAsset) internal returns (bool) { return !isNotSet(ofAsset); }
+    function isSet(address ofAsset) constant returns (bool) { return !isNotSet(ofAsset); }
     function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
     function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
     // Get asset specific information

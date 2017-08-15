@@ -4,7 +4,7 @@ const Governance = artifacts.require('Governance');
 const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
-const PriceFeed = artifacts.require('PriceFeed');
+const DataFeed = artifacts.require('DataFeed');
 const Rewards = artifacts.require('Rewards');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Universe = artifacts.require('Universe');
@@ -35,7 +35,7 @@ contract('Version', (accounts) => {
     logger = await Logger.new();
     version = await Version.deployed();
     logger.addPermission(version.address);
-    pricefeed = await PriceFeed.new(mlnToken.address, [eurToken.address, ethToken.address]);
+    pricefeed = await DataFeed.new(mlnToken.address, [eurToken.address, ethToken.address]);
     exchange = await Exchange.new();
     universe = await Universe.new(
       mlnToken.address,

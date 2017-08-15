@@ -1,13 +1,13 @@
-const PriceFeed = artifacts.require('PriceFeed');
+const DataFeed = artifacts.require('DataFeed');
 const chai = require('chai');
 const assert = chai.assert;
 
-contract('PriceFeed', (accounts) => {
+contract('DataFeed', (accounts) => {
   let feed;
   let assetA;     // eth
   let assetB;     // btc
   before('Get deployed instance', async () => {
-    feed = await PriceFeed.deployed();
+    feed = await DataFeed.deployed();
   });
   it('can get assets', async () => {
     quoteAsset = await feed.getQuoteAsset();

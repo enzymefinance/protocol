@@ -1,6 +1,6 @@
 const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
-const PriceFeed = artifacts.require('PriceFeed');
+const DataFeed = artifacts.require('DataFeed');
 const Exchange = artifacts.require('Exchange');
 const Logger = artifacts.require('Logger');
 const Universe = artifacts.require('Universe');
@@ -33,7 +33,7 @@ contract('Vault', (accounts) => {
     eurToken = await PreminedAsset.new(
       eur.name, eur.symbol, eur.decimals, premined, { from: liquidityProvider });
     ethToken = await EtherToken.new({ from: liquidityProvider });
-    pricefeed = await PriceFeed.new(investor, ethToken.address);
+    pricefeed = await DataFeed.new(investor, ethToken.address);
     await pricefeed.update(
       [ethToken.address, eurToken.address, mlnToken.address],
       [1000000000000000000, 5091131249363608, 226244343891402714], // Mock data
