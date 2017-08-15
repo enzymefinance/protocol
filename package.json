@@ -9,7 +9,8 @@
     "test": "truffle test test/{exchange.js,pricefeed.js,asset.js,logger.js,calculate.js,participation.js}",
     "localnode": "node_modules/.bin/testrpc -l 6713095",
     "compile": "solcjs --abi $(find contracts/ -name '*.sol')",
-    "delete": "find . -name '*.abi' -type f -delete ", "lint": "eslint .",
+    "delete": "find . -name '*.abi' -type f -delete ",
+    "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },

@@ -8,7 +8,7 @@ import './PriceFeedInterface.sol';
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is AssetRegistrar, DBC, Owned, PriceFeedInterface {
+contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
 
     // TYPES
 

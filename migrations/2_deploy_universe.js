@@ -38,7 +38,7 @@ module.exports = async function (deployer, network) {
     .then(() => btcAddr = Asset.address)
     .then(() => deployer.deploy(Asset, 'Melon Token', 'MLN-T', 18))
     .then(() => mlnAddr = Asset.address)
-    .then(() => deployer.deploy(PriceFeed, mlnAddr, [ethAddr, btcAddr]))
+    .then(() => deployer.deploy(PriceFeed, 0, mlnAddr, [ethAddr, btcAddr]))
     .then(() => deployer.deploy(Exchange))
     .then(() => {
       deployer.deploy(Universe,
