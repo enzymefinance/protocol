@@ -95,6 +95,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint256 public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
     uint256 public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
     uint256 public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
+    uint256 public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Fields that are only changed in constructor
     string public name;
     string public symbol;
@@ -107,6 +108,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     mapping (address => Asset) public assets;
     mapping (uint256 => Request) public requests;
     mapping (uint256 => Order) public orders;
+    uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
+
     uint256 lastRequestId;
     Information public info;
     Modules public module;
