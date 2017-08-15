@@ -1,5 +1,5 @@
 const Asset = artifacts.require('./Asset.sol');
-const Exchange = artifacts.require('./Exchange.sol');
+const Market = artifacts.require('./SimpleMarket.sol');
 const PriceFeed = artifacts.require('./PriceFeed.sol');
 const Universe = artifacts.require('./Universe.sol');
 
@@ -39,13 +39,13 @@ module.exports = async function (deployer, network) {
     .then(() => deployer.deploy(Asset, 'Melon Token', 'MLN-T', 18))
     .then(() => mlnAddr = Asset.address)
     .then(() => deployer.deploy(PriceFeed, 0, mlnAddr, [ethAddr, btcAddr]))
-    .then(() => deployer.deploy(Exchange))
+    .then(() => deployer.deploy(Market))
     .then(() => {
       deployer.deploy(Universe,
         ethAddr,
         [mlnAddr, btcAddr],
         PriceFeed.address,
-        Exchange.address,
+        Market.address,
       );
     })
     .catch(e => { throw e });
