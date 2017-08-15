@@ -59,6 +59,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     struct Request { // subscription request
         address owner;
         bool isPending;
+        /*OrderStatus status;*/
         uint256 numShares;
         uint256 offeredValue;
         uint256 incentive;
@@ -195,6 +196,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
+    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
     /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
     /// Post: Pending subscription Request
     function subscribeRequest(uint256 numShares, uint256 offeredValue, uint256 incentiveValue)
@@ -206,7 +208,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ))
         returns(uint256)
     {
-        MELON_CONTRACT.transferFrom(msg.sender, this, msg.value);
+        MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
         uint256 newId = nextId();
         requests[newId] = Request(
             msg.sender,
@@ -234,7 +236,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             request.lastFeedUpdateId + 2
         ))
     {
-        // time and updates have passed
+        // Time and updates have passed
         Request request = requests[requestId];
         uint256 actualValue = calculate.priceForNumBaseShares(
             request.numShares,
@@ -243,12 +245,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply
         ); // [base unit of MELON_ASSET]
         request.isPending = false;
-        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
-        if (request.offeredValue >= actualValue) { // limit OK
-            subscribeAllocate(request.numShares, actualValue);
-        } else {    // outside limit; cancel order and return funds
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
-        }
+        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
+        isGreaterOrEqualThan(request.offeredValue, actualValue) ?
+            subscribeAllocate(request.numShares, actualValue) : // Limit Order is OK
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue)); // Outside limit; cancel order and return funds
     }
 
     /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of MELON_ASSET]
@@ -286,11 +286,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // TODO mitigate `spam` attack
     function redeem(uint256 numShares, uint256 requestedValue)
         pre_cond(isPastZero(numShares))
-        /*pre_cond(module.participation.isRedeemRequestPermitted(
+        pre_cond(module.participation.isRedeemRequestPermitted(
           msg.sender,
           numShares,
-          offeredValue
-          ))*/
+          requestedValue
+        ))
     {
         uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check

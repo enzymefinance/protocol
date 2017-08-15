@@ -64,7 +64,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
     function isRedeemRequestPermitted(
         address owner,
         uint256 numShares,
-        uint256 offeredValue
+        uint256 requestedValue
     )
         constant
         returns (bool)
