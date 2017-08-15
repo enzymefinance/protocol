@@ -184,8 +184,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Init module struct
         module.pricefeed = PriceFeedInterface(ofPriceFeed);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        for (uint id = 0; id < module.pricefeed.numDeliverableAssets(); id++) {
-          address ofAsset = module.pricefeed.getDeliverableAssetAt(id);
+        for (uint id = 0; id < module.pricefeed.numRegisteredAssets(); id++) {
+          address ofAsset = module.pricefeed.getRegisteredAssetAt(id);
           // TODO add to assets mapping
           AssetRegistrar(ofAssetRegistrar).getSpecificInformation(ofAsset);
         }
@@ -322,9 +322,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function allocateSlice(uint256 numShares)
         internal
     {
-        uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
-        for (uint256 i = 0; i < numDeliverableAssets; ++i) {
-            ERC20 Asset = ERC20(address(module.pricefeed.getDeliverableAssetAt(i)));
+        uint256 numRegisteredAssets = module.pricefeed.numRegisteredAssets();
+        for (uint256 i = 0; i < numRegisteredAssets; ++i) {
+            ERC20 Asset = ERC20(address(module.pricefeed.getRegisteredAssetAt(i)));
             uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
@@ -348,9 +348,9 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Destroy _before_ external calls to prevent reentrancy
         annihilateShares(msg.sender, numShares);
         // Transfer separationAmount of Assets
-        uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
-        for (uint256 i = 0; i < numDeliverableAssets; ++i) {
-            ERC20 Asset = ERC20(address(module.pricefeed.getDeliverableAssetAt(i)));
+        uint256 numRegisteredAssets = module.pricefeed.numRegisteredAssets();
+        for (uint256 i = 0; i < numRegisteredAssets; ++i) {
+            ERC20 Asset = ERC20(address(module.pricefeed.getRegisteredAssetAt(i)));
             // Decimals from module.pricefeed
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;

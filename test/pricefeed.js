@@ -11,10 +11,10 @@ contract('PriceFeed', (accounts) => {
   });
   it('can get assets', async () => {
     quoteAsset = await feed.getQuoteAsset();
-    numAssets = await feed.numDeliverableAssets();
+    numAssets = await feed.numRegisteredAssets();
     assert.equal(numAssets, 2);
-    assetA = await feed.getDeliverableAssetAt(0);
-    assetB = await feed.getDeliverableAssetAt(1);
+    assetA = await feed.getRegisteredAssetAt(0);
+    assetB = await feed.getRegisteredAssetAt(1);
   });
   it('registers pricefeed udpate', async () => {
     const initialUid = await feed.getLatestUpdateId();

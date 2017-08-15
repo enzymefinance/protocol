@@ -30,14 +30,12 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
     uint256 public lastUpdateId;
     uint256 public lastUpdateTimestamp;
-    address[] public deliverableAssets;
 
     // PRE, POST, INVARIANT CONDITIONS
 
     function isDataSet(address ofAsset) internal constant returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
     function isDataValid(address ofAsset) internal constant returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
-    function arrayNotEmpty(address[] x) constant returns (bool) { return x.length >= 1; }
     function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastUpdateId; }
 
     // CONSTANT METHODS
@@ -48,9 +46,6 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
     function getValidity() constant returns (uint) { return VALIDITY; }
     function getLatestUpdateId() constant returns (uint) { return lastUpdateId; }
     function getLatestUpdateTimestamp() constant returns (uint) { return lastUpdateTimestamp; }
-    // Get availability of assets
-    function numDeliverableAssets() constant returns (uint) { return deliverableAssets.length; }
-    function getDeliverableAssetAt(uint id) constant returns (address) { return deliverableAssets[id]; }
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
@@ -113,14 +108,33 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
 
     // NON-CONSTANT PUBLIC METHODS
 
-    /// Pre: Define a quote asset against which all prices are measured/based against
+    /// Pre: Define and register a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(bytes32 withChainId, address ofQuoteAsset, address[] ofDeliverableAssets)
+    function PriceFeed(
+        bytes32 withChainId,
+        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        string name,
+        string symbol,
+        uint256 decimal,
+        string url,
+        bytes32 ipfsHash,
+        address breakIn,
+        address breakOut
+    )
         AssetRegistrar(withChainId)
-        pre_cond(arrayNotEmpty(ofDeliverableAssets))
     {
         QUOTE_ASSET = ofQuoteAsset;
-        deliverableAssets = ofDeliverableAssets;
+        // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        super.register(
+            QUOTE_ASSET,
+            name,
+            symbol,
+            decimal,
+            url,
+            ipfsHash,
+            breakIn,
+            breakOut
+        );
     }
 
     /// Pre: Only Owner; Same sized input arrays
