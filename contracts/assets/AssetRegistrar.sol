@@ -33,7 +33,7 @@ contract AssetRegistrar is DBC, Owned {
     // PRE, POST, INVARIANT CONDITIONS
 
     function isNotNullAddress(address x) internal returns (bool) { return x != 0; }
-    function isNotSet(address x) internal returns (bool) { return information[x].hash.length == 0; }
+    function isNotSet(address x) internal returns (bool) { return information[x].hash == 0x0; }
     function isUnique(address x, bytes32 y) internal returns (bool) { return information[x].hash != y; }
 
     // CONSTANT METHODS

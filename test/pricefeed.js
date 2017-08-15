@@ -37,14 +37,35 @@ contract('PriceFeed', (accounts) => {
     assert.equal(priceB.toNumber(), priceB2.toNumber());
     assert.equal(timeA.toNumber(), timeB.toNumber());
   });
-  it('returns first chunk of data history for first asset', async () => {
+  it.skip('returns first chunk of data history for first asset', async () => {
     [timesA, pricesA] = await feed.getDataHistory(assetA, 0);
     assert.notEqual(timesA[1].toNumber(), 0);
     assert.notEqual(pricesA[1].toNumber(), 0);
   });
-  it('returns first chunk of data history for second asset', async () => {
+  it.skip('returns first chunk of data history for second asset', async () => {
     [timesB, pricesB] = await feed.getDataHistory(assetB, 0);
     assert.notEqual(timesB[1].toNumber(), 0);
     assert.notEqual(pricesB[1].toNumber(), 0);
+  });
+  describe('AssetRegistrar', () => {
+    const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+    it('registers without error', async () => {
+      await feed.register(accounts[3], 'Fake token', 'LIE', 18, 'false.com',
+        someBytes, accounts[5], accounts[6]); // using accts as fake addresses
+    });
+    it('gets descriptive information', async () => {
+      [name, sym, dec, url, hash] = await feed.getDescriptiveInformation(accounts[3]);
+      assert.equal(name, 'Fake token');
+      assert.equal(sym, 'LIE');
+      assert.equal(dec, 18);
+      assert.equal(url, 'false.com');
+      assert.equal(hash, someBytes);
+    });
+    it('gets specific information', async () => {
+      [dec, , bIn, bOut] = await feed.getSpecificInformation(accounts[3]);
+      assert.equal(dec, 18);
+      assert.equal(bIn, accounts[5]);
+      assert.equal(bOut, accounts[6]);
+    });
   });
 });

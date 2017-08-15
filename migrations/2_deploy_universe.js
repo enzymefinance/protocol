@@ -1,14 +1,13 @@
 const Asset = artifacts.require('./Asset.sol');
 const Market = artifacts.require('./SimpleMarket.sol');
 const PriceFeed = artifacts.require('./PriceFeed.sol');
-const Universe = artifacts.require('./Universe.sol');
 
 const tokenInfo = require('./config/token_info.js');
 const dataFeedInfo = require('./config/data_feed_info.js');
 const exchangeInfo = require('./config/exchange_info.js');
 
 
-module.exports = async function (deployer, network) {
+module.exports = async (deployer, network) => {
   if (network !== 'development') {
     const ethTokenAddress = tokenInfo[network].find(t => t.symbol === 'ETH-T').address;
     const tokenAddresses = tokenInfo[network].filter(
@@ -40,14 +39,6 @@ module.exports = async function (deployer, network) {
     .then(() => mlnAddr = Asset.address)
     .then(() => deployer.deploy(PriceFeed, 0, mlnAddr, [ethAddr, btcAddr]))
     .then(() => deployer.deploy(Market))
-    .then(() => {
-      deployer.deploy(Universe,
-        ethAddr,
-        [mlnAddr, btcAddr],
-        PriceFeed.address,
-        Market.address,
-      );
-    })
-    .catch(e => { throw e });
+    .catch(e => { throw e; })
   }
 };
