@@ -84,9 +84,22 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint)
+        returns (uint256)
     {
         return dataHistory[lastUpdateId][ofAsset].price;
+    }
+
+    /// Pre: Asset has been initialised and is active
+    /// Post: Inverted price
+    function getInvertedPrice(address ofAsset)
+        constant
+        pre_cond(isDataSet(ofAsset))
+        pre_cond(isDataValid(ofAsset))
+        returns (uint)
+    {
+        return uint256(10 ** uint(getDecimals(ofAsset)))
+            .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
+            .div(getPrice(ofAsset));
     }
 
     /// Pre: Asset has been initialised and is active
