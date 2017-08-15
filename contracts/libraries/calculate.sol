@@ -8,7 +8,7 @@ library calculate {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre:  baseUnitsPerShare not zero
+    /// Pre: baseUnitsPerShare not zero
     /// Post: priceInRef denominated in [base unit of melonAsset]
     function priceForNumBaseShares(
         uint256 numBaseShares,
@@ -20,7 +20,7 @@ library calculate {
         returns (uint256)
     {
         uint256 sharePrice;
-        if(totalSupply > 0)
+        if (totalSupply > 0)
             sharePrice = value.mul(baseUnitsPerShare).div(totalSupply);
         else
             sharePrice = baseUnitsPerShare;
@@ -37,7 +37,7 @@ library calculate {
         constant
         returns (uint256 result)
     {
-        for(uint i; i < prices.length; i++) { //sum(holdings * prices /decimals)
+        for (uint i; i < prices.length; i++) { //sum(holdings * prices /decimals)
             result = result.add(holdings[i].mul(prices[i]).div(10 ** uint(decimals[i])));
         }
     }
