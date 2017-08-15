@@ -133,6 +133,37 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
 
+    // CONSTANT METHODS - ACCOUNTING
+
+    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    function calcGav() constant returns (uint256 gav) {
+        /* Rem 1:
+         *  All prices are relative to the referenceAsset price. The referenceAsset must be
+         *  equal to quoteAsset of corresponding PriceFeed.
+         * Rem 2:
+         *  For this version, the referenceAsset is set as MelonAsset.
+         *  The price of the MelonAsset relative to MelonAsset is defined to always be equal to one.
+         * Rem 3:
+         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
+         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
+         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to referenceAsset price.
+         *  where 0 <= decimals <= 18 and decimals is a natural number.
+         */
+        uint256 numAssignedAssets = module.pricefeed.numRegisteredAssets();
+        for (uint256 i = 0; i < numAssignedAssets; ++i) {
+            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+            // Holdings
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
+            // Price
+            uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
+            // Decimals
+            uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            LOGGER.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
+    }
+
     // NON-CONSTANT INTERNAL METHODS
 
     function nextId() internal returns (uint) {
@@ -435,7 +466,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
+    /// Post: Approved to spend ofToken on Exchange
     function approveSpending(ERC20 ofToken, uint256 amount)
         internal
     {
