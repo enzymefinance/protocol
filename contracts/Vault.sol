@@ -121,6 +121,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
+    function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
         internal returns (bool)
@@ -225,24 +226,28 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
         pre_cond(requests[requestId].isPending)
+        pre_cond(isGreaterOrEqualThan(
+            now,
+            request.timestamp.add(module.pricefeed.getInterval())))
+        pre_cond(isGreaterOrEqualThan(
+            module.pricefeed.getLatestUpdateId(),
+            request.lastFeedUpdateId + 2
+        ))
     {
+        // time and updates have passed
         Request request = requests[requestId];
-        bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
-        bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
-        if (intervalPassed && updatesPassed){  // time and updates have passed
-            uint256 actualValue = calculate.priceForNumBaseShares(
-                request.numShares,
-                BASE_UNITS,
-                atLastPayout.nav,
-                totalSupply
-            ); // [base unit of MELON_ASSET]
-            request.isPending = false;
-            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
-            if(request.offeredValue >= actualValue) { // limit OK
-                subscribeAllocate(request.numShares, actualValue);
-            } else {    // outside limit; cancel order and return funds
-                assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
-            }
+        uint256 actualValue = calculate.priceForNumBaseShares(
+            request.numShares,
+            BASE_UNITS,
+            atLastPayout.nav,
+            totalSupply
+        ); // [base unit of MELON_ASSET]
+        request.isPending = false;
+        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
+        if (request.offeredValue >= actualValue) { // limit OK
+            subscribeAllocate(request.numShares, actualValue);
+        } else {    // outside limit; cancel order and return funds
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
         }
     }
 
