@@ -38,7 +38,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // CONSTANT METHODS
 
-    // Get price feed specific information
+    // Get data feed specific information
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
