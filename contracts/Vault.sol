@@ -191,7 +191,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         );
         performanceReward = 0;
         if (totalSupply != 0) {
-            uint256 currSharePrice = calcValuePerShare(gav);
+            uint256 currSharePrice = calcValuePerShare(gav); // TODO Multiply w getInvertedPrice(ofReferenceAsset)
             if (currSharePrice > atLastPayout.sharePrice) {
               performanceReward = rewards.performanceReward(
                   PERFORMANCE_REWARD_RATE,
