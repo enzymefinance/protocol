@@ -1,14 +1,12 @@
 pragma solidity ^0.4.11;
 
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
 import '../assets/AssetRegistrar.sol';
 import './PriceFeedInterface.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
+contract PriceFeed is PriceFeedInterface, AssetRegistrar {
 
     // TYPES
 
@@ -125,8 +123,8 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
     {
         QUOTE_ASSET = ofQuoteAsset;
         // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        super.register(
-            QUOTE_ASSET,
+        /*register( // TODO register initial asset as quoteAsset
+            ofQuoteAsset,
             name,
             symbol,
             decimal,
@@ -134,7 +132,7 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned, AssetRegistrar {
             ipfsHash,
             breakIn,
             breakOut
-        );
+        );*/
     }
 
     /// Pre: Only Owner; Same sized input arrays
