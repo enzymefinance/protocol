@@ -58,7 +58,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     struct Request { // subscription request
         address owner;
-        bool isOpen;
+        bool isPending;
         uint256 numShares;
         uint256 offeredValue;
         uint256 incentive;
@@ -192,6 +192,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
+    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// Post: Pending subscription Request
     function subscribeRequest(uint256 numShares, uint256 offeredValue, uint256 incentiveValue)
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.participation.isSubscribeRequestPermitted(
@@ -217,22 +219,23 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         return newId;
     }
 
-    /// Pre: Anyone can trigger this function
-    function checkRequest(uint256 requestId)
-        pre_cond(requests[requestId].isOpen)
+    /// Pre: Anyone can trigger this function; Id of request that is pending
+    /// Post: Worker either cancelled or fullfilled request
+    function executeRequest(uint256 requestId)
+        pre_cond(requests[requestId].isPending)
     {
         Request request = requests[requestId];
         ERC20 mln = ERC20(MELON_ASSET);
         bool intervalPassed = now >= request.timestamp.add(module.pricefeed.getLatestUpdateId() * 2);
         bool updatesPassed = module.pricefeed.getLatestUpdateTimestamp() >= request.lastFeedUpdateId + 2;
-        if(intervalPassed && updatesPassed){  // time and updates have passed
+        if (intervalPassed && updatesPassed){  // time and updates have passed
             uint256 actualValue = calculate.priceForNumBaseShares(
                 request.numShares,
                 BASE_UNITS,
                 atLastPayout.nav,
                 totalSupply
             ); // [base unit of MELON_ASSET]
-            request.isOpen = false;
+            request.isPending = false;
             assert(mln.transfer(msg.sender, request.incentive));
             if(request.offeredValue >= actualValue) { // limit OK
                 subscribeAllocate(request.numShares, actualValue);
@@ -263,12 +266,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function cancelRequest(uint requestId)
-        pre_cond(requests[requestId].isOpen)
+        pre_cond(requests[requestId].isPending)
         pre_cond(requests[requestId].owner == msg.sender)
     {
         Request request = requests[requestId];
         ERC20 mln = ERC20(MELON_ASSET);
-        request.isOpen = false;
+        request.isPending = false;
         assert(mln.transfer(msg.sender, request.incentive));
         assert(mln.transfer(request.owner, request.offeredValue));
     }
