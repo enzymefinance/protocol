@@ -44,7 +44,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
         avatar[x].isUPortIdentity = false;
     }
 
-    // NON-CONSTANT BOOLEAN METHODS
+    // CONSTANT METHODS
 
     /// Pre: Request ID
     /// Post: Boolean dependent on market data and on personel data; Compliance
@@ -53,6 +53,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 offeredValue
     )
+        constant
         returns (bool)
     {
         return avatar[owner].isUPortIdentity;
@@ -65,6 +66,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 offeredValue
     )
+        constant
         returns (bool)
     {
         return true;

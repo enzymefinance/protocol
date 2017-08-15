@@ -24,4 +24,4 @@ module.exports = (deployer, network) => {
 };
 
 // #1: very fragile. This assumes that the last deployed asset is MLN, which
-//    is not enforced. See also: trufflesuite/truffle/issues/517
+//    is only ensured by convention. See also: trufflesuite/truffle/issues/517
