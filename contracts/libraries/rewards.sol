@@ -31,7 +31,7 @@ library rewards {
     /// Post: Reward denominated in referenceAsset
     function performanceReward(
         uint performanceRewardRate,
-        int deltaPrice,
+        int deltaPrice, // Price Difference measured agains referenceAsset
         uint totalSupply,
         uint divisorFee
     )
