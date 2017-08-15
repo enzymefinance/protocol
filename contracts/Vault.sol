@@ -7,7 +7,6 @@ import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
-import './libraries/calculate.sol';
 import './libraries/accounting.sol';
 import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
@@ -360,7 +359,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
           requestedValue
         ))
     {
-        uint256 actualValue = calculate.priceForNumBaseShares(numShares, BASE_UNITS, atLastPayout.nav, totalSupply); // [base unit of MELON_ASSET]
+        uint256 actualValue = numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
         assert(requestedValue <= actualValue); // Sanity Check
         assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
         annihilateShares(msg.sender, numShares); // Accounting
