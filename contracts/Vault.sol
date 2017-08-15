@@ -238,7 +238,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint256 actualValue = calculate.priceForNumBaseShares(
+        uint256 actualValue = calculate.priceForNumBaseShares( // TODO In general atLastPayout.nav not current
             request.numShares,
             BASE_UNITS,
             atLastPayout.nav,
@@ -253,8 +253,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of MELON_ASSET]
     /// Post: Subscribe in this fund by creating shares
-    // TODO check comment
-    // TODO mitigate `spam` attack
     /* Rem:
      *  This can be seen as a non-persistent all or nothing limit order, where:
      *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
@@ -283,7 +281,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
     /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    // TODO mitigate `spam` attack
     function redeem(uint256 numShares, uint256 requestedValue)
         pre_cond(isPastZero(numShares))
         pre_cond(module.participation.isRedeemRequestPermitted(

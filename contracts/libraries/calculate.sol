@@ -19,11 +19,9 @@ library calculate {
         constant
         returns (uint256)
     {
-        uint256 sharePrice;
-        if (totalSupply > 0)
-            sharePrice = value.mul(baseUnitsPerShare).div(totalSupply);
-        else
-            sharePrice = baseUnitsPerShare;
+        uint256 sharePrice = (totalSupply > 0) ?
+            value.mul(baseUnitsPerShare).div(totalSupply) :
+            baseUnitsPerShare;
         return numBaseShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
