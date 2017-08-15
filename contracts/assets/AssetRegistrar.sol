@@ -40,7 +40,7 @@ contract AssetRegistrar is DBC, Owned {
 
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
-    function getDecimals(address ofAsset) constant returns (uint256) { return ; }
+    function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
     function getDescriptiveInformation(address ofAsset)
         constant
         returns (string, string, uint256, string, bytes32)
