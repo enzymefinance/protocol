@@ -2,12 +2,13 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
+import '../assets/AssetRegistrar.sol';
 import './PriceFeedInterface.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-contract PriceFeed is PriceFeedInterface, DBC, Owned {
+contract PriceFeed is AssetRegistrar, DBC, Owned, PriceFeedInterface {
 
     // TYPES
 
@@ -114,7 +115,8 @@ contract PriceFeed is PriceFeedInterface, DBC, Owned {
 
     /// Pre: Define a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
-    function PriceFeed(address ofQuoteAsset, address[] ofDeliverableAssets)
+    function PriceFeed(bytes32 withChainId, address ofQuoteAsset, address[] ofDeliverableAssets)
+        AssetRegistrar(withChainId)
         pre_cond(arrayNotEmpty(ofDeliverableAssets))
     {
         QUOTE_ASSET = ofQuoteAsset;

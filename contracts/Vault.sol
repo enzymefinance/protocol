@@ -335,6 +335,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 numDeliverableAssets = module.pricefeed.numDeliverableAssets();
         for (uint256 i = 0; i < numDeliverableAssets; ++i) {
             AssetInterface Asset = AssetInterface(address(module.pricefeed.getDeliverableAssetAt(i)));
+            // Decimals from module.pricefeed
             uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
             if (vaultHoldings == 0) continue;
             uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
