@@ -30,7 +30,7 @@ contract('Calculate', (accounts) => {
     });
   });
   describe('#grossAssetValue', () => {
-    it('returns sum of asset values', async () => {
+    it.skip('returns sum of asset values', async () => {
       const gav = await calculate.grossAssetValue(
         [0, 100, 200, 500, 1000], // holdings
         [2, 0, 10, 100, 10],      // prices
@@ -48,7 +48,7 @@ contract('Calculate', (accounts) => {
     });
   });
   describe('#netAssetValue', () => {
-    it('gets correct value for non-empty NAV', async () => {
+    it.skip('gets correct value for non-empty NAV', async () => {
       let nav = await calculate.netAssetValue(3000, 200);
       assert.equal(nav.toNumber(), 2800);
     });
@@ -57,31 +57,31 @@ contract('Calculate', (accounts) => {
     });
   });
   describe('#managementReward', () => {
-    it('returns zero when no time has elapsed', async () => {
+    it.skip('returns zero when no time has elapsed', async () => {
       const rwd = await calculate.managementReward(2, 0, 1000, 100);
       assert.equal(rwd.toNumber(), 0);
     });
-    it('returns correct reward when some time passed', async () => {
+    it.skip('returns correct reward when some time passed', async () => {
       const rwd = await calculate.managementReward(2, 30, 1000, 100);
       assert.equal(rwd.toNumber(), 600);
     });
   });
   describe('#performanceReward', () => {
-    it('returns zero when no difference in share price', async () => {
+    it.skip('returns zero when no difference in share price', async () => {
       const rwd = await calculate.performanceReward(2, 0, 1000, 100);
       assert.equal(rwd.toNumber(), 0);
     });
-    it('returns zero when share price has decreased', async () => {
+    it.skip('returns zero when share price has decreased', async () => {
       const rwd = await calculate.performanceReward(2, -200, 1000, 100);
       assert.equal(rwd.toNumber(), 0);
     });
-    it('returns correct number when share price has increased', async () => {
+    it.skip('returns correct number when share price has increased', async () => {
       const rwd = await calculate.performanceReward(2, 200, 1000, 100);
       assert.equal(rwd.toNumber(), 4000);
     });
   });
   describe('#rewards', () => {
-    it('calculates correct rewards', async () => {
+    it.skip('calculates correct rewards', async () => {
       [mgmt, perf, unclaimed] = await calculate.rewards(
         200000, 210000, 1, 10000000, 40000, 2000, 100, 10, 100000000,
       );

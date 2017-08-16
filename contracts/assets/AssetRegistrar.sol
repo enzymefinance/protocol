@@ -25,8 +25,6 @@ contract AssetRegistrar is DBC, Owned {
 
     // FIELDS
 
-    // Fields that are only changed in constructor
-    bytes32 public CHAIN_ID;
     // Fields that can be changed by functions
     mapping (address => Asset) public information; // Asset specific information
     address[] public registeredAssets;
@@ -73,9 +71,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar(bytes32 withChainId) {
-        CHAIN_ID = withChainId;
-    }
+    function AssetRegistrar() {}
 
     /// Pre: Only Backup Owner; Non-null new Backup Owner
     /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
@@ -86,6 +82,7 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal,
         string url,
         bytes32 ipfsHash,
+        bytes32 chainId, // unique identifier on which chain we are located on
         address breakIn,
         address breakOut
     )
@@ -98,7 +95,7 @@ contract AssetRegistrar is DBC, Owned {
             decimal: decimal,
             url: url,
             ipfsHash: ipfsHash,
-            chainId: CHAIN_ID,
+            chainId: chainId,
             breakIn: breakIn,
             breakOut: breakOut,
             hash: sha3(name, symbol, decimal, breakIn, breakOut)
