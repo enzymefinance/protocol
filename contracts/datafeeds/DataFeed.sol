@@ -143,30 +143,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// Pre: Define and register a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
     function DataFeed(
-        bytes32 withChainId,
-        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        string name,
-        string symbol,
-        uint256 decimal,
-        string url,
-        bytes32 ipfsHash,
-        address breakIn,
-        address breakOut
-    )
-        AssetRegistrar(withChainId)
-    {
+        address ofQuoteAsset // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+    ) {
         QUOTE_ASSET = ofQuoteAsset;
-        // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        /*register( // TODO register initial asset as quoteAsset
-            ofQuoteAsset,
-            name,
-            symbol,
-            decimal,
-            url,
-            ipfsHash,
-            breakIn,
-            breakOut
-        );*/
     }
 
     /// Pre: Only Owner; Same sized input arrays
