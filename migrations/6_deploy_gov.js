@@ -1,5 +1,6 @@
-const Calculate = artifacts.require('./calculate.sol');
 const Accounting = artifacts.require('./accounting.sol');
+const Calculate = artifacts.require('./calculate.sol');
+const Rewards = artifacts.require('./rewards.sol');
 const Governance = artifacts.require('./Governance.sol');
 const Logger = artifacts.require('./Logger.sol');
 const Version = artifacts.require('./Version.sol');
@@ -14,10 +15,12 @@ module.exports = (deployer, network) => {
     mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
     deployer.deploy(Governance)
     .then(() => deployer.deploy(Logger))
-    .then(() => deployer.deploy(Calculate))
     .then(() => deployer.deploy(Accounting))
-    .then(() => deployer.link(Calculate, Version))
+    .then(() => deployer.deploy(Calculate))
+    .then(() => deployer.deploy(Rewards))
     .then(() => deployer.link(Accounting, Version))
+    .then(() => deployer.link(Calculate, Version))
+    .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
     .catch(e => { throw e; });
   }

@@ -1,7 +1,6 @@
 const Asset = artifacts.require('./Asset.sol');
 const Market = artifacts.require('./SimpleMarket.sol');
 const DataFeed = artifacts.require('./DataFeed.sol');
-const Universe = artifacts.require('./Universe.sol');
 
 const tokenInfo = require('./config/token_info.js');
 const dataFeedInfo = require('./config/data_feed_info.js');
