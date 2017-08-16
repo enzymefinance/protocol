@@ -26,7 +26,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     enum OrderStatus {
         open,
         closed,
-        resolved
+        executed
     }
 
     enum VaultStatus {
@@ -38,20 +38,19 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Information {
-        VaultStatus vault_status;
-        uint timestamp;
+        VaultStatus vaultStatus;
     }
 
     struct Modules { // Can't be changed by Owner
-        ParticipationInterface participation;
-        DataFeedInterface pricefeed;
-        ExchangeInterface exchange;
-        RiskMgmtInterface riskmgmt;
+        ParticipationInterface  participation;
+        DataFeedInterface       pricefeed;
+        ExchangeInterface       exchange;
+        RiskMgmtInterface       riskmgmt;
     }
 
     struct Request { // subscription request
         address owner;
-        bool isPending;
+        bool    isPending;
         uint256 numShares;
         uint256 offeredValue;
         uint256 incentive;
@@ -61,13 +60,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Order {
-        uint256 sell_quantitiy;
-        ERC20 sell_which_token;
-        uint256 buy_quantity;
-        ERC20 buy_which_token;
-        uint256 timestamp;
+        ERC20       haveToken;
+        ERC20       wantToken;
+        uint128     haveAmount;
+        uint128     wantAmount;
+        uint256     timestamp;
         OrderStatus order_status;
-        uint256 quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
+        uint256     quantitiy_filled; // Buy quantitiy filled; Always less than buy_quantity
     }
 
     struct Calculations {
@@ -98,12 +97,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     Logger public LOGGER;
     // Fields that can be changed by functions
-    mapping (uint256 => Request) public requests;
-    mapping (uint256 => Order) public orders;
-    uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
-    uint256 lastRequestId;
     Information public info;
     Modules public module;
+    mapping (uint256 => Request) public requests;
+    uint256 lastRequestId;
+    mapping (uint256 => Order) public orders;
+    uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
+    uint256 lastOrderId;
     Calculations public atLastPayout;
     bool public isDecommissioned;
 
@@ -218,9 +218,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // NON-CONSTANT INTERNAL METHODS
 
-    function nextId() internal returns (uint) {
-        lastRequestId++; return lastRequestId;
-    }
+    function nextRequestId() internal returns (uint) { lastRequestId++; return lastRequestId; }
+    function nextOrderId() internal returns (uint) { lastOrderId++; return lastOrderId; }
 
     // NON-CONSTANT METHODS
 
@@ -270,7 +269,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
     /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
     /// Post: Pending subscription Request
-    function subscribeRequest(
+    function subscribe(
         uint256 numShares,
         uint256 offeredValue,
         uint256 incentiveValue
@@ -285,7 +284,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns(uint256)
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
-        uint256 newId = nextId();
+        uint256 newId = nextRequestId();
         requests[newId] = Request(
             msg.sender,
             true,
@@ -348,67 +347,25 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         annihilateShares(msg.sender, numShares); // Accounting
     }
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings;
-    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
-    /// Note: Independent of running price feed!
-    function subscribeUsingSlice(uint256 numShares)
-        pre_cond(isPastZero(totalSupply))
-        pre_cond(isPastZero(numShares))
-    {
-        allocateSlice(numShares);
-    }
-
     /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
     /// Note: Independent of running price feed!
     function redeemUsingSlice(uint256 numShares)
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
     {
-        separateSlice(numShares);
-        LOGGER.logRedeemed(msg.sender, now, numShares);
-    }
-
-    /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, numShares denominated in [base units ]
-    /// Post: Transfer ownership percentage of all assets to/from Vault
-    function allocateSlice(uint256 numShares)
-        internal
-    {
-        uint256 numRegisteredAssets = module.pricefeed.numRegisteredAssets();
-        for (uint256 i = 0; i < numRegisteredAssets; ++i) {
-            ERC20 Asset = ERC20(address(module.pricefeed.getRegisteredAssetAt(i)));
-            uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
-            if (vaultHoldings == 0) continue;
-            uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
-            uint256 senderHoldings = Asset.balanceOf(msg.sender); // Amount of asset sender holds
-            require(senderHoldings >= allocationAmount);
-            // Transfer allocationAmount of Assets
-            assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to vault
-        }
-        // Issue _after_ external calls
-        createShares(msg.sender, numShares);
-    }
-
-    /// Pre: Allocation: Approve spending for all non empty vaultHoldings of Assets
-    /// Post: Transfer ownership percentage of all assets to/from Vault
-    function separateSlice(uint256 numShares)
-        internal
-    {
         // Current Value
-        uint256 prevTotalSupply = totalSupply.sub(atLastPayout.unclaimedRewards);
+        uint256 prevTotalSupply = totalSupply.sub(atLastPayout.unclaimedRewards); // TODO Fix calculation
         assert(isPastZero(prevTotalSupply));
-        // Destroy _before_ external calls to prevent reentrancy
-        annihilateShares(msg.sender, numShares);
+        annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
         // Transfer separationAmount of Assets
-        uint256 numRegisteredAssets = module.pricefeed.numRegisteredAssets();
-        for (uint256 i = 0; i < numRegisteredAssets; ++i) {
-            ERC20 Asset = ERC20(address(module.pricefeed.getRegisteredAssetAt(i)));
-            // Decimals from module.pricefeed
-            uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
-            if (vaultHoldings == 0) continue;
-            uint256 separationAmount = vaultHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
-            // EXTERNAL CALL
-            assert(Asset.transfer(msg.sender, separationAmount)); // EXTERNAL CALL: Send funds from vault to investor
+        for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this);
+            if (assetHoldings == 0) continue;
+            uint256 separationAmount = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
+            assert(ERC20(ofAsset).transfer(msg.sender, separationAmount)); // Send funds from vault to investor
         }
+        LOGGER.logRedeemed(msg.sender, now, numShares);
     }
 
     function createShares(address recipient, uint256 numShares)
@@ -457,6 +414,16 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         approveSpending(haveToken, haveAmount);
         id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
+        uint256 newId = nextOrderId();
+        orders[newId] = Order({
+            haveToken: haveToken,
+            wantToken: wantToken,
+            haveAmount: haveAmount,
+            wantAmount: wantAmount,
+            timestamp: now,
+            order_status: OrderStatus.open,
+            quantitiy_filled: 0
+        });
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
@@ -483,7 +450,18 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
-        return module.exchange.buy(id, wantedBuyAmount);
+        bool success = module.exchange.buy(id, wantedBuyAmount);
+        uint256 newId = nextOrderId();
+        orders[newId] = Order({
+            haveToken: offeredBuyToken,
+            wantToken: offeredSellToken,
+            haveAmount: uint128(offeredBuyAmount),
+            wantAmount: uint128(wantedBuyAmount),
+            timestamp: now,
+            order_status: OrderStatus.executed,
+            quantitiy_filled: wantedBuyAmount
+        });
+        return success;
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
