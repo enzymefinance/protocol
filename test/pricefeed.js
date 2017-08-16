@@ -37,12 +37,12 @@ contract('PriceFeed', (accounts) => {
     assert.equal(priceB.toNumber(), priceB2.toNumber());
     assert.equal(timeA.toNumber(), timeB.toNumber());
   });
-  it.skip('returns first chunk of data history for first asset', async () => {
+  it('returns first chunk of data history for first asset', async () => {
     [timesA, pricesA] = await feed.getDataHistory(assetA, 0);
     assert.notEqual(timesA[1].toNumber(), 0);
     assert.notEqual(pricesA[1].toNumber(), 0);
   });
-  it.skip('returns first chunk of data history for second asset', async () => {
+  it('returns first chunk of data history for second asset', async () => {
     [timesB, pricesB] = await feed.getDataHistory(assetB, 0);
     assert.notEqual(timesB[1].toNumber(), 0);
     assert.notEqual(pricesB[1].toNumber(), 0);

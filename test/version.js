@@ -22,30 +22,8 @@ contract('Version', (accounts) => {
   let governance;
   let logger;
   let version;
-  let mlnToken, eurToken, ethToken, pricefeed, exchange, universe, participation, riskManagement, rewards;
 
   before('Deploy contract instances', async () => {
-    // TODO: outsource all of these deployments to util function(s)
-    const mln = tokens.find(t => t.symbol === 'MLN-T');
-    const eur = tokens.find(t => t.symbol === 'EUR-T');
-    mlnToken = await PreminedAsset.new(mln.name, mln.symbol, mln.decimals, premined);
-    eurToken = await PreminedAsset.new(eur.name, eur.symbol, eur.decimals, premined);
-    ethToken = await EtherToken.new();
-    governance = await Governance.new(mlnToken.address);
-    logger = await Logger.new();
-    version = await Version.deployed();
-    logger.addPermission(version.address);
-    pricefeed = await PriceFeed.new(mlnToken.address, [eurToken.address, ethToken.address]);
-    exchange = await Exchange.new();
-    universe = await Universe.new(
-      mlnToken.address,
-      [ethToken.address, eurToken.address, mlnToken.address],
-      pricefeed.address,
-      exchange.address,
-    );
-    participation = await Participation.new();
-    riskManagement = await RiskMgmt.new();
-    rewards = await Rewards.new(managementRewardRate, performanceRewardRate);
   });
 
   it.skip('Can create a vault without error', async () => {

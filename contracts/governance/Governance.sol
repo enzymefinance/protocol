@@ -92,4 +92,16 @@ contract Governance is DBC, Owned {
     {
         // TODO decommissionVaults
     }
+
+    function getVersions(uint start)
+        constant
+        returns(address[1024] allVersions, bool[1024] active, uint[1024] timestamps)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii > lastVersionId) break;
+            allVersions[ii] = versions[ii].version;
+            active[ii] = versions[ii].active;
+            timestamps[ii] = versions[ii].timestamp;
+        }
+    }
 }

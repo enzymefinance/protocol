@@ -12,7 +12,6 @@ import '../dependencies/Logger.sol';
 contract Version is DBC, Owned {
 
     // TYPES
-
     enum Status {
         setup,
         funding,
@@ -21,7 +20,6 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
-
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public ASSET_REGISTRAR; // Address of Asset Registrar contract
@@ -33,23 +31,19 @@ contract Version is DBC, Owned {
     uint public lastVaultId;
 
     // EVENTS
-
     event VaultUpdated(uint id);
 
     // CONSTANT METHODS
-
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
     function getVault(uint id) constant returns (address) { return vaults[id]; }
 
     // NON-CONSTANT INTERNAL METHODS
-
     function next_id() internal returns (uint) {
         lastVaultId++; return lastVaultId;
     }
 
     // NON-CONSTANT METHODS
-
     function Version(
         address ofMelonAsset,
         address ofAssetRegistrar,
@@ -99,5 +93,15 @@ contract Version is DBC, Owned {
         // TODO also refund and selfdestruct vault contract
         delete vaults[id];
         VaultUpdated(id);
+    }
+
+    function getVaults(uint start)
+        constant
+        returns (address[1024] allVaults)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii > lastVaultId) break;
+            allVaults[ii] = vaults[ii];
+        }
     }
 }
