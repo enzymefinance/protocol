@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Enum Status to Version contract
 - Enum OrderStatus, VaultStatus to Vault contract
 - Vault internal tracking of all orders
-- Function `subscribeRequest` in Vault
+- Function `subscribe` in Vault
 - `AssetRegistrar` Contract
 - Function `getDataHistory` in DataFeed
 
