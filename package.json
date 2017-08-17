@@ -6,7 +6,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test test/{exchange.js,datafeed.js,asset.js,logger.js,calculate.js,participation.js}",
+    "test": "truffle test test/{exchange.js,datafeed.js,asset.js,logger.js,participation.js}",
     "localnode": "node_modules/.bin/testrpc -l 6713095",
     "compile": "solcjs --abi $(find contracts/ -name '*.sol')",
     "delete": "find . -name '*.abi' -type f -delete ",

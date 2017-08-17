@@ -7,7 +7,6 @@ import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
 import './libraries/safeMath.sol';
-import './libraries/accounting.sol';
 import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
 import './datafeeds/DataFeedInterface.sol';
