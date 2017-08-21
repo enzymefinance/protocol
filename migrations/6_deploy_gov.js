@@ -3,6 +3,7 @@ const Rewards = artifacts.require('./rewards.sol');
 const Governance = artifacts.require('./Governance.sol');
 const Logger = artifacts.require('./Logger.sol');
 const Version = artifacts.require('./Version.sol');
+const Vault = artifacts.require('./Vault.sol');
 const Asset = artifacts.require('./Asset.sol');
 const tokenInfo = require('./config/token_info.js');
 
@@ -18,6 +19,7 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(Rewards))
     .then(() => deployer.link(Calculate, Version))
     .then(() => deployer.link(Rewards, Version))
+    .then(() => deployer.link(Rewards, Vault))
     .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
     .catch(e => { throw e; });
   }

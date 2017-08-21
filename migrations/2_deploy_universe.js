@@ -37,7 +37,7 @@ module.exports = async (deployer, network) => {
     .then(() => btcAddr = Asset.address)
     .then(() => deployer.deploy(Asset, 'Melon Token', 'MLN-T', 18))
     .then(() => mlnAddr = Asset.address)
-    .then(() => deployer.deploy(DataFeed, mlnAddr))
+    .then(() => deployer.deploy(DataFeed, mlnAddr, 120, 60))
     .then(() => deployer.deploy(Market))
     .catch(e => { throw e; })
   }

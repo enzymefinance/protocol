@@ -12,7 +12,6 @@ import '../dependencies/Logger.sol';
 contract Version is DBC, Owned {
 
     // TYPES
-
     enum Status {
         setup,
         funding,
@@ -21,7 +20,6 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
-
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public ASSET_REGISTRAR; // Address of Asset Registrar contract
@@ -49,7 +47,6 @@ contract Version is DBC, Owned {
     }
 
     // NON-CONSTANT METHODS
-
     function Version(
         address ofMelonAsset,
         address ofAssetRegistrar,
@@ -73,7 +70,6 @@ contract Version is DBC, Owned {
     )
         returns (uint id)
     {
-        // Create and register new Vault
         address vault = address(new Vault(
             msg.sender,
             withName,
