@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 /// @title DataFeed Protocol Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice DataFeed according to the Standard Data Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
-/// @notice This is to be considered as a protocol on how to access the underlying DataFeed Contract
+/// @notice This is to be considered as an interface on how to access the underlying DataFeed Contract
 contract DataFeedInterface {
 
     // CONSTANT METHODS

@@ -4,7 +4,7 @@ import '../dependencies/ERC20.sol';
 
 /// @title RiskMgmtInterface Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying RiskMgmt Contract
+/// @notice This is to be considered as an interface on how to access the underlying RiskMgmt Contract
 contract RiskMgmtInterface {
     /* Remark: Checks for:
      *  1) Liquidity: All positions have to be fairly simple to liquidate.
