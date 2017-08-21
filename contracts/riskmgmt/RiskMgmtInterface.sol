@@ -19,7 +19,8 @@ contract RiskMgmtInterface {
         ERC20   haveToken,
         ERC20   wantToken,
         uint    haveAmount,
-        uint    wantAmount
+        uint    wantAmount,
+        uint    referencePrice
     )
         returns (bool)
     {}
@@ -29,6 +30,7 @@ contract RiskMgmtInterface {
         ERC20   wantToken,
         uint    haveAmount,
         uint    wantAmount,
+        uint    referencePrice,
         address orderOwner
     )
         returns (bool)
