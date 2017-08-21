@@ -34,8 +34,7 @@ contract VaultInterface is AssetInterface {
         uint sell_how_much, ERC20 sell_which_token,
         uint buy_how_much,  ERC20 buy_which_token
     )
-        returns (uint id)
-    {}
+        returns (uint id) {}
     function takeOrder(ExchangeInterface onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
     function cancelOrder(ExchangeInterface onExchange, uint id) returns (bool) {}
     function convertUnclaimedRewards() {}
