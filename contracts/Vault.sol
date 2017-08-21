@@ -455,7 +455,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             wantToken,
             haveAmount,
             wantAmount,
-            0 // Insert assetpair specific price
+            0 // TODO: Insert assetpair specific price
         ))
         returns (uint id)
     {
@@ -493,7 +493,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             offeredBuyToken,
             offeredSellAmount,
             offeredBuyAmount,
-            0, // Insert assetpair specific price
+            0, // TODO: Insert assetpair specific price
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
