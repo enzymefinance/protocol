@@ -17,7 +17,14 @@ contract Logger is DBC, Permissioned {
     function logSubscribeRequested(address byParticipant, uint256 atTimestamp, uint256 numShares)
         pre_cond(isPermitted(msg.sender))
     {
-        Subscribed(msg.sender, byParticipant, atTimestamp, numShares);
+        SubscribedRequest(msg.sender, byParticipant, atTimestamp, numShares);
+    }
+
+    event RedeemedRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
+    function logRedeemRequested(address byParticipant, uint256 atTimestamp, uint256 numShares)
+        pre_cond(isPermitted(msg.sender))
+    {
+        RedeemedRequest(msg.sender, byParticipant, atTimestamp, numShares);
     }
 
     event Subscribed(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);

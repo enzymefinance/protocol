@@ -25,6 +25,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     enum RequestStatus {
         subscribe,
         redeem,
+        cancelled,
         executed
     }
 
@@ -57,7 +58,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address owner;
         RequestStatus request_status;
         uint256 numShares;
-        uint256 offeredValue;
+        uint256 offeredOrRequestedValue;
         uint256 incentive;
         uint256 lastFeedUpdateId;
         uint256 lastFeedUpdateTime;
@@ -119,6 +120,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
+    function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
     function isSubscribe(RequestStatus x) internal returns (bool) { return x == RequestStatus.subscribe; }
     function isRedeem(RequestStatus x) internal returns (bool) { return x == RequestStatus.redeem; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
@@ -296,7 +298,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             owner: msg.sender,
             request_status: RequestStatus.subscribe,
             numShares: numShares,
-            offeredValue: offeredValue,
+            offeredOrRequestedValue: offeredValue,
             incentive: incentiveValue,
             lastFeedUpdateId: module.pricefeed.getLatestUpdateId(),
             lastFeedUpdateTime: module.pricefeed.getLatestUpdateTimestamp(),
@@ -324,8 +326,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             numShares,
             requestedValue
         ))
+        returns (uint256)
     {
-        // TODO insert function body
+        uint256 newId = nextRequestId();
+        requests[newId] = Request({
+            owner: msg.sender,
+            request_status: RequestStatus.redeem,
+            numShares: numShares,
+            offeredOrRequestedValue: requestedValue,
+            incentive: incentiveValue,
+            lastFeedUpdateId: module.pricefeed.getLatestUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLatestUpdateTimestamp(),
+            timestamp: now
+        });
+        LOGGER.logRedeemRequested(msg.sender, now, numShares);
+        return newId;
     }
 
     /// Pre: Anyone can trigger this function; Id of request that is pending
@@ -349,16 +364,33 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         Request request = requests[requestId];
         uint256 actualValue = request.numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
         request.request_status = RequestStatus.executed;
-        assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
-        if (isGreaterOrEqualThan(request.offeredValue, actualValue)) { // Limit Order is OK
-            // Create Shares
+        if (isSubscribe(requests[requestId].request_status) &&
+            isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+        ) { // Limit Order is OK
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
             assert(MELON_CONTRACT.transferFrom(request.owner, this, actualValue)); // Value tranfer
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue.sub(actualValue))); // Return remainder
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue.sub(actualValue))); // Return remainder
             createShares(msg.sender, request.numShares); // Accounting
-        } else { // Outside limit; cancel order and return funds
-            // Cancel Request
-            MELON_CONTRACT.transfer(request.owner, request.offeredValue);
+        } else if (isRedeem(requests[requestId].request_status) &&
+            isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+        ) {// Limit Order is OK
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
+            // No remainder to return
+            annihilateShares(msg.sender, request.numShares); // Accounting
         }
+    }
+
+    function cancelRequest(uint requestId)
+        pre_cond(isSubscribe(requests[requestId].request_status) ||
+            isRedeem(requests[requestId].request_status))
+        pre_cond(requests[requestId].owner == msg.sender ||
+            isDecommissioned)
+    {
+        Request request = requests[requestId];
+        request.request_status = RequestStatus.cancelled;
+        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
+        assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue));
     }
 
     /// Pre: Recipient owns shares
