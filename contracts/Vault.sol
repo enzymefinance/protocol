@@ -22,6 +22,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // TYPES
 
+    enum RequestStatus {
+        subscribe,
+        redeem,
+        executed
+    }
+
     enum OrderStatus {
         open,
         closed,
@@ -49,7 +55,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     struct Request { // subscription request
         address owner;
-        bool    isPending;
+        RequestStatus request_status;
         uint256 numShares;
         uint256 offeredValue;
         uint256 incentive;
@@ -113,6 +119,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
+    function isSubscribe(RequestStatus x) internal returns (bool) { return x == RequestStatus.subscribe; }
+    function isRedeem(RequestStatus x) internal returns (bool) { return x == RequestStatus.redeem; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
         internal returns (bool)
@@ -284,25 +292,48 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
         uint256 newId = nextRequestId();
-        requests[newId] = Request(
-            msg.sender,
-            true,
-            numShares,
-            offeredValue,
-            incentiveValue,
-            module.pricefeed.getLatestUpdateId(),
-            module.pricefeed.getLatestUpdateTimestamp(),
-            now
-        );
+        requests[newId] = Request({
+            owner: msg.sender,
+            request_status: RequestStatus.subscribe,
+            numShares: numShares,
+            offeredValue: offeredValue,
+            incentive: incentiveValue,
+            lastFeedUpdateId: module.pricefeed.getLatestUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLatestUpdateTimestamp(),
+            timestamp: now
+        });
         LOGGER.logSubscribeRequested(msg.sender, now, numShares);
         return newId;
+    }
+
+    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
+    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// Post: Pending subscription Request
+
+    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
+    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
+    function redeem(
+        uint256 numShares,
+        uint256 requestedValue,
+        uint256 incentiveValue
+      )
+        public
+        pre_cond(isPastZero(numShares))
+        pre_cond(module.participation.isRedeemRequestPermitted(
+            msg.sender,
+            numShares,
+            requestedValue
+        ))
+    {
+        // TODO insert function body
     }
 
     /// Pre: Anyone can trigger this function; Id of request that is pending
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
         public
-        pre_cond(requests[requestId].isPending)
+        pre_cond(isSubscribe(requests[requestId].request_status) ||
+            isRedeem(requests[requestId].request_status))
         pre_cond(isGreaterOrEqualThan(
                 now,
                 requests[requestId].timestamp.add(module.pricefeed.getInterval())
@@ -317,7 +348,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Time and updates have passed
         Request request = requests[requestId];
         uint256 actualValue = request.numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
-        request.isPending = false;
+        request.request_status = RequestStatus.executed;
         assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
         if (isGreaterOrEqualThan(request.offeredValue, actualValue)) { // Limit Order is OK
             // Create Shares
@@ -328,22 +359,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             // Cancel Request
             MELON_CONTRACT.transfer(request.owner, request.offeredValue);
         }
-    }
-
-    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
-    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    function redeem(uint256 numShares, uint256 requestedValue)
-        pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemRequestPermitted(
-          msg.sender,
-          numShares,
-          requestedValue
-        ))
-    {
-        uint256 actualValue = numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
-        assert(requestedValue <= actualValue); // Sanity Check
-        assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
-        annihilateShares(msg.sender, numShares); // Accounting
     }
 
     /// Pre: Recipient owns shares
