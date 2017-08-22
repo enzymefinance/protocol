@@ -23,11 +23,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // TYPES
 
     enum RequestStatus {
-        subscribe,
-        redeem,
+        open,
         cancelled,
         executed
     }
+     enum RequestType {
+        subscribe,
+        redeem
+     }
 
     enum OrderStatus {
         open,
@@ -56,7 +59,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     struct Request { // subscription request
         address owner;
-        RequestStatus request_status;
+        RequestStatus requestStatus;
+        RequestType requestType;
         uint256 numShares;
         uint256 offeredOrRequestedValue;
         uint256 incentive;
@@ -106,10 +110,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Information public info;
     Modules public module;
     mapping (uint256 => Request) public requests;
-    uint256 lastRequestId;
+    uint256 public lastRequestId;
     mapping (uint256 => Order) public orders;
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
-    uint256 lastOrderId;
+    uint256 public lastOrderId;
     Calculations public atLastPayout;
     bool public isDecommissioned;
 
@@ -121,8 +125,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
     function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
-    function isSubscribe(RequestStatus x) internal returns (bool) { return x == RequestStatus.subscribe; }
-    function isRedeem(RequestStatus x) internal returns (bool) { return x == RequestStatus.redeem; }
+    function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
+    function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
         internal returns (bool)
@@ -157,7 +161,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint256 nav = calcNav(gav, unclaimedRewards);
-        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : getBaseUnitsPerShare(); // Handle potential division through zero by defining a default value
+        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : 1; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
@@ -246,7 +250,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address ofLogger
     ) {
         LOGGER = Logger(ofLogger);
-        LOGGER.addPermission(this);
         owner = ofManager;
         name = withName;
         symbol = withSymbol;
@@ -264,7 +267,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        // Init module struct
         module.pricefeed = DataFeedInterface(ofDataFeed);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         require(module.pricefeed.isSet(MELON_ASSET));
@@ -296,7 +298,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 newId = nextRequestId();
         requests[newId] = Request({
             owner: msg.sender,
-            request_status: RequestStatus.subscribe,
+            requestStatus: RequestStatus.open,
+            requestType: RequestType.subscribe,
             numShares: numShares,
             offeredOrRequestedValue: offeredValue,
             incentive: incentiveValue,
@@ -331,7 +334,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 newId = nextRequestId();
         requests[newId] = Request({
             owner: msg.sender,
-            request_status: RequestStatus.redeem,
+            requestStatus: RequestStatus.open,
+            requestType: RequestType.redeem,
             numShares: numShares,
             offeredOrRequestedValue: requestedValue,
             incentive: incentiveValue,
@@ -347,8 +351,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
         public
-        pre_cond(isSubscribe(requests[requestId].request_status) ||
-            isRedeem(requests[requestId].request_status))
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
                 now,
                 requests[requestId].timestamp.add(module.pricefeed.getInterval())
@@ -363,15 +367,15 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Time and updates have passed
         Request request = requests[requestId];
         uint256 actualValue = request.numShares.mul(calcSharePrice()); // denominated in [base unit of MELON_ASSET]
-        request.request_status = RequestStatus.executed;
-        if (isSubscribe(requests[requestId].request_status) &&
+        request.requestStatus = RequestStatus.executed;
+        if (isSubscribe(requests[requestId].requestType) &&
             isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) { // Limit Order is OK
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
-            assert(MELON_CONTRACT.transferFrom(request.owner, this, actualValue)); // Value tranfer
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue.sub(actualValue))); // Return remainder
-            createShares(msg.sender, request.numShares); // Accounting
-        } else if (isRedeem(requests[requestId].request_status) &&
+            uint remainder = request.offeredOrRequestedValue.sub(actualValue);
+            if(remainder > 0) assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
+            createShares(request.owner, request.numShares); // Accounting
+        } else if (isRedeem(requests[requestId].requestType) &&
             isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) {// Limit Order is OK
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
@@ -382,13 +386,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function cancelRequest(uint requestId)
-        pre_cond(isSubscribe(requests[requestId].request_status) ||
-            isRedeem(requests[requestId].request_status))
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
         pre_cond(requests[requestId].owner == msg.sender ||
             isDecommissioned)
     {
         Request request = requests[requestId];
-        request.request_status = RequestStatus.cancelled;
+        request.requestStatus = RequestStatus.cancelled;
         assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
         assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue));
     }

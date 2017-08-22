@@ -22,13 +22,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // FIELDS
 
-    // Constant fields
-    /// Note: Frequency is purely self imposed and for information purposes only
-    uint constant INTERVAL = 120; // Frequency of updates in seconds
-    uint constant VALIDITY = 60; // Time in seconds data is considered valid
     // Fields that are only changed in constructor
     /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
     address public QUOTE_ASSET; // Is the quote asset of a portfolio against which all other assets are priced against
+    /// Note: Interval is purely self imposed and for information purposes only
+    uint public INTERVAL; // Frequency of updates in seconds
+    uint public VALIDITY; // Time in seconds data is considered valid
     // Fields that can be changed by functions
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
     uint256 public lastUpdateId;
@@ -143,9 +142,13 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// Pre: Define and register a quote asset against which all prices are measured/based against
     /// Post: Price Feed contract w Backup Owner
     function DataFeed(
-        address ofQuoteAsset // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        uint interval,
+        uint validity
     ) {
         QUOTE_ASSET = ofQuoteAsset;
+        INTERVAL = interval;
+        VALIDITY = validity;
     }
 
     /// Pre: Only Owner; Same sized input arrays
@@ -163,7 +166,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         uint256 prevId = lastUpdateId;
         uint256 newId = nextId();
         for (uint i = 0; i < ofAssets.length; ++i) {
-            assert(dataHistory[prevId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
+//            assert(dataHistory[prevId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
             dataHistory[newId][ofAssets[i]] = Data({
                 timestamp: now,
                 price: newPrices[i]

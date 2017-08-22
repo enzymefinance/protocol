@@ -13,18 +13,18 @@ contract Logger is DBC, Permissioned {
     }
 
     // Vault logs
-    event SubscribedRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
+    event SubscribeRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
     function logSubscribeRequested(address byParticipant, uint256 atTimestamp, uint256 numShares)
         pre_cond(isPermitted(msg.sender))
     {
-        SubscribedRequest(msg.sender, byParticipant, atTimestamp, numShares);
+        SubscribeRequest(msg.sender, byParticipant, atTimestamp, numShares);
     }
 
-    event RedeemedRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
+    event RedeemRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
     function logRedeemRequested(address byParticipant, uint256 atTimestamp, uint256 numShares)
         pre_cond(isPermitted(msg.sender))
     {
-        RedeemedRequest(msg.sender, byParticipant, atTimestamp, numShares);
+        RedeemRequest(msg.sender, byParticipant, atTimestamp, numShares);
     }
 
     event Subscribed(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
