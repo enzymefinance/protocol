@@ -16,7 +16,8 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           ERC20   haveToken,
           ERC20   wantToken,
           uint    haveAmount,
-          uint    wantAmount
+          uint    wantAmount,
+          uint    referencePrice
       )
           returns (bool)
       {
@@ -28,6 +29,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           ERC20   wantToken,
           uint    haveAmount,
           uint    wantAmount,
+          uint    referencePrice,
           address orderOwner
       )
           returns (bool)

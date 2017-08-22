@@ -6,7 +6,7 @@ import './exchange/ExchangeInterface.sol';
 
 /// @title Vault Protocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying Vault Contract
+/// @notice This is to be considered as an interface on how to access the underlying Vault Contract
 contract VaultInterface is AssetInterface {
 
     // CONSTANT METHODS
