@@ -34,7 +34,7 @@ contract('Vault', (accounts) => {
     pricefeed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await pricefeed.update(
       [ethToken.address, eurToken.address, mlnToken.address],
-      [1000000000000000000, 5091131249363608, 226244343891402714], // Mock data
+      [1000000000000000000, 5091131249363608, 226244343891402714], // mock data
     );
     exchange = await Exchange.deployed();
     participation = await Participation.deployed();
