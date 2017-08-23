@@ -300,4 +300,23 @@ contract SimpleMarket is EventfulMarket {
 
         success = true;
     }
+
+    // returns sparse arrays
+   	function getOpenOffers(uint start)
+        constant
+        returns (uint[1024] sellAmts, uint[1024] sellTokens,
+                uint[1024] buyAmts, uint[1024] buyTokens,
+                address[1024] owners, uint[1024] timestamps)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii > last_offer_id) break;
+            if(!offers[ii].active) continue;
+            sellAmts[ii] = offers[ii].sell_how_much;
+            sellTokens[ii] = offers[ii].sell_which_token;
+            buyAmts[ii] = offers[ii].buy_how_much;
+            buyTokens[ii] = offers[ii].buy_which_token;
+            owners[ii] = offers[ii].owner;
+            timestamps[ii] = offers[ii].timestamp;
+        }
+    }
 }
