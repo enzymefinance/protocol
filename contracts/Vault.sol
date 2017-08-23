@@ -278,6 +278,15 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         });
     }
 
+    // NON-CONSTANT METHODS - ADMINISTRATION
+
+    function increaseStake () {}
+    function decreaseStake () {}
+    function getStake() constant returns (uint256) {}
+    function toogleSubscription() {}
+    function toogleRedeemal() {}
+
+
     // NON-CONSTANT METHODS - PARTICIPATION
 
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]

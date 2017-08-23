@@ -13,13 +13,19 @@ contract ParticipationInterface {
         address owner,
         uint256 numShares,
         uint256 offeredValue
-    ) constant returns (bool) {}
+    )
+        constant
+        returns (bool)
+    {}
     /// Pre: Request ID
     /// Post: Boolean whether permitted or not
     function isRedeemRequestPermitted(
         address owner,
         uint256 numShares,
         uint256 requestedValue
-    ) constant returns (bool) {}
+    )
+        constant
+        returns (bool)
+    {}
 
 }
