@@ -12,6 +12,7 @@ import '../dependencies/Logger.sol';
 contract Version is DBC, Owned {
 
     // TYPES
+
     enum Status {
         setup,
         funding,
@@ -20,6 +21,7 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
+
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public ASSET_REGISTRAR; // Address of Asset Registrar contract
@@ -35,12 +37,38 @@ contract Version is DBC, Owned {
 
     event VaultUpdated(uint id);
 
+    // PRE, POST, INVARIANT CONDITIONS
+
+    function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastVaultId; }
+
     // CONSTANT METHODS
 
     function getVault(uint id) constant returns (address) { return vaults[id]; }
     function hasVault(address mgr) constant returns (bool) {return managers[id].length > 0}
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
+    function getVault(uint id) constant returns (address) { return vaults[id]; }
+    /// @returns list of all Vaults address is invested in
+    /// @returns list of all numbers of Shares address holds in Vault
+    /// @returns list of all decimals of this Vault
+    function getSubscriptionHistory(address ofAddress, uint withStartId)
+        constant
+        pre_cond(isHistory(withStartId))
+        returns (address[1024], uint256[1024], uint256[1024])
+    {
+        address[1024] memory vaults;
+        uint[1024] memory holdings;
+        uint[1024] memory decimals;
+        for (uint256 indexCounter = 0; indexCounter < 1024; ++i) {
+            if (withStartId + indexCounter > lastVaultId) break;
+            vaults[indexCounter] = getVault(indexCounter);
+            VaultInterface Vault = VaultInterface(vaults[indexCounter]);
+            holdings[indexCounter] = Vault.balanceOf(msg.sender);
+            decimals[indexCounter] = Vault.getDecimals();
+        }
+        return (vaults, holdings, decimals);
+    }
+
 
     // NON-CONSTANT INTERNAL METHODS
 
@@ -49,6 +77,7 @@ contract Version is DBC, Owned {
     }
 
     // NON-CONSTANT METHODS
+
     function Version(
         address ofMelonAsset,
         address ofAssetRegistrar,
