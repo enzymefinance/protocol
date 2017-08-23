@@ -302,7 +302,7 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // returns sparse arrays
-   	function getOpenOffers(uint start)
+    function getOpenOffers(uint start)
         constant
         returns (uint[1024] sellAmts, uint[1024] sellTokens,
                 uint[1024] buyAmts, uint[1024] buyTokens,
