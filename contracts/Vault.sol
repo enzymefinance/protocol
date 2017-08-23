@@ -48,7 +48,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     struct Information {
-        VaultStatus vaultStatus;
+        address owner;
+        string name;
+        string symbol;
+        uint decimals;
+        uint created;
+        VaultStatus status;
     }
 
     struct Modules { // Can't be changed by Owner
@@ -282,6 +287,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             sharePrice: MELON_BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
+        });
+        info = Information({
+            owner: owner;
+            name: name;
+            symbol: symbol;
+            decimals: decimals;
+            created: now;
+            status: VaultStatus.setup;
         });
     }
 
@@ -609,4 +622,47 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         LOGGER.logRewardsConverted(now, numShares, unclaimedRewards);
         LOGGER.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
+	// CONSTANT METHODS
+	function getRequestHistory(uint start)
+		constant
+		returns (
+			address[1024] owners, bool[1024] open, uint[1024] numShares,
+			uint[1024] offered, uint[1024] incentive, uint[1024] lastFeedId,
+			uint[1024] lastFeedTime, uint[1024] timestamp
+		)
+	{
+		for(uint ii = 0; ii < 1024; ii++){
+			if(start + ii > lastRequestId) break;
+			owners[ii] = requests[start + ii].owner;
+			open[ii] = requests[start + ii].isOpen;
+			numShares[ii] = requests[start + ii].numShares;
+			offered[ii] = requests[start + ii].offeredValue;
+			incentive[ii] = requests[start + ii].incentive;
+			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
+			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
+			timestamp[ii] = requests[start + ii].timestamp;
+		}
+	}
+/*
+	function getOrderHistory(uint start)
+		constant
+		returns (
+			uint[1024] sellQuantity, address[1024] sellToken,
+			uint[1024] buyQuantity, address[1024] buyToken,
+			uint[1024] timestamp, uint[1024] statuses,
+			uint[1024] buyQuantityFilled
+		)
+	{
+		for(uint ii = 0; ii < 1024; ii++){
+			if(start + ii > lastUpdateId) break;
+			sellQuantity[ii] = orders[start + ii].sell_quantity;
+			sellToken[ii] = orders[start + ii].sell_which_token;
+			buyQuantity[ii] = orders[start + ii].buy_quantity;
+			buyToken[ii] = orders[start + ii].buy_which_token;
+			timestamp[ii] = orders[start + ii].timestamp;
+			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
+			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
+		}
+	}
+	*/
 }

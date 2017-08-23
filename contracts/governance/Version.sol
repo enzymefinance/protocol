@@ -27,6 +27,7 @@ contract Version is DBC, Owned {
     address public LOGGER;
     Logger logger;
     // Fields that can be changed by functions
+    mapping (address => uint[]) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
     uint public lastVaultId;
 
@@ -36,9 +37,10 @@ contract Version is DBC, Owned {
 
     // CONSTANT METHODS
 
+    function getVault(uint id) constant returns (address) { return vaults[id]; }
+    function hasVault(address mgr) constant returns (bool) {return managers[id].length > 0}
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint id) constant returns (address) { return vaults[id]; }
 
     // NON-CONSTANT INTERNAL METHODS
 
@@ -85,6 +87,8 @@ contract Version is DBC, Owned {
         ));
         id = next_id();
         vaults[id] = vault;
+        uint[] managedIds = managers[msg.sender];
+        managers[msg.sender] = managedVaults.push(id);
         logger.addPermission(vault);
     }
 
@@ -95,5 +99,15 @@ contract Version is DBC, Owned {
         // TODO also refund and selfdestruct vault contract
         delete vaults[id];
         VaultUpdated(id);
+    }
+
+   	function getVaults(uint start)
+        constant
+        returns (address[1024] allVaults)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii > lastVaultId) break;
+            allVaults[ii] = vaults[ii];
+        }
     }
 }
