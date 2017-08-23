@@ -41,6 +41,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     enum VaultStatus {
         setup,
         funding,
+        staking,
         managing,
         locked,
         payout
@@ -128,6 +129,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
+    function noOpenOrders() internal returns (bool) {
+        for (uint256 i = 0; i < MAX_OPEN_ORDERS; ++i) {
+            if (openOrderIds[i] != 0) return false;
+        }
+        return true;
+    }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
         internal returns (bool)
@@ -280,10 +287,34 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // NON-CONSTANT METHODS - ADMINISTRATION
 
-    function increaseStake () {}
-    function decreaseStake () {}
-    function getStake() constant returns (uint256) {}
+    function increaseStake(uint256 numShares)
+        pre_cond(isOwner())
+        pre_cond(isPastZero(numShares))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(noOpenOrders())
+        post_cond(prevTotalSupply == totalSupply)
+    {
+        uint256 prevTotalSupply = totalSupply;
+        subShares(msg.sender, numShares);
+        addShares(this, numShares);
+    }
+
+    function decreaseStake(uint256 numShares)
+        pre_cond(isOwner())
+        pre_cond(isPastZero(numShares))
+        pre_cond(balancesOfHolderAtLeast(this, numShares))
+        pre_cond(noOpenOrders())
+        post_cond(prevTotalSupply == totalSupply)
+    {
+        uint256 prevTotalSupply = totalSupply;
+        subShares(this, numShares);
+        addShares(msg.sender, numShares);
+    }
+
+    function getStake() constant returns (uint256) { return balanceOf(this); }
+
     function toogleSubscription() {}
+
     function toogleRedeemal() {}
 
 
@@ -547,6 +578,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
+        pre_cond(noOpenOrders())
     {
         // TODO Assert that all open orders are closed
         var (
