@@ -11,10 +11,7 @@ const rpc = require('../utils/rpc.js');
 
 const assert = chai.assert;
 
-contract('Vault', (accounts) => {
-  const premined = Math.pow(10, 28);
-  const decimals = 18;
-  const owner = accounts[0];
+contract('Vault shares', (accounts) => {
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
   let ethToken;
@@ -41,7 +38,7 @@ contract('Vault', (accounts) => {
     riskManagement = await RiskMgmt.deployed();
     logger = await Logger.deployed();
     vault = await Vault.new(
-      owner,
+      accounts[0],
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       18,                 // share decimals
@@ -52,7 +49,7 @@ contract('Vault', (accounts) => {
       exchange.address,
       riskManagement.address,
       logger.address,
-      { from: owner },
+      { from: accounts[0] },
     );
     participation.list(investor);   // whitelist investor
     logger.addPermission(vault.address);

@@ -501,7 +501,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
         bool success = module.exchange.buy(id, wantedBuyAmount);
-        uint256 newId = nextOrderId();
+        uint256 newId = nextOrderId();  //XXX: why does this make a new ID?
         orders[newId] = Order({
             haveToken: offeredBuyToken,
             wantToken: offeredSellToken,
