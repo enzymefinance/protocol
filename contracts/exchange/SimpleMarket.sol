@@ -124,10 +124,8 @@ contract SimpleMarket is EventfulMarket {
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token)
         internal
     {
-        var seller_paid_out = buy_which_token.transferFrom(buyer, seller, buy_how_much);
-        assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer(buyer, sell_how_much);
-        assert(buyer_paid_out);
+        assert(buy_which_token.transferFrom(buyer, seller, buy_how_much));
+        assert(sell_which_token.transfer(buyer, sell_how_much));
         Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 

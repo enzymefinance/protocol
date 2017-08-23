@@ -11,10 +11,7 @@ const rpc = require('../utils/rpc.js');
 
 const assert = chai.assert;
 
-contract('Vault', (accounts) => {
-  const premined = Math.pow(10, 28);
-  const decimals = 18;
-  const owner = accounts[0];
+contract('Vault shares', (accounts) => {
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
   let ethToken;
@@ -41,7 +38,7 @@ contract('Vault', (accounts) => {
     riskManagement = await RiskMgmt.deployed();
     logger = await Logger.deployed();
     vault = await Vault.new(
-      owner,
+      accounts[0],
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       18,                 // share decimals
@@ -52,11 +49,20 @@ contract('Vault', (accounts) => {
       exchange.address,
       riskManagement.address,
       logger.address,
-      { from: owner },
+      { from: accounts[0] },
     );
     participation.list(investor);   // whitelist investor
     logger.addPermission(vault.address);
   });
+
+  // convenience function
+  async function simulateFeedUpdate() {
+    await rpc.mineBlock();
+    await pricefeed.update(
+      [ethToken.address, eurToken.address, mlnToken.address],
+      [10 ** 18, 10 ** 18, 10 ** 18],
+    );
+  }
 
   describe('#createShares()', () => {
     const numShares = 10000;
@@ -82,16 +88,8 @@ contract('Vault', (accounts) => {
       });
     });
     it('allows execution of subscribe request', async () => {
-      await rpc.mineBlock();
-      await pricefeed.update(
-        [ethToken.address, eurToken.address, mlnToken.address],
-        [10 ** 18, 10 ** 18, 10 ** 18], // Mock data
-      );   // pass update number check
-      await rpc.mineBlock();
-      await pricefeed.update(
-        [ethToken.address, eurToken.address, mlnToken.address],
-        [10 ** 18, 10 ** 18, 10 ** 18], // Mock data
-      );
+      await simulateFeedUpdate();
+      await simulateFeedUpdate();
       const id = await vault.lastRequestId();
       await vault.executeRequest(id);
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
@@ -105,11 +103,7 @@ contract('Vault', (accounts) => {
       });
     });
     it('performs calculation correctly', async () => {
-      await rpc.mineBlock();
-      await pricefeed.update(
-        [ethToken.address, eurToken.address, mlnToken.address],
-        [10 ** 18, 10 ** 18, 10 ** 18], // Mock data
-      );
+      await simulateFeedUpdate();
       const [gav, , , unclaimedRewards, nav, sharePrice] =
         await vault.performCalculations();
       assert.equal(gav.toNumber(), offeredValue);
@@ -119,30 +113,39 @@ contract('Vault', (accounts) => {
     });
   });
 
-  describe.skip('#annihilateShares()', () => {
+  describe('#annihilateShares()', () => {
     const numShares = 10000;
-    const resShares = 0;
     const requestedValue = 10000;
-    it('annihilates shares of vault with reference asset', async (done) => {
-      await ethToken.approve(vault.address, requestedValue, { from: investor });
-      await vault.redeem(numShares, requestedValue, { from: investor });
-      assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
-      done();
+    const incentive = 100;
+    it('investor receives token from liquidity provider', async () => {
+      await mlnToken.transfer(investor, requestedValue + incentive, { from: liquidityProvider });
+      assert.equal((await mlnToken.balanceOf(investor)).toNumber(), requestedValue + incentive);
     });
-    it('Logs redemption', () => {
+    it('allows redeem request', async () => {
+      await mlnToken.approve(vault.address, requestedValue + incentive, { from: investor });
+      await vault.redeem(numShares, requestedValue, incentive, { from: investor });
+    });
+    it('annihilates shares and returns funds on redeem execution', async () => {
+      await simulateFeedUpdate(); // fake 2 new blocks and updates
+      await simulateFeedUpdate();
+      const id = await vault.lastRequestId();
+      await vault.executeRequest(id);
+      assert.equal((await vault.balanceOf(investor)).toNumber(), 0);
+    });
+    it('logs redemption', () => {
       const redeemEvent = logger.Redeemed();
       redeemEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
       });
     });
-    it('Performs calculations correctly', async () => {
+    it('performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =
         await vault.performCalculations();
       assert.equal(gav.toNumber(), 0);
       assert.equal(unclaimedRewards.toNumber(), 0);
       assert.equal(nav.toNumber(), 0);
-      assert.equal(sharePrice.toNumber(), Math.pow(10, decimals));
+      assert.equal(sharePrice.toNumber(), 10 ** 18);
     });
   });
 });

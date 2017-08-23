@@ -380,11 +380,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             createShares(request.owner, request.numShares); // Accounting
         } else if (isRedeem(requests[requestId].requestType) &&
             isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
-        ) {// Limit Order is OK
+        ) {
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
-            assert(MELON_CONTRACT.transfer(msg.sender, actualValue)); // Transfer value
-            // No remainder to return
-            annihilateShares(msg.sender, request.numShares); // Accounting
+            assert(MELON_CONTRACT.transfer(request.owner, actualValue)); // Transfer value
+            annihilateShares(request.owner, request.numShares); // Accounting
         }
     }
 
@@ -421,17 +420,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         LOGGER.logRedeemed(msg.sender, now, numShares);
     }
 
-    function createShares(address recipient, uint256 numShares)
-        internal
-    {
+    function createShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.add(numShares);
         addShares(recipient, numShares);
         LOGGER.logSubscribed(msg.sender, now, numShares);
     }
 
-    function annihilateShares(address recipient, uint256 numShares)
-        internal
-    {
+    function annihilateShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.sub(numShares);
         subShares(recipient, numShares);
         LOGGER.logRedeemed(msg.sender, now, numShares);
@@ -506,7 +501,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
         bool success = module.exchange.buy(id, wantedBuyAmount);
-        uint256 newId = nextOrderId();
+        uint256 newId = nextOrderId();  //XXX: why does this make a new ID?
         orders[newId] = Order({
             haveToken: offeredBuyToken,
             wantToken: offeredSellToken,
