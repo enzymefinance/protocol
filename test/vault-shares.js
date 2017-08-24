@@ -90,7 +90,7 @@ contract('Vault shares', (accounts) => {
     it('allows execution of subscribe request', async () => {
       await simulateFeedUpdate();
       await simulateFeedUpdate();
-      const id = await vault.lastRequestId();
+      const id = await vault.getLastRequestId();
       await vault.executeRequest(id);
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
@@ -128,7 +128,7 @@ contract('Vault shares', (accounts) => {
     it('annihilates shares and returns funds on redeem execution', async () => {
       await simulateFeedUpdate(); // fake 2 new blocks and updates
       await simulateFeedUpdate();
-      const id = await vault.lastRequestId();
+      const id = await vault.getLastRequestId();
       await vault.executeRequest(id);
       assert.equal((await vault.balanceOf(investor)).toNumber(), 0);
     });

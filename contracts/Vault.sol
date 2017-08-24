@@ -73,7 +73,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     struct Request { // subscription request
         address owner;
         RequestStatus status;
-        RequestType type;
+        RequestType requestType;
         uint256 numShares;
         uint256 offeredOrRequestedValue;
         uint256 incentive;
@@ -125,10 +125,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Information public info;
     Modules public module;
     mapping (uint256 => Request) public requests;
-    uint256 public lastRequestId;
+    uint256 public nextRequestId;
     mapping (uint256 => Order) public orders;
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
-    uint256 public lastOrderId;
+    uint256 public nextOrderId;
     Calculations public atLastPayout;
     bool public isDecommissioned;
     mapping (address => uint) public previousHoldings;
@@ -167,6 +167,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function getVaultBaseUnits() constant returns (uint256) { return VAULT_BASE_UNITS; }
     function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
+    function getLastRequestId() constant returns (uint) {
+        require(nextRequestId > 0);
+        return nextRequestId - 1;
+    }
+    function getLastOrderId() constant returns (uint) {
+        require(nextOrderId > 0);
+        return nextOrderId - 1;
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -281,11 +289,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         //return prev.soldToken - totalSoldToken*xx >= ERC20(ofSold).balanceOf(this)
     }
 
-    // NON-CONSTANT INTERNAL METHODS
-
-    function nextRequestId() internal returns (uint) { lastRequestId++; return lastRequestId; }
-    function nextOrderId() internal returns (uint) { lastOrderId++; return lastOrderId; }
-
     // NON-CONSTANT METHODS
 
     function Vault(
@@ -327,12 +330,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             timestamp: now
         });
         info = Information({
-            owner: owner;
-            name: name;
-            symbol: symbol;
-            decimals: decimals;
-            created: now;
-            status: VaultStatus.setup;
+            owner: owner,
+            name: name,
+            symbol: symbol,
+            decimals: decimals,
+            created: now,
+            status: VaultStatus.setup
         });
     }
 
@@ -389,20 +392,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns(uint256)
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
-        uint256 newId = nextRequestId();
-        requests[newId] = Request({
+        uint thisId = nextRequestId;
+        requests[thisId] = Request({
             owner: msg.sender,
             status: RequestStatus.open,
-            type: RequestType.subscribe,
+            requestType: RequestType.subscribe,
             numShares: numShares,
             offeredOrRequestedValue: offeredValue,
             incentive: incentiveValue,
-            lastFeedUpdateId: module.pricefeed.getLatestUpdateId(),
-            lastFeedUpdateTime: module.pricefeed.getLatestUpdateTimestamp(),
+            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
         LOGGER.logSubscribeRequested(msg.sender, now, numShares);
-        return newId;
+        nextRequestId++;
+        return thisId;
     }
 
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
@@ -425,35 +429,36 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ))
         returns (uint256)
     {
-        uint256 newId = nextRequestId();
-        requests[newId] = Request({
+        uint thisId = nextRequestId;
+        requests[thisId] = Request({
             owner: msg.sender,
             status: RequestStatus.open,
-            type: RequestType.redeem,
+            requestType: RequestType.redeem,
             numShares: numShares,
             offeredOrRequestedValue: requestedValue,
             incentive: incentiveValue,
-            lastFeedUpdateId: module.pricefeed.getLatestUpdateId(),
-            lastFeedUpdateTime: module.pricefeed.getLatestUpdateTimestamp(),
+            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
+        nextRequestId++;
         LOGGER.logRedeemRequested(msg.sender, now, numShares);
-        return newId;
+        return thisId;
     }
 
     /// Pre: Anyone can trigger this function; Id of request that is pending
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
         public
-        pre_cond(isSubscribe(requests[requestId].type) ||
-            isRedeem(requests[requestId].type))
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
                 now,
                 requests[requestId].timestamp.add(module.pricefeed.getInterval())
             ) || isDecommissioned
         )
         pre_cond(isGreaterOrEqualThan(
-                module.pricefeed.getLatestUpdateId(),
+                module.pricefeed.getLastUpdateId(),
                 requests[requestId].lastFeedUpdateId + 2
             ) || isDecommissioned
         )
@@ -462,14 +467,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         Request request = requests[requestId];
         uint256 actualValue = request.numShares.mul(calcSharePrice()).div(getVaultBaseUnits()); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
-        if (isSubscribe(requests[requestId].type) &&
+        if (isSubscribe(requests[requestId].requestType) &&
             isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) { // Limit Order is OK
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
             uint remainder = request.offeredOrRequestedValue.sub(actualValue);
             if(remainder > 0) assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
             createShares(request.owner, request.numShares); // Accounting
-        } else if (isRedeem(requests[requestId].type) &&
+        } else if (isRedeem(requests[requestId].requestType) &&
             isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) {
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
@@ -479,8 +484,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function cancelRequest(uint requestId)
-        pre_cond(isSubscribe(requests[requestId].type) ||
-            isRedeem(requests[requestId].type))
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
         pre_cond(requests[requestId].owner == msg.sender ||
             isDecommissioned)
     {
@@ -554,8 +559,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     {
         approveSpending(haveToken, haveAmount);
         id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
-        uint256 newId = nextOrderId();
-        orders[newId] = Order({
+        orders[nextOrderId] = Order({
             haveToken: haveToken,
             wantToken: wantToken,
             haveAmount: haveAmount,
@@ -565,21 +569,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             orderType: OrderType.make,
             quantity_filled: 0
         });
+        nextOrderId++;
     }
 
     function getOpenOrderExposure(address ofAsset) constant returns(uint amt) {
         for(uint i; i < openOrderIds.length; i++){
-            Order thisOrder = orders(openOrderIds[i]);
-            if(thisOrder.haveToken == ofAsset)
-                amt = amt + thisOrder.haveAmt;
+            Order thisOrder = orders[openOrderIds[i]];
+            if(thisOrder.haveToken == ofAsset) amt = amt + thisOrder.haveAmount;
         }
     }
 
     function getExpectedSettlement(address ofAsset) constant returns(uint amt) {
         for(uint i; i < openOrderIds.length; i++){
-            Order thisOrder = orders(openOrderIds[i]);
+            Order thisOrder = orders[openOrderIds[i]];
             if(thisOrder.wantToken == ofAsset)
-                amt = amt + thisOrder.wantAmt;
+                amt = amt + thisOrder.wantAmount;
         }
     }
 
@@ -609,8 +613,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
         bool success = module.exchange.buy(id, wantedBuyAmount);
-        uint256 newId = nextOrderId();
-        orders[newId] = Order({
+        orders[nextOrderId] = Order({
             haveToken: offeredBuyToken,
             wantToken: offeredSellToken,
             haveAmount: uint128(offeredBuyAmount),
@@ -620,6 +623,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             orderType: OrderType.take,
             quantity_filled: wantedBuyAmount
         });
+        nextOrderId++;
         return success;
     }
 
@@ -682,18 +686,18 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 	function getRequestHistory(uint start)
 		constant
 		returns (
-			address[1024] owners, bool[1024] statuses, uint[1024] types,
+			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
             uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
 			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
 		)
 	{
 		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii > lastRequestId) break;
+			if(start + ii >= nextRequestId) break;
 			owners[ii] = requests[start + ii].owner;
-			statuses[ii] = requests[start + ii].status;
-			types[ii] = requests[start + ii].type;
+			statuses[ii] = uint(requests[start + ii].status);
+			requestTypes[ii] = uint(requests[start + ii].requestType);
 			numShares[ii] = requests[start + ii].numShares;
-			offered[ii] = requests[start + ii].offeredValue;
+			offered[ii] = requests[start + ii].offeredOrRequestedValue;
 			incentive[ii] = requests[start + ii].incentive;
 			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
 			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
@@ -705,19 +709,19 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 	function getOrderHistory(uint start)
 		constant
 		returns (
-			uint[1024] sellQuantity, address[1024] sellToken,
-			uint[1024] buyQuantity, address[1024] buyToken,
-			uint[1024] timestamp, uint[1024] statuses,
+			uint[1024] haveAmount, address[1024] haveToken,
+			uint[1024] wantAmount, address[1024] wantToken,
+			uint[1024] timestamps, uint[1024] statuses,
 			uint[1024] types, uint[1024] buyQuantityFilled
 		)
 	{
 		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii > lastUpdateId) break;
-			sellQuantity[ii] = orders[start + ii].sell_quantity;
-			sellToken[ii] = orders[start + ii].sell_which_token;
-			buyQuantity[ii] = orders[start + ii].buy_quantity;
-			buyToken[ii] = orders[start + ii].buy_which_token;
-			timestamp[ii] = orders[start + ii].timestamp;
+			if(start + ii >= nextOrderId) break;
+			haveAmount[ii] = orders[start + ii].haveAmount;
+			haveToken[ii] = orders[start + ii].haveToken;
+			wantAmount[ii] = orders[start + ii].wantAmount;
+			wantToken[ii] = orders[start + ii].wantToken;
+			timestamps[ii] = orders[start + ii].timestamp;
 			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
 			types[ii] = uint(orders[start + ii].orderType);
 			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;

@@ -45,11 +45,10 @@ contract('DataFeed', (accounts) => {
       assetA = await feed.getRegisteredAssetAt(0);
       assetB = await feed.getRegisteredAssetAt(1);
     });
-    it('registers pricefeed udpate', async () => {
-      const initialUid = await feed.getLatestUpdateId();
+    it('registers pricefeed update', async () => {
       await feed.update([assetA, assetB], [500, 2000]);
-      const newUid = await feed.getLatestUpdateId();
-      assert.equal(1, newUid.toNumber() - initialUid.toNumber());
+      const newUid = await feed.getLastUpdateId();
+      assert.equal(0, newUid.toNumber());
     });
     it('price updates are valid', async () => {
       validA = await feed.isValid(assetA);
@@ -68,13 +67,13 @@ contract('DataFeed', (accounts) => {
     });
     it('returns first chunk of data history for first asset', async () => {
       [timesA, pricesA] = await feed.getDataHistory(assetA, 0);
-      assert.notEqual(timesA[1].toNumber(), 0);
-      assert.notEqual(pricesA[1].toNumber(), 0);
+      assert.notEqual(timesA[0].toNumber(), 0);
+      assert.notEqual(pricesA[0].toNumber(), 0);
     });
     it('returns first chunk of data history for second asset', async () => {
       [timesB, pricesB] = await feed.getDataHistory(assetB, 0);
-      assert.notEqual(timesB[1].toNumber(), 0);
-      assert.notEqual(pricesB[1].toNumber(), 0);
+      assert.notEqual(timesB[0].toNumber(), 0);
+      assert.notEqual(pricesB[0].toNumber(), 0);
     });
   });
 });

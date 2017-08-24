@@ -31,7 +31,7 @@ contract Version is DBC, Owned {
     // Fields that can be changed by functions
     mapping (address => uint[]) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
-    uint public lastVaultId;
+    uint public nextVaultId;
 
     // EVENTS
 
@@ -39,41 +39,36 @@ contract Version is DBC, Owned {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastVaultId; }
+    function isInHistory(uint id) constant returns (bool) { return 0 <= id && id < nextVaultId; }
 
     // CONSTANT METHODS
 
     function getVault(uint id) constant returns (address) { return vaults[id]; }
-    function hasVault(address mgr) constant returns (bool) {return managers[id].length > 0}
+    function hasVault(address mgr) constant returns (bool) {
+      return managers[mgr].length > 0;
+    }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
-    function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint id) constant returns (address) { return vaults[id]; }
-    /// @returns list of all Vaults address is invested in
-    /// @returns list of all numbers of Shares address holds in Vault
-    /// @returns list of all decimals of this Vault
+    function getNextVaultId() constant returns (uint) { return nextVaultId; }
+
+    // @returns list of all Vaults address is invested in
+    // @returns list of all numbers of Shares address holds in Vault
+    // @returns list of all decimals of this Vault
     function getSubscriptionHistory(address ofAddress, uint withStartId)
         constant
-        pre_cond(isHistory(withStartId))
+        pre_cond(isInHistory(withStartId))
         returns (address[1024], uint256[1024], uint256[1024])
     {
         address[1024] memory vaults;
         uint[1024] memory holdings;
         uint[1024] memory decimals;
-        for (uint256 indexCounter = 0; indexCounter < 1024; ++i) {
-            if (withStartId + indexCounter > lastVaultId) break;
-            vaults[indexCounter] = getVault(indexCounter);
-            VaultInterface Vault = VaultInterface(vaults[indexCounter]);
-            holdings[indexCounter] = Vault.balanceOf(msg.sender);
-            decimals[indexCounter] = Vault.getDecimals();
+        for (uint256 i = 0; i < 1024; ++i) {
+            if (withStartId + i >= nextVaultId) break;
+            vaults[i] = getVault(i);
+            VaultInterface Vault = VaultInterface(vaults[i]);
+            holdings[i] = Vault.balanceOf(msg.sender);
+            decimals[i] = Vault.getDecimals();
         }
         return (vaults, holdings, decimals);
-    }
-
-
-    // NON-CONSTANT INTERNAL METHODS
-
-    function next_id() internal returns (uint) {
-        lastVaultId++; return lastVaultId;
     }
 
     // NON-CONSTANT METHODS
@@ -114,10 +109,9 @@ contract Version is DBC, Owned {
             ofRewards,
             LOGGER
         ));
-        id = next_id();
-        vaults[id] = vault;
-        uint[] managedIds = managers[msg.sender];
-        managers[msg.sender] = managedVaults.push(id);
+        vaults[nextVaultId] = vault;
+        managers[msg.sender].push(nextVaultId);
+        nextVaultId++;
         logger.addPermission(vault);
     }
 
@@ -135,7 +129,7 @@ contract Version is DBC, Owned {
         returns (address[1024] allVaults)
     {
         for(uint ii = 0; ii < 1024; ii++){
-            if(start + ii > lastVaultId) break;
+            if(start + ii >= nextVaultId) break;
             allVaults[ii] = vaults[ii];
         }
     }

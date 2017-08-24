@@ -67,7 +67,7 @@ contract('Vault shares', (accounts) => {
       assert.equal(preMln - sellAmt, postMln);
     });
     it('makes an order with expected parameters', async () => {
-      const id = await vault.lastOrderId();
+      const id = await vault.getLastOrderId();
       const order = await vault.orders(id);
       assert.equal(order[0], mlnToken.address);
       assert.equal(order[1], ethToken.address);
@@ -87,7 +87,7 @@ contract('Vault shares', (accounts) => {
       );
     });
     it('takes 100% of an order, which transfers tokens correctly', async () => {
-      const id = await exchange.last_offer_id();
+      const id = await exchange.getLastOfferId();
       const preMln = await mlnToken.balanceOf(vault.address);
       const preEth = await ethToken.balanceOf(vault.address);
       await vault.takeOrder(id, sellAmt, { from: manager });

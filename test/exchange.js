@@ -16,8 +16,8 @@ contract('SimpleMarket', (accounts) => {
     market = await SimpleMarket.new();
   });
 
-  it('empty market has zero orderId', async () => {
-    const firstId = await market.last_offer_id();
+  it('empty market has zero nexOrderId', async () => {
+    const firstId = await market.nextOfferId();
     assert.equal(firstId.toNumber(), 0);
   });
 
@@ -31,13 +31,13 @@ contract('SimpleMarket', (accounts) => {
     });
 
     it('activates order', async () => {
-      const oid = await market.last_offer_id();
+      const oid = await market.getLastOfferId();
       const active = await market.isActive(oid);
       assert(active);
     });
 
     it('sets owner of order', async () => {
-      const oid = await market.last_offer_id();
+      const oid = await market.getLastOfferId();
       const owner = await market.getOwner(oid);
       assert.equal(accounts[0], owner);
     });
@@ -45,12 +45,12 @@ contract('SimpleMarket', (accounts) => {
 
   describe('#cancel()', () => {
     it('calls without error', async () => {
-      const oid = await market.last_offer_id();
+      const oid = await market.getLastOfferId();
       await market.cancel(oid);
     });
 
     it('deactivates order', async () => {
-      const oid = await market.last_offer_id();
+      const oid = await market.getLastOfferId();
       const active = await market.isActive(oid);
       assert.isFalse(active);
     });
@@ -85,7 +85,7 @@ contract('SimpleMarket', (accounts) => {
         });
 
         it('calls without error, where appropriate', async () => {
-          const oid = await market.last_offer_id();
+          const oid = await market.getLastOfferId();
           assert(market.isActive(oid));
           await ethToken.approve(market.address, test.takeAmt, { from: taker });
           if (test.cond === '>') {
@@ -104,7 +104,7 @@ contract('SimpleMarket', (accounts) => {
         });
 
         it('deactivates order, if filled', async () => {
-          const oid = await market.last_offer_id();
+          const oid = await market.getLastOfferId();
           const active = await market.isActive(oid);
           if (test.cond === '==') {
             assert.isFalse(active);

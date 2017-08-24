@@ -30,15 +30,17 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     uint public VALIDITY; // Time in seconds data is considered valid
     // Fields that can be changed by functions
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
-    uint256 public lastUpdateId;
+    uint256 public nextUpdateId;
     uint256 public lastUpdateTimestamp;
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isDataSet(address ofAsset) internal constant returns (bool) { return dataHistory[lastUpdateId][ofAsset].timestamp > 0; }
-    function isDataValid(address ofAsset) internal constant returns (bool) { return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY; }
+    function isDataSet(address ofAsset) internal constant returns (bool) {
+      return dataHistory[getLastUpdateId()][ofAsset].timestamp > 0;
+    }
+    function isDataValid(address ofAsset) internal constant returns (bool) { return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY; }
     function isEqualLength(address[] x, uint[] y) internal returns (bool) { return x.length == y.length; }
-    function isHistory(uint x) constant returns (bool) { return 0 <= x && x <= lastUpdateId; }
+    function isHistory(uint x) constant returns (bool) { return 0 <= x && x < nextUpdateId; }
 
     // CONSTANT METHODS
 
@@ -46,8 +48,13 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
-    function getLatestUpdateId() constant returns (uint) { return lastUpdateId; }
-    function getLatestUpdateTimestamp() constant returns (uint) { return lastUpdateTimestamp; }
+    function getLastUpdateId() constant returns (uint) { 
+      require(nextUpdateId > 0);
+      return nextUpdateId - 1;
+    }
+    function getLastUpdateTimestamp() constant returns (uint) {
+      return lastUpdateTimestamp;
+    }
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
@@ -56,7 +63,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         uint256 indexCounter;
         uint[1024] memory timestamps;
         uint[1024] memory prices;
-        while (indexCounter != 1024 || withStartId + indexCounter <= lastUpdateId) {
+        while (indexCounter != 1024 || withStartId + indexCounter < nextUpdateId) {
             timestamps[withStartId + indexCounter] =
                 dataHistory[withStartId + indexCounter][ofAsset].timestamp;
             prices[withStartId + indexCounter] =
@@ -74,7 +81,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         pre_cond(isDataSet(ofAsset))
         returns (bool)
     {
-        return now - dataHistory[lastUpdateId][ofAsset].timestamp <= VALIDITY;
+        return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
     }
 
     /// Pre: Asset has been initialised and is active
@@ -85,7 +92,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         pre_cond(isDataValid(ofAsset))
         returns (uint256)
     {
-        return dataHistory[lastUpdateId][ofAsset].price;
+        return dataHistory[getLastUpdateId()][ofAsset].price;
     }
 
     /// Pre: Asset has been initialised and is active
@@ -110,8 +117,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         returns (uint256, uint256)
     {
         return (
-            dataHistory[lastUpdateId][ofAsset].timestamp,
-            dataHistory[lastUpdateId][ofAsset].price
+            dataHistory[getLastUpdateId()][ofAsset].timestamp,
+            dataHistory[getLastUpdateId()][ofAsset].price
         );
     }
 
@@ -129,12 +136,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals)));
             PortfolioContent(ofVault, assetHoldings, assetPrice, assetDecimals);
         }
-    }
-
-    // NON-CONSTANT INTERNAL METHODS
-
-    function nextId() internal returns (uint) {
-        lastUpdateId++; return lastUpdateId;
     }
 
     // NON-CONSTANT PUBLIC METHODS
@@ -157,22 +158,22 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
      *  Let QUOTE_ASSET == ETH (in Wei), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 ETH
      *  and let EUR-T decimals == 8,
-     *  => dataHistory[lastUpdateId][EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
+     *  => dataHistory[getLastUpdateId()][EUR-T].price = 8045678 [Wei/ (EUR-T * 10**8)]
      */
     function update(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())
         pre_cond(isEqualLength(ofAssets, newPrices))
     {
-        uint256 prevId = lastUpdateId;
-        uint256 newId = nextId();
+        uint thisId = nextUpdateId;
         for (uint i = 0; i < ofAssets.length; ++i) {
 //            assert(dataHistory[prevId][ofAssets[i]].timestamp != now); // Intended to prevent several updates w/in one block, eg w different prices
-            dataHistory[newId][ofAssets[i]] = Data({
+            dataHistory[thisId][ofAssets[i]] = Data({
                 timestamp: now,
                 price: newPrices[i]
             });
         }
         lastUpdateTimestamp = now;
-        DataUpdated(newId);
+        DataUpdated(thisId);
+        nextUpdateId++;
     }
 }

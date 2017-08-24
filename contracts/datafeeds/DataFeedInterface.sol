@@ -22,8 +22,8 @@ contract DataFeedInterface {
     function getQuoteAsset() constant returns (address) {}
     function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
-    function getLatestUpdateId() constant returns (uint) {}
-    function getLatestUpdateTimestamp() constant returns (uint) {}
+    function getLastUpdateId() constant returns (uint) {}
+    function getLastUpdateTimestamp() constant returns (uint) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}
