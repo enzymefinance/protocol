@@ -368,13 +368,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function getStake() constant returns (uint256) { return balanceOf(this); }
 
-    function toggleSubscription()
+    function toggleSubscribe()
         pre_cond(isOwner())
     {
         isSubscribeAllowed = !isSubscribeAllowed;
     }
 
-    function toggleRedeemal()
+    function toggleRedeem()
         pre_cond(isOwner())
     {
         isRedeemAllowed = !isRedeemAllowed;
