@@ -130,6 +130,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     Calculations public atLastPayout;
     bool public isDecommissioned;
     mapping (address => uint) public previousHoldings;
+    bool public isSubscribeAllowed;
+    bool public isRedeemAllowed;
 
     // EVENTS
 
@@ -302,6 +304,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address ofLogger
     ) {
         LOGGER = Logger(ofLogger);
+        isSubscribeAllowed = true;
+        isRedeemAllowed = true;
         owner = ofManager;
         name = withName;
         symbol = withSymbol;
@@ -364,9 +368,17 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     function getStake() constant returns (uint256) { return balanceOf(this); }
 
-    function toogleSubscription() {}
+    function toggleSubscription()
+        pre_cond(isOwner())
+    {
+        isSubscribeAllowed = !isSubscribeAllowed;
+    }
 
-    function toogleRedeemal() {}
+    function toggleRedeemal()
+        pre_cond(isOwner())
+    {
+        isRedeemAllowed = !isRedeemAllowed;
+    }
 
 
     // NON-CONSTANT METHODS - PARTICIPATION
@@ -380,6 +392,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 incentiveValue
     )
         public
+        pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
@@ -418,6 +431,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 incentiveValue
       )
         public
+        pre_cond(isRedeemAllowed)
         pre_cond(isPastZero(numShares))
         pre_cond(module.participation.isRedeemRequestPermitted(
             msg.sender,
