@@ -42,7 +42,6 @@ contract('Vault shares', (accounts) => {
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       18,                 // share decimals
-      pricefeed.address,
       mlnToken.address,
       pricefeed.address,
       participation.address,

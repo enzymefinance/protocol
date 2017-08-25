@@ -1,8 +1,6 @@
 pragma solidity ^0.4.11;
 
-import './dependencies/ERC20.sol';
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
-import './assets/AssetRegistrar.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
@@ -296,7 +294,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         string withName,
         string withSymbol,
         uint withDecimals,
-        address ofAssetRegistrar,
         address ofMelonAsset,
         address ofDataFeed,
         address ofParticipation,
@@ -666,6 +663,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
         // Accounting: Allocate unclaimedRewards to this fund
         uint256 numShares = totalSupply.mul(unclaimedRewards).div(gav);
+        addShares(owner, numShares);
         addShares(owner, numShares);
         // Update Calculations
         atLastPayout = Calculations({

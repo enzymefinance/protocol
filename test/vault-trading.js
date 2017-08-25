@@ -10,7 +10,7 @@ const chai = require('chai');
 
 const assert = chai.assert;
 
-contract('Vault shares', (accounts) => {
+contract('Vault trading', (accounts) => {
   const manager = accounts[0];
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
@@ -43,7 +43,6 @@ contract('Vault shares', (accounts) => {
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       18,                 // share decimals
-      pricefeed.address,
       mlnToken.address,
       pricefeed.address,
       participation.address,

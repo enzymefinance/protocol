@@ -24,7 +24,6 @@ contract Version is DBC, Owned {
 
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
-    address public ASSET_REGISTRAR; // Address of Asset Registrar contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     address public LOGGER;
     Logger logger;
@@ -49,6 +48,10 @@ contract Version is DBC, Owned {
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getNextVaultId() constant returns (uint) { return nextVaultId; }
+    function getLastVaultId() constant returns (uint) {
+      require(nextVaultId > 0);
+      return nextVaultId - 1;
+    }
 
     // @returns list of all Vaults address is invested in
     // @returns list of all numbers of Shares address holds in Vault
@@ -75,12 +78,10 @@ contract Version is DBC, Owned {
 
     function Version(
         address ofMelonAsset,
-        address ofAssetRegistrar,
         address ofLogger
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-        ASSET_REGISTRAR = ofAssetRegistrar;
         LOGGER = ofLogger;
         logger = Logger(LOGGER);
     }
@@ -89,30 +90,28 @@ contract Version is DBC, Owned {
         string withName,
         string withSymbol,
         uint withDecimals,
-        address ofUniverse,
+        address ofDataFeed,
+        address ofExchange,
         address ofParticipation,
-        address ofRiskMgmt,
-        address ofRewards
+        address ofRiskMgmt
     )
         returns (uint id)
     {
-        address vault = address(new Vault(
+        address vault = new Vault(
             msg.sender,
             withName,
             withSymbol,
             withDecimals,
-            ASSET_REGISTRAR,
             MELON_ASSET,
-            ofUniverse,
+            ofDataFeed,
             ofParticipation,
+            ofExchange,
             ofRiskMgmt,
-            ofRewards,
             LOGGER
-        ));
+        );
         vaults[nextVaultId] = vault;
         managers[msg.sender].push(nextVaultId);
         nextVaultId++;
-        logger.addPermission(vault);
     }
 
     // Dereference Vault and trigger selfdestruct
