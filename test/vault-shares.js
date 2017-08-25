@@ -5,6 +5,7 @@ const Exchange = artifacts.require('SimpleMarket');
 const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
+const Sphere = artifacts.require('Sphere');
 const Vault = artifacts.require('Vault');
 const chai = require('chai');
 const rpc = require('../utils/rpc.js');
@@ -25,6 +26,8 @@ contract('Vault shares', (accounts) => {
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: liquidityProvider });
     pricefeed = await PriceFeed.new(mlnToken.address, 0, 60);
+    exchange = await Exchange.deployed();
+    sphere = await Sphere.new(pricefeed.address, exchange.address);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     pricefeed.register(ethToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     pricefeed.register(eurToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
@@ -33,7 +36,6 @@ contract('Vault shares', (accounts) => {
       [ethToken.address, eurToken.address, mlnToken.address],
       [1000000000000000000, 5091131249363608, 226244343891402714], // mock data
     );
-    exchange = await Exchange.deployed();
     participation = await Participation.deployed();
     riskManagement = await RiskMgmt.deployed();
     logger = await Logger.deployed();
@@ -43,10 +45,9 @@ contract('Vault shares', (accounts) => {
       'MLN-P',            // share symbol
       18,                 // share decimals
       mlnToken.address,
-      pricefeed.address,
       participation.address,
-      exchange.address,
       riskManagement.address,
+      sphere.address,
       logger.address,
       { from: accounts[0] },
     );

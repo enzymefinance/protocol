@@ -90,10 +90,9 @@ contract Version is DBC, Owned {
         string withName,
         string withSymbol,
         uint withDecimals,
-        address ofDataFeed,
-        address ofExchange,
         address ofParticipation,
-        address ofRiskMgmt
+        address ofRiskMgmt,
+        address ofSphere
     )
         returns (uint id)
     {
@@ -103,12 +102,11 @@ contract Version is DBC, Owned {
             withSymbol,
             withDecimals,
             MELON_ASSET,
-            ofDataFeed,
             ofParticipation,
-            ofExchange,
             ofRiskMgmt,
+            ofSphere,
             LOGGER
-        );
+      );
         vaults[nextVaultId] = vault;
         managers[msg.sender].push(nextVaultId);
         nextVaultId++;

@@ -35,7 +35,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isDataSet(address ofAsset) internal constant returns (bool) {
+    function isDataSet(address ofAsset) constant returns (bool) {
       return dataHistory[getLastUpdateId()][ofAsset].timestamp > 0;
     }
     function isDataValid(address ofAsset) internal constant returns (bool) { return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY; }

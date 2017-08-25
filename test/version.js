@@ -6,6 +6,7 @@ const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const DataFeed = artifacts.require('DataFeed');
 const RiskMgmt = artifacts.require('RiskMgmt');
+const Sphere = artifacts.require('Sphere');
 const Version = artifacts.require('Version');
 const chai = require('chai');
 
@@ -22,9 +23,14 @@ contract('Version', (accounts) => {
       'Euro', 'EUR', 8, 10 ** 18, { from: accounts[0] });
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: accounts[0] });
-    version = await Version.deployed();
-    feed = await DataFeed.new(mlnToken.address, [eurToken.address, ethToken.address]);
+    logger = Logger.deployed();
+    version = await Version.new(mlnToken.address, logger.address);
+    feed = await DataFeed.new(mlnToken.address, 0, 120);
+    const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+    await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
+    await feed.update([mlnToken.address], [226244343891402714]);
     exchange = await Exchange.new();
+    sphere = await Sphere.new(feed.address, exchange.address);
     participation = await Participation.new();
     riskManagement = await RiskMgmt.new();
   });
@@ -34,10 +40,9 @@ contract('Version', (accounts) => {
       'Cantaloot',    // name
       'CNLT',         // share symbol
       18,             // share decimals
-      feed.address,
-      exchange.address,
       participation.address,
       riskManagement.address,
+      sphere.address,
       { from: accounts[0], gas: 6713095 }
     );
   });

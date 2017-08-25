@@ -4,6 +4,7 @@ import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './dependencies/Logger.sol';
+import './sphere/SphereInterface.sol';
 import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
@@ -118,6 +119,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT;
     address public REFERENCE_ASSET; // Performance measured against value of this asset
+    SphereInterface public sphere;
     Logger public LOGGER;
     // Fields that can be changed by functions
     Information public info;
@@ -297,12 +299,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         string withSymbol,
         uint withDecimals,
         address ofMelonAsset,
-        address ofDataFeed,
         address ofParticipation,
-        address ofExchange,
         address ofRiskMgmt,
+        address ofSphere,
         address ofLogger
     ) {
+        sphere = SphereInterface(ofSphere);
+        module.exchange = ExchangeInterface(sphere.getExchange());
+        module.pricefeed = DataFeedInterface(sphere.getDataFeed());
         LOGGER = Logger(ofLogger);
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
@@ -312,13 +316,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         decimals = withDecimals;
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
-        module.pricefeed = DataFeedInterface(ofDataFeed);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        require(module.pricefeed.isSet(MELON_ASSET));
+        require(module.pricefeed.isDataSet(MELON_ASSET));
         MELON_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
         VAULT_BASE_UNITS = 10 ** decimals;
         module.participation = ParticipationInterface(ofParticipation);
-        module.exchange = ExchangeInterface(ofExchange);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastPayout = Calculations({
             gav: 0,
