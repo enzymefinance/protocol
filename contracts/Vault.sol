@@ -334,8 +334,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         });
         info = Information({
             owner: owner,
-            name: name,
-            symbol: symbol,
+            name: withName,
+            symbol: withSymbol,
             decimals: decimals,
             created: now,
             status: VaultStatus.setup
