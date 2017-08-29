@@ -1,3 +1,4 @@
+pragma solidity ^0.4.8;
 // TODO actually used compiler version: pragma solidity ^0.4.13;
 
 import '../dependencies/ERC20.sol';
@@ -79,11 +80,7 @@ contract SimpleMarket is EventfulMarket {
 
     mapping (uint => OfferInfo) public offers;
 
-    uint public last_offer_id;
-
-    function next_id() internal returns (uint) {
-        last_offer_id++; return last_offer_id;
-    }
+    uint public nextOfferId;
 
     modifier can_offer {
         _;
@@ -108,6 +105,10 @@ contract SimpleMarket is EventfulMarket {
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
     }
+    function getLastOfferId() constant returns (uint) {
+        require(nextOfferId > 0);
+        return nextOfferId - 1;
+    }
 
     // non underflowing subtraction
     function safeSub(uint a, uint b) internal returns (uint) {
@@ -124,10 +125,8 @@ contract SimpleMarket is EventfulMarket {
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token)
         internal
     {
-        var seller_paid_out = buy_which_token.transferFrom(buyer, seller, buy_how_much);
-        assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer(buyer, sell_how_much);
-        assert(buyer_paid_out);
+        assert(buy_which_token.transferFrom(buyer, seller, buy_how_much));
+        assert(sell_which_token.transfer(buyer, sell_how_much));
         Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
@@ -173,8 +172,8 @@ contract SimpleMarket is EventfulMarket {
         info.owner = msg.sender;
         info.active = true;
         info.timestamp = uint64(now);
-        id = next_id();
-        offers[id] = info;
+        offers[nextOfferId] = info;
+        nextOfferId++;
 
         var seller_paid = sell_which_token.transferFrom(msg.sender, this, sell_how_much);
         assert(seller_paid);
@@ -301,5 +300,24 @@ contract SimpleMarket is EventfulMarket {
         );
 
         success = true;
+    }
+
+    // returns sparse arrays
+    function getOpenOffers(uint start)
+        constant
+        returns (uint[1024] sellAmts, address[1024] sellTokens,
+                uint[1024] buyAmts, address[1024] buyTokens,
+                address[1024] owners, uint[1024] timestamps)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii >= nextOfferId) break;
+            if(!offers[ii].active) continue;
+            sellAmts[ii] = offers[ii].sell_how_much;
+            sellTokens[ii] = offers[ii].sell_which_token;
+            buyAmts[ii] = offers[ii].buy_how_much;
+            buyTokens[ii] = offers[ii].buy_which_token;
+            owners[ii] = offers[ii].owner;
+            timestamps[ii] = offers[ii].timestamp;
+        }
     }
 }

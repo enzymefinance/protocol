@@ -8,32 +8,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Logging contract for errors and other events
-- Calculations library
-- Libraries folder
-- Added dataHistory mapping in PriceFeed contract
-- Enum Status to Version contract
-- Enum OrderStatus, VaultStatus to Vault contract
-- Vault internal tracking of all orders
-- Function `subscribeRequest` in Vault
-- `AssetRegistrar` Contract
-- Function `getDataHistory` in PriceFeed
+- AssetRegistrar Contract
+- History tracking/retrieval for orders, requests, trades and datafeed
+- Sphere module (exchange/pricefeed pairings)
+- Optional manager-controlled whitelisting of investors
+- Basic Vault decommissioning in Version
+- Ability to prove embezzlement for transfers to/from exchange
+- Manager staking
+- A lot of tests
 
 ### Changed
-- Use Logging contract from Vault
-- `..Protocol.sol` renamed to either `..Interface.sol` or `..Adapter.sol`
-- `RiskMgmtV1.sol` renamed to `RMLiquididtyProvider.sol`
-- `numAssignedAssets` renamed to `numDeliverableAssets`
-- `event Trade(uint sell_how_much, address indexed sell_which_token,
-    uint buy_how_much, address indexed buy_which_token);`
-    to `event Trade(address indexed seller, uint sell_how_much, address indexed sell_which_token,
-    address indexed buyer, uint buy_how_much, address indexed buy_which_token);`
-- Changed PriceUpdated Event
-- Simplified Tracking of Vaults in Version contract
-- PriceFeed contract; `getFrequncey` -> `getInterval`
-- Exchange Event `OrderUpdate` -> `ItemUpdate`
-- Exchange Interface `take(..)` -> `buy(..)`
-- `isRedeemPermitted(..)` -> `isRedeemRequestPermitted(..)`
-- `isSubscribePermitted(..)` -> `isSubscribeRequestPermitted(..)`
+- Use logging contract from most other contracts (e.g. Vault)
+- Simplified tracking of Vaults in Version contract
+- Implemented our own reference datafeed
+- Default to MLN for internal accounting and initial investment
+- Subscription now operates under request/execute paradigm
+
+### Removed
+- Universe module
 
 ## [0.2.1]
 

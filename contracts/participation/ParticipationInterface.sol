@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 /// @title Participation Protocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying Participation Contract
+/// @notice This is to be considered as an interface on how to access the underlying Participation Contract
 contract ParticipationInterface {
 
     // CONSTANT METHODS
@@ -13,13 +13,19 @@ contract ParticipationInterface {
         address owner,
         uint256 numShares,
         uint256 offeredValue
-    ) constant returns (bool) {}
+    )
+        constant
+        returns (bool)
+    {}
     /// Pre: Request ID
     /// Post: Boolean whether permitted or not
     function isRedeemRequestPermitted(
         address owner,
         uint256 numShares,
-        uint256 offeredValue
-    ) constant returns (bool) {}
+        uint256 requestedValue
+    )
+        constant
+        returns (bool)
+    {}
 
 }

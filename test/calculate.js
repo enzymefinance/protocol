@@ -52,7 +52,7 @@ contract('Calculate', (accounts) => {
       let nav = await calculate.netAssetValue(3000, 200);
       assert.equal(nav.toNumber(), 2800);
     });
-    it.skip('errors when rewards larger than assets available', () => {
+    it('errors when rewards larger than assets available', () => {
       assert.throws(() => calculate.netAssetValue(2000, 3000))
     });
   });

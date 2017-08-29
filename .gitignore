@@ -2,6 +2,7 @@ app/
 node_modules/
 npm-debug.log
 *.orig
+*.swp
 
 # ignore automatically-generated lockfile
 # use shrinkwrap manually if we need it

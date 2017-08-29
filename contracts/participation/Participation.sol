@@ -9,11 +9,12 @@ import '../dependencies/Owned.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
 contract Participation is ParticipationInterface, DBC, Owned {
+    //TODO: can we make this into a Permissioned contract?
 
     // TYPES
 
     struct Information { // subscription request
-        bool isUPortIdentity; // Lookup call to uPort registry
+        bool isApproved; // Eg: Lookup call to uPort registry
     }
 
     // FIELDS
@@ -27,21 +28,21 @@ contract Participation is ParticipationInterface, DBC, Owned {
     function list(address x)
         pre_cond(isOwner())
     {
-        avatar[x].isUPortIdentity = true;
+        avatar[x].isApproved = true;
     }
 
     function bulkList(address[] x)
         pre_cond(isOwner())
     {
         for (uint i = 0; i < x.length; ++i) {
-            avatar[x[i]].isUPortIdentity = true;
+            avatar[x[i]].isApproved = true;
         }
     }
 
     function delist(address x)
         pre_cond(isOwner())
     {
-        avatar[x].isUPortIdentity = false;
+        avatar[x].isApproved = false;
     }
 
     // CONSTANT METHODS
@@ -56,7 +57,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
         constant
         returns (bool)
     {
-        return avatar[owner].isUPortIdentity;
+        return avatar[owner].isApproved;
     }
 
     /// Pre: Request ID
@@ -64,7 +65,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
     function isRedeemRequestPermitted(
         address owner,
         uint256 numShares,
-        uint256 offeredValue
+        uint256 requestedValue
     )
         constant
         returns (bool)

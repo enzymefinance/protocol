@@ -11,7 +11,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // TYPES
 
-    struct Information {
+    struct Asset {
         string name;
         string symbol;
         uint256 decimal;
@@ -25,10 +25,9 @@ contract AssetRegistrar is DBC, Owned {
 
     // FIELDS
 
-    // Fields that are only changed in constructor
-    bytes32 public CHAIN_ID;
     // Fields that can be changed by functions
-    mapping (address => Information) public information; // Asset specific information
+    mapping (address => Asset) public information; // Asset specific information
+    address[] public registeredAssets;
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -38,9 +37,14 @@ contract AssetRegistrar is DBC, Owned {
 
     // CONSTANT METHODS
 
+    // Get registartion specific information
+    function isSet(address ofAsset) constant returns (bool) { return !isNotSet(ofAsset); }
+    function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
+    function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
+    // Get asset specific information
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
-    function getDecimals(address ofAsset) constant returns (uint256) { return ; }
+    function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
     function getDescriptiveInformation(address ofAsset)
         constant
         returns (string, string, uint256, string, bytes32)
@@ -67,9 +71,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar(bytes32 withChainId) {
-        CHAIN_ID = withChainId;
-    }
+    function AssetRegistrar() {}
 
     /// Pre: Only Backup Owner; Non-null new Backup Owner
     /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
@@ -80,18 +82,20 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal,
         string url,
         bytes32 ipfsHash,
+        bytes32 chainId, // unique identifier on which chain we are located on
         address breakIn,
         address breakOut
     )
         pre_cond(isNotSet(ofAsset))
     {
-        information[ofAsset] = Information({
+        registeredAssets.push(ofAsset);
+        information[ofAsset] = Asset({
             name: name,
             symbol: symbol,
             decimal: decimal,
             url: url,
             ipfsHash: ipfsHash,
-            chainId: CHAIN_ID,
+            chainId: chainId,
             breakIn: breakIn,
             breakOut: breakOut,
             hash: sha3(name, symbol, decimal, breakIn, breakOut)
