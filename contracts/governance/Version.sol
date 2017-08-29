@@ -12,7 +12,6 @@ import '../dependencies/Logger.sol';
 contract Version is DBC, Owned {
 
     // TYPES
-
     enum Status {
         setup,
         funding,
@@ -21,7 +20,6 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
-
     // Fields that are only changed in constructor
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
@@ -33,7 +31,6 @@ contract Version is DBC, Owned {
     uint public nextVaultId;
 
     // EVENTS
-
     event VaultUpdated(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -41,7 +38,12 @@ contract Version is DBC, Owned {
     function isInHistory(uint id) constant returns (bool) { return 0 <= id && id < nextVaultId; }
 
     // CONSTANT METHODS
+<<<<<<< HEAD
 
+=======
+    function getMelonAsset() constant returns (address) { return MELON_ASSET; }
+    function getLastVaultId() constant returns (uint) { return lastVaultId; }
+>>>>>>> origin/develop
     function getVault(uint id) constant returns (address) { return vaults[id]; }
     function hasVault(address mgr) constant returns (bool) {
       return managers[mgr].length > 0;
@@ -53,6 +55,7 @@ contract Version is DBC, Owned {
       return nextVaultId - 1;
     }
 
+<<<<<<< HEAD
     // @returns list of all Vaults address is invested in
     // @returns list of all numbers of Shares address holds in Vault
     // @returns list of all decimals of this Vault
@@ -72,10 +75,14 @@ contract Version is DBC, Owned {
             decimals[i] = Vault.getDecimals();
         }
         return (vaults, holdings, decimals);
+=======
+    // NON-CONSTANT INTERNAL METHODS
+    function next_id() internal returns (uint) {
+        lastVaultId++; return lastVaultId;
+>>>>>>> origin/develop
     }
 
     // NON-CONSTANT METHODS
-
     function Version(
         address ofMelonAsset,
         address ofLogger
@@ -121,12 +128,20 @@ contract Version is DBC, Owned {
         VaultUpdated(id);
     }
 
+<<<<<<< HEAD
    	function getVaults(uint start)
+=======
+    function getVaults(uint start)
+>>>>>>> origin/develop
         constant
         returns (address[1024] allVaults)
     {
         for(uint ii = 0; ii < 1024; ii++){
+<<<<<<< HEAD
             if(start + ii >= nextVaultId) break;
+=======
+            if(start + ii > lastVaultId) break;
+>>>>>>> origin/develop
             allVaults[ii] = vaults[ii];
         }
     }
