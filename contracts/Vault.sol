@@ -146,7 +146,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function noOpenOrders() internal returns (bool) {
-        for (uint256 i = 0; i < MAX_OPEN_ORDERS; ++i) {
+        for (uint256 i = 0; i < openOrderIds.length; i++) {
             if (openOrderIds[i] != 0) return false;
         }
         return true;
@@ -586,17 +586,20 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function getOpenOrderExposure(address ofAsset) constant returns(uint amt) {
-        for(uint i; i < openOrderIds.length; i++){
+        for (uint i; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
-            if(thisOrder.haveToken == ofAsset) amt = amt + thisOrder.haveAmount;
+            if (thisOrder.haveToken == ofAsset) {
+                amt = amt + thisOrder.haveAmount;
+            }
         }
     }
 
     function getExpectedSettlement(address ofAsset) constant returns(uint amt) {
-        for(uint i; i < openOrderIds.length; i++){
+        for (uint i; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
-            if(thisOrder.wantToken == ofAsset)
+            if (thisOrder.wantToken == ofAsset) {
                 amt = amt + thisOrder.wantAmount;
+            }
         }
     }
 
