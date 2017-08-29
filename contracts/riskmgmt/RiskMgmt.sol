@@ -6,14 +6,6 @@ import './RiskMgmtInterface.sol';
 /// @author Melonport AG <team@melonport.com>
 contract RiskMgmt is RiskMgmtInterface {
 
-    // FIELDS
-
-    // EVENTS
-
-    // MODIFIERS
-
-    // CONSTANT METHODS
-
     // NON-CONSTANT METHODS
 
     function isExchangeMakePermitted(

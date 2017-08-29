@@ -566,7 +566,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             wantToken,
             haveAmount,
             wantAmount,
-            0 // TODO: Insert assetpair specific price
+            module.pricefeed.getReferencePrice(haveToken, wantToken)
         ))
         returns (uint id)
     {
@@ -607,7 +607,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
-        // TODO uncomment
         var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
@@ -620,7 +619,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             offeredBuyToken,
             offeredSellAmount,
             offeredBuyAmount,
-            0, // TODO: Insert assetpair specific price
+            module.pricefeed.getReferencePrice(offeredSellToken, offeredBuyToken),
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
