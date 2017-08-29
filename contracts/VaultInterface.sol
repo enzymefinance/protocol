@@ -1,18 +1,18 @@
 pragma solidity ^0.4.11;
 
-import "./assets/AssetProtocol.sol";
+import './assets/AssetInterface.sol';
 import './dependencies/ERC20.sol';
-import './exchange/ExchangeProtocol.sol';
+import './exchange/ExchangeInterface.sol';
 
 /// @title Vault Protocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as a protocol on how to access the underlying Vault Contract
-contract VaultProtocol is AssetProtocol {
+/// @notice This is to be considered as an interface on how to access the underlying Vault Contract
+contract VaultInterface is AssetInterface {
 
     // CONSTANT METHODS
 
-    function getReferenceAsset() constant returns (address) {}
-    function getUniverseAddress() constant returns (address) {}
+    function getDataFeedAddress() constant returns (address) {}
+    function getExchangeAddress() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
     function getCalculationsAtLastPayout() constant returns (uint, uint, uint, uint, uint) {}
     function getSliceForNumShares(uint numShares) constant returns (address[200] assets, uint[200] amounts, uint numAssets) {}
@@ -26,21 +26,16 @@ contract VaultProtocol is AssetProtocol {
 
     // NON-CONSTANT METHODS
 
-    function createShares(uint shareAmount) { createSharesOnBehalf(msg.sender, shareAmount); }
-    function annihilateShares(uint shareAmount) { annihilateSharesOnBehalf(msg.sender, shareAmount); }
+    function createShares(uint shareAmount) {}
+    function annihilateShares(uint shareAmount) {}
     function createSharesOnBehalf(address recipient, uint shareAmount) {}
     function annihilateSharesOnBehalf(address recipient, uint shareAmount) {}
-    function makeOrder(ExchangeProtocol onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
-    )
-        returns (uint id)
-    {}
-    function takeOrder(ExchangeProtocol onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
-    function cancelOrder(ExchangeProtocol onExchange, uint id) returns (bool) {}
+    function makeOrder(ERC20 haveToken, ERC20 wantToken, uint128  haveAmount, uint128  wantAmount) returns (uint id) {}
+    function takeOrder(ExchangeInterface onExchange, uint id, uint wantedBuyAmount) returns (bool) {}
+    function cancelOrder(ExchangeInterface onExchange, uint id) returns (bool) {}
     function convertUnclaimedRewards() {}
 
     // EVENTS
 
-    event OrderUpdate(uint id);
+    event OrderUpdated(uint id);
 }

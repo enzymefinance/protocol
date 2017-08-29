@@ -3,11 +3,16 @@
 # protocol
 Melon Protocol Solidity Implementation
 
-[![Gitter][gitter-badge]][gitter-url]
-[![License: GPL v3][license-badge]][license-badge-url]
-[![Dependencies][dependencies-badge]][dependencies-badge-url]
-[![Dev Dependencies][devDependencies-badge]][devDependencies-badge-url]
-[![NSP Status][NSP Status badge]][NSP Status]
+See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more information.
+
+[![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](http://www.gnu.org/licenses/gpl-3.0)
+[![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
+
+[wiki-url]: https://github.com/melonproject/protocol/wiki
+[whitepaper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
+
 
 ## Installation
 
@@ -28,12 +33,12 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 1. Launch a testrpc client:
     ```
-    node_modules/.bin/testrpc
+    npm run localnode
     ```
 
 2. Open a second terminal and run the test framework:
     ```
-    node_modules/.bin/truffle test
+    npm test
     ```
 
 ## Linting

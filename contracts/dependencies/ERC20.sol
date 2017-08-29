@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import "./ERC20Protocol.sol";
+import './ERC20Protocol.sol';
 
 /// @title ERC20 Token
 /// @author Melonport AG <team@melonport.com>

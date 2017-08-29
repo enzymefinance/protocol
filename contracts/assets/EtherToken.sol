@@ -1,13 +1,13 @@
 pragma solidity ^0.4.11;
 
-import "./PreminedAsset.sol";
+import './PreminedAsset.sol';
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
-/// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
+/// @notice Compliant to https://github.com/dapphub/ds-eth-token/blob/master/src/eth_wrapper.sol
 contract EtherToken is PreminedAsset {
-    using SafeMath for uint256;
+    using safeMath for uint256;
 
     // FIELDS
 
@@ -41,21 +41,17 @@ contract EtherToken is PreminedAsset {
     /// Post: Exchanged Ether against Token
     function deposit()
         payable
-        returns (bool)
     {
         balances[msg.sender] = balances[msg.sender].add(msg.value);
         Deposit(msg.sender, msg.value);
-        return true;
     }
 
     /// Post: Exchanged Token against Ether
     function withdraw(uint amount)
         balances_msg_sender_at_least(amount)
-        returns (bool)
     {
-        balances[msg.sender] = balances[msg.sender].add(amount);
+        balances[msg.sender] = balances[msg.sender].sub(amount);
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
-        return true;
     }
 }

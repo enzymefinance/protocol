@@ -1,9 +1,10 @@
 pragma solidity ^0.4.11;
 
-import "../Vault.sol";
-import "../VaultProtocol.sol";
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
+import '../Vault.sol';
+import '../VaultInterface.sol';
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
+import '../dependencies/Logger.sol';
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
@@ -11,138 +12,118 @@ import "../dependencies/Owned.sol";
 contract Version is DBC, Owned {
 
     // TYPES
-
-    struct VaultInfo {
-        address vault;
-        address owner;
-        string name;
-        string symbol;
-        uint decimals;
-        bool active;
-        uint timestamp;
-        bytes32 ipfsHash;
-        bytes32 swarmHash;
-    }
-
-    struct ModuleSelection {
-        address ofUniverse;
-        address ofParticipation;
-        address ofRiskMgmt;
-        address ofManagementFee;
-        address ofPerformanceFee;
+    enum Status {
+        setup,
+        funding,
+        trading,
+        payout
     }
 
     // FIELDS
-
     // Fields that are only changed in constructor
-    address public melonAsset; // Adresss of Melon asset contract
-    address public governance; // Address of Melon protocol governance contract
+    address public MELON_ASSET; // Adresss of Melon asset contract
+    address public GOVERNANCE; // Address of Melon protocol governance contract
+    address public LOGGER;
+    Logger logger;
     // Fields that can be changed by functions
-    mapping (uint => VaultInfo) public vaults;
-    mapping (uint => ModuleSelection) public usage;
-    uint public lastVaultId;
+    mapping (address => uint[]) public managers; // Links manager address to vault id list
+    mapping (uint => address) public vaults; // Links identifier to vault addresses
+    uint public nextVaultId;
 
     // EVENTS
-
-    event VaultAdded(
-        address vault,
-        address owner,
-        string name,
-        string symbol,
-        uint decimals,
-        bool active,
-        uint id,
-        address ofUniverse,
-        address ofParticitpation,
-        address ofRiskMgmt,
-        address ofRewards
-    );
-    event VaultUpdate(uint id);
+    event VaultUpdated(uint id);
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isVaultOwner(uint atIndex) internal returns (bool) {
-        var (, owner, , , , ,) = getVault(atIndex);
-        return owner == msg.sender;
-    }
+    function isInHistory(uint id) constant returns (bool) { return 0 <= id && id < nextVaultId; }
 
     // CONSTANT METHODS
 
-    function getLastVaultId() constant returns (uint) { return lastVaultId; }
-    function getVault(uint atIndex) constant returns (address, address, string, string, uint, bool, uint) {
-        var vault = vaults[atIndex];
-        return (vault.vault, vault.owner, vault.name, vault.symbol, vault.decimals, vault.active, vault.timestamp);
+    function getVault(uint id) constant returns (address) { return vaults[id]; }
+    function hasVault(address mgr) constant returns (bool) {
+      return managers[mgr].length > 0;
+    }
+    function getMelonAsset() constant returns (address) { return MELON_ASSET; }
+    function getNextVaultId() constant returns (uint) { return nextVaultId; }
+    function getLastVaultId() constant returns (uint) {
+      require(nextVaultId > 0);
+      return nextVaultId - 1;
     }
 
-    // NON-CONSTANT INTERNAL METHODS
-
-    function next_id() internal returns (uint) {
-        lastVaultId++; return lastVaultId;
+    // @returns list of all Vaults address is invested in
+    // @returns list of all numbers of Shares address holds in Vault
+    // @returns list of all decimals of this Vault
+    function getSubscriptionHistory(address ofAddress, uint withStartId)
+        constant
+        pre_cond(isInHistory(withStartId))
+        returns (address[1024], uint256[1024], uint256[1024])
+    {
+        address[1024] memory vaults;
+        uint[1024] memory holdings;
+        uint[1024] memory decimals;
+        for (uint256 i = 0; i < 1024; ++i) {
+            if (withStartId + i >= nextVaultId) break;
+            vaults[i] = getVault(i);
+            VaultInterface Vault = VaultInterface(vaults[i]);
+            holdings[i] = Vault.balanceOf(msg.sender);
+            decimals[i] = Vault.getDecimals();
+        }
+        return (vaults, holdings, decimals);
     }
 
     // NON-CONSTANT METHODS
-
     function Version(
         address ofMelonAsset,
-        address ofGovernance
+        address ofLogger
     ) {
-        melonAsset = ofMelonAsset;
-        governance = ofGovernance;
+        GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
+        MELON_ASSET = ofMelonAsset;
+        LOGGER = ofLogger;
+        logger = Logger(LOGGER);
     }
 
-    function createVault(
+    function setupVault(
         string withName,
         string withSymbol,
         uint withDecimals,
-        address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofRewards
+        address ofSphere
     )
         returns (uint id)
     {
-        // Create and register new Vault
-        VaultInfo memory info;
-        info.vault = address(new Vault(
+        address vault = new Vault(
             msg.sender,
             withName,
             withSymbol,
             withDecimals,
-            melonAsset,
-            ofUniverse,
+            MELON_ASSET,
             ofParticipation,
             ofRiskMgmt,
-            ofRewards
-        ));
-        info.owner = msg.sender;
-        info.name = withName;
-        info.symbol = withSymbol;
-        info.decimals = withDecimals;
-        info.active = true;
-        info.timestamp = now;
-        id = next_id();
-        vaults[id] = info;
-        VaultAdded(
-          info.vault,
-          info.owner,
-          info.name,
-          info.symbol,
-          info.decimals,
-          info.active,
-          id,
-          ofUniverse,
-          ofParticipation,
-          ofRiskMgmt,
-          ofRewards
-        );
+            ofSphere,
+            LOGGER
+      );
+        vaults[nextVaultId] = vault;
+        managers[msg.sender].push(nextVaultId);
+        nextVaultId++;
     }
 
     // Dereference Vault and trigger selfdestruct
-    function annihilateVault(uint atIndex)
-        pre_cond(isVaultOwner(atIndex))
+    function decommissionVault(uint id)
+        pre_cond(isOwner())
     {
         // TODO also refund and selfdestruct vault contract
-        delete vaults[atIndex];
-        VaultUpdate(atIndex);
+        delete vaults[id];
+        VaultUpdated(id);
+    }
+
+   	function getVaults(uint start)
+        constant
+        returns (address[1024] allVaults)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii >= nextVaultId) break;
+            allVaults[ii] = vaults[ii];
+        }
     }
 }

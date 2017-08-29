@@ -1,8 +1,17 @@
-/app
-/node_modules
+app/
+node_modules/
 npm-debug.log
 *.orig
+*.swp
+
+# ignore automatically-generated lockfile
+# use shrinkwrap manually if we need it
+package-lock.json
 
 # ignore built contracts
 build/
 protocol/
+
+# ignore generated coverage data
+coverage.json
+coverage/

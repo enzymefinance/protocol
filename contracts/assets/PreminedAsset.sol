@@ -1,13 +1,13 @@
 pragma solidity ^0.4.11;
 
-import "./Asset.sol";
-import "../dependencies/SafeMath.sol";
+import './Asset.sol';
+import '../libraries/safeMath.sol';
 
 /// @title PreminedAsset Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
 contract PreminedAsset is Asset {
-    using SafeMath for uint256;
+    using safeMath for uint256;
 
     // METHODS
 
@@ -17,5 +17,4 @@ contract PreminedAsset is Asset {
         balances[msg.sender] = balances[msg.sender].add(_amount);
         totalSupply = totalSupply.add(_amount);
     }
-
 }

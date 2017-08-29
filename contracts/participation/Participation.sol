@@ -1,34 +1,75 @@
 pragma solidity ^0.4.11;
 
-import "./ParticipationProtocol.sol";
-import "../dependencies/DBC.sol";
-import "../assets/EtherToken.sol";
-import "../VaultProtocol.sol";
+import './ParticipationInterface.sol';
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
 
 
 /// @title Participation Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
-contract Participation is ParticipationProtocol, DBC {
+contract Participation is ParticipationInterface, DBC, Owned {
+    //TODO: can we make this into a Permissioned contract?
+
+    // TYPES
+
+    struct Information { // subscription request
+        bool isApproved; // Eg: Lookup call to uPort registry
+    }
 
     // FIELDS
 
-    // PRE, POST, INVARIANT CONDITIONS
+    // Fields that can be changed by functions
+    mapping (address => Information) public avatar;
 
-    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
-    function isAtLeast(uint x, uint y) internal returns (bool) { return x >= y; }
+
+    // NON-CONSTANT NON-BOOLEAN METHODS
+
+    function list(address x)
+        pre_cond(isOwner())
+    {
+        avatar[x].isApproved = true;
+    }
+
+    function bulkList(address[] x)
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < x.length; ++i) {
+            avatar[x[i]].isApproved = true;
+        }
+    }
+
+    function delist(address x)
+        pre_cond(isOwner())
+    {
+        avatar[x].isApproved = false;
+    }
 
     // CONSTANT METHODS
 
-    // NON-CONSTANT METHODS
-
-    function isSubscribePermitted(address byParticipant, uint wantedShares) returns (bool) {
-        // Restrict to certain addresses, amounts or timeintervalls
-        return true;
+    /// Pre: Request ID
+    /// Post: Boolean dependent on market data and on personel data; Compliance
+    function isSubscribeRequestPermitted(
+        address owner,
+        uint256 numShares,
+        uint256 offeredValue
+    )
+        constant
+        returns (bool)
+    {
+        return avatar[owner].isApproved;
     }
 
-    function isRedeemPermitted(address byParticipant, uint wantedShares) returns (bool) {
-        // Restrict to certain addresses, amounts or timeintervalls
+    /// Pre: Request ID
+    /// Post: Boolean whether permitted or not
+    function isRedeemRequestPermitted(
+        address owner,
+        uint256 numShares,
+        uint256 requestedValue
+    )
+        constant
+        returns (bool)
+    {
         return true;
     }
 }

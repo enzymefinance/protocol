@@ -1,39 +1,95 @@
 pragma solidity ^0.4.11;
 
-import "./dependencies/ERC20.sol";
-import {ERC20 as Shares} from "./dependencies/ERC20.sol";
-import "./assets/AssetProtocol.sol";
-import "./dependencies/DBC.sol";
-import "./dependencies/Owned.sol";
-import "./dependencies/SafeMath.sol";
-import "./universe/UniverseProtocol.sol";
-import "./participation/ParticipationProtocol.sol";
-import "./datafeeds/PriceFeedProtocol.sol";
-import "./rewards/RewardsProtocol.sol";
-import "./riskmgmt/RiskMgmtProtocol.sol";
-import "./exchange/ExchangeProtocol.sol";
-import "./VaultProtocol.sol";
+import {ERC20 as Shares} from './dependencies/ERC20.sol';
+import './dependencies/DBC.sol';
+import './dependencies/Owned.sol';
+import './dependencies/Logger.sol';
+import './sphere/SphereInterface.sol';
+import './libraries/safeMath.sol';
+import './libraries/rewards.sol';
+import './participation/ParticipationInterface.sol';
+import './datafeeds/DataFeedInterface.sol';
+import './riskmgmt/RiskMgmtInterface.sol';
+import './exchange/ExchangeInterface.sol';
+import './VaultInterface.sol';
 
 /// @title Vault Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple vault
-contract Vault is DBC, Owned, Shares, VaultProtocol {
-    using SafeMath for uint256;
+contract Vault is DBC, Owned, Shares, VaultInterface {
+    using safeMath for uint256;
 
     // TYPES
 
-    struct Prospectus { // Can be changed by Owner
-      bool subscriptionAllowed;
-      uint256 subscriptionFee;
-      bool redeemalAllow;
-      uint256 withdrawalFee;
+    enum RequestStatus {
+        open,
+        cancelled,
+        executed
+    }
+
+     enum RequestType {
+        subscribe,
+        redeem
+     }
+
+    enum OrderStatus {
+        open,
+        partiallyFilled,
+        fullyFilled,
+        cancelled
+    }
+
+    enum OrderType {
+        make,
+        take
+    }
+
+    enum VaultStatus {
+        setup,
+        funding,
+        staking,
+        managing,
+        locked,
+        payout
+    }
+
+    struct Information {
+        address owner;
+        string name;
+        string symbol;
+        uint decimals;
+        uint created;
+        VaultStatus status;
     }
 
     struct Modules { // Can't be changed by Owner
-        UniverseProtocol universe;
-        ParticipationProtocol participation;
-        RiskMgmtProtocol riskmgmt;
-        RewardsProtocol rewards;
+        ParticipationInterface  participation;
+        DataFeedInterface       pricefeed;
+        ExchangeInterface       exchange;
+        RiskMgmtInterface       riskmgmt;
+    }
+
+    struct Request { // subscription request
+        address owner;
+        RequestStatus status;
+        RequestType requestType;
+        uint256 numShares;
+        uint256 offeredOrRequestedValue;
+        uint256 incentive;
+        uint256 lastFeedUpdateId;
+        uint256 lastFeedUpdateTime;
+        uint256 timestamp;
+    }
+
+    struct Order {
+        ERC20       haveToken;
+        ERC20       wantToken;
+        uint128     haveAmount;
+        uint128     wantAmount;
+        uint256     timestamp;
+        OrderStatus order_status;
+        OrderType   orderType;
+        uint256     quantity_filled; // Buy quantity filled; Always less than buy_quantity
     }
 
     struct Calculations {
@@ -49,125 +105,190 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
     // FIELDS
 
+    // Constant asset specific fields
+    uint256 public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
+    uint256 public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
+    uint256 public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
+    uint256 public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Fields that are only changed in constructor
     string public name;
     string public symbol;
     uint public decimals;
-    uint256 public baseUnitsPerShare; // One unit of share equals 10 ** decimals of base unit of shares
-    address public melonAsset; // Adresss of Melon asset contract
-    address public referenceAsset; // Performance measured against value of this asset
+    uint256 public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
+    uint256 public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
+    address public MELON_ASSET; // Adresss of Melon asset contract
+    ERC20 public MELON_CONTRACT;
+    address public REFERENCE_ASSET; // Performance measured against value of this asset
+    SphereInterface public sphere;
+    Logger public LOGGER;
     // Fields that can be changed by functions
-    Prospectus public prospectus;
+    Information public info;
     Modules public module;
+    mapping (uint256 => Request) public requests;
+    uint256 public nextRequestId;
+    mapping (uint256 => Order) public orders;
+    uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
+    uint256 public nextOrderId;
     Calculations public atLastPayout;
+    bool public isDecommissioned;
+    mapping (address => uint) public previousHoldings;
+    bool public isSubscribeAllowed;
+    bool public isRedeemAllowed;
 
     // EVENTS
-
-    event Subscribed(address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
-    event Redeemed(address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
-    event PortfolioContent(uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals); // Calcualtions
-    event SpendingApproved(address ofToken, address onExchange, uint256 amount); // Managing
-    event RewardsConverted(uint256 atTimestamp, uint256 numSharesConverted, uint256 numunclaimedRewards);
-    event RewardsPayedOut(uint256 atTimestamp, uint256 numSharesPayedOut, uint256 atSharePrice);
-    event CalculationUpdate(uint256 atTimestamp, uint256 managementReward, uint256 performanceReward, uint256 nav, uint256 sharePrice, uint256 totalSupply);
 
     // PRE, POST, INVARIANT CONDITIONS
 
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
+    function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
+    function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
+    function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
+    function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
+    function noOpenOrders() internal returns (bool) {
+        for (uint256 i = 0; i < MAX_OPEN_ORDERS; ++i) {
+            if (openOrderIds[i] != 0) return false;
+        }
+        return true;
+    }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
+    function isValidAssetPair(address sell_which_token, address buy_which_token)
+        internal returns (bool)
+    {
+        return
+            module.pricefeed.isValid(sell_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
+            module.pricefeed.isValid(buy_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
+            (buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET) && // One asset must be MELON_ASSET
+            (buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
+    }
 
     // CONSTANT METHODS
 
-    function getReferenceAsset() constant returns (address) { return referenceAsset; }
-    function getUniverseAddress() constant returns (address) { return module.universe; }
     function getDecimals() constant returns (uint) { return decimals; }
-    function getBaseUnitsPerShare() constant returns (uint) { return baseUnitsPerShare; }
+    function getMelonAssetBaseUnits() constant returns (uint256) { return MELON_BASE_UNITS; }
+    function getVaultBaseUnits() constant returns (uint256) { return VAULT_BASE_UNITS; }
+    function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
+    function getExchangeAddress() constant returns (address) { return address(module.exchange); }
+    function getLastRequestId() constant returns (uint) {
+        require(nextRequestId > 0);
+        return nextRequestId - 1;
+    }
+    function getLastOrderId() constant returns (uint) {
+        require(nextOrderId > 0);
+        return nextOrderId - 1;
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre: numShares denominated in [base unit of referenceAsset], baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of referenceAsset]
-    function priceForNumShares(uint256 numShares) constant returns (uint256 priceInRef)
+    /// Pre: None
+    /// Post: sharePrice denominated in [base unit of melonAsset]
+    function calcSharePrice() constant returns (uint256)
     {
         var (, , , , , sharePrice) = performCalculations();
-        priceInRef = numShares.mul(sharePrice).div(baseUnitsPerShare);
+        return sharePrice;
     }
 
     /// Pre: None
-    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of referenceAsset]
+    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint256 gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint256 nav = calcNav(gav, unclaimedRewards);
-        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : baseUnitsPerShare; // Handle potential division through zero by defining a default value
+        uint256 sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : getMelonAssetBaseUnits(); // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
-    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in [base unit of referenceAsset]
-    function calcNav(uint256 gav, uint256 unclaimedRewards) constant returns (uint256 nav) { nav = gav.sub(unclaimedRewards); }
-
-    /// Pre: Gross asset value has been calculated
-    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of referenceAsset]
-    function calcUnclaimedRewards(uint256 gav) constant returns (uint256 managementReward, uint256 performanceReward, uint256 unclaimedRewards) {
-        uint256 timeDifference = now.sub(atLastPayout.timestamp);
-        managementReward = module.rewards.calculateManagementReward(timeDifference, gav);
-        performanceReward = 0;
-        if (totalSupply != 0) {
-            uint256 currSharePrice = calcValuePerShare(gav);
-            if (currSharePrice > atLastPayout.sharePrice) {
-              performanceReward = module.rewards.calculatePerformanceReward(currSharePrice - atLastPayout.sharePrice, totalSupply);
-            }
-        }
-        unclaimedRewards = managementReward.add(performanceReward);
-    }
-
-    /// Pre: Non-zero share supply; value denominated in [base unit of referenceAsset]
-    /// Post: Share price denominated in [base unit of referenceAsset * base unit of share / base unit of share] == [base unit of referenceAsset]
+    /// Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// Post: Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint256 value)
         constant
         pre_cond(isPastZero(totalSupply))
         returns (uint256 valuePerShare)
     {
-        valuePerShare = value.mul(baseUnitsPerShare).div(totalSupply);
+        valuePerShare = value.mul(getMelonAssetBaseUnits()).div(totalSupply);
+    }
+
+    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// Post: Net asset value denominated in [base unit of melonAsset]
+    function calcNav(uint256 gav, uint256 unclaimedRewards)
+        constant
+        returns (uint256 nav)
+    {
+        nav = gav.sub(unclaimedRewards);
+    }
+
+    /// Pre: Gross asset value has been calculated
+    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
+    function calcUnclaimedRewards(uint256 gav)
+        constant
+        returns (
+            uint256 managementReward,
+            uint256 performanceReward,
+            uint256 unclaimedRewards
+        )
+    {
+        uint256 timeDifference = now.sub(atLastPayout.timestamp);
+        managementReward = rewards.managementReward(
+            MANAGEMENT_REWARD_RATE,
+            timeDifference,
+            gav,
+            DIVISOR_FEE
+        );
+        performanceReward = 0;
+        if (totalSupply != 0) {
+            uint256 currSharePrice = calcValuePerShare(gav); // TODO Multiply w getInvertedPrice(ofReferenceAsset)
+            if (currSharePrice > atLastPayout.sharePrice) {
+              performanceReward = rewards.performanceReward(
+                  PERFORMANCE_REWARD_RATE,
+                  int(currSharePrice - atLastPayout.sharePrice),
+                  totalSupply,
+                  DIVISOR_FEE
+              );
+            }
+        }
+        unclaimedRewards = managementReward.add(performanceReward);
     }
 
     /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    /// Post: Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint256 gav) {
-        /* Rem 1:
-         *  All prices are relative to the referenceAsset price. The referenceAsset must be
-         *  equal to quoteAsset of corresponding PriceFeed.
-         * Rem 2:
-         *  For this version, the referenceAsset is set as EtherToken.
-         *  The price of the EtherToken relative to Ether is defined to always be equal to one.
-         * Rem 3:
-         *  price input unit: [Wei / ( Asset * 10**decimals )] == Base unit amount of referenceAsset per base unit of asset
-         *  vaultHoldings input unit: [Asset * 10**decimals] == Base unit amount of asset this vault holds
-         *    ==> vaultHoldings * price == value of asset holdings of this vault relative to referenceAsset price.
-         *  where 0 <= decimals <= 18 and decimals is a natural number.
-         */
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            // Holdings
-            address ofAsset = address(module.universe.assetAt(i));
-            AssetProtocol Asset = AssetProtocol(ofAsset);
-            uint256 assetHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
-            uint256 assetDecimals = Asset.getDecimals();
-            // Price
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            assert(referenceAsset == quoteAsset); // See Remark 1
-            uint256 assetPrice;
-            if (ofAsset == quoteAsset) {
-              assetPrice = 10 ** uint(assetDecimals); // See Remark 2
-            } else {
-              assetPrice = Price.getPrice(ofAsset); // Asset price given quoted to referenceAsset (and 'quoteAsset') price
-            }
+        for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
+            assetHoldings = assetHoldings.add(getOpenOrderExposure(ofAsset));
+            uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
+            uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+            LOGGER.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
+    }
+
+    //TODO: add previousHoldings
+    function closeOpenOrders(address ofSoldToken, address ofBoughtToken)
+        constant
+    {
+        //loop openorders
+        //if o.base == base && o.quote == quote
+        //  o.status = closed
+        //  update previousHoldings
+    }
+
+    //XXX: from perspective of vault
+    function wasNotEmbezzled(address ofSoldToken, address ofBoughtToken)
+        constant
+        returns (bool)
+    {
+        //totalBoughtToken=0
+        //totalSoldToken=0
+        //loop openorders
+        //  if order.have == sold && order.want == bought
+        //    totalBoughtToken += order.wantAmt
+        //    totalSoldToken += order.haveAmt
+        //xx=1
+        //buyFilled = prev.boughtToken + totalBoughtToken <= ERC20(ofBought).balanceOf(this)
+        //if(!buyFilled)
+        //  xx = (ERC20(ofBought).balanceOf(this) - prev.ofBought) / totalBoughtToken
+        //return prev.soldToken - totalSoldToken*xx >= ERC20(ofSold).balanceOf(this)
     }
 
     // NON-CONSTANT METHODS
@@ -178,237 +299,363 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
         string withSymbol,
         uint withDecimals,
         address ofMelonAsset,
-        address ofUniverse,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofRewards
+        address ofSphere,
+        address ofLogger
     ) {
+        sphere = SphereInterface(ofSphere);
+        module.exchange = ExchangeInterface(sphere.getExchange());
+        module.pricefeed = DataFeedInterface(sphere.getDataFeed());
+        LOGGER = Logger(ofLogger);
+        isSubscribeAllowed = true;
+        isRedeemAllowed = true;
         owner = ofManager;
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
-        melonAsset = ofMelonAsset;
-        baseUnitsPerShare = 10 ** decimals;
+        MELON_ASSET = ofMelonAsset;
+        MELON_CONTRACT = ERC20(MELON_ASSET);
+        require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
+        require(module.pricefeed.isDataSet(MELON_ASSET));
+        MELON_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
+        VAULT_BASE_UNITS = 10 ** decimals;
+        module.participation = ParticipationInterface(ofParticipation);
+        module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastPayout = Calculations({
             gav: 0,
             managementReward: 0,
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            sharePrice: baseUnitsPerShare,
+            sharePrice: MELON_BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
         });
-        module.universe = UniverseProtocol(ofUniverse);
-        referenceAsset = module.universe.getReferenceAsset();
-        melonAsset = module.universe.getMelonAsset();
-        // Assert referenceAsset is equal to quoteAsset in all assigned PriceFeeds
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            PriceFeedProtocol Price = PriceFeedProtocol(address(module.universe.priceFeedAt(i)));
-            address quoteAsset = Price.getQuoteAsset();
-            require(referenceAsset == quoteAsset);
-        }
-        module.participation = ParticipationProtocol(ofParticipation);
-        module.riskmgmt = RiskMgmtProtocol(ofRiskMgmt);
-        module.rewards = RewardsProtocol(ofRewards);
+        info = Information({
+            owner: owner,
+            name: withName,
+            symbol: withSymbol,
+            decimals: decimals,
+            created: now,
+            status: VaultStatus.setup
+        });
     }
+
+    // NON-CONSTANT METHODS - ADMINISTRATION
+
+    function increaseStake(uint256 numShares)
+        pre_cond(isOwner())
+        pre_cond(isPastZero(numShares))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(noOpenOrders())
+        post_cond(prevTotalSupply == totalSupply)
+    {
+        uint256 prevTotalSupply = totalSupply;
+        subShares(msg.sender, numShares);
+        addShares(this, numShares);
+    }
+
+    function decreaseStake(uint256 numShares)
+        pre_cond(isOwner())
+        pre_cond(isPastZero(numShares))
+        pre_cond(balancesOfHolderAtLeast(this, numShares))
+        pre_cond(noOpenOrders())
+        post_cond(prevTotalSupply == totalSupply)
+    {
+        uint256 prevTotalSupply = totalSupply;
+        subShares(this, numShares);
+        addShares(msg.sender, numShares);
+    }
+
+    function getStake() constant returns (uint256) { return balanceOf(this); }
+
+    function toggleSubscribe()
+        pre_cond(isOwner())
+    {
+        isSubscribeAllowed = !isSubscribeAllowed;
+    }
+
+    function toggleRedeem()
+        pre_cond(isOwner())
+    {
+        isRedeemAllowed = !isRedeemAllowed;
+    }
+
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings;
-    /// Post: Transfer ownership percentage of all assets from Investor to Vault and create numShares.
-    /// Note: Independent of running price feed!
-    function subscribe(uint256 numShares) { subscribeOnBehalf(msg.sender, numShares); }
-
-    /// Pre: Redeemer has at least `numShares` shares
-    /// Post: Redeemer lost `numShares`, and gained a slice of assets
-    /// Note: Independent of running price feed!
-    function redeem(uint256 numShares) { redeemOnBehalf(msg.sender, numShares); }
-
-    /// Pre: Investor pre-approves spending of vault's reference asset to this contract, denominated in [base unit of referenceAsset]
-    /// Post: Subscribe in this fund by creating shares
-    // TODO check comment
-    // TODO mitigate `spam` attack
-    /* Rem:
-     *  This can be seen as a non-persistent all or nothing limit order, where:
-     *  amount == numShares and price == numShares/offeredAmount [Shares / Reference Asset]
-     */
-    function subscribeWithReferenceAsset(uint256 numShares, uint256 offeredValue)
-        pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isSubscribePermitted(msg.sender, numShares))
+    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
+    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// Post: Pending subscription Request
+    function subscribe(
+        uint256 numShares,
+        uint256 offeredValue,
+        uint256 incentiveValue
+    )
+        public
+        pre_cond(isSubscribeAllowed)
+        pre_cond(isPastZero(incentiveValue))
+        pre_cond(module.participation.isSubscribeRequestPermitted(
+            msg.sender,
+            numShares,
+            offeredValue
+        ))
+        returns(uint256)
     {
-        uint256 actualValue = priceForNumShares(numShares); // [base unit of referenceAsset]
-        assert(offeredValue >= actualValue); // Sanity Check
-        assert(AssetProtocol(referenceAsset).transferFrom(msg.sender, this, actualValue));  // Transfer value
-        createShares(msg.sender, numShares); // Accounting
-        Subscribed(msg.sender, now, numShares);
+        MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
+        uint thisId = nextRequestId;
+        requests[thisId] = Request({
+            owner: msg.sender,
+            status: RequestStatus.open,
+            requestType: RequestType.subscribe,
+            numShares: numShares,
+            offeredOrRequestedValue: offeredValue,
+            incentive: incentiveValue,
+            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
+            timestamp: now
+        });
+        LOGGER.logSubscribeRequested(msg.sender, now, numShares);
+        nextRequestId++;
+        return thisId;
     }
+
+    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
+    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// Post: Pending subscription Request
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
     /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    // TODO mitigate `spam` attack
-    function redeemWithReferenceAsset(uint256 numShares, uint256 requestedValue)
+    function redeem(
+        uint256 numShares,
+        uint256 requestedValue,
+        uint256 incentiveValue
+      )
+        public
+        pre_cond(isRedeemAllowed)
         pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemPermitted(msg.sender, numShares))
-
+        pre_cond(module.participation.isRedeemRequestPermitted(
+            msg.sender,
+            numShares,
+            requestedValue
+        ))
+        returns (uint256)
     {
-        uint256 actualValue = priceForNumShares(numShares); // [base unit of referenceAsset]
-        assert(requestedValue <= actualValue); // Sanity Check
-        assert(AssetProtocol(referenceAsset).transfer(msg.sender, actualValue)); // Transfer value
-        annihilateShares(msg.sender, numShares); // Accounting
-        Redeemed(msg.sender, now, numShares);
+        uint thisId = nextRequestId;
+        requests[thisId] = Request({
+            owner: msg.sender,
+            status: RequestStatus.open,
+            requestType: RequestType.redeem,
+            numShares: numShares,
+            offeredOrRequestedValue: requestedValue,
+            incentive: incentiveValue,
+            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
+            timestamp: now
+        });
+        nextRequestId++;
+        LOGGER.logRedeemRequested(msg.sender, now, numShares);
+        return thisId;
     }
 
-    /// Pre: Approved spending of all assets with non-empty asset holdings;
-    /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
-    function subscribeOnBehalf(address recipient, uint256 numShares)
-        pre_cond(isPastZero(totalSupply))
-        pre_cond(isPastZero(numShares))
+    /// Pre: Anyone can trigger this function; Id of request that is pending
+    /// Post: Worker either cancelled or fullfilled request
+    function executeRequest(uint256 requestId)
+        public
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
+        pre_cond(isGreaterOrEqualThan(
+                now,
+                requests[requestId].timestamp.add(module.pricefeed.getInterval())
+            ) || isDecommissioned
+        )
+        pre_cond(isGreaterOrEqualThan(
+                module.pricefeed.getLastUpdateId(),
+                requests[requestId].lastFeedUpdateId + 2
+            ) || isDecommissioned
+        )
     {
-        allocateSlice(recipient, numShares);
-        Subscribed(recipient, now, numShares);
+        // Time and updates have passed
+        Request request = requests[requestId];
+        uint256 actualValue = request.numShares.mul(calcSharePrice()).div(getVaultBaseUnits()); // denominated in [base unit of MELON_ASSET]
+        request.status = RequestStatus.executed;
+        if (isSubscribe(requests[requestId].requestType) &&
+            isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+        ) { // Limit Order is OK
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
+            uint remainder = request.offeredOrRequestedValue.sub(actualValue);
+            if(remainder > 0) assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
+            createShares(request.owner, request.numShares); // Accounting
+        } else if (isRedeem(requests[requestId].requestType) &&
+            isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+        ) {
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(request.owner, actualValue)); // Transfer value
+            annihilateShares(request.owner, request.numShares); // Accounting
+        }
+    }
+
+    function cancelRequest(uint requestId)
+        pre_cond(isSubscribe(requests[requestId].requestType) ||
+            isRedeem(requests[requestId].requestType))
+        pre_cond(requests[requestId].owner == msg.sender ||
+            isDecommissioned)
+    {
+        Request request = requests[requestId];
+        request.status = RequestStatus.cancelled;
+        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
+        assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue));
     }
 
     /// Pre: Recipient owns shares
     /// Post: Transfer percentage of all assets from Vault to Investor and annihilate numShares of shares.
-    function redeemOnBehalf(address recipient, uint256 numShares)
-        pre_cond(balancesOfHolderAtLeast(recipient, numShares))
-    {
-        separateSlice(recipient, numShares);
-        Redeemed(recipient, now, numShares);
-    }
-
-    /// Pre: Allocation: Pre-approve spending for all non empty vaultHoldings of Assets, numShares denominated in [base units ]
-    /// Post: Transfer ownership percentage of all assets to/from Vault
-    function allocateSlice(address recipient, uint256 numShares)
-        internal
-    {
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
-            uint256 vaultHoldings = Asset.balanceOf(this); // Amount of asset base units this vault holds
-            if (vaultHoldings == 0) continue;
-            uint256 allocationAmount = vaultHoldings.mul(numShares).div(totalSupply); // ownership percentage of msg.sender
-            uint256 senderHoldings = Asset.balanceOf(msg.sender); // Amount of asset sender holds
-            require(senderHoldings >= allocationAmount);
-            // Transfer allocationAmount of Assets
-            assert(Asset.transferFrom(msg.sender, this, allocationAmount)); // Send funds from investor to vault
-        }
-        // Issue _after_ external calls
-        createShares(recipient, numShares);
-    }
-
-    /// Pre: Allocation: Approve spending for all non empty vaultHoldings of Assets
-    /// Post: Transfer ownership percentage of all assets to/from Vault
-    function separateSlice(address recipient, uint256 numShares)
-        internal
+    /// Note: Independent of running price feed!
+    function redeemUsingSlice(uint256 numShares)
+        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
     {
         // Current Value
-        uint256 oldTotalSupply = totalSupply;
-        // Destroy _before_ external calls to prevent reentrancy
-        annihilateShares(recipient, numShares);
+        uint256 prevTotalSupply = totalSupply.sub(atLastPayout.unclaimedRewards); // TODO Fix calculation
+        assert(isPastZero(prevTotalSupply));
+        annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
         // Transfer separationAmount of Assets
-        uint256 numAssignedAssets = module.universe.numAssignedAssets();
-        for (uint256 i = 0; i < numAssignedAssets; ++i) {
-            AssetProtocol Asset = AssetProtocol(address(module.universe.assetAt(i)));
-            uint256 vaultHoldings = Asset.balanceOf(this); // EXTERNAL CALL: Amount of asset base units this vault holds
-            if (vaultHoldings == 0) continue;
-            uint256 separationAmount = vaultHoldings.mul(numShares).div(oldTotalSupply); // ownership percentage of msg.sender
-            // EXTERNAL CALL
-            assert(Asset.transfer(recipient, separationAmount)); // EXTERNAL CALL: Send funds from vault to investor
+        for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this);
+            if (assetHoldings == 0) continue;
+            uint256 separationAmount = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
+            assert(ERC20(ofAsset).transfer(msg.sender, separationAmount)); // Send funds from vault to investor
         }
+        LOGGER.logRedeemed(msg.sender, now, numShares);
     }
 
-    function createShares(address recipient, uint256 numShares)
-        internal
-    {
-        balances[recipient] = balances[recipient].add(numShares);
+    function createShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.add(numShares);
+        addShares(recipient, numShares);
+        LOGGER.logSubscribed(msg.sender, now, numShares);
     }
 
-    function annihilateShares(address recipient, uint256 numShares)
-        internal
-    {
-        balances[recipient] = balances[recipient].sub(numShares);
+    function annihilateShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.sub(numShares);
+        subShares(recipient, numShares);
+        LOGGER.logRedeemed(msg.sender, now, numShares);
+    }
+
+    function addShares(address recipient, uint256 numShares) internal {
+        balances[recipient] = balances[recipient].add(numShares);
+    }
+
+    function subShares(address recipient, uint256 numShares) internal {
+        balances[recipient] = balances[recipient].sub(numShares);
     }
 
     // NON-CONSTANT METHODS - MANAGING
 
     /// Pre: Sufficient balance and spending has been approved
     /// Post: Make offer on selected Exchange
-    function makeOrder(ExchangeProtocol onExchange,
-        uint256 sell_how_much, ERC20 sell_which_token,
-        uint256 buy_how_much,  ERC20 buy_which_token
+    function makeOrder(
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount
     )
         pre_cond(isOwner())
-        pre_cond(module.riskmgmt.isExchangeMakePermitted(onExchange,
-            sell_how_much, sell_which_token,
-            buy_how_much, buy_which_token)
-        )
-        returns (uint256 id)
+        pre_cond(isValidAssetPair(haveToken, wantToken))
+        pre_cond(module.riskmgmt.isExchangeMakePermitted(
+            haveToken,
+            wantToken,
+            haveAmount,
+            wantAmount,
+            0 // TODO: Insert assetpair specific price
+        ))
+        returns (uint id)
     {
-        requireIsWithinKnownUniverse(onExchange, sell_which_token, buy_which_token);
-        approveSpending(sell_which_token, onExchange, sell_how_much);
-        id = onExchange.make(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
+        approveSpending(haveToken, haveAmount);
+        id = module.exchange.make(haveToken, wantToken, haveAmount, wantAmount);
+        orders[nextOrderId] = Order({
+            haveToken: haveToken,
+            wantToken: wantToken,
+            haveAmount: haveAmount,
+            wantAmount: wantAmount,
+            timestamp: now,
+            order_status: OrderStatus.open,
+            orderType: OrderType.make,
+            quantity_filled: 0
+        });
+        nextOrderId++;
+    }
+
+    function getOpenOrderExposure(address ofAsset) constant returns(uint amt) {
+        for(uint i; i < openOrderIds.length; i++){
+            Order thisOrder = orders[openOrderIds[i]];
+            if(thisOrder.haveToken == ofAsset) amt = amt + thisOrder.haveAmount;
+        }
+    }
+
+    function getExpectedSettlement(address ofAsset) constant returns(uint amt) {
+        for(uint i; i < openOrderIds.length; i++){
+            Order thisOrder = orders[openOrderIds[i]];
+            if(thisOrder.wantToken == ofAsset)
+                amt = amt + thisOrder.wantAmount;
+        }
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOrder(ExchangeProtocol onExchange, uint256 id, uint256 wantedBuyAmount)
+    function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
+        // TODO uncomment
         var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
-        ) = onExchange.getOrder(id);
+        ) = module.exchange.getOffer(id);
+        require(isValidAssetPair(offeredBuyToken, offeredSellToken));
         require(wantedBuyAmount <= offeredBuyAmount);
-        requireIsWithinKnownUniverse(onExchange, offeredSellToken, offeredBuyToken);
-        var orderOwner = onExchange.getOwner(id);
-        require(module.riskmgmt.isExchangeTakePermitted(onExchange,
-            offeredSellAmount, offeredSellToken,
-            offeredBuyAmount, offeredBuyToken,
+        var orderOwner = module.exchange.getOwner(id);
+        require(module.riskmgmt.isExchangeTakePermitted(
+            offeredSellToken,
+            offeredBuyToken,
+            offeredSellAmount,
+            offeredBuyAmount,
+            0, // TODO: Insert assetpair specific price
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
-        approveSpending(offeredSellToken, onExchange, wantedSellAmount);
-        return onExchange.take(id, wantedBuyAmount);
+        approveSpending(offeredSellToken, wantedSellAmount);
+        bool success = module.exchange.buy(id, wantedBuyAmount);
+        orders[nextOrderId] = Order({
+            haveToken: offeredBuyToken,
+            wantToken: offeredSellToken,
+            haveAmount: uint128(offeredBuyAmount),
+            wantAmount: uint128(wantedBuyAmount),
+            timestamp: now,
+            order_status: OrderStatus.fullyFilled,
+            orderType: OrderType.take,
+            quantity_filled: wantedBuyAmount
+        });
+        nextOrderId++;
+        return success;
     }
 
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
-    function cancelOrder(ExchangeProtocol onExchange, uint256 id)
+    function cancelOrder(uint256 id)
         pre_cond(isOwner())
         returns (bool)
     {
-        return onExchange.cancel(id);
-    }
-
-    /// Pre: Universe has been defined
-    /// Post: Whether buying and selling of tokens are allowed at given exchange
-    function requireIsWithinKnownUniverse(address onExchange, address sell_which_token, address buy_which_token)
-        internal
-    {
-        // Asset pair defined in Universe and contains referenceAsset
-        require(module.universe.assetAvailability(buy_which_token));
-        require(module.universe.assetAvailability(sell_which_token));
-        require(buy_which_token == referenceAsset || sell_which_token == referenceAsset); // One asset must be referenceAsset
-        require(buy_which_token != referenceAsset || sell_which_token != referenceAsset); // Pair must consists of diffrent assets
-        // Exchange assigned to tokens in Universe
-        require(onExchange == module.universe.assignedExchange(buy_which_token));
-        require(onExchange == module.universe.assignedExchange(sell_which_token));
+        return module.exchange.cancel(id);
     }
 
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Token specific exchange as registered in universe, approved to spend ofToken
-    function approveSpending(ERC20 ofToken, address onExchange, uint256 amount)
+    /// Post: Approved to spend ofToken on Exchange
+    function approveSpending(ERC20 ofToken, uint256 amount)
         internal
     {
-        assert(ofToken.approve(onExchange, amount));
-        SpendingApproved(ofToken, onExchange, amount);
+        assert(ofToken.approve(address(module.exchange), amount));
+        LOGGER.logSpendingApproved(ofToken, address(module.exchange), amount);
     }
 
     // NON-CONSTANT METHODS - REWARDS
@@ -417,7 +664,9 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
+        pre_cond(noOpenOrders())
     {
+        // TODO Assert that all open orders are closed
         var (
             gav,
             managementReward,
@@ -430,21 +679,68 @@ contract Vault is DBC, Owned, Shares, VaultProtocol {
 
         // Accounting: Allocate unclaimedRewards to this fund
         uint256 numShares = totalSupply.mul(unclaimedRewards).div(gav);
-        createShares(owner, numShares);
-
+        addShares(owner, numShares);
+        addShares(owner, numShares);
         // Update Calculations
         atLastPayout = Calculations({
-          gav: gav,
-          managementReward: managementReward,
-          performanceReward: performanceReward,
-          unclaimedRewards: unclaimedRewards,
-          nav: nav,
-          sharePrice: sharePrice,
-          totalSupply: totalSupply,
-          timestamp: now
+            gav: gav,
+            managementReward: managementReward,
+            performanceReward: performanceReward,
+            unclaimedRewards: unclaimedRewards,
+            nav: nav,
+            sharePrice: sharePrice,
+            totalSupply: totalSupply,
+            timestamp: now
         });
 
-        RewardsConverted(now, numShares, unclaimedRewards);
-        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+        LOGGER.logRewardsConverted(now, numShares, unclaimedRewards);
+        LOGGER.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
+
+	// CONSTANT METHODS
+
+  function getRequestHistory(uint start)
+		constant
+		returns (
+			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
+            uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
+			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
+		)
+	{
+		for(uint ii = 0; ii < 1024; ii++){
+			if(start + ii >= nextRequestId) break;
+			owners[ii] = requests[start + ii].owner;
+			statuses[ii] = uint(requests[start + ii].status);
+			requestTypes[ii] = uint(requests[start + ii].requestType);
+			numShares[ii] = requests[start + ii].numShares;
+			offered[ii] = requests[start + ii].offeredOrRequestedValue;
+			incentive[ii] = requests[start + ii].incentive;
+			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
+			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
+			timestamp[ii] = requests[start + ii].timestamp;
+		}
+	}
+
+
+	function getOrderHistory(uint start)
+		constant
+		returns (
+			uint[1024] haveAmount, address[1024] haveToken,
+			uint[1024] wantAmount, address[1024] wantToken,
+			uint[1024] timestamps, uint[1024] statuses,
+			uint[1024] types, uint[1024] buyQuantityFilled
+		)
+	{
+		for(uint ii = 0; ii < 1024; ii++){
+			if(start + ii >= nextOrderId) break;
+			haveAmount[ii] = orders[start + ii].haveAmount;
+			haveToken[ii] = orders[start + ii].haveToken;
+			wantAmount[ii] = orders[start + ii].wantAmount;
+			wantToken[ii] = orders[start + ii].wantToken;
+			timestamps[ii] = orders[start + ii].timestamp;
+			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
+			types[ii] = uint(orders[start + ii].orderType);
+			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
+		}
+	}
 }

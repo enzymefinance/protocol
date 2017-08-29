@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import "./DBC.sol";
-import "./Owned.sol";
+import './DBC.sol';
+import './Owned.sol';
 
 
 /// @title Backup Owned Contract

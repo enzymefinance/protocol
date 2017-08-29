@@ -1,10 +1,10 @@
 pragma solidity ^0.4.11;
 
-import "./RiskMgmtProtocol.sol";
+import './RiskMgmtInterface.sol';
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
-contract RiskMgmt {
+contract RiskMgmt is RiskMgmtInterface {
 
     // FIELDS
 
@@ -17,9 +17,11 @@ contract RiskMgmt {
     // NON-CONSTANT METHODS
 
     function isExchangeMakePermitted(
-        address onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token
+        ERC20   haveToken,
+        ERC20   wantToken,
+        uint    haveAmount,
+        uint    wantAmount,
+        uint    referencePrice
     )
         returns (bool)
     {
@@ -27,9 +29,11 @@ contract RiskMgmt {
     }
 
     function isExchangeTakePermitted(
-        address onExchange,
-        uint sell_how_much, ERC20 sell_which_token,
-        uint buy_how_much,  ERC20 buy_which_token,
+        ERC20   haveToken,
+        ERC20   wantToken,
+        uint    haveAmount,
+        uint    wantAmount,
+        uint    referencePrice,
         address orderOwner
     )
         returns (bool)

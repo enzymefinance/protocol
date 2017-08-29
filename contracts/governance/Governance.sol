@@ -1,42 +1,107 @@
 pragma solidity ^0.4.11;
 
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
 
 /// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Governance contract.
 contract Governance is DBC, Owned {
 
+    // TYPES
+
+    struct VersionInfo {
+        address version;
+        bool active;
+        uint timestamp;
+    }
+
     // FIELDS
 
-    address[] public versions;
-    mapping (address => bool) versionAvailabilities;
+    // Fields that are only changed in constructor
+    address public MELON_ASSET; // Adresss of Melon asset contract
+    // Fields that can be changed by functions
+    mapping (uint => VersionInfo) public versions;
+    uint public lastVersionId;
 
     // EVENTS
 
-    event VersionUpdated(address indexed nextVersion, uint indexed id);
+    event VersionUpdated(uint id);
+
+    // PRE, POST, INVARIANT CONDITIONS
+
+    function isActive(uint id) internal returns (bool active) {
+        (, active, ) = getVersion(id);
+    }
 
     // MODIFIERS
 
     // CONSTANT METHODS
 
-    function numVersions() constant returns (uint) { return versions.length; }
-    function versionAt(uint index) constant returns (address) { return versions[index]; }
-    function assetAvailability(address ofVersion) constant returns (bool) { return versionAvailabilities[ofVersion]; }
+    function getVersion(uint id) constant returns (address, bool, uint) {
+        var version = versions[id];
+        return (
+            version.version,
+            version.active,
+            version.timestamp
+        );
+    }
+
+    // NON-CONSTANT INTERNAL METHODS
+
+    function next_id() internal returns (uint) {
+        lastVersionId++; return lastVersionId;
+    }
 
     // NON-CONSTANT METHODS
 
-    function Governance() {}
+    function Governance(address ofMelonAsset) {
+        MELON_ASSET = ofMelonAsset;
+    }
+
+    /// Pre:
+    /// Post: Updates Melon protocol version
+    function proposeVersion(
+        address ofVersion
+    ) {
+        // TODO: Implement; Can be multisig stlye proposal and confirmation
+    }
 
     /// Pre: Only Owner
     /// Post: Updates Melon protocol version:
-    function updateVersion(address nextVersion)
-        pre_cond(isOwner())
-    {
+    function addVersion(
+        address ofVersion
+    )
         // TODO: Assert Board Members consensus
-        versions.push(nextVersion);
-        versionAvailabilities[nextVersion] = true;
-        VersionUpdated(nextVersion, versions.length);
+        pre_cond(isOwner())
+        returns (uint id)
+    {
+        VersionInfo memory info;
+        info.version = ofVersion;
+        info.active = true;
+        info.timestamp = now;
+        id = next_id();
+        versions[id] = info;
+        VersionUpdated(id);
+    }
+
+    function decommissionVersion(uint id)
+        // TODO: Assert Board Members consensus
+        pre_cond(isOwner())
+        pre_cond(isActive(id))
+    {
+        // TODO decommissionVaults
+    }
+
+    function getVersions(uint start)
+        constant
+        returns(address[1024] allVersions, bool[1024] active, uint[1024] timestamps)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii > lastVersionId) break;
+            allVersions[ii] = versions[ii].version;
+            active[ii] = versions[ii].active;
+            timestamps[ii] = versions[ii].timestamp;
+        }
     }
 }

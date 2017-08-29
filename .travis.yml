@@ -18,6 +18,7 @@ addons:
     - clang
 cache: yarn
 before_script:
-- testrpc > testrpc.log &
+- testrpc -l 6713095 > testrpc.log &
 after_script:
+- npm run coveralls
 - cat testrpc.log
