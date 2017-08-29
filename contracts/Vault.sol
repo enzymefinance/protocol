@@ -255,7 +255,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
             uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getOpenOrderExposure(ofAsset));
+            assetHoldings = assetHoldings.add(getIntededSellAmount(ofAsset));
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -264,7 +264,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     //TODO: add previousHoldings
-    function closeOpenOrders(address ofSoldToken, address ofBoughtToken)
+    function closeOpenOrders(address ofSellToken, address ofBuyToken)
         constant
     {
         //loop openorders
@@ -274,20 +274,26 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     //XXX: from perspective of vault
-    function wasNotEmbezzled(address ofSoldToken, address ofBoughtToken)
+    function wasNotEmbezzled(address ofSellToken, address ofBuyToken)
         constant
         returns (bool)
     {
-        /*uint256 totalExposure = getOpenOrderExposure(ofSoldToken); // Trade intention
-        uint256 totalExpectedExecution = getExpectedExecution(ofBoughtToken); // Trade execution
-        previousHoldings[ofBoughtToken].add()*/
+        uint256 totalIntededSellAmount = getIntededSellAmount(ofSellToken); // Trade intention
+        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofBuyToken); // Trade execution
 
+        // Sold less or equal than expected
+        bool sellFilled = isLessOrEqualThan(
+            previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofBuyToken).balanceOf(this) // Actual amount sold
+        );
+        if (!sellFilled) {
 
-        //xx=1
-        //buyFilled = prev.boughtToken + totalBoughtToken <= ERC20(ofBought).balanceOf(this)
+        }
+
+        //buyFilled = prev.boughtToken + totalIntededSellAmount <= ERC20(ofBought).balanceOf(this)
         //if(!buyFilled)
-        //  xx = (ERC20(ofBought).balanceOf(this) - prev.ofBought) / totalBoughtToken
-        //return prev.soldToken - totalSoldToken*xx >= ERC20(ofSold).balanceOf(this)
+        //  xx = (ERC20(ofBought).balanceOf(this) - prev.ofBought) / totalIntededSellAmount
+        //return prev.soldToken - totalIntededBuyAmount*xx >= ERC20(ofSold).balanceOf(this)
     }
 
     // NON-CONSTANT METHODS
@@ -581,7 +587,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         nextOrderId++;
     }
 
-    function getOpenOrderExposure(address ofAsset) constant returns(uint amt) {
+    function getIntededSellAmount(address ofAsset) constant returns(uint amt) {
         for (uint i; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.haveToken == ofAsset) {
@@ -590,7 +596,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         }
     }
 
-    function getExpectedExecution(address ofAsset) constant returns(uint amt) {
+    function getIntededBuyAmount(address ofAsset) constant returns(uint amt) {
         for (uint i; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.wantToken == ofAsset) {
