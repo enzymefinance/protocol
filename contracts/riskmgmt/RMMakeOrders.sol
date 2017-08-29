@@ -33,7 +33,7 @@ contract RMMakeOrders is RiskMgmtInterface {
               uint256(haveAmount)
               .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
               referencePrice
-              .mul(RISK_LEVEL)
+              .mul(RISK_DIVISOR.sub(RISK_LEVEL))
               .div(RISK_DIVISOR)
           );
       }
