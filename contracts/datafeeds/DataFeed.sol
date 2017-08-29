@@ -85,7 +85,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: return price
+    /// Post: Price of baseUnits(QUOTE_ASSET).ofAsset
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -96,7 +96,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Inverted price
+    /// Post: Inverted price of baseUnits(ofAsset).QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -109,7 +109,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// Pre: One of the address is equal to quote asset
-    /// Post: Reference price of given asset pair BASE.QUOTE
+    /// Post: Price of baseUnits(ofBase).ofQuote
+    /// Post: either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {
         if (getQuoteAsset() == ofQuote) {
             getPrice(ofBase);
