@@ -131,7 +131,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint256 public nextOrderId;
     Calculations public atLastPayout;
     bool public isDecommissioned;
-    mapping (address => uint) public previousHoldings;
+    mapping (address => uint256) public previousHoldings;
     bool public isSubscribeAllowed;
     bool public isRedeemAllowed;
 
@@ -278,12 +278,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         constant
         returns (bool)
     {
-        //totalBoughtToken=0
-        //totalSoldToken=0
-        //loop openorders
-        //  if order.have == sold && order.want == bought
-        //    totalBoughtToken += order.wantAmt
-        //    totalSoldToken += order.haveAmt
+        /*uint256 totalExposure = getOpenOrderExposure(ofSoldToken); // Trade intention
+        uint256 totalExpectedExecution = getExpectedExecution(ofBoughtToken); // Trade execution
+        previousHoldings[ofBoughtToken].add()*/
+
+
         //xx=1
         //buyFilled = prev.boughtToken + totalBoughtToken <= ERC20(ofBought).balanceOf(this)
         //if(!buyFilled)
@@ -562,10 +561,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isOwner())
         pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
-            haveToken,
-            wantToken,
-            haveAmount,
-            wantAmount,
+            0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             0 // TODO: Insert assetpair specific price
         ))
         returns (uint id)
@@ -594,7 +590,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         }
     }
 
-    function getExpectedSettlement(address ofAsset) constant returns(uint amt) {
+    function getExpectedExecution(address ofAsset) constant returns(uint amt) {
         for (uint i; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.wantToken == ofAsset) {
@@ -619,10 +615,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         require(wantedBuyAmount <= offeredBuyAmount);
         var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(
-            offeredSellToken,
-            offeredBuyToken,
-            offeredSellAmount,
-            offeredBuyAmount,
+            0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             0, // TODO: Insert assetpair specific price
             orderOwner)
         );

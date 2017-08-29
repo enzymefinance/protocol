@@ -17,11 +17,8 @@ contract RiskMgmt is RiskMgmtInterface {
     // NON-CONSTANT METHODS
 
     function isExchangeMakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice
+        uint actualPrice,
+        uint referencePrice
     )
         returns (bool)
     {
@@ -29,11 +26,8 @@ contract RiskMgmt is RiskMgmtInterface {
     }
 
     function isExchangeTakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice,
+        uint actualPrice,
+        uint referencePrice,
         address orderOwner
     )
         returns (bool)

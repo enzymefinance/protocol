@@ -16,21 +16,15 @@ import '../dependencies/ERC20.sol';
 contract RiskMgmtInterface {
 
     function isExchangeMakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice
+        uint actualPrice,
+        uint referencePrice
     )
         returns (bool)
     {}
 
     function isExchangeTakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice,
+        uint actualPrice,
+        uint referencePrice,
         address orderOwner
     )
         returns (bool)
