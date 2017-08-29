@@ -697,50 +697,49 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         LOGGER.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
-	// CONSTANT METHODS
+  	// CONSTANT METHODS
 
-  function getRequestHistory(uint start)
-		constant
-		returns (
-			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
-            uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
-			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
-		)
-	{
-		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii >= nextRequestId) break;
-			owners[ii] = requests[start + ii].owner;
-			statuses[ii] = uint(requests[start + ii].status);
-			requestTypes[ii] = uint(requests[start + ii].requestType);
-			numShares[ii] = requests[start + ii].numShares;
-			offered[ii] = requests[start + ii].offeredOrRequestedValue;
-			incentive[ii] = requests[start + ii].incentive;
-			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
-			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
-			timestamp[ii] = requests[start + ii].timestamp;
-		}
-	}
+    function getRequestHistory(uint start)
+    		constant
+    		returns (
+      			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
+                  uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
+      			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
+    		)
+  	{
+    		for(uint ii = 0; ii < 1024; ii++){
+      			if(start + ii >= nextRequestId) break;
+      			owners[ii] = requests[start + ii].owner;
+      			statuses[ii] = uint(requests[start + ii].status);
+      			requestTypes[ii] = uint(requests[start + ii].requestType);
+      			numShares[ii] = requests[start + ii].numShares;
+      			offered[ii] = requests[start + ii].offeredOrRequestedValue;
+      			incentive[ii] = requests[start + ii].incentive;
+      			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
+      			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
+      			timestamp[ii] = requests[start + ii].timestamp;
+    		}
+  	}
 
-
-	function getOrderHistory(uint start)
-		constant
-		returns (
-			uint[1024] haveAmount, address[1024] haveToken,
-			uint[1024] wantAmount, address[1024] wantToken,
-			uint[1024] timestamps, uint[1024] statuses,
-			uint[1024] types, uint[1024] buyQuantityFilled
-		)
-	{
-		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii >= nextOrderId) break;
-			haveAmount[ii] = orders[start + ii].haveAmount;
-			haveToken[ii] = orders[start + ii].haveToken;
-			wantAmount[ii] = orders[start + ii].wantAmount;
-			wantToken[ii] = orders[start + ii].wantToken;
-			timestamps[ii] = orders[start + ii].timestamp;
-			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
-			types[ii] = uint(orders[start + ii].orderType);
-			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
-		}
-	}
+  	function getOrderHistory(uint start)
+    		constant
+    		returns (
+      			uint[1024] haveAmount, address[1024] haveToken,
+      			uint[1024] wantAmount, address[1024] wantToken,
+      			uint[1024] timestamps, uint[1024] statuses,
+      			uint[1024] types, uint[1024] buyQuantityFilled
+    		)
+  	{
+    		for(uint ii = 0; ii < 1024; ii++){
+      			if(start + ii >= nextOrderId) break;
+      			haveAmount[ii] = orders[start + ii].haveAmount;
+      			haveToken[ii] = orders[start + ii].haveToken;
+      			wantAmount[ii] = orders[start + ii].wantAmount;
+      			wantToken[ii] = orders[start + ii].wantToken;
+      			timestamps[ii] = orders[start + ii].timestamp;
+      			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
+      			types[ii] = uint(orders[start + ii].orderType);
+      			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
+    		}
+  	}
 }
