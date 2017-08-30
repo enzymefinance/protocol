@@ -272,50 +272,62 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     //TODO: add previousHoldings
-    function closeOpenOrders(address ofSellToken, address ofBuyToken)
+    function closeOpenOrders(address ofBase, address ofQuote)
         constant
     {
-        //loop openorders
-        //if o.base == base && o.quote == quote
-        //  o.status = closed
-        //  update previousHoldings
+        for (uint i = 0; i < openOrderIds.length; i++) {
+            Order thisOrder = orders[openOrderIds[i]];
+            if (thisOrder.haveToken == ofBase && thisOrder.wantToken == ofQuote) {
+                proofOfEmbezzlement(ofBase, ofQuote);
+                delete openOrderIds[i]; // Free up open order slot
+                // TODO: fix pot incorrect OrderStatus - partiallyFilled
+                thisOrder.order_status = OrderStatus.fullyFilled;
+                //  update previousHoldings
+                // TODO: trigger for each proofOfEmbezzlement() call
+                previousHoldings[ofBase] = ERC20(ofBase).balanceOf(this);
+                previousHoldings[ofQuote] = ERC20(ofQuote).balanceOf(this);
+            }
+        }
     }
 
     //XXX: from perspective of vault
-    function proofOfEmbezzlement(address ofSellToken, address ofBuyToken)
+    /// Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
+    /// Post: True if embezzled otherwise false
+    function proofOfEmbezzlement(address ofBase, address ofQuote)
         constant
         returns (bool)
     {
-
         // Sold more than expected => Proof of Embezzlemnt
-        uint256 totalIntededSellAmount = getIntededSellAmount(ofSellToken); // Trade intention
+        uint256 totalIntededSellAmount = getIntededSellAmount(ofBase); // Trade intention
         if (isLargerThan(
-            previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
-            ERC20(ofSellToken).balanceOf(this) // Actual amount sold
+            previousHoldings[ofBase].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
         )) {
             isShutDown = true;
+            // Allocate staked shares from this to msg.sender
             return true;
         }
         // Sold less or equal than intended
         uint256 factor = 10000;
         uint256 divisor = factor;
         if (isLessThan(
-            previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
-            ERC20(ofSellToken).balanceOf(this) // Actual amount sold
+            previousHoldings[ofBase].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
         )) { // Sold less than intended
             factor = divisor
-                .mul(previousHoldings[ofSellToken].sub(ERC20(ofSellToken).balanceOf(this)))
+                .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
                 .div(totalIntededSellAmount);
         }
 
         // Sold at a worse price than expected => Proof of Embezzlemnt
-        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofBuyToken); // Trade execution
+        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofQuote); // Trade execution
         uint256 totalExpectedBuyAmount = totalIntededBuyAmount.mul(factor).div(divisor);
         if (isLargerThan(
-            previousHoldings[ofBuyToken].add(totalExpectedBuyAmount), // Expected amount bhought
-            ERC20(ofBuyToken).balanceOf(this) // Actual amount sold
+            previousHoldings[ofQuote].add(totalExpectedBuyAmount), // Expected amount bhought
+            ERC20(ofQuote).balanceOf(this) // Actual amount sold
         )) {
             isShutDown = true;
+            // Allocate staked shares from this to msg.sender
             return true;
         }
         return false;
@@ -623,7 +635,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function getIntededSellAmount(address ofAsset) constant returns(uint amt) {
-        for (uint i; i < openOrderIds.length; i++) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.haveToken == ofAsset) {
                 amt = amt + thisOrder.haveAmount;
@@ -632,7 +644,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     function getIntededBuyAmount(address ofAsset) constant returns(uint amt) {
-        for (uint i; i < openOrderIds.length; i++) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.wantToken == ofAsset) {
                 amt = amt + thisOrder.wantAmount;
