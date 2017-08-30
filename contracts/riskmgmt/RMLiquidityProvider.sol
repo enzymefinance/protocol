@@ -13,9 +13,9 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       // NON-CONSTANT METHODS
 
       function isExchangeMakePermitted(
-          uint actualPrice,
-          uint referencePrice,
-          uint quantity
+          uint orderPrice,
+          uint orderQuantity,
+          uint referencePrice
       )
           returns (bool)
       {
@@ -23,9 +23,9 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       }
 
       function isExchangeTakePermitted(
-          uint actualPrice,
+          uint orderPrice,
+          uint orderQuantity,
           uint referencePrice,
-          uint quantity,
           address orderOwner
       )
           returns (bool)

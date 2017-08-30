@@ -116,6 +116,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint public decimals;
     uint256 public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     uint256 public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
+    address public VERSION; // Adress of Version contract
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT;
     address public REFERENCE_ASSET; // Performance measured against value of this asset
@@ -143,9 +144,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
     function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
+    function isLargerThan(uint256 x, uint256 y) internal returns (bool) { return x > y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
-    function noOpenOrders() internal returns (bool) {
+    function noOpenOrders()
+        internal
+        returns (bool) {
         for (uint256 i = 0; i < openOrderIds.length; i++) {
             if (openOrderIds[i] != 0) return false;
         }
@@ -153,7 +157,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
-        internal returns (bool)
+        internal
+        returns (bool)
     {
         return
             module.pricefeed.isValid(sell_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
@@ -161,6 +166,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             (buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET) && // One asset must be MELON_ASSET
             (buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
     }
+    function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // CONSTANT METHODS
 
@@ -281,6 +287,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 totalIntededSellAmount = getIntededSellAmount(ofSellToken); // Trade intention
         uint256 totalIntededBuyAmount = getIntededBuyAmount(ofBuyToken); // Trade execution
 
+        // Sold MORE than expected => Proof of Embezzlemnt
+
         // Sold less or equal than expected
         bool sellFilled = isLessOrEqualThan(
             previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
@@ -319,6 +327,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        VERSION = msg.sender;
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
@@ -385,6 +394,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isOwner())
     {
         isRedeemAllowed = !isRedeemAllowed;
+    }
+
+    function decommission()
+        pre_cond(isVersion())
+    {
+        isDecommissioned == true;
     }
 
 
@@ -624,9 +639,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         require(module.riskmgmt.isExchangeTakePermitted(
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             0, // TODO: Insert assetpair specific price
-            0, // TODO Insert buy quantity
-            orderOwner)
-        );
+            0 // TODO Insert buy quantity
+        ));
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
         bool success = module.exchange.buy(id, wantedBuyAmount);
