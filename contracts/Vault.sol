@@ -660,7 +660,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
-        // TODO uncomment
         var (
             offeredBuyAmount, offeredBuyToken,
             offeredSellAmount, offeredSellToken
