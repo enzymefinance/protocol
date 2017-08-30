@@ -48,12 +48,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
-    function getLastUpdateId() constant returns (uint) { 
-      require(nextUpdateId > 0);
-      return nextUpdateId - 1;
+    function getLastUpdateId() constant returns (uint) {
+        require(nextUpdateId > 0);
+        return nextUpdateId - 1;
     }
     function getLastUpdateTimestamp() constant returns (uint) {
-      return lastUpdateTimestamp;
+        return lastUpdateTimestamp;
     }
     function getDataHistory(address ofAsset, uint withStartId)
         constant
@@ -85,7 +85,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: return price
+    /// Post: Price of baseUnits(QUOTE_ASSET).ofAsset
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -96,7 +96,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// Pre: Asset has been initialised and is active
-    /// Post: Inverted price
+    /// Post: Inverted price of baseUnits(ofAsset).QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -107,6 +107,19 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
             .div(getPrice(ofAsset));
     }
+
+    /// Pre: One of the address is equal to quote asset
+    /// Post: Price of baseUnits(ofBase).ofQuote
+    /// Post: either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
+    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {
+        if (getQuoteAsset() == ofQuote) {
+            getPrice(ofBase);
+        } else if (getQuoteAsset() == ofBase) {
+            getInvertedPrice(ofBase);
+        } else {
+            throw; // Log Error: No suitable reference price availabe
+        }
+     }
 
     /// Pre: Asset has been initialised and is active
     /// Post: Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
