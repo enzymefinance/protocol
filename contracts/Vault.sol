@@ -145,6 +145,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
     function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
     function isLargerThan(uint256 x, uint256 y) internal returns (bool) { return x > y; }
+    function isLessThan(uint256 x, uint256 y) internal returns (bool) { return x < y; }
+    function isEqualTo(uint256 x, uint256 y) internal returns (bool) { return x == y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function noOpenOrders()
@@ -280,28 +282,47 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     //XXX: from perspective of vault
-    function wasNotEmbezzled(address ofSellToken, address ofBuyToken)
+    function proofOfEmbezzlement(address ofSellToken, address ofBuyToken)
         constant
         returns (bool)
     {
+
+        // Sold more than expected => Proof of Embezzlemnt
         uint256 totalIntededSellAmount = getIntededSellAmount(ofSellToken); // Trade intention
-        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofBuyToken); // Trade execution
 
-        // Sold MORE than expected => Proof of Embezzlemnt
-
-        // Sold less or equal than expected
-        bool sellFilled = isLessOrEqualThan(
+        if (isLargerThan(
             previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
-            ERC20(ofBuyToken).balanceOf(this) // Actual amount sold
-        );
-        if (!sellFilled) {
-
+            ERC20(ofSellToken).balanceOf(this) // Actual amount sold
+        )) {
+            isDecommissioned = true;
+            return true;
+        }
+        // Sold less or equal than intended
+        uint256 percentageFactor = 10000;
+        uint256 percentageDivisor = percentageFactor;
+        if (isLessThan(
+            previousHoldings[ofSellToken].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofSellToken).balanceOf(this) // Actual amount sold
+        )) { // Sold less than intended
+            percentageFactor = percentageDivisor
+                .mul(previousHoldings[ofSellToken].sub(ERC20(ofSellToken).balanceOf(this)))
+                .div(totalIntededSellAmount);
         }
 
-        //buyFilled = prev.boughtToken + totalIntededSellAmount <= ERC20(ofBought).balanceOf(this)
-        //if(!buyFilled)
-        //  xx = (ERC20(ofBought).balanceOf(this) - prev.ofBought) / totalIntededSellAmount
-        //return prev.soldToken - totalIntededBuyAmount*xx >= ERC20(ofSold).balanceOf(this)
+        // Sold at a worse price than expected => Proof of Embezzlemnt
+        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofBuyToken); // Trade execution
+        uint256 totalExpectedBuyAmount = totalIntededBuyAmount
+            .mul(percentageFactor)
+            .div(percentageDivisor);
+
+        if (isLargerThan(
+            previousHoldings[ofBuyToken].add(totalExpectedBuyAmount), // Expected amount bhought
+            ERC20(ofBuyToken).balanceOf(this) // Actual amount sold
+        )) {
+            isDecommissioned = true;
+            return true;
+        }
+        return false;
     }
 
     // NON-CONSTANT METHODS
@@ -373,6 +394,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function decreaseStake(uint256 numShares)
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
+        pre_cond(!isDecommissioned)
         pre_cond(balancesOfHolderAtLeast(this, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -580,6 +602,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint128  wantAmount
     )
         pre_cond(isOwner())
+        pre_cond(!isDecommissioned)
         pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
@@ -625,6 +648,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Take offer on selected Exchange
     function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
+        pre_cond(!isDecommissioned)
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -682,6 +706,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
+        pre_cond(!isDecommissioned)
         pre_cond(noOpenOrders())
     {
         // TODO Assert that all open orders are closed
