@@ -108,11 +108,11 @@ contract Version is DBC, Owned {
     }
 
     // Dereference Vault and trigger selfdestruct
-    function decommissionVault(uint id)
+    function shutDownVault(uint id)
         pre_cond(isOwner())
     {
         VaultInterface Vault = VaultInterface(getVault(id));
-        Vault.decommission();
+        Vault.shutDown();
         delete vaults[id];
         VaultUpdated(id);
     }
