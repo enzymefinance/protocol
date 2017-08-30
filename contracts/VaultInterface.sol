@@ -23,7 +23,7 @@ contract VaultInterface is AssetInterface {
     function calcUnclaimedFees(uint gav) constant returns (uint managementFee, uint performanceFee, uint unclaimedFees) {}
     function calcNav(uint gav, uint unclaimedFees) constant returns (uint nav) {}
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
-    function decommission();
+    function shutDown();
 
     // NON-CONSTANT METHODS
 

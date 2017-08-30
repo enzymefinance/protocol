@@ -54,6 +54,6 @@ contract('Version', (accounts) => {
 
   it('Can remove a vault', async () => {
     let vaultId = await version.getLastVaultId();
-    await version.decommissionVault(vaultId);
+    await version.shutDownVault(vaultId);
   });
 });
