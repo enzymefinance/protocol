@@ -568,7 +568,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
-            0 // TODO: Insert assetpair specific price
+            0, // TODO: Insert assetpair specific price
+            0 // TODO Insert buy quantity
         ))
         returns (uint id)
     {
@@ -623,6 +624,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         require(module.riskmgmt.isExchangeTakePermitted(
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             0, // TODO: Insert assetpair specific price
+            0, // TODO Insert buy quantity
             orderOwner)
         );
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);

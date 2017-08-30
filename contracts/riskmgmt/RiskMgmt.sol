@@ -18,7 +18,8 @@ contract RiskMgmt is RiskMgmtInterface {
 
     function isExchangeMakePermitted(
         uint actualPrice,
-        uint referencePrice
+        uint referencePrice,
+        uint quantity
     )
         returns (bool)
     {
@@ -28,6 +29,7 @@ contract RiskMgmt is RiskMgmtInterface {
     function isExchangeTakePermitted(
         uint actualPrice,
         uint referencePrice,
+        uint quantity,
         address orderOwner
     )
         returns (bool)
