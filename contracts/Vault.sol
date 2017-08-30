@@ -116,6 +116,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint public decimals;
     uint256 public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     uint256 public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
+    address public VERSION; // Adress of Version contract
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT;
     address public REFERENCE_ASSET; // Performance measured against value of this asset
@@ -130,8 +131,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
     uint256 public nextOrderId;
     Calculations public atLastPayout;
-    bool public isDecommissioned;
-    mapping (address => uint) public previousHoldings;
+    bool public isShutDown;
+    mapping (address => uint256) public previousHoldings;
     bool public isSubscribeAllowed;
     bool public isRedeemAllowed;
 
@@ -143,17 +144,23 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function isPastZero(uint256 x) internal returns (bool) { return 0 < x; }
     function isGreaterOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x >= y; }
     function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
+    function isLargerThan(uint256 x, uint256 y) internal returns (bool) { return x > y; }
+    function isLessThan(uint256 x, uint256 y) internal returns (bool) { return x < y; }
+    function isEqualTo(uint256 x, uint256 y) internal returns (bool) { return x == y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
-    function noOpenOrders() internal returns (bool) {
-        for (uint256 i = 0; i < MAX_OPEN_ORDERS; ++i) {
+    function noOpenOrders()
+        internal
+        returns (bool) {
+        for (uint256 i = 0; i < openOrderIds.length; i++) {
             if (openOrderIds[i] != 0) return false;
         }
         return true;
     }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
-        internal returns (bool)
+        internal
+        returns (bool)
     {
         return
             module.pricefeed.isValid(sell_which_token) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
@@ -161,6 +168,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             (buy_which_token == MELON_ASSET || sell_which_token == MELON_ASSET) && // One asset must be MELON_ASSET
             (buy_which_token != MELON_ASSET || sell_which_token != MELON_ASSET); // Pair must consists of diffrent assets
     }
+    function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // CONSTANT METHODS
 
@@ -255,7 +263,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
             uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getOpenOrderExposure(ofAsset));
+            assetHoldings = assetHoldings.add(getIntededSellAmount(ofAsset));
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -264,31 +272,65 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     }
 
     //TODO: add previousHoldings
-    function closeOpenOrders(address ofSoldToken, address ofBoughtToken)
+    function closeOpenOrders(address ofBase, address ofQuote)
         constant
     {
-        //loop openorders
-        //if o.base == base && o.quote == quote
-        //  o.status = closed
-        //  update previousHoldings
+        for (uint i = 0; i < openOrderIds.length; i++) {
+            Order thisOrder = orders[openOrderIds[i]];
+            if (thisOrder.haveToken == ofBase && thisOrder.wantToken == ofQuote) {
+                proofOfEmbezzlement(ofBase, ofQuote);
+                delete openOrderIds[i]; // Free up open order slot
+                // TODO: fix pot incorrect OrderStatus - partiallyFilled
+                thisOrder.order_status = OrderStatus.fullyFilled;
+                //  update previousHoldings
+                // TODO: trigger for each proofOfEmbezzlement() call
+                previousHoldings[ofBase] = ERC20(ofBase).balanceOf(this);
+                previousHoldings[ofQuote] = ERC20(ofQuote).balanceOf(this);
+            }
+        }
     }
 
     //XXX: from perspective of vault
-    function wasNotEmbezzled(address ofSoldToken, address ofBoughtToken)
+    /// Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
+    /// Post: True if embezzled otherwise false
+    function proofOfEmbezzlement(address ofBase, address ofQuote)
         constant
         returns (bool)
     {
-        //totalBoughtToken=0
-        //totalSoldToken=0
-        //loop openorders
-        //  if order.have == sold && order.want == bought
-        //    totalBoughtToken += order.wantAmt
-        //    totalSoldToken += order.haveAmt
-        //xx=1
-        //buyFilled = prev.boughtToken + totalBoughtToken <= ERC20(ofBought).balanceOf(this)
-        //if(!buyFilled)
-        //  xx = (ERC20(ofBought).balanceOf(this) - prev.ofBought) / totalBoughtToken
-        //return prev.soldToken - totalSoldToken*xx >= ERC20(ofSold).balanceOf(this)
+        // Sold more than expected => Proof of Embezzlemnt
+        uint256 totalIntededSellAmount = getIntededSellAmount(ofBase); // Trade intention
+        if (isLargerThan(
+            previousHoldings[ofBase].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
+        )) {
+            isShutDown = true;
+            // Allocate staked shares from this to msg.sender
+            return true;
+        }
+        // Sold less or equal than intended
+        uint256 factor = 10000;
+        uint256 divisor = factor;
+        if (isLessThan(
+            previousHoldings[ofBase].sub(totalIntededSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
+        )) { // Sold less than intended
+            factor = divisor
+                .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
+                .div(totalIntededSellAmount);
+        }
+
+        // Sold at a worse price than expected => Proof of Embezzlemnt
+        uint256 totalIntededBuyAmount = getIntededBuyAmount(ofQuote); // Trade execution
+        uint256 totalExpectedBuyAmount = totalIntededBuyAmount.mul(factor).div(divisor);
+        if (isLargerThan(
+            previousHoldings[ofQuote].add(totalExpectedBuyAmount), // Expected amount bhought
+            ERC20(ofQuote).balanceOf(this) // Actual amount sold
+        )) {
+            isShutDown = true;
+            // Allocate staked shares from this to msg.sender
+            return true;
+        }
+        return false;
     }
 
     // NON-CONSTANT METHODS
@@ -314,6 +356,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        VERSION = msg.sender;
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
@@ -359,6 +402,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     function decreaseStake(uint256 numShares)
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
+        pre_cond(!isShutDown)
         pre_cond(balancesOfHolderAtLeast(this, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -380,6 +424,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isOwner())
     {
         isRedeemAllowed = !isRedeemAllowed;
+    }
+
+    function shutDown()
+        pre_cond(isVersion())
+    {
+        isShutDown == true;
     }
 
 
@@ -468,12 +518,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isGreaterOrEqualThan(
                 now,
                 requests[requestId].timestamp.add(module.pricefeed.getInterval())
-            ) || isDecommissioned
+            ) || isShutDown
         )
         pre_cond(isGreaterOrEqualThan(
                 module.pricefeed.getLastUpdateId(),
                 requests[requestId].lastFeedUpdateId + 2
-            ) || isDecommissioned
+            ) || isShutDown
         )
     {
         // Time and updates have passed
@@ -500,7 +550,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
         pre_cond(requests[requestId].owner == msg.sender ||
-            isDecommissioned)
+            isShutDown)
     {
         Request request = requests[requestId];
         request.status = RequestStatus.cancelled;
@@ -560,13 +610,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint128  wantAmount
     )
         pre_cond(isOwner())
+        pre_cond(!isShutDown)
         pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
-            haveToken,
-            wantToken,
-            haveAmount,
-            wantAmount,
-            module.pricefeed.getReferencePrice(haveToken, wantToken)
+            0, // TODO Insert assetpair actual price (formatted the same way as reference price)
+            0, // TODO: Insert assetpair specific price
+            0 // TODO Insert buy quantity
         ))
         returns (uint id)
     {
@@ -585,18 +634,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         nextOrderId++;
     }
 
-    function getOpenOrderExposure(address ofAsset) constant returns(uint amt) {
-        for(uint i; i < openOrderIds.length; i++){
+    function getIntededSellAmount(address ofAsset) constant returns(uint amt) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
-            if(thisOrder.haveToken == ofAsset) amt = amt + thisOrder.haveAmount;
+            if (thisOrder.haveToken == ofAsset) {
+                amt = amt + thisOrder.haveAmount;
+            }
         }
     }
 
-    function getExpectedSettlement(address ofAsset) constant returns(uint amt) {
-        for(uint i; i < openOrderIds.length; i++){
+    function getIntededBuyAmount(address ofAsset) constant returns(uint amt) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
-            if(thisOrder.wantToken == ofAsset)
+            if (thisOrder.wantToken == ofAsset) {
                 amt = amt + thisOrder.wantAmount;
+            }
         }
     }
 
@@ -604,6 +656,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Take offer on selected Exchange
     function takeOrder(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
+        pre_cond(!isShutDown)
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -615,13 +668,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         require(wantedBuyAmount <= offeredBuyAmount);
         var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(
-            offeredSellToken,
-            offeredBuyToken,
-            offeredSellAmount,
-            offeredBuyAmount,
-            module.pricefeed.getReferencePrice(offeredSellToken, offeredBuyToken),
-            orderOwner)
-        );
+            0, // TODO Insert assetpair actual price (formatted the same way as reference price)
+            0, // TODO: Insert assetpair specific price
+            0 // TODO Insert buy quantity
+        ));
         uint256 wantedSellAmount = wantedBuyAmount.mul(offeredSellAmount).div(offeredBuyAmount);
         approveSpending(offeredSellToken, wantedSellAmount);
         bool success = module.exchange.buy(id, wantedBuyAmount);
@@ -663,6 +713,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         pre_cond(isOwner())
+        pre_cond(!isShutDown)
         pre_cond(noOpenOrders())
     {
         // TODO Assert that all open orders are closed
@@ -696,50 +747,49 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         LOGGER.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
-	// CONSTANT METHODS
+  	// CONSTANT METHODS
 
-  function getRequestHistory(uint start)
-		constant
-		returns (
-			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
-            uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
-			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
-		)
-	{
-		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii >= nextRequestId) break;
-			owners[ii] = requests[start + ii].owner;
-			statuses[ii] = uint(requests[start + ii].status);
-			requestTypes[ii] = uint(requests[start + ii].requestType);
-			numShares[ii] = requests[start + ii].numShares;
-			offered[ii] = requests[start + ii].offeredOrRequestedValue;
-			incentive[ii] = requests[start + ii].incentive;
-			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
-			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
-			timestamp[ii] = requests[start + ii].timestamp;
-		}
-	}
+    function getRequestHistory(uint start)
+    		constant
+    		returns (
+      			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
+                  uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
+      			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
+    		)
+  	{
+    		for(uint ii = 0; ii < 1024; ii++){
+      			if(start + ii >= nextRequestId) break;
+      			owners[ii] = requests[start + ii].owner;
+      			statuses[ii] = uint(requests[start + ii].status);
+      			requestTypes[ii] = uint(requests[start + ii].requestType);
+      			numShares[ii] = requests[start + ii].numShares;
+      			offered[ii] = requests[start + ii].offeredOrRequestedValue;
+      			incentive[ii] = requests[start + ii].incentive;
+      			lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
+      			lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
+      			timestamp[ii] = requests[start + ii].timestamp;
+    		}
+  	}
 
-
-	function getOrderHistory(uint start)
-		constant
-		returns (
-			uint[1024] haveAmount, address[1024] haveToken,
-			uint[1024] wantAmount, address[1024] wantToken,
-			uint[1024] timestamps, uint[1024] statuses,
-			uint[1024] types, uint[1024] buyQuantityFilled
-		)
-	{
-		for(uint ii = 0; ii < 1024; ii++){
-			if(start + ii >= nextOrderId) break;
-			haveAmount[ii] = orders[start + ii].haveAmount;
-			haveToken[ii] = orders[start + ii].haveToken;
-			wantAmount[ii] = orders[start + ii].wantAmount;
-			wantToken[ii] = orders[start + ii].wantToken;
-			timestamps[ii] = orders[start + ii].timestamp;
-			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
-			types[ii] = uint(orders[start + ii].orderType);
-			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
-		}
-	}
+  	function getOrderHistory(uint start)
+    		constant
+    		returns (
+      			uint[1024] haveAmount, address[1024] haveToken,
+      			uint[1024] wantAmount, address[1024] wantToken,
+      			uint[1024] timestamps, uint[1024] statuses,
+      			uint[1024] types, uint[1024] buyQuantityFilled
+    		)
+  	{
+    		for(uint ii = 0; ii < 1024; ii++){
+      			if(start + ii >= nextOrderId) break;
+      			haveAmount[ii] = orders[start + ii].haveAmount;
+      			haveToken[ii] = orders[start + ii].haveToken;
+      			wantAmount[ii] = orders[start + ii].wantAmount;
+      			wantToken[ii] = orders[start + ii].wantToken;
+      			timestamps[ii] = orders[start + ii].timestamp;
+      			statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
+      			types[ii] = uint(orders[start + ii].orderType);
+      			buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
+    		}
+  	}
 }

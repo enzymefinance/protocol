@@ -1,7 +1,5 @@
 pragma solidity ^0.4.11;
 
-import '../dependencies/ERC20.sol';
-
 /// @title RiskMgmtInterface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying RiskMgmt Contract
@@ -16,23 +14,14 @@ import '../dependencies/ERC20.sol';
 contract RiskMgmtInterface {
 
     function isExchangeMakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice
-    )
-        returns (bool)
-    {}
+        uint orderPrice,
+        uint orderQuantity,
+        uint referencePrice
+    ) returns (bool);
 
     function isExchangeTakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice,
-        address orderOwner
-    )
-        returns (bool)
-    {}
+        uint orderPrice,
+        uint orderQuantity,
+        uint referencePrice
+    ) returns (bool);
 }
