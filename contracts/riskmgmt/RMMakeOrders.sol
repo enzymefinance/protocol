@@ -1,5 +1,6 @@
 pragma solidity ^0.4.11;
 
+import '../dependencies/ERC20.sol';
 import '../libraries/safeMath.sol';
 import './RiskMgmtInterface.sol';
 
