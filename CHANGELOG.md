@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.3.1]
+
+- Introducing ability to shut down both Version and Vaults.
+- Implement functionality to get reference price of datafeed
+- Refactor Risk Management parameters
+- Adding new Risk Management module for making and taking orders based on a reference price
+- Implement Proof Of Embezzlement
 
 ## [0.3.0]
 
