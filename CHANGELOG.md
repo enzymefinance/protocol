@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.3.1]
 
+### Added
 - Introducing ability to shut down both Version and Vaults.
 - Implement functionality to get reference price of datafeed
 - Refactor Risk Management parameters
