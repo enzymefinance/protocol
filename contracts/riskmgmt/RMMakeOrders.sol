@@ -21,41 +21,38 @@ contract RMMakeOrders is RiskMgmtInterface {
       // NON-CONSTANT METHODS
 
       function isExchangeMakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice
+          uint orderPrice,
+          uint orderQuantity,
+          uint referencePrice
       )
           returns (bool)
       {
+          return true;
           // Don't buy at much higher price
-          return isLessOrEqualThan(
-              uint256(haveAmount)
+          /*return isLessOrEqualThan(
+              uint256(orderPrice)
               .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
               referencePrice
               .mul(RISK_DIVISOR.sub(RISK_LEVEL))
               .div(RISK_DIVISOR)
-          );
+          );*/
       }
 
       function isExchangeTakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice,
-          address orderOwner
+          uint orderPrice,
+          uint orderQuantity,
+          uint referencePrice
       )
           returns (bool)
       {
+          return true;
           // Don't buy at much higher price
-          return isLessOrEqualThan(
+          /*return isLessOrEqualThan(
               uint256(haveAmount)
               .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
               referencePrice
               .mul(RISK_LEVEL)
               .div(RISK_DIVISOR)
-          );
+          );*/
       }
 }
