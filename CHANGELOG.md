@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## [0.3.0]
+
 ### Added
 - Logging contract for errors and other events
 - AssetRegistrar Contract
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Use logging contract from most other contracts (e.g. Vault)
 - Simplified tracking of Vaults in Version contract
-- Implemented our own reference datafeed
+- Extend our own reference datafeed
 - Default to MLN for internal accounting and initial investment
 - Subscription now operates under request/execute paradigm
 

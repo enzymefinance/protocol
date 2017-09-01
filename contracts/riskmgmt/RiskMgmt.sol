@@ -6,22 +6,12 @@ import './RiskMgmtInterface.sol';
 /// @author Melonport AG <team@melonport.com>
 contract RiskMgmt is RiskMgmtInterface {
 
-    // FIELDS
-
-    // EVENTS
-
-    // MODIFIERS
-
-    // CONSTANT METHODS
-
     // NON-CONSTANT METHODS
 
     function isExchangeMakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice
+        uint orderPrice,
+        uint orderQuantity,
+        uint referencePrice
     )
         returns (bool)
     {
@@ -29,12 +19,9 @@ contract RiskMgmt is RiskMgmtInterface {
     }
 
     function isExchangeTakePermitted(
-        ERC20   haveToken,
-        ERC20   wantToken,
-        uint    haveAmount,
-        uint    wantAmount,
-        uint    referencePrice,
-        address orderOwner
+        uint orderPrice,
+        uint orderQuantity,
+        uint referencePrice
     )
         returns (bool)
     {

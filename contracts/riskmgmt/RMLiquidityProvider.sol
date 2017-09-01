@@ -13,11 +13,9 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       // NON-CONSTANT METHODS
 
       function isExchangeMakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice
+          uint orderPrice,
+          uint orderQuantity,
+          uint referencePrice
       )
           returns (bool)
       {
@@ -25,11 +23,9 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       }
 
       function isExchangeTakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice,
+          uint orderPrice,
+          uint orderQuantity,
+          uint referencePrice,
           address orderOwner
       )
           returns (bool)

@@ -63,8 +63,7 @@ contract Version is DBC, Owned {
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
             if (withStartId + i >= nextVaultId) break;
-            vaults[i] = getVault(i);
-            VaultInterface Vault = VaultInterface(vaults[i]);
+            VaultInterface Vault = VaultInterface(getVault(i));
             holdings[i] = Vault.balanceOf(msg.sender);
             decimals[i] = Vault.getDecimals();
         }
@@ -109,10 +108,11 @@ contract Version is DBC, Owned {
     }
 
     // Dereference Vault and trigger selfdestruct
-    function decommissionVault(uint id)
+    function shutDownVault(uint id)
         pre_cond(isOwner())
     {
-        // TODO also refund and selfdestruct vault contract
+        VaultInterface Vault = VaultInterface(getVault(id));
+        Vault.shutDown();
         delete vaults[id];
         VaultUpdated(id);
     }
