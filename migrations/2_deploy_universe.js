@@ -7,9 +7,10 @@ const dataFeedInfo = require('./config/data_feed_info.js');
 const exchangeInfo = require('./config/exchange_info.js');
 
 
-module.exports = async (deployer, network) => {
+module.exports = (deployer, network) => {
   if (network !== 'development') {
-    const ethTokenAddress = tokenInfo[network].find(t => t.symbol === 'ETH-T').address;
+    const ethAddr = tokenInfo[network].find(t => t.symbol === 'ETH-T').address;
+    const mlnAddr = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
     const tokenAddresses = tokenInfo[network].filter(
       t => // Note: Must be subset of what data feeds provide data for
         t.symbol !== 'AVT-T' &&
@@ -17,16 +18,9 @@ module.exports = async (deployer, network) => {
         t.symbol !== 'MKR-T' &&
         t.symbol !== 'ZRX-T',
     ).map(t => t.address);
-    try {
-      await deployer.deploy(Universe,
-        ethTokenAddress,
-        tokenAddresses,
-        Array(tokenInfo[network].length).fill(dataFeedInfo[network].find(d => d.name === 'CryptoCompare').address),
-        Array(tokenInfo[network].length).fill(exchangeInfo[network].find(e => e.name === 'OasisDex').address),
-      );
-    } catch (e) {
-      throw e;
-    }
+    deployer.deploy(DataFeed, mlnAddr, 120, 60)
+    .then(() => deployer.deploy(Market))
+    .catch(e => { throw e; })
   } else {
     let ethAddr;
     let mlnAddr;

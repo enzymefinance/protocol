@@ -11,6 +11,13 @@ module.exports = (deployer, network) => {
   let mlnTokenAddress;
   if (network !== 'development') {
     mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
+    deployer.deploy(Governance)
+    .then(() => deployer.deploy(Logger))
+    .then(() => deployer.deploy(Calculate))
+    .then(() => deployer.link(Calculate, Vault))
+    .then(() => deployer.link(Calculate, Version))
+    .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
+    .catch(e => { throw e; });
   } else {
     mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
     deployer.deploy(Governance)
