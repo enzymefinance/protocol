@@ -11,7 +11,7 @@ contract BackupOwned is DBC, Owned {
 
     // FIELDS
 
-    // Fields that are only changed in constructor
+    // Constructor fields
     address public backupOwner;
 
     // PRE, POST, INVARIANT CONDITIONS

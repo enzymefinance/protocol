@@ -20,12 +20,12 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
-    // Fields that are only changed in constructor
+    // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     address public LOGGER;
     Logger logger;
-    // Fields that can be changed by functions
+    // Function fields
     mapping (address => uint[]) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
     uint public nextVaultId;

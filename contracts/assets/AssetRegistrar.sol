@@ -25,7 +25,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // FIELDS
 
-    // Fields that can be changed by functions
+    // Function fields
     mapping (address => Asset) public information; // Asset specific information
     address[] public registeredAssets;
 
