@@ -1,6 +1,7 @@
 const Asset = artifacts.require('./Asset.sol');
 const Market = artifacts.require('./SimpleMarket.sol');
 const DataFeed = artifacts.require('./DataFeed.sol');
+const Sphere = artifacts.require('./Sphere.sol');
 
 const tokenInfo = require('./config/token_info.js');
 const dataFeedInfo = require('./config/data_feed_info.js');
@@ -20,6 +21,7 @@ module.exports = (deployer, network) => {
     ).map(t => t.address);
     deployer.deploy(DataFeed, mlnAddr, 120, 60)
     .then(() => deployer.deploy(Market))
+    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address))
     .catch(e => { throw e; })
   } else {
     let ethAddr;
