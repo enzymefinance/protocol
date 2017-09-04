@@ -35,6 +35,7 @@ module.exports = (deployer, network) => {
     .then(() => mlnAddr = Asset.address)
     .then(() => deployer.deploy(DataFeed, mlnAddr, 120, 60))
     .then(() => deployer.deploy(Market))
+    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address))
     .catch(e => { throw e; })
   }
 };

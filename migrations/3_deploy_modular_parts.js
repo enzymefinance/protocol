@@ -1,6 +1,6 @@
 const Participation = artifacts.require('./Participation.sol');
 const RiskMgmt = artifacts.require('./RiskMgmt.sol');
-const RMLiquididtyProvider = artifacts.require('./RMLiquididtyProvider.sol');
+const RMMakeOrders = artifacts.require('./RMMakeOrders.sol');
 
 module.exports = (deployer, network) => {
   try {
@@ -9,7 +9,7 @@ module.exports = (deployer, network) => {
       .then(() => deployer.deploy(RiskMgmt))
     } else if (network === 'kovan') {
       deployer.deploy(Participation)
-      .then(() => deployer.deploy(RMLiquididtyProvider))
+      .then(() => deployer.deploy(RMMakeOrders))
       .catch(e => { throw e; });
     }
   } catch (e) {

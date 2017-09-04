@@ -77,8 +77,8 @@ contract Version is DBC, Owned {
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-        LOGGER = ofLogger;
-        logger = Logger(LOGGER);
+        /*LOGGER = ofLogger;
+        logger = Logger(LOGGER);*/
     }
 
     function setupVault(

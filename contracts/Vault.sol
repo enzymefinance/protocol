@@ -375,14 +375,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        info = Information({
-            owner: owner,
+        /*info = Information({
+            owner: ofManager,
             name: withName,
             symbol: withSymbol,
-            decimals: decimals,
+            decimals: withDecimals,
             created: now,
             status: VaultStatus.setup
-        });
+        });*/
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
