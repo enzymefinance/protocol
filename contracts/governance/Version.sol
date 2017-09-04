@@ -104,7 +104,7 @@ contract Version is DBC, Owned {
       );
         vaults[nextVaultId] = vault;
         managers[msg.sender].push(nextVaultId);
-        logger.logVaultAdded(vault, nextVaultId, withName);
+        logger.logVaultAdded(vault, nextVaultId, withName, now);
         nextVaultId++;
     }
 
