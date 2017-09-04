@@ -13,11 +13,11 @@ contract Logger is DBC, Permissioned {
     }
 
     // Vault logs
-    event VaultAdded(address sender, address vaultAddress, uint vaultId, string name);
-    function logVaultAdded(address vaultAddress, uint vaultId, string name)
+    event VaultAdded(address sender, address vaultAddress, uint id, string name);
+    function logVaultAdded(address vaultAddress, uint id, string name)
         pre_cond(isPermitted(msg.sender))
     {
-        VaultAdded(msg.sender, vaultAddress, vaultId, name);
+        VaultAdded(msg.sender, vaultAddress, id, name);
     }
 
     event SubscribeRequest(address sender, address indexed byParticipant, uint256 atTimestamp, uint256 numShares);
