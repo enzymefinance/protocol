@@ -17,34 +17,34 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal;
         string url;
         bytes32 ipfsHash;
-        bytes32 chainId; // unique identifier on which chain we are located on
+        bytes32 chainId;
         address breakIn;
         address breakOut;
-        bytes32 hash;
+        bool exists;
     }
 
     // FIELDS
 
     // Function fields
-    mapping (address => Asset) public information; // Asset specific information
+    mapping (address => Asset) public information;
     address[] public registeredAssets;
 
-    // PRE, POST, INVARIANT CONDITIONS
+    // PRE, POST AND INVARIANT CONDITIONS
 
-    function isNotNullAddress(address x) internal returns (bool) { return x != 0; }
-    function isNotSet(address x) internal returns (bool) { return information[x].hash == 0x0; }
-    function isUnique(address x, bytes32 y) internal returns (bool) { return information[x].hash != y; }
+    function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
 
     // CONSTANT METHODS
 
-    // Get registartion specific information
-    function isSet(address ofAsset) constant returns (bool) { return !isNotSet(ofAsset); }
+    // Get registration specific information
+    function isRegistered(address ofAsset) constant returns (bool) { return !notRegistered(ofAsset); }
     function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
     function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
     // Get asset specific information
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
+
+    /// @notice Get human-readable information about an Asset
     function getDescriptiveInformation(address ofAsset)
         constant
         returns (string, string, uint256, string, bytes32)
@@ -57,6 +57,7 @@ contract AssetRegistrar is DBC, Owned {
             information[ofAsset].ipfsHash
         );
     }
+
     function getSpecificInformation(address ofAsset)
         constant
         returns (uint256, bytes32, address, address)
@@ -73,8 +74,8 @@ contract AssetRegistrar is DBC, Owned {
 
     function AssetRegistrar() {}
 
-    /// Pre: Only Backup Owner; Non-null new Backup Owner
-    /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
+    /// @dev Pre:  Only registrar owner should be able to register
+    /// @dev Post: Address ofAsset is registered
     function register(
         address ofAsset,
         string name,
@@ -82,11 +83,13 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal,
         string url,
         bytes32 ipfsHash,
-        bytes32 chainId, // unique identifier on which chain we are located on
+        bytes32 chainId,
         address breakIn,
         address breakOut
     )
-        pre_cond(isNotSet(ofAsset))
+        pre_cond(isOwner())
+        pre_cond(notRegistered(ofAsset))
+        //post_cond(isRegistered(ofAsset)) // XXX: oddly, this doesn't work with a post_condition, so it's just added to the end of the function body. Investigate this eventually.
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -98,7 +101,8 @@ contract AssetRegistrar is DBC, Owned {
             chainId: chainId,
             breakIn: breakIn,
             breakOut: breakOut,
-            hash: sha3(name, symbol, decimal, breakIn, breakOut)
+            exists: true
         });
+        assert(isRegistered(ofAsset));
     }
 }

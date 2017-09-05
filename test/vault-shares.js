@@ -55,9 +55,14 @@ contract('Vault shares', (accounts) => {
     logger.addPermission(vault.address);
   });
 
+  function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   // convenience function
   async function simulateFeedUpdate() {
     await rpc.mineBlock();
+    await timeout(3000);
     await pricefeed.update(
       [ethToken.address, eurToken.address, mlnToken.address],
       [10 ** 18, 10 ** 18, 10 ** 18],
