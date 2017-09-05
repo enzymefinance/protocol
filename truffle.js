@@ -3,19 +3,13 @@ module.exports = {
     development: {
       host: 'localhost',
       port: 8545,
-      gas: 6800000,
+      gas: 6950000,
       network_id: '*', // Match any network id
     },
     kovan: {
       host: 'localhost',
       port: 8545,
-      gas: 6800000,
-      network_id: 42,
-    },
-    staging: { // Deployment of Kovan auxillary parts such as Assets, DataFeeds, Exchanges
-      host: 'localhost',
-      port: 8545,
-      gas: 6800000,
+      gas: 6950000,
       network_id: 42,
     },
   },

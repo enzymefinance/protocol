@@ -1,15 +1,16 @@
 const Participation = artifacts.require('./Participation.sol');
 const RiskMgmt = artifacts.require('./RiskMgmt.sol');
-const RMLiquididtyProvider = artifacts.require('./RMLiquididtyProvider.sol');
+const RMMakeOrders = artifacts.require('./RMMakeOrders.sol');
 
-module.exports = async (deployer, network) => {
+module.exports = (deployer, network) => {
   try {
     if (network === 'development') {
       deployer.deploy(Participation)
       .then(() => deployer.deploy(RiskMgmt))
     } else if (network === 'kovan') {
-      await deployer.deploy(Participation);
-      await deployer.deploy(RMLiquididtyProvider);
+      deployer.deploy(Participation)
+      .then(() => deployer.deploy(RMMakeOrders))
+      .catch(e => { throw e; });
     }
   } catch (e) {
     throw e;

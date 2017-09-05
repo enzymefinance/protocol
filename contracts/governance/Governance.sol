@@ -18,9 +18,9 @@ contract Governance is DBC, Owned {
 
     // FIELDS
 
-    // Fields that are only changed in constructor
+    // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
-    // Fields that can be changed by functions
+    // Function fields
     mapping (uint => VersionInfo) public versions;
     uint public lastVersionId;
 

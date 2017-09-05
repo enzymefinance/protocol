@@ -22,13 +22,13 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // FIELDS
 
-    // Fields that are only changed in constructor
+    // Constructor fields
     /// Note: By definition the price of the quote asset against itself (quote asset) is always equals one
     address public QUOTE_ASSET; // Is the quote asset of a portfolio against which all other assets are priced against
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds data is considered valid
-    // Fields that can be changed by functions
+    // Function fields
     mapping (uint => mapping(address => Data)) public dataHistory; // Ordered data set // Address of asset quoted against `QUOTE_ASSET` times ten to the power of {decimals of this asset} => data of asset
     uint256 public nextUpdateId;
     uint256 public lastUpdateTimestamp;

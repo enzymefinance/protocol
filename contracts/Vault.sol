@@ -105,12 +105,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     // FIELDS
 
-    // Constant asset specific fields
+    // Constant fields
     uint256 public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
     uint256 public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
     uint256 public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint256 public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
-    // Fields that are only changed in constructor
+    // Constructor fields
     string public name;
     string public symbol;
     uint public decimals;
@@ -122,7 +122,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     SphereInterface public sphere;
     Logger public LOGGER;
-    // Fields that can be changed by functions
+    // Function fields
     Information public info;
     Modules public module;
     mapping (uint256 => Request) public requests;
@@ -375,14 +375,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        info = Information({
-            owner: owner,
+        /*info = Information({
+            owner: ofManager,
             name: withName,
             symbol: withSymbol,
-            decimals: decimals,
+            decimals: withDecimals,
             created: now,
             status: VaultStatus.setup
-        });
+        });*/
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION

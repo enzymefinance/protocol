@@ -19,7 +19,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
 
     // FIELDS
 
-    // Fields that can be changed by functions
+    // Function fields
     mapping (address => Information) public avatar;
 
 
