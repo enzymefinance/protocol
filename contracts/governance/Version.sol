@@ -23,7 +23,7 @@ contract Version is DBC, Owned {
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
-    address public LOGGER;
+    address public LOGGER_ADDRESS;
     Logger logger;
     // Function fields
     mapping (address => uint[]) public managers; // Links manager address to vault id list
@@ -77,8 +77,8 @@ contract Version is DBC, Owned {
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-        /*LOGGER = ofLogger;
-        logger = Logger(LOGGER);*/
+        LOGGER_ADDRESS = ofLogger;
+        logger = Logger(LOGGER_ADDRESS);
     }
 
     function setupVault(
@@ -100,10 +100,11 @@ contract Version is DBC, Owned {
             ofParticipation,
             ofRiskMgmt,
             ofSphere,
-            LOGGER
-      );
+            LOGGER_ADDRESS
+        );
         vaults[nextVaultId] = vault;
         managers[msg.sender].push(nextVaultId);
+        logger.addPermission(vault);
         logger.logVaultAdded(vault, nextVaultId, withName, now);
         nextVaultId++;
     }

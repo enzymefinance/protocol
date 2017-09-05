@@ -9,6 +9,8 @@ const tokenInfo = require('./config/token_info.js');
 
 module.exports = (deployer, network) => {
   let mlnTokenAddress;
+  let logger;
+  let version;
   if (network !== 'development') {
     mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
     deployer.deploy(Governance)
@@ -18,6 +20,11 @@ module.exports = (deployer, network) => {
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Vault))
     .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
+    .then(() => Logger.deployed())
+    .then(res => logger = res)
+    .then(() => Version.deployed())
+    .then(res => version = res)
+    .then(() => logger.addAdmin(version.address))
     .catch(e => { throw e; });
   } else {
     mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
@@ -28,6 +35,11 @@ module.exports = (deployer, network) => {
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Vault))
     .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
+    .then(() => Logger.deployed())
+    .then(res => logger = res)
+    .then(() => Version.deployed())
+    .then(res => version = res)
+    .then(() => logger.addAdmin(version.address))
     .catch(e => { throw e; });
   }
 };

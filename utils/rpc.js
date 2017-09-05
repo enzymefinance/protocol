@@ -11,9 +11,9 @@ function rpcCall(method, arg) {
     web3.currentProvider.sendAsync(req, (err, result) => {
       if (err) return reject(err);
       if (result && result.error) {
-        return reject(new Error('RPC Error: ' + (result.error.message || result.error)))
+        reject(new Error('RPC Error: ' + (result.error.message || result.error)))
       }
-      return resolve(result);
+      resolve(result);
     })
   })
 }
