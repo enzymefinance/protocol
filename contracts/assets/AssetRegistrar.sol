@@ -20,6 +20,7 @@ contract AssetRegistrar is DBC, Owned {
         bytes32 chainId;
         address breakIn;
         address breakOut;
+        bool exists;
     }
 
     // FIELDS
@@ -30,7 +31,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // PRE, POST AND INVARIANT CONDITIONS
 
-    function notRegistered(address a) internal constant returns (bool) { return information[a].ipfsHash != 0; }
+    function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
 
     // CONSTANT METHODS
 
@@ -88,7 +89,7 @@ contract AssetRegistrar is DBC, Owned {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        post_cond(isRegistered(ofAsset))
+        //post_cond(isRegistered(ofAsset)) // XXX: oddly, this doesn't work with a post_condition, so it's just added to the end of the function body. Investigate this eventually.
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -99,7 +100,9 @@ contract AssetRegistrar is DBC, Owned {
             ipfsHash: ipfsHash,
             chainId: chainId,
             breakIn: breakIn,
-            breakOut: breakOut
+            breakOut: breakOut,
+            exists: true
         });
+        assert(isRegistered(ofAsset));
     }
 }

@@ -22,5 +22,4 @@ contract DBC {
         _;
         assert(condition);
     }
-
 }
