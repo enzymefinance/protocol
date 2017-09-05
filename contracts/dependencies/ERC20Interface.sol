@@ -1,9 +1,9 @@
 pragma solidity ^0.4.11;
 
-/// @title ERC20 Token Protocol
+/// @title ERC20 Token Interface
 /// @author Melonport AG <team@melonport.com>
 /// @notice See https://github.com/ethereum/EIPs/issues/20
-contract ERC20Protocol {
+contract ERC20Interface {
 
     // CONSTANT METHODS
 

@@ -11,10 +11,10 @@ contract PreminedAsset is Asset {
 
     // METHODS
 
-    function PreminedAsset(string _name, string _symbol, uint _decimals, uint256 _amount)
-        Asset(_name, _symbol, _decimals)
+    function PreminedAsset(string name, string symbol, uint decimals, uint256 amount)
+        Asset(name, symbol, decimals)
     {
-        balances[msg.sender] = balances[msg.sender].add(_amount);
-        totalSupply = totalSupply.add(_amount);
+        balances[msg.sender] = balances[msg.sender].add(amount);
+        totalSupply = totalSupply.add(amount);
     }
 }
