@@ -18,16 +18,6 @@ import './VaultInterface.sol';
 contract Vault is DBC, Owned, Shares, VaultInterface {
     using safeMath for uint256;
 
-    // EVENTS
-    event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event SpendingApproved(address ofToken, address onExchange, uint amount);
-    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
-    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
-
     // TYPES
 
     enum RequestStatus {
@@ -145,6 +135,15 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     bool public isRedeemAllowed;
 
     // EVENTS
+
+    event PortfolioContent(uint holdings, uint price, uint decimals);
+    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event SpendingApproved(address ofToken, address onExchange, uint amount);
+    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
+    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -364,6 +363,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         decimals = withDecimals;
         VERSION = msg.sender;
         MELON_ASSET = ofMelonAsset;
+        REFERENCE_ASSET = MELON_ASSET; // XXX let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         require(module.pricefeed.isDataSet(MELON_ASSET));
