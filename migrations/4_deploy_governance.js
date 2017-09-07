@@ -1,7 +1,6 @@
 const Calculate = artifacts.require('./calculate.sol');
 const Rewards = artifacts.require('./rewards.sol');
 const Governance = artifacts.require('./Governance.sol');
-const Logger = artifacts.require('./Logger.sol');
 const Version = artifacts.require('./Version.sol');
 const Vault = artifacts.require('./Vault.sol');
 const Asset = artifacts.require('./Asset.sol');
@@ -9,37 +8,24 @@ const tokenInfo = require('./config/token_info.js');
 
 module.exports = (deployer, network) => {
   let mlnTokenAddress;
-  let logger;
   let version;
   if (network !== 'development') {
     mlnTokenAddress = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
     deployer.deploy(Governance)
-    .then(() => deployer.deploy(Logger))
     .then(() => deployer.deploy(Calculate))
     .then(() => deployer.deploy(Rewards))    
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Vault))
-    .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
-    .then(() => Logger.deployed())
-    .then(res => logger = res)
-    .then(() => Version.deployed())
-    .then(res => version = res)
-    .then(() => logger.addAdmin(version.address))
+    .then(() => deployer.deploy(Version, mlnTokenAddress))
     .catch(e => { throw e; });
   } else {
     mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
     deployer.deploy(Governance)
-    .then(() => deployer.deploy(Logger))
     .then(() => deployer.deploy(Calculate))
     .then(() => deployer.deploy(Rewards))
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Vault))
-    .then(() => deployer.deploy(Version, mlnTokenAddress, Logger.address))
-    .then(() => Logger.deployed())
-    .then(res => logger = res)
-    .then(() => Version.deployed())
-    .then(res => version = res)
-    .then(() => logger.addAdmin(version.address))
+    .then(() => deployer.deploy(Version, mlnTokenAddress))
     .catch(e => { throw e; });
   }
 };

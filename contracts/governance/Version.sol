@@ -4,12 +4,14 @@ import '../Vault.sol';
 import '../VaultInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import '../dependencies/Logger.sol';
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
 contract Version is DBC, Owned {
+
+    // EVENTS
+    event VaultAdded(address vaultAddress, uint id, string name, uint256 atTime);
 
     // TYPES
     enum Status {
@@ -23,7 +25,6 @@ contract Version is DBC, Owned {
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
-    address public LOGGER_ADDRESS;
     // Function fields
     mapping (address => uint[]) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
@@ -71,12 +72,10 @@ contract Version is DBC, Owned {
 
     // NON-CONSTANT METHODS
     function Version(
-        address ofMelonAsset,
-        address ofLogger
+        address ofMelonAsset
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-        LOGGER_ADDRESS = ofLogger;
     }
 
     function setupVault(
@@ -97,14 +96,11 @@ contract Version is DBC, Owned {
             MELON_ASSET,
             ofParticipation,
             ofRiskMgmt,
-            ofSphere,
-            LOGGER_ADDRESS
+            ofSphere
         );
         vaults[nextVaultId] = vault;
         managers[msg.sender].push(nextVaultId);
-        Logger logger = Logger(LOGGER_ADDRESS);
-        logger.addPermission(vault);
-//        logger.logVaultAdded(vault, nextVaultId, withName, now); // comment this out in order to deploy...
+        VaultAdded(vault, nextVaultId, withName, now);
         nextVaultId++;
     }
 

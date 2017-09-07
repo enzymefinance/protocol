@@ -3,7 +3,6 @@ pragma solidity ^0.4.11;
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
-import './dependencies/Logger.sol';
 import './sphere/SphereInterface.sol';
 import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
@@ -18,6 +17,16 @@ import './VaultInterface.sol';
 /// @notice Simple vault
 contract Vault is DBC, Owned, Shares, VaultInterface {
     using safeMath for uint256;
+
+    // EVENTS
+    event PortfolioContent(uint holdings, uint price, uint decimals);
+    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event SpendingApproved(address ofToken, address onExchange, uint amount);
+    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
+    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
 
     // TYPES
 
@@ -121,7 +130,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     ERC20 public MELON_CONTRACT;
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     SphereInterface public sphere;
-    Logger public LOGGER;
     // Function fields
     Information public info;
     Modules public module;
@@ -267,7 +275,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            LOGGER.logPortfolioContent(assetHoldings, assetPrice, assetDecimals);
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
 
@@ -343,13 +351,11 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         address ofMelonAsset,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofSphere,
-        address ofLogger
+        address ofSphere
     ) {
         sphere = SphereInterface(ofSphere);
         module.exchange = ExchangeInterface(sphere.getExchange());
         module.pricefeed = DataFeedInterface(sphere.getDataFeed());
-        LOGGER = Logger(ofLogger);
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
@@ -466,7 +472,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
-        LOGGER.logSubscribeRequested(msg.sender, now, numShares);
+        SubscribeRequest(msg.sender, now, numShares);
         nextRequestId++;
         return thisId;
     }
@@ -505,7 +511,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             timestamp: now
         });
         nextRequestId++;
-        LOGGER.logRedeemRequested(msg.sender, now, numShares);
+        RedeemRequest(msg.sender, now, numShares);
         return thisId;
     }
 
@@ -576,19 +582,19 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             uint256 separationAmount = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
             assert(ERC20(ofAsset).transfer(msg.sender, separationAmount)); // Send funds from vault to investor
         }
-        LOGGER.logRedeemed(msg.sender, now, numShares);
+        Redeemed(msg.sender, now, numShares);
     }
 
     function createShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.add(numShares);
         addShares(recipient, numShares);
-        LOGGER.logSubscribed(msg.sender, now, numShares);
+        Subscribed(msg.sender, now, numShares);
     }
 
     function annihilateShares(address recipient, uint256 numShares) internal {
         totalSupply = totalSupply.sub(numShares);
         subShares(recipient, numShares);
-        LOGGER.logRedeemed(msg.sender, now, numShares);
+        Redeemed(msg.sender, now, numShares);
     }
 
     function addShares(address recipient, uint256 numShares) internal {
@@ -704,7 +710,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         internal
     {
         assert(ofToken.approve(address(module.exchange), amount));
-        LOGGER.logSpendingApproved(ofToken, address(module.exchange), amount);
+        SpendingApproved(ofToken, address(module.exchange), amount);
     }
 
     // NON-CONSTANT METHODS - REWARDS
@@ -743,8 +749,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             timestamp: now
         });
 
-        LOGGER.logRewardsConverted(now, numShares, unclaimedRewards);
-        LOGGER.logCalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+        RewardsConverted(now, numShares, unclaimedRewards);
+        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
   	// CONSTANT METHODS

@@ -1,7 +1,6 @@
 const EtherToken = artifacts.require('EtherToken');
 const Exchange = artifacts.require('SimpleMarket');
 const Governance = artifacts.require('Governance');
-const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const DataFeed = artifacts.require('DataFeed');
@@ -13,7 +12,6 @@ const chai = require('chai');
 const assert = chai.assert;
 
 contract('Version', (accounts) => {
-  let logger;
   let version;
   let feed;
 
@@ -23,9 +21,7 @@ contract('Version', (accounts) => {
       'Euro', 'EUR', 8, 10 ** 18, { from: accounts[0] });
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: accounts[0] });
-    logger = await Logger.deployed();
-    version = await Version.new(mlnToken.address, logger.address);
-    await logger.addAdmin(version.address);
+    version = await Version.new(mlnToken.address);
     feed = await DataFeed.new(mlnToken.address, 0, 120);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
