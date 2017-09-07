@@ -26,22 +26,18 @@ contract Version is DBC, Owned {
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Function fields
-    mapping (address => uint[]) public managers; // Links manager address to vault id list
+    mapping (address => address) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
     uint public nextVaultId;
 
     // EVENTS
     event VaultUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isInHistory(uint id) constant returns (bool) { return 0 <= id && id < nextVaultId; }
-
     // CONSTANT METHODS
 
     function getVault(uint id) constant returns (address) { return vaults[id]; }
-    function hasVault(address mgr) constant returns (bool) {
-      return managers[mgr].length > 0;
+    function vaultForManager(address mgr) constant returns (address) {
+        return managers[mgr];
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getNextVaultId() constant returns (uint) { return nextVaultId; }
@@ -53,16 +49,16 @@ contract Version is DBC, Owned {
     // @returns list of all Vaults address is invested in
     // @returns list of all numbers of Shares address holds in Vault
     // @returns list of all decimals of this Vault
-    function getSubscriptionHistory(address ofAddress, uint withStartId)
+    function getSubscriptionHistory(address ofAddress, uint startId)
         constant
-        pre_cond(isInHistory(withStartId))
+        pre_cond(0 <= startId && startId < nextVaultId)
         returns (address[1024], uint256[1024], uint256[1024])
     {
         address[1024] memory vaults;
         uint[1024] memory holdings;
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
-            if (withStartId + i >= nextVaultId) break;
+            if (startId + i >= nextVaultId) break;
             VaultInterface Vault = VaultInterface(getVault(i));
             holdings[i] = Vault.balanceOf(msg.sender);
             decimals[i] = Vault.getDecimals();
@@ -99,7 +95,7 @@ contract Version is DBC, Owned {
             ofSphere
         );
         vaults[nextVaultId] = vault;
-        managers[msg.sender].push(nextVaultId);
+        managers[msg.sender] = vault;
         VaultAdded(vault, nextVaultId, withName, now);
         nextVaultId++;
     }
