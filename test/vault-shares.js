@@ -2,7 +2,6 @@ const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('DataFeed');
 const Exchange = artifacts.require('SimpleMarket');
-const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
@@ -17,7 +16,6 @@ contract('Vault shares', (accounts) => {
   const investor = accounts[2];
   let ethToken;
   let vault;
-  let logger;
 
   before('Set up new Vault', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
@@ -38,7 +36,6 @@ contract('Vault shares', (accounts) => {
     );
     participation = await Participation.deployed();
     riskManagement = await RiskMgmt.deployed();
-    logger = await Logger.deployed();
     vault = await Vault.new(
       accounts[0],
       'Melon Portfolio',  // name
@@ -48,11 +45,9 @@ contract('Vault shares', (accounts) => {
       participation.address,
       riskManagement.address,
       sphere.address,
-      logger.address,
       { from: accounts[0] },
     );
     participation.list(investor);   // whitelist investor
-    logger.addPermission(vault.address);
   });
 
   function timeout(ms) {
@@ -85,7 +80,7 @@ contract('Vault shares', (accounts) => {
       await vault.subscribe(numShares, offeredValue, incentive, { from: investor });
     });
     it('logs request event', (done) => {
-      const reqEvent = logger.SubscribeRequest();
+      const reqEvent = vault.SubscribeRequest();
       reqEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
@@ -100,7 +95,7 @@ contract('Vault shares', (accounts) => {
       assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
     });
     it('logs share creation', (done) => {
-      const subEvent = logger.Subscribed();
+      const subEvent = vault.Subscribed();
       subEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
@@ -138,7 +133,7 @@ contract('Vault shares', (accounts) => {
       assert.equal((await vault.balanceOf(investor)).toNumber(), 0);
     });
     it('logs redemption', () => {
-      const redeemEvent = logger.Redeemed();
+      const redeemEvent = vault.Redeemed();
       redeemEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);

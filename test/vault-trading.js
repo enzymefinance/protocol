@@ -2,7 +2,6 @@ const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('DataFeed');
 const Exchange = artifacts.require('SimpleMarket');
-const Logger = artifacts.require('Logger');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
@@ -17,7 +16,6 @@ contract('Vault trading', (accounts) => {
   const investor = accounts[2];
   let ethToken;
   let vault;
-  let logger;
   let exchange;
 
   before('Set up new Vault', async () => {
@@ -39,7 +37,6 @@ contract('Vault trading', (accounts) => {
     );
     participation = await Participation.deployed();
     riskManagement = await RiskMgmt.deployed();
-    logger = await Logger.deployed();
     vault = await Vault.new(
       manager,
       'Melon Portfolio',  // name
@@ -49,11 +46,9 @@ contract('Vault trading', (accounts) => {
       participation.address,
       riskManagement.address,
       sphere.address,
-      logger.address,
       { from: accounts[0] },
     );
     await participation.list(investor);   // whitelist investor
-    await logger.addPermission(vault.address);
     await mlnToken.transfer(vault.address, 1000000, { from: accounts[1] }); // initialize balances
     await ethToken.transfer(vault.address, 1000000, { from: accounts[1] });
   });

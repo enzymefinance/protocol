@@ -4,12 +4,14 @@ import '../Vault.sol';
 import '../VaultInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import '../dependencies/Logger.sol';
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
 contract Version is DBC, Owned {
+
+    // EVENTS
+    event VaultAdded(address vaultAddress, uint id, string name, uint256 atTime);
 
     // TYPES
     enum Status {
@@ -23,24 +25,19 @@ contract Version is DBC, Owned {
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
-    address public LOGGER_ADDRESS;
     // Function fields
-    mapping (address => uint[]) public managers; // Links manager address to vault id list
+    mapping (address => address) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
     uint public nextVaultId;
 
     // EVENTS
     event VaultUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isInHistory(uint id) constant returns (bool) { return 0 <= id && id < nextVaultId; }
-
     // CONSTANT METHODS
 
     function getVault(uint id) constant returns (address) { return vaults[id]; }
-    function hasVault(address mgr) constant returns (bool) {
-      return managers[mgr].length > 0;
+    function vaultForManager(address mgr) constant returns (address) {
+        return managers[mgr];
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getNextVaultId() constant returns (uint) { return nextVaultId; }
@@ -52,16 +49,16 @@ contract Version is DBC, Owned {
     // @returns list of all Vaults address is invested in
     // @returns list of all numbers of Shares address holds in Vault
     // @returns list of all decimals of this Vault
-    function getSubscriptionHistory(address ofAddress, uint withStartId)
+    function getSubscriptionHistory(address ofAddress, uint startId)
         constant
-        pre_cond(isInHistory(withStartId))
+        pre_cond(0 <= startId && startId < nextVaultId)
         returns (address[1024], uint256[1024], uint256[1024])
     {
         address[1024] memory vaults;
         uint[1024] memory holdings;
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
-            if (withStartId + i >= nextVaultId) break;
+            if (startId + i >= nextVaultId) break;
             VaultInterface Vault = VaultInterface(getVault(i));
             holdings[i] = Vault.balanceOf(msg.sender);
             decimals[i] = Vault.getDecimals();
@@ -71,12 +68,10 @@ contract Version is DBC, Owned {
 
     // NON-CONSTANT METHODS
     function Version(
-        address ofMelonAsset,
-        address ofLogger
+        address ofMelonAsset
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-        LOGGER_ADDRESS = ofLogger;
     }
 
     function setupVault(
@@ -97,14 +92,11 @@ contract Version is DBC, Owned {
             MELON_ASSET,
             ofParticipation,
             ofRiskMgmt,
-            ofSphere,
-            LOGGER_ADDRESS
+            ofSphere
         );
         vaults[nextVaultId] = vault;
-        managers[msg.sender].push(nextVaultId);
-        Logger logger = Logger(LOGGER_ADDRESS);
-        logger.addPermission(vault);
-//        logger.logVaultAdded(vault, nextVaultId, withName, now); // comment this out in order to deploy...
+        managers[msg.sender] = vault;
+        VaultAdded(vault, nextVaultId, withName, now);
         nextVaultId++;
     }
 
