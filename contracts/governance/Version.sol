@@ -82,7 +82,6 @@ contract Version is DBC, Owned {
         address ofRiskMgmt,
         address ofSphere
     )
-        returns (uint id)
     {
         address vault = new Vault(
             msg.sender,

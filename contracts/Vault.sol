@@ -366,7 +366,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        require(module.pricefeed.isDataSet(MELON_ASSET));
         MELON_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
         VAULT_BASE_UNITS = 10 ** decimals;
         module.participation = ParticipationInterface(ofParticipation);
@@ -381,14 +380,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        /*info = Information({
+        info = Information({
             owner: ofManager,
             name: withName,
             symbol: withSymbol,
             decimals: withDecimals,
             created: now,
             status: VaultStatus.setup
-        });*/
+        });
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
@@ -452,6 +451,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         public
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
+        pre_cond(module.pricefeed.isDataValid(MELON_ASSET))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
             numShares,
