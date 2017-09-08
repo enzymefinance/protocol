@@ -10,10 +10,8 @@ import '../dependencies/Owned.sol';
 /// @notice Simple and static Management Fee.
 contract Version is DBC, Owned {
 
-    // EVENTS
-    event VaultAdded(address vaultAddress, uint id, string name, uint256 atTime);
-
     // TYPES
+
     enum Status {
         setup,
         funding,
@@ -22,6 +20,7 @@ contract Version is DBC, Owned {
     }
 
     // FIELDS
+
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
@@ -31,6 +30,8 @@ contract Version is DBC, Owned {
     uint public nextVaultId;
 
     // EVENTS
+
+    event VaultAdded(address vaultAddress, uint id, string name, uint256 atTime);
     event VaultUpdated(uint id);
 
     // CONSTANT METHODS
@@ -67,6 +68,7 @@ contract Version is DBC, Owned {
     }
 
     // NON-CONSTANT METHODS
+    
     function Version(
         address ofMelonAsset
     ) {

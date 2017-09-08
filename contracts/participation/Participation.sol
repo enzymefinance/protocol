@@ -9,8 +9,7 @@ import '../dependencies/Owned.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
 contract Participation is ParticipationInterface, DBC, Owned {
-    //TODO: can we make this into a Permissioned contract?
-
+  
     // TYPES
 
     struct Information { // subscription request
