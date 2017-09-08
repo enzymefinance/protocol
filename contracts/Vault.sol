@@ -722,7 +722,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(!isShutDown)
         pre_cond(noOpenOrders())
     {
-        // TODO Assert that all open orders are closed
         var (
             gav,
             managementReward,
@@ -758,21 +757,21 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     		constant
     		returns (
       			address[1024] owners, uint[1024] statuses, uint[1024] requestTypes,
-                  uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
+            uint[1024] numShares, uint[1024] offered, uint[1024] incentive,
       			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
     		)
   	{
-    	for(uint ii = 0; ii < 1024; ii++){
-      		if(start + ii >= nextRequestId) break;
-      		owners[ii] = requests[start + ii].owner;
-      		statuses[ii] = uint(requests[start + ii].status);
-      		requestTypes[ii] = uint(requests[start + ii].requestType);
-      		numShares[ii] = requests[start + ii].numShares;
-      		offered[ii] = requests[start + ii].offeredOrRequestedValue;
-      		incentive[ii] = requests[start + ii].incentive;
-      		lastFeedId[ii] = requests[start + ii].lastFeedUpdateId;
-      		lastFeedTime[ii] = requests[start + ii].lastFeedUpdateTime;
-      		timestamp[ii] = requests[start + ii].timestamp;
+    	for (uint i = 0; i < 1024; i++) {
+      		if(start + i >= nextRequestId) break;
+      		owners[i] = requests[start + i].owner;
+      		statuses[i] = uint(requests[start + i].status);
+      		requestTypes[i] = uint(requests[start + i].requestType);
+      		numShares[i] = requests[start + i].numShares;
+      		offered[i] = requests[start + i].offeredOrRequestedValue;
+      		incentive[i] = requests[start + i].incentive;
+      		lastFeedId[i] = requests[start + i].lastFeedUpdateId;
+      		lastFeedTime[i] = requests[start + i].lastFeedUpdateTime;
+      		timestamp[i] = requests[start + i].timestamp;
     	}
   	}
 
@@ -785,16 +784,16 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
       			uint[1024] types, uint[1024] buyQuantityFilled
     		)
   	{
-        for(uint ii = 0; ii < 1024; ii++){
-      		if(start + ii >= nextOrderId) break;
-      		haveAmount[ii] = orders[start + ii].haveAmount;
-      		haveToken[ii] = orders[start + ii].haveToken;
-      		wantAmount[ii] = orders[start + ii].wantAmount;
-      		wantToken[ii] = orders[start + ii].wantToken;
-      		timestamps[ii] = orders[start + ii].timestamp;
-      		statuses[ii] = uint(orders[start + ii].order_status);   // cast enum
-      		types[ii] = uint(orders[start + ii].orderType);
-      		buyQuantityFilled[ii] = orders[start + ii].quantity_filled;
+        for (uint i = 0; i < 1024; i++) {
+      		if (start + i >= nextOrderId) break;
+      		haveAmount[i] = orders[start + i].haveAmount;
+      		haveToken[i] = orders[start + i].haveToken;
+      		wantAmount[i] = orders[start + i].wantAmount;
+      		wantToken[i] = orders[start + i].wantToken;
+      		timestamps[i] = orders[start + i].timestamp;
+      		statuses[i] = uint(orders[start + i].order_status);   // cast enum
+      		types[i] = uint(orders[start + i].orderType);
+      		buyQuantityFilled[i] = orders[start + i].quantity_filled;
     	}
   	}
 }
