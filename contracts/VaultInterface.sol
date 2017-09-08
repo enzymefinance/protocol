@@ -9,6 +9,10 @@ import './exchange/ExchangeInterface.sol';
 /// @notice This is to be considered as an interface on how to access the underlying Vault Contract
 contract VaultInterface is AssetInterface {
 
+    // EVENTS
+
+    event OrderUpdated(uint id);
+
     // CONSTANT METHODS
 
     function getDataFeedAddress() constant returns (address) {}
@@ -36,7 +40,4 @@ contract VaultInterface is AssetInterface {
     function cancelOrder(ExchangeInterface onExchange, uint id) returns (bool) {}
     function convertUnclaimedRewards() {}
 
-    // EVENTS
-
-    event OrderUpdated(uint id);
 }
