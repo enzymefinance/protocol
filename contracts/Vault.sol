@@ -772,18 +772,18 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
       			uint[1024] lastFeedId, uint[1024] lastFeedTime, uint[1024] timestamp
     		)
   	{
-    	for (uint i = 0; i < 1024; i++) {
-      		if (start + i >= nextRequestId) break;
-      		owners[i] = requests[start + i].owner;
-      		statuses[i] = uint(requests[start + i].status);
-      		requestTypes[i] = uint(requests[start + i].requestType);
-      		numShares[i] = requests[start + i].numShares;
-      		offered[i] = requests[start + i].offeredOrRequestedValue;
-      		incentive[i] = requests[start + i].incentive;
-      		lastFeedId[i] = requests[start + i].lastFeedUpdateId;
-      		lastFeedTime[i] = requests[start + i].lastFeedUpdateTime;
-      		timestamp[i] = requests[start + i].timestamp;
-    	}
+      	for (uint i = 0; i < 1024; i++) {
+        		if (start + i >= nextRequestId) break;
+        		owners[i] = requests[start + i].owner;
+        		statuses[i] = uint(requests[start + i].status);
+        		requestTypes[i] = uint(requests[start + i].requestType);
+        		numShares[i] = requests[start + i].numShares;
+        		offered[i] = requests[start + i].offeredOrRequestedValue;
+        		incentive[i] = requests[start + i].incentive;
+        		lastFeedId[i] = requests[start + i].lastFeedUpdateId;
+        		lastFeedTime[i] = requests[start + i].lastFeedUpdateTime;
+        		timestamp[i] = requests[start + i].timestamp;
+      	}
   	}
 
   	function getOrderHistory(uint start)
@@ -796,15 +796,15 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     		)
   	{
         for (uint i = 0; i < 1024; i++) {
-      		if (start + i >= nextOrderId) break;
-      		haveAmount[i] = orders[start + i].haveAmount;
-      		haveToken[i] = orders[start + i].haveToken;
-      		wantAmount[i] = orders[start + i].wantAmount;
-      		wantToken[i] = orders[start + i].wantToken;
-      		timestamps[i] = orders[start + i].timestamp;
-      		statuses[i] = uint(orders[start + i].order_status);   // cast enum
-      		types[i] = uint(orders[start + i].orderType);
-      		buyQuantityFilled[i] = orders[start + i].quantity_filled;
+        		if (start + i >= nextOrderId) break;
+        		haveAmount[i] = orders[start + i].haveAmount;
+        		haveToken[i] = orders[start + i].haveToken;
+        		wantAmount[i] = orders[start + i].wantAmount;
+        		wantToken[i] = orders[start + i].wantToken;
+        		timestamps[i] = orders[start + i].timestamp;
+        		statuses[i] = uint(orders[start + i].order_status);   // cast enum
+        		types[i] = uint(orders[start + i].orderType);
+        		buyQuantityFilled[i] = orders[start + i].quantity_filled;
     	}
   	}
 }
