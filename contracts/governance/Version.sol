@@ -68,7 +68,7 @@ contract Version is DBC, Owned {
     }
 
     // NON-CONSTANT METHODS
-    
+
     function Version(
         address ofMelonAsset
     ) {
@@ -83,8 +83,7 @@ contract Version is DBC, Owned {
         address ofParticipation,
         address ofRiskMgmt,
         address ofSphere
-    )
-    {
+    ) {
         address vault = new Vault(
             msg.sender,
             withName,

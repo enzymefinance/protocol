@@ -307,7 +307,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         // Sold more than expected => Proof of Embezzlemnt
         uint256 totalIntendedSellAmount = getIndendedSellAmount(ofBase); // Trade intention
         if (isLargerThan(
-            previousHoldings[ofBase].sub(totalIndendedSellAmount), // Intended amount sold
+            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
             ERC20(ofBase).balanceOf(this) // Actual amount sold
         )) {
             isShutDown = true;
@@ -318,12 +318,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         uint256 factor = 10000;
         uint256 divisor = factor;
         if (isLessThan(
-            previousHoldings[ofBase].sub(totalIndendedSellAmount), // Intended amount sold
+            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
             ERC20(ofBase).balanceOf(this) // Actual amount sold
         )) { // Sold less than intended
             factor = divisor
                 .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
-                .div(totalIndendedSellAmount);
+                .div(totalIntendedSellAmount);
         }
 
         // Sold at a worse price than expected => Proof of Embezzlemnt
@@ -451,7 +451,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         public
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
-        pre_cond(module.pricefeed.isDataValid(MELON_ASSET))
+        pre_cond(module.pricefeed.isValid(MELON_ASSET))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
             numShares,
