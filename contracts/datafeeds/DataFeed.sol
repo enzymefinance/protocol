@@ -28,6 +28,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds data is considered valid
     // Function fields
+    // XXX: change to array, or make access clearer in update()
     mapping (uint => mapping(address => Data)) public dataHistory; // maps integers to asset addresses, which map to data structs
     uint public nextUpdateId;
     uint public lastUpdateTimestamp;
@@ -117,7 +118,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         } else {
             throw; // Log Error: No suitable reference price availabe
         }
-     }
+    }
 
     /// Pre: Asset has been initialised and is active
     /// Post: Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
