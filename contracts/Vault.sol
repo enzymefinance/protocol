@@ -144,8 +144,6 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     bool public isSubscribeAllowed;
     bool public isRedeemAllowed;
 
-    // EVENTS
-
     // PRE, POST, INVARIANT CONDITIONS
 
     function isZero(uint256 x) internal returns (bool) { return 0 == x; }
