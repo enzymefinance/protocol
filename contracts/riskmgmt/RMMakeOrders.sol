@@ -29,13 +29,6 @@ contract RMMakeOrders is RiskMgmtInterface {
       {
           // Don't buy at much higher price
           return true;
-          /*return isLessOrEqualThan(
-              uint256(haveAmount)
-              .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
-              referencePrice
-              .mul(RISK_DIVISOR.sub(RISK_LEVEL))
-              .div(RISK_DIVISOR)
-          );*/
       }
 
       function isExchangeTakePermitted(
@@ -47,12 +40,5 @@ contract RMMakeOrders is RiskMgmtInterface {
       {
           // Don't buy at much higher price
           return true;
-          /*return isLessOrEqualThan(
-              uint256(haveAmount)
-              .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
-              referencePrice
-              .mul(RISK_LEVEL)
-              .div(RISK_DIVISOR)
-          );*/
       }
 }

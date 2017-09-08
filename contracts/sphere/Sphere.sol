@@ -10,9 +10,8 @@ import '../dependencies/Owned.sol';
 /// @notice Simple and static Sphere Module.
 contract Sphere is SphereInterface, DBC, Owned {
 
-    // TYPES
-
     // FIELDS
+
     address public DATAFEED;
     address public EXCHANGE;
 

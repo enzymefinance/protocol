@@ -133,22 +133,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         );
     }
 
-    // CONSTANT METHODS - ACCOUNTING
-
-    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in [base unit of referenceAsset]
-    function calcGav(address ofVault) constant returns (uint256 gav) {
-        for (uint256 i = 0; i < numRegisteredAssets(); ++i) {
-            address ofAsset = address(getRegisteredAssetAt(i));
-            uint256 assetHoldings = ERC20(ofAsset).balanceOf(ofVault); // Amount of asset base units this vault holds
-            uint256 assetPrice = getPrice(ofAsset);
-            uint256 assetDecimals = getDecimals(ofAsset);
-            // Sum up product of asset holdings of this vault and asset prices
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals)));
-            PortfolioContent(ofVault, assetHoldings, assetPrice, assetDecimals);
-        }
-    }
-
     // NON-CONSTANT PUBLIC METHODS
 
     /// Pre: Define and register a quote asset against which all prices are measured/based against
