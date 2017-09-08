@@ -9,7 +9,7 @@ import '../dependencies/Owned.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Participation Module.
 contract Participation is ParticipationInterface, DBC, Owned {
-  
+
     // TYPES
 
     struct Information { // subscription request
@@ -19,7 +19,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
     // FIELDS
 
     // Function fields
-    mapping (address => Information) public avatar;
+    mapping (address => Information) public persona;
 
 
     // NON-CONSTANT NON-BOOLEAN METHODS
@@ -27,21 +27,21 @@ contract Participation is ParticipationInterface, DBC, Owned {
     function list(address x)
         pre_cond(isOwner())
     {
-        avatar[x].isApproved = true;
+        persona[x].isApproved = true;
     }
 
     function bulkList(address[] x)
         pre_cond(isOwner())
     {
         for (uint i = 0; i < x.length; ++i) {
-            avatar[x[i]].isApproved = true;
+            persona[x[i]].isApproved = true;
         }
     }
 
     function delist(address x)
         pre_cond(isOwner())
     {
-        avatar[x].isApproved = false;
+        persona[x].isApproved = false;
     }
 
     // CONSTANT METHODS
@@ -56,7 +56,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
         constant
         returns (bool)
     {
-        return avatar[owner].isApproved;
+        return persona[owner].isApproved;
     }
 
     /// Pre: Request ID

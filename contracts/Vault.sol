@@ -619,7 +619,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         pre_cond(!isShutDown)
         pre_cond(isValidAssetPair(haveToken, wantToken))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
-            0, // TODO Insert assetpair actual price (formatted the same way as reference price)
+            module.pricefeed.getPriceOfOrder(
+                haveToken,
+                wantToken,
+                haveAmount,
+                wantAmount
+            ),
             module.pricefeed.getReferencePrice(haveToken, wantToken),
             wantAmount
         ))
@@ -640,20 +645,20 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         nextOrderId++;
     }
 
-    function getIndendedSellAmount(address ofAsset) constant returns(uint amt) {
+    function getIndendedSellAmount(address ofAsset) constant returns(uint amount) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.haveToken == ofAsset) {
-                amt = amt + thisOrder.haveAmount;
+                amount = amount + thisOrder.haveAmount;
             }
         }
     }
 
-    function getIndendedBuyAmount(address ofAsset) constant returns(uint amt) {
+    function getIndendedBuyAmount(address ofAsset) constant returns(uint amount) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.wantToken == ofAsset) {
-                amt = amt + thisOrder.wantAmount;
+                amount = amount + thisOrder.wantAmount;
             }
         }
     }
@@ -674,6 +679,12 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         require(wantedBuyAmount <= offeredBuyAmount);
         var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(
+            /*module.pricefeed.getPriceOfOrder(
+              offeredSellToken, // I have what is being sold
+              offeredBuyToken, // I want what is being bhought
+              offeredBuyAmount,
+              wantedBuyAmount
+            ),*/ // TODO Fix: Stack size too deep
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             module.pricefeed.getReferencePrice(offeredBuyToken, offeredSellToken),
             offeredSellAmount
@@ -762,7 +773,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     		)
   	{
     	for (uint i = 0; i < 1024; i++) {
-      		if(start + i >= nextRequestId) break;
+      		if (start + i >= nextRequestId) break;
       		owners[i] = requests[start + i].owner;
       		statuses[i] = uint(requests[start + i].status);
       		requestTypes[i] = uint(requests[start + i].requestType);

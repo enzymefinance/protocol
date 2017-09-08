@@ -1,5 +1,7 @@
 pragma solidity ^0.4.11;
 
+import '../dependencies/ERC20.sol';
+
 /// @title DataFeed Protocol Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice DataFeed according to the Standard Data Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
@@ -29,6 +31,14 @@ contract DataFeedInterface {
     function getPrice(address ofAsset) constant returns (uint) {}
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
+    function getPriceOfOrder(
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint     haveAmount,
+        uint     wantAmount
+    )
+        constant returns (uint)
+    {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
 

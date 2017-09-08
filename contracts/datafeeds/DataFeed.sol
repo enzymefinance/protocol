@@ -120,6 +120,18 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         }
     }
 
+    function getPriceOfOrder(
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint     haveAmount,
+        uint     wantAmount
+    )
+        constant returns (uint256)
+    {
+        // TODO Calculate asset pairs actual price (formatted the same way as reference price)
+        return 0;
+    }
+
     /// Pre: Asset has been initialised and is active
     /// Post: Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
     function getData(address ofAsset)
