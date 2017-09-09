@@ -15,7 +15,6 @@ contract DataFeedInterface {
     // CONSTANT METHODS
 
     // Get registartion specific information
-    function isDataSet(address ofAsset) constant returns (bool) {}
     function numRegisteredAssets() constant returns (uint) {}
     function getRegisteredAssetAt(uint id) constant returns (address) {}
     // Get asset specific information
