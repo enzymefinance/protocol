@@ -51,8 +51,6 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     // FIELDS
 
     // Constant fields
-    uint256 public constant MANAGEMENT_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per delta improvment
-    uint256 public constant PERFORMANCE_REWARD_RATE = 0; // Reward rate in REFERENCE_ASSET per managed seconds
     uint256 public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint256 public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Constructor fields
@@ -60,6 +58,8 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     string public symbol;
     uint public decimals;
     uint public created; // Timestamp of Fund creation
+    uint256 public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
+    uint256 public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     uint256 public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     uint256 public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     address public VERSION; // Address of Version contract
@@ -300,6 +300,8 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         string withName,
         string withSymbol,
         uint withDecimals,
+        uint ofManagementRewardRate,
+        uint ofPerformanceRewardRate,
         address ofMelonAsset,
         address ofParticipation,
         address ofRiskMgmt,
@@ -314,6 +316,8 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         name = withName;
         symbol = withSymbol;
         decimals = withDecimals;
+        MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
+        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = MELON_ASSET; // XXX let user decide

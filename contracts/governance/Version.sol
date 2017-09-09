@@ -80,6 +80,8 @@ contract Version is DBC, Owned {
         string withName,
         string withSymbol,
         uint withDecimals,
+        uint ofManagementRewardRate,
+        uint ofPerformanceRewardRate,
         address ofParticipation,
         address ofRiskMgmt,
         address ofSphere
@@ -89,6 +91,8 @@ contract Version is DBC, Owned {
             withName,
             withSymbol,
             withDecimals,
+            ofManagementRewardRate,
+            ofPerformanceRewardRate,
             MELON_ASSET,
             ofParticipation,
             ofRiskMgmt,

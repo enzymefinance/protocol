@@ -37,6 +37,8 @@ contract('Version', (accounts) => {
       'Cantaloot',    // name
       'CNLT',         // share symbol
       18,             // share decimals
+      0,              // mgmt reward
+      0,              // perf reward
       participation.address,
       riskManagement.address,
       sphere.address,
