@@ -99,14 +99,8 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     function isEqualTo(uint256 x, uint256 y) internal returns (bool) { return x == y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
-    function noOpenOrders()
-        internal
-        returns (bool) {
-        for (uint256 i = 0; i < openOrderIds.length; i++) {
-            if (openOrderIds[i] != 0) return false;
-        }
-        return true;
-    }
+    function noOpenOrders() internal returns (bool) { return nextOpenSlotOfArray() == 0; }
+    function openOrdersNotFull() internal returns (bool) { return nextOpenSlotOfArray() == MAX_OPEN_ORDERS; }
     function balancesOfHolderAtLeast(address ofHolder, uint256 x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isValidAssetPair(address sell_which_token, address buy_which_token)
         internal
@@ -127,6 +121,12 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     function getFundBaseUnits() constant returns (uint256) { return VAULT_BASE_UNITS; }
     function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
+    function nextOpenSlotOfArray() internal returns (uint) {
+        for (uint256 i = 0; i < openOrderIds.length; i++) {
+            if (openOrderIds[i] != 0) return i;
+        }
+        return MAX_OPEN_ORDERS;
+    }
     function getIndendedSellAmount(address ofAsset) constant returns(uint amount) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
@@ -591,6 +591,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
             orderType: OrderType.make,
             quantity_filled: 0
         });
+        /*openOrderIds[nextOpenSlotOfArray()] = nextOrderId;*/ //TODO: out of gas error
         nextOrderId++;
     }
 
