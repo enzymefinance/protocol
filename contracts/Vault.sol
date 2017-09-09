@@ -270,7 +270,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
             uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset));
+            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset)); // TODO: Account for in diff contract
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -380,14 +380,14 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        info = Information({
+        /*info = Information({
             owner: ofManager,
             name: withName,
             symbol: withSymbol,
             decimals: withDecimals,
             created: now,
             status: VaultStatus.setup
-        });
+        });*/
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
@@ -443,7 +443,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
     /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
     /// Post: Pending subscription Request
-    function subscribe(
+    function requestSubscription(
         uint256 numShares,
         uint256 offeredValue,
         uint256 incentiveValue
@@ -483,7 +483,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
     /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
-    function redeem(
+    function requestRedemption(
         uint256 numShares,
         uint256 requestedValue,
         uint256 incentiveValue
@@ -677,14 +677,13 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         ) = module.exchange.getOffer(id);
         require(isValidAssetPair(offeredBuyToken, offeredSellToken));
         require(wantedBuyAmount <= offeredBuyAmount);
-        var orderOwner = module.exchange.getOwner(id);
         require(module.riskmgmt.isExchangeTakePermitted(
             /*module.pricefeed.getPriceOfOrder(
               offeredSellToken, // I have what is being sold
               offeredBuyToken, // I want what is being bhought
               offeredBuyAmount,
               wantedBuyAmount
-            ),*/ // TODO Fix: Stack size too deep
+            ), */ // TODO Fix: Stack size too deep
             0, // TODO Insert assetpair actual price (formatted the same way as reference price)
             module.pricefeed.getReferencePrice(offeredBuyToken, offeredSellToken),
             offeredSellAmount

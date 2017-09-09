@@ -77,7 +77,7 @@ contract('Vault shares', (accounts) => {
       await mlnToken.approve(vault.address, offeredValue + incentive, { from: investor });
       const allowance = await mlnToken.allowance(investor, vault.address);
       assert.equal(allowance.toNumber(), offeredValue + incentive);
-      await vault.subscribe(numShares, offeredValue, incentive, { from: investor });
+      await vault.requestSubscription(numShares, offeredValue, incentive, { from: investor });
     });
     it('logs request event', (done) => {
       const reqEvent = vault.SubscribeRequest();
@@ -123,7 +123,7 @@ contract('Vault shares', (accounts) => {
     });
     it('allows redeem request', async () => {
       await mlnToken.approve(vault.address, requestedValue + incentive, { from: investor });
-      await vault.redeem(numShares, requestedValue, incentive, { from: investor });
+      await vault.requestRedemption(numShares, requestedValue, incentive, { from: investor });
     });
     it('annihilates shares and returns funds on redeem execution', async () => {
       await simulateFeedUpdate(); // fake 2 new blocks and updates
