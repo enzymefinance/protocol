@@ -8,6 +8,10 @@ import '../dependencies/ERC20.sol';
 /// @notice This is to be considered as an interface on how to access the underlying DataFeed Contract
 contract DataFeedInterface {
 
+    // EVENTS
+
+    event DataUpdated(uint id);
+
     // CONSTANT METHODS
 
     // Get registartion specific information
@@ -41,10 +45,4 @@ contract DataFeedInterface {
     {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
-
-    // EVENTS
-
-    event DataUpdated(uint id);
-    event PortfolioContent(address ofFund, uint256 assetHoldings, uint256 assetPrice, uint256 assetDecimals);
-
 }
