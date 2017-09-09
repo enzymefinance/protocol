@@ -30,15 +30,6 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         payout
     }
 
-    struct Information {
-        address owner;
-        string name;
-        string symbol;
-        uint decimals;
-        uint created;
-        FundStatus status;
-    }
-
     struct Modules { // Can't be changed by Owner
         ParticipationInterface  participation;
         DataFeedInterface       pricefeed;
@@ -68,22 +59,21 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     string public name;
     string public symbol;
     uint public decimals;
+    uint public created; // Timestamp of Fund creation
     uint256 public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     uint256 public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     address public VERSION; // Address of Version contract
     address public MELON_ASSET; // Address of Melon asset contract
-    ERC20 public MELON_CONTRACT;
+    ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     SphereInterface public sphere;
     // Function fields
-    Information public info;
-    Modules public module;
-
-
     uint256[] openOrderIds = new uint256[](MAX_OPEN_ORDERS);
+    mapping (address => uint256) public previousHoldings;
+    FundStatus currentStatus;
+    Modules public module;
     Calculations public atLastConversion;
     bool public isShutDown;
-    mapping (address => uint256) public previousHoldings;
     bool public isSubscribeAllowed;
     bool public isRedeemAllowed;
 
@@ -137,6 +127,22 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     function getFundBaseUnits() constant returns (uint256) { return VAULT_BASE_UNITS; }
     function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
     function getExchangeAddress() constant returns (address) { return address(module.exchange); }
+    function getIndendedSellAmount(address ofAsset) constant returns(uint amount) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
+            Order thisOrder = orders[openOrderIds[i]];
+            if (thisOrder.haveToken == ofAsset) {
+                amount = amount + thisOrder.haveAmount;
+            }
+        }
+    }
+    function getIndendedBuyAmount(address ofAsset) constant returns(uint amount) {
+        for (uint i = 0; i < openOrderIds.length; i++) {
+            Order thisOrder = orders[openOrderIds[i]];
+            if (thisOrder.wantToken == ofAsset) {
+                amount = amount + thisOrder.wantAmount;
+            }
+        }
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -215,13 +221,15 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         for (uint256 i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
             uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset)); // TODO: Account for in diff contract
+            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset));
             uint256 assetPrice = module.pricefeed.getPrice(ofAsset);
             uint256 assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
+
+    // NON-CONSTANT MANAGING
 
     //TODO: add previousHoldings
     function closeOpenOrders(address ofBase, address ofQuote)
@@ -325,14 +333,8 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
             totalSupply: totalSupply,
             timestamp: now
         });
-        /*info = Information({
-            owner: ofManager,
-            name: withName,
-            symbol: withSymbol,
-            decimals: withDecimals,
-            created: now,
-            status: FundStatus.setup
-        });*/
+        created = now;
+        currentStatus = FundStatus.setup;
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
@@ -587,24 +589,6 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
             quantity_filled: 0
         });
         nextOrderId++;
-    }
-
-    function getIndendedSellAmount(address ofAsset) constant returns(uint amount) {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.haveToken == ofAsset) {
-                amount = amount + thisOrder.haveAmount;
-            }
-        }
-    }
-
-    function getIndendedBuyAmount(address ofAsset) constant returns(uint amount) {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.wantToken == ofAsset) {
-                amount = amount + thisOrder.wantAmount;
-            }
-        }
     }
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange

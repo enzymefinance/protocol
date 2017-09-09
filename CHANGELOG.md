@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Naming: subscribe -> requestSubscription in Fund
 - Naming: redeem -> requestRedemption in Fund
 
+### Removed
+- Information struct in Fund
+
 ## [0.3.1]
 
 ### Added
