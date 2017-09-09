@@ -11,7 +11,7 @@ module.exports = (deployer, network) => {
     } else if (network === 'kovan') {
       deployer.deploy(ParticipationOpen)
       .then(() => deployer.deploy(RMMakeOrders))
-      .catch(e => { throw e; });
+      .catch((e) => { throw e; });
     }
   } catch (e) {
     throw e;

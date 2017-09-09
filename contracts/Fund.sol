@@ -278,7 +278,6 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
                 .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
                 .div(totalIntendedSellAmount);
         }
-
         // Sold at a worse price than expected => Proof of Embezzlemnt
         uint256 totalIndendedBuyAmount = getIndendedBuyAmount(ofQuote); // Trade execution
         uint256 totalExpectedBuyAmount = totalIndendedBuyAmount.mul(factor).div(divisor);
