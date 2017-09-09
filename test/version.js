@@ -33,7 +33,7 @@ contract('Version', (accounts) => {
   });
 
   it('Can create a vault without error', async () => {
-    await version.setupVault(
+    await version.setupFund(
       'Cantaloot',    // name
       'CNLT',         // share symbol
       18,             // share decimals
@@ -45,12 +45,12 @@ contract('Version', (accounts) => {
   });
 
   it('Can retrieve vault from index', async () => {
-    let vaultId = await version.getLastVaultId();
+    let vaultId = await version.getLastFundId();
     assert.equal(vaultId.toNumber(), 0);
   });
 
   it('Can remove a vault', async () => {
-    let vaultId = await version.getLastVaultId();
-    await version.shutDownVault(vaultId);
+    let vaultId = await version.getLastFundId();
+    await version.shutDownFund(vaultId);
   });
 });

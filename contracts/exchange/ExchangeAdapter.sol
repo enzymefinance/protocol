@@ -8,4 +8,8 @@ import '../dependencies/Owned.sol';
 /// @title ExchangeAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static ExchangeAdapter Module.
-contract ExchangeAdapter is ExchangeInterface, DBC, Owned {}
+contract ExchangeAdapter is ExchangeInterface, DBC, Owned {
+
+
+
+}

@@ -5,12 +5,12 @@ const Exchange = artifacts.require('SimpleMarket');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
-const Vault = artifacts.require('Vault');
+const Fund = artifacts.require('Fund');
 const chai = require('chai');
 
 const assert = chai.assert;
 
-contract('Vault trading', (accounts) => {
+contract('Fund trading', (accounts) => {
   const manager = accounts[0];
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
@@ -18,7 +18,7 @@ contract('Vault trading', (accounts) => {
   let vault;
   let exchange;
 
-  before('Set up new Vault', async () => {
+  before('Set up new Fund', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
     eurToken = await PreminedAsset.new(
       'Euro', 'EUR', 8, 10 ** 18, { from: liquidityProvider });
@@ -37,7 +37,7 @@ contract('Vault trading', (accounts) => {
     );
     participation = await Participation.deployed();
     riskManagement = await RiskMgmt.deployed();
-    vault = await Vault.new(
+    vault = await Fund.new(
       manager,
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol

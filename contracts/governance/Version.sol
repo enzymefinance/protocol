@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import '../Vault.sol';
-import '../VaultInterface.sol';
+import '../Fund.sol';
+import '../FundInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 
@@ -27,42 +27,42 @@ contract Version is DBC, Owned {
     // Function fields
     mapping (address => address) public managers; // Links manager address to vault id list
     mapping (uint => address) public vaults; // Links identifier to vault addresses
-    uint public nextVaultId;
+    uint public nextFundId;
 
     // EVENTS
 
-    event VaultAdded(address vaultAddress, uint id, string name, uint256 atTime);
-    event VaultUpdated(uint id);
+    event FundAdded(address vaultAddress, uint id, string name, uint256 atTime);
+    event FundUpdated(uint id);
 
     // CONSTANT METHODS
 
-    function getVault(uint id) constant returns (address) { return vaults[id]; }
+    function getFund(uint id) constant returns (address) { return vaults[id]; }
     function vaultForManager(address mgr) constant returns (address) {
         return managers[mgr];
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
-    function getNextVaultId() constant returns (uint) { return nextVaultId; }
-    function getLastVaultId() constant returns (uint) {
-      require(nextVaultId > 0);
-      return nextVaultId - 1;
+    function getNextFundId() constant returns (uint) { return nextFundId; }
+    function getLastFundId() constant returns (uint) {
+      require(nextFundId > 0);
+      return nextFundId - 1;
     }
 
-    // @returns list of all Vaults address is invested in
-    // @returns list of all numbers of Shares address holds in Vault
-    // @returns list of all decimals of this Vault
+    // @returns list of all Funds address is invested in
+    // @returns list of all numbers of Shares address holds in Fund
+    // @returns list of all decimals of this Fund
     function getSubscriptionHistory(address ofAddress, uint startId)
         constant
-        pre_cond(0 <= startId && startId < nextVaultId)
+        pre_cond(0 <= startId && startId < nextFundId)
         returns (address[1024], uint256[1024], uint256[1024])
     {
         address[1024] memory vaults;
         uint[1024] memory holdings;
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
-            if (startId + i >= nextVaultId) break;
-            VaultInterface Vault = VaultInterface(getVault(i));
-            holdings[i] = Vault.balanceOf(msg.sender);
-            decimals[i] = Vault.getDecimals();
+            if (startId + i >= nextFundId) break;
+            FundInterface Fund = FundInterface(getFund(i));
+            holdings[i] = Fund.balanceOf(msg.sender);
+            decimals[i] = Fund.getDecimals();
         }
         return (vaults, holdings, decimals);
     }
@@ -76,7 +76,7 @@ contract Version is DBC, Owned {
         MELON_ASSET = ofMelonAsset;
     }
 
-    function setupVault(
+    function setupFund(
         string withName,
         string withSymbol,
         uint withDecimals,
@@ -84,7 +84,7 @@ contract Version is DBC, Owned {
         address ofRiskMgmt,
         address ofSphere
     ) {
-        address vault = new Vault(
+        address vault = new Fund(
             msg.sender,
             withName,
             withSymbol,
@@ -94,29 +94,29 @@ contract Version is DBC, Owned {
             ofRiskMgmt,
             ofSphere
         );
-        vaults[nextVaultId] = vault;
+        vaults[nextFundId] = vault;
         managers[msg.sender] = vault;
-        VaultAdded(vault, nextVaultId, withName, now);
-        nextVaultId++;
+        FundAdded(vault, nextFundId, withName, now);
+        nextFundId++;
     }
 
-    // Dereference Vault and trigger selfdestruct
-    function shutDownVault(uint id)
+    // Dereference Fund and trigger selfdestruct
+    function shutDownFund(uint id)
         pre_cond(isOwner())
     {
-        VaultInterface Vault = VaultInterface(getVault(id));
-        Vault.shutDown();
+        FundInterface Fund = FundInterface(getFund(id));
+        Fund.shutDown();
         delete vaults[id];
-        VaultUpdated(id);
+        FundUpdated(id);
     }
 
-   	function getVaults(uint start)
+   	function getFunds(uint start)
         constant
-        returns (address[1024] allVaults)
+        returns (address[1024] allFunds)
     {
         for(uint ii = 0; ii < 1024; ii++){
-            if(start + ii >= nextVaultId) break;
-            allVaults[ii] = vaults[ii];
+            if(start + ii >= nextFundId) break;
+            allFunds[ii] = vaults[ii];
         }
     }
 }

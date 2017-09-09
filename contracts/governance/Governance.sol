@@ -90,7 +90,7 @@ contract Governance is DBC, Owned {
         pre_cond(isOwner())
         pre_cond(isActive(id))
     {
-        // TODO decommissionVaults
+        // TODO decommissionFunds
     }
 
     function getVersions(uint start)

@@ -4,10 +4,10 @@ import './assets/AssetInterface.sol';
 import './dependencies/ERC20.sol';
 import './exchange/ExchangeInterface.sol';
 
-/// @title Vault Protocol Contract
+/// @title Fund Protocol Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as an interface on how to access the underlying Vault Contract
-contract VaultInterface is AssetInterface {
+/// @notice This is to be considered as an interface on how to access the underlying Fund Contract
+contract FundInterface is AssetInterface {
 
     // EVENTS
 
