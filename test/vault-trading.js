@@ -72,7 +72,7 @@ contract('Vault trading', (accounts) => {
       assert.equal(order[6].toNumber(), 0);
     });
   });
-  describe('#takeOrder', () => {
+  describe('#takeOffer', () => {
     const sellAmt = 20000;  // sell/buy from maker's perspective
     const buyAmt = 4000;
     before('make an order to take', async () => {
@@ -85,7 +85,7 @@ contract('Vault trading', (accounts) => {
       const id = await exchange.getLastOfferId();
       const preMln = await mlnToken.balanceOf(vault.address);
       const preEth = await ethToken.balanceOf(vault.address);
-      await vault.takeOrder(id, sellAmt, { from: manager });
+      await vault.takeOffer(id, sellAmt, { from: manager });
       const postMln = await mlnToken.balanceOf(vault.address);
       const postEth = await ethToken.balanceOf(vault.address);
       assert.equal(postMln.toNumber() - preMln.toNumber(), sellAmt);
