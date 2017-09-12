@@ -16,7 +16,7 @@ import './FundHistory.sol';
 /// @title Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple vault
-contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
+contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     using safeMath for uint256;
 
     // TYPES

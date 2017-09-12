@@ -2,12 +2,12 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-
+import './AssetRegistrarInterface.sol';
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract AssetRegistrar is DBC, Owned {
+contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // TYPES
 
