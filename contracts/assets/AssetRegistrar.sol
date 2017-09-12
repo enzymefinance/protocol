@@ -47,12 +47,11 @@ contract AssetRegistrar is DBC, Owned {
     /// @notice Get human-readable information about an Asset
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, uint256, string, bytes32)
+        returns (string, string, string, bytes32)
     {
         return (
             information[ofAsset].name,
             information[ofAsset].symbol,
-            information[ofAsset].decimal,
             information[ofAsset].url,
             information[ofAsset].ipfsHash
         );
@@ -104,5 +103,24 @@ contract AssetRegistrar is DBC, Owned {
             exists: true
         });
         assert(isRegistered(ofAsset));
+    }
+
+    /// @dev Pre: Owner can change an existing entry
+    /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
+    function changeDescriptiveInformation(
+        address ofAsset,
+        string name,
+        string symbol,
+        string url,
+        bytes32 ipfsHash
+    )
+        pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
+    {
+        Asset asset = information[ofAsset];
+        asset.name = name;
+        asset.symbol = symbol;
+        asset.url = url;
+        asset.ipfsHash = ipfsHash;
     }
 }
