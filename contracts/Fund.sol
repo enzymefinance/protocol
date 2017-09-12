@@ -119,8 +119,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function getDecimals() constant returns (uint) { return decimals; }
     function getMelonAssetBaseUnits() constant returns (uint256) { return MELON_BASE_UNITS; }
     function getFundBaseUnits() constant returns (uint256) { return VAULT_BASE_UNITS; }
-    function getDataFeedAddress() constant returns (address) { return address(module.pricefeed); }
-    function getExchangeAddress() constant returns (address) { return address(module.exchange); }
+    function getDataFeed() constant returns (address) { return address(module.pricefeed); }
+    function getExchangeAdapter() constant returns (address) { return address(module.exchange); }
     function nextOpenSlotOfArray() internal returns (uint) {
         for (uint256 i = 0; i < openOrderIds.length; i++) {
             if (openOrderIds[i] != 0) return i;
@@ -308,7 +308,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         address ofSphere
     ) {
         sphere = SphereInterface(ofSphere);
-        module.exchange = ExchangeInterface(sphere.getExchange());
+        module.exchange = ExchangeInterface(sphere.getExchangeAdapter());
         module.pricefeed = DataFeedInterface(sphere.getDataFeed());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;

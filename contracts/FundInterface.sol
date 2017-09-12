@@ -15,8 +15,8 @@ contract FundInterface is AssetInterface {
 
     // CONSTANT METHODS
 
-    function getDataFeedAddress() constant returns (address) {}
-    function getExchangeAddress() constant returns (address) {}
+    function getDataFeed() constant returns (address) {}
+    function getExchangeAdapter() constant returns (address) {}
     function getDecimals() constant returns (uint) {}
 
     function calcGav() constant returns (uint gav) {}

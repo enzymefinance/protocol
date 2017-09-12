@@ -17,7 +17,7 @@ contract('SimpleMarket', (accounts) => {
   });
 
   it('empty market has zero nexOrderId', async () => {
-    const firstId = await market.nextOfferId();
+    const firstId = await market.getLastOfferId();
     assert.equal(firstId.toNumber(), 0);
   });
 
@@ -76,10 +76,10 @@ contract('SimpleMarket', (accounts) => {
         before('Setup order', async () => {
           pre.taker.mln = await mlnToken.balanceOf(taker);
           pre.taker.eth = await ethToken.balanceOf(taker);
-          pre.maker.mln = await mlnToken.balanceOf(maker);
+          pre.buyr.mln = await mlnToken.balanceOf(maker);
           pre.maker.eth = await ethToken.balanceOf(maker);
           await mlnToken.approve(market.address, test.makeAmt, { from: maker });
-          await market.make(
+          await market.buy(
             mlnToken.address, ethToken.address, test.makeAmt, test.makeAmt, { from: maker },
           );
         });
