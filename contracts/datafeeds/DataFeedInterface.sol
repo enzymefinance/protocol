@@ -10,6 +10,8 @@ contract DataFeedInterface {
 
     // Get registartion specific information
     function isDataSet(address ofAsset) constant returns (bool) {}
+    function isDataValid(address ofAsset) constant returns (bool) {}
+    function isValid(address ofAsset) constant returns (bool) {}
     function numRegisteredAssets() constant returns (uint) {}
     function getRegisteredAssetAt(uint id) constant returns (address) {}
     // Get asset specific information
@@ -25,7 +27,6 @@ contract DataFeedInterface {
     function getLastUpdateId() constant returns (uint) {}
     function getLastUpdateTimestamp() constant returns (uint) {}
     // Get asset specific information
-    function isValid(address ofAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
