@@ -8,10 +8,7 @@ contract DataFeedInterface {
 
     // CONSTANT METHODS
 
-    // Get registartion specific information
-    function isDataSet(address ofAsset) constant returns (bool) {}
-    function isDataValid(address ofAsset) constant returns (bool) {}
-    function isValid(address ofAsset) constant returns (bool) {}
+    // Get registration specific information
     function numRegisteredAssets() constant returns (uint) {}
     function getRegisteredAssetAt(uint id) constant returns (address) {}
     // Get asset specific information
@@ -20,18 +17,18 @@ contract DataFeedInterface {
     function getDecimals(address ofAsset) constant returns (uint256) {}
     function getDescriptiveInformation(address ofAsset) constant returns (string, string, uint256, string, bytes32) {}
     function getSpecificInformation(address ofAsset) constant returns (uint256, bytes32, address, address) {}
+    function isValid(address ofAsset) constant returns (bool) {}
+    function getPrice(address ofAsset) constant returns (uint) {}
+    function getInvertedPrice(address ofAsset) constant returns (uint) {}
+    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
+    function getTimestamp(address ofAsset) constant returns (uint) {}
+    function getData(address ofAsset) constant returns (uint, uint) {}
     // Get data feed specific information
     function getQuoteAsset() constant returns (address) {}
     function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
     function getLastUpdateId() constant returns (uint) {}
     function getLastUpdateTimestamp() constant returns (uint) {}
-    // Get asset specific information
-    function getPrice(address ofAsset) constant returns (uint) {}
-    function getInvertedPrice(address ofAsset) constant returns (uint) {}
-    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
-    function getTimestamp(address ofAsset) constant returns (uint) {}
-    function getData(address ofAsset) constant returns (uint, uint) {}
 
     // EVENTS
 

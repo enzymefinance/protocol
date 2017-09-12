@@ -451,17 +451,17 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
         public
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
-        pre_cond(module.pricefeed.isDataValid(MELON_ASSET))
+        pre_cond(module.pricefeed.isValid(MELON_ASSET))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
             numShares,
             offeredValue
         ))
-        returns(uint256)
+        returns (uint256 id)
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
-        uint thisId = nextRequestId;
-        requests[thisId] = Request({
+        id = nextRequestId;
+        requests[id] = Request({
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.subscribe,
@@ -472,9 +472,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
-        SubscribeRequest(msg.sender, thisId, now, numShares);
+        SubscribeRequest(msg.sender, id, now, numShares);
         nextRequestId++;
-        return thisId;
     }
 
     /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
@@ -496,10 +495,10 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             numShares,
             requestedValue
         ))
-        returns (uint256)
+        returns (uint256 id)
     {
-        uint thisId = nextRequestId;
-        requests[thisId] = Request({
+        id = nextRequestId;
+        requests[id] = Request({
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.redeem,
@@ -510,9 +509,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
-        RedeemRequest(msg.sender, thisId, now, numShares);
+        RedeemRequest(msg.sender, id, now, numShares);
         nextRequestId++;
-        return thisId;
     }
 
     /// Pre: Anyone can trigger this function; Id of request that is pending
