@@ -658,7 +658,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
 
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
-    function takeOrder(uint256 id, uint256 wantedBuyAmount)
+    function takeOffer(uint256 id, uint256 wantedBuyAmount)
         pre_cond(isOwner())
         pre_cond(!isShutDown)
         returns (bool)
