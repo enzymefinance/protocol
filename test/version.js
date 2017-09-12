@@ -40,7 +40,7 @@ contract('Version', (accounts) => {
       participation.address,
       riskManagement.address,
       sphere.address,
-      { from: accounts[0], gas: 6713095 }
+      { from: accounts[6], gas: 6713095 }
     );
   });
 
