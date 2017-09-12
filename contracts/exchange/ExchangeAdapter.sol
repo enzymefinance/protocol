@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import './ExchangeInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import './SimpleMarket.sol';
+import './existing/SimpleMarket.sol';
 
 
 /// @title ExchangeAdapter Contract
@@ -16,7 +16,7 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
     function ExchangeAdapter(
         address ofSimpleMarket
     ) {
-      
+
     }
 
 }
