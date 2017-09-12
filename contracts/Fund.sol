@@ -143,6 +143,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
             }
         }
     }
+    function getStake() constant returns (uint256) { return balanceOf(this); }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -343,6 +344,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     // NON-CONSTANT METHODS - ADMINISTRATION
 
     function increaseStake(uint256 numShares)
+        external
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
@@ -355,6 +357,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     }
 
     function decreaseStake(uint256 numShares)
+        external
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
         pre_cond(!isShutDown)
@@ -367,15 +370,15 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         addShares(msg.sender, numShares);
     }
 
-    function getStake() constant returns (uint256) { return balanceOf(this); }
-
-    function toggleSubscribe()
+    function toogleSubscription()
+        external
         pre_cond(isOwner())
     {
         isSubscribeAllowed = !isSubscribeAllowed;
     }
 
-    function toggleRedeem()
+    function toggleRedemption()
+        external
         pre_cond(isOwner())
     {
         isRedeemAllowed = !isRedeemAllowed;
@@ -397,7 +400,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         uint256 offeredValue,
         uint256 incentiveValue
     )
-        public
+        external
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.pricefeed.isValid(MELON_ASSET))
@@ -437,7 +440,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         uint256 requestedValue,
         uint256 incentiveValue
       )
-        public
+        external
         pre_cond(isRedeemAllowed)
         pre_cond(isPastZero(numShares))
         pre_cond(module.participation.isRedeemRequestPermitted(
@@ -467,7 +470,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     /// Pre: Anyone can trigger this function; Id of request that is pending
     /// Post: Worker either cancelled or fullfilled request
     function executeRequest(uint256 requestId)
-        public
+        external
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
@@ -502,6 +505,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     }
 
     function cancelRequest(uint requestId)
+        external
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
         pre_cond(requests[requestId].owner == msg.sender ||
@@ -517,6 +521,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     /// Post: Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
     /// Note: Independent of running price feed!
     function redeemUsingSlice(uint256 numShares)
+        external
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
     {
         // Current Value
@@ -564,6 +569,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
         uint128  haveAmount,
         uint128  wantAmount
     )
+        external
         pre_cond(isOwner())
         pre_cond(!isShutDown)
         pre_cond(isValidAssetPair(haveToken, wantToken))
@@ -598,6 +604,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     /// Pre: Active offer (id) and valid buy amount on selected Exchange
     /// Post: Take offer on selected Exchange
     function takeOrder(uint256 id, uint256 wantedBuyAmount)
+        external
         pre_cond(isOwner())
         pre_cond(!isShutDown)
         returns (bool)
@@ -641,6 +648,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     /// Pre: Active offer (id) with owner of this contract on selected Exchange
     /// Post: Cancel offer on selected Exchange
     function cancelOrder(uint256 id)
+        external
         pre_cond(isOwner())
         returns (bool)
     {
@@ -661,6 +669,7 @@ contract Fund is DBC, Owned, Shares, FundInterface, FundHistory {
     /// Pre: Only Owner
     /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
+        external
         pre_cond(isOwner())
         pre_cond(!isShutDown)
         pre_cond(noOpenOrders())
