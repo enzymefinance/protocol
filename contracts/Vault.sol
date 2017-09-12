@@ -137,8 +137,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
     // EVENTS
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event SubscribeRequest(address indexed byParticipant, uint id, uint atTimestamp, uint numShares);
+    event RedeemRequest(address indexed byParticipant, uint id, uint atTimestamp, uint numShares);
     event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
     event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
     event SpendingApproved(address ofToken, address onExchange, uint amount);
@@ -472,7 +472,7 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
-        SubscribeRequest(msg.sender, now, numShares);
+        SubscribeRequest(msg.sender, thisId, now, numShares);
         nextRequestId++;
         return thisId;
     }
@@ -510,8 +510,8 @@ contract Vault is DBC, Owned, Shares, VaultInterface {
             lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         });
+        RedeemRequest(msg.sender, thisId, now, numShares);
         nextRequestId++;
-        RedeemRequest(msg.sender, now, numShares);
         return thisId;
     }
 
