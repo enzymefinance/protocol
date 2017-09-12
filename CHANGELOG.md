@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Fixed: #104
+- Function to change descriptive information in asset registrar
 
 ### Changed
 - Naming: Vault -> Fund

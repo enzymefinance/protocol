@@ -106,6 +106,7 @@ contract AssetRegistrar is DBC, Owned {
     }
 
     // TODO: implement me
+    /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
     function changeDescriptiveInformation(
         address ofAsset,
