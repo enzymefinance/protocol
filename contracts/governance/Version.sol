@@ -24,20 +24,29 @@ contract Version is DBC, Owned {
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
+    string public TERMS_AND_CONDITIONS; // This is the legal text as displayed on IPFS.
+
     // Function fields
-    mapping (address => address) public managers; // Links manager address to vault id list
-    mapping (uint => address) public vaults; // Links identifier to vault addresses
+    mapping (address => address) public managers; // Links manager address to fundId list
+    mapping (uint => address) public funds; // Links fundId to fundAddr
     uint public nextFundId;
 
     // EVENTS
 
-    event FundAdded(address vaultAddress, uint id, string name, uint256 atTime);
+    event FundAdded(address fundAddr, uint id, string name, uint256 atTime);
     event FundUpdated(uint id);
+
+    // PRE, POST, INVARIANT CONDITIONS
+
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool) {
+        bytes32 hash = sha3(TERMS_AND_CONDITIONS); // Convert string into bytes32
+        return ecrecover(hash, v, r, s) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
+    }
 
     // CONSTANT METHODS
 
-    function getFund(uint id) constant returns (address) { return vaults[id]; }
-    function vaultForManager(address mgr) constant returns (address) {
+    function getFund(uint id) constant returns (address) { return funds[id]; }
+    function fundForManager(address mgr) constant returns (address) {
         return managers[mgr];
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
@@ -55,7 +64,7 @@ contract Version is DBC, Owned {
         pre_cond(0 <= startId && startId < nextFundId)
         returns (address[1024], uint256[1024], uint256[1024])
     {
-        address[1024] memory vaults;
+        address[1024] memory funds;
         uint[1024] memory holdings;
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
@@ -64,7 +73,7 @@ contract Version is DBC, Owned {
             holdings[i] = Fund.balanceOf(msg.sender);
             decimals[i] = Fund.getDecimals();
         }
-        return (vaults, holdings, decimals);
+        return (funds, holdings, decimals);
     }
 
     // NON-CONSTANT METHODS
@@ -74,6 +83,17 @@ contract Version is DBC, Owned {
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
+    }
+
+    function registerForCompetition(
+        uint competitionId,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        /*pre_cond(termsAndConditionsAreSigned(v, r, s))*/ // TODO throws out of gas error
+    {
+
     }
 
     function setupFund(
@@ -86,7 +106,7 @@ contract Version is DBC, Owned {
         address ofRiskMgmt,
         address ofSphere
     ) {
-        address vault = new Fund(
+        address fundAddr = new Fund(
             msg.sender,
             withName,
             withSymbol,
@@ -98,9 +118,9 @@ contract Version is DBC, Owned {
             ofRiskMgmt,
             ofSphere
         );
-        vaults[nextFundId] = vault;
-        managers[msg.sender] = vault;
-        FundAdded(vault, nextFundId, withName, now);
+        funds[nextFundId] = fundAddr;
+        managers[msg.sender] = fundAddr;
+        FundAdded(fundAddr, nextFundId, withName, now);
         nextFundId++;
     }
 
@@ -110,7 +130,7 @@ contract Version is DBC, Owned {
     {
         FundInterface Fund = FundInterface(getFund(id));
         Fund.shutDown();
-        delete vaults[id];
+        delete funds[id];
         FundUpdated(id);
     }
 
@@ -120,7 +140,7 @@ contract Version is DBC, Owned {
     {
         for(uint ii = 0; ii < 1024; ii++){
             if(start + ii >= nextFundId) break;
-            allFunds[ii] = vaults[ii];
+            allFunds[ii] = funds[ii];
         }
     }
 }

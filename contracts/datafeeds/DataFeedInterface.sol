@@ -21,7 +21,7 @@ contract DataFeedInterface {
     function getName(address ofAsset) constant returns (string) {}
     function getSymbol(address ofAsset) constant returns (string) {}
     function getDecimals(address ofAsset) constant returns (uint256) {}
-    function getDescriptiveInformation(address ofAsset) constant returns (string, string, uint256, string, bytes32) {}
+    function getDescriptiveInformation(address ofAsset) constant returns (string, string, string, bytes32) {}
     function getSpecificInformation(address ofAsset) constant returns (uint256, bytes32, address, address) {}
     // Get data feed specific information
     function getQuoteAsset() constant returns (address) {}
