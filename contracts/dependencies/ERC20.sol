@@ -34,7 +34,7 @@ contract ERC20 is ERC20Interface {
     function approve(address _spender, uint256 _value) returns (bool success) {
         // See: https://github.com/ethereum/EIPs/issues/20#issuecomment-263555598
         if (_value > 0) {
-            allowed[msg.sender][_spender]  = 0
+            require(allowed[msg.sender][_spender] == 0);
         }
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
