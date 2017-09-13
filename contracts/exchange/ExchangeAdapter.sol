@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import './ExchangeInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import './existing/SimpleMarket.sol';
+import './thirdparty/SimpleMarket.sol';
 
 
 /// @title ExchangeAdapter Contract

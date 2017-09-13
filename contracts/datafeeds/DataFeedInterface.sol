@@ -27,10 +27,10 @@ contract DataFeedInterface is AssetRegistrarInterface {
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
     function getPriceOfOrder(
-        ERC20    haveToken,
-        ERC20    wantToken,
-        uint     haveAmount,
-        uint     wantAmount
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     )
         constant returns (uint)
     {}

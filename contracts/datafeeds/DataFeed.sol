@@ -121,10 +121,10 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     function getPriceOfOrder(
-        ERC20    haveToken,
-        ERC20    wantToken,
-        uint     haveAmount,
-        uint     wantAmount
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     )
         constant returns (uint256)
     {

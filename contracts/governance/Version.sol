@@ -40,7 +40,15 @@ contract Version is DBC, Owned {
 
     function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool) {
         bytes32 hash = sha3(TERMS_AND_CONDITIONS); // Convert string into bytes32
-        return ecrecover(hash, v, r, s) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
+        return ecrecover(
+            // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
+            // Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
+            // it will return rsv (same as geth; where v is [27, 28]).
+            keccak256("\x19Ethereum Signed Message:\n64", hash),
+            v,
+            r,
+            s
+        ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
     // CONSTANT METHODS

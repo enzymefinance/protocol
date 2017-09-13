@@ -36,31 +36,31 @@ contract FundHistory {
         address owner;
         RequestStatus status;
         RequestType requestType;
-        uint256 numShares;
-        uint256 offeredOrRequestedValue;
-        uint256 incentive;
-        uint256 lastFeedUpdateId;
-        uint256 lastFeedUpdateTime;
-        uint256 timestamp;
+        uint numShares;
+        uint offeredOrRequestedValue;
+        uint incentive;
+        uint lastFeedUpdateId;
+        uint lastFeedUpdateTime;
+        uint timestamp;
     }
 
     struct Order {
-        ERC20       haveToken;
-        ERC20       wantToken;
-        uint128     haveAmount;
-        uint128     wantAmount;
-        uint256     timestamp;
+        address sellAsset;
+        address buyAsset;
+        uint sellQuantity;
+        uint buyQuantity;
+        uint timestamp;
         OrderStatus order_status;
-        OrderType   orderType;
-        uint256     quantity_filled; // Buy quantity filled; Always less than buy_quantity
+        OrderType orderType;
+        uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
     // FIELDS
 
-    mapping (uint256 => Request) public requests;   ///XXX: array perhaps
-    uint256 public nextRequestId;
-    mapping (uint256 => Order) public orders;       ///XXX: array
-    uint256 public nextOrderId;
+    mapping (uint => Request) public requests;   ///XXX: array perhaps
+    uint public nextRequestId;
+    mapping (uint => Order) public orders;       ///XXX: array
+    uint public nextOrderId;
 
     // CONSTANT METHODS
 
@@ -98,22 +98,22 @@ contract FundHistory {
   	function getOrderHistory(uint start)
     		constant
     		returns (
-      			uint[1024] haveAmount, address[1024] haveToken,
-      			uint[1024] wantAmount, address[1024] wantToken,
+      			uint[1024] sellQuantity, address[1024] sellAsset,
+      			uint[1024] buyQuantity, address[1024] buyAsset,
       			uint[1024] timestamps, uint[1024] statuses,
       			uint[1024] types, uint[1024] buyQuantityFilled
     		)
   	{
         for (uint i = 0; i < 1024; i++) {
         		if (start + i >= nextOrderId) break;
-        		haveAmount[i] = orders[start + i].haveAmount;
-        		haveToken[i] = orders[start + i].haveToken;
-        		wantAmount[i] = orders[start + i].wantAmount;
-        		wantToken[i] = orders[start + i].wantToken;
+        		sellQuantity[i] = orders[start + i].sellQuantity;
+        		sellAsset[i] = orders[start + i].sellAsset;
+        		buyQuantity[i] = orders[start + i].buyQuantity;
+        		buyAsset[i] = orders[start + i].buyAsset;
         		timestamps[i] = orders[start + i].timestamp;
         		statuses[i] = uint(orders[start + i].order_status);   // cast enum
         		types[i] = uint(orders[start + i].orderType);
-        		buyQuantityFilled[i] = orders[start + i].quantity_filled;
+        		buyQuantityFilled[i] = orders[start + i].fillQuantity;
         }
   	}
 }

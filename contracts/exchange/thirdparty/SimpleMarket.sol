@@ -90,7 +90,7 @@ contract DSMath {
     }
 }
 
-import '../dependencies/ERC20.sol';
+import '../../dependencies/ERC20.sol';
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
