@@ -30,11 +30,11 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         payout
     }
 
-    struct Modules { // Can't be changed by Owner
-        ParticipationInterface  participation;
-        DataFeedInterface       pricefeed;
-        ExchangeInterface       exchange;
-        RiskMgmtInterface       riskmgmt;
+    struct Modules {
+        ParticipationInterface participation;
+        DataFeedInterface datafeed;
+        ExchangeInterface exchange;
+        RiskMgmtInterface riskmgmt;
     }
 
     struct Calculations {
@@ -107,8 +107,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         return
-            module.pricefeed.isValid(sellAsset) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
-            module.pricefeed.isValid(buyAsset) && // Is tradeable asset (TODO cleaner) and pricefeed delivering data
+            module.datafeed.isValid(sellAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
+            module.datafeed.isValid(buyAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
             (buyAsset == MELON_ASSET || sellAsset == MELON_ASSET) && // One asset must be MELON_ASSET
             (buyAsset != MELON_ASSET || sellAsset != MELON_ASSET); // Pair must consists of diffrent assets
     }
@@ -119,7 +119,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function getDecimals() constant returns (uint) { return decimals; }
     function getMelonAssetBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
     function getFundBaseUnits() constant returns (uint) { return VAULT_BASE_UNITS; }
-    function getDataFeed() constant returns (address) { return address(module.pricefeed); }
+    function getDataFeed() constant returns (address) { return address(module.datafeed); }
     function getExchangeAdapter() constant returns (address) { return address(module.exchange); }
     function nextOpenSlotOfArray() internal returns (uint) {
         for (uint i = 0; i < openOrderIds.length; i++) {
@@ -219,12 +219,12 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// @dev Post Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
-        for (uint i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
-            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
             assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset));
-            uint assetPrice = module.pricefeed.getPrice(ofAsset);
-            uint assetDecimals = module.pricefeed.getDecimals(ofAsset);
+            uint assetPrice = module.datafeed.getPrice(ofAsset);
+            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
@@ -309,7 +309,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     ) {
         sphere = SphereInterface(ofSphere);
         module.exchange = ExchangeInterface(sphere.getExchangeAdapter()); // Bridge thrid party exchange to Melon exchange interface
-        module.pricefeed = DataFeedInterface(sphere.getDataFeed());
+        module.datafeed = DataFeedInterface(sphere.getDataFeed());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
@@ -322,8 +322,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = MELON_ASSET; // XXX let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
-        require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        MELON_BASE_UNITS = 10 ** uint(module.pricefeed.getDecimals(MELON_ASSET));
+        require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
+        MELON_BASE_UNITS = 10 ** uint(module.datafeed.getDecimals(MELON_ASSET));
         VAULT_BASE_UNITS = 10 ** decimals;
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -403,7 +403,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         external
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
-        pre_cond(module.pricefeed.isValid(MELON_ASSET))
+        pre_cond(module.datafeed.isValid(MELON_ASSET))
         pre_cond(module.participation.isSubscribeRequestPermitted(
             msg.sender,
             numShares,
@@ -420,8 +420,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             numShares: numShares,
             offeredOrRequestedValue: offeredValue,
             incentive: incentiveValue,
-            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
-            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
+            lastFeedUpdateId: module.datafeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         });
         SubscribeRequest(msg.sender, now, numShares);
@@ -458,8 +458,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             numShares: numShares,
             offeredOrRequestedValue: requestedValue,
             incentive: incentiveValue,
-            lastFeedUpdateId: module.pricefeed.getLastUpdateId(),
-            lastFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
+            lastFeedUpdateId: module.datafeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         });
         nextRequestId++;
@@ -475,11 +475,11 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
                 now,
-                requests[requestId].timestamp.add(module.pricefeed.getInterval())
+                requests[requestId].timestamp.add(module.datafeed.getInterval())
             ) || isShutDown
         )
         pre_cond(isGreaterOrEqualThan(
-                module.pricefeed.getLastUpdateId(),
+                module.datafeed.getLastUpdateId(),
                 requests[requestId].lastFeedUpdateId + 2
             ) || isShutDown
         )
@@ -529,8 +529,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         assert(isPastZero(prevTotalSupply));
         annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
         // Transfer separationAmount of Assets
-        for (uint i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
-            address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
+        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
             uint separationAmount = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
@@ -574,13 +574,13 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(!isShutDown)
         pre_cond(isValidAssetPair(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isExchangeMakePermitted(
-            module.pricefeed.getPriceOfOrder(
+            module.datafeed.getPriceOfOrder(
                 sellAsset,
                 buyAsset,
                 sellQuantity,
                 buyQuantity
             ),
-            module.pricefeed.getReferencePrice(sellAsset, buyAsset),
+            module.datafeed.getReferencePrice(sellAsset, buyAsset),
             buyQuantity
         ))
         returns (uint id)
@@ -620,14 +620,14 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         require(isValidAssetPair(order.buyAsset, order.sellAsset));
         require(order.buyQuantity <= quantity);
         require(module.riskmgmt.isExchangeTakePermitted(
-            module.pricefeed.getPriceOfOrder(
+            module.datafeed.getPriceOfOrder(
                 order.sellAsset, // I have what is being sold
                 order.buyAsset, // I want what is being bhought
                 order.buyQuantity,
                 order.sellQuantity
             ),
             order.sellQuantity,
-            module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset)
+            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
         uint wantedSellQuantity = quantity.mul(order.sellQuantity).div(order.buyQuantity); // <- Qunatity times price
         approveSpending(order.sellAsset, wantedSellQuantity);
@@ -656,7 +656,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function approveSpending(address ofToken, uint amount)
         internal
     {
-        assert(ERC20(ofToken).approve(address(module.exchange), amount)); // TODO change to actual exchange
+        assert(ERC20(ofToken).approve(address(module.exchange), amount));
         SpendingApproved(ofToken, address(module.exchange), amount);
     }
 
