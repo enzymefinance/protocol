@@ -10,7 +10,7 @@ import './thirdparty/SimpleMarket.sol';
 /// @title ExchangeAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
-/// @notice The concept of this can be extended to work with Kyber, 0x and many more!
+/// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     // FIELDS
