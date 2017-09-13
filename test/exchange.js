@@ -42,7 +42,7 @@ contract('SimpleMarket', (accounts) => {
     it('sets owner of order', async () => {
       const oid = await market.getLastOrderId();
       const owner = await market.getOwner(oid);
-      assert.equal(accounts[0], owner);
+      assert.equal(market.address, owner);
     });
   });
 

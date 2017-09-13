@@ -10,6 +10,7 @@ import './thirdparty/SimpleMarket.sol';
 /// @title ExchangeAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
+/// @notice The concept of this can be extended to work with Kyber, 0x and many more!
 contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     // FIELDS
@@ -18,20 +19,29 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     // INTERNAL METHODS
 
-    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Approved to spend ofAsset on Exchange
+    /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
+    /// Post: Transferred tokens to this contract
     function claimAsset(address ofAsset, uint quantity)
         internal
     {
         assert(ERC20(ofAsset).transferFrom(msg.sender, this, quantity));
     }
 
-    /// Pre: Exchange needs to be approved to spend Tokens on the adapters behalf
-    /// Post: Approved to spend ofAsset on Exchange
+    /// Pre: Transferred tokens to this contract
+    /// Post: Approved to spend tokens on EXCHANGE
     function approveSpending(address ofAsset, uint quantity)
         internal
     {
         assert(ERC20(ofAsset).approve(address(EXCHANGE), quantity));
+    }
+
+    /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
+    /// Post: Claimed quantitiy of asset and approved EXCHANGE to spend them
+    function claimAndApprove(address ofAsset, uint quantity)
+        internal
+    {
+        claimAsset(ofAsset, quantity);
+        approveSpending(ofAsset, quantity);
     }
 
     // CONSTANT METHODS
@@ -74,8 +84,7 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         uint sellQuantity,
         uint buyQuantity
     ) external returns (uint id) {
-        claimAsset(sellAsset, sellQuantity);
-        approveSpending(sellAsset, sellQuantity);
+        claimAndApprove(sellAsset, sellQuantity);
         return EXCHANGE.offer(
             sellQuantity,
             ERC20(sellAsset),
@@ -85,11 +94,12 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
     }
 
     function takeOrder(uint id, uint quantity) external returns (bool) {
+        var (sellAsset, , sellQuantity, ) = getOrder(id);
+        claimAndApprove(sellAsset, sellQuantity);
         return EXCHANGE.buy(id, quantity);
     }
 
     function cancelOrder(uint id) external returns (bool) {
         return EXCHANGE.cancel(id);
     }
-
 }
