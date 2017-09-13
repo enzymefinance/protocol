@@ -35,25 +35,6 @@ contract ExchangeInterface {
 
     // EVENTS
 
-    event OrderUpdated(
-        bool isActive,
-        address indexed seller,
-        address indexed buyer,
-        address sellAsset,
-        address buyAsset,
-        uint sellQuantity,
-        uint buyQuantity,
-        uint atTimestamp,
-        uint id
-    );
-    event Traded(
-        address indexed seller,
-        address indexed buyer,
-        address sellAsset,
-        address buyAsset,
-        uint soldQuantity,
-        uint boughtQuantity,
-        uint atTimestamp,
-        uint id
-    );
+    event OrderUpdated(uint id);
+
 }

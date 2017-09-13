@@ -83,27 +83,30 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         returns (uint id)
     {
         claimAndApprove(sellAsset, sellQuantity);
-        return EXCHANGE.offer(
+        id = EXCHANGE.offer(
             sellQuantity,
             ERC20(sellAsset),
             buyQuantity,
             ERC20(buyAsset)
         );
+        OrderUpdated(id);
     }
 
     function takeOrder(uint id, uint quantity)
         external
-        returns (bool)
+        returns (bool success)
     {
         var (sellAsset, , sellQuantity, ) = getOrder(id);
         claimAndApprove(sellAsset, sellQuantity);
-        return EXCHANGE.buy(id, quantity);
+        success = EXCHANGE.buy(id, quantity);
+        OrderUpdated(id);
     }
 
     function cancelOrder(uint id)
         external
-        returns (bool)
+        returns (bool success)
     {
-        return EXCHANGE.cancel(id);
+        success = EXCHANGE.cancel(id);
+        OrderUpdated(id);
     }
 }
