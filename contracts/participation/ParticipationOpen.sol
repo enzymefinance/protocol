@@ -13,7 +13,7 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
 
     /// @dev Pre: Request ID
     /// @dev Post Boolean dependent on market data and on personel data; Compliance
-    function isSubscribeRequestPermitted(
+    function isSubscriptionPermitted(
         address owner,
         uint256 numShares,
         uint256 offeredValue
@@ -26,7 +26,7 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
 
     /// @dev Pre: Request ID
     /// @dev Post Boolean whether permitted or not
-    function isRedeemRequestPermitted(
+    function isRedemptionPermitted(
         address owner,
         uint256 numShares,
         uint256 requestedValue

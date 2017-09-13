@@ -404,7 +404,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.datafeed.isValid(MELON_ASSET))
-        pre_cond(module.participation.isSubscribeRequestPermitted(
+        pre_cond(module.participation.isSubscriptionPermitted(
             msg.sender,
             numShares,
             offeredValue
@@ -443,7 +443,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         external
         pre_cond(isRedeemAllowed)
         pre_cond(isPastZero(numShares))
-        pre_cond(module.participation.isRedeemRequestPermitted(
+        pre_cond(module.participation.isRedemptionPermitted(
             msg.sender,
             numShares,
             requestedValue

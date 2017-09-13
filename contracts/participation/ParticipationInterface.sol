@@ -7,25 +7,14 @@ contract ParticipationInterface {
 
     // CONSTANT METHODS
 
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean dependent on market data and on personel data; Compliance
-    function isSubscribeRequestPermitted(
+    function isSubscriptionPermitted(
         address owner,
         uint256 numShares,
         uint256 offeredValue
-    )
-        constant
-        returns (bool)
-    {}
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean whether permitted or not
-    function isRedeemRequestPermitted(
+    ) constant returns (bool) {}
+    function isRedemptionPermitted(
         address owner,
         uint256 numShares,
         uint256 requestedValue
-    )
-        constant
-        returns (bool)
-    {}
-
+    ) constant returns (bool) {}
 }
