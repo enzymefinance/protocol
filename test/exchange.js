@@ -27,7 +27,7 @@ contract('SimpleMarket', (accounts) => {
   describe('#make()', () => {
     it('calls without error', async () => {
       const amt = 1000;
-      await mlnToken.approve(simpleMarket.address, amt, { from: accounts[0] });
+      await mlnToken.approve(market.address, amt, { from: accounts[0] });
       await market.makeOrder(
         mlnToken.address, ethToken.address, amt, amt, { from: accounts[0] },
       );

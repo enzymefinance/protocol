@@ -16,23 +16,49 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     SimpleMarket public EXCHANGE;
 
+    // INTERNAL METHODS
+
     /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Approved to spend ofToken on Exchange
-    function approveSpending(address ofToken, uint amount)
+    /// Post: Approved to spend ofAsset on Exchange
+    function claimAsset(address ofAsset, uint quantity)
         internal
     {
-        assert(ERC20(ofToken).approve(address(EXCHANGE), amount)); // TODO change to actual exchange
-        /*SpendingApproved(ofToken, address(module.exchange), amount);*/
+        assert(ERC20(ofAsset).transferFrom(msg.sender, this, quantity));
+    }
+
+    /// Pre: Exchange needs to be approved to spend Tokens on the adapters behalf
+    /// Post: Approved to spend ofAsset on Exchange
+    function approveSpending(address ofAsset, uint quantity)
+        internal
+    {
+        assert(ERC20(ofAsset).approve(address(EXCHANGE), quantity));
     }
 
     // CONSTANT METHODS
 
     function getLastOrderId() constant returns (uint) {
-        EXCHANGE.last_offer_id();
+        return EXCHANGE.last_offer_id();
     }
-    function isActive(uint id) constant returns (bool) {}
-    function getOwner(uint id) constant returns (address) {}
-    function getOrder(uint id) constant returns (address, address, uint, uint) {}
+    function isActive(uint id) constant returns (bool) {
+        return EXCHANGE.isActive(id);
+    }
+    function getOwner(uint id) constant returns (address) {
+        return EXCHANGE.getOwner(id);
+    }
+    function getOrder(uint id) constant returns (address, address, uint, uint) {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = EXCHANGE.getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
+    }
 
     // NON-CONSTANT METHODS
 
@@ -48,7 +74,7 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         uint sellQuantity,
         uint buyQuantity
     ) external returns (uint id) {
-        /*claim(sellQuantity)*/
+        claimAsset(sellAsset, sellQuantity);
         approveSpending(sellAsset, sellQuantity);
         return EXCHANGE.offer(
             sellQuantity,
