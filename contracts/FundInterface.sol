@@ -12,10 +12,10 @@ contract FundInterface is AssetInterface {
     // EVENTS
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
+    event SubscribeRequest(address indexed ofParticipant, uint atTimestamp, uint numShares);
+    event RedeemRequest(address indexed ofParticipant, uint atTimestamp, uint numShares);
+    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint numShares);
+    event Redeemed(address indexed ofParticipant, uint atTimestamp, uint numShares);
     event SpendingApproved(address ofToken, address onExchange, uint amount);
     event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
