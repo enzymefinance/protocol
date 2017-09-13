@@ -50,7 +50,7 @@ contract FundHistory {
         uint sellQuantity;
         uint buyQuantity;
         uint timestamp;
-        OrderStatus order_status;
+        OrderStatus status;
         OrderType orderType;
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
@@ -111,7 +111,7 @@ contract FundHistory {
         		buyQuantity[i] = orders[start + i].buyQuantity;
         		buyAsset[i] = orders[start + i].buyAsset;
         		timestamps[i] = orders[start + i].timestamp;
-        		statuses[i] = uint(orders[start + i].order_status);   // cast enum
+        		statuses[i] = uint(orders[start + i].status);   // cast enum
         		types[i] = uint(orders[start + i].orderType);
         		buyQuantityFilled[i] = orders[start + i].fillQuantity;
         }

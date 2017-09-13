@@ -242,7 +242,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
                 proofOfEmbezzlement(ofBase, ofQuote);
                 delete openOrderIds[i]; // Free up open order slot
                 // TODO: fix pot incorrect OrderStatus - partiallyFilled
-                thisOrder.order_status = OrderStatus.fullyFilled;
+                thisOrder.status = OrderStatus.fullyFilled;
                 //  update previousHoldings
                 // TODO: trigger for each proofOfEmbezzlement() call
                 previousHoldings[ofBase] = ERC20(ofBase).balanceOf(this);
@@ -593,7 +593,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             sellQuantity: sellQuantity,
             buyQuantity: buyQuantity,
             timestamp: now,
-            order_status: OrderStatus.open,
+            status: OrderStatus.open,
             orderType: OrderType.make,
             fillQuantity: 0
         });
@@ -610,35 +610,33 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
-
-        var (sellAsset, buyAsset, sellQuantity, buyQuantity) = module.exchange.getOrder(id);
-        require(isValidAssetPair(buyAsset, sellAsset));
-        require(buyQuantity <= quantity);
+        Order memory order;
+        (
+            order.sellAsset,
+            order.buyAsset,
+            order.sellQuantity,
+            order.buyQuantity
+        ) = module.exchange.getOrder(id);
+        require(isValidAssetPair(order.buyAsset, order.sellAsset));
+        require(order.buyQuantity <= quantity);
         require(module.riskmgmt.isExchangeTakePermitted(
-            /*module.pricefeed.getPriceOfOrder(
-              sellAsset, // I have what is being sold
-              buyAsset, // I want what is being bhought
-              buyQuantity,
-              buyQuantity
-            ), */ // TODO Fix: Stack size too deep
-            /*0, // TODO Insert assetpair actual price (formatted the same way as reference price)*/
-            buyQuantity, // TODO Insert assetpair actual price (formatted the same way as reference price)
-            module.pricefeed.getReferencePrice(buyAsset, sellAsset),
-            sellQuantity
+            module.pricefeed.getPriceOfOrder(
+                order.sellAsset, // I have what is being sold
+                order.buyAsset, // I want what is being bhought
+                order.buyQuantity,
+                order.sellQuantity
+            ),
+            order.sellQuantity,
+            module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
-        uint wantedSellQuantity = quantity.mul(sellQuantity).div(buyQuantity); // <- Qunatity times price
-        approveSpending(sellAsset, wantedSellQuantity);
+        uint wantedSellQuantity = quantity.mul(order.sellQuantity).div(order.buyQuantity); // <- Qunatity times price
+        approveSpending(order.sellAsset, wantedSellQuantity);
         bool success = module.exchange.takeOrder(id, quantity);
-        orders[nextOrderId] = Order({
-            sellAsset: buyAsset,
-            buyAsset: sellAsset,
-            sellQuantity: buyQuantity,
-            buyQuantity: quantity,
-            timestamp: now,
-            order_status: OrderStatus.fullyFilled,
-            orderType: OrderType.take,
-            fillQuantity: quantity // fix
-        });
+        order.timestamp = now;
+        order.status = OrderStatus.fullyFilled;
+        order.orderType = OrderType.take;
+        order.fillQuantity = quantity;
+        orders[nextOrderId] = order;
         nextOrderId++;
         return success;
     }

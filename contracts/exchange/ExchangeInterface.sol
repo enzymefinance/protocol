@@ -27,7 +27,7 @@ contract ExchangeInterface {
     ) external returns (uint id) {}
     function takeOrder(
         uint id,
-        uint buyQuantity
+        uint quantity
     ) external returns (bool) {}
     function cancelOrder(
         uint id
@@ -36,7 +36,7 @@ contract ExchangeInterface {
     // EVENTS
 
     event OrderUpdated(
-        bytes32 indexed melonTopic,
+        bytes32 indexed melonTopic, // melon version and network id
         bool isActive,
         address indexed seller,
         address indexed buyer,
