@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
 
-/// @title Exchange Protocol Contract
+/// @title Exchange Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Exchange Contract
 /// @notice This interface should work for any fully decentralised exchanges such as OasisDex, Kyber, Bancor

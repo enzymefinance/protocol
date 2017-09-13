@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import '../dependencies/ERC20.sol';
 import '../assets/AssetRegistrarInterface.sol';
 
-/// @title DataFeed Protocol Contract
+/// @title DataFeed Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice DataFeed according to the Standard Data Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
 /// @notice This is to be considered as an interface on how to access the underlying DataFeed Contract

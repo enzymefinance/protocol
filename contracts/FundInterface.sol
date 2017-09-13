@@ -4,7 +4,7 @@ import './assets/AssetInterface.sol';
 import './dependencies/ERC20.sol';
 import './exchange/ExchangeInterface.sol';
 
-/// @title Fund Protocol Contract
+/// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Fund Contract
 contract FundInterface is AssetInterface {
