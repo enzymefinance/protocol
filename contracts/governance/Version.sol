@@ -24,7 +24,6 @@ contract Version is DBC, Owned {
     // Constructor fields
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
-    string public TERMS_AND_CONDITIONS; // This is the legal text as displayed on IPFS.
 
     // Function fields
     mapping (address => address) public managers; // Links manager address to fundId list
@@ -36,26 +35,11 @@ contract Version is DBC, Owned {
     event FundAdded(address fundAddr, uint id, string name, uint256 atTime);
     event FundUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool) {
-        bytes32 hash = sha3(TERMS_AND_CONDITIONS); // Convert string into bytes32
-        return ecrecover(
-            // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
-            // Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
-            // it will return rsv (same as geth; where v is [27, 28]).
-            keccak256("\x19Ethereum Signed Message:\n64", hash),
-            v,
-            r,
-            s
-        ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
-    }
-
     // CONSTANT METHODS
 
     function getFund(uint id) constant returns (address) { return funds[id]; }
-    function fundForManager(address mgr) constant returns (address) {
-        return managers[mgr];
+    function fundForManager(address ofManager) constant returns (address) {
+        return managers[ofManager];
     }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getNextFundId() constant returns (uint) { return nextFundId; }
@@ -84,6 +68,16 @@ contract Version is DBC, Owned {
         return (funds, holdings, decimals);
     }
 
+    function getFunds(uint start)
+        constant
+        returns (address[1024] allFunds)
+    {
+        for(uint ii = 0; ii < 1024; ii++){
+            if(start + ii >= nextFundId) break;
+            allFunds[ii] = funds[ii];
+        }
+    }
+
     // NON-CONSTANT METHODS
 
     function Version(
@@ -91,17 +85,6 @@ contract Version is DBC, Owned {
     ) {
         GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
         MELON_ASSET = ofMelonAsset;
-    }
-
-    function registerForCompetition(
-        uint competitionId,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        /*pre_cond(termsAndConditionsAreSigned(v, r, s))*/ // TODO throws out of gas error
-    {
-
     }
 
     function setupFund(
@@ -132,7 +115,7 @@ contract Version is DBC, Owned {
         nextFundId++;
     }
 
-    // Dereference Fund and trigger selfdestruct
+    /// @dev Dereference Fund and trigger selfdestruct
     function shutDownFund(uint id)
         pre_cond(isOwner())
     {
@@ -142,13 +125,4 @@ contract Version is DBC, Owned {
         FundUpdated(id);
     }
 
-   	function getFunds(uint start)
-        constant
-        returns (address[1024] allFunds)
-    {
-        for(uint ii = 0; ii < 1024; ii++){
-            if(start + ii >= nextFundId) break;
-            allFunds[ii] = funds[ii];
-        }
-    }
 }
