@@ -27,8 +27,8 @@ contract BackupOwned is DBC, Owned {
         backupOwner = ofBackupOwner;
     }
 
-    /// Pre: Only Backup Owner; Non-null new Backup Owner
-    /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
+    /// @dev Pre: Only Backup Owner; Non-null new Backup Owner
+    /// @dev Post Swaps backup Owner to Owner and new backup Owner to backup Owner
     function useBackup(address ofNewBackupOwner)
         pre_cond(isBackupOwner())
         pre_cond(isNotNullAddress(ofNewBackupOwner))
@@ -38,8 +38,8 @@ contract BackupOwned is DBC, Owned {
         backupOwner = ofNewBackupOwner;
     }
 
-    /// Pre: Only Owner; Non-null new Backup Owner
-    /// Post: New backup Owner
+    /// @dev Pre: Only Owner; Non-null new Backup Owner
+    /// @dev Post New backup Owner
     function setNewBackup(address ofNewBackupOwner)
         pre_cond(isOwner())
         pre_cond(isNotNullAddress(ofNewBackupOwner))

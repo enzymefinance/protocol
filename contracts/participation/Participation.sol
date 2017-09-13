@@ -45,8 +45,8 @@ contract Participation is ParticipationInterface, DBC, Owned {
 
     // CONSTANT METHODS
 
-    /// Pre: Request ID
-    /// Post: Boolean dependent on market data and on personel data; Compliance
+    /// @dev Pre: Request ID
+    /// @dev Post Boolean dependent on market data and on personel data; Compliance
     function isSubscribeRequestPermitted(
         address owner,
         uint256 numShares,
@@ -58,8 +58,8 @@ contract Participation is ParticipationInterface, DBC, Owned {
         return persona[owner].isApproved;
     }
 
-    /// Pre: Request ID
-    /// Post: Boolean whether permitted or not
+    /// @dev Pre: Request ID
+    /// @dev Post Boolean whether permitted or not
     function isRedeemRequestPermitted(
         address owner,
         uint256 numShares,

@@ -147,16 +147,16 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre: None
-    /// Post: sharePrice denominated in [base unit of melonAsset]
+    /// @dev Pre: None
+    /// @dev Post sharePrice denominated in [base unit of melonAsset]
     function calcSharePrice() constant returns (uint)
     {
         var (, , , , , sharePrice) = performCalculations();
         return sharePrice;
     }
 
-    /// Pre: None
-    /// Post: Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
+    /// @dev Pre: None
+    /// @dev Post Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
@@ -165,8 +165,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
-    /// Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// Post: Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
+    /// @dev Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// @dev Post Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint value)
         constant
         pre_cond(isPastZero(totalSupply))
@@ -175,8 +175,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         valuePerShare = value.mul(getMelonAssetBaseUnits()).div(totalSupply);
     }
 
-    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in [base unit of melonAsset]
+    /// @dev Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// @dev Post Net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
         constant
         returns (uint nav)
@@ -184,8 +184,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         nav = gav.sub(unclaimedRewards);
     }
 
-    /// Pre: Gross asset value has been calculated
-    /// Post: The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
+    /// @dev Pre: Gross asset value has been calculated
+    /// @dev Post The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -216,8 +216,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         unclaimedRewards = managementReward.add(performanceReward);
     }
 
-    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in [base unit of melonAsset]
+    /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev Post Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.pricefeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.pricefeed.getRegisteredAssetAt(i));
@@ -252,8 +252,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     }
 
     //XXX: from perspective of vault
-    /// Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
-    /// Post: True if embezzled otherwise false
+    /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
+    /// @dev Post True if embezzled otherwise false
     function proofOfEmbezzlement(address ofBase, address ofQuote)
         constant
         returns (bool)
@@ -392,9 +392,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
-    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
-    /// Post: Pending subscription Request
+    /// @dev Pre: offeredValue denominated in [base unit of MELON_ASSET]
+    /// @dev Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// @dev Post Pending subscription Request
     function requestSubscription(
         uint numShares,
         uint offeredValue,
@@ -429,12 +429,12 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         return thisId;
     }
 
-    /// Pre: offeredValue denominated in [base unit of MELON_ASSET]
-    /// Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
-    /// Post: Pending subscription Request
+    /// @dev Pre: offeredValue denominated in [base unit of MELON_ASSET]
+    /// @dev Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
+    /// @dev Post Pending subscription Request
 
-    /// Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
-    /// Post: Redeemer lost `numShares`, and gained `numShares * value` reference tokens
+    /// @dev Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
+    /// @dev Post Redeemer lost `numShares`, and gained `numShares * value` reference tokens
     function requestRedemption(
         uint numShares,
         uint requestedValue,
@@ -467,8 +467,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         return thisId;
     }
 
-    /// Pre: Anyone can trigger this function; Id of request that is pending
-    /// Post: Worker either cancelled or fullfilled request
+    /// @dev Pre: Anyone can trigger this function; Id of request that is pending
+    /// @dev Post Worker either cancelled or fullfilled request
     function executeRequest(uint requestId)
         external
         pre_cond(isSubscribe(requests[requestId].requestType) ||
@@ -517,8 +517,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue));
     }
 
-    /// Pre: Recipient owns shares
-    /// Post: Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
+    /// @dev Pre: Recipient owns shares
+    /// @dev Post Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
     /// Note: Independent of running price feed!
     function redeemUsingSlice(uint numShares)
         external
@@ -561,8 +561,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // NON-CONSTANT METHODS - MANAGING
 
-    /// Pre: Sufficient balance and spending has been approved
-    /// Post: Make offer on selected Exchange
+    /// @dev Pre: Sufficient balance and spending has been approved
+    /// @dev Post Make offer on selected Exchange
     function makeOrder(
         address sellAsset,
         address buyAsset,
@@ -601,8 +601,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         nextOrderId++;
     }
 
-    /// Pre: Active offer (id) and valid buy amount on selected Exchange
-    /// Post: Take offer on selected Exchange
+    /// @dev Pre: Active offer (id) and valid buy amount on selected Exchange
+    /// @dev Post Take offer on selected Exchange
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
@@ -641,8 +641,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         return success;
     }
 
-    /// Pre: Active offer (id) with owner of this contract on selected Exchange
-    /// Post: Cancel offer on selected Exchange
+    /// @dev Pre: Active offer (id) with owner of this contract on selected Exchange
+    /// @dev Post Cancel offer on selected Exchange
     function cancelOrder(uint id)
         external
         pre_cond(isOwner())
@@ -651,8 +651,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         return module.exchange.cancelOrder(id);
     }
 
-    /// Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// Post: Approved to spend ofToken on Exchange
+    /// @dev Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
+    /// @dev Post Approved to spend ofToken on Exchange
     function approveSpending(address ofToken, uint amount)
         internal
     {
@@ -662,8 +662,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // NON-CONSTANT METHODS - REWARDS
 
-    /// Pre: Only Owner
-    /// Post: Unclaimed fees of manager are converted into shares of the Owner of this fund.
+    /// @dev Pre: Only Owner
+    /// @dev Post Unclaimed fees of manager are converted into shares of the Owner of this fund.
     function convertUnclaimedRewards()
         external
         pre_cond(isOwner())

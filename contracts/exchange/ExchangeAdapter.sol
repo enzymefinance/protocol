@@ -17,44 +17,39 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     SimpleMarket public EXCHANGE;
 
-    // INTERNAL METHODS
+    // PRE, POST, INVARIANT CONDITIONS
 
     /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
-    /// Post: Transferred tokens to this contract
+    /// @dev Post: Transferred tokens to this contract
     function claimAsset(address ofAsset, uint quantity)
         internal
+        returns (bool)
     {
-        assert(ERC20(ofAsset).transferFrom(msg.sender, this, quantity));
+        return ERC20(ofAsset).transferFrom(msg.sender, this, quantity);
     }
 
-    /// Pre: Transferred tokens to this contract
-    /// Post: Approved to spend tokens on EXCHANGE
+    /// @dev Pre: Transferred tokens to this contract
+    /// @dev Post Approved to spend tokens on EXCHANGE
     function approveSpending(address ofAsset, uint quantity)
         internal
+        returns (bool)
     {
-        assert(ERC20(ofAsset).approve(address(EXCHANGE), quantity));
+        return ERC20(ofAsset).approve(address(EXCHANGE), quantity);
     }
 
     /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
-    /// Post: Claimed quantitiy of asset and approved EXCHANGE to spend them
+    /// @dev Post Claimed quantitiy of asset and approved EXCHANGE to spend them
     function claimAndApprove(address ofAsset, uint quantity)
         internal
-    {
-        claimAsset(ofAsset, quantity);
-        approveSpending(ofAsset, quantity);
-    }
+        pre_cond(claimAsset(ofAsset, quantity))
+        post_cond(approveSpending(ofAsset, quantity))
+    {}
 
     // CONSTANT METHODS
 
-    function getLastOrderId() constant returns (uint) {
-        return EXCHANGE.last_offer_id();
-    }
-    function isActive(uint id) constant returns (bool) {
-        return EXCHANGE.isActive(id);
-    }
-    function getOwner(uint id) constant returns (address) {
-        return EXCHANGE.getOwner(id);
-    }
+    function getLastOrderId() constant returns (uint) { return EXCHANGE.last_offer_id(); }
+    function isActive(uint id) constant returns (bool) { return EXCHANGE.isActive(id); }
+    function getOwner(uint id) constant returns (address) { return EXCHANGE.getOwner(id); }
     function getOrder(uint id) constant returns (address, address, uint, uint) {
         var (
             sellQuantity,
@@ -83,7 +78,10 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) external returns (uint id) {
+    )
+        external
+        returns (uint id)
+    {
         claimAndApprove(sellAsset, sellQuantity);
         return EXCHANGE.offer(
             sellQuantity,
@@ -93,13 +91,19 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         );
     }
 
-    function takeOrder(uint id, uint quantity) external returns (bool) {
+    function takeOrder(uint id, uint quantity)
+        external
+        returns (bool)
+    {
         var (sellAsset, , sellQuantity, ) = getOrder(id);
         claimAndApprove(sellAsset, sellQuantity);
         return EXCHANGE.buy(id, quantity);
     }
 
-    function cancelOrder(uint id) external returns (bool) {
+    function cancelOrder(uint id)
+        external
+        returns (bool)
+    {
         return EXCHANGE.cancel(id);
     }
 }

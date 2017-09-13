@@ -60,15 +60,15 @@ contract Governance is DBC, Owned {
     }
 
     /// Pre:
-    /// Post: Updates Melon protocol version
+    /// @dev Post Updates Melon protocol version
     function proposeVersion(
         address ofVersion
     ) {
         // TODO: Implement; Can be multisig stlye proposal and confirmation
     }
 
-    /// Pre: Only Owner
-    /// Post: Updates Melon protocol version:
+    /// @dev Pre: Only Owner
+    /// @dev Post Updates Melon protocol version:
     function addVersion(
         address ofVersion
     )

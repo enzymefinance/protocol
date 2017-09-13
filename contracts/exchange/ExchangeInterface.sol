@@ -36,7 +36,6 @@ contract ExchangeInterface {
     // EVENTS
 
     event OrderUpdated(
-        bytes32 indexed melonTopic, // melon version and network id
         bool isActive,
         address indexed seller,
         address indexed buyer,
@@ -48,7 +47,6 @@ contract ExchangeInterface {
         uint id
     );
     event Traded(
-        bytes32 indexed melonTopic,
         address indexed seller,
         address indexed buyer,
         address sellAsset,

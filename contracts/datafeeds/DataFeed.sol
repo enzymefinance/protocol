@@ -73,8 +73,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     // Get asset specific information
-    /// Pre: Asset has been initialised
-    /// Post: Returns boolean if data is valid
+    /// @dev Pre: Asset has been initialised
+    /// @dev Post Returns boolean if data is valid
     function isValid(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -83,8 +83,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
     }
 
-    /// Pre: Asset has been initialised and is active
-    /// Post: Price of baseUnits(QUOTE_ASSET).ofAsset
+    /// @dev Pre: Asset has been initialised and is active
+    /// @dev Post Price of baseUnits(QUOTE_ASSET).ofAsset
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -94,8 +94,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         return dataHistory[getLastUpdateId()][ofAsset].price;
     }
 
-    /// Pre: Asset has been initialised and is active
-    /// Post: Inverted price of baseUnits(ofAsset).QUOTE_ASSET
+    /// @dev Pre: Asset has been initialised and is active
+    /// @dev Post Inverted price of baseUnits(ofAsset).QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -107,9 +107,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             .div(getPrice(ofAsset));
     }
 
-    /// Pre: One of the address is equal to quote asset
-    /// Post: Price of baseUnits(ofBase).ofQuote
-    /// Post: either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
+    /// @dev Pre: One of the address is equal to quote asset
+    /// @dev Post Price of baseUnits(ofBase).ofQuote
+    /// @dev Post either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {
         if (getQuoteAsset() == ofQuote) {
             getPrice(ofBase);
@@ -132,8 +132,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         return 0;
     }
 
-    /// Pre: Asset has been initialised and is active
-    /// Post: Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
+    /// @dev Pre: Asset has been initialised and is active
+    /// @dev Post Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
     function getData(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -148,8 +148,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // NON-CONSTANT PUBLIC METHODS
 
-    /// Pre: Define and register a quote asset against which all prices are measured/based against
-    /// Post: Price Feed contract w Backup Owner
+    /// @dev Pre: Define and register a quote asset against which all prices are measured/based against
+    /// @dev Post Price Feed contract w Backup Owner
     function DataFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         uint interval,
@@ -160,8 +160,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         VALIDITY = validity;
     }
 
-    /// Pre: Only Owner; Same sized input arrays
-    /// Post: Update price of asset relative to QUOTE_ASSET
+    /// @dev Pre: Only Owner; Same sized input arrays
+    /// @dev Post Update price of asset relative to QUOTE_ASSET
     /** Ex:
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN
