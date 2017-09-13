@@ -31,9 +31,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     }
 
     struct Modules {
-        ParticipationInterface participation;
         DataFeedInterface datafeed;
         ExchangeInterface exchange;
+        ParticipationInterface participation;
         RiskMgmtInterface riskmgmt;
     }
 
@@ -77,17 +77,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     bool public isSubscribeAllowed;
     bool public isRedeemAllowed;
 
-    // EVENTS
-
-    event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Subscribed(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event Redeemed(address indexed byParticipant, uint atTimestamp, uint numShares);
-    event SpendingApproved(address ofToken, address onExchange, uint amount);
-    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
-    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
-
     // PRE, POST, INVARIANT CONDITIONS
 
     function isZero(uint x) internal returns (bool) { return 0 == x; }
@@ -114,20 +103,15 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     }
     function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
-    // CONSTANT METHODS
+    // INTERNAL METHODS
 
-    function getDecimals() constant returns (uint) { return decimals; }
-    function getMelonAssetBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
-    function getFundBaseUnits() constant returns (uint) { return VAULT_BASE_UNITS; }
-    function getDataFeed() constant returns (address) { return address(module.datafeed); }
-    function getExchangeAdapter() constant returns (address) { return address(module.exchange); }
     function nextOpenSlotOfArray() internal returns (uint) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             if (openOrderIds[i] != 0) return i;
         }
         return MAX_OPEN_ORDERS;
     }
-    function getIndendedSellAmount(address ofAsset) constant returns(uint amount) {
+    function getIndendedSellAmount(address ofAsset) internal returns(uint amount) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.sellAsset == ofAsset) {
@@ -135,7 +119,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             }
         }
     }
-    function getIndendedBuyAmount(address ofAsset) constant returns(uint amount) {
+    function getIndendedBuyAmount(address ofAsset) internal returns(uint amount) {
         for (uint i = 0; i < openOrderIds.length; i++) {
             Order thisOrder = orders[openOrderIds[i]];
             if (thisOrder.buyAsset == ofAsset) {
@@ -143,45 +127,37 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             }
         }
     }
+
+    // CONSTANT METHODS
+
+    function getName() constant returns (string) { return name; }
+    function getSymbol() constant returns (string) { return symbol; }
+    function getDecimals() constant returns (uint) { return decimals; }
+
+    function getModules() constant returns (address ,address, address, address) {
+        return (
+            address(module.datafeed),
+            address(module.exchange),
+            address(module.participation),
+            address(module.riskmgmt)
+        );
+    }
     function getStake() constant returns (uint) { return balanceOf(this); }
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// @dev Pre: None
-    /// @dev Post sharePrice denominated in [base unit of melonAsset]
-    function calcSharePrice() constant returns (uint)
-    {
-        var (, , , , , sharePrice) = performCalculations();
-        return sharePrice;
-    }
-
-    /// @dev Pre: None
-    /// @dev Post Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
-        uint gav = calcGav(); // Reflects value indepentent of fees
-        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
-        uint nav = calcNav(gav, unclaimedRewards);
-        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : getMelonAssetBaseUnits(); // Handle potential division through zero by defining a default value
-        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
-    }
-
-    /// @dev Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @dev Post Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
-    function calcValuePerShare(uint value)
-        constant
-        pre_cond(isPastZero(totalSupply))
-        returns (uint valuePerShare)
-    {
-        valuePerShare = value.mul(getMelonAssetBaseUnits()).div(totalSupply);
-    }
-
-    /// @dev Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// @dev Post Net asset value denominated in [base unit of melonAsset]
-    function calcNav(uint gav, uint unclaimedRewards)
-        constant
-        returns (uint nav)
-    {
-        nav = gav.sub(unclaimedRewards);
+    /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev Post Gross asset value denominated in [base unit of melonAsset]
+    function calcGav() constant returns (uint gav) {
+        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
+            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
+            uint assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
+            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset));
+            uint assetPrice = module.datafeed.getPrice(ofAsset);
+            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
     }
 
     /// @dev Pre: Gross asset value has been calculated
@@ -216,81 +192,41 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         unclaimedRewards = managementReward.add(performanceReward);
     }
 
-    /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// @dev Post Gross asset value denominated in [base unit of melonAsset]
-    function calcGav() constant returns (uint gav) {
-        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
-            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
-            uint assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getIndendedSellAmount(ofAsset));
-            uint assetPrice = module.datafeed.getPrice(ofAsset);
-            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
-        }
+    /// @dev Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// @dev Post Net asset value denominated in [base unit of melonAsset]
+    function calcNav(uint gav, uint unclaimedRewards)
+        constant
+        returns (uint nav)
+    {
+        nav = gav.sub(unclaimedRewards);
     }
 
-    // NON-CONSTANT MANAGING
-
-    //TODO: add previousHoldings
-    function closeOpenOrders(address ofBase, address ofQuote)
+    /// @dev Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// @dev Post Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
+    function calcValuePerShare(uint value)
         constant
+        pre_cond(isPastZero(totalSupply))
+        returns (uint valuePerShare)
     {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.sellAsset == ofBase && thisOrder.buyAsset == ofQuote) {
-                proofOfEmbezzlement(ofBase, ofQuote);
-                delete openOrderIds[i]; // Free up open order slot
-                // TODO: fix pot incorrect OrderStatus - partiallyFilled
-                thisOrder.status = OrderStatus.fullyFilled;
-                //  update previousHoldings
-                // TODO: trigger for each proofOfEmbezzlement() call
-                previousHoldings[ofBase] = ERC20(ofBase).balanceOf(this);
-                previousHoldings[ofQuote] = ERC20(ofQuote).balanceOf(this);
-            }
-        }
+        valuePerShare = value.mul(MELON_BASE_UNITS).div(totalSupply);
     }
 
-    //XXX: from perspective of vault
-    /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
-    /// @dev Post True if embezzled otherwise false
-    function proofOfEmbezzlement(address ofBase, address ofQuote)
-        constant
-        returns (bool)
+    /// @dev Pre: None
+    /// @dev Post Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
+        uint gav = calcGav(); // Reflects value indepentent of fees
+        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
+        uint nav = calcNav(gav, unclaimedRewards);
+        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_BASE_UNITS; // Handle potential division through zero by defining a default value
+        return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
+    }
+
+    /// @dev Pre: None
+    /// @dev Post sharePrice denominated in [base unit of melonAsset]
+    function calcSharePrice() constant returns (uint)
     {
-        // Sold more than expected => Proof of Embezzlemnt
-        uint totalIntendedSellAmount = getIndendedSellAmount(ofBase); // Trade intention
-        if (isLargerThan(
-            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
-            ERC20(ofBase).balanceOf(this) // Actual amount sold
-        )) {
-            isShutDown = true;
-            // TODO: Allocate staked shares from this to msg.sender
-            return true;
-        }
-        // Sold less or equal than intended
-        uint factor = 10000;
-        uint divisor = factor;
-        if (isLessThan(
-            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
-            ERC20(ofBase).balanceOf(this) // Actual amount sold
-        )) { // Sold less than intended
-            factor = divisor
-                .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
-                .div(totalIntendedSellAmount);
-        }
-        // Sold at a worse price than expected => Proof of Embezzlemnt
-        uint totalIndendedBuyAmount = getIndendedBuyAmount(ofQuote); // Trade execution
-        uint totalExpectedBuyAmount = totalIndendedBuyAmount.mul(factor).div(divisor);
-        if (isLargerThan(
-            previousHoldings[ofQuote].add(totalExpectedBuyAmount), // Expected amount bhought
-            ERC20(ofQuote).balanceOf(this) // Actual amount sold
-        )) {
-            isShutDown = true;
-            // TODO: Allocate staked shares from this to msg.sender
-            return true;
-        }
-        return false;
+        var (, , , , , sharePrice) = performCalculations();
+        return sharePrice;
     }
 
     // NON-CONSTANT METHODS
@@ -486,7 +422,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint actualValue = request.numShares.mul(calcSharePrice()).div(getFundBaseUnits()); // denominated in [base unit of MELON_ASSET]
+        uint actualValue = request.numShares.mul(calcSharePrice()).div(VAULT_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(requests[requestId].requestType) &&
             isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
@@ -649,6 +585,67 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         return module.exchange.cancelOrder(id);
+    }
+
+    //TODO: add previousHoldings
+    function closeOpenOrders(address ofBase, address ofQuote)
+        constant
+    {
+        for (uint i = 0; i < openOrderIds.length; i++) {
+            Order thisOrder = orders[openOrderIds[i]];
+            if (thisOrder.sellAsset == ofBase && thisOrder.buyAsset == ofQuote) {
+                proofOfEmbezzlement(ofBase, ofQuote);
+                delete openOrderIds[i]; // Free up open order slot
+                // TODO: fix pot incorrect OrderStatus - partiallyFilled
+                thisOrder.status = OrderStatus.fullyFilled;
+                //  update previousHoldings
+                // TODO: trigger for each proofOfEmbezzlement() call
+                previousHoldings[ofBase] = ERC20(ofBase).balanceOf(this);
+                previousHoldings[ofQuote] = ERC20(ofQuote).balanceOf(this);
+            }
+        }
+    }
+
+    //XXX: from perspective of vault
+    /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
+    /// @dev Post True if embezzled otherwise false
+    function proofOfEmbezzlement(address ofBase, address ofQuote)
+        constant
+        returns (bool)
+    {
+        // Sold more than expected => Proof of Embezzlemnt
+        uint totalIntendedSellAmount = getIndendedSellAmount(ofBase); // Trade intention
+        if (isLargerThan(
+            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
+        )) {
+            isShutDown = true;
+            // TODO: Allocate staked shares from this to msg.sender
+            return true;
+        }
+        // Sold less or equal than intended
+        uint factor = 10000;
+        uint divisor = factor;
+        if (isLessThan(
+            previousHoldings[ofBase].sub(totalIntendedSellAmount), // Intended amount sold
+            ERC20(ofBase).balanceOf(this) // Actual amount sold
+        )) { // Sold less than intended
+            factor = divisor
+                .mul(previousHoldings[ofBase].sub(ERC20(ofBase).balanceOf(this)))
+                .div(totalIntendedSellAmount);
+        }
+        // Sold at a worse price than expected => Proof of Embezzlemnt
+        uint totalIndendedBuyAmount = getIndendedBuyAmount(ofQuote); // Trade execution
+        uint totalExpectedBuyAmount = totalIndendedBuyAmount.mul(factor).div(divisor);
+        if (isLargerThan(
+            previousHoldings[ofQuote].add(totalExpectedBuyAmount), // Expected amount bhought
+            ERC20(ofQuote).balanceOf(this) // Actual amount sold
+        )) {
+            isShutDown = true;
+            // TODO: Allocate staked shares from this to msg.sender
+            return true;
+        }
+        return false;
     }
 
     /// @dev Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf

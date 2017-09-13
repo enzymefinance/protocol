@@ -14,7 +14,7 @@ contract ExchangeInterface {
     // EVENTS
 
     event OrderUpdated(uint id);
-    
+
     // CONSTANT METHODS
 
     function getLastOrderId() constant returns (uint) {}
@@ -29,12 +29,7 @@ contract ExchangeInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) external returns (uint id) {}
-    function takeOrder(
-        uint id,
-        uint quantity
-    ) external returns (bool) {}
-    function cancelOrder(
-        uint id
-    ) external returns (bool) {}
+    ) external returns (uint) {}
+    function takeOrder(uint id, uint quantity) external returns (bool) {}
+    function cancelOrder(uint id) external returns (bool) {}
 }
