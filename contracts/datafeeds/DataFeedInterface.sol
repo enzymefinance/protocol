@@ -36,4 +36,8 @@ contract DataFeedInterface is AssetRegistrarInterface {
     {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
+
+    // NON-CONSTANT METHODS
+
+    function update(address[] ofAssets, uint[] newPrices) {}
 }

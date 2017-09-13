@@ -11,6 +11,10 @@ import '../dependencies/ERC20.sol';
 ///   https://github.com/0xProject/contracts/blob/master/contracts/Exchange.sol
 contract ExchangeInterface {
 
+    // EVENTS
+
+    event OrderUpdated(uint id);
+    
     // CONSTANT METHODS
 
     function getLastOrderId() constant returns (uint) {}
@@ -33,9 +37,4 @@ contract ExchangeInterface {
     function cancelOrder(
         uint id
     ) external returns (bool) {}
-
-    // EVENTS
-
-    event OrderUpdated(uint id);
-
 }
