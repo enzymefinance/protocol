@@ -17,6 +17,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint orderQuantity,
           uint referencePrice
       )
+          constant
           returns (bool)
       {
           return false; // Inital version of risk management does not allow to make orders
@@ -28,6 +29,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint referencePrice,
           address orderOwner
       )
+          constant
           returns (bool)
       {
           return orderOwner == LIQUIDITY_PROVIDER; // Inital version of risk management restricts trading to liquidity provider

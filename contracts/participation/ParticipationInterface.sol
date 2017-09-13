@@ -12,6 +12,7 @@ contract ParticipationInterface {
         uint256 numShares,
         uint256 offeredValue
     ) constant returns (bool) {}
+
     function isRedemptionPermitted(
         address owner,
         uint256 numShares,

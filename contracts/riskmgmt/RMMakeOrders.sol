@@ -25,6 +25,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           uint orderQuantity,
           uint referencePrice
       )
+          constant
           returns (bool)
       {
           // Don't buy at much higher price
@@ -36,6 +37,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           uint orderQuantity,
           uint referencePrice
       )
+          constant
           returns (bool)
       {
           // Don't buy at much higher price

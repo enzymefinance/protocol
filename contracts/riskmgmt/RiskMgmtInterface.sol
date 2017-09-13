@@ -17,11 +17,11 @@ contract RiskMgmtInterface {
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice
-    ) returns (bool);
+    ) constant returns (bool);
 
     function isExchangeTakePermitted(
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice
-    ) returns (bool);
+    ) constant returns (bool);
 }
