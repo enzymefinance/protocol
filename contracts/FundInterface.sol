@@ -1,13 +1,13 @@
 pragma solidity ^0.4.11;
 
 import './assets/AssetInterface.sol';
-import './dependencies/ERC20.sol';
+import './dependencies/ERC20Interface.sol';
 import './exchange/ExchangeInterface.sol';
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Fund Contract
-contract FundInterface is AssetInterface {
+contract FundInterface is AssetInterface, ERC20Interface {
 
     // EVENTS
 
