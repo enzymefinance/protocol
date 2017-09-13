@@ -12,7 +12,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       // NON-CONSTANT METHODS
 
-      function isExchangeMakePermitted(
+      function isMakePermitted(
           uint orderPrice,
           uint orderQuantity,
           uint referencePrice
@@ -23,7 +23,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           return false; // Inital version of risk management does not allow to make orders
       }
 
-      function isExchangeTakePermitted(
+      function isTakePermitted(
           uint orderPrice,
           uint orderQuantity,
           uint referencePrice,

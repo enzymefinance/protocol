@@ -51,22 +51,21 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     // FIELDS
 
     // Constant fields
+    string constant SYMBOL = "MLN-F"; // Melon Fund
+    uint constant DECIMALS = 18;
+    uint constant VAULT_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Constructor fields
     string public name;
-    string public symbol;
-    uint public decimals;
     uint public created; // Timestamp of Fund creation
+    uint public MELON_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
-    uint public VAULT_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
-    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** decimals of base unit of shares
     address public VERSION; // Address of Version contract
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
-    SphereInterface public sphere;
     // Function fields
     uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
     mapping (address => uint) public previousHoldings;
@@ -131,8 +130,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     // CONSTANT METHODS
 
     function getName() constant returns (string) { return name; }
-    function getSymbol() constant returns (string) { return symbol; }
-    function getDecimals() constant returns (uint) { return decimals; }
+    function getSymbol() constant returns (string) { return SYMBOL; }
+    function getDecimals() constant returns (uint) { return DECIMALS; }
 
     function getModules() constant returns (address ,address, address, address) {
         return (
@@ -234,8 +233,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function Fund(
         address ofManager,
         string withName,
-        string withSymbol,
-        uint withDecimals,
+        string withSymbol, // TODO remove
+        uint withDecimals, // TODO remove
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofMelonAsset,
@@ -243,15 +242,13 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         address ofRiskMgmt,
         address ofSphere
     ) {
-        sphere = SphereInterface(ofSphere);
+        SphereInterface sphere = SphereInterface(ofSphere);
         module.exchange = ExchangeInterface(sphere.getExchangeAdapter()); // Bridge thrid party exchange to Melon exchange interface
         module.datafeed = DataFeedInterface(sphere.getDataFeed());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
         name = withName;
-        symbol = withSymbol;
-        decimals = withDecimals;
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
@@ -260,7 +257,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
         MELON_BASE_UNITS = 10 ** uint(module.datafeed.getDecimals(MELON_ASSET));
-        VAULT_BASE_UNITS = 10 ** decimals;
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
@@ -509,7 +505,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(isOwner())
         pre_cond(!isShutDown)
         pre_cond(isValidAssetPair(sellAsset, buyAsset))
-        pre_cond(module.riskmgmt.isExchangeMakePermitted(
+        pre_cond(module.riskmgmt.isMakePermitted(
             module.datafeed.getPriceOfOrder(
                 sellAsset,
                 buyAsset,
@@ -555,7 +551,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         ) = module.exchange.getOrder(id);
         require(isValidAssetPair(order.buyAsset, order.sellAsset));
         require(order.buyQuantity <= quantity);
-        require(module.riskmgmt.isExchangeTakePermitted(
+        require(module.riskmgmt.isTakePermitted(
             module.datafeed.getPriceOfOrder(
                 order.sellAsset, // I have what is being sold
                 order.buyAsset, // I want what is being bhought
