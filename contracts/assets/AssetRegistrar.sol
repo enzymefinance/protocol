@@ -71,8 +71,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar() {}
-
     /// @dev Pre:  Only registrar owner should be able to register
     /// @dev Post: Address ofAsset is registered
     function register(
@@ -88,7 +86,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        //post_cond(isRegistered(ofAsset)) // XXX: oddly, this doesn't work with a post_condition, so it's just added to the end of the function body. Investigate this eventually.
+        //post_cond(isRegistered(ofAsset)) // Wait for next release of solidity
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
