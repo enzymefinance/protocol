@@ -21,7 +21,35 @@ contract Participation is ParticipationInterface, DBC, Owned {
     // Function fields
     mapping (address => Information) public persona;
 
-    // NON-CONSTANT NON-BOOLEAN METHODS
+    // CONSTANT METHODS
+
+    /// @dev Pre: Request ID
+    /// @dev Post Boolean dependent on market data and on personel data; Compliance
+    function isSubscriptionPermitted(
+        address owner,
+        uint256 numShares,
+        uint256 offeredValue
+    )
+        constant
+        returns (bool)
+    {
+        return persona[owner].isApproved;
+    }
+
+    /// @dev Pre: Request ID
+    /// @dev Post Boolean whether permitted or not
+    function isRedemptionPermitted(
+        address owner,
+        uint256 numShares,
+        uint256 requestedValue
+    )
+        constant
+        returns (bool)
+    {
+        return true;
+    }
+
+    // NON-CONSTANT METHODS
 
     function list(address x)
         pre_cond(isOwner())
@@ -51,31 +79,4 @@ contract Participation is ParticipationInterface, DBC, Owned {
         }
     }
 
-    // CONSTANT METHODS
-
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean dependent on market data and on personel data; Compliance
-    function isSubscriptionPermitted(
-        address owner,
-        uint256 numShares,
-        uint256 offeredValue
-    )
-        constant
-        returns (bool)
-    {
-        return persona[owner].isApproved;
-    }
-
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean whether permitted or not
-    function isRedemptionPermitted(
-        address owner,
-        uint256 numShares,
-        uint256 requestedValue
-    )
-        constant
-        returns (bool)
-    {
-        return true;
-    }
 }
