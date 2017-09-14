@@ -38,7 +38,7 @@ contract Competition is DBC, Owned {
             // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
             // Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
             // it will return rsv (same as geth; where v is [27, 28]).
-            keccak256("\x19Ethereum Signed Message:\n64", hash),
+            keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
             r,
             s
@@ -65,7 +65,7 @@ contract Competition is DBC, Owned {
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s)) // TODO throws out of gas error
     {
-
+        
     }
 
 }
