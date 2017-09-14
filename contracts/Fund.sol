@@ -407,7 +407,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     /// @dev Post Worker either cancelled or fullfilled request
     function executeRequest(uint requestId)
         external
-        pre_cond(notShutDown())
+        /*pre_cond(notShutDown())
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
@@ -417,7 +417,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(isGreaterOrEqualThan(
             module.datafeed.getLastUpdateId(),
             requests[requestId].lastFeedUpdateId + 2
-        ))
+        ))*/
     {
         // Time and updates have passed
         Request request = requests[requestId];
