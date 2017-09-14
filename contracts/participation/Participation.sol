@@ -41,7 +41,6 @@ contract Participation is ParticipationInterface, DBC, Owned {
         return identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
     }
 
-
     /// @notice Required for Melon protocol interaction.
     /// @param ofParticipant Address requesting to redeem from a Melon fund
     /// @param numShares Quantity of shares times 10 ** 18 offered to redeem
