@@ -87,6 +87,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function isEqualTo(uint x, uint y) internal returns (bool) { return x == y; }
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
+    function notShutDown() internal returns (bool) { return !isShutDown; }
     function noOpenOrders() internal returns (bool) { return nextOpenSlotOfArray() == 0; }
     function openOrdersNotFull() internal returns (bool) { return nextOpenSlotOfArray() == MAX_OPEN_ORDERS; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
@@ -279,6 +280,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
+        pre_cond(notShutDown())
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -292,7 +294,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(isPastZero(numShares))
-        pre_cond(!isShutDown)
+        pre_cond(notShutDown())
         pre_cond(balancesOfHolderAtLeast(this, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -333,6 +335,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint incentiveValue
     )
         external
+        pre_cond(notShutDown())
         pre_cond(isSubscribeAllowed)
         pre_cond(isPastZero(incentiveValue))
         pre_cond(module.datafeed.isValid(MELON_ASSET))
@@ -373,6 +376,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint incentiveValue
       )
         external
+        pre_cond(notShutDown())
         pre_cond(isRedeemAllowed)
         pre_cond(isPastZero(numShares))
         pre_cond(module.participation.isRedemptionPermitted(
@@ -403,18 +407,17 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     /// @dev Post Worker either cancelled or fullfilled request
     function executeRequest(uint requestId)
         external
+        pre_cond(notShutDown())
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
         pre_cond(isGreaterOrEqualThan(
-                now,
-                requests[requestId].timestamp.add(module.datafeed.getInterval())
-            ) || isShutDown
-        )
+            now,
+            requests[requestId].timestamp.add(module.datafeed.getInterval())
+        ))
         pre_cond(isGreaterOrEqualThan(
-                module.datafeed.getLastUpdateId(),
-                requests[requestId].lastFeedUpdateId + 2
-            ) || isShutDown
-        )
+            module.datafeed.getLastUpdateId(),
+            requests[requestId].lastFeedUpdateId + 2
+        ))
     {
         // Time and updates have passed
         Request request = requests[requestId];
@@ -439,9 +442,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function cancelRequest(uint requestId)
         external
         pre_cond(isSubscribe(requests[requestId].requestType) ||
-            isRedeem(requests[requestId].requestType))
-        pre_cond(requests[requestId].owner == msg.sender ||
-            isShutDown)
+            isRedeem(requests[requestId].requestType)) // TODO: Check validity of this
+        pre_cond(requests[requestId].owner == msg.sender || isShutDown)
     {
         Request request = requests[requestId];
         request.status = RequestStatus.cancelled;
@@ -503,7 +505,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     )
         external
         pre_cond(isOwner())
-        pre_cond(!isShutDown)
+        pre_cond(notShutDown())
         pre_cond(isValidAssetPair(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isMakePermitted(
             module.datafeed.getPriceOfOrder(
@@ -538,7 +540,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
-        pre_cond(!isShutDown)
+        pre_cond(notShutDown())
         returns (bool)
     {
         // Inverse variable terminology! Buying what another person is selling
@@ -577,9 +579,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     /// @dev Post Cancel offer on selected Exchange
     function cancelOrder(uint id)
         external
-        pre_cond(isOwner())
+        pre_cond(isOwner() || isShutDown)
         returns (bool)
     {
+        // TODO orders accounting
         return module.exchange.cancelOrder(id);
     }
 
@@ -660,7 +663,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function convertUnclaimedRewards()
         external
         pre_cond(isOwner())
-        pre_cond(!isShutDown)
+        pre_cond(notShutDown())
         pre_cond(noOpenOrders())
     {
         var (
