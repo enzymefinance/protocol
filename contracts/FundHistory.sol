@@ -55,6 +55,18 @@ contract FundHistory {
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
+    // EVENTS
+
+    event LogRequest(address owner,
+            RequestStatus status,
+            RequestType requestType,
+            uint numShares,
+            uint offeredOrRequestedValue,
+            uint incentive,
+            uint lastFeedUpdateId,
+            uint lastFeedUpdateTime,
+            uint timestamp);
+
     // FIELDS
 
     mapping (uint => Request) public requests;   ///XXX: array perhaps
