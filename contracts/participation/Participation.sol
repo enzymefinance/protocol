@@ -1,82 +1,80 @@
 pragma solidity ^0.4.11;
 
-import './ParticipationInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-
+import './ParticipationInterface.sol';
 
 /// @title Participation Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Participation Module.
+/// @notice Example for uPort, Zug Gov, Melonport collaboration
 contract Participation is ParticipationInterface, DBC, Owned {
 
     // TYPES
 
-    struct Information { // subscription request
-        bool isApproved; // Eg: Lookup call to uPort registry
+    struct Identity { // Using uPort and attestation from Zug Government
+        bool hasUportId; // Whether identiy has registered a uPort identity w Zug Gov
+        /* .. additional information
+         *   for example how much identity is eligible to invest
+         */
     }
 
     // FIELDS
 
     // Function fields
-    mapping (address => Information) public persona;
+    mapping (address => Identity) public identities;
 
     // CONSTANT METHODS
 
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean dependent on market data and on personel data; Compliance
+    /// @notice Required for Melon protocol interaction.
+    /// @param ofParticipant Address requesting to invest in a Melon fund
+    /// @param numShares Quantity of shares times 10 ** 18 requested to be received
+    /// @param offeredValue Quantity of Melon token times 10 ** 18 offered to receive numShares
+    /// @return Whether identity is eligible to invest in a Melon fund.
     function isSubscriptionPermitted(
-        address owner,
+        address ofParticipant,
         uint256 numShares,
         uint256 offeredValue
     )
         constant
         returns (bool)
     {
-        return persona[owner].isApproved;
+        return identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
     }
 
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean whether permitted or not
+
+    /// @notice Required for Melon protocol interaction.
+    /// @param ofParticipant Address requesting to redeem from a Melon fund
+    /// @param numShares Quantity of shares times 10 ** 18 offered to redeem
+    /// @param requestedValue Quantity of Melon token times 10 ** 18 requested to receive for numShares
+    /// @return Whether identity is eligible to redeem from a Melon fund.
     function isRedemptionPermitted(
-        address owner,
+        address ofParticipant,
         uint256 numShares,
         uint256 requestedValue
     )
         constant
         returns (bool)
     {
-        return true;
+        return true; // No need for KYC/AML in case of redeeming shares
     }
 
     // NON-CONSTANT METHODS
 
-    function list(address x)
+    /// @notice Creates attestation of a participant
+    /// @dev Maintainer of above identities mapping (== owner) can trigger this function
+    /// @param ofParticipant Adresses to receive attestation
+    function attestForIdentity(address ofParticipant)
         pre_cond(isOwner())
     {
-        persona[x].isApproved = true;
+        identities[ofParticipant].hasUportId = true;
     }
 
-    function bulkList(address[] x)
+    /// @notice Removes attestation of a participant
+    /// @dev Maintainer of above identities mapping (== owner) can trigger this function
+    /// @param ofParticipant Adresses to have attestation removed
+    function removeAttestation(address ofParticipant)
         pre_cond(isOwner())
     {
-        for (uint i = 0; i < x.length; ++i) {
-            persona[x[i]].isApproved = true;
-        }
+        identities[ofParticipant].hasUportId = false;
     }
-
-    function delist(address x)
-        pre_cond(isOwner())
-    {
-        persona[x].isApproved = false;
-    }
-
-    function bulkDelist(address[] x)
-        pre_cond(isOwner())
-    {
-        for (uint i = 0; i < x.length; ++i) {
-            persona[x[i]].isApproved = false;
-        }
-    }
-
 }

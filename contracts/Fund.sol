@@ -80,8 +80,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     function isZero(uint x) internal returns (bool) { return 0 == x; }
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
-    function isGreaterOrEqualThan(uint x, uint y) internal returns (bool) { return x >= y; }
-    function isLessOrEqualThan(uint x, uint y) internal returns (bool) { return x <= y; }
+    function notLessThan(uint x, uint y) internal returns (bool) { return x >= y; }
+    function notGreaterThan(uint x, uint y) internal returns (bool) { return x <= y; }
     function isLargerThan(uint x, uint y) internal returns (bool) { return x > y; }
     function isLessThan(uint x, uint y) internal returns (bool) { return x < y; }
     function isEqualTo(uint x, uint y) internal returns (bool) { return x == y; }
@@ -408,11 +408,11 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(notShutDown())
         pre_cond(isSubscribe(requests[requestId].requestType) ||
             isRedeem(requests[requestId].requestType))
-        pre_cond(isGreaterOrEqualThan(
+        pre_cond(notLessThan(
             now,
             requests[requestId].timestamp.add(module.datafeed.getInterval())
         ))
-        pre_cond(isGreaterOrEqualThan(
+        pre_cond(notLessThan(
             module.datafeed.getLastUpdateId(),
             requests[requestId].lastFeedUpdateId + 2
         ))
@@ -422,14 +422,14 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint actualValue = request.numShares.mul(calcSharePrice()).div(VAULT_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(requests[requestId].requestType) &&
-            isGreaterOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+            notLessThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) { // Limit Order is OK
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
             uint remainder = request.offeredOrRequestedValue.sub(actualValue);
             if(remainder > 0) assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
             createShares(request.owner, request.numShares); // Accounting
         } else if (isRedeem(requests[requestId].requestType) &&
-            isLessOrEqualThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
+            notGreaterThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) {
             assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.owner, actualValue)); // Transfer value

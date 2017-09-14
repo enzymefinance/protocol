@@ -13,11 +13,11 @@ contract('Participation', (accounts) => {
     assert.isFalse(res);
   });
   it('account is permitted to subscribe after listing', async () => {
-    ptcp.list(accounts[1]);
+    ptcp.attestForIdentity(accounts[1]);
     const res = await ptcp.isSubscriptionPermitted(accounts[1], 10, 20);
     assert(res);
   });
-  it('listing multiple accounts permits them all to subscribe', async () => {
+  it.skip('listing multiple accounts permits them all to subscribe', async () => {
     await ptcp.bulkList([accounts[2], accounts[3], accounts[4], accounts[5]]);
     const allRes = await Promise.all([2, 3, 4, 5].map(ii =>
       ptcp.isSubscriptionPermitted(accounts[ii], 10, 20)
@@ -27,7 +27,7 @@ contract('Participation', (accounts) => {
   it('delisting removes subscribe permissions', async () => {
     let res = await ptcp.isSubscriptionPermitted(accounts[1], 10, 20);
     assert(res);
-    await ptcp.delist(accounts[1]);
+    await ptcp.removeAttestation(accounts[1]);
     res = await ptcp.isSubscriptionPermitted(accounts[1], 10, 20);
     assert.isFalse(res);
   });
