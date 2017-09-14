@@ -57,15 +57,17 @@ contract FundHistory {
 
     // EVENTS
 
-    event LogRequest(address owner,
-            RequestStatus status,
-            RequestType requestType,
-            uint numShares,
-            uint offeredOrRequestedValue,
-            uint incentive,
-            uint lastFeedUpdateId,
-            uint lastFeedUpdateTime,
-            uint timestamp);
+    event LogRequest(
+        address owner,
+        RequestStatus status,
+        RequestType requestType,
+        uint numShares,
+        uint offeredOrRequestedValue,
+        uint incentive,
+        uint lastFeedUpdateId,
+        uint lastFeedUpdateTime,
+        uint timestamp
+    );
 
     // FIELDS
 

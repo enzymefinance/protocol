@@ -348,30 +348,19 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
         id = nextRequestId;
-        Request memory info;
-        info.owner = msg.sender;
-        info.status = RequestStatus.open;
-        info.requestType = RequestType.subscribe;
-        info.numShares = numShares;
-        info.offeredOrRequestedValue = offeredValue;
-        info.incentive = incentiveValue;
-        info.lastFeedUpdateId = module.datafeed.getLastUpdateId();
-        info.lastFeedUpdateTime = module.datafeed.getLastUpdateTimestamp();
-        info.timestamp = now;
-        LogRequest(
-          info.owner,
-          info.status,
-          info.requestType,
-          info.numShares,
-          info.offeredOrRequestedValue,
-          info.incentive,
-          info.lastFeedUpdateId,
-          info.lastFeedUpdateTime,
-          info.timestamp
-        );
-        requests[id] = info;
-        SubscribeRequest(id, msg.sender, now, numShares);
         nextRequestId++;
+        requests[id] = Request({
+            owner: msg.sender,
+            status: RequestStatus.open,
+            requestType: RequestType.subscribe,
+            numShares: numShares,
+            offeredOrRequestedValue: offeredValue,
+            incentive: incentiveValue,
+            lastFeedUpdateId: module.datafeed.getLastUpdateId(),
+            lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
+            timestamp: now
+        });
+        SubscribeRequest(id, msg.sender, now, numShares);
     }
 
     /// @dev Pre: offeredValue denominated in [base unit of MELON_ASSET]
@@ -397,6 +386,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (uint id)
     {
         id = nextRequestId;
+        nextRequestId++;
         requests[id] = Request({
             owner: msg.sender,
             status: RequestStatus.open,
@@ -409,7 +399,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             timestamp: now
         });
         RedeemRequest(id, msg.sender, now, numShares);
-        nextRequestId++;
     }
 
     /// @dev Pre: Anyone can trigger this function; Id of request that is pending
