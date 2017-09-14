@@ -43,6 +43,14 @@ contract Participation is ParticipationInterface, DBC, Owned {
         persona[x].isApproved = false;
     }
 
+    function bulkDelist(address[] x)
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < x.length; ++i) {
+            persona[x[i]].isApproved = false;
+        }
+    }
+
     // CONSTANT METHODS
 
     /// @dev Pre: Request ID
