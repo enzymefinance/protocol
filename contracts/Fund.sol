@@ -13,22 +13,13 @@ import './exchange/ExchangeInterface.sol';
 import './FundInterface.sol';
 import './FundHistory.sol';
 
-/// @title Fund Contract
+/// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple vault
 contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     using safeMath for uint;
 
     // TYPES
-
-    enum FundStatus {
-        setup,
-        funding,
-        staking,
-        managing,
-        locked,
-        payout
-    }
 
     struct Modules {
         DataFeedInterface datafeed;
@@ -69,7 +60,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     // Function fields
     uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
     mapping (address => uint) public previousHoldings;
-    FundStatus currentStatus;
     Modules public module;
     Calculations public atLastConversion;
     bool public isShutDown;
@@ -271,7 +261,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             timestamp: now
         });
         created = now;
-        currentStatus = FundStatus.setup;
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION

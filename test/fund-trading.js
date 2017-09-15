@@ -50,7 +50,7 @@ contract('Fund trading', (accounts) => {
       sphere.address,
       { from: accounts[0] },
     );
-    await participation.list(investor);   // whitelist investor
+    await participation.attestForIdentity(investor);   // whitelist investor
     await mlnToken.transfer(fund.address, 1000000, { from: accounts[1] }); // initialize balances
     await ethToken.transfer(fund.address, 1000000, { from: accounts[1] });
   });

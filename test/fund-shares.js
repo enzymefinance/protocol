@@ -49,7 +49,7 @@ contract('Fund shares', (accounts) => {
       sphere.address,
       { from: accounts[0] },
     );
-    participation.list(investor);   // whitelist investor
+    participation.attestForIdentity(investor);   // whitelist investor
   });
 
   function timeout(ms) {

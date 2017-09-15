@@ -11,7 +11,7 @@ contract Competition is DBC, Owned {
 
     // TYPES
 
-    struct Participant {
+    struct Hopeful { // Someone who wants to succeed or who seems likely to win
         address fund; // Address of the Melon fund
         address manager; // Manager (== owner) of above Melon fund
         bool isCompeting; // Whether currently taking part in a competition
@@ -32,14 +32,14 @@ contract Competition is DBC, Owned {
     uint public startTime; // Competition start time in seconds
     uint public endTime; // Competition end time in seconds
     uint public maxDepositQuantity; // Limit amount of deposit to participate in competition
-    uint public maxParticipantsNumber; // Limit number of participate in competition
+    uint public maxHopefulsNumber; // Limit number of participate in competition
     uint public prizeMoneyAsset; // Equivalent to payoutAsset
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
 
     // Function fields
-    Participant[] participants; // List of all participants
+    Hopeful[] public hopefuls; // List of all hopefuls, can be externally accessed
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -97,16 +97,16 @@ contract Competition is DBC, Owned {
         bytes32 s
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
-        /* In initial version
+        /* In later version
          * require depositAsset == MELON_ASSET
          * require payoutAsset == MELON_ASSET
          * require depositQuantity <= maxDepositQuantity
-         * require participants.length + 1 <= maxParticipantsNumber
-         * require participants.length + 1 <= maxParticipantsNumber
+         * require hopefuls.length + 1 <= maxHopefulsNumber
+         * require hopefuls.length + 1 <= maxHopefulsNumber
          */
     {
-        uint id = participants.length;
-        participants[id] = Participant({
+        uint id = hopefuls.length;
+        hopefuls[id] = Hopeful({
           fund: fund,
           manager: msg.sender,
           isCompeting: true,
