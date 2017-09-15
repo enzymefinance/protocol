@@ -20,7 +20,7 @@ contract RMMakeOrders is RiskMgmtInterface {
 
       // NON-CONSTANT METHODS
 
-      function isExchangeMakePermitted(
+      function isMakePermitted(
           uint orderPrice,
           uint orderQuantity,
           uint referencePrice
@@ -31,7 +31,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           return true;
       }
 
-      function isExchangeTakePermitted(
+      function isTakePermitted(
           uint orderPrice,
           uint orderQuantity,
           uint referencePrice

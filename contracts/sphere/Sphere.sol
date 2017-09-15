@@ -13,17 +13,17 @@ contract Sphere is SphereInterface, DBC, Owned {
     // FIELDS
 
     address public DATAFEED;
-    address public EXCHANGE;
+    address public EXCHANGE_ADAPTER;
 
     // CONSTANT METHODS
 
-    function getDataFeed() constant returns (address) { return DATAFEED; }
-    function getExchange() constant returns (address) { return EXCHANGE; }
+    function getDataFeed() external constant returns (address) { return DATAFEED; }
+    function getExchangeAdapter() external constant returns (address) { return EXCHANGE_ADAPTER; }
 
     // NON-CONSTANT METHODS
 
-    function Sphere(address ofDataFeed, address ofExchange) {
+    function Sphere(address ofDataFeed, address ofExchangeAdapter) {
         DATAFEED = ofDataFeed;
-        EXCHANGE = ofExchange;
+        EXCHANGE_ADAPTER = ofExchangeAdapter;
     }
 }

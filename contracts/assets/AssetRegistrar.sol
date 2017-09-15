@@ -2,12 +2,12 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-
+import './AssetRegistrarInterface.sol';
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract AssetRegistrar is DBC, Owned {
+contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // TYPES
 
@@ -47,12 +47,11 @@ contract AssetRegistrar is DBC, Owned {
     /// @notice Get human-readable information about an Asset
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, uint256, string, bytes32)
+        returns (string, string, string, bytes32)
     {
         return (
             information[ofAsset].name,
             information[ofAsset].symbol,
-            information[ofAsset].decimal,
             information[ofAsset].url,
             information[ofAsset].ipfsHash
         );
@@ -72,8 +71,6 @@ contract AssetRegistrar is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar() {}
-
     /// @dev Pre:  Only registrar owner should be able to register
     /// @dev Post: Address ofAsset is registered
     function register(
@@ -89,7 +86,7 @@ contract AssetRegistrar is DBC, Owned {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        //post_cond(isRegistered(ofAsset)) // XXX: oddly, this doesn't work with a post_condition, so it's just added to the end of the function body. Investigate this eventually.
+        //post_cond(isRegistered(ofAsset)) // Wait for next release of solidity
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -104,5 +101,24 @@ contract AssetRegistrar is DBC, Owned {
             exists: true
         });
         assert(isRegistered(ofAsset));
+    }
+
+    /// @dev Pre: Owner can change an existing entry
+    /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
+    function changeDescriptiveInformation(
+        address ofAsset,
+        string name,
+        string symbol,
+        string url,
+        bytes32 ipfsHash
+    )
+        pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
+    {
+        Asset asset = information[ofAsset];
+        asset.name = name;
+        asset.symbol = symbol;
+        asset.url = url;
+        asset.ipfsHash = ipfsHash;
     }
 }

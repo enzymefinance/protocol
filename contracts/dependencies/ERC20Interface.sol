@@ -5,6 +5,11 @@ pragma solidity ^0.4.11;
 /// @notice See https://github.com/ethereum/EIPs/issues/20
 contract ERC20Interface {
 
+    // EVENTS
+
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+
     // CONSTANT METHODS
 
     function totalSupply() constant returns (uint256 totalSupply) {}
@@ -16,10 +21,4 @@ contract ERC20Interface {
     function transfer(address _to, uint256 _value) returns (bool success) {}
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {}
     function approve(address _spender, uint256 _value) returns (bool success) {}
-
-    // EVENTS
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-
 }

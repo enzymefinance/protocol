@@ -11,7 +11,7 @@ library rewards {
     /* Function invariant
      *  for timeDifference == 0 => returns 0
      */
-    /// Post: Reward denominated in referenceAsset
+    /// @dev Post Reward denominated in referenceAsset
     function managementReward(
         uint managementRewardRate,
         uint timeDifference,
@@ -28,7 +28,7 @@ library rewards {
     /* Function invariant
      *  for deltaDifference == 0 => returns 0
      */
-    /// Post: Reward denominated in referenceAsset
+    /// @dev Post Reward denominated in referenceAsset
     function performanceReward(
         uint performanceRewardRate,
         int deltaPrice, // Price Difference measured agains referenceAsset

@@ -5,19 +5,19 @@ const Exchange = artifacts.require('SimpleMarket');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
-const Vault = artifacts.require('Vault');
+const Fund = artifacts.require('Fund');
 const chai = require('chai');
 const rpc = require('../utils/rpc.js');
 
 const assert = chai.assert;
 
-contract('Vault shares', (accounts) => {
+contract('Fund shares', (accounts) => {
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
   let ethToken;
-  let vault;
+  let fund;
 
-  before('Set up new Vault', async () => {
+  before('Set up new Fund', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
     eurToken = await PreminedAsset.new(
       'Euro', 'EUR', 8, 10 ** 18, { from: liquidityProvider });
@@ -36,18 +36,20 @@ contract('Vault shares', (accounts) => {
     );
     participation = await Participation.deployed();
     riskManagement = await RiskMgmt.deployed();
-    vault = await Vault.new(
+    fund = await Fund.new(
       accounts[0],
       'Melon Portfolio',  // name
       'MLN-P',            // share symbol
       18,                 // share decimals
+      0,                  // mgmt reward
+      0,                  // perf reward
       mlnToken.address,
       participation.address,
       riskManagement.address,
       sphere.address,
       { from: accounts[0] },
     );
-    participation.list(investor);   // whitelist investor
+    participation.attestForIdentity(investor);   // whitelist investor
   });
 
   function timeout(ms) {
@@ -74,13 +76,13 @@ contract('Vault shares', (accounts) => {
       assert.equal((await mlnToken.balanceOf(investor)).toNumber(), offeredValue + incentive);
     });
     it('allows subscribe request', async () => {
-      await mlnToken.approve(vault.address, offeredValue + incentive, { from: investor });
-      const allowance = await mlnToken.allowance(investor, vault.address);
+      await mlnToken.approve(fund.address, offeredValue + incentive, { from: investor });
+      const allowance = await mlnToken.allowance(investor, fund.address);
       assert.equal(allowance.toNumber(), offeredValue + incentive);
-      await vault.subscribe(numShares, offeredValue, incentive, { from: investor });
+      await fund.requestSubscription(numShares, offeredValue, incentive, { from: investor });
     });
     it('logs request event', (done) => {
-      const reqEvent = vault.SubscribeRequest();
+      const reqEvent = fund.SubscribeRequest();
       reqEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
@@ -90,12 +92,12 @@ contract('Vault shares', (accounts) => {
     it('allows execution of subscribe request', async () => {
       await simulateFeedUpdate();
       await simulateFeedUpdate();
-      const id = await vault.getLastRequestId();
-      await vault.executeRequest(id);
-      assert.equal((await vault.balanceOf(investor)).toNumber(), resShares);
+      const id = await fund.getLastRequestId();
+      await fund.executeRequest(id);
+      assert.equal((await fund.balanceOf(investor)).toNumber(), resShares);
     });
     it('logs share creation', (done) => {
-      const subEvent = vault.Subscribed();
+      const subEvent = fund.Subscribed();
       subEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
@@ -105,7 +107,7 @@ contract('Vault shares', (accounts) => {
     it('performs calculation correctly', async () => {
       await simulateFeedUpdate();
       const [gav, , , unclaimedRewards, nav, sharePrice] =
-        await vault.performCalculations();
+        await fund.performCalculations();
       assert.equal(gav.toNumber(), offeredValue);
       assert.equal(unclaimedRewards.toNumber(), 0);
       assert.equal(nav.toNumber(), offeredValue);
@@ -122,18 +124,18 @@ contract('Vault shares', (accounts) => {
       assert.equal((await mlnToken.balanceOf(investor)).toNumber(), requestedValue + incentive);
     });
     it('allows redeem request', async () => {
-      await mlnToken.approve(vault.address, requestedValue + incentive, { from: investor });
-      await vault.redeem(numShares, requestedValue, incentive, { from: investor });
+      await mlnToken.approve(fund.address, requestedValue + incentive, { from: investor });
+      await fund.requestRedemption(numShares, requestedValue, incentive, { from: investor });
     });
     it('annihilates shares and returns funds on redeem execution', async () => {
       await simulateFeedUpdate(); // fake 2 new blocks and updates
       await simulateFeedUpdate();
-      const id = await vault.getLastRequestId();
-      await vault.executeRequest(id);
-      assert.equal((await vault.balanceOf(investor)).toNumber(), 0);
+      const id = await fund.getLastRequestId();
+      await fund.executeRequest(id);
+      assert.equal((await fund.balanceOf(investor)).toNumber(), 0);
     });
     it('logs redemption', () => {
-      const redeemEvent = vault.Redeemed();
+      const redeemEvent = fund.Redeemed();
       redeemEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);
@@ -141,7 +143,7 @@ contract('Vault shares', (accounts) => {
     });
     it('performs calculations correctly', async () => {
       const [gav, , , unclaimedRewards, nav, sharePrice] =
-        await vault.performCalculations();
+        await fund.performCalculations();
       assert.equal(gav.toNumber(), 0);
       assert.equal(unclaimedRewards.toNumber(), 0);
       assert.equal(nav.toNumber(), 0);

@@ -8,7 +8,7 @@ contract RiskMgmt is RiskMgmtInterface {
 
     // NON-CONSTANT METHODS
 
-    function isExchangeMakePermitted(
+    function isMakePermitted(
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice
@@ -18,7 +18,7 @@ contract RiskMgmt is RiskMgmtInterface {
         return true; // For testing purposes
     }
 
-    function isExchangeTakePermitted(
+    function isTakePermitted(
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice

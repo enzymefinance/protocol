@@ -10,8 +10,8 @@ library calculate {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// Pre: baseUnitsPerShare not zero
-    /// Post: priceInRef denominated in [base unit of melonAsset]
+    /// @dev Pre: baseUnitsPerShare not zero
+    /// @dev Post priceInRef denominated in [base unit of melonAsset]
     function priceForNumBaseShares(
         uint256 numBaseShares,
         uint256 baseUnitsPerShare,
@@ -28,8 +28,8 @@ library calculate {
         return numBaseShares.mul(sharePrice).div(baseUnitsPerShare);
     }
 
-    /// Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
-    /// Post: Net asset value denominated in [base unit of melonAsset]
+    /// @dev Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// @dev Post Net asset value denominated in [base unit of melonAsset]
     function netAssetValue(
         uint256 gav,
         uint256 rewardsUnclaimed
@@ -40,8 +40,8 @@ library calculate {
         return gav.sub(rewardsUnclaimed);
     }
 
-    /// Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// Post: Gross asset value denominated in [base unit of referenceAsset]
+    /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev Post Gross asset value denominated in [base unit of referenceAsset]
     function grossAssetValue(DataFeedInterface DataFeed) constant returns (uint256 gav) {
         for (uint256 i = 0; i < DataFeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(DataFeed.getRegisteredAssetAt(i));
