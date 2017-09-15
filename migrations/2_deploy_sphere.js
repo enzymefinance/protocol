@@ -1,5 +1,6 @@
 const Asset = artifacts.require('./Asset.sol');
 const ExchangeAdapter = artifacts.require('./ExchangeAdapter.sol');
+const SimpleMarket = artifacts.require('./SimpleMarket.sol');
 const DataFeed = artifacts.require('./DataFeed.sol');
 const Sphere = artifacts.require('./Sphere.sol');
 
@@ -20,7 +21,8 @@ module.exports = (deployer, network) => {
         t.symbol !== 'ZRX-T',
     ).map(t => t.address);
     deployer.deploy(DataFeed, mlnAddr, 120, 60)
-    .then(() => deployer.deploy(ExchangeAdapter))
+    .then(() => deployer.deploy(SimpleMarket))
+    .then(() => deployer.deploy(ExchangeAdapter, SimpleMarket.address))
     .then(() => deployer.deploy(Sphere, DataFeed.address, ExchangeAdapter.address))
     .catch(e => { throw e; })
   } else {
@@ -34,7 +36,8 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(Asset, 'Melon Token', 'MLN-T', 18))
     .then(() => mlnAddr = Asset.address)
     .then(() => deployer.deploy(DataFeed, mlnAddr, 120, 60))
-    .then(() => deployer.deploy(ExchangeAdapter))
+    .then(() => deployer.deploy(SimpleMarket))
+    .then(() => deployer.deploy(ExchangeAdapter, SimpleMarket.address))
     .then(() => deployer.deploy(Sphere, DataFeed.address, ExchangeAdapter.address))
     .catch(e => { throw e; })
   }
