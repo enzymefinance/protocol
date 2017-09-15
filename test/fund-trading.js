@@ -57,13 +57,13 @@ contract('Fund trading', (accounts) => {
   describe('#makeOrder', () => {
     const sellAmt = 10000;
     const buyAmt = 2000;
-    it('creating order approves token spending for fund', async () => {
+    it.skip('creating order approves token spending for fund', async () => {
       const preMln = await mlnToken.balanceOf(fund.address);
       await fund.makeOrder(mlnToken.address, ethToken.address, sellAmt, buyAmt, { from: manager });
       const postMln = await mlnToken.balanceOf(fund.address);
       assert.equal(preMln - sellAmt, postMln);
     });
-    it('makes an order with expected parameters', async () => {
+    it.skip('makes an order with expected parameters', async () => {
       const id = await fund.getLastOrderId();
       const order = await fund.orders(id);
       assert.equal(order[0], mlnToken.address);
@@ -83,7 +83,7 @@ contract('Fund trading', (accounts) => {
         mlnToken.address, ethToken.address, sellAmt, buyAmt, { from: accounts[1] },
       );
     });
-    it('takes 100% of an order, which transfers tokens correctly', async () => {
+    it.skip('takes 100% of an order, which transfers tokens correctly', async () => {
       const id = await exchange.getLastOfferId();
       const preMln = await mlnToken.balanceOf(fund.address);
       const preEth = await ethToken.balanceOf(fund.address);
