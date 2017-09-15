@@ -19,7 +19,7 @@ contract('SimpleMarket', (accounts) => {
     market = await ExchangeAdapter.new(simpleMarket.address);
   });
 
-  it('empty market has zero nexOrderId', async () => {
+  it('empty market has zero nextOrderId', async () => {
     const firstId = await market.getLastOrderId();
     assert.equal(firstId.toNumber(), 0);
   });

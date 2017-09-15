@@ -17,13 +17,6 @@ contract('Participation', (accounts) => {
     const res = await ptcp.isSubscriptionPermitted.call(accounts[1], 10, 20);
     assert(res);
   });
-  it.skip('listing multiple accounts permits them all to subscribe', async () => {
-    await ptcp.bulkList([accounts[2], accounts[3], accounts[4], accounts[5]]);
-    const allRes = await Promise.all([2, 3, 4, 5].map(ii =>
-      ptcp.isSubscriptionPermitted.call(accounts[ii], 10, 20)
-    ));
-    assert.notInclude(allRes, false);
-  });
   it('delisting removes subscribe permissions', async () => {
     let res = await ptcp.isSubscriptionPermitted.call(accounts[1], 10, 20);
     assert(res);
