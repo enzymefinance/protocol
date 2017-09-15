@@ -24,7 +24,7 @@ contract('SimpleMarket', (accounts) => {
     assert.equal(firstId.toNumber(), 0);
   });
 
-  describe('#make()', () => {
+  describe.skip('#make()', () => {
     it('calls without error', async () => {
       const amt = 1000;
       await mlnToken.approve(market.address, amt, { from: accounts[0] });
@@ -46,7 +46,7 @@ contract('SimpleMarket', (accounts) => {
     });
   });
 
-  describe('#cancel()', () => {
+  describe.skip('#cancel()', () => {
     it('calls without error', async () => {
       const oid = await market.getLastOrderId();
       await market.cancelOrder(oid);
@@ -59,7 +59,7 @@ contract('SimpleMarket', (accounts) => {
     });
   });
 
-  describe('#take()', () => {
+  describe.skip('#takeOrder()', () => {
     const maker = accounts[1];
     const taker = accounts[2];
     before(async () => {
@@ -80,7 +80,7 @@ contract('SimpleMarket', (accounts) => {
           return;
           pre.taker.mln = await mlnToken.balanceOf(taker);
           pre.taker.eth = await ethToken.balanceOf(taker);
-          pre.buyr.mln = await mlnToken.balanceOf(maker);
+          pre.maker.mln = await mlnToken.balanceOf(maker);
           pre.maker.eth = await ethToken.balanceOf(maker);
           await mlnToken.approve(market.address, test.makeAmt, { from: maker });
           await market.takeOrder(
@@ -88,13 +88,13 @@ contract('SimpleMarket', (accounts) => {
           );
         });
 
-        it.skip('calls without error, where appropriate', async () => {
+        it('calls without error, where appropriate', async () => {
           const oid = await market.getLastOrderId();
           assert(market.isActive(oid));
           await ethToken.approve(market.address, test.takeAmt, { from: taker });
           if (test.cond === '>') {
             try {
-              await market.take(oid, test.takeAmt, { from: taker })
+              await market.takeOrder(oid, test.takeAmt, { from: taker })
               assert(false, 'No error thrown');
             } catch (e) {
               const e1 = e.message.indexOf('invalid opcode') !== -1;
@@ -103,11 +103,11 @@ contract('SimpleMarket', (accounts) => {
               else assert(true);
             }
           } else {
-            await market.take(oid, test.takeAmt, { from: taker })
+            await market.takeOrder(oid, test.takeAmt, { from: taker })
           }
         });
 
-        it.skip('deactivates order, if filled', async () => {
+        it('deactivates order, if filled', async () => {
           const oid = await market.getLastOrderId();
           const active = await market.isActive(oid);
           if (test.cond === '==') {
