@@ -42,7 +42,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     // FIELDS
 
     // Constant fields
-    string constant SYMBOL = "MLN-F"; // Melon Fund
+    string constant SYMBOL = "MLN-Fund"; // Melon Fund
     uint constant DECIMALS = 18;
     uint constant VAULT_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number

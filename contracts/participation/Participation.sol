@@ -35,7 +35,6 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 offeredValue
     )
-        constant
         returns (bool)
     {
         return identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
@@ -51,7 +50,6 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 requestedValue
     )
-        constant
         returns (bool)
     {
         return true; // No need for KYC/AML in case of redeeming shares

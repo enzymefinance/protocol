@@ -17,11 +17,11 @@ contract RiskMgmtInterface {
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice
-    ) constant returns (bool) {}
+    ) returns (bool) {}
 
     function isTakePermitted(
         uint orderPrice,
         uint orderQuantity,
         uint referencePrice
-    ) constant returns (bool) {}
+    ) returns (bool) {}
 }

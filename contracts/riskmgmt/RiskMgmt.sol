@@ -13,7 +13,6 @@ contract RiskMgmt is RiskMgmtInterface {
         uint orderQuantity,
         uint referencePrice
     )
-        constant
         returns (bool)
     {
         return true; // For testing purposes
@@ -24,7 +23,6 @@ contract RiskMgmt is RiskMgmtInterface {
         uint orderQuantity,
         uint referencePrice
     )
-        constant
         returns (bool)
     {
         return true; // For testing purposes

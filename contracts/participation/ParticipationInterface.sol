@@ -11,11 +11,11 @@ contract ParticipationInterface {
         address owner,
         uint256 numShares,
         uint256 offeredValue
-    ) constant returns (bool) {}
+    ) returns (bool) {}
 
     function isRedemptionPermitted(
         address owner,
         uint256 numShares,
         uint256 requestedValue
-    ) constant returns (bool) {}
+    ) returns (bool) {}
 }

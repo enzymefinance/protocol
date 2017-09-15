@@ -18,7 +18,6 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 offeredValue
     )
-        constant
         returns (bool)
     {
         return true;
@@ -31,7 +30,6 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 requestedValue
     )
-        constant
         returns (bool)
     {
         return true;

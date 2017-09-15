@@ -101,8 +101,8 @@ contract Competition is DBC, Owned {
          * require depositAsset == MELON_ASSET
          * require payoutAsset == MELON_ASSET
          * require depositQuantity <= maxDepositQuantity
-         * require hopefuls.length + 1 <= maxHopefulsNumber
-         * require hopefuls.length + 1 <= maxHopefulsNumber
+         * require hopefuls.length < maxHopefulsNumber
+         * require hopefuls.length < maxHopefulsNumber
          */
     {
         uint id = hopefuls.length;
