@@ -92,16 +92,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function noOpenOrders() internal returns (bool) { return nextOpenSlotOfArray() == 0; }
     function openOrdersNotFull() internal returns (bool) { return nextOpenSlotOfArray() == MAX_OPEN_ORDERS; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
-    function isValidAssetPair(address sellAsset, address buyAsset)
-        internal
-        returns (bool)
-    {
-        return
-            module.datafeed.isValid(sellAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
-            module.datafeed.isValid(buyAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
-            (buyAsset == MELON_ASSET || sellAsset == MELON_ASSET) && // One asset must be MELON_ASSET
-            (buyAsset != MELON_ASSET || sellAsset != MELON_ASSET); // Pair must consists of diffrent assets
-    }
     function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // INTERNAL METHODS
@@ -501,7 +491,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(isValidAssetPair(sellAsset, buyAsset))
+        pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(
                 sellQuantity,
@@ -552,7 +542,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
         order.fillQuantity = quantity;
-        require(isValidAssetPair(order.buyAsset, order.sellAsset));
+        require(module.datafeed.existsData(order.buyAsset, order.sellAsset));
         require(quantity <= order.sellQuantity);
         require(module.riskmgmt.isTakePermitted(
             module.datafeed.getOrderPrice(

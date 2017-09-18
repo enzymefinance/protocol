@@ -23,6 +23,7 @@ contract DataFeedInterface is AssetRegistrarInterface {
     function getLastUpdateTimestamp() constant returns (uint) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
+    function existsData(address sellAsset, address buyAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
