@@ -1,13 +1,12 @@
 pragma solidity ^0.4.11;
 
-import '../FundInterface.sol';
 import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
+import '../dependencies/ERC20.sol';
 
 /// @title Competition Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Links Melon Funds to Competition Ids
-contract Competition is DBC, Owned {
+/// @notice Links Melon Funds to Competition
+contract Competition is DBC {
 
     // TYPES
 
@@ -19,7 +18,7 @@ contract Competition is DBC, Owned {
         address payoutAsset; // Asset (usually Melon Token) to be received as prize
         uint depositQuantity; // Quantity of depositAsset spent
         uint payoutQuantity; // Quantity of payoutAsset received as prize
-        uint finalSharePrice; // Can be exchanged for any other comparison metric
+        uint finalSharePrice; // Can be changed for any other comparison metric
     }
 
     // FIELDS

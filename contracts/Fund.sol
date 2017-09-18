@@ -352,10 +352,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         SubscribeRequest(id, msg.sender, now, numShares);
     }
 
-    /// @dev Pre: offeredValue denominated in [base unit of MELON_ASSET]
-    /// @dev Pre: Amount of shares for offered value; Non-zero incentive Value which is paid to workers
-    /// @dev Post Pending subscription Request
-
     /// @dev Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
     /// @dev Post Redeemer lost `numShares`, and gained `numShares * value` reference tokens
     function requestRedemption(
@@ -495,9 +491,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         pre_cond(notShutDown())
         pre_cond(isValidAssetPair(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isMakePermitted(
-            module.datafeed.getPriceOfOrder(
-                sellAsset,
-                buyAsset,
+            module.datafeed.getOrderPrice(
                 sellQuantity,
                 buyQuantity
             ),
@@ -541,11 +535,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         require(isValidAssetPair(order.buyAsset, order.sellAsset));
         require(order.buyQuantity <= quantity);
         require(module.riskmgmt.isTakePermitted(
-            module.datafeed.getPriceOfOrder(
-                order.sellAsset, // I have what is being sold
-                order.buyAsset, // I want what is being bhought
-                order.buyQuantity,
-                order.sellQuantity
+            module.datafeed.getOrderPrice(
+                order.buyQuantity,  // Buying what is being sold
+                order.sellQuantity // Selling what is being bhought
             ),
             order.sellQuantity,
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
@@ -592,7 +584,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         }
     }
 
-    //XXX: from perspective of vault
+    /// @notice Whether embezzlement happened
     /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
     /// @dev Post True if embezzled otherwise false
     function proofOfEmbezzlement(address ofBase, address ofQuote)

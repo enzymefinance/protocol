@@ -48,9 +48,9 @@ contract Version is DBC, Owned {
       return nextFundId - 1;
     }
 
-    // @returns list of all Funds address is invested in
-    // @returns list of all numbers of Shares address holds in Fund
-    // @returns list of all decimals of this Fund
+    /// @return list of all Funds address is invested in
+    /// @return list of all numbers of Shares address holds in Fund
+    /// @return list of all decimals of this Fund
     function getSubscriptionHistory(address ofAddress, uint startId)
         constant
         pre_cond(0 <= startId && startId < nextFundId)
