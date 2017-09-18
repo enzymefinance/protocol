@@ -80,9 +80,10 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         uint buyQuantity
     )
         external
+        post_cond(approveSpending(sellAsset, sellQuantity))
         returns (uint id)
     {
-        claimAndApprove(sellAsset, sellQuantity);
+        /*claimAndApprove(sellAsset, sellQuantity);*/
         id = EXCHANGE.offer(
             sellQuantity,
             ERC20(sellAsset),
@@ -96,8 +97,10 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         external
         returns (bool success)
     {
-        var (sellAsset, , sellQuantity, ) = getOrder(id);
-        claimAndApprove(sellAsset, sellQuantity);
+        var (sellAsset, buyAsset, sellQuantity, buyQuantity) = getOrder(id);
+        /*require(approveSpending(sellAsset, sellQuantity));*/
+        require(approveSpending(buyAsset, buyQuantity));
+        /*claimAndApprove(sellAsset, sellQuantity);*/
         success = EXCHANGE.buy(id, quantity);
         OrderUpdated(id);
     }
