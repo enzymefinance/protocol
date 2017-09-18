@@ -1,7 +1,8 @@
 const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('DataFeed');
-const Exchange = artifacts.require('SimpleMarket');
+const SimpleMarket = artifacts.require('SimpleMarket');
+const ExchangeAdapter = artifacts.require('ExchangeAdapter');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
@@ -16,7 +17,8 @@ contract('Fund trading', (accounts) => {
   const investor = accounts[2];
   let ethToken;
   let fund;
-  let exchange;
+  let simpleMarket;
+  let simpleAdapter;
 
   before('Set up new Fund', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
@@ -25,8 +27,9 @@ contract('Fund trading', (accounts) => {
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: liquidityProvider });
     pricefeed = await PriceFeed.new(mlnToken.address, 0, 60);
-    exchange = await Exchange.deployed();
-    sphere = await Sphere.new(pricefeed.address, exchange.address);
+    simpleMarket = await SimpleMarket.new();
+    simpleAdapter = await ExchangeAdapter.new();
+    sphere = await Sphere.new(pricefeed.address, simpleMarket.address, simpleAdapter.address);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await pricefeed.register(ethToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await pricefeed.register(eurToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
@@ -57,13 +60,13 @@ contract('Fund trading', (accounts) => {
   describe('#makeOrder', () => {
     const sellAmt = 10000;
     const buyAmt = 2000;
-    it.skip('creating order approves token spending for fund', async () => {
+    it('creating order approves token spending for fund', async () => {
       const preMln = await mlnToken.balanceOf(fund.address);
       await fund.makeOrder(mlnToken.address, ethToken.address, sellAmt, buyAmt, { from: manager });
       const postMln = await mlnToken.balanceOf(fund.address);
       assert.equal(preMln - sellAmt, postMln);
     });
-    it.skip('makes an order with expected parameters', async () => {
+    it('makes an order with expected parameters', async () => {
       const id = await fund.getLastOrderId();
       const order = await fund.orders(id);
       assert.equal(order[0], mlnToken.address);
@@ -78,13 +81,13 @@ contract('Fund trading', (accounts) => {
     const sellAmt = 20000;  // sell/buy from maker's perspective
     const buyAmt = 4000;
     before('make an order to take', async () => {
-      await mlnToken.approve(exchange.address, sellAmt, { from: accounts[1] }); // make an order to take
-      await exchange.make(
+      await mlnToken.approve(simpleMarket.address, sellAmt, { from: accounts[1] }); // make an order to take
+      await simpleMarket.make(
         mlnToken.address, ethToken.address, sellAmt, buyAmt, { from: accounts[1] },
       );
     });
-    it.skip('takes 100% of an order, which transfers tokens correctly', async () => {
-      const id = await exchange.getLastOfferId();
+    it('takes 100% of an order, which transfers tokens correctly', async () => {
+      const id = await simpleAdapter.getLastOrderId(simpleMarket.address);
       const preMln = await mlnToken.balanceOf(fund.address);
       const preEth = await ethToken.balanceOf(fund.address);
       await fund.takeOrder(id, sellAmt, { from: manager });

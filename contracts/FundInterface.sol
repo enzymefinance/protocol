@@ -15,7 +15,7 @@ contract FundInterface is AssetInterface {
     event RedeemRequest(uint requestId, address indexed ofParticipant, uint atTimestamp, uint numShares);
     event Subscribed(address indexed ofParticipant, uint atTimestamp, uint numShares);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint numShares);
-    event SpendingApproved(address ofToken, address onExchange, uint amount);
+    event SpendingApproved(address onConsigned, address ofAsset, uint amount);
     event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);

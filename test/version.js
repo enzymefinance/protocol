@@ -1,5 +1,6 @@
 const EtherToken = artifacts.require('EtherToken');
-const Exchange = artifacts.require('SimpleMarket');
+const SimpleMarket = artifacts.require('SimpleMarket');
+const ExchangeAdapter = artifacts.require('ExchangeAdapter');
 const Governance = artifacts.require('Governance');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
@@ -26,8 +27,9 @@ contract('Version', (accounts) => {
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await feed.update([mlnToken.address], [226244343891402714]);
-    exchange = await Exchange.new();
-    sphere = await Sphere.new(feed.address, exchange.address);
+    simpleMarket = await SimpleMarket.new();
+    simpleAdapter = await ExchangeAdapter.new();
+    sphere = await Sphere.new(feed.address, simpleMarket.address, simpleAdapter.address);
     participation = await Participation.new();
     riskManagement = await RiskMgmt.new();
   });

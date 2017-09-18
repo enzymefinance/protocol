@@ -54,6 +54,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
+    address public EXCHANGE;
+    address public CONSIGNED; // Other then redeem, assets can only be transferred to this, eg to an exchange
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
@@ -78,6 +80,15 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
+    /// @dev Pre: Transferred tokens to this contract
+    /// @dev Post Approved to spend tokens on EXCHANGE
+    function approveSpending(address onConsigned, address ofAsset, uint quantity)
+        internal
+        returns (bool success)
+    {
+        success = ERC20(ofAsset).approve(onConsigned, quantity);
+        SpendingApproved(onConsigned, ofAsset, quantity);
+    }
     function noOpenOrders() internal returns (bool) { return nextOpenSlotOfArray() == 0; }
     function openOrdersNotFull() internal returns (bool) { return nextOpenSlotOfArray() == MAX_OPEN_ORDERS; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
@@ -243,6 +254,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
+        CONSIGNED = address(sphere.getConsigned()); // Actual exchange Address
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = MELON_ASSET; // XXX let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
@@ -495,13 +507,17 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
                 sellQuantity,
                 buyQuantity
             ),
-            module.datafeed.getReferencePrice(sellAsset, buyAsset),
-            buyQuantity
+            buyQuantity, // Quantity trying to be received
+            module.datafeed.getReferencePrice(sellAsset, buyAsset)
         ))
+        pre_cond(approveSpending(CONSIGNED, sellAsset, sellQuantity))
         returns (uint id)
     {
-        approveSpending(sellAsset, sellQuantity);
-        id = module.exchange.makeOrder(sellAsset, buyAsset, sellQuantity, buyQuantity);
+        address(module.exchange).delegatecall( // TODO: use as library call
+            bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")),
+            CONSIGNED, sellAsset, buyAsset, sellQuantity, buyQuantity
+        ); // TODO check boolean return value
+        /*id = module.exchange.makeOrder(sellAsset, buyAsset, sellQuantity, buyQuantity);*/
         orders[nextOrderId] = Order({
             sellAsset: sellAsset,
             buyAsset: buyAsset,
@@ -531,24 +547,26 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = module.exchange.getOrder(id);
-        require(isValidAssetPair(order.buyAsset, order.sellAsset));
-        require(order.buyQuantity <= quantity);
-        require(module.riskmgmt.isTakePermitted(
-            module.datafeed.getOrderPrice(
-                order.buyQuantity,  // Buying what is being sold
-                order.sellQuantity // Selling what is being bhought
-            ),
-            order.sellQuantity,
-            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
-        ));
-        uint wantedSellQuantity = quantity.mul(order.sellQuantity).div(order.buyQuantity); // <- Qunatity times price
-        approveSpending(order.sellAsset, wantedSellQuantity);
-        bool success = module.exchange.takeOrder(id, quantity);
+        ) = module.exchange.getOrder(CONSIGNED, id);
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
         order.fillQuantity = quantity;
+        require(isValidAssetPair(order.buyAsset, order.sellAsset));
+        require(quantity <= order.sellQuantity);
+        require(module.riskmgmt.isTakePermitted(
+            module.datafeed.getOrderPrice(
+                order.buyQuantity, // Buying what is being sold
+                order.sellQuantity // Selling what is being bhought
+            ),
+            order.sellQuantity, // Quantity about to be received
+            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
+        ));
+        require(approveSpending(CONSIGNED, order.buyAsset, quantity));
+        bool success = address(module.exchange).delegatecall( // TODO: use as library call
+            bytes4(sha3("takeOrder(address,uint256,uint256)")),
+            CONSIGNED, id, quantity
+        );
         orders[nextOrderId] = order;
         nextOrderId++;
         return success;
@@ -562,7 +580,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         // TODO orders accounting
-        return module.exchange.cancelOrder(id);
+        return module.exchange.cancelOrder(CONSIGNED, id);
     }
 
     //TODO: add previousHoldings
@@ -624,15 +642,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             return true;
         }
         return false;
-    }
-
-    /// @dev Pre: To Exchange needs to be approved to spend Tokens on the Managers behalf
-    /// @dev Post Approved to spend ofToken on Exchange
-    function approveSpending(address ofToken, uint amount)
-        internal
-    {
-        assert(ERC20(ofToken).approve(address(module.exchange), amount));
-        SpendingApproved(ofToken, address(module.exchange), amount);
     }
 
     // NON-CONSTANT METHODS - REWARDS

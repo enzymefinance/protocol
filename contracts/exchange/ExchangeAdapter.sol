@@ -11,52 +11,39 @@ import './thirdparty/SimpleMarket.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
+/// @notice Can be implemented as a library
 contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
-
-    // FIELDS
-
-    SimpleMarket public EXCHANGE;
-
-    // PRE, POST, INVARIANT CONDITIONS
-
-    /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
-    /// @dev Post: Transferred tokens to this contract
-    function claimAsset(address ofAsset, uint quantity)
-        internal
-        returns (bool)
-    {
-        return ERC20(ofAsset).transferFrom(msg.sender, this, quantity);
-    }
-
-    /// @dev Pre: Transferred tokens to this contract
-    /// @dev Post Approved to spend tokens on EXCHANGE
-    function approveSpending(address ofAsset, uint quantity)
-        internal
-        returns (bool)
-    {
-        return ERC20(ofAsset).approve(address(EXCHANGE), quantity);
-    }
-
-    /// @dev Pre: Adapter needs to be approved to spend tokens on msg.senders behalf
-    /// @dev Post Claimed quantitiy of asset and approved EXCHANGE to spend them
-    function claimAndApprove(address ofAsset, uint quantity)
-        internal
-        pre_cond(claimAsset(ofAsset, quantity))
-        post_cond(approveSpending(ofAsset, quantity))
-    {}
 
     // CONSTANT METHODS
 
-    function getLastOrderId() constant returns (uint) { return EXCHANGE.last_offer_id(); }
-    function isActive(uint id) constant returns (bool) { return EXCHANGE.isActive(id); }
-    function getOwner(uint id) constant returns (address) { return EXCHANGE.getOwner(id); }
-    function getOrder(uint id) constant returns (address, address, uint, uint) {
+    function getLastOrderId(address onConsigned)
+        constant
+        returns (uint)
+    {
+        return SimpleMarket(onConsigned).last_offer_id();
+    }
+    function isActive(address onConsigned, uint id)
+        constant
+        returns (bool)
+    {
+        return SimpleMarket(onConsigned).isActive(id);
+    }
+    function getOwner(address onConsigned, uint id)
+        constant
+        returns (address)
+    {
+        return SimpleMarket(onConsigned).getOwner(id);
+    }
+    function getOrder(address onConsigned, uint id)
+        constant
+        returns (address, address, uint, uint)
+    {
         var (
             sellQuantity,
             sellAsset,
             buyQuantity,
             buyAsset
-        ) = EXCHANGE.getOffer(id);
+        ) = SimpleMarket(onConsigned).getOffer(id);
         return (
             address(sellAsset),
             address(buyAsset),
@@ -67,23 +54,17 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
 
     // NON-CONSTANT METHODS
 
-    function ExchangeAdapter(
-        address ofSimpleMarket
-    ) {
-        EXCHANGE = SimpleMarket(ofSimpleMarket);
-    }
-
     function makeOrder(
+        address onConsigned,
         address sellAsset,
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     )
         external
-        post_cond(approveSpending(sellAsset, sellQuantity))
         returns (uint id)
     {
-        id = EXCHANGE.offer(
+        id = SimpleMarket(onConsigned).offer(
             sellQuantity,
             ERC20(sellAsset),
             buyQuantity,
@@ -92,21 +73,26 @@ contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
         OrderUpdated(id);
     }
 
-    function takeOrder(uint id, uint quantity)
+    function takeOrder(
+        address onConsigned,
+        uint id,
+        uint quantity
+    )
         external
         returns (bool success)
     {
-        var (, buyAsset, , buyQuantity) = getOrder(id);
-        require(approveSpending(buyAsset, buyQuantity));
-        success = EXCHANGE.buy(id, quantity);
+        success = SimpleMarket(onConsigned).buy(id, quantity);
         OrderUpdated(id);
     }
 
-    function cancelOrder(uint id)
+    function cancelOrder(
+        address onConsigned,
+        uint id
+    )
         external
         returns (bool success)
     {
-        success = EXCHANGE.cancel(id);
+        success = SimpleMarket(onConsigned).cancel(id);
         OrderUpdated(id);
     }
 }

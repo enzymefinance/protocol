@@ -17,19 +17,20 @@ contract ExchangeInterface {
 
     // CONSTANT METHODS
 
-    function getLastOrderId() constant returns (uint) {}
-    function isActive(uint id) constant returns (bool) {}
-    function getOwner(uint id) constant returns (address) {}
-    function getOrder(uint id) constant returns (address, address, uint, uint) {}
+    function getLastOrderId(address onConsigned) constant returns (uint) {}
+    function isActive(address onConsigned, uint id) constant returns (bool) {}
+    function getOwner(address onConsigned, uint id) constant returns (address) {}
+    function getOrder(address onConsigned, uint id) constant returns (address, address, uint, uint) {}
 
     // NON-CONSTANT METHODS
 
     function makeOrder(
+        address onConsigned,
         address sellAsset,
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     ) external returns (uint) {}
-    function takeOrder(uint id, uint quantity) external returns (bool) {}
-    function cancelOrder(uint id) external returns (bool) {}
+    function takeOrder(address onConsigned, uint id, uint quantity) external returns (bool) {}
+    function cancelOrder(address onConsigned, uint id) external returns (bool) {}
 }
