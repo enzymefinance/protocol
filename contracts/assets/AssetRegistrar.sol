@@ -45,6 +45,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
 
     /// @notice Get human-readable information about an Asset
+    /// @param ofAsset address for which descriptive information is requested
     function getDescriptiveInformation(address ofAsset)
         constant
         returns (string, string, string, bytes32)
@@ -57,6 +58,8 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         );
     }
 
+    /// @notice Get fund accounting related information about an Asset
+    /// @param ofAsset address for which specific information is requested
     function getSpecificInformation(address ofAsset)
         constant
         returns (uint256, bytes32, address, address)
