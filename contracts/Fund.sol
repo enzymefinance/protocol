@@ -80,7 +80,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
     /// @dev Pre: Transferred tokens to this contract
-    /// @dev Post Approved to spend tokens on EXCHANGE
+    /// @dev Post Approved to spend tokens on CONSIGNED
     function approveSpending(address onConsigned, address ofAsset, uint quantity)
         internal
         returns (bool success)
@@ -140,8 +140,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
-            uint assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
-            assetHoldings = assetHoldings.add(getIntendedSellQuantity(ofAsset));
+            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
+                .add(ERC20(ofAsset).balanceOf(CONSIGNED)); // Qty held in custody
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -308,9 +308,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     }
 
     function shutDown()
-        pre_cond(isVersion())
+        pre_cond(isVersion() || isOwner())
     {
-        isShutDown == true;
+        isShutDown = true;
     }
 
     // NON-CONSTANT METHODS - PARTICIPATION
@@ -445,13 +445,16 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
         assert(isPastZero(prevTotalSupply));
         annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
-        // Transfer ownershipQuantity of Assets
+        // Transfer ownershipQty of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
-            assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
+            uint ownershipQty = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
+            if (isLessThan(ownershipQty, assetHoldings)) { // Less available than what is owned
+                isShutDown = true; // Eg in case of unreturned qty at CONSIGNED address
+            }
+            assert(ERC20(ofAsset).transfer(msg.sender, ownershipQty)); // Send funds from vault to investor
         }
         Redeemed(msg.sender, now, numShares);
     }
@@ -478,6 +481,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // NON-CONSTANT METHODS - MANAGING
 
+    /// @notice These are orders that are not expected to settle immediately
     /// @dev Pre: Sufficient balance and spending has been approved
     /// @dev Post Make offer on selected Exchange
     function makeOrder(
@@ -516,10 +520,11 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             orderType: OrderType.make,
             fillQuantity: 0
         });
-        /*openOrderIds[nextOpenSlotOfArray()] = nextOrderId;*/ //TODO: out of gas error
+        // TODO count open orders as integer
         nextOrderId++;
     }
 
+    /// @notice These are orders that are expected to settle immediately
     /// @dev Pre: Active offer (id) and valid buy amount on selected Exchange
     /// @dev Post Take offer on selected Exchange
     function takeOrder(uint id, uint quantity)
