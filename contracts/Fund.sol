@@ -54,7 +54,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    address public CONSIGNED; // Other then redeem, assets can only be transferred to this, eg to an exchange
+    address public EXCHANGE; // Other then redeem, assets can only be transferred to this, eg to an exchange
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
@@ -80,9 +80,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
     /// @dev Pre: Transferred tokens to this contract
-    /// @dev Post Approved to spend tokens on CONSIGNED
+    /// @dev Post Approved to spend tokens on EXCHANGE
     function approveSpending(address onConsigned, address ofAsset, uint quantity)
-        internal
+        /*internal*/
         returns (bool success)
     {
         success = ERC20(ofAsset).approve(onConsigned, quantity);
@@ -141,7 +141,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(ERC20(ofAsset).balanceOf(CONSIGNED)); // Qty held in custody
+                .add(ERC20(ofAsset).balanceOf(EXCHANGE)); // Qty held in custody
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -242,7 +242,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        CONSIGNED = address(sphere.getConsigned()); // Actual exchange Address
+        EXCHANGE = address(sphere.getExchange()); // Actual exchange Address
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = MELON_ASSET; // XXX let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
@@ -452,7 +452,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             if (assetHoldings == 0) continue;
             uint ownershipQty = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
             if (isLessThan(ownershipQty, assetHoldings)) { // Less available than what is owned
-                isShutDown = true; // Eg in case of unreturned qty at CONSIGNED address
+                isShutDown = true; // Eg in case of unreturned qty at EXCHANGE address
             }
             assert(ERC20(ofAsset).transfer(msg.sender, ownershipQty)); // Send funds from vault to investor
         }
@@ -504,10 +504,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         ))
         returns (uint id)
     {
-        require(approveSpending(CONSIGNED, sellAsset, sellQuantity));
+        require(approveSpending(EXCHANGE, sellAsset, sellQuantity));
         address(module.exchange).delegatecall( // TODO: use as library call
             bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")),
-            CONSIGNED, sellAsset, buyAsset, sellQuantity, buyQuantity
+            EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity
         ); // TODO check boolean return value
         /*id = module.exchange.makeOrder(sellAsset, buyAsset, sellQuantity, buyQuantity);*/
         orders[nextOrderId] = Order({
@@ -540,7 +540,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = module.exchange.getOrder(CONSIGNED, id);
+        ) = module.exchange.getOrder(EXCHANGE, id);
         require(module.datafeed.existsData(order.buyAsset, order.sellAsset));
         require(quantity <= order.sellQuantity);
         require(module.riskmgmt.isTakePermitted(
@@ -551,10 +551,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             order.sellQuantity, // Quantity about to be received
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
-        require(approveSpending(CONSIGNED, order.buyAsset, quantity));
+        require(approveSpending(EXCHANGE, order.buyAsset, quantity));
         bool success = address(module.exchange).delegatecall( // TODO: use as library call
             bytes4(sha3("takeOrder(address,uint256,uint256)")),
-            CONSIGNED, id, quantity
+            EXCHANGE, id, quantity
         );
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
@@ -573,7 +573,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         // TODO orders accounting
-        return module.exchange.cancelOrder(CONSIGNED, id);
+        return module.exchange.cancelOrder(EXCHANGE, id);
     }
 
     //TODO: add previousHoldings
