@@ -54,6 +54,26 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     function getLastUpdateTimestamp() constant returns (uint) {
         return lastUpdateTimestamp;
     }
+    /// @notice Get asset specific information
+    /// @dev Pre: Asset has been initialised
+    /// @dev Post Returns boolean if data is valid
+    function isValid(address ofAsset)
+        constant
+        pre_cond(isDataSet(ofAsset))
+        returns (bool)
+    {
+        return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
+    }
+    function existsData(address sellAsset, address buyAsset)
+        constant
+        returns (bool)
+    {
+        return
+            isValid(sellAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
+            isValid(buyAsset) && // Is tradeable asset (TODO cleaner) and datafeed delivering data
+            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
+            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+    }
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
@@ -70,17 +90,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             ++indexCounter;
         }
         return (timestamps, prices);
-    }
-
-    /// @notice Get asset specific information
-    /// @dev Pre: Asset has been initialised
-    /// @dev Post Returns boolean if data is valid
-    function isValid(address ofAsset)
-        constant
-        pre_cond(isDataSet(ofAsset))
-        returns (bool)
-    {
-        return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
     }
 
     /// @dev Asset has been initialised and is active

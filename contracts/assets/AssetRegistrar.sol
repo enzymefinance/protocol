@@ -108,7 +108,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
-    function changeDescriptiveInformation(
+    function updateDescriptiveInformation(
         address ofAsset,
         string name,
         string symbol,
@@ -123,5 +123,18 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         asset.symbol = symbol;
         asset.url = url;
         asset.ipfsHash = ipfsHash;
+    }
+
+    /// @dev Owner can delete an existing entry
+    /// @param ofAsset address for which specific information is requested
+    /// @return deletes an existing entry
+    function remove(
+        address ofAsset
+    )
+        pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
+        post_cond(notRegistered(ofAsset))
+    {
+        delete information[ofAsset]; // Sets exists boolean to false
     }
 }

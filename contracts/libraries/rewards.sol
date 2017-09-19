@@ -1,10 +1,7 @@
 pragma solidity ^0.4.11;
 
-import './safeMath.sol';
-
 // Fully functional calculation library
 library rewards {
-    using safeMath for uint256;
 
     // CONSTANT METHODS
 

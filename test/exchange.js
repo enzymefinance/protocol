@@ -1,5 +1,5 @@
 const SimpleMarket = artifacts.require('SimpleMarket');
-const ExchangeAdapter = artifacts.require('ExchangeAdapter');
+const ExchangeAdapter = artifacts.require('SimpleAdapter');
 const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const chai = require('chai');
@@ -10,61 +10,64 @@ contract('SimpleMarket', (accounts) => {
   let ethToken;
   let mlnToken;
   let simpleMarket;
-  let market;
+  let simpleAdapter;
 
   before('Deploy contract instances', async () => {
     ethToken = await EtherToken.new();
     mlnToken = await PreminedAsset.new('Melon token', 'MLN', 18, 10 ** 28);
     simpleMarket = await SimpleMarket.new();
-    market = await ExchangeAdapter.new(simpleMarket.address);
+    simpleAdapter = await ExchangeAdapter.new();
   });
 
-  it('empty market has zero nextOrderId', async () => {
-    const firstId = await market.getLastOrderId();
+  it('empty simpleAdapter has zero nextOrderId', async () => {
+    const firstId = await simpleAdapter.getLastOrderId(simpleMarket.address);
     assert.equal(firstId.toNumber(), 0);
   });
 
   describe.skip('#make()', () => {
     it('calls without error', async () => {
       const amt = 1000;
-      await mlnToken.approve(market.address, amt, { from: accounts[0] });
-      await market.makeOrder(
-        mlnToken.address, ethToken.address, amt, amt, { from: accounts[0] },
+      await mlnToken.transfer(simpleAdapter.address, amt, { from: accounts[0] });
+      await simpleAdapter.makeOrder(
+        simpleMarket.address, mlnToken.address, ethToken.address, amt, amt, { from: accounts[0] },
       );
     });
 
     it('activates order', async () => {
-      const oid = await market.getLastOrderId();
-      const active = await market.isActive(oid);
+      const oid = await simpleAdapter.getLastOrderId(simpleMarket.address);
+      const active = await simpleAdapter.isActive(simpleMarket.address, oid);
       assert(active);
     });
 
     it('sets owner of order', async () => {
-      const oid = await market.getLastOrderId();
-      const owner = await market.getOwner(oid);
-      assert.equal(market.address, owner);
+      const oid = await simpleAdapter.getLastOrderId(simpleMarket.address);
+      const owner = await simpleAdapter.getOwner(simpleMarket.address, oid);
+      assert.equal(simpleAdapter.address, owner);
     });
   });
 
   describe.skip('#cancel()', () => {
     it('calls without error', async () => {
-      const oid = await market.getLastOrderId();
-      await market.cancelOrder(oid);
+      const oid = await simpleAdapter.getLastOrderId(simpleMarket.address);
+      await simpleAdapter.cancelOrder(simpleMarket.address, oid);
     });
 
     it('deactivates order', async () => {
-      const oid = await market.getLastOrderId();
-      const active = await market.isActive(oid);
+      const oid = await simpleAdapter.getLastOrderId(simpleMarket.address);
+      const active = await simpleAdapter.isActive(simpleMarket.address, oid);
       assert.isFalse(active);
     });
   });
 
   describe.skip('#takeOrder()', () => {
-    const maker = accounts[1];
-    const taker = accounts[2];
+    let maker;
+    let taker;
     before(async () => {
-      await mlnToken.transfer(maker, 3000, { from: accounts[0] }); // give mlnT
-      await ethToken.transfer(taker, 3000, { from: accounts[0] }); // give ethT
+      maker = accounts[0]; // simpleAdapter owner
+      taker = accounts[0]; // simpleAdapter owner
+      // simpleAdapter acts as proxy for maker, taker
+      await mlnToken.transfer(simpleAdapter.address, 3000, { from: accounts[0] }); // give mlnT
+      await ethToken.transfer(simpleAdapter.address, 3000, { from: accounts[0] }); // give ethT
     });
 
     const tests = [
@@ -77,24 +80,21 @@ contract('SimpleMarket', (accounts) => {
       describe(`take ${test.cond} order value`, () => {
         const pre = { taker: {}, maker: {} };
         before('Setup order', async () => {
-          return;
           pre.taker.mln = await mlnToken.balanceOf(taker);
           pre.taker.eth = await ethToken.balanceOf(taker);
           pre.maker.mln = await mlnToken.balanceOf(maker);
           pre.maker.eth = await ethToken.balanceOf(maker);
-          await mlnToken.approve(market.address, test.makeAmt, { from: maker });
-          await market.takeOrder(
-            mlnToken.address, ethToken.address, test.makeAmt, test.makeAmt, { from: maker },
+          await simpleAdapter.makeOrder(
+            simpleMarket.address, mlnToken.address, ethToken.address, test.makeAmt, test.makeAmt, { from: maker },
           );
         });
 
         it('calls without error, where appropriate', async () => {
-          const oid = await market.getLastOrderId();
-          assert(market.isActive(oid));
-          await ethToken.approve(market.address, test.takeAmt, { from: taker });
+          const oid = await simpleAdapter.getLastOrderId();
+          assert(simpleAdapter.isActive(oid));
           if (test.cond === '>') {
             try {
-              await market.takeOrder(oid, test.takeAmt, { from: taker })
+              await simpleAdapter.takeOrder(simpleMarket.address, oid, test.takeAmt, { from: taker })
               assert(false, 'No error thrown');
             } catch (e) {
               const e1 = e.message.indexOf('invalid opcode') !== -1;
@@ -103,22 +103,22 @@ contract('SimpleMarket', (accounts) => {
               else assert(true);
             }
           } else {
-            await market.takeOrder(oid, test.takeAmt, { from: taker })
+            await simpleAdapter.takeOrder(simpleMarket.address, oid, test.takeAmt, { from: taker })
           }
         });
 
         it('deactivates order, if filled', async () => {
-          const oid = await market.getLastOrderId();
-          const active = await market.isActive(oid);
+          const oid = await simpleAdapter.getLastOrderId();
+          const active = await simpleAdapter.isActive(oid);
           if (test.cond === '==') {
             assert.isFalse(active);
           } else {
             assert.isTrue(active);
-            await market.cancelOrder(oid, { from: maker }); // cancel to return mln
+            await simpleAdapter.cancelOrder(oid, { from: maker }); // cancel to return mln
           }
         });
 
-        it.skip('moves funds correctly', async () => {
+        it('moves funds correctly', async () => {
           const post = { taker: {}, maker: {} };
           post.taker.mln = await mlnToken.balanceOf(taker);
           post.taker.eth = await ethToken.balanceOf(taker);

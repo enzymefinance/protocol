@@ -1,7 +1,8 @@
 const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('DataFeed');
-const Exchange = artifacts.require('SimpleMarket');
+const SimpleMarket = artifacts.require('SimpleMarket');
+const ExchangeAdapter = artifacts.require('SimpleAdapter');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
@@ -24,8 +25,9 @@ contract('Fund shares', (accounts) => {
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: liquidityProvider });
     pricefeed = await PriceFeed.new(mlnToken.address, 0, 60);
-    exchange = await Exchange.deployed();
-    sphere = await Sphere.new(pricefeed.address, exchange.address);
+    simpleMarket = await SimpleMarket.new();
+    simpleAdapter = await ExchangeAdapter.new();
+    sphere = await Sphere.new(pricefeed.address, simpleMarket.address, simpleAdapter.address);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     pricefeed.register(ethToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     pricefeed.register(eurToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
