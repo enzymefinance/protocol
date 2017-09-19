@@ -182,6 +182,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
      */
     function update(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
         pre_cond(ofAssets.length == newPrices.length)
     {
         uint thisId = nextUpdateId;
