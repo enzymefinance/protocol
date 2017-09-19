@@ -1,5 +1,5 @@
 const SimpleMarket = artifacts.require('SimpleMarket');
-const ExchangeAdapter = artifacts.require('ExchangeAdapter');
+const ExchangeAdapter = artifacts.require('SimpleAdapter');
 const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const chai = require('chai');

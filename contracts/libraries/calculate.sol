@@ -45,10 +45,10 @@ library calculate {
     function grossAssetValue(DataFeedInterface DataFeed) constant returns (uint256 gav) {
         for (uint256 i = 0; i < DataFeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(DataFeed.getRegisteredAssetAt(i));
-            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this vault holds
+            uint256 assetHoldings = ERC20(ofAsset).balanceOf(this); // Amount of asset base units this fund holds
             uint256 assetPrice = DataFeed.getPrice(ofAsset);
             uint256 assetDecimals = DataFeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this fund and asset prices
         }
     }
 }

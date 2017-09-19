@@ -1,6 +1,6 @@
 const EtherToken = artifacts.require('EtherToken');
 const SimpleMarket = artifacts.require('SimpleMarket');
-const ExchangeAdapter = artifacts.require('ExchangeAdapter');
+const ExchangeAdapter = artifacts.require('SimpleAdapter');
 const Governance = artifacts.require('Governance');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
@@ -34,7 +34,7 @@ contract('Version', (accounts) => {
     riskManagement = await RiskMgmt.new();
   });
 
-  it('Can create a vault without error', async () => {
+  it('Can create a fund without error', async () => {
     await version.setupFund(
       'Cantaloot',    // name
       'CNLT',         // share symbol
@@ -48,13 +48,13 @@ contract('Version', (accounts) => {
     );
   });
 
-  it('Can retrieve vault from index', async () => {
-    let vaultId = await version.getLastFundId();
-    assert.equal(vaultId.toNumber(), 0);
+  it('Can retrieve fund from index', async () => {
+    let fundId = await version.getLastFundId();
+    assert.equal(fundId.toNumber(), 0);
   });
 
-  it('Can remove a vault', async () => {
-    let vaultId = await version.getLastFundId();
-    await version.shutDownFund(vaultId);
+  it('Can remove a fund', async () => {
+    let fundId = await version.getLastFundId();
+    await version.shutDownFund(fundId);
   });
 });

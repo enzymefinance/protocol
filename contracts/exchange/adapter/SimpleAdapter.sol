@@ -1,18 +1,16 @@
 pragma solidity ^0.4.11;
 
-import './ExchangeInterface.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
-import '../dependencies/ERC20.sol';
-import './thirdparty/SimpleMarket.sol';
+import '../ExchangeInterface.sol';
+import '../../dependencies/ERC20.sol';
+import '../thirdparty/SimpleMarket.sol';
 
 
-/// @title ExchangeAdapter Contract
+/// @title SimpleAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-contract ExchangeAdapter is DBC, Owned, ExchangeInterface {
+contract SimpleAdapter is ExchangeInterface {
 
     // CONSTANT METHODS
 
