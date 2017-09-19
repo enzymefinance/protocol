@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 import '../dependencies/ERC20.sol';
 
@@ -9,7 +9,7 @@ import '../dependencies/ERC20.sol';
 /// @notice Interface influenced by
 ///   https://github.com/makerdao/maker-otc/blob/master/src/simple_market.sol and
 ///   https://github.com/0xProject/contracts/blob/master/contracts/Exchange.sol
-contract ExchangeInterface {
+interface ExchangeInterface {
 
     // EVENTS
 
@@ -17,10 +17,10 @@ contract ExchangeInterface {
 
     // CONSTANT METHODS
 
-    function getLastOrderId(address onConsigned) constant returns (uint) {}
-    function isActive(address onConsigned, uint id) constant returns (bool) {}
-    function getOwner(address onConsigned, uint id) constant returns (address) {}
-    function getOrder(address onConsigned, uint id) constant returns (address, address, uint, uint) {}
+    function getLastOrderId(address onConsigned) constant returns (uint);
+    function isActive(address onConsigned, uint id) constant returns (bool);
+    function getOwner(address onConsigned, uint id) constant returns (address);
+    function getOrder(address onConsigned, uint id) constant returns (address, address, uint, uint);
 
     // NON-CONSTANT METHODS
 
@@ -30,7 +30,7 @@ contract ExchangeInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) external returns (uint) {}
-    function takeOrder(address onConsigned, uint id, uint quantity) external returns (bool) {}
-    function cancelOrder(address onConsigned, uint id) external returns (bool) {}
+    ) external returns (uint);
+    function takeOrder(address onConsigned, uint id, uint quantity) external returns (bool);
+    function cancelOrder(address onConsigned, uint id) external returns (bool);
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './dependencies/DBC.sol';

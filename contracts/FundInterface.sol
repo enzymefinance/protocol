@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 import './assets/AssetInterface.sol';
 import './exchange/ExchangeInterface.sol';

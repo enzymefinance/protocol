@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 /// @title RiskMgmtInterface Contract
 /// @author Melonport AG <team@melonport.com>

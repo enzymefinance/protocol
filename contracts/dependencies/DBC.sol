@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 /// @title Desing by contract (Hoare logic)
 /// @author Melonport AG <team@melonport.com>
