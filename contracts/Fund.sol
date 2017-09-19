@@ -30,27 +30,27 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     struct Calculations { // List of internal calculations
         uint gav; // Gross asset value
-        uint managementReward; // time based reward
-        uint performanceReward; // performance based reward measured against REFERENCE_ASSET
+        uint managementReward; // Time based reward
+        uint performanceReward; // Performance based reward measured against REFERENCE_ASSET
         uint unclaimedRewards; // Rewards not yet allocated to fund manager
         uint nav; // Net asset value
-        uint sharePrice; // a measure of fund performance
+        uint sharePrice; // A measure of fund performance
         uint totalSupply; // Total supply of shares
-        uint timestamp; // when above has been calculated
+        uint timestamp; // When above has been calculated
     }
 
     // FIELDS
 
     // Constant fields
     string constant SYMBOL = "MLN-Fund"; // Melon Fund
-    uint constant DECIMALS = 18;
+    uint constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
     uint constant VAULT_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Constructor fields
-    string public name;
-    uint public created; // Timestamp of Fund creation
-    uint public MELON_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
+    string public NAME; // Name of this fund
+    uint public CREATED; // Timestamp of Fund creation
+    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** DECIMALS of base unit of shares
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
@@ -120,10 +120,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // CONSTANT METHODS
 
-    function getName() constant returns (string) { return name; }
+    function getName() constant returns (string) { return NAME; }
     function getSymbol() constant returns (string) { return SYMBOL; }
     function getDecimals() constant returns (uint) { return DECIMALS; }
-
     function getModules() constant returns (address ,address, address, address) {
         return (
             address(module.datafeed),
@@ -239,7 +238,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
-        name = withName;
+        NAME = withName;
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
@@ -261,7 +260,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        created = now;
+        CREATED = now;
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
