@@ -20,13 +20,11 @@ contract Sphere is SphereInterface, DBC, Owned {
 
     function getDataFeed() external constant returns (address) { return DATAFEED; }
     function getExchange() external constant returns (address) { return EXCHANGE; }
-    function getExchangeAdapter() external constant returns (address) { return EXCHANGE_ADAPTER; }
 
     // NON-CONSTANT METHODS
 
-    function Sphere(address ofDataFeed, address ofExchange, address ofExchangeAdapter) {
+    function Sphere(address ofDataFeed, address ofExchange) {
         DATAFEED = ofDataFeed;
         EXCHANGE = ofExchange;
-        EXCHANGE_ADAPTER = ofExchangeAdapter;
     }
 }

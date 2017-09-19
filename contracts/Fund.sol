@@ -10,6 +10,7 @@ import './participation/ParticipationInterface.sol';
 import './datafeeds/DataFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
+import './exchange/adapter/simpleAdapter.sol';
 import './FundInterface.sol';
 import './FundHistory.sol';
 
@@ -82,7 +83,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     /// @dev Pre: Transferred tokens to this contract
     /// @dev Post Approved to spend tokens on EXCHANGE
     function approveSpending(address onConsigned, address ofAsset, uint quantity)
-        /*internal*/
+        internal
         returns (bool success)
     {
         success = ERC20(ofAsset).approve(onConsigned, quantity);
@@ -126,7 +127,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function getModules() constant returns (address ,address, address, address) {
         return (
             address(module.datafeed),
-            address(module.exchange),
+            address(EXCHANGE),
             address(module.participation),
             address(module.riskmgmt)
         );
@@ -233,7 +234,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         address ofSphere
     ) {
         SphereInterface sphere = SphereInterface(ofSphere);
-        module.exchange = ExchangeInterface(sphere.getExchangeAdapter()); // Bridge thrid party exchange to Melon exchange interface
+        /*simpleAdapter = ExchangeInterface(sphere.getExchangeAdapter());*/
         module.datafeed = DataFeedInterface(sphere.getDataFeed());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
@@ -242,9 +243,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        EXCHANGE = address(sphere.getExchange()); // Actual exchange Address
+        EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by simpleAdapter library
         MELON_ASSET = ofMelonAsset;
-        REFERENCE_ASSET = MELON_ASSET; // XXX let user decide
+        REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
         MELON_BASE_UNITS = 10 ** uint(module.datafeed.getDecimals(MELON_ASSET));
@@ -505,11 +506,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (uint id)
     {
         require(approveSpending(EXCHANGE, sellAsset, sellQuantity));
-        address(module.exchange).delegatecall( // TODO: use as library call
-            bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")),
-            EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity
-        ); // TODO check boolean return value
-        /*id = module.exchange.makeOrder(sellAsset, buyAsset, sellQuantity, buyQuantity);*/
+        id = simpleAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         orders[nextOrderId] = Order({
             sellAsset: sellAsset,
             buyAsset: buyAsset,
@@ -540,7 +537,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = module.exchange.getOrder(EXCHANGE, id);
+        ) = simpleAdapter.getOrder(EXCHANGE, id);
         require(module.datafeed.existsData(order.buyAsset, order.sellAsset));
         require(quantity <= order.sellQuantity);
         require(module.riskmgmt.isTakePermitted(
@@ -552,10 +549,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
         require(approveSpending(EXCHANGE, order.buyAsset, quantity));
-        bool success = address(module.exchange).delegatecall( // TODO: use as library call
-            bytes4(sha3("takeOrder(address,uint256,uint256)")),
-            EXCHANGE, id, quantity
-        );
+        bool success = simpleAdapter.takeOrder(EXCHANGE, id, quantity);
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
@@ -573,7 +567,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         // TODO orders accounting
-        return module.exchange.cancelOrder(EXCHANGE, id);
+        return simpleAdapter.cancelOrder(EXCHANGE, id);
     }
 
     //TODO: add previousHoldings

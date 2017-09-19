@@ -7,6 +7,13 @@ module.exports = {
       url: 'https://www.cryptocompare.com/',
       githubHint: '',
     },
+    {
+      address: '0xe634cCC51dF65Cf31E0E62C541A400396143F3C0',
+      name: 'Melonport',
+      data: '',
+      url: 'https://www.melonport.com/',
+      githubHint: '',
+    },
   ],
   staging: [
     {

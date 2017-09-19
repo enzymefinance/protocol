@@ -1,4 +1,5 @@
 const Rewards = artifacts.require('./rewards.sol');
+const SimpleAdapter = artifacts.require('./simpleAdapter.sol');
 const Governance = artifacts.require('./Governance.sol');
 const Version = artifacts.require('./Version.sol');
 const Fund = artifacts.require('./Fund.sol');
@@ -13,6 +14,9 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(Rewards))
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Fund))
+    .then(() => deployer.deploy(SimpleAdapter))
+    .then(() => deployer.link(SimpleAdapter, Version))
+    .then(() => deployer.link(SimpleAdapter, Fund))    
     .then(() => deployer.deploy(Version, mlnTokenAddress))
     .catch((e) => { throw e; });
   } else {
@@ -21,6 +25,9 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(Rewards))
     .then(() => deployer.link(Rewards, Version))
     .then(() => deployer.link(Rewards, Fund))
+    .then(() => deployer.deploy(SimpleAdapter))
+    .then(() => deployer.link(SimpleAdapter, Version))
+    .then(() => deployer.link(SimpleAdapter, Fund))
     .then(() => deployer.deploy(Version, mlnTokenAddress))
     .catch((e) => { throw e; });
   }

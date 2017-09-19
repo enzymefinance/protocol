@@ -71,9 +71,9 @@ contract FundHistory {
 
     // FIELDS
 
-    mapping (uint => Request) public requests;   ///XXX: array perhaps
+    mapping (uint => Request) public requests;
     uint public nextRequestId;
-    mapping (uint => Order) public orders;       ///XXX: array
+    mapping (uint => Order) public orders;
     uint public nextOrderId;
 
     // CONSTANT METHODS

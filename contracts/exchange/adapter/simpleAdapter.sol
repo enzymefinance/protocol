@@ -10,7 +10,11 @@ import '../thirdparty/SimpleMarket.sol';
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-contract SimpleAdapter is ExchangeInterface {
+library simpleAdapter {
+
+    // EVENTS
+
+    event OrderUpdated(uint id);
 
     // CONSTANT METHODS
 
@@ -59,7 +63,7 @@ contract SimpleAdapter is ExchangeInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-        external
+        /*external*/
         returns (uint id)
     {
         id = SimpleMarket(onConsigned).offer(
@@ -76,7 +80,7 @@ contract SimpleAdapter is ExchangeInterface {
         uint id,
         uint quantity
     )
-        external
+        /*external*/
         returns (bool success)
     {
         success = SimpleMarket(onConsigned).buy(id, quantity);
@@ -87,7 +91,7 @@ contract SimpleAdapter is ExchangeInterface {
         address onConsigned,
         uint id
     )
-        external
+        /*external*/
         returns (bool success)
     {
         success = SimpleMarket(onConsigned).cancel(id);

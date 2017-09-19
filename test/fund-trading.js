@@ -2,7 +2,7 @@ const EtherToken = artifacts.require('EtherToken');
 const PreminedAsset = artifacts.require('PreminedAsset');
 const PriceFeed = artifacts.require('DataFeed');
 const SimpleMarket = artifacts.require('SimpleMarket');
-const ExchangeAdapter = artifacts.require('SimpleAdapter');
+const SimpleAdapter = artifacts.require('simpleAdapter');
 const Participation = artifacts.require('Participation');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
@@ -18,7 +18,6 @@ contract('Fund trading', (accounts) => {
   let ethToken;
   let fund;
   let simpleMarket;
-  let simpleAdapter;
 
   before('Set up new Fund', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
@@ -28,8 +27,7 @@ contract('Fund trading', (accounts) => {
       'Melon', 'MLN', 18, 10 ** 18, { from: liquidityProvider });
     pricefeed = await PriceFeed.new(mlnToken.address, 0, 60);
     simpleMarket = await SimpleMarket.new();
-    simpleAdapter = await ExchangeAdapter.new();
-    sphere = await Sphere.new(pricefeed.address, simpleMarket.address, simpleAdapter.address);
+    sphere = await Sphere.new(pricefeed.address, simpleMarket.address);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await pricefeed.register(ethToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await pricefeed.register(eurToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
@@ -87,6 +85,7 @@ contract('Fund trading', (accounts) => {
       );
     });
     it('takes 100% of an order, which transfers tokens correctly', async () => {
+      const simpleAdapter = await SimpleAdapter.deployed();
       const id = await simpleAdapter.getLastOrderId(simpleMarket.address);
       const preMln = await mlnToken.balanceOf(fund.address);
       const preEth = await ethToken.balanceOf(fund.address);

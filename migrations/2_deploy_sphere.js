@@ -1,6 +1,5 @@
 const Asset = artifacts.require('./Asset.sol');
 const Market = artifacts.require('./SimpleMarket.sol');
-const Adapter = artifacts.require('./SimpleAdapter.sol');
 const DataFeed = artifacts.require('./DataFeed.sol');
 const Sphere = artifacts.require('./Sphere.sol');
 
@@ -22,8 +21,7 @@ module.exports = (deployer, network) => {
     ).map(t => t.address);
     deployer.deploy(DataFeed, mlnAddr, 120, 60)
     .then(() => deployer.deploy(Market))
-    .then(() => deployer.deploy(Adapter))
-    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address, Adapter.address))
+    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address))
     .catch(e => { throw e; })
   } else {
     let ethAddr;
@@ -37,8 +35,7 @@ module.exports = (deployer, network) => {
     .then(() => mlnAddr = Asset.address)
     .then(() => deployer.deploy(DataFeed, mlnAddr, 120, 60))
     .then(() => deployer.deploy(Market))
-    .then(() => deployer.deploy(Adapter))
-    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address, Adapter.address))
+    .then(() => deployer.deploy(Sphere, DataFeed.address, Market.address))
     .catch(e => { throw e; })
   }
 };
