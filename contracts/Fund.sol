@@ -21,22 +21,22 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // TYPES
 
-    struct Modules {
-        DataFeedInterface datafeed;
-        ExchangeInterface exchange;
-        ParticipationInterface participation;
-        RiskMgmtInterface riskmgmt;
+    struct Modules { // List of modular parts, standardized through an interface
+        DataFeedInterface datafeed; // Provides all external data
+        ExchangeInterface exchange; // Wrapes exchange adapter into exchange interface
+        ParticipationInterface participation; // Boolean functions regarding invest/redeem
+        RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
 
-    struct Calculations {
-        uint gav;
-        uint managementReward;
-        uint performanceReward;
-        uint unclaimedRewards;
-        uint nav;
-        uint sharePrice;
-        uint totalSupply;
-        uint timestamp;
+    struct Calculations { // List of internal calculations
+        uint gav; // Gross asset value
+        uint managementReward; // time based reward
+        uint performanceReward; // performance based reward measured against REFERENCE_ASSET
+        uint unclaimedRewards; // Rewards not yet allocated to fund manager
+        uint nav; // Net asset value
+        uint sharePrice; // a measure of fund performance
+        uint totalSupply; // Total supply of shares
+        uint timestamp; // when above has been calculated
     }
 
     // FIELDS
