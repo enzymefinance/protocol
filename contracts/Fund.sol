@@ -502,9 +502,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             buyQuantity, // Quantity trying to be received
             module.datafeed.getReferencePrice(sellAsset, buyAsset)
         ))
-        pre_cond(approveSpending(CONSIGNED, sellAsset, sellQuantity))
         returns (uint id)
     {
+        require(approveSpending(CONSIGNED, sellAsset, sellQuantity));
         address(module.exchange).delegatecall( // TODO: use as library call
             bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")),
             CONSIGNED, sellAsset, buyAsset, sellQuantity, buyQuantity
