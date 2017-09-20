@@ -32,7 +32,7 @@ contract('Version', (accounts) => {
     riskManagement = await RiskMgmt.new();
   });
 
-  it.skip('Can create a fund without error', async () => {
+  it('Can create a fund without error', async () => {
     console.log(sphere.address)
     await version.setupFund(
       'Cantaloot',    // name
@@ -47,12 +47,12 @@ contract('Version', (accounts) => {
     );
   });
 
-  it.skip('Can retrieve fund from index', async () => {
+  it('Can retrieve fund from index', async () => {
     let fundId = await version.getLastFundId();
     assert.equal(fundId.toNumber(), 0);
   });
 
-  it.skip('Can remove a fund', async () => {
+  it('Can remove a fund', async () => {
     let fundId = await version.getLastFundId();
     await version.shutDownFund(fundId);
   });

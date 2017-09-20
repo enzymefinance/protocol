@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.11;
 
 /// @title Sphere Interface Contract
 /// @author Melonport AG <team@melonport.com>

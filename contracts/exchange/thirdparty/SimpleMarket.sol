@@ -9,7 +9,8 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND (express or implied).
 
-pragma solidity ^0.4.13;
+/*pragma solidity ^0.4.13;*/
+pragma solidity ^0.4.11;
 
 contract DSMath {
     function add(uint x, uint y) constant internal returns (uint z) {
