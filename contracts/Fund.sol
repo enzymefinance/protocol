@@ -59,8 +59,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
 
     // Constant fields
     string constant SYMBOL = "MLN-Fund"; // Melon Fund
-    uint constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
-    uint constant VAULT_BASE_UNITS = 10 ** DECIMALS; // One unit of share equals 10 ** DECIMALS of base unit of shares
+    uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Constructor fields
@@ -144,6 +143,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function getName() constant returns (string) { return NAME; }
     function getSymbol() constant returns (string) { return SYMBOL; }
     function getDecimals() constant returns (uint) { return DECIMALS; }
+    function getBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
         return (
             address(module.datafeed),
@@ -356,7 +356,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         ))
         returns(uint id)
     {
-        MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue);
+        MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue.add(incentiveValue));
         id = nextRequestId;
         nextRequestId++;
         requests[id] = Request({
@@ -425,20 +425,22 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint actualValue = request.numShares.mul(calcSharePrice()).div(VAULT_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
+        uint actualValue = request.numShares.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(requests[requestId].requestType) &&
             notLessThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) { // Limit Order is OK
-            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
             uint remainder = request.offeredOrRequestedValue.sub(actualValue);
-            if(remainder > 0) assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
+            if(isPastZero(remainder)) {
+                assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
+            }
             createShares(request.owner, request.numShares); // Accounting
         } else if (isRedeem(requests[requestId].requestType) &&
             notGreaterThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
         ) {
-            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentive)); // Reward Worker
-            assert(MELON_CONTRACT.transfer(request.owner, actualValue)); // Transfer value
+            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue)); // Transfer value
             annihilateShares(request.owner, request.numShares); // Accounting
         }
     }
@@ -512,9 +514,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint buyQuantity
     )
         external
-        /*pre_cond(isOwner())*/
-        /*pre_cond(notShutDown())*/
-        /*pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
+        pre_cond(isOwner())
+        pre_cond(notShutDown())
+        pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(
                 sellQuantity,
@@ -522,14 +524,14 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             ),
             buyQuantity, // Quantity trying to be received
             module.datafeed.getReferencePrice(sellAsset, buyAsset)
-        ))*/
+        ))
         returns (uint id)
     {
         require(approveSpending(sellAsset, sellQuantity));
         LogMakeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         id = simpleAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         OrderUpdated(id);
-        /*orders[nextOrderId] = Order({
+        orders[nextOrderId] = Order({
             sellAsset: sellAsset,
             buyAsset: buyAsset,
             sellQuantity: sellQuantity,
@@ -538,10 +540,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             status: OrderStatus.open,
             orderType: OrderType.make,
             fillQuantity: 0
-        });*/
+        });
 
         // TODO count open orders as integer
-        /*nextOrderId++;*/
+        nextOrderId++;
     }
 
     /// @notice These are orders that are expected to settle immediately

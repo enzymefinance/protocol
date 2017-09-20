@@ -115,7 +115,7 @@ contract('Fund shares', (accounts) => {
     });
   });
 
-  describe('#annihilateShares()', () => {
+  describe.skip('#annihilateShares()', () => {
     const numShares = 10000;
     const requestedValue = 10000;
     const incentive = 100;

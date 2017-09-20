@@ -7,6 +7,7 @@ const DataFeed = artifacts.require('DataFeed');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
 const Version = artifacts.require('Version');
+const Fund = artifacts.require('Fund');
 const chai = require('chai');
 
 const assert = chai.assert;
@@ -47,8 +48,12 @@ contract('Version', (accounts) => {
   });
 
   it('Can retrieve fund from index', async () => {
-    let fundId = await version.getLastFundId();
+    const fundId = await version.getLastFundId();
     assert.equal(fundId.toNumber(), 0);
+    const fundAddr = await version.getFund(fundId);
+    const fund = await Fund.at(fundAddr);
+    assert.equal(await fund.getDecimals(), 18);
+    assert.equal(await fund.getBaseUnits(), Math.pow(10, 18));
   });
 
   it('Can remove a fund', async () => {
