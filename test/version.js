@@ -1,6 +1,5 @@
 const EtherToken = artifacts.require('EtherToken');
 const SimpleMarket = artifacts.require('SimpleMarket');
-const ExchangeAdapter = artifacts.require('SimpleAdapter');
 const Governance = artifacts.require('Governance');
 const Participation = artifacts.require('Participation');
 const PreminedAsset = artifacts.require('PreminedAsset');
@@ -8,6 +7,7 @@ const DataFeed = artifacts.require('DataFeed');
 const RiskMgmt = artifacts.require('RiskMgmt');
 const Sphere = artifacts.require('Sphere');
 const Version = artifacts.require('Version');
+const Fund = artifacts.require('Fund');
 const chai = require('chai');
 
 const assert = chai.assert;
@@ -28,8 +28,7 @@ contract('Version', (accounts) => {
     await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await feed.update([mlnToken.address], [226244343891402714]);
     simpleMarket = await SimpleMarket.new();
-    simpleAdapter = await ExchangeAdapter.new();
-    sphere = await Sphere.new(feed.address, simpleMarket.address, simpleAdapter.address);
+    sphere = await Sphere.new(feed.address, simpleMarket.address);
     participation = await Participation.new();
     riskManagement = await RiskMgmt.new();
   });
@@ -49,8 +48,12 @@ contract('Version', (accounts) => {
   });
 
   it('Can retrieve fund from index', async () => {
-    let fundId = await version.getLastFundId();
+    const fundId = await version.getLastFundId();
     assert.equal(fundId.toNumber(), 0);
+    const fundAddr = await version.getFund(fundId);
+    const fund = await Fund.at(fundAddr);
+    assert.equal(await fund.getDecimals(), 18);
+    assert.equal(await fund.getBaseUnits(), Math.pow(10, 18));
   });
 
   it('Can remove a fund', async () => {

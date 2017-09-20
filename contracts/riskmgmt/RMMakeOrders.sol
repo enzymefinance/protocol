@@ -1,13 +1,11 @@
 pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
-import '../libraries/safeMath.sol';
 import './RiskMgmtInterface.sol';
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
 contract RMMakeOrders is RiskMgmtInterface {
-      using safeMath for uint256;
 
       // FIELDS
 

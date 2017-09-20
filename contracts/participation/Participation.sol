@@ -35,9 +35,9 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 offeredValue
     )
-        returns (bool)
+        returns (bool isEligible)
     {
-        return identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
+        isEligible = identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
     }
 
     /// @notice Required for Melon protocol interaction.
@@ -50,9 +50,9 @@ contract Participation is ParticipationInterface, DBC, Owned {
         uint256 numShares,
         uint256 requestedValue
     )
-        returns (bool)
+        returns (bool isEligible)
     {
-        return true; // No need for KYC/AML in case of redeeming shares
+        isEligible = true; // No need for KYC/AML in case of redeeming shares
     }
 
     // NON-CONSTANT METHODS

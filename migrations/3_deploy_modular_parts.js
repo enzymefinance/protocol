@@ -9,9 +9,11 @@ module.exports = (deployer, network) => {
       deployer.deploy(Participation)
       .then(() => deployer.deploy(RiskMgmt))
     } else if (network === 'kovan') {
+      // deployer.deploy(ParticipationOpen)
+      // .then(() => deployer.deploy(RMMakeOrders))
+      // .catch((e) => { throw e; });
       deployer.deploy(ParticipationOpen)
       .then(() => deployer.deploy(RMMakeOrders))
-      .catch((e) => { throw e; });
     }
   } catch (e) {
     throw e;
