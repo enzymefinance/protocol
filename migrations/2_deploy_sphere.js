@@ -12,8 +12,9 @@ module.exports = (deployer, network) => {
   if (network !== 'development') {
     const mpDataFeedAddr = dataFeedInfo[network].find(t => t.name === 'Melonport').address;
     const mlnAddr = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
-    deployer.deploy(DataFeed, mlnAddr, 120, 60) // As a second option
-    .then(() => deployer.deploy(Market))
+    // deployer.deploy(DataFeed, mlnAddr, 120, 60) // As a second option
+    // .then(() =>
+    deployer.deploy(Market))
     .then(() => deployer.deploy(Sphere, mpDataFeedAddr, Market.address))
     .catch(e => { throw e; })
   } else {

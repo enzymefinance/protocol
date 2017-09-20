@@ -11,27 +11,23 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
 
     // CONSTANT METHODS
 
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean dependent on market data and on personel data; Compliance
     function isSubscriptionPermitted(
-        address owner,
+        address ofParticipant,
         uint256 numShares,
         uint256 offeredValue
     )
-        returns (bool)
+        returns (bool isEligible)
     {
-        return true;
+        isEligible = true;
     }
 
-    /// @dev Pre: Request ID
-    /// @dev Post Boolean whether permitted or not
     function isRedemptionPermitted(
-        address owner,
+        address ofParticipant,
         uint256 numShares,
         uint256 requestedValue
     )
-        returns (bool)
+        returns (bool isEligible)
     {
-        return true;
+        isEligible = true;
     }
 }
