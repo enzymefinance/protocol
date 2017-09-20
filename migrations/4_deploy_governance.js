@@ -16,7 +16,7 @@ module.exports = (deployer, network) => {
     .then(() => deployer.link(Rewards, Fund))
     .then(() => deployer.deploy(SimpleAdapter))
     .then(() => deployer.link(SimpleAdapter, Version))
-    .then(() => deployer.link(SimpleAdapter, Fund))    
+    .then(() => deployer.link(SimpleAdapter, Fund))
     .then(() => deployer.deploy(Version, mlnTokenAddress))
     .catch((e) => { throw e; });
   } else {

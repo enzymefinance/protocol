@@ -33,7 +33,6 @@ contract('Version', (accounts) => {
   });
 
   it('Can create a fund without error', async () => {
-    console.log(sphere.address)
     await version.setupFund(
       'Cantaloot',    // name
       'CNLT',         // share symbol

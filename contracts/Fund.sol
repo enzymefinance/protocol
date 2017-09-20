@@ -40,6 +40,21 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint timestamp; // When above has been calculated
     }
 
+    enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
+    enum OrderType { make, take }
+
+    struct Order {
+        address sellAsset; // Asset (as registred in Asset registrar) to be sold
+        address buyAsset; // Asset (as registred in Asset registrar) to be bought
+        uint sellQuantity; // Quantity of sellAsset to be sold
+        uint buyQuantity; // Quantity of sellAsset to be bought
+        uint timestamp; // Time in seconds when this order was created
+        /*uint expiration; // Time in seconds after which this order expires*/
+        OrderStatus status;
+        OrderType orderType;
+        uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
+    }
+
     // FIELDS
 
     // Constant fields
@@ -60,7 +75,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Function fields
-
     uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
     mapping (address => uint) public previousHoldings; // Maps assets to holdings, needed for internal accounting
     Modules public module; // Struct which holds all the initialised module instances
@@ -68,6 +82,15 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
+
+    // TODO use arrays
+    mapping (uint => Order) public orders;
+    uint public nextOrderId;
+    function getLastOrderId() constant returns (uint) {
+        require(nextOrderId > 0);
+        return nextOrderId - 1;
+    }
+
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -140,7 +163,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
                 .add(quantitySentToExchange(ofAsset));
-                .add(ERC20(ofAsset).balanceOf(EXCHANGE)); // Qty held in custody
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -490,9 +512,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint buyQuantity
     )
         external
-        pre_cond(isOwner())
-        pre_cond(notShutDown())
-        pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
+        /*pre_cond(isOwner())*/
+        /*pre_cond(notShutDown())*/
+        /*pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
         pre_cond(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(
                 sellQuantity,
@@ -500,12 +522,14 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             ),
             buyQuantity, // Quantity trying to be received
             module.datafeed.getReferencePrice(sellAsset, buyAsset)
-        ))
+        ))*/
         returns (uint id)
     {
         require(approveSpending(sellAsset, sellQuantity));
+        LogMakeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         id = simpleAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        orders[nextOrderId] = Order({
+        OrderUpdated(id);
+        /*orders[nextOrderId] = Order({
             sellAsset: sellAsset,
             buyAsset: buyAsset,
             sellQuantity: sellQuantity,
@@ -514,9 +538,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             status: OrderStatus.open,
             orderType: OrderType.make,
             fillQuantity: 0
-        });
+        });*/
+
         // TODO count open orders as integer
-        nextOrderId++;
+        /*nextOrderId++;*/
     }
 
     /// @notice These are orders that are expected to settle immediately
@@ -541,7 +566,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         require(module.riskmgmt.isTakePermitted(
             module.datafeed.getOrderPrice(
                 order.buyQuantity, // Buying what is being sold
-                order.sellQuantity // Selling what is being bhought
+                order.sellQuantity // Selling what is being bought
             ),
             order.sellQuantity, // Quantity about to be received
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
@@ -588,7 +613,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     }
 
     /// @notice Whether embezzlement happened
-    /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bhought
+    /// @dev Pre: Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bought
     /// @dev Post True if embezzled otherwise false
     function proofOfEmbezzlement(address sellAsset, address buyAsset)
         constant
@@ -619,7 +644,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint totalIntendedBuyQty = getIntendedBuyQuantity(buyAsset); // Trade execution
         uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
         if (isLargerThan(
-            previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bhought
+            previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
             ERC20(buyAsset).balanceOf(this) // Actual qty sold
         )) {
             isShutDown = true;

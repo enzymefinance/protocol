@@ -14,7 +14,7 @@ module.exports = (deployer, network) => {
     const mlnAddr = tokenInfo[network].find(t => t.symbol === 'MLN-T').address;
     // deployer.deploy(DataFeed, mlnAddr, 120, 60) // As a second option
     // .then(() =>
-    deployer.deploy(Market))
+    deployer.deploy(Market)
     .then(() => deployer.deploy(Sphere, mpDataFeedAddr, Market.address))
     .catch(e => { throw e; })
   } else {

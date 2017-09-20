@@ -15,6 +15,7 @@ library simpleAdapter {
     // EVENTS
 
     event OrderUpdated(uint id);
+    event Log(address exchange, address sender);
 
     // CONSTANT METHODS
 
@@ -66,7 +67,10 @@ library simpleAdapter {
         /*external*/
         returns (uint id)
     {
-        id = SimpleMarket(onConsigned).offer(
+        // TODO remove if not necessary
+        Log(onConsigned, msg.sender);
+        SimpleMarket ex = SimpleMarket(onConsigned);
+        id = ex.offer(
             sellQuantity,
             ERC20(sellAsset),
             buyQuantity,

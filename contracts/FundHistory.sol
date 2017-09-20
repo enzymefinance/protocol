@@ -9,28 +9,8 @@ contract FundHistory {
 
     // TYPES
 
-    enum RequestStatus {
-        open,
-        cancelled,
-        executed
-    }
-
-     enum RequestType {
-        subscribe,
-        redeem
-     }
-
-    enum OrderStatus {
-        open,
-        partiallyFilled,
-        fullyFilled,
-        cancelled
-    }
-
-    enum OrderType {
-        make,
-        take
-    }
+    enum RequestStatus { open, cancelled, executed }
+    enum RequestType { subscribe, redeem }
 
     struct Request {
         address owner;
@@ -42,17 +22,6 @@ contract FundHistory {
         uint lastFeedUpdateId;
         uint lastFeedUpdateTime;
         uint timestamp;
-    }
-
-    struct Order {
-        address sellAsset;
-        address buyAsset;
-        uint sellQuantity;
-        uint buyQuantity;
-        uint timestamp;
-        OrderStatus status;
-        OrderType orderType;
-        uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
     // EVENTS
@@ -69,22 +38,24 @@ contract FundHistory {
         uint timestamp
     );
 
+    event LogMakeOrder(
+        address EXCHANGE,
+        address sellAsset, // Asset (as registred in Asset registrar) to be sold
+        address buyAsset, // Asset (as registred in Asset registrar) to be bought
+        uint sellQuantity, // Quantity of sellAsset to be sold
+        uint buyQuantity // Quantity of sellAsset to be bought
+    );
+
     // FIELDS
 
     mapping (uint => Request) public requests;
     uint public nextRequestId;
-    mapping (uint => Order) public orders;
-    uint public nextOrderId;
 
     // CONSTANT METHODS
 
     function getLastRequestId() constant returns (uint) {
         require(nextRequestId > 0);
         return nextRequestId - 1;
-    }
-    function getLastOrderId() constant returns (uint) {
-        require(nextOrderId > 0);
-        return nextOrderId - 1;
     }
 
     function getRequestHistory(uint start)
@@ -107,27 +78,5 @@ contract FundHistory {
         		lastFeedTime[i] = requests[start + i].lastFeedUpdateTime;
         		timestamp[i] = requests[start + i].timestamp;
       	}
-  	}
-
-  	function getOrderHistory(uint start)
-    		constant
-    		returns (
-      			uint[1024] sellQuantity, address[1024] sellAsset,
-      			uint[1024] buyQuantity, address[1024] buyAsset,
-      			uint[1024] timestamps, uint[1024] statuses,
-      			uint[1024] types, uint[1024] buyQuantityFilled
-    		)
-  	{
-        for (uint i = 0; i < 1024; i++) {
-        		if (start + i >= nextOrderId) break;
-        		sellQuantity[i] = orders[start + i].sellQuantity;
-        		sellAsset[i] = orders[start + i].sellAsset;
-        		buyQuantity[i] = orders[start + i].buyQuantity;
-        		buyAsset[i] = orders[start + i].buyAsset;
-        		timestamps[i] = orders[start + i].timestamp;
-        		statuses[i] = uint(orders[start + i].status);   // cast enum
-        		types[i] = uint(orders[start + i].orderType);
-        		buyQuantityFilled[i] = orders[start + i].fillQuantity;
-        }
   	}
 }
