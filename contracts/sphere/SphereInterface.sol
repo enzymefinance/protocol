@@ -9,4 +9,5 @@ contract SphereInterface {
 
     function getDataFeed() external constant returns (address) {}
     function getExchange() external constant returns (address) {}
+    function getExchangeAdapter() external constant returns (address) {}
 }
