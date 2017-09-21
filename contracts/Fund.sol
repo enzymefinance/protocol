@@ -41,7 +41,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     enum RequestStatus { open, cancelled, executed }
     enum RequestType { subscribe, redeem }
-
     struct Request {
         address owner;
         RequestStatus status;
@@ -54,13 +53,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint timestamp;
     }
 
-
-
-
-
     enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
-
     struct Order {
         uint exchangeId; // Id as returned from exchange
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
@@ -99,8 +93,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
-    Order[] public orders;
-    Request[] public requests;
+    Order[] public orders; // All the orders this fund placed on exchanges
+    Request[] public requests; // All the requests this fund received from participants
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -169,7 +163,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// @dev Pre: Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// @return Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
@@ -185,8 +179,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @dev Pre: Gross asset value has been calculated
-    /// @return The sum and its individual parts of all applicable fees denominated in [base unit of melonAsset]
+    /// @param gav gross asset value of this fund
+    /// @return The sum and its individual parts of all earned rewards denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -217,7 +211,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         unclaimedRewards = managementReward.add(performanceReward);
     }
 
-    /// @dev Pre: Gross asset value and sum of all applicable and unclaimed fees has been calculated
+    /// @dev Calculates the Net Asset Value
+    /// @param gav gross asset value of this fund denominated in [base unit of melonAsset]
+    /// @param unclaimedRewards the sum of all earned rewards denominated in [base unit of melonAsset]
     /// @return Net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
         constant
@@ -226,7 +222,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         nav = gav.sub(unclaimedRewards);
     }
 
-    /// @dev Pre: Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
     /// @return Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint value)
         constant
@@ -236,7 +232,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         valuePerShare = value.mul(MELON_BASE_UNITS).div(totalSupply);
     }
 
-    /// @dev Pre: None
+    /// @notice Calculates essential fund metrics
     /// @return Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
@@ -246,7 +242,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
-    /// @dev Pre: None
+    /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice denominated in [base unit of melonAsset]
     function calcSharePrice() constant returns (uint)
     {
