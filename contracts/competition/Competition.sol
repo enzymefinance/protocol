@@ -104,8 +104,7 @@ contract Competition is DBC {
          * require hopefuls.length < maxHopefulsNumber
          */
     {
-        uint id = hopefuls.length;
-        hopefuls[id] = Hopeful({
+        hopefuls.push(Hopeful({
           fund: fund,
           manager: msg.sender,
           isCompeting: true,
@@ -114,6 +113,6 @@ contract Competition is DBC {
           depositQuantity: depositQuantity,
           payoutQuantity: 0,
           finalSharePrice: 0
-        });
+        }));
     }
 }
