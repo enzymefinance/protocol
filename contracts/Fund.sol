@@ -412,16 +412,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function executeRequest(uint requestId)
         external
         pre_cond(notShutDown())
-        pre_cond(isSubscribe(requests[requestId].requestType) ||
-            isRedeem(requests[requestId].requestType))
-        pre_cond(notLessThan(
-            now,
-            requests[requestId].timestamp.add(module.datafeed.getInterval())
-        ))
-        pre_cond(notLessThan(
-            module.datafeed.getLastUpdateId(),
-            requests[requestId].lastFeedUpdateId + 2
-        ))
+        pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
+        pre_cond(notLessThan(now, requests[requestId].timestamp.add(module.datafeed.getInterval())))
+        pre_cond(notLessThan(module.datafeed.getLastUpdateId(), requests[requestId].lastFeedUpdateId + 2))
     {
         // Time and updates have passed
         Request request = requests[requestId];
@@ -443,8 +436,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     function cancelRequest(uint requestId)
         external
-        pre_cond(isSubscribe(requests[requestId].requestType) ||
-            isRedeem(requests[requestId].requestType)) // TODO: Check validity of this
+        pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
         pre_cond(requests[requestId].owner == msg.sender || isShutDown)
     {
         Request request = requests[requestId];
@@ -607,6 +599,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     //TODO: add previousHoldings
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
     function closeOpenOrders(address sellAsset, address buyAsset)
         constant
     {
