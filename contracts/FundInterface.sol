@@ -19,6 +19,7 @@ contract FundInterface is AssetInterface {
     event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
+    event LogError(uint ERROR_CODE);
 
     // CONSTANT METHODS
 

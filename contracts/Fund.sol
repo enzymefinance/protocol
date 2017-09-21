@@ -107,7 +107,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isZero(uint x) internal returns (bool) { return 0 == x; }
+    function isZero(uint x) internal returns (bool) { return x == 0; }
+    function isFalse(bool x) internal returns (bool) { return x == false; }
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
     function notLessThan(uint x, uint y) internal returns (bool) { return x >= y; }
     function notGreaterThan(uint x, uint y) internal returns (bool) { return x <= y; }
@@ -289,8 +290,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function increaseStake(uint numShares)
         external
         pre_cond(isOwner())
-        pre_cond(isPastZero(numShares))
         pre_cond(notShutDown())
+        pre_cond(isPastZero(numShares))
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -303,8 +304,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function decreaseStake(uint numShares)
         external
         pre_cond(isOwner())
-        pre_cond(isPastZero(numShares))
         pre_cond(notShutDown())
+        pre_cond(isPastZero(numShares))
         pre_cond(balancesOfHolderAtLeast(this, numShares))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
@@ -456,7 +457,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @dev Independent of running price feed!
+    /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
     /// @param numShares numer of shares owned by msg.sender which msg.sender would like to receive
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
     function redeemUsingSlice(uint numShares)
@@ -519,19 +520,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(module.datafeed.existsData(sellAsset, buyAsset))
-        pre_cond(module.riskmgmt.isMakePermitted(
-            module.datafeed.getOrderPrice(
-                sellQuantity,
-                buyQuantity
-            ),
-            buyQuantity, // Quantity trying to be received
-            module.datafeed.getReferencePrice(sellAsset, buyAsset)
-        ))
         returns (uint id)
     {
-        require(approveSpending(sellAsset, sellQuantity));
+        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) { LogError(0); return; }
+        if (isFalse(module.riskmgmt.isMakePermitted(
+            module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
+            buyQuantity,
+            module.datafeed.getReferencePrice(sellAsset, buyAsset)
+        ))) { LogError(1); return; }
+        if (isFalse(approveSpending(sellAsset, sellQuantity))) { LogError(2); return; }
         id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+        if (isZero(id)) { LogError(3); return; } // TODO: check accuracy of this
         orders.push(Order({
             exchangeId: id,
             sellAsset: sellAsset,
@@ -560,27 +559,24 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (bool success)
     {
-        // Inverse variable terminology! Buying what another person is selling
-        Order memory order;
+        Order memory order; // Inverse variable terminology! Buying what another person is selling
         (
             order.sellAsset,
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
-        require(module.datafeed.existsData(order.buyAsset, order.sellAsset));
-        require(quantity <= order.sellQuantity);
-        require(module.riskmgmt.isTakePermitted(
-            module.datafeed.getOrderPrice(
-                order.buyQuantity, // Buying what is being sold
-                order.sellQuantity // Selling what is being bought
-            ),
+        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) { LogError(0); return; }
+        if (isFalse(module.riskmgmt.isTakePermitted(
+            // TODO check: Buying what is being sold and selling what is being bought
+            module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
             order.sellQuantity, // Quantity about to be received
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
-        ));
-        require(approveSpending(order.buyAsset, quantity));
+        ))) { LogError(1); return; }
+        if (isFalse(quantity <= order.sellQuantity)) { LogError(2); return; }
+        if (isFalse(approveSpending(order.buyAsset, quantity))) { LogError(3); return; }
         success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
-        assert(success);
+        if (isFalse(success)) { LogError(4); return; }
         order.exchangeId = id;
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
@@ -590,6 +586,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
+    /// @notice Cancel orders that were not expected to settle immediately, i.e. makeOrders
     /// @param id Active order id with order owner of this contract on selected Exchange
     /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
@@ -599,12 +596,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
-        assert(success);
-        // TODO implement
-        /*exposure.quantitySentToExchange[sellAsset] = quantitySentToExchange(sellAsset)
-            .sub(sellQuantity);
-        exposure.quantityExpectedToReceive[buyAsset] = quantityExpectedToReceive(buyAsset)
-            .sub(buyQuantity);*/
+        if (isFalse(success)) { LogError(0); return; }
+        exposure.quantitySentToExchange[order.sellAsset] = quantitySentToExchange(order.sellAsset)
+            .sub(order.sellQuantity);
+        exposure.quantityExpectedToReceive[order.buyAsset] = quantityExpectedToReceive(order.buyAsset)
+            .sub(order.buyQuantity);
         OrderUpdated(id);
     }
 
