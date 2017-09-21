@@ -21,7 +21,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // TYPES
 
-    struct Modules { // List of modular parts, standardized through an interface
+    struct Modules { // Describes all modular parts, standardized through an interface
         DataFeedInterface datafeed; // Provides all external data
         ExchangeInterface exchange; // Wrapes exchange adapter into exchange interface
         ParticipationInterface participation; // Boolean functions regarding invest/redeem
@@ -39,9 +39,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint timestamp; // When above has been calculated
     }
 
+    struct InternalAccounting {
+        uint numberOfMakeOrders; // Number of potentially unsettled orders
+        mapping (address => uint) quantitySentToExchange;
+        mapping (address => uint) quantityExpectedToReceive;
+    }
+
     enum RequestStatus { open, cancelled, executed }
     enum RequestType { subscribe, redeem }
-    struct Request {
+    struct Request { // Describes and logs whenever asset enter this fund
         address owner;
         RequestStatus status;
         RequestType requestType;
@@ -55,7 +61,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
-    struct Order {
+    struct Order { // Describes and logs whenever assets leave this fund
         uint exchangeId; // Id as returned from exchange
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
         address buyAsset; // Asset (as registred in Asset registrar) to be bought
@@ -70,7 +76,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // FIELDS
 
     // Constant fields
-    string constant SYMBOL = "MLN-Fund"; // Melon Fund
+    string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
     uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
     uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
@@ -86,15 +92,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Function fields
-    uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
-    mapping (address => uint) public previousHoldings; // Maps assets to holdings, needed for internal accounting
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
+    InternalAccounting public exposure;
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
+    Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
-    Request[] public requests; // All the requests this fund received from participants
+
+    uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
+    mapping (address => uint) public previousHoldings; // Maps assets to holdings, needed for internal accounting
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -113,35 +121,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         success = ERC20(ofAsset).approve(EXCHANGE, quantity);
         SpendingApproved(EXCHANGE, ofAsset, quantity);
     }
-    function noOpenOrders() internal returns (bool) { return nextOpenSlotOfArray() == 0; }
-    function openOrdersNotFull() internal returns (bool) { return nextOpenSlotOfArray() == MAX_OPEN_ORDERS; }
     function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
     function isVersion() internal returns (bool) { return msg.sender == VERSION; }
-
-    // INTERNAL METHODS
-
-    function nextOpenSlotOfArray() internal returns (uint) {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            if (openOrderIds[i] != 0) return i;
-        }
-        return MAX_OPEN_ORDERS;
-    }
-    function quantitySentToExchange(address ofAsset) internal returns(uint qty) {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.sellAsset == ofAsset) {
-                qty = qty + thisOrder.sellQuantity;
-            }
-        }
-    }
-    function quantityExpectedToReceive(address ofAsset) internal returns(uint qty) {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.buyAsset == ofAsset) {
-                qty = qty + thisOrder.buyQuantity;
-            }
-        }
-    }
 
     // CONSTANT METHODS
 
@@ -160,6 +141,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
+    function noOpenOrders() internal returns (bool) { return isZero(exposure.numberOfMakeOrders); }
+    function quantitySentToExchange(address ofAsset) constant returns (uint) {
+        exposure.quantitySentToExchange[ofAsset];
+    }
+    function quantityExpectedToReceive(address ofAsset) constant returns (uint) {
+        exposure.quantityExpectedToReceive[ofAsset];
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -554,6 +542,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             orderType: OrderType.make,
             fillQuantity: 0
         }));
+        exposure.quantitySentToExchange[sellAsset] = quantitySentToExchange(sellAsset)
+            .add(sellQuantity);
+        exposure.quantityExpectedToReceive[buyAsset] = quantityExpectedToReceive(buyAsset)
+            .add(buyQuantity);
         OrderUpdated(id);
     }
 
@@ -565,7 +557,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (bool)
+        returns (bool success)
     {
         // Inverse variable terminology! Buying what another person is selling
         Order memory order;
@@ -586,7 +578,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
         require(approveSpending(order.buyAsset, quantity));
-        bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
+        success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
         assert(success);
         order.exchangeId = id;
         order.timestamp = now;
@@ -594,7 +586,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         order.orderType = OrderType.take;
         order.fillQuantity = quantity;
         orders.push(order);
-        return success;
+        OrderUpdated(id);
     }
 
     /// @param id Active order id with order owner of this contract on selected Exchange
@@ -602,10 +594,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function cancelOrder(uint id)
         external
         pre_cond(isOwner() || isShutDown)
-        returns (bool)
+        returns (bool success)
     {
-        // TODO orders accounting
-        return exchangeAdapter.cancelOrder(EXCHANGE, id);
+        Order memory order = orders[id];
+        success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
+        assert(success);
+        // TODO implement
+        /*exposure.quantitySentToExchange[sellAsset] = quantitySentToExchange(sellAsset)
+            .sub(sellQuantity);
+        exposure.quantityExpectedToReceive[buyAsset] = quantityExpectedToReceive(buyAsset)
+            .sub(buyQuantity);*/
+        OrderUpdated(id);
     }
 
     //TODO: add previousHoldings
