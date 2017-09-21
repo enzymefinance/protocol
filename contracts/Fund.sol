@@ -41,6 +41,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     struct InternalAccounting {
         uint numberOfMakeOrders; // Number of potentially unsettled orders
+        mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
         mapping (address => uint) quantitySentToExchange;
         mapping (address => uint) quantityExpectedToReceive;
         mapping (address => uint) previousHoldings;
@@ -493,6 +494,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (uint id)
     {
+        // TODO: Exists make order for asset pair sha3(sellAsset, buyAsset)
         if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) { LogError(0); return; }
         if (isFalse(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
@@ -570,6 +572,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Order memory order = orders[id];
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
         if (isFalse(success)) { LogError(0); return; }
+        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
@@ -586,10 +589,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         constant
     {
         proofOfEmbezzlement(sellAsset, buyAsset);
+        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
         // TODO: fix pot incorrect OrderStatus - partiallyFilled
         /*thisOrder.status = OrderStatus.fullyFilled;*/
         //  update previousHoldings
-        // TODO: trigger for each proofOfEmbezzlement() call
         internalAccounting.previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
         internalAccounting.previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
     }
