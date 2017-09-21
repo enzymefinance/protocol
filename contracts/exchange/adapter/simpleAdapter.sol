@@ -64,7 +64,6 @@ library simpleAdapter {
         uint sellQuantity,
         uint buyQuantity
     )
-        external
         returns (uint id)
     {
         id = SimpleMarket(onExchange).offer(
@@ -82,7 +81,6 @@ library simpleAdapter {
         uint id,
         uint quantity
     )
-        external
         returns (bool success)
     {
         success = SimpleMarket(onExchange).buy(id, quantity);
@@ -94,7 +92,6 @@ library simpleAdapter {
         address onExchange,
         uint id
     )
-        external
         returns (bool success)
     {
         success = SimpleMarket(onExchange).cancel(id);
