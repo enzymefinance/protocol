@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [0.3.2]
+## [0.3.3]
+
+### Added
+
+### Changed
+
+### Removed
+
+## [0.3.2] - 2017-09-21
 
 ### Added
 - Function to change descriptive information in asset registrar
@@ -31,7 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FundHistory dependency
 - Logger
 
-## Fixes
+## Fixed
 - Fixed: #104
 - Fixed makeOrder issue
 
@@ -75,6 +83,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `FundUpdate` -> `FundUpdated`
 
 ## [0.2.0]
+
 ### Added
 - Tokens: GNO, GNT, ICN, ANT, BAT, BNT, SNT, ETC, LTC, DOGE, AVT, XRP, SNGLS incl addresses and verified on EtherScan
 - Second way to subscribe and redeem using referenceAsset directly in Fund
@@ -86,6 +95,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - From SafeMath contract to SafeMath library
 
 ## [0.1.3] - 2017-06-13
+
 ### Added
 - Fund slice calculator
 - method getting share price in reference asset
@@ -95,6 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - share creation using reference asset
 
 ## [0.1.2] - 2017-06-09
+
 ### Fixed
 - publish command
 
@@ -102,6 +113,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - no change
 
 ## [0.1.0] - 2017-06-09
+
 ### Added
 - core protocol contracts
 - build directory with compiled contracts

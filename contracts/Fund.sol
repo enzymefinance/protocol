@@ -52,7 +52,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         address owner;
         RequestStatus status;
         RequestType requestType;
-        uint numShares;
+        uint shareQuantity;
         uint offeredValue; // if requestType is subscribe
         uint requestedValue; // if requestType is redeem
         uint incentive;
@@ -282,62 +282,46 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - ADMINISTRATION
 
-    function increaseStake(uint numShares)
+    function increaseStake(uint shareQuantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(isPastZero(numShares))
-        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(isPastZero(shareQuantity))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
-        subShares(msg.sender, numShares);
-        addShares(this, numShares);
+        subShares(msg.sender, shareQuantity);
+        addShares(this, shareQuantity);
     }
 
-    function decreaseStake(uint numShares)
+    function decreaseStake(uint shareQuantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(isPastZero(numShares))
-        pre_cond(balancesOfHolderAtLeast(this, numShares))
+        pre_cond(isPastZero(shareQuantity))
+        pre_cond(balancesOfHolderAtLeast(this, shareQuantity))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
-        subShares(this, numShares);
-        addShares(msg.sender, numShares);
+        subShares(this, shareQuantity);
+        addShares(msg.sender, shareQuantity);
     }
 
-    function toogleSubscription()
-        external
-        pre_cond(isOwner())
-    {
-        isSubscribeAllowed = !isSubscribeAllowed;
-    }
-
-    function toggleRedemption()
-        external
-        pre_cond(isOwner())
-    {
-        isRedeemAllowed = !isRedeemAllowed;
-    }
-
-    function shutDown()
-        pre_cond(isVersion() || isOwner())
-    {
-        isShutDown = true;
-    }
+    function toogleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
+    function toggleRedemption() external pre_cond(isOwner()) { isRedeemAllowed = !isRedeemAllowed; }
+    function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// @param numShares number of shares for offered value
+    /// @param shareQuantity number of shares for offered value
     /// @param offeredValue denominated in [base unit of MELON_ASSET]
     /// @param incentiveValue non-zero incentive Value which is paid to workers for triggering executeRequest
     /// @return Pending subscription Request
     function requestSubscription(
-        uint numShares,
+        uint shareQuantity,
         uint offeredValue,
         uint incentiveValue
     )
@@ -348,7 +332,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(module.datafeed.isValid(MELON_ASSET))
         pre_cond(module.participation.isSubscriptionPermitted(
             msg.sender,
-            numShares,
+            shareQuantity,
             offeredValue
         ))
         returns(uint id)
@@ -358,7 +342,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.subscribe,
-            numShares: numShares,
+            shareQuantity: shareQuantity,
             offeredValue: offeredValue,
             requestedValue: 0,
             incentive: incentiveValue,
@@ -367,23 +351,23 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         }));
         id = getLastRequestId();
-        SubscribeRequest(id, msg.sender, now, numShares);
+        SubscribeRequest(id, msg.sender, now, shareQuantity);
     }
 
-    /// @dev Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
-    /// @return Redeemer lost `numShares`, and gained `numShares * value` of Melon asset
+    /// @dev Redeemer has at least `shareQuantity` shares; redeemer approved this contract to handle shares
+    /// @return Redeemer lost `shareQuantity`, and gained `shareQuantity * value` of Melon asset
     function requestRedemption(
-        uint numShares,
+        uint shareQuantity,
         uint requestedValue,
         uint incentiveValue
       )
         external
         pre_cond(notShutDown())
         pre_cond(isRedeemAllowed)
-        pre_cond(isPastZero(numShares))
+        pre_cond(isPastZero(shareQuantity))
         pre_cond(module.participation.isRedemptionPermitted(
             msg.sender,
-            numShares,
+            shareQuantity,
             requestedValue
         ))
         returns (uint id)
@@ -392,7 +376,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.redeem,
-            numShares: numShares,
+            shareQuantity: shareQuantity,
             offeredValue: 0,
             requestedValue: requestedValue,
             incentive: incentiveValue,
@@ -401,10 +385,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         }));
         id = getLastRequestId();
-        RedeemRequest(id, msg.sender, now, numShares);
+        RedeemRequest(id, msg.sender, now, shareQuantity);
     }
 
-    /// @dev Pre: Anyone can trigger this function; Id of request that is pending
+    /// @dev Anyone can trigger this function; Id of request that is pending
     /// @return Worker either cancelled or fullfilled request
     function executeRequest(uint requestId)
         external
@@ -415,7 +399,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint actualValue = request.numShares.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
+        uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
@@ -423,11 +407,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             if(isPastZero(remainder)) {
                 assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
             }
-            createShares(request.owner, request.numShares); // Accounting
+            createShares(request.owner, request.shareQuantity); // Accounting
         } else if (isRedeem(request.requestType) && notGreaterThan(request.requestedValue, actualValue)) {
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Transfer value
-            annihilateShares(request.owner, request.numShares); // Accounting
+            annihilateShares(request.owner, request.shareQuantity); // Accounting
         }
     }
 
@@ -445,48 +429,48 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
-    /// @param numShares numer of shares owned by msg.sender which msg.sender would like to receive
-    /// @return Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
-    function redeemUsingSlice(uint numShares)
+    /// @param shareQuantity numer of shares owned by msg.sender which msg.sender would like to receive
+    /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
+    function redeemUsingSlice(uint shareQuantity)
         external
-        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
     {
         // Current Value
         uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
         assert(isPastZero(prevTotalSupply));
-        annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity); // Destroy _before_ external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
+            uint ownershipQuantity = assetHoldings.mul(shareQuantity).div(prevTotalSupply); // ownership percentage of msg.sender
             if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
                 isShutDown = true; // Shutdown allows open orders to be cancelled, eg. to return
             }
             assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
         }
-        Redeemed(msg.sender, now, numShares);
+        Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function createShares(address recipient, uint numShares) internal {
-        totalSupply = totalSupply.add(numShares);
-        addShares(recipient, numShares);
-        Subscribed(msg.sender, now, numShares);
+    function createShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.add(shareQuantity);
+        addShares(recipient, shareQuantity);
+        Subscribed(msg.sender, now, shareQuantity);
     }
 
-    function annihilateShares(address recipient, uint numShares) internal {
-        totalSupply = totalSupply.sub(numShares);
-        subShares(recipient, numShares);
-        Redeemed(msg.sender, now, numShares);
+    function annihilateShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.sub(shareQuantity);
+        subShares(recipient, shareQuantity);
+        Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function addShares(address recipient, uint numShares) internal {
-        balances[recipient] = balances[recipient].add(numShares);
+    function addShares(address recipient, uint shareQuantity) internal {
+        balances[recipient] = balances[recipient].add(shareQuantity);
     }
 
-    function subShares(address recipient, uint numShares) internal {
-        balances[recipient] = balances[recipient].sub(numShares);
+    function subShares(address recipient, uint shareQuantity) internal {
+        balances[recipient] = balances[recipient].sub(shareQuantity);
     }
 
     // NON-CONSTANT METHODS - MANAGING
@@ -673,8 +657,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
-        uint numShares = totalSupply.mul(unclaimedRewards).div(gav);
-        addShares(owner, numShares);
+        uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
+        addShares(owner, shareQuantity);
         // Update Calculations
         atLastConversion = Calculations({
             gav: gav,
@@ -687,7 +671,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
 
-        RewardsConverted(now, numShares, unclaimedRewards);
+        RewardsConverted(now, shareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 }
