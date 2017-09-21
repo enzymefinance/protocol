@@ -52,7 +52,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RequestStatus status;
         RequestType requestType;
         uint numShares;
-        uint offeredOrRequestedValue;
+        uint offeredValue; // if requestType is subscribe
+        uint requestedValue; // if requestType is redeem
         uint incentive;
         uint lastFeedUpdateId;
         uint lastFeedUpdateTime;
@@ -362,7 +363,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             status: RequestStatus.open,
             requestType: RequestType.subscribe,
             numShares: numShares,
-            offeredOrRequestedValue: offeredValue,
+            offeredValue: offeredValue,
+            requestedValue: 0,
             incentive: incentiveValue,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
@@ -395,7 +397,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             status: RequestStatus.open,
             requestType: RequestType.redeem,
             numShares: numShares,
-            offeredOrRequestedValue: requestedValue,
+            offeredValue: 0,
+            requestedValue: requestedValue,
             incentive: incentiveValue,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
@@ -425,20 +428,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Request request = requests[requestId];
         uint actualValue = request.numShares.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
-        if (isSubscribe(requests[requestId].requestType) &&
-            notLessThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
-        ) { // Limit Order is OK
+        if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
-            uint remainder = request.offeredOrRequestedValue.sub(actualValue);
+            uint remainder = request.offeredValue.sub(actualValue);
             if(isPastZero(remainder)) {
                 assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
             }
             createShares(request.owner, request.numShares); // Accounting
-        } else if (isRedeem(requests[requestId].requestType) &&
-            notGreaterThan(request.offeredOrRequestedValue, actualValue) // Sanity Check
-        ) {
+        } else if (isRedeem(request.requestType) && notGreaterThan(request.requestedValue, actualValue)) {
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue)); // Transfer value
+            assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Transfer value
             annihilateShares(request.owner, request.numShares); // Accounting
         }
     }
@@ -452,7 +451,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Request request = requests[requestId];
         request.status = RequestStatus.cancelled;
         assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
-        assert(MELON_CONTRACT.transfer(request.owner, request.offeredOrRequestedValue));
+        if (isSubscribe(request.requestType)) {
+            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
+        }
     }
 
     /// @dev Independent of running price feed!
