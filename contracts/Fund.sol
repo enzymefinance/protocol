@@ -95,7 +95,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Function fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    InternalAccounting public exposure;
+    InternalAccounting public internalAccounting; // Accounts for assets not held in custody of fund
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -143,12 +143,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
-    function noOpenOrders() internal returns (bool) { return isZero(exposure.numberOfMakeOrders); }
+    function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
     function quantitySentToExchange(address ofAsset) constant returns (uint) {
-        exposure.quantitySentToExchange[ofAsset];
+        internalAccounting.quantitySentToExchange[ofAsset];
     }
     function quantityExpectedToReceive(address ofAsset) constant returns (uint) {
-        exposure.quantityExpectedToReceive[ofAsset];
+        internalAccounting.quantityExpectedToReceive[ofAsset];
     }
 
     // CONSTANT METHODS - ACCOUNTING
@@ -158,10 +158,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
-            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)); // Amount of asset base units this vault holds
-            // TODO fix error in below
-            /*uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(quantitySentToExchange(ofAsset));*/
+            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
+                .add(quantitySentToExchange(ofAsset));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -542,9 +540,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             orderType: OrderType.make,
             fillQuantity: 0
         }));
-        exposure.quantitySentToExchange[sellAsset] = quantitySentToExchange(sellAsset)
+        internalAccounting.quantitySentToExchange[sellAsset] =
+            quantitySentToExchange(sellAsset)
             .add(sellQuantity);
-        exposure.quantityExpectedToReceive[buyAsset] = quantityExpectedToReceive(buyAsset)
+        internalAccounting.quantityExpectedToReceive[buyAsset] =
+            quantityExpectedToReceive(buyAsset)
             .add(buyQuantity);
         OrderUpdated(id);
     }
@@ -597,9 +597,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Order memory order = orders[id];
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
         if (isFalse(success)) { LogError(0); return; }
-        exposure.quantitySentToExchange[order.sellAsset] = quantitySentToExchange(order.sellAsset)
+        internalAccounting.quantitySentToExchange[order.sellAsset] =
+            quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
-        exposure.quantityExpectedToReceive[order.buyAsset] = quantityExpectedToReceive(order.buyAsset)
+        internalAccounting.quantityExpectedToReceive[order.buyAsset] =
+            quantityExpectedToReceive(order.buyAsset)
             .sub(order.buyQuantity);
         OrderUpdated(id);
     }
