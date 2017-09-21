@@ -2,12 +2,12 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-
+import './AssetRegistrarInterface.sol';
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract AssetRegistrar is DBC, Owned {
+contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // TYPES
 
@@ -17,46 +17,49 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal;
         string url;
         bytes32 ipfsHash;
-        bytes32 chainId; // unique identifier on which chain we are located on
+        bytes32 chainId;
         address breakIn;
         address breakOut;
-        bytes32 hash;
+        bool exists;
     }
 
     // FIELDS
 
-    // Fields that can be changed by functions
-    mapping (address => Asset) public information; // Asset specific information
+    // Function fields
+    mapping (address => Asset) public information;
     address[] public registeredAssets;
 
-    // PRE, POST, INVARIANT CONDITIONS
+    // PRE, POST AND INVARIANT CONDITIONS
 
-    function isNotNullAddress(address x) internal returns (bool) { return x != 0; }
-    function isNotSet(address x) internal returns (bool) { return information[x].hash == 0x0; }
-    function isUnique(address x, bytes32 y) internal returns (bool) { return information[x].hash != y; }
+    function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
 
     // CONSTANT METHODS
 
-    // Get registartion specific information
-    function isSet(address ofAsset) constant returns (bool) { return !isNotSet(ofAsset); }
+    // Get registration specific information
+    function isRegistered(address ofAsset) constant returns (bool) { return !notRegistered(ofAsset); }
     function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
     function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
     // Get asset specific information
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
+
+    /// @notice Get human-readable information about an Asset
+    /// @param ofAsset address for which descriptive information is requested
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, uint256, string, bytes32)
+        returns (string, string, string, bytes32)
     {
         return (
             information[ofAsset].name,
             information[ofAsset].symbol,
-            information[ofAsset].decimal,
             information[ofAsset].url,
             information[ofAsset].ipfsHash
         );
     }
+
+    /// @notice Get fund accounting related information about an Asset
+    /// @param ofAsset address for which specific information is requested
     function getSpecificInformation(address ofAsset)
         constant
         returns (uint256, bytes32, address, address)
@@ -71,10 +74,8 @@ contract AssetRegistrar is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function AssetRegistrar() {}
-
-    /// Pre: Only Backup Owner; Non-null new Backup Owner
-    /// Post: Swaps backup Owner to Owner and new backup Owner to backup Owner
+    /// @dev Pre:  Only registrar owner should be able to register
+    /// @dev Post: Address ofAsset is registered
     function register(
         address ofAsset,
         string name,
@@ -82,11 +83,13 @@ contract AssetRegistrar is DBC, Owned {
         uint256 decimal,
         string url,
         bytes32 ipfsHash,
-        bytes32 chainId, // unique identifier on which chain we are located on
+        bytes32 chainId,
         address breakIn,
         address breakOut
     )
-        pre_cond(isNotSet(ofAsset))
+        pre_cond(isOwner())
+        pre_cond(notRegistered(ofAsset))
+        //post_cond(isRegistered(ofAsset)) // Wait for next release of solidity
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -98,7 +101,40 @@ contract AssetRegistrar is DBC, Owned {
             chainId: chainId,
             breakIn: breakIn,
             breakOut: breakOut,
-            hash: sha3(name, symbol, decimal, breakIn, breakOut)
+            exists: true
         });
+        assert(isRegistered(ofAsset));
+    }
+
+    /// @dev Pre: Owner can change an existing entry
+    /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
+    function updateDescriptiveInformation(
+        address ofAsset,
+        string name,
+        string symbol,
+        string url,
+        bytes32 ipfsHash
+    )
+        pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
+    {
+        Asset asset = information[ofAsset];
+        asset.name = name;
+        asset.symbol = symbol;
+        asset.url = url;
+        asset.ipfsHash = ipfsHash;
+    }
+
+    /// @dev Owner can delete an existing entry
+    /// @param ofAsset address for which specific information is requested
+    /// @return deletes an existing entry
+    function remove(
+        address ofAsset
+    )
+        pre_cond(isOwner())
+        pre_cond(isRegistered(ofAsset))
+        post_cond(notRegistered(ofAsset))
+    {
+        delete information[ofAsset]; // Sets exists boolean to false
     }
 }

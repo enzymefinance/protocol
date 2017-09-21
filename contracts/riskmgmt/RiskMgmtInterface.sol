@@ -13,15 +13,15 @@ pragma solidity ^0.4.11;
  */
 contract RiskMgmtInterface {
 
-    function isExchangeMakePermitted(
+    function isMakePermitted(
         uint orderPrice,
-        uint orderQuantity,
-        uint referencePrice
-    ) returns (bool);
+        uint referencePrice,
+        uint orderQuantity
+    ) returns (bool) {}
 
-    function isExchangeTakePermitted(
+    function isTakePermitted(
         uint orderPrice,
-        uint orderQuantity,
-        uint referencePrice
-    ) returns (bool);
+        uint referencePrice,
+        uint orderQuantity
+    ) returns (bool) {}
 }

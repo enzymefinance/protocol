@@ -1,12 +1,12 @@
 pragma solidity ^0.4.11;
 
-import './ERC20Protocol.sol';
+import './ERC20Interface.sol';
 
 /// @title ERC20 Token
 /// @author Melonport AG <team@melonport.com>
 /// @notice Original taken from https://github.com/ethereum/EIPs/issues/20
 /// @notice Checked against integer overflow
-contract ERC20 is ERC20Protocol {
+contract ERC20 is ERC20Interface {
 
     function transfer(address _to, uint256 _value) returns (bool success) {
         if (balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
@@ -14,7 +14,7 @@ contract ERC20 is ERC20Protocol {
             balances[_to] += _value;
             Transfer(msg.sender, _to, _value);
             return true;
-        } else { return false; }
+        } else { throw; }
     }
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
@@ -24,7 +24,7 @@ contract ERC20 is ERC20Protocol {
             allowed[_from][msg.sender] -= _value;
             Transfer(_from, _to, _value);
             return true;
-        } else { return false; }
+        } else { throw; }
     }
 
     function balanceOf(address _owner) constant returns (uint256 balance) {
@@ -32,6 +32,10 @@ contract ERC20 is ERC20Protocol {
     }
 
     function approve(address _spender, uint256 _value) returns (bool success) {
+        // See: https://github.com/ethereum/EIPs/issues/20#issuecomment-263555598
+        if (_value > 0) {
+            require(allowed[msg.sender][_spender] == 0);
+        }
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;

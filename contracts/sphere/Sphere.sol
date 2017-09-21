@@ -10,16 +10,17 @@ import '../dependencies/Owned.sol';
 /// @notice Simple and static Sphere Module.
 contract Sphere is SphereInterface, DBC, Owned {
 
-    // TYPES
-
     // FIELDS
+
     address public DATAFEED;
-    address public EXCHANGE;
+    address public EXCHANGE; // Assets can be transferred to this address
+    address public EXCHANGE_ADAPTER;
 
     // CONSTANT METHODS
 
-    function getDataFeed() constant returns (address) { return DATAFEED; }
-    function getExchange() constant returns (address) { return EXCHANGE; }
+    function getDataFeed() external constant returns (address) { return DATAFEED; }
+    function getExchange() external constant returns (address) { return EXCHANGE; }
+    function getExchangeAdapter() external constant returns (address) { return EXCHANGE_ADAPTER; }
 
     // NON-CONSTANT METHODS
 

@@ -1,9 +1,14 @@
 pragma solidity ^0.4.11;
 
-/// @title ERC20 Token Protocol
+/// @title ERC20 Token Interface
 /// @author Melonport AG <team@melonport.com>
 /// @notice See https://github.com/ethereum/EIPs/issues/20
-contract ERC20Protocol {
+contract ERC20Interface {
+
+    // EVENTS
+
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     // CONSTANT METHODS
 
@@ -16,10 +21,4 @@ contract ERC20Protocol {
     function transfer(address _to, uint256 _value) returns (bool success) {}
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {}
     function approve(address _spender, uint256 _value) returns (bool success) {}
-
-    // EVENTS
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-
 }

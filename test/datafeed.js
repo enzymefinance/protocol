@@ -14,23 +14,24 @@ contract('DataFeed', (accounts) => {
   });
   describe('AssetRegistrar', () => {
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-    it('registers twice without error', async () => {
+    const someChainId = '0x86b5eed81d000000000000000000000000000000000000000000000000000000';
+    it('registers twice without error', async () => {   // using accts as fake addrs
       await feed.register(btc.address, 'Bitcoin', 'BTC', 18, 'bitcoin.org',
-        someBytes, someBytes, accounts[5], accounts[6]); // accts as fake addrs
+        someBytes, someChainId, accounts[5], accounts[6], {from: accounts[0]});
       await feed.register(eth.address, 'Ethereum', 'ETH', 18, 'ethereum.org',
-        someBytes, someBytes, accounts[7], accounts[8]);
+        someBytes, someBytes, accounts[7], accounts[8], {from: accounts[0]});
     });
     it('gets descriptive information', async () => {
-      [name, sym, dec, url, hash] = await feed.getDescriptiveInformation(btc.address);
+      [name, sym, url, hash] = await feed.getDescriptiveInformation(btc.address);
       assert.equal(name, 'Bitcoin');
       assert.equal(sym, 'BTC');
-      assert.equal(dec, 18);
       assert.equal(url, 'bitcoin.org');
       assert.equal(hash, someBytes);
     });
     it('gets specific information', async () => {
-      [dec, , bIn, bOut] = await feed.getSpecificInformation(btc.address);
+      [dec, chainId, bIn, bOut] = await feed.getSpecificInformation(btc.address);
       assert.equal(dec, 18);
+      assert.equal(chainId, someChainId)
       assert.equal(bIn, accounts[5]);
       assert.equal(bOut, accounts[6]);
     });

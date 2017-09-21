@@ -1,17 +1,14 @@
 pragma solidity ^0.4.11;
 
-import './safeMath.sol';
-
 // Fully functional calculation library
 library rewards {
-    using safeMath for uint256;
 
     // CONSTANT METHODS
 
     /* Function invariant
      *  for timeDifference == 0 => returns 0
      */
-    /// Post: Reward denominated in referenceAsset
+    /// @dev Post Reward denominated in referenceAsset
     function managementReward(
         uint managementRewardRate,
         uint timeDifference,
@@ -28,7 +25,7 @@ library rewards {
     /* Function invariant
      *  for deltaDifference == 0 => returns 0
      */
-    /// Post: Reward denominated in referenceAsset
+    /// @dev Post Reward denominated in referenceAsset
     function performanceReward(
         uint performanceRewardRate,
         int deltaPrice, // Price Difference measured agains referenceAsset

@@ -1,14 +1,15 @@
 pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
+import './AssetInterface.sol';
 
 /// @title Asset Contract.
 /// @author Melonport AG <team@melonport.com>
-contract Asset is ERC20 {
+contract Asset is AssetInterface, ERC20 {
 
     // FIELDS
 
-    // Constant token specific fields
+    // Constructor fields
     string public name;
     string public symbol;
     uint public decimals;
@@ -22,9 +23,8 @@ contract Asset is ERC20 {
     // NON-CONSTANT METHODS
 
     function Asset(string _name, string _symbol, uint _decimals) {
-        name = _name; // Set the name for display purposes
-        symbol = _symbol; // Set the symbol for display purposes
-        decimals = _decimals; // Defined in price feed protocol
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
     }
-
 }

@@ -1,13 +1,11 @@
 pragma solidity ^0.4.11;
 
 import '../dependencies/ERC20.sol';
-import '../libraries/safeMath.sol';
 import './RiskMgmtInterface.sol';
 
 /// @title RiskMgmt Contract
 /// @author Melonport AG <team@melonport.com>
 contract RMMakeOrders is RiskMgmtInterface {
-      using safeMath for uint256;
 
       // FIELDS
 
@@ -20,42 +18,25 @@ contract RMMakeOrders is RiskMgmtInterface {
 
       // NON-CONSTANT METHODS
 
-      function isExchangeMakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice
+      function isMakePermitted(
+          uint orderPrice,
+          uint referencePrice,
+          uint orderQuantity
       )
           returns (bool)
       {
           // Don't buy at much higher price
-          return isLessOrEqualThan(
-              uint256(haveAmount)
-              .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
-              referencePrice
-              .mul(RISK_DIVISOR.sub(RISK_LEVEL))
-              .div(RISK_DIVISOR)
-          );
+          return true;
       }
 
-      function isExchangeTakePermitted(
-          ERC20   haveToken,
-          ERC20   wantToken,
-          uint    haveAmount,
-          uint    wantAmount,
-          uint    referencePrice,
-          address orderOwner
+      function isTakePermitted(
+          uint orderPrice,
+          uint referencePrice,
+          uint orderQuantity
       )
           returns (bool)
       {
           // Don't buy at much higher price
-          return isLessOrEqualThan(
-              uint256(haveAmount)
-              .div(wantAmount), // TODO: multiply w baseUnits of base (==haveToken.decimals)
-              referencePrice
-              .mul(RISK_LEVEL)
-              .div(RISK_DIVISOR)
-          );
+          return true;
       }
 }

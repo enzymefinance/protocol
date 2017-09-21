@@ -1,17 +1,18 @@
 pragma solidity ^0.4.11;
 
+import '../dependencies/DBC.sol';
 import './PreminedAsset.sol';
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/dapphub/ds-eth-token/blob/master/src/eth_wrapper.sol
-contract EtherToken is PreminedAsset {
+contract EtherToken is DBC, PreminedAsset {
     using safeMath for uint256;
 
     // FIELDS
 
-    // Constant token specific fields
+    // Constant fields
     string public constant name = "Ether Token";
     string public constant symbol = "ETH-T";
     uint public constant decimals = 18;
@@ -24,21 +25,12 @@ contract EtherToken is PreminedAsset {
 
     // METHODS
 
-    modifier balances_msg_sender_at_least(uint x) {
-        assert(balances[msg.sender] >= x);
-        _;
-    }
-
-    // NON-CONSTANT METHODS
-
     function EtherToken()
         PreminedAsset(name, symbol, decimals, preminedAmount)
     {}
 
-    /// Post: Exchanged Ether against Token
     function() payable { deposit(); }
 
-    /// Post: Exchanged Ether against Token
     function deposit()
         payable
     {
@@ -46,9 +38,8 @@ contract EtherToken is PreminedAsset {
         Deposit(msg.sender, msg.value);
     }
 
-    /// Post: Exchanged Token against Ether
     function withdraw(uint amount)
-        balances_msg_sender_at_least(amount)
+        pre_cond(balances[msg.sender] >= amount)
     {
         balances[msg.sender] = balances[msg.sender].sub(amount);
         assert(msg.sender.send(amount));
