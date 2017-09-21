@@ -515,6 +515,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             orderType: OrderType.make,
             fillQuantity: 0
         }));
+        internalAccounting.numberOfMakeOrders++;
         internalAccounting.quantitySentToExchange[sellAsset] =
             quantitySentToExchange(sellAsset)
             .add(sellQuantity);
@@ -561,7 +562,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-    /// @notice Cancel orders that were not expected to settle immediately, i.e. makeOrders
+    /// @notice Reduce exposure with exchange interaction
+    /// @dev Cancel orders that were not expected to settle immediately, i.e. makeOrders
     /// @param id Active order id with order owner of this contract on selected Exchange
     /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
@@ -573,6 +575,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
         if (isFalse(success)) { LogError(0); return; }
         // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
+        internalAccounting.numberOfMakeOrders--;
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
@@ -582,17 +585,25 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-    //TODO: add previousHoldings
+    /// @notice Reduce exposure without exchange interaction
+    /// @dev After funds have been sent manually back to Melon fund, 'settle' them manually
     /// @param sellAsset Asset (as registred in Asset registrar) to be sold
     /// @param buyAsset Asset (as registred in Asset registrar) to be bought
     function closeOpenOrders(address sellAsset, address buyAsset)
         constant
     {
         proofOfEmbezzlement(sellAsset, buyAsset);
+        // TODO: update order.status = OrderStatus.fullyFilled;
         // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
-        // TODO: fix pot incorrect OrderStatus - partiallyFilled
-        /*thisOrder.status = OrderStatus.fullyFilled;*/
-        //  update previousHoldings
+        // TODO: abstract below into function
+        internalAccounting.numberOfMakeOrders--;
+        internalAccounting.quantitySentToExchange[order.sellAsset] =
+            quantitySentToExchange(order.sellAsset)
+            .sub(order.sellQuantity);
+        internalAccounting.quantityExpectedToReceive[order.buyAsset] =
+            quantityExpectedToReceive(order.buyAsset)
+            .sub(order.buyQuantity);
+        // Update prev holdings
         internalAccounting.previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
         internalAccounting.previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
     }
