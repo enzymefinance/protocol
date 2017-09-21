@@ -43,6 +43,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint numberOfMakeOrders; // Number of potentially unsettled orders
         mapping (address => uint) quantitySentToExchange;
         mapping (address => uint) quantityExpectedToReceive;
+        mapping (address => uint) previousHoldings;
     }
 
     enum RequestStatus { open, cancelled, executed }
@@ -80,7 +81,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
     uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
     uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
-    uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
@@ -101,9 +101,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
-
-    uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
-    mapping (address => uint) public previousHoldings; // Maps assets to holdings, needed for internal accounting
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -604,19 +601,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function closeOpenOrders(address sellAsset, address buyAsset)
         constant
     {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.sellAsset == sellAsset && thisOrder.buyAsset == buyAsset) {
-                proofOfEmbezzlement(sellAsset, buyAsset);
-                delete openOrderIds[i]; // Free up open order slot
-                // TODO: fix pot incorrect OrderStatus - partiallyFilled
-                thisOrder.status = OrderStatus.fullyFilled;
-                //  update previousHoldings
-                // TODO: trigger for each proofOfEmbezzlement() call
-                previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
-                previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
-            }
-        }
+        proofOfEmbezzlement(sellAsset, buyAsset);
+        // TODO: fix pot incorrect OrderStatus - partiallyFilled
+        /*thisOrder.status = OrderStatus.fullyFilled;*/
+        //  update previousHoldings
+        // TODO: trigger for each proofOfEmbezzlement() call
+        internalAccounting.previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
+        internalAccounting.previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
     }
 
     /// @notice Whether embezzlement happened
@@ -629,7 +620,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Sold more than expected => Proof of Embezzlemnt
         uint totalIntendedSellQty = quantitySentToExchange(sellAsset); // Trade intention
         if (isLargerThan(
-            previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
             ERC20(sellAsset).balanceOf(this) // Actual qty sold
         )) {
             isShutDown = true;
@@ -640,18 +631,18 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint factor = 10000;
         uint divisor = factor;
         if (isLessThan(
-            previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
             ERC20(sellAsset).balanceOf(this) // Actual qty sold
         )) { // Sold less than intended
             factor = divisor
-                .mul(previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
+                .mul(internalAccounting.previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
                 .div(totalIntendedSellQty);
         }
         // Sold at a worse price than expected => Proof of Embezzlemnt
         uint totalIntendedBuyQty = quantityExpectedToReceive(buyAsset); // Trade execution
         uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
         if (isLargerThan(
-            previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
+            internalAccounting.previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
             ERC20(buyAsset).balanceOf(this) // Actual qty sold
         )) {
             isShutDown = true;
