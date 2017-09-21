@@ -12,12 +12,11 @@ import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
 import {simpleAdapter as exchangeAdapter} from './exchange/adapter/simpleAdapter.sol';
 import './FundInterface.sol';
-import './FundHistory.sol';
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
+contract Fund is DBC, Owned, Shares, FundInterface {
     using safeMath for uint;
 
     // TYPES
@@ -40,10 +39,30 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint timestamp; // When above has been calculated
     }
 
+    enum RequestStatus { open, cancelled, executed }
+    enum RequestType { subscribe, redeem }
+
+    struct Request {
+        address owner;
+        RequestStatus status;
+        RequestType requestType;
+        uint numShares;
+        uint offeredOrRequestedValue;
+        uint incentive;
+        uint lastFeedUpdateId;
+        uint lastFeedUpdateTime;
+        uint timestamp;
+    }
+
+
+
+
+
     enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
 
     struct Order {
+        uint exchangeId; // Id as returned from exchange
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
         address buyAsset; // Asset (as registred in Asset registrar) to be bought
         uint sellQuantity; // Quantity of sellAsset to be sold
@@ -80,14 +99,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
-
-    // TODO use arrays
-    mapping (uint => Order) public orders;
-    uint public nextOrderId;
-    function getLastOrderId() constant returns (uint) {
-        require(nextOrderId > 0);
-        return nextOrderId - 1;
-    }
+    Order[] public orders;
+    Request[] public requests;
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -151,6 +164,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         );
     }
     function getStake() constant returns (uint) { return balanceOf(this); }
+    function getLastOrderId() constant returns (uint) { return orders.length - 1; }
+    function getLastRequestId() constant returns (uint) { return requests.length - 1; }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -159,8 +174,10 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
-            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(quantitySentToExchange(ofAsset));
+            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)); // Amount of asset base units this vault holds
+            // TODO fix error in below
+            /*uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
+                .add(quantitySentToExchange(ofAsset));*/
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -266,7 +283,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
-        MELON_BASE_UNITS = 10 ** uint(module.datafeed.getDecimals(MELON_ASSET));
+        MELON_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
@@ -356,9 +373,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns(uint id)
     {
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue.add(incentiveValue));
-        id = nextRequestId;
-        nextRequestId++;
-        requests[id] = Request({
+        requests.push(Request({
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.subscribe,
@@ -368,7 +383,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
-        });
+        }));
+        id = getLastRequestId();
         SubscribeRequest(id, msg.sender, now, numShares);
     }
 
@@ -390,9 +406,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         ))
         returns (uint id)
     {
-        id = nextRequestId;
-        nextRequestId++;
-        requests[id] = Request({
+        requests.push(Request({
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.redeem,
@@ -402,7 +416,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
-        });
+        }));
+        id = getLastRequestId();
         RedeemRequest(id, msg.sender, now, numShares);
     }
 
@@ -504,7 +519,11 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     // NON-CONSTANT METHODS - MANAGING
 
     /// @notice These are orders that are not expected to settle immediately
-    /// @dev Sufficient balance and spending has been approved
+    /// @dev Sufficient balance (== sellQuantity) of sellAsset
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
+    /// @param sellQuantity Quantity of sellAsset to be sold
+    /// @param buyQuantity Quantity of sellAsset to be bought
     /// @return Make offer on selected Exchange
     function makeOrder(
         address sellAsset,
@@ -527,10 +546,9 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (uint id)
     {
         require(approveSpending(sellAsset, sellQuantity));
-        LogMakeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        OrderUpdated(id);
-        orders[nextOrderId] = Order({
+        orders.push(Order({
+            exchangeId: id,
             sellAsset: sellAsset,
             buyAsset: buyAsset,
             sellQuantity: sellQuantity,
@@ -539,14 +557,13 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             status: OrderStatus.open,
             orderType: OrderType.make,
             fillQuantity: 0
-        });
-
-        // TODO count open orders as integer
-        nextOrderId++;
+        }));
+        OrderUpdated(id);
     }
 
     /// @notice These are orders that are expected to settle immediately
-    /// @dev Active offer (id) and valid buy qty on selected Exchange
+    /// @param id Active order id
+    /// @param quantity valid buy quantity of what others are selling on selected Exchange
     /// @return Take offer on selected Exchange
     function takeOrder(uint id, uint quantity)
         external
@@ -574,17 +591,18 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         ));
         require(approveSpending(order.buyAsset, quantity));
         bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
+        assert(success);
+        order.exchangeId = id;
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
         order.fillQuantity = quantity;
-        orders[nextOrderId] = order;
-        nextOrderId++;
+        orders.push(order);
         return success;
     }
 
-    /// @dev Active offer (id) with owner of this contract on selected Exchange
-    /// @return Cancel offer on selected Exchange
+    /// @param id Active order id with order owner of this contract on selected Exchange
+    /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
         external
         pre_cond(isOwner() || isShutDown)
