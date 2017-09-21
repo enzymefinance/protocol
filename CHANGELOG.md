@@ -7,21 +7,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.3.2]
 
 ### Added
-- Fixed: #104
 - Function to change descriptive information in asset registrar
 - Contract draft for contribution
 - FundHistory
 - Interfaces
 - ExchagneAdapter
 - Actual implementation of SimpleMarket - OasisDex exchange
+- InternalAccounting cleanup
+- Natspecs comments
+- Participation example uPort
+- Competition contract
+- LogError event in Fund
+- Gross asset calculations accounts for externally held assets
 
 ### Changed
 - Naming: Vault -> Fund
 - Naming: subscribe -> requestSubscription in Fund
 - Naming: redeem -> requestRedemption in Fund
+- Mappings to arrays where sensible
 
 ### Removed
 - Information struct in Fund
+- FundHistory dependency
+- Logger
+
+## Fixes
+- Fixed: #104
+- Fixed makeOrder issue
 
 ## [0.3.1]
 
