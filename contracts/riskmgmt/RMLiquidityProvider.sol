@@ -14,8 +14,8 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       function isMakePermitted(
           uint orderPrice,
-          uint orderQuantity,
-          uint referencePrice
+          uint referencePrice,
+          uint orderQuantity
       )
           returns (bool)
       {
@@ -24,8 +24,8 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       function isTakePermitted(
           uint orderPrice,
-          uint orderQuantity,
           uint referencePrice,
+          uint orderQuantity,
           address orderOwner
       )
           returns (bool)

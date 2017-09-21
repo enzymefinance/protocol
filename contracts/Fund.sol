@@ -525,8 +525,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) { LogError(0); return; }
         if (isFalse(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
-            buyQuantity,
-            module.datafeed.getReferencePrice(sellAsset, buyAsset)
+            module.datafeed.getReferencePrice(sellAsset, buyAsset),
+            buyQuantity
         ))) { LogError(1); return; }
         if (isFalse(approveSpending(sellAsset, sellQuantity))) { LogError(2); return; }
         id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
@@ -570,8 +570,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         if (isFalse(module.riskmgmt.isTakePermitted(
             // TODO check: Buying what is being sold and selling what is being bought
             module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
-            order.sellQuantity, // Quantity about to be received
-            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
+            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
+            order.sellQuantity // Quantity about to be received
         ))) { LogError(1); return; }
         if (isFalse(quantity <= order.sellQuantity)) { LogError(2); return; }
         if (isFalse(approveSpending(order.buyAsset, quantity))) { LogError(3); return; }
