@@ -10,7 +10,7 @@ import './participation/ParticipationInterface.sol';
 import './datafeeds/DataFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
-import './exchange/adapter/simpleAdapter.sol';
+import {simpleAdapter as exchangeAdapter} from './exchange/adapter/simpleAdapter.sol';
 import './FundInterface.sol';
 import './FundHistory.sol';
 
@@ -49,9 +49,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         uint sellQuantity; // Quantity of sellAsset to be sold
         uint buyQuantity; // Quantity of sellAsset to be bought
         uint timestamp; // Time in seconds when this order was created
-        /*uint expiration; // Time in seconds after which this order expires*/
-        OrderStatus status;
-        OrderType orderType;
+        OrderStatus status; // Enum: open, partiallyFilled, fullyFilled, cancelled
+        OrderType orderType; // Enum: make, take
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
@@ -89,7 +88,6 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         require(nextOrderId > 0);
         return nextOrderId - 1;
     }
-
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -254,8 +252,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         address ofSphere
     ) {
         SphereInterface sphere = SphereInterface(ofSphere);
-        /*simpleAdapter = ExchangeInterface(sphere.getExchangeAdapter());*/
         module.datafeed = DataFeedInterface(sphere.getDataFeed());
+        // For later release initiate exchangeAdapter here: eg as exchangeAdapter = ExchangeInterface(sphere.getExchangeAdapter());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
@@ -263,7 +261,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by simpleAdapter library
+        EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
@@ -474,8 +472,8 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
             uint ownershipQuantity = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
-            if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned
-                isShutDown = true; // Eg in case of unreturned qty at EXCHANGE address
+            if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
+                isShutDown = true; // Shutdown allows open orders to be cancelled, eg. to return
             }
             assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
         }
@@ -529,7 +527,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
     {
         require(approveSpending(sellAsset, sellQuantity));
         LogMakeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        id = simpleAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+        id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
         OrderUpdated(id);
         orders[nextOrderId] = Order({
             sellAsset: sellAsset,
@@ -562,7 +560,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = simpleAdapter.getOrder(EXCHANGE, id);
+        ) = exchangeAdapter.getOrder(EXCHANGE, id);
         require(module.datafeed.existsData(order.buyAsset, order.sellAsset));
         require(quantity <= order.sellQuantity);
         require(module.riskmgmt.isTakePermitted(
@@ -574,7 +572,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset)
         ));
         require(approveSpending(order.buyAsset, quantity));
-        bool success = simpleAdapter.takeOrder(EXCHANGE, id, quantity);
+        bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
@@ -592,7 +590,7 @@ contract Fund is DBC, Owned, Shares, FundHistory, FundInterface {
         returns (bool)
     {
         // TODO orders accounting
-        return simpleAdapter.cancelOrder(EXCHANGE, id);
+        return exchangeAdapter.cancelOrder(EXCHANGE, id);
     }
 
     //TODO: add previousHoldings

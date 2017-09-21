@@ -15,29 +15,28 @@ library simpleAdapter {
     // EVENTS
 
     event OrderUpdated(uint id);
-    event Log(address exchange, address sender);
 
     // CONSTANT METHODS
 
-    function getLastOrderId(address onConsigned)
+    function getLastOrderId(address onExchange)
         constant
         returns (uint)
     {
-        return SimpleMarket(onConsigned).last_offer_id();
+        return SimpleMarket(onExchange).last_offer_id();
     }
-    function isActive(address onConsigned, uint id)
+    function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
-        return SimpleMarket(onConsigned).isActive(id);
+        return SimpleMarket(onExchange).isActive(id);
     }
-    function getOwner(address onConsigned, uint id)
+    function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
-        return SimpleMarket(onConsigned).getOwner(id);
+        return SimpleMarket(onExchange).getOwner(id);
     }
-    function getOrder(address onConsigned, uint id)
+    function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
     {
@@ -46,7 +45,7 @@ library simpleAdapter {
             sellAsset,
             buyQuantity,
             buyAsset
-        ) = SimpleMarket(onConsigned).getOffer(id);
+        ) = SimpleMarket(onExchange).getOffer(id);
         return (
             address(sellAsset),
             address(buyAsset),
@@ -57,20 +56,18 @@ library simpleAdapter {
 
     // NON-CONSTANT METHODS
 
+    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
     function makeOrder(
-        address onConsigned,
+        address onExchange,
         address sellAsset,
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     )
-        /*external*/
+        external
         returns (uint id)
     {
-        // TODO remove if not necessary
-        Log(onConsigned, msg.sender);
-        SimpleMarket ex = SimpleMarket(onConsigned);
-        id = ex.offer(
+        id = SimpleMarket(onExchange).offer(
             sellQuantity,
             ERC20(sellAsset),
             buyQuantity,
@@ -79,26 +76,28 @@ library simpleAdapter {
         OrderUpdated(id);
     }
 
+    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
     function takeOrder(
-        address onConsigned,
+        address onExchange,
         uint id,
         uint quantity
     )
-        /*external*/
+        external
         returns (bool success)
     {
-        success = SimpleMarket(onConsigned).buy(id, quantity);
+        success = SimpleMarket(onExchange).buy(id, quantity);
         OrderUpdated(id);
     }
 
+    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
     function cancelOrder(
-        address onConsigned,
+        address onExchange,
         uint id
     )
-        /*external*/
+        external
         returns (bool success)
     {
-        success = SimpleMarket(onConsigned).cancel(id);
+        success = SimpleMarket(onExchange).cancel(id);
         OrderUpdated(id);
     }
 }
