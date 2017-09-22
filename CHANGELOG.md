@@ -8,9 +8,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Introduce the concept of an externalAdapter, that is an exchangeAdapter that can be used in conjunction w a sphere of subset externalCustodian and any kind of centralised exchange
+- Introduce concept of basic subset of Melon fund; I.e. a coarse categorisation of the type of Melon fund - such as blockchainCustodian and externalCustodian
+- Introduce concept of existsMakeOrder, i.e. whether there already is an open order for a given asset pair
+
+
+
 ### Changed
 
+- Redesign of PoE
+- Improve precision of PoE
+- Naming consistency: numShares -> sharesQuantity; Clean up natspecs comments
+
 ### Removed
+
+- Remove concept of openOrders; max open orders
 
 ## [0.3.2] - 2017-09-21
 
