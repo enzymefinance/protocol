@@ -659,28 +659,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Whether embezzlement happened
-    /// @dev Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bought
+    /// @dev Asset pair corresponds to unsettled (== make) order
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
     /// @return True if embezzled otherwise false
     function proofOfEmbezzlement(address sellAsset, address buyAsset)
         constant
         returns (bool)
     {
-        // Sold more than expected => Proof of Embezzlemnt
-        // Have less than accounted for => Proof of Embezzlment
-        if (isLessThan(
-            ERC20(sellAsset).balanceOf(this), // Actual quantity held in fund
-            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Accounted for
-        )) {
-            // TODO: Allocate staked shares from this to msg.sender
-            // TODO: error log
-            isShutDown = true;
-            return true;
-        }
-
-        // Sold less or equal than intended
-        // Have more or equal than accounted for
-        uint factor = MELON_BASE_UNITS;
-        uint divisor = factor;
+        // Accounted for sell quanity is less than what is held in custody (good)
+        uint factor = MELON_BASE_UNITS; // Want to receive proportionally as much as sold
+        uint divisor = factor; // To reduce inaccuracy due to rounding errors
         if (isLessThan(
             internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
             ERC20(sellAsset).balanceOf(this) // Actual quantity held in fund
@@ -688,19 +677,28 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             factor = divisor
                 .mul(internalAccounting.previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
                 .div(quantitySentToExchange(sellAsset));
-        }
-        // Sold at a worse price than expected => Proof of Embezzlemnt
-        uint totalIntendedBuyQty = quantityExpectedToReturn(buyAsset); // Trade execution
-        uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
-        if (isLargerThan(
-            internalAccounting.previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
-            ERC20(buyAsset).balanceOf(this) // Actual quantity held in fund
-        )) {
-            isShutDown = true;
+        } else { // Held in custody is less than accounted for (PoE)
             // TODO: Allocate staked shares from this to msg.sender
+            // TODO: error log
+            isShutDown = true;
             return true;
         }
-        return false;
+
+        // Revise return expectations, for example in case of partial fill of order
+        uint revisedReturnExpectations = quantityExpectedToReturn(buyAsset).mul(factor).div(divisor);
+
+        // Held in custody is more than revised return expectations of buy asset (good)
+        if (isLargerThan(
+            internalAccounting.previousHoldings[buyAsset].add(revisedReturnExpectations), // Expected qty bought
+            ERC20(buyAsset).balanceOf(this) // Actual quantity held in fund
+        )) {
+            return false;
+        } else { // Held in custody is less than accounted for (PoE)
+            // TODO: Allocate staked shares from this to msg.sender
+            // TODO: error log
+            isShutDown = true;
+            return true;
+        }
     }
 
     // NON-CONSTANT METHODS - REWARDS
