@@ -669,7 +669,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Have less than accounted for => Proof of Embezzlment
         if (isLessThan(
             ERC20(sellAsset).balanceOf(this), // Actual quantity held in fund
-            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Intended qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Accounted for
         )) {
             // TODO: Allocate staked shares from this to msg.sender
             // TODO: error log
@@ -677,16 +677,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return true;
         }
 
-        if (isEqual(
-            ERC20(sellAsset).balanceOf(this), // Actual quantity held in fund
-            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Intended qty sold
-        ))
         // Sold less or equal than intended
         // Have more or equal than accounted for
-        uint factor = 10000;
+        uint factor = MELON_BASE_UNITS;
         uint divisor = factor;
         if (isLessThan(
-            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Intended qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
             ERC20(sellAsset).balanceOf(this) // Actual quantity held in fund
         )) { // Sold less than intended
             factor = divisor
