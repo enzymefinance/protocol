@@ -522,7 +522,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         if (isZero(id)) {
             LogError(4);
             return;
-        } // TODO: check accuracy of this
+        } // TODO: validate accuracy of this
         orders.push(Order({
             exchangeId: id,
             sellAsset: sellAsset,
