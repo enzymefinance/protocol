@@ -666,32 +666,39 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         returns (bool)
     {
         // Sold more than expected => Proof of Embezzlemnt
-        uint totalIntendedSellQty = quantitySentToExchange(sellAsset); // Trade intention
-        if (isLargerThan(
-            internalAccounting.previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
-            ERC20(sellAsset).balanceOf(this) // Actual qty sold
+        // Have less than accounted for => Proof of Embezzlment
+        if (isLessThan(
+            ERC20(sellAsset).balanceOf(this), // Actual quantity held in fund
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Intended qty sold
         )) {
-            isShutDown = true;
             // TODO: Allocate staked shares from this to msg.sender
+            // TODO: error log
+            isShutDown = true;
             return true;
         }
+
+        if (isEqual(
+            ERC20(sellAsset).balanceOf(this), // Actual quantity held in fund
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)) // Intended qty sold
+        ))
         // Sold less or equal than intended
+        // Have more or equal than accounted for
         uint factor = 10000;
         uint divisor = factor;
         if (isLessThan(
-            internalAccounting.previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
-            ERC20(sellAsset).balanceOf(this) // Actual qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Intended qty sold
+            ERC20(sellAsset).balanceOf(this) // Actual quantity held in fund
         )) { // Sold less than intended
             factor = divisor
                 .mul(internalAccounting.previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
-                .div(totalIntendedSellQty);
+                .div(quantitySentToExchange(sellAsset));
         }
         // Sold at a worse price than expected => Proof of Embezzlemnt
         uint totalIntendedBuyQty = quantityExpectedToReturn(buyAsset); // Trade execution
         uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
         if (isLargerThan(
             internalAccounting.previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
-            ERC20(buyAsset).balanceOf(this) // Actual qty sold
+            ERC20(buyAsset).balanceOf(this) // Actual quantity held in fund
         )) {
             isShutDown = true;
             // TODO: Allocate staked shares from this to msg.sender
