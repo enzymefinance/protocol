@@ -42,8 +42,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     struct InternalAccounting {
         uint numberOfMakeOrders; // Number of potentially unsettled orders
         mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
+        mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange;
-        mapping (address => uint) quantityExpectedToReceive;
+        mapping (address => uint) quantityExpectedToReturn;
         mapping (address => uint) previousHoldings;
     }
 
@@ -65,6 +66,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
     struct Order { // Describes and logs whenever assets leave this fund
+        // TODO: consider bool isActive;
         uint exchangeId; // Id as returned from exchange
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
         address buyAsset; // Asset (as registred in Asset registrar) to be bought
@@ -105,7 +107,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isZero(uint x) internal returns (bool) { return x == 0; }
+    function isZero(uint x) internal returns (bool) { x == 0; }
     function isFalse(bool x) internal returns (bool) { return x == false; }
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
     function notLessThan(uint x, uint y) internal returns (bool) { return x >= y; }
@@ -131,7 +133,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getDecimals() constant returns (uint) { return DECIMALS; }
     function getBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
-        return (
+        (
             address(module.datafeed),
             address(EXCHANGE),
             address(module.participation),
@@ -143,10 +145,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
     function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
     function quantitySentToExchange(address ofAsset) constant returns (uint) {
-        internalAccounting.quantitySentToExchange[ofAsset];
+        return internalAccounting.quantitySentToExchange[ofAsset];
     }
-    function quantityExpectedToReceive(address ofAsset) constant returns (uint) {
-        internalAccounting.quantityExpectedToReceive[ofAsset];
+    function quantityExpectedToReturn(address ofAsset) constant returns (uint) {
+        return internalAccounting.quantityExpectedToReturn[ofAsset];
     }
 
     // CONSTANT METHODS - ACCOUNTING
@@ -494,16 +496,33 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (uint id)
     {
-        // TODO: Exists make order for asset pair sha3(sellAsset, buyAsset)
-        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) { LogError(0); return; }
+        bytes32 assetPair = sha3(sellAsset, buyAsset);
+        if (internalAccounting.existsMakeOrder[assetPair]) {
+            LogError(0);
+            return;
+        }
+        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) {
+            LogError(1);
+            return;
+        }
         if (isFalse(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
             module.datafeed.getReferencePrice(sellAsset, buyAsset),
             buyQuantity
-        ))) { LogError(1); return; }
-        if (isFalse(approveSpending(sellAsset, sellQuantity))) { LogError(2); return; }
+        ))) {
+            LogError(2);
+            return;
+        }
+        if (isFalse(approveSpending(sellAsset, sellQuantity))) {
+            LogError(3);
+            return;
+        }
+
         id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        if (isZero(id)) { LogError(3); return; } // TODO: check accuracy of this
+        if (isZero(id)) {
+            LogError(4);
+            return;
+        } // TODO: check accuracy of this
         orders.push(Order({
             exchangeId: id,
             sellAsset: sellAsset,
@@ -519,8 +538,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         internalAccounting.quantitySentToExchange[sellAsset] =
             quantitySentToExchange(sellAsset)
             .add(sellQuantity);
-        internalAccounting.quantityExpectedToReceive[buyAsset] =
-            quantityExpectedToReceive(buyAsset)
+        internalAccounting.quantityExpectedToReturn[buyAsset] =
+            quantityExpectedToReturn(buyAsset)
             .add(buyQuantity);
         OrderUpdated(id);
     }
@@ -542,17 +561,32 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.sellQuantity,
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
-        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) { LogError(0); return; }
+        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) {
+              LogError(0);
+              return;
+        }
         if (isFalse(module.riskmgmt.isTakePermitted(
             // TODO check: Buying what is being sold and selling what is being bought
             module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
             order.sellQuantity // Quantity about to be received
-        ))) { LogError(1); return; }
-        if (isFalse(quantity <= order.sellQuantity)) { LogError(2); return; }
-        if (isFalse(approveSpending(order.buyAsset, quantity))) { LogError(3); return; }
+        ))) {
+              LogError(1);
+              return;
+        }
+        if (isFalse(quantity <= order.sellQuantity)) {
+              LogError(2);
+              return;
+        }
+        if (isFalse(approveSpending(order.buyAsset, quantity))) {
+              LogError(3);
+              return;
+        }
         success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
-        if (isFalse(success)) { LogError(4); return; }
+        if (isFalse(success)) {
+              LogError(4);
+              return;
+        }
         order.exchangeId = id;
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
@@ -564,7 +598,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Reduce exposure with exchange interaction
     /// @dev Cancel orders that were not expected to settle immediately, i.e. makeOrders
-    /// @param id Active order id with order owner of this contract on selected Exchange
+    /// @param id Active order id of this order array with order owner of this contract on selected Exchange
     /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
         external
@@ -573,14 +607,18 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
-        if (isFalse(success)) { LogError(0); return; }
+        if (isFalse(success)) {
+            LogError(0);
+            return;
+        }
+
         // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
         internalAccounting.numberOfMakeOrders--;
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
-        internalAccounting.quantityExpectedToReceive[order.buyAsset] =
-            quantityExpectedToReceive(order.buyAsset)
+        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
+            quantityExpectedToReturn(order.buyAsset)
             .sub(order.buyQuantity);
         OrderUpdated(id);
     }
@@ -589,10 +627,22 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev After funds have been sent manually back to Melon fund, 'settle' them manually
     /// @param sellAsset Asset (as registred in Asset registrar) to be sold
     /// @param buyAsset Asset (as registred in Asset registrar) to be bought
-    function closeOpenOrders(address sellAsset, address buyAsset)
+    function manualSettlement(address sellAsset, address buyAsset)
         constant
     {
-        proofOfEmbezzlement(sellAsset, buyAsset);
+        // TODO TradeEvent
+        bytes32 assetPair = sha3(sellAsset, buyAsset);
+        if (isFalse(internalAccounting.existsMakeOrder[assetPair])) {
+            LogError(0);
+            return;
+        }
+
+        uint id = internalAccounting.makeOrderId[assetPair];
+        Order memory order = orders[id];
+        if (proofOfEmbezzlement(order.sellAsset, order.buyAsset)) {
+            LogError(1);
+            return;
+        }
         // TODO: update order.status = OrderStatus.fullyFilled;
         // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
         // TODO: abstract below into function
@@ -600,12 +650,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
-        internalAccounting.quantityExpectedToReceive[order.buyAsset] =
-            quantityExpectedToReceive(order.buyAsset)
+        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
+            quantityExpectedToReturn(order.buyAsset)
             .sub(order.buyQuantity);
         // Update prev holdings
-        internalAccounting.previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
-        internalAccounting.previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
+        internalAccounting.previousHoldings[order.sellAsset] = ERC20(order.sellAsset).balanceOf(this);
+        internalAccounting.previousHoldings[order.buyAsset] = ERC20(order.buyAsset).balanceOf(this);
     }
 
     /// @notice Whether embezzlement happened
@@ -637,7 +687,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
                 .div(totalIntendedSellQty);
         }
         // Sold at a worse price than expected => Proof of Embezzlemnt
-        uint totalIntendedBuyQty = quantityExpectedToReceive(buyAsset); // Trade execution
+        uint totalIntendedBuyQty = quantityExpectedToReturn(buyAsset); // Trade execution
         uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
         if (isLargerThan(
             internalAccounting.previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
