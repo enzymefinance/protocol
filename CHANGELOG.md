@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Introduce concept of basic subset of Melon fund; I.e. a coarse categorisation of the type of Melon fund - such as blockchainCustodian and externalCustodian
 - Introduce concept of existsMakeOrder, i.e. whether there already is an open order for a given asset pair
 
-
-
 ### Changed
 
 - Redesign of PoE
