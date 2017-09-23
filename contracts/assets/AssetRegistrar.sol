@@ -25,7 +25,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // FIELDS
 
-    // Function fields
+    // Methods fields
     mapping (address => Asset) public information;
     address[] public registeredAssets;
 

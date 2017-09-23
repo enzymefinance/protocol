@@ -36,8 +36,7 @@ contract Competition is DBC {
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
-
-    // Function fields
+    // Methods fields
     Hopeful[] public hopefuls; // List of all hopefuls, can be externally accessed
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -95,13 +94,12 @@ contract Competition is DBC {
         bytes32 s
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
-        /* In later version
-         * require depositAsset == MELON_ASSET
-         * require payoutAsset == MELON_ASSET
-         * require depositQuantity <= maxDepositQuantity
-         * require hopefuls.length < maxHopefulsNumber
-         * require fund.sharePrice == 1 MELON_BASE_UNITS
-         */
+        // In later version
+        //  require depositAsset == MELON_ASSET
+        //  require payoutAsset == MELON_ASSET
+        //  require depositQuantity <= maxDepositQuantity
+        //  require hopefuls.length < maxHopefulsNumber
+        //  require fund.sharePrice == 1 MELON_BASE_UNITS
     {
         hopefuls.push(Hopeful({
           fund: fund,

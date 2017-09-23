@@ -95,7 +95,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
-    // Function fields
+    // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
     InternalAccounting public internalAccounting; // Accounts for assets not held in custody of fund
