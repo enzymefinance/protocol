@@ -100,6 +100,7 @@ contract Competition is DBC {
          * require payoutAsset == MELON_ASSET
          * require depositQuantity <= maxDepositQuantity
          * require hopefuls.length < maxHopefulsNumber
+         * require fund.sharePrice == 1 MELON_BASE_UNITS
          */
     {
         hopefuls.push(Hopeful({
