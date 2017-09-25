@@ -12,3 +12,4 @@ protocol/
 # ignore generated coverage data
 coverage.json
 coverage/
+/out
