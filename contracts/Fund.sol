@@ -83,11 +83,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Constant fields
     string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
     uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
-    uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
+    uint public constant DIVISOR_FEE = 10 ** uint256(15); // Reward are divided by this number
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
-    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** DECIMALS of base unit of shares
+    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** uint256(DECIMALS) of base unit of shares
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
