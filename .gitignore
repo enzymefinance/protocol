@@ -8,8 +8,8 @@ package-lock.json
 # ignore built contracts
 build/
 protocol/
+out/
 
 # ignore generated coverage data
 coverage.json
 coverage/
-/out
