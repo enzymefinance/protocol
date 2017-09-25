@@ -162,7 +162,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
                 .add(quantitySentToExchange(ofAsset));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
