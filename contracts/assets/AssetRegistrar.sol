@@ -133,8 +133,9 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
-        post_cond(notRegistered(ofAsset))
+        //post_cond(notRegistered(ofAsset)) // Wait for next release of solidity
     {
         delete information[ofAsset]; // Sets exists boolean to false
+        assert(notRegistered(ofAsset));
     }
 }
