@@ -87,7 +87,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
-    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** uint256(DECIMALS) of base unit of shares
+    uint public MELON_IN_BASE_UNITS; // One unit of share equals 10 ** uint256(DECIMALS) of base unit of shares
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
@@ -132,7 +132,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getSymbol() constant returns (string) { return SYMBOL; }
     function getDecimals() constant returns (uint) { return DECIMALS; }
     function getCreationTime() constant returns (uint) { return CREATED; }
-    function getBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
+    function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
         (
             address(module.datafeed),
@@ -214,7 +214,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(isPastZero(totalSupply))
         returns (uint valuePerShare)
     {
-        valuePerShare = value.mul(MELON_BASE_UNITS).div(totalSupply);
+        valuePerShare = value.mul(MELON_IN_BASE_UNITS).div(totalSupply);
     }
 
     /// @notice Calculates essential fund metrics
@@ -223,7 +223,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint nav = calcNav(gav, unclaimedRewards);
-        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_BASE_UNITS; // Handle potential division through zero by defining a default value
+        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
@@ -264,7 +264,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
-        MELON_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
+        MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
@@ -273,7 +273,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            sharePrice: MELON_BASE_UNITS,
+            sharePrice: MELON_IN_BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
         });
@@ -399,7 +399,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
+        uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_IN_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
@@ -665,7 +665,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         returns (bool)
     {
         // Accounted for sell quanity is less than what is held in custody (good)
-        uint factor = MELON_BASE_UNITS; // Want to receive proportionally as much as sold
+        uint factor = MELON_IN_BASE_UNITS; // Want to receive proportionally as much as sold
         uint divisor = factor; // To reduce inaccuracy due to rounding errors
         if (isLessThan(
             internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
