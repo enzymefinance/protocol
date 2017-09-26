@@ -7,13 +7,11 @@ module.exports = {
       url: 'https://oasisdex.com',
       githubHint: '',
     },
-  ],
-  staging: [
     {
-      address: '0x74b129d64dc1f861531c4d444f664d86f74106b7',
-      name: 'OasisDex',
+      address: '0xd3d105564a01ecb65f9b1b422b02a6ce735fd2e6',
+      name: 'Melonport',
       data: '',
-      url: 'https://oasisdex.com',
+      url: 'https://www.melonport.com/',
       githubHint: '',
     },
   ],

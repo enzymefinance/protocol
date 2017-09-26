@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.4]
+
+### Added
+
+- Introduce the concept of an externalAdapter, that is an exchangeAdapter that can be used in conjunction w a sphere of subset externalCustodian and any kind of centralised exchange
+- Introduce concept of basic subset of Melon fund; I.e. a coarse categorisation of the type of Melon fund - such as blockchainCustodian and externalCustodian
+- Introduce concept of existsMakeOrder, i.e. whether there already is an open order for a given asset pair
+- Added Dapp suite development environment
+- Custom deployment script
+
+### Changed
+
+- Redesign of PoE
+- Improve precision of PoE
+- Naming consistency: numShares -> sharesQuantity; Clean up natspecs comments
+- Babel dependency
+- uint256 for all exponents
+- AssetRegistrar.remove post condition
+
+### Fixed
+
+- makeOrder error
+- Linter errors
+
 ## [0.3.3]
 
 ### Added
