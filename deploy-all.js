@@ -4,6 +4,8 @@ const solc = require('solc');
 const tokenInfo = require('./migrations/config/token_info.js');
 const Web3 = require('web3');
 
+const networkName = 'kovan';
+
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
   let modifiedPath = libPath.replace('out', 'src');
@@ -13,10 +15,9 @@ function getPlaceholderFromPath(libPath) {
 
 async function main() {
   try {
-    const networkName = 'kovan';
     const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: 6900000 };
+    const opts = { from: accounts[0], gas: 6900000, gasPrice: 100000000000 };
     const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
     const datafeedInterval = 120;
     const datafeedValidity = 60;
@@ -122,20 +123,31 @@ async function main() {
     const mockAddress = '0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd';
 
     // register assets in datafeed
-    tokenInfo[networkName].forEach(async (token) => {
-      console.log(`Registering ${token.name}`);
+
+
+    const assetsToRegister = [
+      'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
+      'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
+    ];
+
+    for(const assetSymbol of assetsToRegister) {
+      console.log(`Registering ${assetSymbol}`);
+      const thisToken = tokenInfo[networkName].filter(token => token.symbol === assetSymbol)[0];
       await datafeed.methods.register(
-        token.address,
-        token.name,
-        token.symbol,
-        token.decimals,
-        token.url,
+        thisToken.address,
+        thisToken.name,
+        thisToken.symbol,
+        thisToken.decimals,
+        thisToken.url,
         mockBytes,
         mockChainId,
         mockAddress,
         mockAddress,
-      ).send(opts);
-    });
+      ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
+    }
+
+    console.log(`DATAFEED: ${datafeed.options.address}`);
+    console.log(`SPHERE: ${sphere.options.address}`);
 
     // write out to JSON
     const addressBook = {
