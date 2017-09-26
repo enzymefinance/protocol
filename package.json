@@ -14,7 +14,7 @@
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "dev-deploy": "rm -rf build && truffle migrate --network development --reset",
-    "deploy": "rm -rf build && truffle migrate --network kovan --reset"
+    "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deploy-all.js"
   },
   "files": [
     "build",
@@ -57,10 +57,11 @@
     "truffle": "^3.4.4"
   },
   "dependencies": {
-    "babel-cli": "^6.24.1",
     "babel-core": "^6.20.0",
     "babel-preset-env": "^1.6.0",
     "bignumber.js": "^2.4.0",
-    "chai": "^4.1.0"
+    "chai": "^4.1.0",
+    "solc": "^0.4.17",
+    "web3": "^1.0.0-beta.21"
   }
 }
