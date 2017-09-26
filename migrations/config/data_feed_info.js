@@ -8,16 +8,7 @@ module.exports = {
       githubHint: '',
     },
     {
-      address: '0x5643cc502cc7ccd388178f406219734e96509c83',
-      name: 'Melonport',
-      data: '',
-      url: 'https://www.melonport.com/',
-      githubHint: '',
-    },
-  ],
-  staging: [
-    {
-      address: '0x5643cc502cc7ccd388178f406219734e96509c83',
+      address: '0x9ffE1fcE6DC97834c5733362d229dFc997299a79',
       name: 'Melonport',
       data: '',
       url: 'https://www.melonport.com/',
