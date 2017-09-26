@@ -6,7 +6,7 @@
     "node": true,
     "mocha": true
   },
-  "globals": {
+  "globals": { // Can be remove if once only Dapp suite used
     "contract": true,
     "artifacts": true
   }
