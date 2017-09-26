@@ -14,8 +14,7 @@
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "dev-deploy": "rm -rf build && truffle migrate --network development --reset",
-    "deploy": "rm -rf build && truffle migrate --network kovan --reset",
-    "temp-deploy": "babel-node deploy-all.js"
+    "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deploy-all.js"
   },
   "files": [
     "build",
