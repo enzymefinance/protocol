@@ -131,6 +131,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getName() constant returns (string) { return NAME; }
     function getSymbol() constant returns (string) { return SYMBOL; }
     function getDecimals() constant returns (uint) { return DECIMALS; }
+    function getCreationTime() constant returns (uint) { return CREATED; }
     function getBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
         (
@@ -144,12 +145,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
     function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
-    function quantitySentToExchange(address ofAsset) constant returns (uint) {
-        return internalAccounting.quantitySentToExchange[ofAsset];
-    }
-    function quantityExpectedToReturn(address ofAsset) constant returns (uint) {
-        return internalAccounting.quantityExpectedToReturn[ofAsset];
-    }
+    function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
+    function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
 
     // CONSTANT METHODS - ACCOUNTING
 
