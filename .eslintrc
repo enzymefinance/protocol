@@ -1,61 +1,14 @@
 {
   "parser": "babel-eslint",
-  "parserOptions": {
-    "allowImportExportEverywhere": true,
-    "ecmaVersion": 6,
-    "sourceType": "module"
+  "extends": ["airbnb", "prettier"],
+  "plugins": ["flowtype"],
+  "env": {
+    "node": true,
+    "mocha": true
   },
-  "plugins": [
-    "meteor"
-  ],
-  "extends": [
-    "airbnb",
-    "plugin:meteor/recommended"
-  ],
-  "settings": {
-    "import/resolver": meteor,
-  },
-  "rules": {
-    "no-undef": 0,
-    "import/extensions": ["off", "never"],
-    "import/no-absolute-path": "off",
-    "import/no-unresolved": [
-      2,
-      {
-        "ignore": [
-          "^meteor/"
-        ]
-      }
-    ],
-    "meteor/no-session": [
-      0
-    ],
-    "max-len": [
-      2,
-      120,
-      2,
-      {
-        "ignoreComments": true
-      }
-    ],
-    "import/no-extraneous-dependencies": 0,
-    "no-underscore-dangle": [
-      "error",
-      {
-        "allow": [
-          "_id"
-        ]
-      }
-    ]
-  },
-  "globals": {
+  "globals": { // Can be remove if once only Dapp suite used
     "web3": true,
     "contract": true,
-    "describe": false,
-    "it": false,
-    "before": false,
-    "beforeEach": false,
-    "after": false,
-    "afterEach": false
+    "artifacts": true
   }
 }

@@ -1,5 +1,6 @@
 const Participation = artifacts.require('Participation');
 const chai = require('chai');
+
 const assert = chai.assert;
 
 contract('Participation', (accounts) => {

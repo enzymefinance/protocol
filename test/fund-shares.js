@@ -15,6 +15,13 @@ contract('Fund shares', (accounts) => {
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
   let ethToken;
+  let eurToken;
+  let mlnToken;
+  let pricefeed;
+  let simpleMarket;
+  let participation;
+  let riskManagement;
+  let sphere;
   let fund;
 
   before('Set up new Fund', async () => {
@@ -73,7 +80,7 @@ contract('Fund shares', (accounts) => {
     const incentive = 100;
 
     it('initial calculations', async () => {
-      const [gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice] =
+      const [gav, , , unclaimedRewards, nav, sharePrice] =
         await fund.performCalculations();
       assert.equal(gav.toNumber(), 0);
       assert.equal(unclaimedRewards.toNumber(), 0);

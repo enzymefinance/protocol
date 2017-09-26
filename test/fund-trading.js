@@ -23,20 +23,20 @@ contract('Fund trading', (accounts) => {
 
   before('Set up new Fund', async () => {
     ethToken = await EtherToken.new({ from: liquidityProvider });
-    eurToken = await PreminedAsset.new(
+    const eurToken = await PreminedAsset.new(
       'Euro', 'EUR', 8, 10 ** 18, { from: liquidityProvider });
     mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: liquidityProvider });
-    datafeed = await PriceFeed.new(mlnToken.address, 0, 600);
+    const datafeed = await PriceFeed.new(mlnToken.address, 0, 600);
     simpleMarket = await SimpleMarket.new();
     simpleAdapter = await SimpleAdapter.new();
-    sphere = await Sphere.new(datafeed.address, simpleMarket.address);
+    const sphere = await Sphere.new(datafeed.address, simpleMarket.address);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await datafeed.register(ethToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await datafeed.register(eurToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
     await datafeed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
-    participation = await Participation.deployed();
-    riskManagement = await RiskMgmt.deployed();
+    const participation = await Participation.deployed();
+    const riskManagement = await RiskMgmt.deployed();
     fund = await Fund.new(
       manager,
       'Melon Portfolio',  // name
@@ -89,7 +89,6 @@ contract('Fund trading', (accounts) => {
       );
     });
     it('takes 100% of an order, which transfers tokens correctly', async () => {
-      const simpleAdapter = await SimpleAdapter.deployed();
       const id = await simpleAdapter.getLastOrderId(simpleMarket.address);
       const preMln = await mlnToken.balanceOf(fund.address);
       const preEth = await ethToken.balanceOf(fund.address);

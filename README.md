@@ -18,13 +18,19 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
 
 1. Clone this repository
     ```
-    git clone git@github.com:melonproject/protocol.git
+    git clone --recursive git@github.com:melonproject/protocol.git
     cd protocol
     ```
 
-2. Install dependencies, such as [Truffle](https://github.com/ConsenSys/truffle) (requires NodeJS 5.0+) and [Testrpc](https://github.com/ethereumjs/testrpc):
+2. Install dependencies
     ```
     npm install
+    ```
+
+3. Generate bytecode and abi of smart-contracts using [dapp](https://github.com/dapphub/dapp) suite
+
+    ```
+    npm run compile
     ```
 
 ## Testing
@@ -61,7 +67,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
     ```
     truffle migrate --network kovan
     ```
-    
+
 [gitter-badge]: https://img.shields.io/gitter/room/melonproject/general.js.svg?style=flat-square
 [gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [license-badge]: https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square
