@@ -5,5 +5,9 @@
   "env": {
     "node": true,
     "mocha": true
+  },
+  "globals": {
+    "contract": true,
+    "artifacts": true
   }
 }
