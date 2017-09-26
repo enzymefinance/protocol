@@ -11,13 +11,14 @@ function getPlaceholderFromPath(libPath) {
   return modifiedPath.slice(0, 36);
 }
 
-
 async function main() {
   try {
     const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: 7200000 };
+    const opts = { from: accounts[0], gas: 6900000 };
     const mlnAddr = tokenInfo['kovan'].find(t => t.symbol === 'MLN-T').address;
+    const datafeedInterval = 120;
+    const datafeedValidity = 60;
     let abi;
     let bytecode;
 
@@ -26,8 +27,9 @@ async function main() {
     bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
     const datafeed = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: [mlnAddr, 120, 60],
+      arguments: [mlnAddr, datafeedInterval, datafeedValidity],
     }).send(opts));
+    console.log('Deployed datafeed');
 
     // deploy simplemarket
     abi = JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi'));
@@ -36,6 +38,7 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [],
     }).send(opts));
+    console.log('Deployed simplemarket');
 
     // deploy sphere
     abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
@@ -47,6 +50,7 @@ async function main() {
         simpleMarket._address,
       ],
     }).send(opts));
+    console.log('Deployed sphere');
 
     // deploy participation
     abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
@@ -55,6 +59,7 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [],
     }).send(opts));
+    console.log('Deployed participation');
 
     // deploy riskmgmt
     abi = JSON.parse(fs.readFileSync('out/riskmgmt/RMMakeOrders.abi'));
@@ -63,6 +68,7 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [],
     }).send(opts));
+    console.log('Deployed riskmgmt');
 
     // deploy governance
     abi = JSON.parse(fs.readFileSync('out/governance/Governance.abi'));
@@ -71,6 +77,7 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [mlnAddr],
     }).send(opts));
+    console.log('Deployed governance');
 
     // deploy rewards
     abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
@@ -79,6 +86,7 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [],
     }).send(opts));
+    console.log('Deployed rewards');
 
     // deploy simpleAdapter
     abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
@@ -87,29 +95,34 @@ async function main() {
       data: `0x${bytecode}`,
       arguments: [],
     }).send(opts));
+    console.log('Deployed simpleadapter');
 
     // link libs to fund (needed to deploy version)
     let libObject = {};
-    let fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'));
+    const fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'), 'utf8');
     let fundBytecode = fs.readFileSync('out/Fund.bin', 'utf8');
     libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards._address;
     libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter._address;
     fundBytecode = solc.linkBytecode(fundBytecode, libObject);
     fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
+    fs.writeFileSync('out/governance/Fund.bin', fundBytecode, 'utf8');
 
     // deploy version (can use identical libs object as above)
     const versionAbi = JSON.parse(fs.readFileSync('out/governance/Version.abi', 'utf8'));
     let versionBytecode = fs.readFileSync('out/governance/Version.bin', 'utf8');
     versionBytecode = solc.linkBytecode(versionBytecode, libObject);
-    console.log(versionBytecode);
-    fs.writeFileSync('out/governance/Fund.bin', versionBytecode, 'utf8');
     const version = await (new web3.eth.Contract(versionAbi).deploy({
       data: `0x${versionBytecode}`,
       arguments: [mlnAddr],
     }).send(opts));
 
+    // have to mock some data for now
+    const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+    const mockChainId = '0x86b5eed81d000000000000000000000000000000000000000000000000000000';
+    const mockAddress = '0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd';
+
     // register assets in datafeed
-    Object.values(tokenInfo).forEach(async (token) => {
+    tokenInfo['kovan'].forEach(async (token) => {
       console.log(`Registering ${token.name}`);
       await datafeed.methods.register(
         token.address,
@@ -117,15 +130,15 @@ async function main() {
         token.symbol,
         token.decimals,
         token.url,
-        token.ipfsHash,
-        token.chainId,
-        token.breakIn,
-        token.breakOut,
+        mockBytes,
+        mockChainId,
+        mockAddress,
+        mockAddress,
       ).send(opts);
     });
 
     // write out to JSON
-    addressBook = {
+    let addressBook = {
       DataFeed: datafeed._address,
       SimpleMarket: simpleMarket._address,
       Sphere: sphere._address,
