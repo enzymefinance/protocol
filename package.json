@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.3.2",
+  "version": "0.3.4-alpha.3",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
@@ -41,11 +41,7 @@
   "devDependencies": {
     "assert": "^1.4.1",
     "async": "^2.4.0",
-    "babel-cli": "^6.26.0",
-    "babel-eslint": "^7.2.3",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-preset-stage-1": "^6.24.1",
-    "babel-preset-stage-2": "^6.24.1",
+    "babel-eslint": "^7.1.1",
     "coveralls": "^2.13.1",
     "eslint": "^3.13.1",
     "eslint-config-airbnb": "^13.0.0",
@@ -58,10 +54,11 @@
     "js-sha256": "^0.3.2",
     "mocha-lcov-reporter": "^1.3.0",
     "solidity-coverage": "^0.2.1",
-    "truffle": "3.4.4"
+    "truffle": "^3.4.4"
   },
   "dependencies": {
     "babel-core": "^6.20.0",
+    "babel-preset-env": "^1.6.0",
     "bignumber.js": "^2.4.0",
     "chai": "^4.1.0",
     "solc": "^0.4.17",

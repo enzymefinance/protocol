@@ -20,7 +20,7 @@ contract Participation is ParticipationInterface, DBC, Owned {
 
     // FIELDS
 
-    // Function fields
+    // Methods fields
     mapping (address => Identity) public identities;
 
     // CONSTANT METHODS

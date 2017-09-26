@@ -41,8 +41,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     struct InternalAccounting {
         uint numberOfMakeOrders; // Number of potentially unsettled orders
+        mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
+        mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange;
-        mapping (address => uint) quantityExpectedToReceive;
+        mapping (address => uint) quantityExpectedToReturn;
+        mapping (address => uint) previousHoldings;
     }
 
     enum RequestStatus { open, cancelled, executed }
@@ -51,7 +54,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         address owner;
         RequestStatus status;
         RequestType requestType;
-        uint numShares;
+        uint shareQuantity;
         uint offeredValue; // if requestType is subscribe
         uint requestedValue; // if requestType is redeem
         uint incentive;
@@ -63,6 +66,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
     struct Order { // Describes and logs whenever assets leave this fund
+        // TODO: consider bool isActive;
         uint exchangeId; // Id as returned from exchange
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
         address buyAsset; // Asset (as registred in Asset registrar) to be bought
@@ -79,12 +83,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Constant fields
     string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
     uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
-    uint public constant DIVISOR_FEE = 10 ** 15; // Reward are divided by this number
-    uint public constant MAX_OPEN_ORDERS = 6; // Maximum number of open orders
+    uint public constant DIVISOR_FEE = 10 ** uint256(15); // Reward are divided by this number
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
-    uint public MELON_BASE_UNITS; // One unit of share equals 10 ** DECIMALS of base unit of shares
+    uint public MELON_IN_BASE_UNITS; // One unit of share equals 10 ** uint256(DECIMALS) of base unit of shares
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
@@ -92,7 +95,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
-    // Function fields
+    // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
     InternalAccounting public internalAccounting; // Accounts for assets not held in custody of fund
@@ -102,12 +105,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
 
-    uint[] openOrderIds = new uint[](MAX_OPEN_ORDERS);
-    mapping (address => uint) public previousHoldings; // Maps assets to holdings, needed for internal accounting
-
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isZero(uint x) internal returns (bool) { return x == 0; }
+    function isZero(uint x) internal returns (bool) { x == 0; }
     function isFalse(bool x) internal returns (bool) { return x == false; }
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
     function notLessThan(uint x, uint y) internal returns (bool) { return x >= y; }
@@ -131,9 +131,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getName() constant returns (string) { return NAME; }
     function getSymbol() constant returns (string) { return SYMBOL; }
     function getDecimals() constant returns (uint) { return DECIMALS; }
-    function getBaseUnits() constant returns (uint) { return MELON_BASE_UNITS; }
+    function getCreationTime() constant returns (uint) { return CREATED; }
+    function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
-        return (
+        (
             address(module.datafeed),
             address(EXCHANGE),
             address(module.participation),
@@ -144,12 +145,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
     function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
-    function quantitySentToExchange(address ofAsset) constant returns (uint) {
-        internalAccounting.quantitySentToExchange[ofAsset];
-    }
-    function quantityExpectedToReceive(address ofAsset) constant returns (uint) {
-        internalAccounting.quantityExpectedToReceive[ofAsset];
-    }
+    function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
+    function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -162,7 +159,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
                 .add(quantitySentToExchange(ofAsset));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
@@ -217,7 +214,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(isPastZero(totalSupply))
         returns (uint valuePerShare)
     {
-        valuePerShare = value.mul(MELON_BASE_UNITS).div(totalSupply);
+        valuePerShare = value.mul(MELON_IN_BASE_UNITS).div(totalSupply);
     }
 
     /// @notice Calculates essential fund metrics
@@ -226,7 +223,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint nav = calcNav(gav, unclaimedRewards);
-        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_BASE_UNITS; // Handle potential division through zero by defining a default value
+        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
@@ -267,7 +264,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
-        MELON_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
+        MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
@@ -276,7 +273,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            sharePrice: MELON_BASE_UNITS,
+            sharePrice: MELON_IN_BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
         });
@@ -285,62 +282,46 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - ADMINISTRATION
 
-    function increaseStake(uint numShares)
+    function increaseStake(uint shareQuantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(isPastZero(numShares))
-        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(isPastZero(shareQuantity))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
-        subShares(msg.sender, numShares);
-        addShares(this, numShares);
+        subShares(msg.sender, shareQuantity);
+        addShares(this, shareQuantity);
     }
 
-    function decreaseStake(uint numShares)
+    function decreaseStake(uint shareQuantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(isPastZero(numShares))
-        pre_cond(balancesOfHolderAtLeast(this, numShares))
+        pre_cond(isPastZero(shareQuantity))
+        pre_cond(balancesOfHolderAtLeast(this, shareQuantity))
         pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
-        subShares(this, numShares);
-        addShares(msg.sender, numShares);
+        subShares(this, shareQuantity);
+        addShares(msg.sender, shareQuantity);
     }
 
-    function toogleSubscription()
-        external
-        pre_cond(isOwner())
-    {
-        isSubscribeAllowed = !isSubscribeAllowed;
-    }
-
-    function toggleRedemption()
-        external
-        pre_cond(isOwner())
-    {
-        isRedeemAllowed = !isRedeemAllowed;
-    }
-
-    function shutDown()
-        pre_cond(isVersion() || isOwner())
-    {
-        isShutDown = true;
-    }
+    function toogleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
+    function toggleRedemption() external pre_cond(isOwner()) { isRedeemAllowed = !isRedeemAllowed; }
+    function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// @param numShares number of shares for offered value
+    /// @param shareQuantity number of shares for offered value
     /// @param offeredValue denominated in [base unit of MELON_ASSET]
     /// @param incentiveValue non-zero incentive Value which is paid to workers for triggering executeRequest
     /// @return Pending subscription Request
     function requestSubscription(
-        uint numShares,
+        uint shareQuantity,
         uint offeredValue,
         uint incentiveValue
     )
@@ -351,7 +332,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(module.datafeed.isValid(MELON_ASSET))
         pre_cond(module.participation.isSubscriptionPermitted(
             msg.sender,
-            numShares,
+            shareQuantity,
             offeredValue
         ))
         returns(uint id)
@@ -361,7 +342,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.subscribe,
-            numShares: numShares,
+            shareQuantity: shareQuantity,
             offeredValue: offeredValue,
             requestedValue: 0,
             incentive: incentiveValue,
@@ -370,23 +351,23 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         }));
         id = getLastRequestId();
-        SubscribeRequest(id, msg.sender, now, numShares);
+        SubscribeRequest(id, msg.sender, now, shareQuantity);
     }
 
-    /// @dev Pre:  Redeemer has at least `numShares` shares; redeemer approved this contract to handle shares
-    /// @return Redeemer lost `numShares`, and gained `numShares * value` of Melon asset
+    /// @dev Redeemer has at least `shareQuantity` shares; redeemer approved this contract to handle shares
+    /// @return Redeemer lost `shareQuantity`, and gained `shareQuantity * value` of Melon asset
     function requestRedemption(
-        uint numShares,
+        uint shareQuantity,
         uint requestedValue,
         uint incentiveValue
       )
         external
         pre_cond(notShutDown())
         pre_cond(isRedeemAllowed)
-        pre_cond(isPastZero(numShares))
+        pre_cond(isPastZero(shareQuantity))
         pre_cond(module.participation.isRedemptionPermitted(
             msg.sender,
-            numShares,
+            shareQuantity,
             requestedValue
         ))
         returns (uint id)
@@ -395,7 +376,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             owner: msg.sender,
             status: RequestStatus.open,
             requestType: RequestType.redeem,
-            numShares: numShares,
+            shareQuantity: shareQuantity,
             offeredValue: 0,
             requestedValue: requestedValue,
             incentive: incentiveValue,
@@ -404,10 +385,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         }));
         id = getLastRequestId();
-        RedeemRequest(id, msg.sender, now, numShares);
+        RedeemRequest(id, msg.sender, now, shareQuantity);
     }
 
-    /// @dev Pre: Anyone can trigger this function; Id of request that is pending
+    /// @dev Anyone can trigger this function; Id of request that is pending
     /// @return Worker either cancelled or fullfilled request
     function executeRequest(uint requestId)
         external
@@ -418,7 +399,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         // Time and updates have passed
         Request request = requests[requestId];
-        uint actualValue = request.numShares.mul(calcSharePrice()).div(MELON_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
+        uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_IN_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
@@ -426,11 +407,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             if(isPastZero(remainder)) {
                 assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
             }
-            createShares(request.owner, request.numShares); // Accounting
+            createShares(request.owner, request.shareQuantity); // Accounting
         } else if (isRedeem(request.requestType) && notGreaterThan(request.requestedValue, actualValue)) {
             assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Transfer value
-            annihilateShares(request.owner, request.numShares); // Accounting
+            annihilateShares(request.owner, request.shareQuantity); // Accounting
         }
     }
 
@@ -448,48 +429,48 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
-    /// @param numShares numer of shares owned by msg.sender which msg.sender would like to receive
-    /// @return Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
-    function redeemUsingSlice(uint numShares)
+    /// @param shareQuantity numer of shares owned by msg.sender which msg.sender would like to receive
+    /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
+    function redeemUsingSlice(uint shareQuantity)
         external
-        pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
+        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
     {
         // Current Value
         uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
         assert(isPastZero(prevTotalSupply));
-        annihilateShares(msg.sender, numShares); // Destroy _before_ external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity); // Destroy _before_ external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings.mul(numShares).div(prevTotalSupply); // ownership percentage of msg.sender
+            uint ownershipQuantity = assetHoldings.mul(shareQuantity).div(prevTotalSupply); // ownership percentage of msg.sender
             if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
                 isShutDown = true; // Shutdown allows open orders to be cancelled, eg. to return
             }
             assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
         }
-        Redeemed(msg.sender, now, numShares);
+        Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function createShares(address recipient, uint numShares) internal {
-        totalSupply = totalSupply.add(numShares);
-        addShares(recipient, numShares);
-        Subscribed(msg.sender, now, numShares);
+    function createShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.add(shareQuantity);
+        addShares(recipient, shareQuantity);
+        Subscribed(msg.sender, now, shareQuantity);
     }
 
-    function annihilateShares(address recipient, uint numShares) internal {
-        totalSupply = totalSupply.sub(numShares);
-        subShares(recipient, numShares);
-        Redeemed(msg.sender, now, numShares);
+    function annihilateShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.sub(shareQuantity);
+        subShares(recipient, shareQuantity);
+        Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function addShares(address recipient, uint numShares) internal {
-        balances[recipient] = balances[recipient].add(numShares);
+    function addShares(address recipient, uint shareQuantity) internal {
+        balances[recipient] = balances[recipient].add(shareQuantity);
     }
 
-    function subShares(address recipient, uint numShares) internal {
-        balances[recipient] = balances[recipient].sub(numShares);
+    function subShares(address recipient, uint shareQuantity) internal {
+        balances[recipient] = balances[recipient].sub(shareQuantity);
     }
 
     // NON-CONSTANT METHODS - MANAGING
@@ -512,15 +493,33 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (uint id)
     {
-        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) { LogError(0); return; }
+        bytes32 assetPair = sha3(sellAsset, buyAsset);
+        if (internalAccounting.existsMakeOrder[assetPair]) {
+            LogError(0);
+            return;
+        }
+        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) {
+            LogError(1);
+            return;
+        }
         if (isFalse(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
             module.datafeed.getReferencePrice(sellAsset, buyAsset),
             buyQuantity
-        ))) { LogError(1); return; }
-        if (isFalse(approveSpending(sellAsset, sellQuantity))) { LogError(2); return; }
+        ))) {
+            LogError(2);
+            return;
+        }
+        if (isFalse(approveSpending(sellAsset, sellQuantity))) {
+            LogError(3);
+            return;
+        }
+
         id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        if (isZero(id)) { LogError(3); return; } // TODO: check accuracy of this
+        if (isZero(id)) {
+            LogError(4);
+            return;
+        } // TODO: validate accuracy of this
         orders.push(Order({
             exchangeId: id,
             sellAsset: sellAsset,
@@ -532,11 +531,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             orderType: OrderType.make,
             fillQuantity: 0
         }));
+        internalAccounting.numberOfMakeOrders++;
         internalAccounting.quantitySentToExchange[sellAsset] =
             quantitySentToExchange(sellAsset)
             .add(sellQuantity);
-        internalAccounting.quantityExpectedToReceive[buyAsset] =
-            quantityExpectedToReceive(buyAsset)
+        internalAccounting.quantityExpectedToReturn[buyAsset] =
+            quantityExpectedToReturn(buyAsset)
             .add(buyQuantity);
         OrderUpdated(id);
     }
@@ -558,17 +558,32 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.sellQuantity,
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
-        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) { LogError(0); return; }
+        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) {
+              LogError(0);
+              return;
+        }
         if (isFalse(module.riskmgmt.isTakePermitted(
             // TODO check: Buying what is being sold and selling what is being bought
             module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
             order.sellQuantity // Quantity about to be received
-        ))) { LogError(1); return; }
-        if (isFalse(quantity <= order.sellQuantity)) { LogError(2); return; }
-        if (isFalse(approveSpending(order.buyAsset, quantity))) { LogError(3); return; }
+        ))) {
+              LogError(1);
+              return;
+        }
+        if (isFalse(quantity <= order.sellQuantity)) {
+              LogError(2);
+              return;
+        }
+        if (isFalse(approveSpending(order.buyAsset, quantity))) {
+              LogError(3);
+              return;
+        }
         success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
-        if (isFalse(success)) { LogError(4); return; }
+        if (isFalse(success)) {
+              LogError(4);
+              return;
+        }
         order.exchangeId = id;
         order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
@@ -578,8 +593,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-    /// @notice Cancel orders that were not expected to settle immediately, i.e. makeOrders
-    /// @param id Active order id with order owner of this contract on selected Exchange
+    /// @notice Reduce exposure with exchange interaction
+    /// @dev Cancel orders that were not expected to settle immediately, i.e. makeOrders
+    /// @param id Active order id of this order array with order owner of this contract on selected Exchange
     /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
         external
@@ -588,77 +604,98 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
         success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
-        if (isFalse(success)) { LogError(0); return; }
+        if (isFalse(success)) {
+            LogError(0);
+            return;
+        }
+
+        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
+        internalAccounting.numberOfMakeOrders--;
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
-        internalAccounting.quantityExpectedToReceive[order.buyAsset] =
-            quantityExpectedToReceive(order.buyAsset)
+        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
+            quantityExpectedToReturn(order.buyAsset)
             .sub(order.buyQuantity);
         OrderUpdated(id);
     }
 
-    //TODO: add previousHoldings
+    /// @notice Reduce exposure without exchange interaction
+    /// @dev After funds have been sent manually back to Melon fund, 'settle' them manually
     /// @param sellAsset Asset (as registred in Asset registrar) to be sold
     /// @param buyAsset Asset (as registred in Asset registrar) to be bought
-    function closeOpenOrders(address sellAsset, address buyAsset)
+    function manualSettlement(address sellAsset, address buyAsset)
         constant
     {
-        for (uint i = 0; i < openOrderIds.length; i++) {
-            Order thisOrder = orders[openOrderIds[i]];
-            if (thisOrder.sellAsset == sellAsset && thisOrder.buyAsset == buyAsset) {
-                proofOfEmbezzlement(sellAsset, buyAsset);
-                delete openOrderIds[i]; // Free up open order slot
-                // TODO: fix pot incorrect OrderStatus - partiallyFilled
-                thisOrder.status = OrderStatus.fullyFilled;
-                //  update previousHoldings
-                // TODO: trigger for each proofOfEmbezzlement() call
-                previousHoldings[sellAsset] = ERC20(sellAsset).balanceOf(this);
-                previousHoldings[buyAsset] = ERC20(buyAsset).balanceOf(this);
-            }
+        // TODO TradeEvent
+        bytes32 assetPair = sha3(sellAsset, buyAsset);
+        if (isFalse(internalAccounting.existsMakeOrder[assetPair])) {
+            LogError(0);
+            return;
         }
+
+        uint id = internalAccounting.makeOrderId[assetPair];
+        Order memory order = orders[id];
+        if (proofOfEmbezzlement(order.sellAsset, order.buyAsset)) {
+            LogError(1);
+            return;
+        }
+        // TODO: update order.status = OrderStatus.fullyFilled;
+        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
+        // TODO: abstract below into function
+        internalAccounting.numberOfMakeOrders--;
+        internalAccounting.quantitySentToExchange[order.sellAsset] =
+            quantitySentToExchange(order.sellAsset)
+            .sub(order.sellQuantity);
+        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
+            quantityExpectedToReturn(order.buyAsset)
+            .sub(order.buyQuantity);
+        // Update prev holdings
+        internalAccounting.previousHoldings[order.sellAsset] = ERC20(order.sellAsset).balanceOf(this);
+        internalAccounting.previousHoldings[order.buyAsset] = ERC20(order.buyAsset).balanceOf(this);
     }
 
     /// @notice Whether embezzlement happened
-    /// @dev Specific asset pair (ofBase.ofQuote) where by convention ofBase is asset being sold and ofQuote asset being bought
+    /// @dev Asset pair corresponds to unsettled (== make) order
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
     /// @return True if embezzled otherwise false
     function proofOfEmbezzlement(address sellAsset, address buyAsset)
         constant
         returns (bool)
     {
-        // Sold more than expected => Proof of Embezzlemnt
-        uint totalIntendedSellQty = quantitySentToExchange(sellAsset); // Trade intention
-        if (isLargerThan(
-            previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
-            ERC20(sellAsset).balanceOf(this) // Actual qty sold
-        )) {
-            isShutDown = true;
-            // TODO: Allocate staked shares from this to msg.sender
-            return true;
-        }
-        // Sold less or equal than intended
-        uint factor = 10000;
-        uint divisor = factor;
+        // Accounted for sell quanity is less than what is held in custody (good)
+        uint factor = MELON_IN_BASE_UNITS; // Want to receive proportionally as much as sold
+        uint divisor = factor; // To reduce inaccuracy due to rounding errors
         if (isLessThan(
-            previousHoldings[sellAsset].sub(totalIntendedSellQty), // Intended qty sold
-            ERC20(sellAsset).balanceOf(this) // Actual qty sold
+            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
+            ERC20(sellAsset).balanceOf(this) // Actual quantity held in fund
         )) { // Sold less than intended
             factor = divisor
-                .mul(previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
-                .div(totalIntendedSellQty);
-        }
-        // Sold at a worse price than expected => Proof of Embezzlemnt
-        uint totalIntendedBuyQty = quantityExpectedToReceive(buyAsset); // Trade execution
-        uint totalExpectedBuyQty = totalIntendedBuyQty.mul(factor).div(divisor);
-        if (isLargerThan(
-            previousHoldings[buyAsset].add(totalExpectedBuyQty), // Expected qty bought
-            ERC20(buyAsset).balanceOf(this) // Actual qty sold
-        )) {
-            isShutDown = true;
+                .mul(internalAccounting.previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
+                .div(quantitySentToExchange(sellAsset));
+        } else { // Held in custody is less than accounted for (PoE)
             // TODO: Allocate staked shares from this to msg.sender
+            // TODO: error log
+            isShutDown = true;
             return true;
         }
-        return false;
+
+        // Revise return expectations, for example in case of partial fill of order
+        uint revisedReturnExpectations = quantityExpectedToReturn(buyAsset).mul(factor).div(divisor);
+
+        // Held in custody is more than revised return expectations of buy asset (good)
+        if (isLargerThan(
+            internalAccounting.previousHoldings[buyAsset].add(revisedReturnExpectations), // Expected qty bought
+            ERC20(buyAsset).balanceOf(this) // Actual quantity held in fund
+        )) {
+            return false;
+        } else { // Held in custody is less than accounted for (PoE)
+            // TODO: Allocate staked shares from this to msg.sender
+            // TODO: error log
+            isShutDown = true;
+            return true;
+        }
     }
 
     // NON-CONSTANT METHODS - REWARDS
@@ -682,8 +719,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         assert(isPastZero(gav));
 
         // Accounting: Allocate unclaimedRewards to this fund
-        uint numShares = totalSupply.mul(unclaimedRewards).div(gav);
-        addShares(owner, numShares);
+        uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
+        addShares(owner, shareQuantity);
         // Update Calculations
         atLastConversion = Calculations({
             gav: gav,
@@ -696,7 +733,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
 
-        RewardsConverted(now, numShares, unclaimedRewards);
+        RewardsConverted(now, shareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 }

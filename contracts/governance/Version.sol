@@ -25,7 +25,7 @@ contract Version is DBC, Owned {
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
 
-    // Function fields
+    // Methods fields
     mapping (address => address) public managers; // Links manager address to fundId list
     mapping (uint => address) public funds; // Links fundId to fundAddr
     uint public nextFundId;
