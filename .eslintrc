@@ -7,6 +7,7 @@
     "mocha": true
   },
   "globals": { // Can be remove if once only Dapp suite used
+    "web3": true,
     "contract": true,
     "artifacts": true
   }
