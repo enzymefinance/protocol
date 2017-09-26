@@ -1,5 +1,4 @@
 const Calculate = artifacts.require('calculate');
-const BigNumber = require('bignumber.js');
 const chai = require('chai');
 const assert = chai.assert;
 
