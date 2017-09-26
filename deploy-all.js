@@ -13,10 +13,11 @@ function getPlaceholderFromPath(libPath) {
 
 async function main() {
   try {
+    const networkName = 'kovan';
     const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
     const accounts = await web3.eth.getAccounts();
     const opts = { from: accounts[0], gas: 6900000 };
-    const mlnAddr = tokenInfo['kovan'].find(t => t.symbol === 'MLN-T').address;
+    const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
     const datafeedInterval = 120;
     const datafeedValidity = 60;
     let abi;
@@ -46,8 +47,8 @@ async function main() {
     const sphere = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
       arguments: [
-        datafeed._address,
-        simpleMarket._address,
+        datafeed.options.address,
+        simpleMarket.options.address,
       ],
     }).send(opts));
     console.log('Deployed sphere');
@@ -98,11 +99,10 @@ async function main() {
     console.log('Deployed simpleadapter');
 
     // link libs to fund (needed to deploy version)
-    let libObject = {};
-    const fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'), 'utf8');
+    const libObject = {};
     let fundBytecode = fs.readFileSync('out/Fund.bin', 'utf8');
-    libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards._address;
-    libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter._address;
+    libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
+    libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
     fundBytecode = solc.linkBytecode(fundBytecode, libObject);
     fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
     fs.writeFileSync('out/governance/Fund.bin', fundBytecode, 'utf8');
@@ -122,7 +122,7 @@ async function main() {
     const mockAddress = '0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd';
 
     // register assets in datafeed
-    tokenInfo['kovan'].forEach(async (token) => {
+    tokenInfo[networkName].forEach(async (token) => {
       console.log(`Registering ${token.name}`);
       await datafeed.methods.register(
         token.address,
@@ -138,18 +138,18 @@ async function main() {
     });
 
     // write out to JSON
-    let addressBook = {
-      DataFeed: datafeed._address,
-      SimpleMarket: simpleMarket._address,
-      Sphere: sphere._address,
-      Participation: participation._address,
-      RMMakeOrders: riskMgmt._address,
-      Governance: governance._address,
-      rewards: rewards._address,
-      simpleAdapter: simpleAdapter._address,
-      Version: version._address,
+    const addressBook = {
+      DataFeed: datafeed.options.address,
+      SimpleMarket: simpleMarket.options.address,
+      Sphere: sphere.options.address,
+      Participation: participation.options.address,
+      RMMakeOrders: riskMgmt.options.address,
+      Governance: governance.options.address,
+      rewards: rewards.options.address,
+      simpleAdapter: simpleAdapter.options.address,
+      Version: version.options.address,
     };
-    fs.writeFileSync('./address-book.json', JSON.stringify(addressBook), 'utf8');
+    fs.writeFileSync('./address-book.json', JSON.stringify(addressBook, null, '\t'), 'utf8');
   } catch (err) { console.log(err.stack); }
 }
 
