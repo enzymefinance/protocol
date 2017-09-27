@@ -33,7 +33,7 @@ async function main() {
     }).send(opts));
     console.log('Deployed datafeed');
 
-    // deploy simplemarket
+  // deploy simplemarket
     abi = JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi'));
     bytecode = fs.readFileSync('out/exchange/thirdparty/SimpleMarket.bin');
     const simpleMarket = await (new web3.eth.Contract(abi).deploy({
@@ -146,11 +146,14 @@ async function main() {
       ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
     }
 
-    console.log(`DATAFEED: ${datafeed.options.address}`);
-    console.log(`SPHERE: ${sphere.options.address}`);
+    // update address book
+    let addressBook;
+    const addressBookFile = './address-book.json';
+    if(fs.existsSync(addressBookFile)) {
+      addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+    } else addressBook = {};
 
-    // write out to JSON
-    const addressBook = {
+    addressBook[networkName] = {
       DataFeed: datafeed.options.address,
       SimpleMarket: simpleMarket.options.address,
       Sphere: sphere.options.address,
@@ -161,7 +164,8 @@ async function main() {
       simpleAdapter: simpleAdapter.options.address,
       Version: version.options.address,
     };
-    fs.writeFileSync('./address-book.json', JSON.stringify(addressBook, null, '\t'), 'utf8');
+
+    fs.writeFileSync(addressBookFile, JSON.stringify(addressBook, null, '\t'), 'utf8');
   } catch (err) { console.log(err.stack); }
 }
 
