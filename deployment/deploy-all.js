@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
-const tokenInfo = require('../migrations/config/token_info.js');
 const Web3 = require('web3');
-const config = require('./conf.js');
+const environmentConfig = require('./ecosystem.config.js');
+const tokenInfo = require('./token.info.js');
+
 
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
@@ -12,16 +13,17 @@ function getPlaceholderFromPath(libPath) {
   return modifiedPath.slice(0, 36);
 }
 
-async function deployKovan() {
+
+async function deploy(environment) {
   try {
-    const networkName = 'kovan';
-    const networkConfig = config[networkName];
-    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${networkConfig.host}:${networkConfig.port}`));
+    const config = environmentConfig[environment];
+    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
+    if(config.networkId !== await web3.eth.getId()) {
+      throw new Error(`Deployment for environment ${environment} not defined`);
+    }
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: networkConfig.gas, gasPrice: networkConfig.gasPrice, };
-    const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
-    const datafeedInterval = 120;
-    const datafeedValidity = 60;
+    const opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice, };
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN-T').address;
     let abi;
     let bytecode;
 
@@ -30,7 +32,7 @@ async function deployKovan() {
     bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
     const datafeed = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: [mlnAddr, datafeedInterval, datafeedValidity],
+      arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
     }).send(opts));
     console.log('Deployed datafeed');
 
@@ -118,32 +120,19 @@ async function deployKovan() {
       arguments: [mlnAddr],
     }).send(opts));
 
-    // have to mock some data for now
-    const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-    const mockChainId = '0x86b5eed81d000000000000000000000000000000000000000000000000000000';
-    const mockAddress = '0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd';
-
-    // register assets in datafeed
-
-
-    const assetsToRegister = [
-      'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
-      'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
-    ];
-
-    for(const assetSymbol of assetsToRegister) {
+    for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
       console.log(`Registering ${assetSymbol}`);
-      const token = tokenInfo[networkName].filter(token => token.symbol === assetSymbol)[0];
+      const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
       await datafeed.methods.register(
         token.address,
         token.name,
         token.symbol,
         token.decimals,
         token.url,
-        mockBytes,
-        mockChainId,
-        mockAddress,
-        mockAddress,
+        token.ipfsHash,
+        token.chainId,
+        token.breakIn,
+        token.breakOut,
       ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
     }
 
@@ -154,7 +143,7 @@ async function deployKovan() {
       addressBook = JSON.parse(fs.readFileSync(addressBookFile));
     } else addressBook = {};
 
-    addressBook[networkName] = {
+    addressBook[environment] = {
       DataFeed: datafeed.options.address,
       SimpleMarket: simpleMarket.options.address,
       Sphere: sphere.options.address,
@@ -170,12 +159,10 @@ async function deployKovan() {
   } catch (err) { console.log(err.stack); }
 }
 
-async function deployToNetwork(networkName) {
-  if(networkName === 'kovan') deployKovan();
-  else throw new Error(`Deployment for network ${networkName} not defined`);
-}
-
 if (require.main === module) {
-  const networkArgument = process.argv[2];
-  deployToNetwork(networkArgument);
+  if (process.argv.length < 2) {
+    throw new Error(`Please specify a deployment environment`);
+  } else {
+    deploy(process.argv[2]);
+  }
 }
