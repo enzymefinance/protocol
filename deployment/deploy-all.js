@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
-const tokenInfo = require('./migrations/config/token_info.js');
+const tokenInfo = require('../migrations/config/token_info.js');
 const Web3 = require('web3');
+const config = require('./conf.js');
 
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
@@ -14,9 +15,10 @@ function getPlaceholderFromPath(libPath) {
 async function deployKovan() {
   try {
     const networkName = 'kovan';
-    const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
+    const netConfig = config[networkName];
+    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${netConfig.host}:${netConfig.port}`));
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: 6900000, gasPrice: 100000000000 };
+    const opts = { from: accounts[0], gas: netConfig.gas, gasPrice: netConfig.gasPrice, };
     const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
     const datafeedInterval = 120;
     const datafeedValidity = 60;
@@ -131,13 +133,13 @@ async function deployKovan() {
 
     for(const assetSymbol of assetsToRegister) {
       console.log(`Registering ${assetSymbol}`);
-      const thisToken = tokenInfo[networkName].filter(token => token.symbol === assetSymbol)[0];
+      const token = tokenInfo[networkName].filter(token => token.symbol === assetSymbol)[0];
       await datafeed.methods.register(
-        thisToken.address,
-        thisToken.name,
-        thisToken.symbol,
-        thisToken.decimals,
-        thisToken.url,
+        token.address,
+        token.name,
+        token.symbol,
+        token.decimals,
+        token.url,
         mockBytes,
         mockChainId,
         mockAddress,
