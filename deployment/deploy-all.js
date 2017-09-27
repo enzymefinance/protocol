@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
-const tokenInfo = require('../migrations/config/token_info.js');
 const Web3 = require('web3');
-const config = require('./conf.js');
+const environmentConfig = require('./environment.config.js');
+const tokenInfo = require('./token.info.js');
+
 
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
@@ -12,14 +13,17 @@ function getPlaceholderFromPath(libPath) {
   return modifiedPath.slice(0, 36);
 }
 
-async function deployKovan() {
+
+async function deploy(environment) {
   try {
-    const networkName = 'kovan';
-    const networkConfig = config[networkName];
-    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${networkConfig.host}:${networkConfig.port}`));
+    const config = environmentConfig[environment];
+    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
+    if(config.networkId !== await web3.eth.getId()) {
+      throw new Error(`Deployment for environment ${environment} not defined`);
+    }
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: networkConfig.gas, gasPrice: networkConfig.gasPrice, };
-    const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
+    const opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice, };
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN-T').address;
     const datafeedInterval = 120;
     const datafeedValidity = 60;
     let abi;
@@ -133,7 +137,7 @@ async function deployKovan() {
 
     for(const assetSymbol of assetsToRegister) {
       console.log(`Registering ${assetSymbol}`);
-      const token = tokenInfo[networkName].filter(token => token.symbol === assetSymbol)[0];
+      const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
       await datafeed.methods.register(
         token.address,
         token.name,
@@ -154,7 +158,7 @@ async function deployKovan() {
       addressBook = JSON.parse(fs.readFileSync(addressBookFile));
     } else addressBook = {};
 
-    addressBook[networkName] = {
+    addressBook[environment] = {
       DataFeed: datafeed.options.address,
       SimpleMarket: simpleMarket.options.address,
       Sphere: sphere.options.address,
@@ -170,12 +174,10 @@ async function deployKovan() {
   } catch (err) { console.log(err.stack); }
 }
 
-async function deployToNetwork(networkName) {
-  if(networkName === 'kovan') deployKovan();
-  else throw new Error(`Deployment for network ${networkName} not defined`);
-}
-
 if (require.main === module) {
-  const networkArgument = process.argv[2];
-  deployToNetwork(networkArgument);
+  if (process.argv.length < 2) {
+    throw new Error(`Please specify a deployment environment`);
+  } else {
+    deploy(process.argv[2]);
+  }
 }
