@@ -7,14 +7,14 @@ module.exports = {
     gasPrice: 100000000000,
     protocol: {
       registrar: {
-        assetsToRegister = [
+        assetsToRegister: [
           'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
         ],
       },
       datafeed: {
-        interval = 120,
-        validity = 60,
+        interval: 120,
+        validity: 60,
       },
     },
   },
@@ -26,14 +26,14 @@ module.exports = {
     gasPrice: 100000000000,
     protocol: {
       registrar: {
-        assetsToRegister = [
+        assetsToRegister: [
           'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
         ],
       },
       datafeed: {
-        interval = 120,
-        validity = 60,
+        interval: 120,
+        validity: 60,
       },
     },
   },
