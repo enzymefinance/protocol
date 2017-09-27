@@ -1,9 +1,9 @@
 const Calculate = artifacts.require('calculate');
-const BigNumber = require('bignumber.js');
 const chai = require('chai');
+
 const assert = chai.assert;
 
-contract('Calculate', (accounts) => {
+describe('Calculate', () => {
   let calculate;
   before('Get the library', async () => {
     calculate = await Calculate.deployed();
@@ -49,7 +49,7 @@ contract('Calculate', (accounts) => {
   });
   describe('#netAssetValue', () => {
     it('gets correct value for non-empty NAV', async () => {
-      let nav = await calculate.netAssetValue(3000, 200);
+      const nav = await calculate.netAssetValue(3000, 200);
       assert.equal(nav.toNumber(), 2800);
     });
     it('errors when rewards larger than assets available', () => {
@@ -82,7 +82,7 @@ contract('Calculate', (accounts) => {
   });
   describe('#rewards', () => {
     it('calculates correct rewards', async () => {
-      [mgmt, perf, unclaimed] = await calculate.rewards(
+      const [mgmt, perf, unclaimed] = await calculate.rewards(
         200000, 210000, 1, 10000000, 40000, 2000, 100, 10, 100000000,
       );
       assert.equal(mgmt.toNumber(), 4);

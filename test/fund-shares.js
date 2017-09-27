@@ -15,6 +15,13 @@ contract('Fund shares', (accounts) => {
   const liquidityProvider = accounts[1];
   const investor = accounts[2];
   let ethToken;
+  let eurToken;
+  let mlnToken;
+  let pricefeed;
+  let simpleMarket;
+  let participation;
+  let riskManagement;
+  let sphere;
   let fund;
 
   before('Set up new Fund', async () => {
@@ -71,6 +78,15 @@ contract('Fund shares', (accounts) => {
     const resShares = 10000;
     const offeredValue = 10000;
     const incentive = 100;
+
+    it('initial calculations', async () => {
+      const [gav, , , unclaimedRewards, nav, sharePrice] =
+        await fund.performCalculations();
+      assert.equal(gav.toNumber(), 0);
+      assert.equal(unclaimedRewards.toNumber(), 0);
+      assert.equal(nav.toNumber(), 0);
+      assert.equal(sharePrice.toNumber(), 10 ** 18);
+    });
     it('investor receives token from liquidity provider', async () => {
       await mlnToken.transfer(investor, offeredValue + incentive, { from: liquidityProvider });
       assert.equal((await mlnToken.balanceOf(investor)).toNumber(), offeredValue + incentive);

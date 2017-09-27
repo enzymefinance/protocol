@@ -5,7 +5,7 @@ import '../dependencies/ERC20.sol';
 
 /// @title Competition Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Links Melon Funds to Competition
+/// @notice Register Melon funds in competition
 contract Competition is DBC {
 
     // TYPES
@@ -18,7 +18,7 @@ contract Competition is DBC {
         address payoutAsset; // Asset (usually Melon Token) to be received as prize
         uint depositQuantity; // Quantity of depositAsset spent
         uint payoutQuantity; // Quantity of payoutAsset received as prize
-        uint finalSharePrice; // Can be changed for any other comparison metric
+        uint finalSharePrice; // Performance of Melon fund at competition endTime; Can be changed for any other comparison metric
     }
 
     // FIELDS
@@ -36,8 +36,7 @@ contract Competition is DBC {
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
-
-    // Function fields
+    // Methods fields
     Hopeful[] public hopefuls; // List of all hopefuls, can be externally accessed
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -77,8 +76,7 @@ contract Competition is DBC {
     }
 
 
-    /// @notice To take part in the competition
-    /// @dev Maintainer of above identities mapping (== owner) can trigger this function
+    /// @notice Register to take part in the competition
     /// @param fund Address of the Melon fund
     /// @param depositAsset Asset (ERC20 Token) spent to take part in competition
     /// @param payoutAsset Asset (usually Melon Token) to be received as prize
@@ -96,13 +94,12 @@ contract Competition is DBC {
         bytes32 s
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
-        /* In later version
-         * require depositAsset == MELON_ASSET
-         * require payoutAsset == MELON_ASSET
-         * require depositQuantity <= maxDepositQuantity
-         * require hopefuls.length < maxHopefulsNumber
-         * require hopefuls.length < maxHopefulsNumber
-         */
+        // In later version
+        //  require depositAsset == MELON_ASSET
+        //  require payoutAsset == MELON_ASSET
+        //  require depositQuantity <= maxDepositQuantity
+        //  require hopefuls.length < maxHopefulsNumber
+        //  require fund.sharePrice == 1 MELON_BASE_UNITS
     {
         hopefuls.push(Hopeful({
           fund: fund,

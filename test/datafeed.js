@@ -1,6 +1,7 @@
 const DataFeed = artifacts.require('DataFeed');
 const Asset = artifacts.require('Asset');
 const chai = require('chai');
+
 const assert = chai.assert;
 
 contract('DataFeed', (accounts) => {
@@ -22,14 +23,14 @@ contract('DataFeed', (accounts) => {
         someBytes, someBytes, accounts[7], accounts[8], {from: accounts[0]});
     });
     it('gets descriptive information', async () => {
-      [name, sym, url, hash] = await feed.getDescriptiveInformation(btc.address);
+      const [name, sym, url, hash] = await feed.getDescriptiveInformation(btc.address);
       assert.equal(name, 'Bitcoin');
       assert.equal(sym, 'BTC');
       assert.equal(url, 'bitcoin.org');
       assert.equal(hash, someBytes);
     });
     it('gets specific information', async () => {
-      [dec, chainId, bIn, bOut] = await feed.getSpecificInformation(btc.address);
+      const [dec, chainId, bIn, bOut] = await feed.getSpecificInformation(btc.address);
       assert.equal(dec, 18);
       assert.equal(chainId, someChainId)
       assert.equal(bIn, accounts[5]);
@@ -40,8 +41,7 @@ contract('DataFeed', (accounts) => {
     let assetA;
     let assetB;
     it('can get assets', async () => {
-      quoteAsset = await feed.getQuoteAsset();
-      numAssets = await feed.numRegisteredAssets();
+      const numAssets = await feed.numRegisteredAssets();
       assert.equal(numAssets.toNumber(), 2);
       assetA = await feed.getRegisteredAssetAt(0);
       assetB = await feed.getRegisteredAssetAt(1);
@@ -52,27 +52,27 @@ contract('DataFeed', (accounts) => {
       assert.equal(0, newUid.toNumber());
     });
     it('price updates are valid', async () => {
-      validA = await feed.isValid(assetA);
-      validB = await feed.isValid(assetB);
+      const validA = await feed.isValid(assetA);
+      const validB = await feed.isValid(assetB);
       assert(validA);
       assert(validB);
     });
     it('price updates are correct', async () => {
-      [timeA, priceA] = await feed.getData(assetA);
-      [timeB, priceB] = await feed.getData(assetB);
-      priceB2 = await feed.getPrice(assetB);
+      const [timeA, priceA] = await feed.getData(assetA);
+      const [timeB, priceB] = await feed.getData(assetB);
+      const priceB2 = await feed.getPrice(assetB);
       assert.equal(priceA.toNumber(), 500);
       assert.equal(priceB.toNumber(), 2000);
       assert.equal(priceB.toNumber(), priceB2.toNumber());
       assert.equal(timeA.toNumber(), timeB.toNumber());
     });
     it('returns first chunk of data history for first asset', async () => {
-      [timesA, pricesA] = await feed.getDataHistory(assetA, 0);
+      const [timesA, pricesA] = await feed.getDataHistory(assetA, 0);
       assert.notEqual(timesA[0].toNumber(), 0);
       assert.notEqual(pricesA[0].toNumber(), 0);
     });
     it('returns first chunk of data history for second asset', async () => {
-      [timesB, pricesB] = await feed.getDataHistory(assetB, 0);
+      const [timesB, pricesB] = await feed.getDataHistory(assetB, 0);
       assert.notEqual(timesB[0].toNumber(), 0);
       assert.notEqual(pricesB[0].toNumber(), 0);
     });

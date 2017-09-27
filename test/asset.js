@@ -7,7 +7,7 @@ const assert = chai.assert;
 
 contract('Assets', (accounts) => {
   let mlnToken;
-  let PREMINED = Math.pow(10, 28);
+  const PREMINED = 10 ** 28;
 
   before('Deploy asset', async () => {
     const mln = tokens.find(t => t.symbol === 'MLN-T');
