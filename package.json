@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
-    "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deploy-all.js",
+    "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deploy-all.js kovan",
     "dev-compile": "solcjs --abi $(find contracts/ -name '*.sol')",
     "dev-delete": "find . -name '*.abi' -type f -delete ",
     "dev-deploy": "rm -rf build && truffle migrate --network development --reset"
