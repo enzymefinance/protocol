@@ -5,15 +5,12 @@ const RMMakeOrders = artifacts.require('./RMMakeOrders.sol');
 
 module.exports = (deployer, network) => {
   try {
-    if (network === 'development') {
-      deployer.deploy(Participation)
-      .then(() => deployer.deploy(RiskMgmt))
-    } else if (network === 'kovan') {
-      // deployer.deploy(ParticipationOpen)
-      // .then(() => deployer.deploy(RMMakeOrders))
-      // .catch((e) => { throw e; });
+    if (network !== 'development') {
       deployer.deploy(ParticipationOpen)
       .then(() => deployer.deploy(RMMakeOrders))
+    } else {
+      deployer.deploy(Participation)
+      .then(() => deployer.deploy(RiskMgmt))
     }
   } catch (e) {
     throw e;

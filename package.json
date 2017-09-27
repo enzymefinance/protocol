@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.3.6-alpha.1",
+  "version": "0.3.6-alpha.2",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
@@ -15,7 +15,7 @@
     "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deploy-all.js",
     "dev-compile": "solcjs --abi $(find contracts/ -name '*.sol')",
     "dev-delete": "find . -name '*.abi' -type f -delete ",
-    "dev-deploy": "rm -rf build && truffle migrate --network development --reset"
+    "dev-deploy": "rm -rf build && truffle migrate --network kovan --reset"
   },
   "files": [
     "build",
