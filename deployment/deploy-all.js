@@ -15,10 +15,10 @@ function getPlaceholderFromPath(libPath) {
 async function deployKovan() {
   try {
     const networkName = 'kovan';
-    const netConfig = config[networkName];
-    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${netConfig.host}:${netConfig.port}`));
+    const networkConfig = config[networkName];
+    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${networkConfig.host}:${networkConfig.port}`));
     const accounts = await web3.eth.getAccounts();
-    const opts = { from: accounts[0], gas: netConfig.gas, gasPrice: netConfig.gasPrice, };
+    const opts = { from: accounts[0], gas: networkConfig.gas, gasPrice: networkConfig.gasPrice, };
     const mlnAddr = tokenInfo[networkName].find(t => t.symbol === 'MLN-T').address;
     const datafeedInterval = 120;
     const datafeedValidity = 60;
