@@ -129,10 +129,10 @@ async function deploy(environment) {
         token.symbol,
         token.decimals,
         token.url,
-        config.protocol.registrar.ipfsHash,
-        config.protocol.registrar.chainId,
-        config.protocol.registrar.breakIn,
-        config.protocol.registrar.breakOut,
+        token.ipfsHash,
+        token.chainId,
+        token.breakIn,
+        token.breakOut,
       ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
     }
 
