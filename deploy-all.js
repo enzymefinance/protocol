@@ -4,8 +4,6 @@ const solc = require('solc');
 const tokenInfo = require('./migrations/config/token_info.js');
 const Web3 = require('web3');
 
-const networkName = 'kovan';
-
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
   let modifiedPath = libPath.replace('out', 'src');
@@ -13,8 +11,9 @@ function getPlaceholderFromPath(libPath) {
   return modifiedPath.slice(0, 36);
 }
 
-async function main() {
+async function deployKovan() {
   try {
+    const networkName = 'kovan';
     const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
     const accounts = await web3.eth.getAccounts();
     const opts = { from: accounts[0], gas: 6900000, gasPrice: 100000000000 };
@@ -169,6 +168,12 @@ async function main() {
   } catch (err) { console.log(err.stack); }
 }
 
+async function deployToNetwork(networkName) {
+  if(networkName === 'kovan') deployKovan();
+  else throw new Error(`Deployment for network ${networkName} not defined`);
+}
+
 if (require.main === module) {
-  main();
+  const networkArgument = process.argv[2];
+  deployToNetwork(networkArgument);
 }
