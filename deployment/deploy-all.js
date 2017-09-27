@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
 const Web3 = require('web3');
-const environmentConfig = require('./environment.config.js');
+const environmentConfig = require('./ecosystem.config.js');
 const tokenInfo = require('./token.info.js');
 
 
@@ -24,8 +24,6 @@ async function deploy(environment) {
     const accounts = await web3.eth.getAccounts();
     const opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice, };
     const mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN-T').address;
-    const datafeedInterval = 120;
-    const datafeedValidity = 60;
     let abi;
     let bytecode;
 
@@ -34,7 +32,7 @@ async function deploy(environment) {
     bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
     const datafeed = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: [mlnAddr, datafeedInterval, datafeedValidity],
+      arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
     }).send(opts));
     console.log('Deployed datafeed');
 
@@ -122,20 +120,7 @@ async function deploy(environment) {
       arguments: [mlnAddr],
     }).send(opts));
 
-    // have to mock some data for now
-    const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-    const mockChainId = '0x86b5eed81d000000000000000000000000000000000000000000000000000000';
-    const mockAddress = '0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd';
-
-    // register assets in datafeed
-
-
-    const assetsToRegister = [
-      'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
-      'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
-    ];
-
-    for(const assetSymbol of assetsToRegister) {
+    for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
       console.log(`Registering ${assetSymbol}`);
       const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
       await datafeed.methods.register(
@@ -144,10 +129,10 @@ async function deploy(environment) {
         token.symbol,
         token.decimals,
         token.url,
-        mockBytes,
-        mockChainId,
-        mockAddress,
-        mockAddress,
+        config.protocol.registrar.ipfsHash,
+        config.protocol.registrar.chainId,
+        config.protocol.registrar.breakIn,
+        config.protocol.registrar.breakOut,
       ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
     }
 
