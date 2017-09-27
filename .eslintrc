@@ -1,10 +1,11 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb", "prettier"],
-  "plugins": ["flowtype"],
+  "extends": ["airbnb", "prettier", "plugin:jasmine/recommended"],
+  "plugins": ["flowtype", "jasmine"],
   "env": {
     "node": true,
-    "mocha": true
+    "mocha": true,
+    "jasmine": true
   },
   "globals": { // Can be remove if once only Dapp suite used
     "web3": true,
