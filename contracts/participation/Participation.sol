@@ -40,10 +40,6 @@ contract Participation is ParticipationInterface, DBC, Owned {
         isEligible = identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
     }
 
-    function isSubscriptionPermitted2(
-        Request request
-    ) returns (bool isEligible) {}
-
     /// @notice Required for Melon protocol interaction.
     /// @param ofParticipant Address requesting to redeem from a Melon fund
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
