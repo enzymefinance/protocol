@@ -504,6 +504,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         if (isFalse(module.riskmgmt.isMakePermitted(
             module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
             module.datafeed.getReferencePrice(sellAsset, buyAsset),
+            sellAsset,
+            buyAsset,
+            sellQuantity,
             buyQuantity
         ))) {
             LogError(2);
@@ -566,7 +569,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             // TODO check: Buying what is being sold and selling what is being bought
             module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
             module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
-            order.sellQuantity // Quantity about to be received
+            order.sellAsset,
+            order.buyAsset,
+            order.sellQuantity,
+            order.buyQuantity
         ))) {
               LogError(1);
               return;
