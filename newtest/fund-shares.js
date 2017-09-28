@@ -24,6 +24,7 @@ describe('Fund shares', async () => {
   let eurToken;
   let fund;
   let investor;
+  let manager;
   let mlnToken;
   let opts;
   let participation;
@@ -42,28 +43,30 @@ describe('Fund shares', async () => {
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
     opts = { from: accounts[0], gas: config.gas };
+    manager = accounts[1];
     investor = accounts[2];
     mockAddress = accounts[5];
+    const preminedAmount = 10 ** 20;
     // deploy supporting contracts
     let abi;
     let bytecode;
-    abi = JSON.parse(fs.readFileSync('./out/assets/Asset.abi'));
-    bytecode = fs.readFileSync('./out/assets/Asset.bin');
+    abi = JSON.parse(fs.readFileSync('./out/assets/PreminedAsset.abi'));
+    bytecode = fs.readFileSync('./out/assets/PreminedAsset.bin');
     ethToken = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: ['Ether token', 'ETH-T', 18],
+      arguments: ['Ether token', 'ETH-T', 18, preminedAmount],
     }).send(opts));
     console.log('Deployed ether token');
 
     mlnToken = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: ['Melon token', 'MLN-T', 18],
+      arguments: ['Melon token', 'MLN-T', 18, preminedAmount],
     }).send(opts));
     console.log('Deployed melon token');
 
     eurToken = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
-      arguments: ['Euro token', 'EUR-T', 18],
+      arguments: ['Euro token', 'EUR-T', 18, preminedAmount],
     }).send(opts));
     console.log('Deployed euro token');
 
@@ -149,7 +152,6 @@ describe('Fund shares', async () => {
     ).send(opts);
     console.log('Done registration and updates');
 
-    // TODO: fix out of gas error when deploying Fund
     abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
     bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
     const libObject = {};
@@ -159,7 +161,7 @@ describe('Fund shares', async () => {
     fund = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
       arguments: [
-        accounts[0],
+        accounts[1],
         'Melon Portfolio',  // name
         'MLN-P',            // share symbol
         18,                 // share decimals
@@ -170,8 +172,7 @@ describe('Fund shares', async () => {
         riskManagement.options.address,
         sphere.options.address,
       ],
-    }).send(opts));
-    console.log(fund);
+    }).send({from: accounts[0], gas: config.gas}));
     console.log('Deployed fund');
  
     participation.methods.attestForIdentity(investor).send(opts);   // whitelist investor
@@ -191,8 +192,25 @@ describe('Fund shares', async () => {
     ).send(opts);
   }
 
+  async function getAllBalances() {
+    return {
+      investor: {
+        mlnToken: Number(await mlnToken.methods.balanceOf(investor).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(investor).call()),
+      },
+      manager: {
+        mlnToken: Number(await mlnToken.methods.balanceOf(manager).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(manager).call()),
+      },
+      fund: {
+        mlnToken: Number(await mlnToken.methods.balanceOf(fund.options.address).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(fund.options.address).call()),
+      }
+    }
+  }
+
   it('initial calculations', async () => {
-    const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations.send(opts));
+    const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations().call(opts));
 
     expect(Number(gav)).toEqual(0);
     expect(Number(unclaimedRewards)).toEqual(0);
@@ -200,28 +218,37 @@ describe('Fund shares', async () => {
     expect(Number(sharePrice)).toEqual(10 ** 18);
   });
   it('investor receives token from liquidity provider', async () => {
+    const pre = await getAllBalances();
     const inputAmount = offeredValue + incentive;
-    await mlnToken.methods.transfer(
-      investor, inputAmount
-    ).send(opts);
-    const investorMlnBalance = await mlnToken.balanceOf(investor).call();
+    await mlnToken.methods.transfer(investor, inputAmount).send({from: accounts[0]});
+    const post = await getAllBalances();
 
-    expect(Number(investorMlnBalance)).toEqual(inputAmount);
+    expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken + inputAmount);
+    expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+    expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+    expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+    expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+    expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
   });
   it('allows subscribe request', async () => {
+    const pre = await getAllBalances();
     const inputAllowance = offeredValue + incentive;
-    await mlnToken.methods.approve(
-      fund.options.address, inputAllowance
-    ).send({from: investor});
-    const investorAllowance = await mlnToken.methods.allowance(investor, fund.address).call();
-    const subscriptionRequest = async () => {
-      await fund.requestSubscription(
-        wantedShares, offeredValue, incentive
-      ).send({from: investor});
-    }
+    await mlnToken.methods.approve(fund.options.address, inputAllowance).send({from: investor});
+    const fundAllowance = await mlnToken.methods.allowance(investor, fund.options.address).call();
 
-    expect(Number(investorAllowance)).toEqual(inputAllowance);
-    expect(subscriptionRequest).not.toThrow();
+    expect(Number(fundAllowance)).toEqual(inputAllowance);
+
+    await fund.methods.requestSubscription(
+      wantedShares, offeredValue, incentive
+    ).send({from: investor, gas: config.gas});
+    const post = await getAllBalances();
+
+    expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - fundAllowance);
+    expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+    expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+    expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+    expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + Number(fundAllowance));
+    expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
   });
   it('logs request event', async () => {
     const events = await fund.getPastEvents('SubscribeRequest');

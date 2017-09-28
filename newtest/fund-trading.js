@@ -144,23 +144,23 @@ describe('Fund shares', async () => {
     }).send(opts));
     console.log('Deployed fund');
 
-    // participation.options.attestForIdentity(investor).send(opts);   // whitelist investor
+     participation.options.attestForIdentity(investor).send(opts);   // whitelist investor
   });
 
   // convenience function
   async function getAllBalances() {
     return {
       investor: {
-        mlnToken: await mlnToken.methods.balanceOf(investor).call(),
-        ethToken: await ethToken.methods.balanceOf(investor).call(),
+        mlnToken: Number(await mlnToken.methods.balanceOf(investor).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(investor).call()),
       },
       manager: {
-        mlnToken: await mlnToken.methods.balanceOf(manager).call(),
-        ethToken: await ethToken.methods.balanceOf(manager).call(),
+        mlnToken: Number(await mlnToken.methods.balanceOf(manager).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(manager).call()),
       },
       fund: {
-        mlnToken: await mlnToken.methods.balanceOf(fund.options.address).call(),
-        ethToken: await ethToken.methods.balanceOf(fund.options.address).call(),
+        mlnToken: Number(await mlnToken.methods.balanceOf(fund.options.address).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(fund.options.address).call()),
       }
     }
   }
