@@ -9,11 +9,11 @@
     "test": "truffle compile && truffle test test/exchange.js test/datafeed.js test/asset.js test/participation.js test/fund-shares.js test/fund-trading.js test/version.js",
     "test:jasmine": "babel-node newtest/run.js",
     "localnode": "node_modules/.bin/testrpc -l 6990000",
-    "compile": "dapp build",
+    "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
-    "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deployment/deploy-all.js kovan",
+    "deploy": "npm run compile && babel-node deployment/deploy-all.js kovan",
     "dev-compile": "node_modules/.bin/solcjs --abi $(find contracts/ -name '*.sol')",
     "dev-delete": "find . -name '*.abi' -type f -delete ",
     "dev-deploy": "rm -rf build && truffle migrate --network kovan --reset"
