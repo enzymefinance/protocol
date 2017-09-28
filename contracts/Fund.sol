@@ -336,7 +336,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         ))
         returns(uint id)
     {
-        Request memory request;
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue.add(incentiveValue));
         requests.push(Request({
             owner: msg.sender,
