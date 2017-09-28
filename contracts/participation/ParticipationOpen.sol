@@ -13,7 +13,7 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
 
     function isSubscriptionPermitted(
         address ofParticipant,
-        uint256 numShares,
+        uint256 shareQuantity,
         uint256 offeredValue
     )
         returns (bool isEligible)
@@ -23,7 +23,7 @@ contract ParticipationOpen is ParticipationInterface, DBC, Owned {
 
     function isRedemptionPermitted(
         address ofParticipant,
-        uint256 numShares,
+        uint256 shareQuantity,
         uint256 requestedValue
     )
         returns (bool isEligible)
