@@ -5,14 +5,12 @@ const Web3 = require('web3');
 const environmentConfig = require('./ecosystem.config.js');
 const tokenInfo = require('./token.info.js');
 
-
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
   let modifiedPath = libPath.replace('out', 'src');
   modifiedPath = `${modifiedPath}.sol:${libContractName}`;
   return modifiedPath.slice(0, 36);
 }
-
 
 async function deploy(environment) {
   try {

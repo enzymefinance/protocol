@@ -1,21 +1,11 @@
 const fs = require('fs');
 const environmentConfig = require('../deployment/environment.config.js');
-const path = require('path');
 const rpc = require('../utils/rpc.js');
-const solc = require('solc');
 const Web3 = require('web3');
 
 const environment = 'development';
 const config = environmentConfig[environment];
 const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
-
-// TODO: factor out into a module
-function getPlaceholderFromPath(libPath) {
-  const libContractName = path.basename(libPath);
-  let modifiedPath = libPath.replace('out', 'src');
-  modifiedPath = `${modifiedPath}.sol:${libContractName}`;
-  return modifiedPath.slice(0, 36);
-}
 
 describe('Fund shares', async () => {
   let accounts;
@@ -24,24 +14,25 @@ describe('Fund shares', async () => {
   let eurToken;
   let fund;
   let investor;
+  let manager;
   let mlnToken;
   let opts;
   let participation;
-  let rewards;
   let riskManagement;
-  let simpleAdapter;
   let simpleMarket;
   let sphere;
   // mock data
   let mockAddress;
   const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-  const wantedShares = 10000;
-  const offeredValue = 10000;
-  const incentive = 100;
+  const makeSellAmount = 10000;
+  const makeBuyAmount = 2000;
+  const takeSellAmount = 20000;  // sell/buy from maker's perspective
+  const takeBuyAmount = 4000;
 
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
     opts = { from: accounts[0], gas: config.gas };
+    manager = accounts[1];
     investor = accounts[2];
     mockAddress = accounts[5];
     // deploy supporting contracts
@@ -114,25 +105,9 @@ describe('Fund shares', async () => {
     }).send(opts));
     console.log('Deployed participation');
 
-    abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
-    bytecode = fs.readFileSync('out/exchange/adapter/simpleAdapter.bin');
-    simpleAdapter = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed simple adapter');
-
-    abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
-    bytecode = fs.readFileSync('out/libraries/rewards.bin');
-    rewards = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed rewards library');
-
     // register assets
     await datafeed.methods.register(
-      ethToken.options.address, '', '', 18, '', 
+      ethToken.options.address, '', '', 18, '',
       someBytes, someBytes, mockAddress, mockAddress
     ).send(opts);
     await datafeed.methods.register(
@@ -151,11 +126,7 @@ describe('Fund shares', async () => {
 
     // TODO: fix out of gas error when deploying Fund
     abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
-    bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
-    const libObject = {};
-    libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
-    libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
-    bytecode = solc.linkBytecode(bytecode, libObject);
+    bytecode = fs.readFileSync('out/Fund.bin');
     fund = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
       arguments: [
@@ -171,86 +142,76 @@ describe('Fund shares', async () => {
         sphere.options.address,
       ],
     }).send(opts));
-    console.log(fund);
     console.log('Deployed fund');
- 
-    participation.methods.attestForIdentity(investor).send(opts);   // whitelist investor
+
+    // participation.options.attestForIdentity(investor).send(opts);   // whitelist investor
   });
 
-  // convenience functions
-  function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async function simulateFeedUpdate() {
-    await rpc.mineBlock();
-    await timeout(3000);
-    await datafeed.methods.update(
-      [ethToken.options.address, eurToken.options.address, mlnToken.options.address],
-      [10 ** 18, 10 ** 18, 10 ** 18],
-    ).send(opts);
-  }
-
-  it('initial calculations', async () => {
-    const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations.send(opts));
-
-    expect(Number(gav)).toEqual(0);
-    expect(Number(unclaimedRewards)).toEqual(0);
-    expect(Number(nav)).toEqual(0);
-    expect(Number(sharePrice)).toEqual(10 ** 18);
-  });
-  it('investor receives token from liquidity provider', async () => {
-    const inputAmount = offeredValue + incentive;
-    await mlnToken.methods.transfer(
-      investor, inputAmount
-    ).send(opts);
-    const investorMlnBalance = await mlnToken.balanceOf(investor).call();
-
-    expect(Number(investorMlnBalance)).toEqual(inputAmount);
-  });
-  it('allows subscribe request', async () => {
-    const inputAllowance = offeredValue + incentive;
-    await mlnToken.methods.approve(
-      fund.options.address, inputAllowance
-    ).send({from: investor});
-    const investorAllowance = await mlnToken.methods.allowance(investor, fund.address).call();
-    const subscriptionRequest = async () => {
-      await fund.requestSubscription(
-        wantedShares, offeredValue, incentive
-      ).send({from: investor});
+  // convenience function
+  async function getAllBalances() {
+    return {
+      investor: {
+        mlnToken: await mlnToken.methods.balanceOf(investor).call(),
+        ethToken: await ethToken.methods.balanceOf(investor).call(),
+      },
+      manager: {
+        mlnToken: await mlnToken.methods.balanceOf(manager).call(),
+        ethToken: await ethToken.methods.balanceOf(manager).call(),
+      },
+      fund: {
+        mlnToken: await mlnToken.methods.balanceOf(fund.options.address).call(),
+        ethToken: await ethToken.methods.balanceOf(fund.options.address).call(),
+      }
     }
+  }
 
-    expect(Number(investorAllowance)).toEqual(inputAllowance);
-    expect(subscriptionRequest).not.toThrow();
-  });
-  it('logs request event', async () => {
-    const events = await fund.getPastEvents('SubscribeRequest');
+  describe('#makeOrder', async () => {
+    it('approves token spending for fund', async () => {
+      const pre = await getAllBalances();
+      await fund.methods.makeOrder(
+        mlnToken.address, ethToken.address, makeSellAmount, makeBuyAmount
+      ).send({ from: manager });
+      const post = await getAllBalances();
 
-    expect(events.length).toEqual(1);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken - makeSellAmount);
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+    });
+//    it('makes an order with expected parameters', async () => {
+//      const orderId = await fund.methods.getLastOrderId().call();
+//      const order = await fund.methods.orders(orderId).call();
+//      const exchangeOrderId = await simpleAdapter.methods.getLastOrderId(simpleMarket.options.address);
+//
+//      assert.equal(order[0].toNumber(), exchangeOrderId.toNumber());
+//      assert.equal(order[1], mlnToken.address);
+//      assert.equal(order[2], ethToken.address);
+//      assert.equal(order[3].toNumber(), makeSellAmt);
+//      assert.equal(order[4].toNumber(), makeBuyAmt);
+//      // assert.equal(order[5].toNumber(), 0); // TODO fix: Timestamp
+//      assert.equal(order[6].toNumber(), 0);
+//    });
   });
-  it('allows execution of subscribe request', async () => {
-    await simulateFeedUpdate();
-    await simulateFeedUpdate();
-    const requestId = await fund.methods.getLastRequestId().call();
-    await fund.executeRequest(requestId);
-    const investorBalance = await fund.methods.balanceOf(investor).call();
-
-    expect(Number(investorBalance)).toEqual(wantedShares);
-  });
-  it('logs share creation', async () => {
-    const events = await fund.getPastEvents('Subscribed');
-
-    expect(events.length).toEqual(1);
-  });
-  it('performs calculation correctly', async () => {
-    await simulateFeedUpdate();
-    const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(
-      await fund.methods.performCalculations().call()
-    );
-
-    expect(Number(gav)).toEqual(offeredValue);
-    expect(Number(unclaimedRewards)).toEqual(0);
-    expect(Number(nav)).toEqual(offeredValue);
-    expect(Number(sharePrice)).toEqual(10 ** 18);
-  });
+//
+//  describe('#takeOrder', async () => {
+//    before('make an order to take', async () => {
+//      await mlnToken.approve(simpleMarket.address, takeSellAmt, { from: liquidityProvider }); // make an order to take
+//      await simpleMarket.make(
+//        mlnToken.address, ethToken.address, takeSellAmt, takeBuyAmt, { from: liquidityProvider },
+//      );
+//    });
+//    it('takes 100% of an order, which transfers tokens correctly', async () => {
+//      const id = await simpleAdapter.getLastOrderId(simpleMarket.address);
+//      const preMln = await mlnToken.balanceOf(fund.address);
+//      const preEth = await ethToken.balanceOf(fund.address);
+//      await fund.takeOrder(id, takeSellAmt, { from: manager });
+//      const postMln = await mlnToken.balanceOf(fund.address);
+//      const postEth = await ethToken.balanceOf(fund.address);
+//      assert.equal(postMln.toNumber() - preMln.toNumber(), takeSellAmt);
+//      assert.equal(preEth.toNumber() - postEth.toNumber(), takeBuyAmt);
+//    });
+//  });
 });
