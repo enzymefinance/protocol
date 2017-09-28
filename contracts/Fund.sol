@@ -48,7 +48,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         mapping (address => uint) previousHoldings;
     }
 
-    enum RequestStatus { open, cancelled, executed }
+    enum RequestStatus { active, cancelled, executed }
     enum RequestType { subscribe, redeem }
     struct Request { // Describes and logs whenever asset enter this fund
         address owner;
@@ -63,18 +63,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint timestamp;
     }
 
-    enum OrderStatus { open, partiallyFilled, fullyFilled, cancelled }
+    enum OrderStatus { active, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
     struct Order { // Describes and logs whenever assets leave this fund
-        // TODO: consider bool isActive;
         uint exchangeId; // Id as returned from exchange
+        OrderStatus status; // Enum: active, partiallyFilled, fullyFilled, cancelled
+        OrderType orderType; // Enum: make, take
         address sellAsset; // Asset (as registred in Asset registrar) to be sold
         address buyAsset; // Asset (as registred in Asset registrar) to be bought
         uint sellQuantity; // Quantity of sellAsset to be sold
         uint buyQuantity; // Quantity of sellAsset to be bought
         uint timestamp; // Time in seconds when this order was created
-        OrderStatus status; // Enum: open, partiallyFilled, fullyFilled, cancelled
-        OrderType orderType; // Enum: make, take
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
@@ -337,10 +336,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         ))
         returns(uint id)
     {
+        Request memory request;
         MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue.add(incentiveValue));
         requests.push(Request({
             owner: msg.sender,
-            status: RequestStatus.open,
+            status: RequestStatus.active,
             requestType: RequestType.subscribe,
             shareQuantity: shareQuantity,
             offeredValue: offeredValue,
@@ -374,7 +374,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         requests.push(Request({
             owner: msg.sender,
-            status: RequestStatus.open,
+            status: RequestStatus.active,
             requestType: RequestType.redeem,
             shareQuantity: shareQuantity,
             offeredValue: 0,
@@ -446,7 +446,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             if (assetHoldings == 0) continue;
             uint ownershipQuantity = assetHoldings.mul(shareQuantity).div(prevTotalSupply); // ownership percentage of msg.sender
             if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
-                isShutDown = true; // Shutdown allows open orders to be cancelled, eg. to return
+                isShutDown = true; // Shutdown allows active orders to be cancelled, eg. to return
             }
             assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
         }
@@ -520,15 +520,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             LogError(4);
             return;
         } // TODO: validate accuracy of this
+
         orders.push(Order({
             exchangeId: id,
+            status: OrderStatus.active,
+            orderType: OrderType.make,
             sellAsset: sellAsset,
             buyAsset: buyAsset,
             sellQuantity: sellQuantity,
             buyQuantity: buyQuantity,
             timestamp: now,
-            status: OrderStatus.open,
-            orderType: OrderType.make,
             fillQuantity: 0
         }));
         internalAccounting.numberOfMakeOrders++;
@@ -585,9 +586,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
               return;
         }
         order.exchangeId = id;
-        order.timestamp = now;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
+        order.timestamp = now;
         order.fillQuantity = quantity;
         orders.push(order);
         OrderUpdated(id);
