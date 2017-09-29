@@ -53,9 +53,9 @@ contract FundInterface is AssetInterface {
     function decreaseStake(uint sharesQuantity) external {}
     function shutDown() external {}
     // Managing by Manager
-    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (uint) {}
-    function takeOrder(uint id, uint quantity) external returns (bool) {}
-    function cancelOrder(uint id) external returns (bool) {}
+    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
+    function takeOrder(uint id, uint quantity) external returns (bool, string) {}
+    function cancelOrder(uint id) external returns (bool, string) {}
     function closeOpenOrders(address ofBase, address ofQuote) constant {}
     function proofOfEmbezzlement(address ofBase, address ofQuote) constant returns (bool) {}
     // Rewards by Manager
