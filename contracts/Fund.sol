@@ -109,16 +109,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function isZero(uint x) internal returns (bool) { x == 0; }
     function isFalse(bool x) internal returns (bool) { return x == false; }
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
-    function notLessThan(uint x, uint y) internal returns (bool) { return x >= y; }
-    function notGreaterThan(uint x, uint y) internal returns (bool) { return x <= y; }
     function isLargerThan(uint x, uint y) internal returns (bool) { return x > y; }
     function isLessThan(uint x, uint y) internal returns (bool) { return x < y; }
     function isEqualTo(uint x, uint y) internal returns (bool) { return x == y; }
-    function isSubscribe(RequestType x) internal returns (bool) { return x == RequestType.subscribe; }
-    function isRedeem(RequestType x) internal returns (bool) { return x == RequestType.redeem; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
-    function approveSpending(address ofAsset, uint quantity) internal returns (bool success)
-    {
+    function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
         success = ERC20(ofAsset).approve(EXCHANGE, quantity);
         SpendingApproved(EXCHANGE, ofAsset, quantity);
     }
@@ -403,36 +398,70 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @dev Anyone can trigger this function; Id of request that is pending
+    /// @param id Index of the request wanted to execute
     /// @return Worker either cancelled or fullfilled request
-    function executeRequest(uint requestId)
+    function executeRequest(uint id)
         external
         pre_cond(notShutDown())
-        pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
-        pre_cond(notLessThan(now, requests[requestId].timestamp.add(module.datafeed.getInterval())))
-        pre_cond(notLessThan(module.datafeed.getLastUpdateId(), requests[requestId].lastFeedUpdateId + 2))
+        returns (bool, string)
     {
-        // Time and updates have passed
-        Request request = requests[requestId];
-        uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_IN_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
+        Request request = requests[id];
+
+        returnError(
+            request.status == RequestStatus.active,
+            "ERR: Request is not active"
+        );
+
+        returnError(
+            request.timestamp.add(module.datafeed.getInterval()) <= now,
+            "ERR: DataFeed Module: Wait at least one interval before continuing"
+        );
+
+        returnError(
+            request.lastFeedUpdateId.add(2) <= module.datafeed.getLastUpdateId(),
+            "ERR: DataFeed Module: Wait at least for two updates before continuing"
+        );
+
+        uint actualQuantity = request.shareQuantity
+            .mul(calcSharePrice()) // denominated in [base unit of MELON_ASSET]
+            .div(MELON_IN_BASE_UNITS);
+
         request.status = RequestStatus.executed;
-        if (isSubscribe(request.requestType) && notLessThan(request.giveQuantity, actualValue)) { // Limit Order is OK
+
+        if (
+            request.requestType == RequestType.subscribe &&
+            actualQuantity <= request.giveQuantity
+        ) {
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
-            assert(MELON_CONTRACT.transferFrom(request.participant, this, actualValue)); // Allocate Value
+            assert(MELON_CONTRACT.transferFrom(request.participant, this, actualQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
-        } else if (isRedeem(request.requestType) && notGreaterThan(request.receiveQuantity, actualValue)) {
+        } else if (
+            request.requestType == RequestType.redeem &&
+            request.receiveQuantity <= actualQuantity
+        ) {
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         }
     }
 
-    // REmove
-    function cancelRequest(uint requestId)
+    function cancelRequest(uint id)
         external
-        pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
-        pre_cond(requests[requestId].participant == msg.sender || isShutDown)
+        returns (bool, string)
     {
-        Request request = requests[requestId];
+        Request request = requests[id];
+
+        returnError(
+            request.status == RequestStatus.active,
+            "ERR: Request is not active"
+        );
+
+        returnError(
+            request.participant == msg.sender ||
+            isShutDown,
+            "ERR: Neither request creator nor is fund shut down"
+        );
+
         request.status = RequestStatus.cancelled;
     }
 
