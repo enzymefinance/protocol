@@ -12,10 +12,10 @@ contract FundInterface is AssetInterface {
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
     event RequestUpdated(uint id);
-    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint sharesQuantity);
-    event Redeemed(address indexed ofParticipant, uint atTimestamp, uint sharesQuantity);
+    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
+    event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
-    event RewardsConverted(uint atTimestamp, uint sharesQuantityConverted, uint unclaimed);
+    event RewardsConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
     event LogError(uint ERROR_CODE);
@@ -45,12 +45,12 @@ contract FundInterface is AssetInterface {
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external returns (bool, string) {}
     function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemUsingSlice(uint sharesQuantity) external {}
+    function redeemUsingSlice(uint shareQuantity) external {}
     // Administration by Manager
     function toogleSubscription() external {}
     function toggleRedemption() external {}
-    function increaseStake(uint sharesQuantity) external {}
-    function decreaseStake(uint sharesQuantity) external {}
+    function increaseStake(uint shareQuantity) external {}
+    function decreaseStake(uint shareQuantity) external {}
     function shutDown() external {}
     // Managing by Manager
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
