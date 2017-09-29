@@ -140,12 +140,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
     function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
     function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
-    function returnError(bool requirement, string message) constant returns (bool, string) {
-        if (isFalse(requirement)) {
-            ErrorMessage(message);
-            return (true, message);
-        }
-    }
+
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -501,22 +496,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function createShares(address recipient, uint shareQuantity) internal {
-        totalSupply = totalSupply.add(shareQuantity);
-        addShares(recipient, shareQuantity);
-        Subscribed(msg.sender, now, shareQuantity);
-    }
-
-    function annihilateShares(address recipient, uint shareQuantity) internal {
-        totalSupply = totalSupply.sub(shareQuantity);
-        subShares(recipient, shareQuantity);
-        Redeemed(msg.sender, now, shareQuantity);
-    }
-
-    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].add(shareQuantity); }
-
-    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].sub(shareQuantity); }
-
     // NON-CONSTANT METHODS - MANAGING
 
     /// @notice These are orders that are not expected to settle immediately
@@ -787,4 +766,30 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RewardsConverted(now, shareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
+
+    // INTERNAL METHODS
+
+    function createShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.add(shareQuantity);
+        addShares(recipient, shareQuantity);
+        Subscribed(msg.sender, now, shareQuantity);
+    }
+
+    function annihilateShares(address recipient, uint shareQuantity) internal {
+        totalSupply = totalSupply.sub(shareQuantity);
+        subShares(recipient, shareQuantity);
+        Redeemed(msg.sender, now, shareQuantity);
+    }
+
+    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].add(shareQuantity); }
+
+    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].sub(shareQuantity); }
+
+    function returnError(bool requirement, string message) internal returns (bool, string) {
+        if (isFalse(requirement)) {
+            ErrorMessage(message);
+            return (true, message);
+        }
+    }
+
 }
