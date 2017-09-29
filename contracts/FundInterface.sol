@@ -11,8 +11,7 @@ contract FundInterface is AssetInterface {
     // EVENTS
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(uint requestId, address indexed ofParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(uint requestId, address indexed ofParticipant, uint atTimestamp, uint numShares);
+    event RequestUpdated(uint id);
     event Subscribed(address indexed ofParticipant, uint atTimestamp, uint numShares);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint numShares);
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
@@ -20,6 +19,7 @@ contract FundInterface is AssetInterface {
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
     event LogError(uint ERROR_CODE);
+    event ErrorMessage(string errorMessage);
 
     // CONSTANT METHODS
 
@@ -44,8 +44,8 @@ contract FundInterface is AssetInterface {
     function toggleRedemption() external {}
     function shutDown() external {}
     // Participation
-    function requestSubscription(uint numShares, uint offeredValue, uint incentiveValue) external returns(uint) {}
-    function requestRedemption(uint numShares, uint requestedValue, uint incentiveValue) external returns (uint) {}
+    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external {}
     function cancelRequest(uint requestId) external {}
     function redeemUsingSlice(uint numShares) external {}
