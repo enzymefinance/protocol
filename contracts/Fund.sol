@@ -514,38 +514,43 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (uint id)
+        returns (bool, string)
     {
         bytes32 assetPair = sha3(sellAsset, buyAsset);
-        if (internalAccounting.existsMakeOrder[assetPair]) {
-            LogError(0);
-            return;
-        }
-        if (isFalse(module.datafeed.existsData(sellAsset, buyAsset))) {
-            LogError(1);
-            return;
-        }
-        if (isFalse(module.riskmgmt.isMakePermitted(
-            module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
-            module.datafeed.getReferencePrice(sellAsset, buyAsset),
-            sellAsset,
-            buyAsset,
-            sellQuantity,
-            buyQuantity
-        ))) {
-            LogError(2);
-            return;
-        }
-        if (isFalse(approveSpending(sellAsset, sellQuantity))) {
-            LogError(3);
-            return;
-        }
 
-        id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
-        if (isZero(id)) {
-            LogError(4);
-            return;
-        } // TODO: validate accuracy of this
+        returnError(
+            isFalse(internalAccounting.existsMakeOrder[assetPair]),
+            "ERR: Currently only one make order allowed"
+        );
+
+        returnError(
+            module.datafeed.existsData(sellAsset, buyAsset),
+            "ERR: DataFeed module: Requested asset pair not valid"
+        );
+
+        returnError(
+            module.riskmgmt.isMakePermitted(
+                module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
+                module.datafeed.getReferencePrice(sellAsset, buyAsset),
+                sellAsset,
+                buyAsset,
+                sellQuantity,
+                buyQuantity
+            ),
+            "ERR: RiskMgmt module: Make order not permitted"
+        );
+
+        returnError(
+            approveSpending(sellAsset, sellQuantity),
+            "ERR: Could not approve spending of sellQuantity of sellAsset"
+        );
+
+        uint id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+
+        returnError(
+            isPastZero(id),
+            "ERR: Exchange Adapter: Failed to make order"
+        );
 
         orders.push(Order({
             exchangeId: id,
@@ -558,6 +563,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now,
             fillQuantity: 0
         }));
+
         internalAccounting.numberOfMakeOrders++;
         internalAccounting.quantitySentToExchange[sellAsset] =
             quantitySentToExchange(sellAsset)
@@ -565,18 +571,19 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         internalAccounting.quantityExpectedToReturn[buyAsset] =
             quantityExpectedToReturn(buyAsset)
             .add(buyQuantity);
+
         OrderUpdated(id);
     }
 
     /// @notice These are orders that are expected to settle immediately
     /// @param id Active order id
-    /// @param quantity valid buy quantity of what others are selling on selected Exchange
+    /// @param quantity Buy quantity of what others are selling on selected Exchange
     /// @return Take offer on selected Exchange
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (bool success)
+        returns (bool, string)
     {
         Order memory order; // Inverse variable terminology! Buying what another person is selling
         (
@@ -585,35 +592,43 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.sellQuantity,
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
-        if (isFalse(module.datafeed.existsData(order.buyAsset, order.sellAsset))) {
-              LogError(0);
-              return;
-        }
-        if (isFalse(module.riskmgmt.isTakePermitted(
-            // TODO check: Buying what is being sold and selling what is being bought
-            module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity),
-            module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
-            order.sellAsset,
-            order.buyAsset,
-            order.sellQuantity,
-            order.buyQuantity
-        ))) {
-              LogError(1);
-              return;
-        }
-        if (isFalse(quantity <= order.sellQuantity)) {
-              LogError(2);
-              return;
-        }
-        if (isFalse(approveSpending(order.buyAsset, quantity))) {
-              LogError(3);
-              return;
-        }
-        success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
-        if (isFalse(success)) {
-              LogError(4);
-              return;
-        }
+
+        returnError(
+            module.datafeed.existsData(order.buyAsset, order.sellAsset),
+            "ERR: DataFeed module: Requested asset pair not valid"
+        );
+
+        returnError(
+            module.riskmgmt.isTakePermitted(
+                module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
+                module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
+                order.sellAsset,
+                order.buyAsset,
+                order.sellQuantity,
+                order.buyQuantity
+            ),
+            "ERR: RiskMgmt module: Take order not permitted"
+        );
+
+        returnError(
+            quantity <= order.sellQuantity,
+            "ERR: Not enough quantity of order for what is trying to be bhought"
+        );
+
+        uint spendQuantity = quantity.mul(order.buyQuantity).div(order.sellQuantity);
+
+        returnError(
+            approveSpending(order.buyAsset, spendQuantity),
+            "ERR: Could not approve spending of spendQuantity of order.buyAsset"
+        );
+
+        bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
+
+        returnError(
+            success,
+            "ERR: Exchange Adapter: Failed to take order"
+        );
+
         order.exchangeId = id;
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
@@ -630,14 +645,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function cancelOrder(uint id)
         external
         pre_cond(isOwner() || isShutDown)
-        returns (bool success)
+        returns (bool, string)
     {
         Order memory order = orders[id];
-        success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
-        if (isFalse(success)) {
-            LogError(0);
-            return;
-        }
+
+        bool success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
+
+        returnError(
+            success,
+            "ERR: Exchange Adapter: Failed to cancel order"
+        );
 
         // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
         internalAccounting.numberOfMakeOrders--;
