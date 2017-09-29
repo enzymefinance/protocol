@@ -46,8 +46,8 @@ contract FundInterface is AssetInterface {
     // Participation
     function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
-    function executeRequest(uint requestId) external {}
-    function cancelRequest(uint requestId) external {}
+    function executeRequest(uint requestId) external returns (bool, string) {}
+    function cancelRequest(uint requestId) external returns (bool, string) {}
     function redeemUsingSlice(uint numShares) external {}
     // Managing
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (uint) {}
