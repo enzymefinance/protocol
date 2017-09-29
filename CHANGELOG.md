@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Redesign of PoE
 - Improve precision of PoE
-- Naming consistency: numShares -> sharesQuantity; Clean up natspecs comments
+- Naming consistency: numShares -> shareQuantity; Clean up natspecs comments
 - Babel dependency
 - uint256 for all exponents
 - AssetRegistrar.remove post condition
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Redesign of PoE
 - Improve precision of PoE
-- Naming consistency: numShares -> sharesQuantity; Clean up natspecs comments
+- Naming consistency: numShares -> shareQuantity; Clean up natspecs comments
 
 ### Removed
 
