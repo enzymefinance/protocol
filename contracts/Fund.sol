@@ -51,16 +51,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     enum RequestStatus { active, cancelled, executed }
     enum RequestType { subscribe, redeem }
     struct Request { // Describes and logs whenever asset enter this fund
-        address participant; // Participant requesting subscription or redemption
-        RequestStatus status;
-        RequestType requestType;
+        address participant; // Participant in Melon fund requesting subscription or redemption
+        RequestStatus status; // Enum: active, cancelled, executed; Status of request
+        RequestType requestType; // Enum: subscribe, redeem
         uint shareQuantity;
-        uint giveQuantity; // if requestType is subscribe
-        uint receiveQuantity; // if requestType is redeem
-        uint workerReward;
-        uint lastFeedUpdateId;
-        uint lastFeedUpdateTime;
-        uint timestamp;
+        uint giveQuantity; // Quantity in Melon asset to give to Melon fund
+        uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund
+        uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
+        uint lastFeedUpdateId; // Data feed module specifc id of last update
+        uint lastFeedUpdateTime; // Data feed module specifc timestamp of last update
+        uint timestamp; // Time of request creation
     }
 
     enum OrderStatus { active, partiallyFilled, fullyFilled, cancelled }
@@ -111,7 +111,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function isPastZero(uint x) internal returns (bool) { return 0 < x; }
     function isLargerThan(uint x, uint y) internal returns (bool) { return x > y; }
     function isLessThan(uint x, uint y) internal returns (bool) { return x < y; }
-    function isEqualTo(uint x, uint y) internal returns (bool) { return x == y; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
         success = ERC20(ofAsset).approve(EXCHANGE, quantity);
@@ -316,13 +315,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
+    /// @notice Give melons to receive shares of this fund
+    /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
-    /// @param workerReward non-zero incentive Value which is paid to workers for triggering executeRequest
-    /// @return Pending subscription Request
+    /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
+    /// @param incentiveQuantity Quantity in Melon asset to give to person executing request
+    /// @return active subscription request
     function requestSubscription(
         uint giveQuantity,
         uint shareQuantity,
-        uint workerReward
+        uint incentiveQuantity
     )
         external
         pre_cond(notShutDown())
@@ -349,7 +351,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
-            workerReward: workerReward,
+            incentiveQuantity: incentiveQuantity,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
@@ -357,12 +359,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RequestUpdated(getLastRequestId());
     }
 
-    /// @dev Redeemer has at least `shareQuantity` shares; redeemer approved this contract to handle shares
-    /// @return Redeemer lost `shareQuantity`, and gained `shareQuantity * value` of Melon asset
+    /// @notice Give shares to receive melons of this fund
+    /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
+    /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
+    /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
+    /// @param incentiveQuantity Quantity in Melon asset to give to person executing request
+    /// @return active redemption request
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
-        uint workerReward
+        uint incentiveQuantity
       )
         external
         pre_cond(notShutDown())
@@ -389,7 +395,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
-            workerReward: workerReward,
+            incentiveQuantity: incentiveQuantity,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
@@ -397,9 +403,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RequestUpdated(getLastRequestId());
     }
 
-    /// @dev Anyone can trigger this function; Id of request that is pending
-    /// @param id Index of the request wanted to execute
-    /// @return Worker either cancelled or fullfilled request
+    /// @notice Executes active subscription and redemption requests, in a way that minimizes information advantages of investor
+    /// @dev Distributes melon and shares according to request
+    /// @param id Index of request to be executed
+    /// @dev active subscription or redemption request executed
     function executeRequest(uint id)
         external
         pre_cond(notShutDown())
@@ -432,19 +439,22 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.subscribe &&
             actualQuantity <= request.giveQuantity
         ) {
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             assert(MELON_CONTRACT.transferFrom(request.participant, this, actualQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= actualQuantity
         ) {
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         }
     }
 
+    /// @notice Cancelles active subscription and redemption requests
+    /// @param id Index of request to be executed
+    /// @return active subscription or redemption request cancelled
     function cancelRequest(uint id)
         external
         returns (bool, string)
@@ -465,8 +475,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         request.status = RequestStatus.cancelled;
     }
 
+    /// @notice Redeems by allocating a ownership percentage of each asset to participant
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
-    /// @param shareQuantity numer of shares owned by msg.sender which msg.sender would like to receive
+    /// @param shareQuantity numer of shares owned by participant which participant would like to receive
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
     function redeemUsingSlice(uint shareQuantity)
         external
