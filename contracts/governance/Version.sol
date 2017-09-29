@@ -4,11 +4,12 @@ import '../Fund.sol';
 import '../FundInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
+import './VersionInterface.sol';
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is DBC, Owned {
+contract Version is DBC, Owned, VersionInterface {
 
     // TYPES
 
@@ -124,5 +125,4 @@ contract Version is DBC, Owned {
         delete funds[id];
         FundUpdated(id);
     }
-
 }

@@ -43,9 +43,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint numberOfMakeOrders; // Number of potentially unsettled orders
         mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
         mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
-        mapping (address => uint) quantitySentToExchange;
-        mapping (address => uint) quantityExpectedToReturn;
-        mapping (address => uint) previousHoldings;
+        mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
+        mapping (address => uint) quantityExpectedToReturn; // Quantity expected to receive of asset of what has been sent to exchange
+        mapping (address => uint) holdingsAtLastManualSettlement; //
     }
 
     enum RequestStatus { active, cancelled, executed }
@@ -57,7 +57,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint shareQuantity;
         uint offeredValue; // if requestType is subscribe
         uint requestedValue; // if requestType is redeem
-        uint incentive;
+        uint incentiveValue;
         uint lastFeedUpdateId;
         uint lastFeedUpdateTime;
         uint timestamp;
@@ -150,7 +150,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // CONSTANT METHODS - ACCOUNTING
 
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// @return Gross asset value denominated in [base unit of melonAsset]
+    /// @return gav Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
@@ -336,7 +336,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         ))
         returns(uint id)
     {
-        MELON_CONTRACT.transferFrom(msg.sender, this, offeredValue.add(incentiveValue));
         requests.push(Request({
             owner: msg.sender,
             status: RequestStatus.active,
@@ -344,7 +343,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             offeredValue: offeredValue,
             requestedValue: 0,
-            incentive: incentiveValue,
+            incentiveValue: incentiveValue,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
@@ -378,7 +377,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             offeredValue: 0,
             requestedValue: requestedValue,
-            incentive: incentiveValue,
+            incentiveValue: incentiveValue,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
@@ -401,19 +400,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_IN_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
         if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
-            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
-            uint remainder = request.offeredValue.sub(actualValue);
-            if(isPastZero(remainder)) {
-                assert(MELON_CONTRACT.transfer(request.owner, remainder)); // Return remainder
-            }
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentiveValue)); // Reward Worker
+            assert(MELON_CONTRACT.transferFrom(request.owner, this, actualValue)); // Allocate Value
             createShares(request.owner, request.shareQuantity); // Accounting
         } else if (isRedeem(request.requestType) && notGreaterThan(request.requestedValue, actualValue)) {
-            assert(MELON_CONTRACT.transfer(msg.sender, request.incentive)); // Reward Worker
-            assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Transfer value
+            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentiveValue)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Return value
             annihilateShares(request.owner, request.shareQuantity); // Accounting
         }
     }
 
+    // REmove
     function cancelRequest(uint requestId)
         external
         pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
@@ -421,10 +418,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Request request = requests[requestId];
         request.status = RequestStatus.cancelled;
-        assert(MELON_CONTRACT.transfer(msg.sender, request.incentive));
-        if (isSubscribe(request.requestType)) {
-            assert(MELON_CONTRACT.transfer(request.owner, request.offeredValue));
-        }
     }
 
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
@@ -464,13 +457,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function addShares(address recipient, uint shareQuantity) internal {
-        balances[recipient] = balances[recipient].add(shareQuantity);
-    }
+    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].add(shareQuantity); }
 
-    function subShares(address recipient, uint shareQuantity) internal {
-        balances[recipient] = balances[recipient].sub(shareQuantity);
-    }
+    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].sub(shareQuantity); }
 
     // NON-CONSTANT METHODS - MANAGING
 
@@ -657,8 +646,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             quantityExpectedToReturn(order.buyAsset)
             .sub(order.buyQuantity);
         // Update prev holdings
-        internalAccounting.previousHoldings[order.sellAsset] = ERC20(order.sellAsset).balanceOf(this);
-        internalAccounting.previousHoldings[order.buyAsset] = ERC20(order.buyAsset).balanceOf(this);
+        internalAccounting.holdingsAtLastManualSettlement[order.sellAsset] = ERC20(order.sellAsset).balanceOf(this);
+        internalAccounting.holdingsAtLastManualSettlement[order.buyAsset] = ERC20(order.buyAsset).balanceOf(this);
     }
 
     /// @notice Whether embezzlement happened
@@ -674,11 +663,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint factor = MELON_IN_BASE_UNITS; // Want to receive proportionally as much as sold
         uint divisor = factor; // To reduce inaccuracy due to rounding errors
         if (isLessThan(
-            internalAccounting.previousHoldings[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
+            internalAccounting.holdingsAtLastManualSettlement[sellAsset].sub(quantitySentToExchange(sellAsset)), // Accounted for
             ERC20(sellAsset).balanceOf(this) // Actual quantity held in fund
         )) { // Sold less than intended
             factor = divisor
-                .mul(internalAccounting.previousHoldings[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
+                .mul(internalAccounting.holdingsAtLastManualSettlement[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
                 .div(quantitySentToExchange(sellAsset));
         } else { // Held in custody is less than accounted for (PoE)
             // TODO: Allocate staked shares from this to msg.sender
@@ -692,7 +681,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         // Held in custody is more than revised return expectations of buy asset (good)
         if (isLargerThan(
-            internalAccounting.previousHoldings[buyAsset].add(revisedReturnExpectations), // Expected qty bought
+            internalAccounting.holdingsAtLastManualSettlement[buyAsset].add(revisedReturnExpectations), // Expected qty bought
             ERC20(buyAsset).balanceOf(this) // Actual quantity held in fund
         )) {
             return false;
