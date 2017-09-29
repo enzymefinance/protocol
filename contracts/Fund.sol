@@ -45,19 +45,19 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
         mapping (address => uint) quantityExpectedToReturn; // Quantity expected to receive of asset of what has been sent to exchange
-        mapping (address => uint) holdingsAtLastManualSettlement; //
+        mapping (address => uint) holdingsAtLastManualSettlement; // Quantity of asset held in custody of fund at time of manuel settlement
     }
 
     enum RequestStatus { active, cancelled, executed }
     enum RequestType { subscribe, redeem }
     struct Request { // Describes and logs whenever asset enter this fund
-        address owner;
+        address participant; // Participant requesting subscription or redemption
         RequestStatus status;
         RequestType requestType;
         uint shareQuantity;
-        uint offeredValue; // if requestType is subscribe
-        uint requestedValue; // if requestType is redeem
-        uint incentiveValue;
+        uint giveQuantity; // if requestType is subscribe
+        uint receiveQuantity; // if requestType is redeem
+        uint workerReward;
         uint lastFeedUpdateId;
         uint lastFeedUpdateTime;
         uint timestamp;
@@ -146,6 +146,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
     function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
     function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
+    function returnError(bool requirement, string message) constant returns (bool, string) {
+        if (isFalse(requirement)) {
+            ErrorMessage(message);
+            return (true, message);
+        }
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -315,75 +321,85 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// @param shareQuantity number of shares for offered value
-    /// @param offeredValue denominated in [base unit of MELON_ASSET]
-    /// @param incentiveValue non-zero incentive Value which is paid to workers for triggering executeRequest
+    /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
+    /// @param workerReward non-zero incentive Value which is paid to workers for triggering executeRequest
     /// @return Pending subscription Request
     function requestSubscription(
+        uint giveQuantity,
         uint shareQuantity,
-        uint offeredValue,
-        uint incentiveValue
+        uint workerReward
     )
         external
         pre_cond(notShutDown())
-        pre_cond(isSubscribeAllowed)
-        pre_cond(isPastZero(incentiveValue))
-        pre_cond(module.datafeed.isValid(MELON_ASSET))
-        pre_cond(module.participation.isSubscriptionPermitted(
-            msg.sender,
-            shareQuantity,
-            offeredValue
-        ))
-        returns(uint id)
+        returns(bool, string)
     {
+        returnError(
+            isSubscribeAllowed,
+            "ERR: Subscription using Melon has been deactivated by Manager"
+        );
+
+        returnError(
+            module.participation.isSubscriptionPermitted(
+                msg.sender, // Address ofParticipant
+                giveQuantity, // uint256 giveQuantity
+                shareQuantity // uint256 shareQuantity
+            ),
+            "ERR: Participation Module: Subscription not permitted"
+        );
+
         requests.push(Request({
-            owner: msg.sender,
+            participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.subscribe,
             shareQuantity: shareQuantity,
-            offeredValue: offeredValue,
-            requestedValue: 0,
-            incentiveValue: incentiveValue,
+            giveQuantity: giveQuantity,
+            receiveQuantity: shareQuantity,
+            workerReward: workerReward,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
-        id = getLastRequestId();
-        SubscribeRequest(id, msg.sender, now, shareQuantity);
+        RequestUpdated(getLastRequestId());
     }
 
     /// @dev Redeemer has at least `shareQuantity` shares; redeemer approved this contract to handle shares
     /// @return Redeemer lost `shareQuantity`, and gained `shareQuantity * value` of Melon asset
     function requestRedemption(
         uint shareQuantity,
-        uint requestedValue,
-        uint incentiveValue
+        uint receiveQuantity,
+        uint workerReward
       )
         external
         pre_cond(notShutDown())
-        pre_cond(isRedeemAllowed)
-        pre_cond(isPastZero(shareQuantity))
-        pre_cond(module.participation.isRedemptionPermitted(
-            msg.sender,
-            shareQuantity,
-            requestedValue
-        ))
-        returns (uint id)
+        returns (bool, string)
     {
+        returnError(
+            isRedeemAllowed,
+            "ERR: Redemption using Melon has been deactivated by Manager"
+        );
+
+        returnError(
+            module.participation.isRedemptionPermitted(
+                msg.sender, // Address ofParticipant
+                shareQuantity, // uint256 giveQuantity
+                receiveQuantity // uint256 receiveQuantity
+            ),
+            "ERR: Participation Module: Redemption not permitted"
+        );
+
         requests.push(Request({
-            owner: msg.sender,
+            participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.redeem,
             shareQuantity: shareQuantity,
-            offeredValue: 0,
-            requestedValue: requestedValue,
-            incentiveValue: incentiveValue,
+            giveQuantity: shareQuantity,
+            receiveQuantity: receiveQuantity,
+            workerReward: workerReward,
             lastFeedUpdateId: module.datafeed.getLastUpdateId(),
             lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
-        id = getLastRequestId();
-        RedeemRequest(id, msg.sender, now, shareQuantity);
+        RequestUpdated(getLastRequestId());
     }
 
     /// @dev Anyone can trigger this function; Id of request that is pending
@@ -399,14 +415,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         Request request = requests[requestId];
         uint actualValue = request.shareQuantity.mul(calcSharePrice()).div(MELON_IN_BASE_UNITS); // denominated in [base unit of MELON_ASSET]
         request.status = RequestStatus.executed;
-        if (isSubscribe(request.requestType) && notLessThan(request.offeredValue, actualValue)) { // Limit Order is OK
-            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentiveValue)); // Reward Worker
-            assert(MELON_CONTRACT.transferFrom(request.owner, this, actualValue)); // Allocate Value
-            createShares(request.owner, request.shareQuantity); // Accounting
-        } else if (isRedeem(request.requestType) && notGreaterThan(request.requestedValue, actualValue)) {
-            assert(MELON_CONTRACT.transferFrom(request.owner, msg.sender, request.incentiveValue)); // Reward Worker
-            assert(MELON_CONTRACT.transfer(request.owner, request.requestedValue)); // Return value
-            annihilateShares(request.owner, request.shareQuantity); // Accounting
+        if (isSubscribe(request.requestType) && notLessThan(request.giveQuantity, actualValue)) { // Limit Order is OK
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
+            assert(MELON_CONTRACT.transferFrom(request.participant, this, actualValue)); // Allocate Value
+            createShares(request.participant, request.shareQuantity); // Accounting
+        } else if (isRedeem(request.requestType) && notGreaterThan(request.receiveQuantity, actualValue)) {
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.workerReward)); // Reward Worker
+            assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
+            annihilateShares(request.participant, request.shareQuantity); // Accounting
         }
     }
 
@@ -414,7 +430,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function cancelRequest(uint requestId)
         external
         pre_cond(isSubscribe(requests[requestId].requestType) || isRedeem(requests[requestId].requestType))
-        pre_cond(requests[requestId].owner == msg.sender || isShutDown)
+        pre_cond(requests[requestId].participant == msg.sender || isShutDown)
     {
         Request request = requests[requestId];
         request.status = RequestStatus.cancelled;
