@@ -25,15 +25,18 @@ contract FundInterface is AssetInterface {
 
     // Get general information
     function getCreationTime() constant returns (uint) {}
+    function getBaseUnits() constant returns (uint) {}
     function getModules() constant returns (address ,address, address, address) {}
     function getStake() constant returns (uint) {}
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
+    // Get staking information
     function noOpenOrders() internal returns (bool) {}
     function quantitySentToExchange(address ofAsset) constant returns (uint) {}
     function quantityExpectedToReturn(address ofAsset) constant returns (uint) {}
     // Get accounting information
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
+    function calcSharePrice() constant returns (uint) {}
 
     // NON-CONSTANT METHODS
 
