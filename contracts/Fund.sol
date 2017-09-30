@@ -50,13 +50,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     enum RequestStatus { active, cancelled, executed }
     enum RequestType { subscribe, redeem }
-    struct Request { // Describes and logs whenever asset enter this fund
+    struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting subscription or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
         RequestType requestType; // Enum: subscribe, redeem
-        uint shareQuantity;
-        uint giveQuantity; // Quantity in Melon asset to give to Melon fund
-        uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund
+        uint shareQuantity; // Quantity of Melon shares
+        uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
+        uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
         uint lastFeedUpdateId; // Data feed module specifc id of last update
         uint lastFeedUpdateTime; // Data feed module specifc timestamp of last update
@@ -65,7 +65,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     enum OrderStatus { active, partiallyFilled, fullyFilled, cancelled }
     enum OrderType { make, take }
-    struct Order { // Describes and logs whenever assets leave this fund
+    struct Order { // Describes and logs whenever assets enter and leave fund due to Manager
         uint exchangeId; // Id as returned from exchange
         OrderStatus status; // Enum: active, partiallyFilled, fullyFilled, cancelled
         OrderType orderType; // Enum: make, take
