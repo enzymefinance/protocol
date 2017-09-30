@@ -40,6 +40,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     struct InternalAccounting {
+        uint numberOfMakeOrders; // Number of potentially unsettled orders
         mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
         mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
@@ -522,9 +523,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         bytes32 assetPair = sha3(sellAsset, buyAsset);
 
         // Settle existing make orders before creating a new one
-        if (internalAccounting.existsMakeOrder[assetPair]) {
+        /*if (internalAccounting.existsMakeOrder[assetPair]) {
             manualSettlement(sellAsset, buyAsset);
-        }
+        }*/ // TODO: returns out of gas error
 
         returnError(
             module.datafeed.existsData(sellAsset, buyAsset),
