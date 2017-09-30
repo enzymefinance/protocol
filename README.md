@@ -75,8 +75,8 @@ shareQuantity | `uint256` | Quantity of Melon shares
 giveQuantity | `uint256` | Quantity in Melon asset to give to Melon fund to receive shareQuantity
 receiveQuantity | `uint256` | Quantity in Melon asset to receive from Melon fund for given shareQuantity
 incentiveQuantity | `uint256` | Quantity in Melon asset to give to person executing request
-lastFeedUpdateId | `uint256` | Data feed module specifc id of last update
-lastFeedUpdateTime | `uint256` | Data feed module specifc timestamp of last update
+lastDataFeedUpdateId | `uint256` | Data feed module specifc id of last update
+lastDataFeedUpdateTime | `uint256` | Data feed module specifc timestamp of last update
 timestamp | `uint256` | Time of request creation
 
 While the Risk Management module takes as input the following parameters:
