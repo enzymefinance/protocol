@@ -47,11 +47,12 @@ This repository contains a reference implementation of the Melon protocol writte
 ### List of Melon modules
 
 Melon has five different module classes:
+- Participation
+- Risk Management
 - Asset registrars
 - Data feeds
 - Exchange Adapters
-- Participation
-- Risk Management
+
 
 #### Module interaction (boolean functions)
 
@@ -59,14 +60,47 @@ These Melon modules are:
 - Participation
 - Risk Managment
 
-They interact with the Melon protocol using boolean functions. That is functions which return either true or false.
+They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false.
+
+The Participation module takes a input the following parameters:
+
+**Requests:** Describes and logs whenever asset enter and leave fund due to Participants
+
+Name | Data Type | Description
+--- | --- | ---
+participant | `address` | Participant in Melon fund requesting subscription or redemption
+status | `enum` | Enum: active, cancelled, executed; Status of request
+requestType | `enum` | Enum: subscribe, redeem
+shareQuantity | `uint256` | Quantity of Melon shares
+giveQuantity | `uint256` | Quantity in Melon asset to give to Melon fund to receive shareQuantity
+receiveQuantity | `uint256` | Quantity in Melon asset to receive from Melon fund for given shareQuantity
+incentiveQuantity | `uint256` | Quantity in Melon asset to give to person executing request
+lastFeedUpdateId | `uint256` | Data feed module specifc id of last update
+lastFeedUpdateTime | `uint256` | Data feed module specifc timestamp of last update
+timestamp | `uint256` | Time of request creation
+
+While the Risk Management module takes a input the following parameters:
+
+**Orders:** Describes and logs whenever assets enter and leave fund due to Manager
+
+Name | Data Type | Description
+--- | --- | ---
+exchangeId | `uint256` | Id as returned from exchange
+status | `enum` | Enum: active, partiallyFilled, fullyFilled, cancelled
+orderType | `enum` | Enum: make, take
+sellAsset | `address` | Asset (as registred in Asset registrar) to be sold
+buyAsset | `address` | Asset (as registred in Asset registrar) to be bought
+sellQuantity | `uint256` | Quantity of sellAsset to be sold
+buyQuantity | `uint256` |  Quantity of sellAsset to be bought
+timestamp | `uint256` | Time in seconds when this order was created
+fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
 
 #### Module interaction (non-boolean functions)
 
 These Melon modules are:
-- Exchanges
+- Asset registrars
 - Data feeds
-- Asset registrar
+- Exchange Adapters
 
 ## Get started
 
