@@ -17,7 +17,7 @@ This repository contains a reference implementation of the Melon protocol writte
 
 * [Implementation](#implementation-overview)
     * [Governance](#governance)
-    * [Investment Funds](#investment-funds)
+    * [Funds](#funds)
     * [Modules](#modules)
 * [Get started](#get-started)
     * [Installation](#installation)
@@ -36,7 +36,7 @@ This repository contains a reference implementation of the Melon protocol writte
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/governance.png" width = "100%">
 
-### Investment Funds
+### Funds
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/vault.png" width = "100%">
 
