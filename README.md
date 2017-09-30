@@ -62,7 +62,7 @@ These Melon modules are:
 
 They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false.
 
-The Participation module takes a input the following parameters:
+The Participation module takes as input the following parameters:
 
 **Requests:** Describes and logs whenever asset enter and leave fund due to Participants
 
@@ -79,7 +79,7 @@ lastFeedUpdateId | `uint256` | Data feed module specifc id of last update
 lastFeedUpdateTime | `uint256` | Data feed module specifc timestamp of last update
 timestamp | `uint256` | Time of request creation
 
-While the Risk Management module takes a input the following parameters:
+While the Risk Management module takes as input the following parameters:
 
 **Orders:** Describes and logs whenever assets enter and leave fund due to Manager
 
