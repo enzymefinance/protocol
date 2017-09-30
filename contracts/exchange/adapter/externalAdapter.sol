@@ -63,7 +63,7 @@ library externalAdapter {
     )
         returns (uint id)
     {
-        id = ERC20(sellAsset).transfer(onExchange, sellQuantity) ? 1 : 0; // Convert bool to uint
+        id = ERC20(sellAsset).transfer(msg.sender, sellQuantity) ? 1 : 0; // Convert bool to uint
         OrderUpdated(id);
     }
 
