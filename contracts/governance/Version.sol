@@ -9,7 +9,7 @@ import './VersionInterface.sol';
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is DBC, Owned, VersionInterface {
+contract Version is DBC, Owned {
 
     // TYPES
 
