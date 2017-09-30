@@ -39,15 +39,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint timestamp; // When above has been calculated
     }
 
-    struct InternalAccounting {
-        uint numberOfMakeOrders; // Number of potentially unsettled orders
-        mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
-        mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
-        mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
-        mapping (address => uint) quantityExpectedToReturn; // Quantity expected to receive of asset of what has been sent to exchange
-        mapping (address => uint) holdingsAtLastManualSettlement; // Quantity of asset held in custody of fund at time of manuel settlement
-    }
-
     enum RequestStatus { active, cancelled, executed }
     enum RequestType { subscribe, redeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
@@ -97,7 +88,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    InternalAccounting public internalAccounting; // Accounts for assets not held in custody of fund
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -127,7 +117,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getCreationTime() constant returns (uint) { return CREATED; }
     function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
-        (
+        return (
             address(module.datafeed),
             address(EXCHANGE),
             address(module.participation),
@@ -137,8 +127,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
-    function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
-    function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -148,7 +136,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(quantitySentToExchange(ofAsset));
+                .add(ERC20(ofAsset).balanceOf(EXCHANGE));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -157,7 +145,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @param gav gross asset value of this fund
-    /// @return The sum and its individual parts of all earned rewards denominated in [base unit of melonAsset]
+    /// @return managementReward A time (seconds) based reward
+    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
+    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -191,7 +181,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Calculates the Net Asset Value
     /// @param gav gross asset value of this fund denominated in [base unit of melonAsset]
     /// @param unclaimedRewards the sum of all earned rewards denominated in [base unit of melonAsset]
-    /// @return Net asset value denominated in [base unit of melonAsset]
+    /// @return nav net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
         constant
         returns (uint nav)
@@ -210,7 +200,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates essential fund metrics
-    /// @return Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
+    /// @return gav gross asset value of this fund denominated in [base unit of melonAsset]
+    /// @return managementReward A time (seconds) based reward
+    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
+    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
+    /// @return nav net asset value denominated in [base unit of melonAsset]
+    /// @return sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
@@ -229,11 +224,19 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS
 
+    /*/// @param ofManger owner of this fund, person who can manage asset holdings
+    /// @param name human-readable describive name (not necessarily unique)
+    /// @param ofReferenceAsset asset against which performance reward is measured against§
+    /// @param ofManagementRewardRate
+    /// @param ofPerformanceRewardRate
+    /// @param ofMelonAsset
+    /// @param ofParticipation
+    /// @param ofRiskMgmt
+    /// @param ofSphere*/
     function Fund(
         address ofManager,
         string withName,
-        string withSymbol, // TODO remove
-        uint withDecimals, // TODO remove
+        address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofMelonAsset,
@@ -253,7 +256,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         VERSION = msg.sender;
         EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
-        REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
+        REFERENCE_ASSET = ofReferenceAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
         MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
@@ -446,22 +449,41 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
     function redeemUsingSlice(uint shareQuantity)
         external
-        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
+        returns (bool, string)
     {
-        // Current Value
-        uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
-        assert(isPastZero(prevTotalSupply));
-        annihilateShares(msg.sender, shareQuantity); // Destroy _before_ external calls to prevent reentrancy
+        returnError(
+            balancesOfHolderAtLeast(msg.sender, shareQuantity),
+            "ERR: Sender does not own enough shares"
+        );
+
+        // Quantity of shares which belong to the investors
+        var (gav, , , , nav, ) = performCalculations();
+        uint participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
+
+        returnError(
+            isPastZero(participantsTotalSupplyBeforeRedeem),
+            "ERR: Sender does not own enough shares"
+        );
+
+        annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings.mul(shareQuantity).div(prevTotalSupply); // ownership percentage of msg.sender
-            if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
-                isShutDown = true; // Shutdown allows active orders to be cancelled, eg. to return
-            }
-            assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
+            uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
+                .mul(shareQuantity)
+                .div(participantsTotalSupplyBeforeRedeem);
+
+            returnCriticalError(
+                isLessThan(ownershipQuantity, assetHoldings), // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
+                "CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy"
+            );
+
+            returnCriticalError(
+                ERC20(ofAsset).transfer(msg.sender, ownershipQuantity), // Send funds from vault to investor
+                "CRITICAL ERR: Transfer of an asset failed!"
+            );
         }
         Redeemed(msg.sender, now, shareQuantity);
     }
@@ -486,13 +508,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (bool, string)
     {
-        bytes32 assetPair = sha3(sellAsset, buyAsset);
-
-        returnError(
-            isFalse(internalAccounting.existsMakeOrder[assetPair]),
-            "ERR: Currently only one make order allowed"
-        );
-
         returnError(
             module.datafeed.existsData(sellAsset, buyAsset),
             "ERR: DataFeed module: Requested asset pair not valid"
@@ -533,14 +548,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now,
             fillQuantity: 0
         }));
-
-        internalAccounting.numberOfMakeOrders++;
-        internalAccounting.quantitySentToExchange[sellAsset] =
-            quantitySentToExchange(sellAsset)
-            .add(sellQuantity);
-        internalAccounting.quantityExpectedToReturn[buyAsset] =
-            quantityExpectedToReturn(buyAsset)
-            .add(buyQuantity);
 
         OrderUpdated(id);
     }
@@ -619,6 +626,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
 
+        bytes32 assetPair = sha3(order.sellAsset, order.buyAsset);
         bool success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
 
         returnError(
@@ -626,14 +634,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             "ERR: Exchange Adapter: Failed to cancel order"
         );
 
-        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
-        internalAccounting.numberOfMakeOrders--;
-        internalAccounting.quantitySentToExchange[order.sellAsset] =
-            quantitySentToExchange(order.sellAsset)
-            .sub(order.sellQuantity);
-        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
-            quantityExpectedToReturn(order.buyAsset)
-            .sub(order.buyQuantity);
         OrderUpdated(id);
     }
 
@@ -645,6 +645,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
+        returns (bool, string)
     {
         var (
             gav,
@@ -654,11 +655,21 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             nav,
             sharePrice
         ) = performCalculations();
-        assert(isPastZero(gav));
 
-        // Accounting: Allocate unclaimedRewards to this fund
+        returnError(
+            isPastZero(gav),
+            "ERR: Gross asset value can't be zero"
+        );
+
+        returnError(
+            isPastZero(unclaimedRewards),
+            "ERR: Nothing to convert as of now"
+        );
+
+        // Convert unclaimed rewards in form of ownerless shares into shares which belong to manager
         uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
-        addShares(owner, shareQuantity);
+        totalSupply = totalSupply.sub(shareQuantity); // Annihilate ownerless shares
+        addShares(owner, shareQuantity); // Create shares and allocate them to manager
         // Update Calculations
         atLastConversion = Calculations({
             gav: gav,
@@ -695,6 +706,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     function returnError(bool requirement, string message) internal returns (bool, string) {
         if (isFalse(requirement)) {
+            ErrorMessage(message);
+            return (true, message);
+        }
+    }
+
+    function returnCriticalError(bool requirement, string message) internal returns (bool, string) {
+        if (isFalse(requirement)) {
+            isShutDown = true;
             ErrorMessage(message);
             return (true, message);
         }

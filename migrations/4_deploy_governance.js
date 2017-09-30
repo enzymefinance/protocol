@@ -17,7 +17,7 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(SimpleAdapter))
     .then(() => deployer.link(SimpleAdapter, Version))
     .then(() => deployer.link(SimpleAdapter, Fund))
-    .then(() => deployer.deploy(Version, mlnTokenAddress))
+    .then(() => deployer.deploy(Version, '', '', mlnTokenAddress))
     .catch((e) => { throw e; });
   } else {
     mlnTokenAddress = Asset.address;  // TODO: fix this (see footnote #1)
@@ -28,7 +28,7 @@ module.exports = (deployer, network) => {
     .then(() => deployer.deploy(SimpleAdapter))
     .then(() => deployer.link(SimpleAdapter, Version))
     .then(() => deployer.link(SimpleAdapter, Fund))
-    .then(() => deployer.deploy(Version, mlnTokenAddress))
+    .then(() => deployer.deploy(Version, '', '', mlnTokenAddress))
     .catch((e) => { throw e; });
   }
 };

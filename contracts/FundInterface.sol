@@ -44,7 +44,7 @@ contract FundInterface is AssetInterface {
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external returns (bool, string) {}
     function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemUsingSlice(uint shareQuantity) external {}
+    function redeemUsingSlice(uint shareQuantity) external returns (bool, string) {}
     // Administration by Manager
     function toogleSubscription() external {}
     function toggleRedemption() external {}
@@ -55,8 +55,8 @@ contract FundInterface is AssetInterface {
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
     function takeOrder(uint id, uint quantity) external returns (bool, string) {}
     function cancelOrder(uint id) external returns (bool, string) {}
-    function closeOpenOrders(address ofBase, address ofQuote) constant {}
-    function proofOfEmbezzlement(address ofBase, address ofQuote) constant returns (bool) {}
+    function manualSettlement(address sellAsset, address buyAsset) returns (bool, string) {}
+    function proofOfEmbezzlement(address sellAsset, address buyAsset) returns (bool, string) {}
     // Rewards by Manager
-    function convertUnclaimedRewards() external {}
+    function convertUnclaimedRewards() external returns (bool, string) {}
 }
