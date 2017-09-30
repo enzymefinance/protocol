@@ -54,7 +54,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         address participant; // Participant in Melon fund requesting subscription or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
         RequestType requestType; // Enum: subscribe, redeem
-        uint shareQuantity; // Quantity of Melon shares
+        uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
