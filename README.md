@@ -1,4 +1,4 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%201.jpg" width = "50%">
+<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%201.jpg" width = "25%">
 
 # protocol
 
@@ -15,10 +15,25 @@ This repository contains a reference implementation of the Melon protocol writte
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
-[wiki-url]: https://github.com/melonproject/protocol/wiki
-[paper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
+## Table of Contents
 
-## Installation
+* [Implementation](#implementation-overview)
+* [Modules](#modules)
+    * [Module interactions](#boolean-functions)
+    * [Input formats](#input-formats)
+* [Get started](#get-started)
+    * [Installation](#installation)
+    * [Testing](#testing)
+    * [Linting](#linting)
+    * [Deployment](#deployment)
+* [Contributing](#contributing)
+    * [Security Issues](#security-issues)
+    * [Protocol Design](#protocol-design)
+    * [Implementation Design](#implementation-design)
+
+## Get started
+
+### Installation
 
 1. Clone this repository
     ```
@@ -37,7 +52,7 @@ This repository contains a reference implementation of the Melon protocol writte
     npm run compile
     ```
 
-## Testing
+### Testing
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
@@ -51,14 +66,14 @@ After installation is complete, go to the above `protocol` directory, open a ter
     npm test
     ```
 
-## Linting
+### Linting
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
 
 `npm run lint`
 
 
-## Deployment
+### Deployment
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
@@ -72,6 +87,35 @@ After installation is complete, go to the above `protocol` directory, open a ter
     truffle migrate --network kovan
     ```
 
+## Contributing
+
+As an open-source project we ❤️ any kind of community involvement. Whether that is by contributing code, reporting issues or engaging in insightful discussions.
+
+### Security Issues
+
+If you find a vulnerability that may affect live or kovan deployments please send your report privately to admin@melonport.com. Please DO NOT file a public issue.
+
+### Protocol Design
+
+When considering protocol design proposals, we are looking for:
+
+- A description of the problem this design proposal solves
+- Discussion of the tradeoffs involved
+- Review of other existing solutions
+- Links to relevant literature (RFCs, papers, etc)
+- Discussion of the proposed solution
+
+Please note that protocol design is hard, and meticulous work. You may need to review existing literature and think through generalized use cases.
+
+### Implementation Design
+
+When considering design proposals for implementations, we are looking for:
+
+- A description of the problem this design proposal solves
+- Discussion of the tradeoffs involved
+- Discussion of the proposed solution
+
+[paper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
 [gitter-badge]: https://img.shields.io/gitter/room/melonproject/general.js.svg?style=flat-square
 [gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [license-badge]: https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square
