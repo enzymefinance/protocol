@@ -661,13 +661,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             "ERR: Exchange Adapter: Failed to cancel order"
         );
 
-        internalAccounting.existsMakeOrder[assetPair] = false;
-        internalAccounting.quantitySentToExchange[order.sellAsset] =
-            quantitySentToExchange(order.sellAsset)
-            .sub(order.sellQuantity);
-        internalAccounting.quantityExpectedToReturn[order.buyAsset] =
-            quantityExpectedToReturn(order.buyAsset)
-            .sub(order.buyQuantity);
+        /*if (internalAccounting.existsMakeOrder[assetPair]) {
+            manualSettlement(sellAsset, buyAsset);
+        }*/ // TODO: returns out of gas error
+        
         OrderUpdated(id);
     }
 
