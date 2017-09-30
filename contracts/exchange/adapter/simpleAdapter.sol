@@ -52,6 +52,13 @@ library simpleAdapter {
             buyQuantity
         );
     }
+    function getTimestamp(address onExchange, uint id)
+        constant
+        returns (uint)
+    {
+        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
+        return timestamp;
+    }
 
     // NON-CONSTANT METHODS
 

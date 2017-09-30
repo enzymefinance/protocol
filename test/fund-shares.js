@@ -98,7 +98,7 @@ contract('Fund shares', (accounts) => {
       await fund.requestSubscription(numShares, offeredValue, incentive, { from: investor });
     });
     it('logs request event', (done) => {
-      const reqEvent = fund.SubscribeRequest();
+      const reqEvent = fund.RequestUpdated();
       reqEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);

@@ -16,12 +16,18 @@ contract RiskMgmtInterface {
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
-        uint orderQuantity
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     ) returns (bool) {}
 
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
-        uint orderQuantity
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     ) returns (bool) {}
 }

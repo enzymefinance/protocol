@@ -44,6 +44,12 @@ library externalAdapter {
     {
         throw;
     }
+    function getTimestamp(address onExchange, uint id)
+        constant
+        returns (uint)
+    {
+        throw;
+    }
 
     // NON-CONSTANT METHODS
 
