@@ -21,8 +21,6 @@ This repository contains a reference implementation of the Melon protocol writte
     * [Governance](#governance)
     * [Investment Funds](#investment-funds)
     * [Modules](#modules)
-      * [Module interactions](#boolean-functions)
-      * [Input formats](#input-formats)
 * [Get started](#get-started)
     * [Installation](#installation)
     * [Testing](#testing)
@@ -47,6 +45,8 @@ This repository contains a reference implementation of the Melon protocol writte
 ### Modules
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/modules.png" width = "100%">
+
+### List of Melon modules
 
 Melon has five different module classes:
 - Asset registrars
