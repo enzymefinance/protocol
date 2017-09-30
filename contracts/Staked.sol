@@ -13,7 +13,6 @@ contract Staked is Fund {
         pre_cond(notShutDown())
         pre_cond(isPastZero(shareQuantity))
         pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
-        pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
@@ -27,7 +26,6 @@ contract Staked is Fund {
         pre_cond(notShutDown())
         pre_cond(isPastZero(shareQuantity))
         pre_cond(balancesOfHolderAtLeast(this, shareQuantity))
-        pre_cond(noOpenOrders())
         post_cond(prevTotalSupply == totalSupply)
     {
         uint prevTotalSupply = totalSupply;
@@ -112,8 +110,4 @@ contract Staked is Fund {
             return true;
         }
     }
-
-
-
-
 }
