@@ -1,10 +1,14 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%201.jpg
-" width = "120px">
+<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%201.jpg" width = "50%">
 
 # protocol
-Melon Protocol Solidity Implementation
 
-See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more information.
+Melon ([méllō], μέλλω; Greek for "destined to be") is blockchain software that seeks to enable participants to set up, manage and invest in technology regulated investment funds in a way that reduces barriers to entry while minimizing the requirements for trust.
+
+It does so by leveraging off the fact that digital assets on distributed quasi turing complete machines can be held solely by smart-contract code and spent only if its preprogrammed within this code. The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund. It's meant to protect the investor and fund manager from malevolent behaviour of each other.
+
+Melon is for wealth management what Bitcoin is for accounting, a set of rules, enforced by blockchain technology, legitimized by the consent of its participants.
+
+This repository contains a reference implementation of the Melon protocol written in Solidity, as specified in our [paper][paper-url].
 
 [![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
@@ -12,8 +16,7 @@ See our [wiki][wiki-url] or read our [whitepaper][whitepaper-url] for more infor
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
 [wiki-url]: https://github.com/melonproject/protocol/wiki
-[whitepaper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
-
+[paper-url]: https://github.com/melonproject/whitepaper/blob/master/melonprotocol.pdf
 
 ## Installation
 
