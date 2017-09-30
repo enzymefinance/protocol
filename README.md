@@ -21,6 +21,7 @@ This repository contains a reference implementation of the Melon protocol writte
     * [Governance](#governance)
     * [Funds](#funds)
     * [Modules](#modules)
+* [Interaction](#interaction)
 * [Get started](#get-started)
     * [Installation](#installation)
     * [Testing](#testing)
@@ -118,6 +119,18 @@ These Melon modules are:
 
 These are modules security critical infrastructure modules.
 The reason they are security criticial is that the correctness of the data they provide cannot directly be enforced or guaranteed.
+
+## Interaction
+
+Smart contract interaction for the following scenarios:
+- Setup of a new Melon fund
+- Participant invests in a Melon fund
+- Participant redeems from a Melon fund
+- Manager makes an order
+- Manager takes an order
+- Manager converts rewards into shares
+- Manager shuts down the fund
+
 
 ## Get started
 
