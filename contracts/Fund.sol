@@ -58,8 +58,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
-        uint lastFeedUpdateId; // Data feed module specifc id of last update
-        uint lastFeedUpdateTime; // Data feed module specifc timestamp of last update
+        uint lastDataFeedUpdateId; // Data feed module specifc id of last update
+        uint lastDataFeedUpdateTime; // Data feed module specifc timestamp of last update
         uint timestamp; // Time of request creation
     }
 
@@ -347,8 +347,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastFeedUpdateId: module.datafeed.getLastUpdateId(),
-            lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
+            lastDataFeedUpdateId: module.datafeed.getLastUpdateId(),
+            lastDataFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -391,8 +391,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastFeedUpdateId: module.datafeed.getLastUpdateId(),
-            lastFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
+            lastDataFeedUpdateId: module.datafeed.getLastUpdateId(),
+            lastDataFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -420,7 +420,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         );
 
         returnError(
-            request.lastFeedUpdateId.add(2) <= module.datafeed.getLastUpdateId(),
+            request.lastDataFeedUpdateId.add(2) <= module.datafeed.getLastUpdateId(),
             "ERR: DataFeed Module: Wait at least for two updates before continuing"
         );
 
