@@ -40,8 +40,7 @@ contract('Fund trading', (accounts) => {
     fund = await Fund.new(
       manager,
       'Melon Portfolio',  // name
-      'MLN-P',            // share symbol
-      18,                 // share decimals
+      mlnToken.address,   // reference asset
       0,                  // mgmt reward
       0,                  // perf reward
       mlnToken.address,

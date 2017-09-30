@@ -46,8 +46,7 @@ contract Version is DBC, Owned {
 
     function setupFund(
         string withName,
-        string withSymbol,
-        uint withDecimals,
+        address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofParticipation,
@@ -57,8 +56,7 @@ contract Version is DBC, Owned {
         address fund = new Fund(
             msg.sender,
             withName,
-            withSymbol,
-            withDecimals,
+            ofReferenceAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
             MELON_ASSET,

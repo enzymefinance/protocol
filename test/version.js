@@ -13,13 +13,14 @@ const assert = chai.assert;
 contract('Version', (accounts) => {
   let version;
   let feed;
+  let mlnToken;
   let simpleMarket;
   let participation;
   let riskManagement;
   let sphere;
 
   before('Deploy contract instances', async () => {
-    const mlnToken = await PreminedAsset.new(
+    mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: accounts[0] });
     version = await Version.new('', '', mlnToken.address);
     feed = await DataFeed.new(mlnToken.address, 0, 120);
@@ -34,15 +35,14 @@ contract('Version', (accounts) => {
 
   it('Can create a fund without error', async () => {
     await version.setupFund(
-      'Cantaloot',    // name
-      'CNLT',         // share symbol
-      18,             // share decimals
-      0,              // mgmt reward
-      0,              // perf reward
+      'Cantaloot',        // name
+      mlnToken.address,   // reference asset
+      0,                  // mgmt reward
+      0,                  // perf reward
       participation.address,
       riskManagement.address,
       sphere.address,
-      { from: accounts[6], gas: 6713095 }
+      { from: accounts[6], gas: 6913095 }
     );
   });
 

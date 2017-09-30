@@ -127,7 +127,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getCreationTime() constant returns (uint) { return CREATED; }
     function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
-        (
+        return (
             address(module.datafeed),
             address(EXCHANGE),
             address(module.participation),
@@ -157,7 +157,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @param gav gross asset value of this fund
-    /// @return The sum and its individual parts of all earned rewards denominated in [base unit of melonAsset]
+    /// @return managementReward A time (seconds) based reward
+    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
+    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -232,8 +234,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function Fund(
         address ofManager,
         string withName,
-        string withSymbol, // TODO remove
-        uint withDecimals, // TODO remove
+        address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofMelonAsset,
@@ -253,7 +254,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         VERSION = msg.sender;
         EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
-        REFERENCE_ASSET = MELON_ASSET; // TODO let user decide
+        REFERENCE_ASSET = ofReferenceAsset;
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
         MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
@@ -446,12 +447,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
     function redeemUsingSlice(uint shareQuantity)
         external
-        pre_cond(balancesOfHolderAtLeast(msg.sender, shareQuantity))
+        returns (bool, string)
     {
+        returnError(
+            balancesOfHolderAtLeast(msg.sender, shareQuantity),
+            "ERR: Sender does not own enough shares"
+        );
+
         // Current Value
         uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
         assert(isPastZero(prevTotalSupply));
-        annihilateShares(msg.sender, shareQuantity); // Destroy _before_ external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
