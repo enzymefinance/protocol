@@ -470,13 +470,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         // Quantity of shares which belong to the investors
         var (gav, , , , nav, ) = performCalculations();
-        uint participantTotalSupplyBeforeRedeem = totalSupply.mul(gav).div(nav);
+        uint participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
 
         returnError(
-            isPastZero(participantTotalSupplyBeforeRedeem),
+            isPastZero(participantsTotalSupplyBeforeRedeem),
             "ERR: Sender does not own enough shares"
         );
-
 
         annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
@@ -486,7 +485,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             if (assetHoldings == 0) continue;
             uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
                 .mul(shareQuantity)
-                .div(participantTotalSupplyBeforeRedeem);
+                .div(participantsTotalSupplyBeforeRedeem);
 
             returnCriticalError(
                 isLessThan(ownershipQuantity, assetHoldings), // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
@@ -680,6 +679,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
+        returns (bool, string)
     {
         var (
             gav,
@@ -689,11 +689,21 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             nav,
             sharePrice
         ) = performCalculations();
-        assert(isPastZero(gav));
 
-        // Accounting: Allocate unclaimedRewards to this fund
+        returnError(
+            isPastZero(gav),
+            "ERR: Gross asset value can't be zero"
+        );
+
+        returnError(
+            isPastZero(unclaimedRewards),
+            "ERR: Nothing to convert as of now"
+        );
+
+        // Convert unclaimed rewards in form of ownerless shares into shares which belong to manager
         uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
-        addShares(owner, shareQuantity);
+        totalSupply = totalSupply.sub(shareQuantity); // Annihilate ownerless shares
+        addShares(owner, shareQuantity); // Create shares and allocate them to manager
         // Update Calculations
         atLastConversion = Calculations({
             gav: gav,

@@ -55,8 +55,9 @@ contract FundInterface is AssetInterface {
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
     function takeOrder(uint id, uint quantity) external returns (bool, string) {}
     function cancelOrder(uint id) external returns (bool, string) {}
+      
     function closeOpenOrders(address ofBase, address ofQuote) constant {}
     function proofOfEmbezzlement(address ofBase, address ofQuote) constant returns (bool) {}
     // Rewards by Manager
-    function convertUnclaimedRewards() external {}
+    function convertUnclaimedRewards() external returns (bool, string) {}
 }
