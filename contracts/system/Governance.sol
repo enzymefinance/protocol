@@ -50,9 +50,8 @@ contract Governance is DBC, Owned {
 
     /// @notice Propose new versions of Melon
     function proposeVersion(address ofVersion)
-        /* In later versions
-         *  Require Authorities
-         */
+        // In later version
+        //  require Only authorities
     {}
 
     /// @notice Add an approved version of Melon
@@ -60,9 +59,8 @@ contract Governance is DBC, Owned {
         address ofVersion
     )
         pre_cond(isOwner())
-        /* In later versions
-         *  Require Authorities consensus
-         */
+        // In later version
+        //  require Authorities consensus
         returns (uint id)
     {
         Version memory info;
@@ -77,8 +75,7 @@ contract Governance is DBC, Owned {
     function decommissionVersion(uint id)
         pre_cond(isOwner())
         pre_cond(isActive(id))
-        /* In later versions
-         *  Require Authorities consensus
-         */
+        // In later version
+        //  require Authorities consensus
     {}
 }
