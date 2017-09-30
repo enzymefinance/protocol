@@ -18,18 +18,57 @@ This repository contains a reference implementation of the Melon protocol writte
 ## Table of Contents
 
 * [Implementation](#implementation-overview)
-* [Modules](#modules)
-    * [Module interactions](#boolean-functions)
-    * [Input formats](#input-formats)
+    * [Governance](#governance)
+    * [Investment Funds](#investment-funds)
+    * [Modules](#modules)
+      * [Module interactions](#boolean-functions)
+      * [Input formats](#input-formats)
 * [Get started](#get-started)
     * [Installation](#installation)
     * [Testing](#testing)
     * [Linting](#linting)
     * [Deployment](#deployment)
-* [Contributing](#contributing)
+* [Contribute](#contribute)
     * [Security Issues](#security-issues)
     * [Protocol Design](#protocol-design)
     * [Implementation Design](#implementation-design)
+
+
+## Implementation
+
+### Governance
+
+<img src = "https://github.com/melonproject/branding/blob/master/explanation/governance.png" width = "100%">
+
+### Investment Funds
+
+<img src = "https://github.com/melonproject/branding/blob/master/explanation/vault.png" width = "100%">
+
+### Modules
+
+<img src = "https://github.com/melonproject/branding/blob/master/explanation/modules.png" width = "100%">
+
+Melon has five different module classes:
+- Asset registrars
+- Data feeds
+- Exchange Adapters
+- Participation
+- Risk Management
+
+#### Module interaction (boolean functions)
+
+These Melon modules are:
+- Participation
+- Risk Managment
+
+They interact with the Melon protocol using boolean functions. That is functions which return either true or false.
+
+#### Module interaction (non-boolean functions)
+
+These Melon modules are:
+- Exchanges
+- Data feeds
+- Asset registrar
 
 ## Get started
 
@@ -87,9 +126,9 @@ After installation is complete, go to the above `protocol` directory, open a ter
     truffle migrate --network kovan
     ```
 
-## Contributing
+## Contribute
 
-As an open-source project we ❤️ any kind of community involvement. Whether that is by contributing code, reporting issues or engaging in insightful discussions.
+As an open-source project we welcome any kind of community involvement. Whether that is by contributing code, reporting issues or engaging in insightful discussions.
 
 ### Security Issues
 
