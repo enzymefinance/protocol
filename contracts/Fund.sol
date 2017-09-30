@@ -193,7 +193,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Calculates the Net Asset Value
     /// @param gav gross asset value of this fund denominated in [base unit of melonAsset]
     /// @param unclaimedRewards the sum of all earned rewards denominated in [base unit of melonAsset]
-    /// @return Net asset value denominated in [base unit of melonAsset]
+    /// @return nav net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
         constant
         returns (uint nav)
@@ -212,7 +212,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates essential fund metrics
-    /// @return Gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice denominated in [base unit of melonAsset]
+    /// @return gav gross asset value of this fund denominated in [base unit of melonAsset]
+    /// @return managementReward A time (seconds) based reward
+    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
+    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
+    /// @return nav net asset value denominated in [base unit of melonAsset]
+    /// @return sharePrice denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value indepentent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
@@ -231,6 +236,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS
 
+    /*/// @param ofManger owner of this fund, person who can manage asset holdings
+    /// @param name human-readable describive name (not necessarily unique)
+    /// @param ofReferenceAsset asset against which performance reward is measured against§
+    /// @param ofManagementRewardRate
+    /// @param ofPerformanceRewardRate
+    /// @param ofMelonAsset
+    /// @param ofParticipation
+    /// @param ofRiskMgmt
+    /// @param ofSphere*/
     function Fund(
         address ofManager,
         string withName,
@@ -454,20 +468,35 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             "ERR: Sender does not own enough shares"
         );
 
-        // Current Value
-        uint prevTotalSupply = totalSupply.sub(atLastConversion.unclaimedRewards); // TODO Fix calculation
-        assert(isPastZero(prevTotalSupply));
+        // Quantity of shares which belong to the investors
+        var (gav, , , , nav, ) = performCalculations();
+        uint participantTotalSupplyBeforeRedeem = totalSupply.mul(gav).div(nav);
+
+        returnError(
+            isPastZero(participantTotalSupplyBeforeRedeem),
+            "ERR: Sender does not own enough shares"
+        );
+
+
         annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings.mul(shareQuantity).div(prevTotalSupply); // ownership percentage of msg.sender
-            if (isLessThan(ownershipQuantity, assetHoldings)) { // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
-                isShutDown = true; // Shutdown allows active orders to be cancelled, eg. to return
-            }
-            assert(ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)); // Send funds from vault to investor
+            uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
+                .mul(shareQuantity)
+                .div(participantTotalSupplyBeforeRedeem);
+
+            returnCriticalError(
+                isLessThan(ownershipQuantity, assetHoldings), // Less available than what is owned - Eg in case of unreturned asset quantity at EXCHANGE address
+                "CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy"
+            );
+
+            returnCriticalError(
+                ERC20(ofAsset).transfer(msg.sender, ownershipQuantity), // Send funds from vault to investor
+                "CRITICAL ERR: Transfer of an asset failed!"
+            );
         }
         Redeemed(msg.sender, now, shareQuantity);
     }
@@ -701,6 +730,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     function returnError(bool requirement, string message) internal returns (bool, string) {
         if (isFalse(requirement)) {
+            ErrorMessage(message);
+            return (true, message);
+        }
+    }
+
+    function returnCriticalError(bool requirement, string message) internal returns (bool, string) {
+        if (isFalse(requirement)) {
+            isShutDown = true;
             ErrorMessage(message);
             return (true, message);
         }
