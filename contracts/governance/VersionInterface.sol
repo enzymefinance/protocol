@@ -7,16 +7,14 @@ contract VersionInterface {
 
       // EVENTS
 
-      event FundAdded(address fundAddr, uint id, string name, uint256 atTime);
       event FundUpdated(uint id);
 
       // CONSTANT METHODS
 
-      function getFund(uint id) constant returns (address) {}
-      function fundForManager(address ofManager) constant returns (address) {}
       function getMelonAsset() constant returns (address) {}
-      function getNextFundId() constant returns (uint) {}
+      function getFund(uint withId) constant returns (address) {}
       function getLastFundId() constant returns (uint) {}
+      function getFund(address ofManager) constant returns (address) {}
 
       // NON-CONSTANT METHODS
 

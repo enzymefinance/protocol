@@ -21,7 +21,7 @@ contract('Version', (accounts) => {
   before('Deploy contract instances', async () => {
     const mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: accounts[0] });
-    version = await Version.new(mlnToken.address);
+    version = await Version.new('', '', mlnToken.address);
     feed = await DataFeed.new(mlnToken.address, 0, 120);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);

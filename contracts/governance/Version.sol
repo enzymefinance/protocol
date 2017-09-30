@@ -14,39 +14,33 @@ contract Version is DBC, Owned {
     // FIELDS
 
     // Constructor fields
-    address public VERSION_NUMBER = "0.4.0"; //
+    string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
-
     // Methods fields
-    mapping (address => address) public managers; // Links manager address to fundId list
-    mapping (uint => address) public funds; // Links fundId to fundAddr
-    uint public nextFundId;
+    mapping (address => address) public managerToFunds; // Links manager address to fund addresseses created using this version
+    address[] public listOfFunds; // A complete list of fund addresses created using this version
 
     // EVENTS
 
-    event FundAdded(address fundAddr, uint id, string name, uint256 atTime);
     event FundUpdated(uint id);
 
     // CONSTANT METHODS
 
-    function getFund(uint id) constant returns (address) { return funds[id]; }
-    function fundForManager(address ofManager) constant returns (address) {
-        return managers[ofManager];
-    }
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
-    function getNextFundId() constant returns (uint) { return nextFundId; }
-    function getLastFundId() constant returns (uint) {
-      require(nextFundId > 0);
-      return nextFundId - 1;
-    }
+    function getFund(uint withId) constant returns (address) { return listOfFunds[withId]; }
+    function getLastFundId() constant returns (uint) { return listOfFunds.length -1; }
+    function getFund(address ofManager) constant returns (address) { return managerToFunds[ofManager]; }
 
     // NON-CONSTANT METHODS
 
     function Version(
+        string versionNumber,
+        address ofGovernance,
         address ofMelonAsset
     ) {
-        GOVERNANCE = msg.sender; //TODO fix (not set as msg.sender by default!)
+        VERSION_NUMBER = versionNumber;
+        GOVERNANCE = ofGovernance;
         MELON_ASSET = ofMelonAsset;
     }
 
@@ -60,7 +54,7 @@ contract Version is DBC, Owned {
         address ofRiskMgmt,
         address ofSphere
     ) {
-        address fundAddr = new Fund(
+        address fund = new Fund(
             msg.sender,
             withName,
             withSymbol,
@@ -72,10 +66,9 @@ contract Version is DBC, Owned {
             ofRiskMgmt,
             ofSphere
         );
-        funds[nextFundId] = fundAddr;
-        managers[msg.sender] = fundAddr;
-        FundAdded(fundAddr, nextFundId, withName, now);
-        nextFundId++;
+        listOfFunds.push(fund);
+        managerToFunds[msg.sender] = fund;
+        FundUpdated(getLastFundId());
     }
 
     /// @dev Dereference Fund and trigger selfdestruct
@@ -84,7 +77,7 @@ contract Version is DBC, Owned {
     {
         FundInterface Fund = FundInterface(getFund(id));
         Fund.shutDown();
-        delete funds[id];
+        delete listOfFunds[id];
         FundUpdated(id);
     }
 }
