@@ -40,7 +40,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     struct InternalAccounting {
-        uint numberOfMakeOrders; // Number of potentially unsettled orders
         mapping (bytes32 => bool) existsMakeOrder; // sha3(sellAsset, buyAsset) to boolean
         mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
@@ -97,7 +96,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    InternalAccounting public internalAccounting; // Accounts for assets not held in custody of fund
+    InternalAccounting internalAccounting; // Accounts for assets not held in custody of fund
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -522,10 +521,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         bytes32 assetPair = sha3(sellAsset, buyAsset);
 
-        returnError(
-            isFalse(internalAccounting.existsMakeOrder[assetPair]),
-            "ERR: Currently only one make order allowed"
-        );
+        // Settle existing make orders before creating a new one
+        if (internalAccounting.existsMakeOrder[assetPair]) {
+            manualSettlement(sellAsset, buyAsset);
+        }
 
         returnError(
             module.datafeed.existsData(sellAsset, buyAsset),
@@ -568,7 +567,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             fillQuantity: 0
         }));
 
-        internalAccounting.numberOfMakeOrders++;
+        internalAccounting.existsMakeOrder[assetPair] = true;
         internalAccounting.quantitySentToExchange[sellAsset] =
             quantitySentToExchange(sellAsset)
             .add(sellQuantity);
@@ -653,6 +652,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
 
+        bytes32 assetPair = sha3(order.sellAsset, order.buyAsset);
         bool success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
 
         returnError(
@@ -660,8 +660,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             "ERR: Exchange Adapter: Failed to cancel order"
         );
 
-        // TODO: Close make order for asset pair sha3(sellAsset, buyAsset)
-        internalAccounting.numberOfMakeOrders--;
+        internalAccounting.existsMakeOrder[assetPair] = false;
         internalAccounting.quantitySentToExchange[order.sellAsset] =
             quantitySentToExchange(order.sellAsset)
             .sub(order.sellQuantity);
@@ -669,6 +668,77 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             quantityExpectedToReturn(order.buyAsset)
             .sub(order.buyQuantity);
         OrderUpdated(id);
+    }
+
+    /// @notice Reduce exposure without exchange interaction
+    /// @dev After funds have been sent back to Melon fund, 'settle' them internally
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
+    function manualSettlement(address sellAsset, address buyAsset)
+        returns (bool, string)
+    {
+        bytes32 assetPair = sha3(sellAsset, buyAsset);
+
+        returnError(
+            isFalse(internalAccounting.existsMakeOrder[assetPair]),
+            "ERR: Make order for input asset pair not found"
+        );
+
+        uint id = internalAccounting.makeOrderId[assetPair];
+        Order memory order = orders[id];
+        var (error, ) = proofOfEmbezzlement(order.sellAsset, order.buyAsset);
+
+        returnError(
+            isFalse(error),
+            "ERR: Embezzlement has been determined"
+        );
+
+        // TODO: update order.status = OrderStatus.fullyFilled;
+        // TODO: abstract below into function
+        internalAccounting.existsMakeOrder[assetPair] = false;
+        internalAccounting.quantitySentToExchange[order.sellAsset] = 0;
+        internalAccounting.quantityExpectedToReturn[order.buyAsset] = 0;
+        // Update prev holdings
+        internalAccounting.holdingsAtLastManualSettlement[order.sellAsset] = ERC20(order.sellAsset).balanceOf(this);
+        internalAccounting.holdingsAtLastManualSettlement[order.buyAsset] = ERC20(order.buyAsset).balanceOf(this);
+    }
+
+    /// @notice Whether embezzlement happened
+    /// @dev Asset pair corresponds to unsettled (== make) order
+    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
+    /// @return True if embezzled otherwise false
+    function proofOfEmbezzlement(address sellAsset, address buyAsset)
+        returns (bool, string)
+    {
+        returnCriticalError(
+            (
+                ERC20(sellAsset).balanceOf(this) <=
+                internalAccounting.holdingsAtLastManualSettlement[sellAsset]
+                    .sub(quantitySentToExchange(sellAsset))
+            ), // TODO: Allocate staked shares from this to msg.sender
+            "CRITICAL ERR: Sold more than expected!"
+        );
+
+        // What is held in custody is less or equal than accounted for sell quantity (good)
+        uint factor = MELON_IN_BASE_UNITS; // Want to receive proportionally as much as sold
+        uint divisor = factor; // To reduce inaccuracy due to rounding errors
+        factor = divisor
+            .mul(internalAccounting.holdingsAtLastManualSettlement[sellAsset].sub(ERC20(sellAsset).balanceOf(this)))
+            .div(quantitySentToExchange(sellAsset));
+        // Revise return expectations, for example in case of partial fill of order
+        uint revisedReturnExpectations = quantityExpectedToReturn(buyAsset).mul(factor).div(divisor);
+
+        returnCriticalError(
+            (
+                ERC20(buyAsset).balanceOf(this) >=
+                internalAccounting.holdingsAtLastManualSettlement[buyAsset]
+                    .add(revisedReturnExpectations)
+            ), // TODO: Allocate staked shares from this to msg.sender
+            "CRITICAL ERR: Received (proportionally) less than expected buy quantity!"
+        );
+
+        return (false, "");
     }
 
     // NON-CONSTANT METHODS - REWARDS
