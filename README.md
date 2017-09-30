@@ -87,7 +87,7 @@ Name | Data Type | Description
 participant | `address` | Participant in Melon fund requesting subscription or redemption
 status | `enum` | Enum: active, cancelled, executed; Status of request
 requestType | `enum` | Enum: subscribe, redeem
-shareQuantity | `uint256` | Quantity of Melon shares
+shareQuantity | `uint256` | Quantity of Melon fund shares
 giveQuantity | `uint256` | Quantity in Melon asset to give to Melon fund to receive shareQuantity
 receiveQuantity | `uint256` | Quantity in Melon asset to receive from Melon fund for given shareQuantity
 incentiveQuantity | `uint256` | Quantity in Melon asset to give to person executing request
