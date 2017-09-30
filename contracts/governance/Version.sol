@@ -11,18 +11,10 @@ import './VersionInterface.sol';
 /// @notice Simple and static Management Fee.
 contract Version is DBC, Owned {
 
-    // TYPES
-
-    enum Status {
-        setup,
-        funding,
-        trading,
-        payout
-    }
-
     // FIELDS
 
     // Constructor fields
+    address public VERSION_NUMBER = "0.4.0"; //
     address public MELON_ASSET; // Adresss of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
 
@@ -47,36 +39,6 @@ contract Version is DBC, Owned {
     function getLastFundId() constant returns (uint) {
       require(nextFundId > 0);
       return nextFundId - 1;
-    }
-
-    /// @return list of all Funds address is invested in
-    /// @return list of all numbers of Shares address holds in Fund
-    /// @return list of all decimals of this Fund
-    function getSubscriptionHistory(address ofAddress, uint startId)
-        constant
-        pre_cond(0 <= startId && startId < nextFundId)
-        returns (address[1024], uint256[1024], uint256[1024])
-    {
-        address[1024] memory funds;
-        uint[1024] memory holdings;
-        uint[1024] memory decimals;
-        for (uint256 i = 0; i < 1024; ++i) {
-            if (startId + i >= nextFundId) break;
-            FundInterface Fund = FundInterface(getFund(i));
-            holdings[i] = Fund.balanceOf(msg.sender);
-            decimals[i] = Fund.getDecimals();
-        }
-        return (funds, holdings, decimals);
-    }
-
-    function getFunds(uint start)
-        constant
-        returns (address[1024] allFunds)
-    {
-        for(uint ii = 0; ii < 1024; ii++){
-            if(start + ii >= nextFundId) break;
-            allFunds[ii] = funds[ii];
-        }
     }
 
     // NON-CONSTANT METHODS

@@ -137,10 +137,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
-    function noOpenOrders() internal returns (bool) { return isZero(internalAccounting.numberOfMakeOrders); }
     function quantitySentToExchange(address ofAsset) constant returns (uint) { return internalAccounting.quantitySentToExchange[ofAsset]; }
     function quantityExpectedToReturn(address ofAsset) constant returns (uint) { return internalAccounting.quantityExpectedToReturn[ofAsset]; }
-
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -275,7 +273,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
-    
+
     function toogleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
     function toggleRedemption() external pre_cond(isOwner()) { isRedeemAllowed = !isRedeemAllowed; }
     function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
@@ -647,7 +645,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        pre_cond(noOpenOrders())
     {
         var (
             gav,

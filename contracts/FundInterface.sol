@@ -31,7 +31,6 @@ contract FundInterface is AssetInterface {
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
     // Get staking information
-    function noOpenOrders() internal returns (bool) {}
     function quantitySentToExchange(address ofAsset) constant returns (uint) {}
     function quantityExpectedToReturn(address ofAsset) constant returns (uint) {}
     // Get accounting information
