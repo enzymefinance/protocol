@@ -1,5 +1,3 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%201.jpg" width = "25%">
-
 # protocol
 
 Melon ([méllō], μέλλω; Greek for "destined to be") is blockchain software that seeks to enable participants to set up, manage and invest in technology regulated investment funds in a way that reduces barriers to entry while minimizing the requirements for trust.
