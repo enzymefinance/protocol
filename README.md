@@ -48,15 +48,28 @@ This repository contains a reference implementation of the Melon protocol writte
 
 ### List of Melon modules
 
-Melon has five different module classes:
+Melon has six different module classes:
+- Exchange Adapters
+- Rewards
 - Participation
 - Risk Management
 - Asset registrars
 - Data feeds
+
+Which can be categorized into three sub sets:
+- Libraries
+- Boolean function
+- Infrastructure
+
+#### Libraries
+
+These Melon modules are:
 - Exchange Adapters
+- Rewards
 
+They interact with the Melon protocol using as pre-linked libraries to the Melon version contract.
 
-#### Module interaction (boolean functions)
+#### Boolean functions
 
 These Melon modules are:
 - Participation
@@ -97,12 +110,14 @@ buyQuantity | `uint256` |  Quantity of sellAsset to be bought
 timestamp | `uint256` | Time in seconds when this order was created
 fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
 
-#### Module interaction (non-boolean functions)
+#### Infrastructure
 
 These Melon modules are:
 - Asset registrars
 - Data feeds
-- Exchange Adapters
+
+These are modules security critical infrastructure modules.
+The reason they are security criticial is that the correctness of the data they provide cannot directly be enforced or guaranteed.
 
 ## Get started
 
