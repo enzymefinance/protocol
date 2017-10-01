@@ -4,6 +4,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.6]
+
+### Added
+
+- Deployement specific network environments, inputted as a parameter
+- Jasmine environment
+- Soliditiy tests
+- Jasmine tests
+- Init VersionInterface; Simplified executeRequest
+- Add calcSharePrice, getBaseUnits to fund interface
+- Readme Intro text
+- Readme ToC
+- Readme Contribution section
+- Readme New logo
+- Readme Module section
+- Introduce Staked contract
+- Add two new parameteres to Version contract constructor
+- Introduce concept of system contracts
+- Introduce returnCriticalError, a function which shutsdown fund on error;
+- Staked contract, as a way to have fund inheritance into staked fund
+
+### Changed
+
+- Reorder Order struct
+- Rename numShares -> shareQuantity
+- Change RiskMgmt interface to include order quadruple of buy/sell asset/quantity
+- Refactoring dispatching of requests
+- Refactor executeRequest and cancelRequst
+- Request functions update natspec comments
+- Cleaned up Version and Version Interface
+- Cleaned up Governance
+- Input ReferenceAsset in Fund, Version setup
+- redeemUsingSlice in (err,,msg) format
+- natspecs comments
+- Add (err,errMsg) format to PoE and manualSettlemnt
+- quantityHeldInCustodyOfExchange() function to fix accounting issue
+- Require only one fund per manager in setupFund function call
+
+### Removed
+
+-  Staking from Fund
+- noOpenOrders in Fund
+- getSupscriptionHistory, getFunds in Version
+- Competition contract
+
+### Fixed
+- Fix #112
+- Fix #125
+- Fix #161
+- Fix #148
+- Fix VersionInterface inheritance in Version err
+- Fix calculations in redeeumUsingSlice
+- Fix calculations in convertUnclaimedRewards
+
 ## [0.3.4]
 
 ### Added
