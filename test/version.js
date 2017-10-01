@@ -13,15 +13,16 @@ const assert = chai.assert;
 contract('Version', (accounts) => {
   let version;
   let feed;
+  let mlnToken;
   let simpleMarket;
   let participation;
   let riskManagement;
   let sphere;
 
   before('Deploy contract instances', async () => {
-    const mlnToken = await PreminedAsset.new(
+    mlnToken = await PreminedAsset.new(
       'Melon', 'MLN', 18, 10 ** 18, { from: accounts[0] });
-    version = await Version.new(mlnToken.address);
+    version = await Version.new('', '', mlnToken.address);
     feed = await DataFeed.new(mlnToken.address, 0, 120);
     const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     await feed.register(mlnToken.address, '', '', 18, '', someBytes, someBytes, accounts[9], accounts[9]);
@@ -34,15 +35,14 @@ contract('Version', (accounts) => {
 
   it('Can create a fund without error', async () => {
     await version.setupFund(
-      'Cantaloot',    // name
-      'CNLT',         // share symbol
-      18,             // share decimals
-      0,              // mgmt reward
-      0,              // perf reward
+      'Cantaloot',        // name
+      mlnToken.address,   // reference asset
+      0,                  // mgmt reward
+      0,                  // perf reward
       participation.address,
       riskManagement.address,
       sphere.address,
-      { from: accounts[6], gas: 6713095 }
+      { from: accounts[6], gas: 6913095 }
     );
   });
 

@@ -46,8 +46,7 @@ contract('Fund shares', (accounts) => {
     fund = await Fund.new(
       accounts[0],
       'Melon Portfolio',  // name
-      'MLN-P',            // share symbol
-      18,                 // share decimals
+      mlnToken.address,   // reference asset
       0,                  // mgmt reward
       0,                  // perf reward
       mlnToken.address,
@@ -98,7 +97,7 @@ contract('Fund shares', (accounts) => {
       await fund.requestSubscription(numShares, offeredValue, incentive, { from: investor });
     });
     it('logs request event', (done) => {
-      const reqEvent = fund.SubscribeRequest();
+      const reqEvent = fund.RequestUpdated();
       reqEvent.get((err, events) => {
         if (err) throw err;
         assert.equal(events.length, 1);

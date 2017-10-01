@@ -40,8 +40,7 @@ contract('Fund trading', (accounts) => {
     fund = await Fund.new(
       manager,
       'Melon Portfolio',  // name
-      'MLN-P',            // share symbol
-      18,                 // share decimals
+      mlnToken.address,   // reference asset
       0,                  // mgmt reward
       0,                  // perf reward
       mlnToken.address,
@@ -71,12 +70,12 @@ contract('Fund trading', (accounts) => {
       const order = await fund.orders(id);
       const exchangeOrderId = await simpleAdapter.getLastOrderId(simpleMarket.address);
       assert.equal(order[0].toNumber(), exchangeOrderId.toNumber());
-      assert.equal(order[1], mlnToken.address);
-      assert.equal(order[2], ethToken.address);
-      assert.equal(order[3].toNumber(), sellAmt);
-      assert.equal(order[4].toNumber(), buyAmt);
-      // assert.equal(order[5].toNumber(), 0); // TODO fix: Timestamp
-      assert.equal(order[6].toNumber(), 0);
+      assert.equal(order[3], mlnToken.address);
+      assert.equal(order[4], ethToken.address);
+      assert.equal(order[5].toNumber(), sellAmt);
+      assert.equal(order[6].toNumber(), buyAmt);
+      // assert.equal(order[7].toNumber(), 0); // TODO fix: Timestamp
+      assert.equal(order[8].toNumber(), 0);
     });
   });
   describe('#takeOrder', () => {

@@ -1,0 +1,7 @@
+{
+  "spec_dir": "newtest",
+  "spec_files": ["*.js"],
+  "helpers": [],
+  "stopSpecOnExpectationFailure": false,
+  "random": false
+}
