@@ -52,7 +52,9 @@ contract Version is DBC, Owned {
         address ofParticipation,
         address ofRiskMgmt,
         address ofSphere
-    ) {
+    )
+        pre_cond(managerToFunds[msg.sender] == 0) // require only one fund per manager
+    {
         address fund = new Fund(
             msg.sender,
             withName,
