@@ -88,6 +88,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
+    uint public openMakeOrderId; // exchange id of open make order, if no open make orders uint is zero
     bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -127,6 +128,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
+    function quantityHeldInCustodyOfExchange(address ofAsset) constant returns (uint) {
+        if (openMakeOrderId == 0) return 0;
+        var ( , , sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, openMakeOrderId);
+        if (sellQuantity == 0) openMakeOrderId = 0;
+        return sellQuantity;
+    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -136,7 +143,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(ERC20(ofAsset).balanceOf(EXCHANGE));
+                .add(quantityHeldInCustodyOfExchange(ofAsset));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
@@ -508,6 +515,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (bool, string)
     {
+        returnError(
+            quantityHeldInCustodyOfExchange(sellAsset) == 0,
+            "ERR: Curr only one make order per sellAsset allowed. Please wait or cancel existing make order."
+        );
+
         returnError(
             module.datafeed.existsData(sellAsset, buyAsset),
             "ERR: DataFeed module: Requested asset pair not valid"
