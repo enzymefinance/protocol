@@ -30,7 +30,7 @@ contract Version is DBC, Owned {
     function getMelonAsset() constant returns (address) { return MELON_ASSET; }
     function getFund(uint withId) constant returns (address) { return listOfFunds[withId]; }
     function getLastFundId() constant returns (uint) { return listOfFunds.length -1; }
-    function getFund(address ofManager) constant returns (address) { return managerToFunds[ofManager]; }
+    function getFundForManager(address ofManager) constant returns (address) { return managerToFunds[ofManager]; }
 
     // NON-CONSTANT METHODS
 
