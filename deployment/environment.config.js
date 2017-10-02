@@ -22,7 +22,7 @@ module.exports = {
     networkId: '*',
     host: 'localhost',
     port: 8545,
-    gas: 7000000,
+    gas: 6900000,
     gasPrice: 100000000000,
     protocol: {
       registrar: {
