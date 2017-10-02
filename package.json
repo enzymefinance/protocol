@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
-    "deploy": "npm run compile && babel-node deployment/deploy-all.js kovan",
+    "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
+    "deploy:development": "babel-node deployment/deploy-all.js development",
     "dev-compile": "node_modules/.bin/solcjs --abi $(find contracts/ -name '*.sol')",
     "dev-delete": "find . -name '*.abi' -type f -delete ",
     "dev-deploy": "rm -rf build && truffle migrate --network kovan --reset"
@@ -65,9 +66,11 @@
     "truffle": "^3.4.4"
   },
   "dependencies": {
+    "bignumber.js": "^4.1.0",
     "chai": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
     "file-system": "^2.2.2",
+    "request-promise": "^4.2.2",
     "solc": "^0.4.17",
     "web3": "^1.0.0-beta.21"
   }
