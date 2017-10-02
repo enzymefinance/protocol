@@ -37,7 +37,7 @@ contract Version is DBC, Owned {
 
     // CONSTANT METHODS
 
-    function getFund(uint id) constant returns (address) { return funds[id]; }
+    function getFundById(uint id) constant returns (address) { return funds[id]; }
     function fundForManager(address ofManager) constant returns (address) {
         return managers[ofManager];
     }
@@ -61,7 +61,7 @@ contract Version is DBC, Owned {
         uint[1024] memory decimals;
         for (uint256 i = 0; i < 1024; ++i) {
             if (startId + i >= nextFundId) break;
-            FundInterface Fund = FundInterface(getFund(i));
+            FundInterface Fund = FundInterface(getFundById(i));
             holdings[i] = Fund.balanceOf(msg.sender);
             decimals[i] = Fund.getDecimals();
         }
@@ -119,7 +119,7 @@ contract Version is DBC, Owned {
     function shutDownFund(uint id)
         pre_cond(isOwner())
     {
-        FundInterface Fund = FundInterface(getFund(id));
+        FundInterface Fund = FundInterface(getFundById(id));
         Fund.shutDown();
         delete funds[id];
         FundUpdated(id);
