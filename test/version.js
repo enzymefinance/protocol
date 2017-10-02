@@ -49,7 +49,7 @@ contract('Version', (accounts) => {
   it('Can retrieve fund from index', async () => {
     const fundId = await version.getLastFundId();
     assert.equal(fundId.toNumber(), 0);
-    const fundAddr = await version.getFund(fundId);
+    const fundAddr = await version.getFundById(fundId);
     const fund = await Fund.at(fundAddr);
     assert.equal(await fund.getDecimals(), 18);
     assert.equal(await fund.getBaseUnits(), 10 ** 18);
