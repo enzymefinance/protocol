@@ -14,7 +14,7 @@ contract VersionInterface {
       function getMelonAsset() constant returns (address) {}
       function getFund(uint withId) constant returns (address) {}
       function getLastFundId() constant returns (uint) {}
-      function getFund(address ofManager) constant returns (address) {}
+      function getFundForManager(address ofManager) constant returns (address) {}
 
       // NON-CONSTANT METHODS
 
