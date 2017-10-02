@@ -75,7 +75,7 @@ contract Version is DBC, Owned {
     function shutDownFund(uint id)
         pre_cond(isOwner())
     {
-        FundInterface Fund = FundInterface(getFund(id));
+        FundInterface Fund = FundInterface(getFundById(id));
         Fund.shutDown();
         delete listOfFunds[id];
         FundUpdated(id);
