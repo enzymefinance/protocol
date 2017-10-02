@@ -1,181 +1,71 @@
-const fs = require('fs');
+const addressBook = require('../address-book.json');
+const BigNumber = require('bignumber.js');
 const environmentConfig = require('../deployment/environment.config.js');
+const fs = require('fs');
 const path = require('path');
-const rpc = require('../utils/rpc.js');
-const solc = require('solc');
+const rp = require('request-promise');
 const Web3 = require('web3');
+// TODO: should we have a separate token config for development network?
+const tokenInfo = require('../migrations/config/token_info.js').kovan;
 
 const environment = 'development';
+const apiPath = 'https://min-api.cryptocompare.com/data/price';
 const config = environmentConfig[environment];
 const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
 
-// TODO: factor out into a module
-function getPlaceholderFromPath(libPath) {
-  const libContractName = path.basename(libPath);
-  let modifiedPath = libPath.replace('out', 'src');
-  modifiedPath = `${modifiedPath}.sol:${libContractName}`;
-  return modifiedPath.slice(0, 36);
-}
-
-describe('Fund shares', async () => {
+describe('Fund shares', () => {
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000; // datafeed updates must take a few seconds
   let accounts;
+  let manager;
+  let investor;
+  let opts;
   let datafeed;
+  let mlnToken;
   let ethToken;
   let eurToken;
-  let fund;
-  let investor;
-  let manager;
-  let mlnToken;
-  let opts;
   let participation;
-  let rewards;
-  let riskManagement;
-  let simpleAdapter;
-  let simpleMarket;
-  let sphere;
-  // mock data
-  let mockAddress;
-  const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-  const wantedShares = 10000;
-  const offeredValue = 10000;
-  const incentive = 100;
+  let fund;
+  let worker;
+  let version;
+
+  const addresses = addressBook[environment];
 
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
-    opts = { from: accounts[0], gas: config.gas };
     manager = accounts[1];
     investor = accounts[2];
-    mockAddress = accounts[5];
-    const preminedAmount = 10 ** 20;
-    // deploy supporting contracts
-    let abi;
-    let bytecode;
-    abi = JSON.parse(fs.readFileSync('./out/assets/PreminedAsset.abi'));
-    bytecode = fs.readFileSync('./out/assets/PreminedAsset.bin');
-    ethToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Ether token', 'ETH-T', 18, preminedAmount],
-    }).send(opts));
-    console.log('Deployed ether token');
+    worker = accounts[3];
+    opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice, };
 
-    mlnToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Melon token', 'MLN-T', 18, preminedAmount],
-    }).send(opts));
-    console.log('Deployed melon token');
+    // retrieve deployed contracts
+    version = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/governance/Version.abi')), addresses.Version
+    );
+    datafeed = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi')), addresses.DataFeed
+    );
+    mlnToken = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/assets/PreminedAsset.abi')), addresses.MlnToken
+    );
+    ethToken = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/assets/PreminedAsset.abi')), addresses.EthToken
+    );
+    eurToken = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/assets/PreminedAsset.abi')), addresses.EurToken
+    );
+    participation = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/participation/Participation.abi')), addresses.Participation
+    );
 
-    eurToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Euro token', 'EUR-T', 18, preminedAmount],
-    }).send(opts));
-    console.log('Deployed euro token');
-
-    abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
-    bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
-    datafeed = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [
-        mlnToken.options.address,
-        config.protocol.datafeed.interval,
-        config.protocol.datafeed.validity
-      ],
-    }).send(opts));
-    console.log('Deployed datafeed');
-
-    abi = JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi'));
-    bytecode = fs.readFileSync('out/exchange/thirdparty/SimpleMarket.bin');
-    simpleMarket = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed simple market');
-
-    abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
-    bytecode = fs.readFileSync('out/sphere/Sphere.bin');
-    sphere = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [
-        datafeed.options.address,
-        simpleMarket.options.address
-      ],
-    }).send(opts));
-    console.log('Deployed sphere');
-
-    abi = JSON.parse(fs.readFileSync('out/riskmgmt/RiskMgmt.abi'));
-    bytecode = fs.readFileSync('out/riskmgmt/RiskMgmt.bin');
-    riskManagement = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed risk management');
-
-    abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
-    bytecode = fs.readFileSync('out/participation/Participation.bin');
-    participation = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed participation');
-
-    abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
-    bytecode = fs.readFileSync('out/exchange/adapter/simpleAdapter.bin');
-    simpleAdapter = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed simple adapter');
-
-    abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
-    bytecode = fs.readFileSync('out/libraries/rewards.bin');
-    rewards = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [],
-    }).send(opts));
-    console.log('Deployed rewards library');
-
-    // register assets
-    await datafeed.methods.register(
-      ethToken.options.address, '', '', 18, '', 
-      someBytes, someBytes, mockAddress, mockAddress
-    ).send(opts);
-    await datafeed.methods.register(
-      eurToken.options.address, '', '', 18, '',
-      someBytes, someBytes, mockAddress, mockAddress
-    ).send(opts);
-    await datafeed.methods.register(
-      mlnToken.options.address, '', '', 18, '',
-      someBytes, someBytes, mockAddress, mockAddress
-    ).send(opts);
-    await datafeed.methods.update(
-      [ethToken.options.address, eurToken.options.address, mlnToken.options.address],
-      [1000000000000000000, 5091131249363608, 226244343891402714],  // mock data
-    ).send(opts);
-    console.log('Done registration and updates');
-
-    abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
-    bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
-    const libObject = {};
-    libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
-    libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
-    bytecode = solc.linkBytecode(bytecode, libObject);
-    fund = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [
-        accounts[1],
-        'Melon Portfolio',  // name
-        'MLN-P',            // share symbol
-        18,                 // share decimals
-        0,                  // mgmt reward
-        0,                  // perf reward
-        mlnToken.options.address,
-        participation.options.address,
-        riskManagement.options.address,
-        sphere.options.address,
-      ],
-    }).send({from: accounts[0], gas: config.gas}));
-    console.log('Deployed fund');
- 
     participation.methods.attestForIdentity(investor).send(opts);   // whitelist investor
+  });
+
+  // register block force mining method
+  web3.extend({
+    methods: [{
+      name: 'mineBlock',
+      call: 'evm_mine'
+    }]
   });
 
   // convenience functions
@@ -183,12 +73,27 @@ describe('Fund shares', async () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function simulateFeedUpdate() {
-    await rpc.mineBlock();
+  async function updateDatafeed() {
+    const fromSymbol = 'MLN';
+    const toSymbols = ['ETH', 'EUR', 'MLN'];
+    const options = {
+      uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
+      json: true
+    }
+    const queryResult = await rp(options);
+    const ethDecimals = tokenInfo.filter(token => token.symbol === 'ETH-T')[0].decimals
+    const eurDecimals = tokenInfo.filter(token => token.symbol === 'EUR-T')[0].decimals
+    const mlnDecimals = tokenInfo.filter(token => token.symbol === 'MLN-T')[0].decimals
+    const inverseEth = new BigNumber(1).div(new BigNumber(queryResult.ETH)).toNumber().toFixed(15);
+    const inverseEur = new BigNumber(1).div(new BigNumber(queryResult.EUR)).toNumber().toFixed(15);
+    const inverseMln = new BigNumber(1).div(new BigNumber(queryResult.MLN)).toNumber().toFixed(15);
+    const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - mlnDecimals)).times(10 ** ethDecimals);
+    const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
+    const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
     await timeout(3000);
     await datafeed.methods.update(
       [ethToken.options.address, eurToken.options.address, mlnToken.options.address],
-      [10 ** 18, 10 ** 18, 10 ** 18],
+      [convertedEth, convertedEur, convertedMln],
     ).send(opts);
   }
 
@@ -209,6 +114,27 @@ describe('Fund shares', async () => {
     }
   }
 
+  it('can set up new fund', async () => {
+    await updateDatafeed();
+    await version.methods.setupFund(
+      'Melon Portfolio',  // name
+      'MLN-P',            // share symbol
+      18,                 // share decimals
+      5,                  // management reward
+      7,                  // performance reward
+      addresses.Participation,
+      addresses.RMMakeOrders,
+      addresses.Sphere
+    ).send({from: manager, gas: 6900000});
+    const fundId = await version.methods.getLastFundId().call();
+    const fundAddress = await version.methods.getFund(fundId).call();
+    fund = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/Fund.abi')), fundAddress
+    );
+
+    expect(Number(fundId)).toEqual(0);
+  });
+
   it('initial calculations', async () => {
     const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations().call(opts));
 
@@ -217,13 +143,16 @@ describe('Fund shares', async () => {
     expect(Number(nav)).toEqual(0);
     expect(Number(sharePrice)).toEqual(10 ** 18);
   });
-  it('investor receives token from liquidity provider', async () => {
+  const wantedShares = 10000;
+  const offeredValue = 10000;
+  const incentive = 100;
+  const initialTokenAmount = 10000000000;
+  it('investor receives initial token from liquidity provider', async () => {
     const pre = await getAllBalances();
-    const inputAmount = offeredValue + incentive;
-    await mlnToken.methods.transfer(investor, inputAmount).send({from: accounts[0]});
+    await mlnToken.methods.transfer(investor, initialTokenAmount).send({from: accounts[0]});
     const post = await getAllBalances();
 
-    expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken + inputAmount);
+    expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken + initialTokenAmount);
     expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
     expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
     expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
@@ -255,14 +184,31 @@ describe('Fund shares', async () => {
 
     expect(events.length).toEqual(1);
   });
+  // TODO: investigate failing assertion (fund "losing" mln on subscribe execution)
   it('allows execution of subscribe request', async () => {
-    await simulateFeedUpdate();
-    await simulateFeedUpdate();
+    await updateDatafeed();
+    await web3.mineBlock();
+    await updateDatafeed();
+    await web3.mineBlock();
+    const initiallyApprovedMln = offeredValue + incentive;
+    const pre = await getAllBalances();
+    const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
     const requestId = await fund.methods.getLastRequestId().call();
-    await fund.executeRequest(requestId);
+    await fund.methods.executeRequest(requestId).send({from: worker, gas: 6000000});
     const investorBalance = await fund.methods.balanceOf(investor).call();
+    const remainingApprovedMln = await mlnToken.methods.allowance(investor, fund.options.address).call();
+    const post = await getAllBalances();
+    const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
 
     expect(Number(investorBalance)).toEqual(wantedShares);
+    expect(Number(remainingApprovedMln)).toEqual(0);
+    expect(workerPostMln).toEqual(workerPreMln + incentive);
+    expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+    expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+    expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+    expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+    expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+    expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
   });
   it('logs share creation', async () => {
     const events = await fund.getPastEvents('Subscribed');
@@ -270,7 +216,7 @@ describe('Fund shares', async () => {
     expect(events.length).toEqual(1);
   });
   it('performs calculation correctly', async () => {
-    await simulateFeedUpdate();
+    await web3.mineBlock();
     const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(
       await fund.methods.performCalculations().call()
     );
