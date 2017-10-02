@@ -1,7 +1,7 @@
 module.exports = {
   kovan: [
     {
-      address: '0x81bfb6a2db736c5ec06ddf4654478cf78b3e0be7',
+      address: '0x375d52588c3f39ee7710290237a95C691d8432E7',
       name: 'OasisDex',
       data: '',
       url: 'https://oasisdex.com',
@@ -12,6 +12,15 @@ module.exports = {
       name: 'Melonport',
       data: '',
       url: 'https://www.melonport.com/',
+      githubHint: '',
+    },
+  ],
+  live: [
+    {
+      address: '0x3Aa927a97594c3ab7d7bf0d47C71c3877D1DE4A1',
+      name: 'OasisDex',
+      data: '',
+      url: 'https://oasisdex.com',
       githubHint: '',
     },
   ],
