@@ -135,6 +135,7 @@ describe('Fund shares', () => {
     });
 
     it('initial calculations', async () => {
+      await updateDatafeed();
       const [gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations().call(opts));
 
       expect(Number(gav)).toEqual(0);
@@ -212,7 +213,7 @@ describe('Fund shares', () => {
         const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
         const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
         const requestId = await fund.methods.getLastRequestId().call();
-        await fund.methods.executeRequest(requestId).send({from: worker, gas: 6000000});
+        await fund.methods.executeRequest(requestId).send({from: worker, gas: 3000000});
         const post = await getAllBalances();
         const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
         const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
@@ -245,6 +246,84 @@ describe('Fund shares', () => {
         expect(Number(postUnclaimedRewards)).toEqual(preUnclaimedRewards);
         expect(Number(postNav)).toEqual(preNav + test.offeredValue - offerRemainder);
         expect(Number(postSharePrice)).toEqual(preSharePrice); // no trades have been made
+      });
+    });
+  });
+  describe('request and execute redemption', async () => {
+    let initialInvestorShares;
+    const partialRedemptionAmount = 33333;
+    beforeAll(async () => {
+      initialInvestorShares = Number(await fund.methods.balanceOf(investor).call());
+    });
+    const testArray = [
+      { wantedShares: 10000, wantedValue: 10000, incentive: 100 },
+      { wantedShares: 500, wantedValue: 3000, incentive: 500 },
+      { wantedShares: 20143783, wantedValue: 2000, incentive: 5000 },
+    ];
+    testArray.forEach((test, index) => {
+      let fundPreCalculations;
+      let offerRemainder;
+      beforeAll(async () => {
+        fundPreCalculations = Object.values(await fund.methods.performCalculations().call(opts));
+      });
+      afterAll(async () => {
+        fundPreCalculations = [];
+      });
+      describe(`Subscription request and execution, round ${index + 1}`, async () => {
+        it('investor can request redemption from fund', async () => {
+          const pre = await getAllBalances();
+          await mlnToken.methods.approve(
+            fund.options.address, test.incentive
+          ).send({from: investor});
+          await fund.methods.requestRedemption(
+            test.wantedShares, test.wantedValue, test.incentive
+          ).send({from: investor, gas: 3000000});
+          const post = await getAllBalances();
+
+          expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+          expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+          expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+          expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+          expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+          expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+        });
+        it('logs RequestUpdated event', async () => {
+          const events = await fund.getPastEvents('RequestUpdated');
+
+          expect(events.length).toEqual(1);
+        });
+        it('reduces leftover allowance to zero', async () => {
+          await mlnToken.methods.approve(fund.options.address, 0).send({from: investor});
+          const remainingApprovedMln = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
+
+          expect(remainingApprovedMln).toEqual(0);
+        });
+        it('executing request moves token from fund to investor, shares annihilated, and incentive to worker', async () => {
+          await updateDatafeed();
+          await web3.mineBlock();
+          await updateDatafeed();
+          await web3.mineBlock();
+          const pre = await getAllBalances();
+          const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
+          const preTotalShares = Number(await fund.methods.totalSupply().call());
+          const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
+          const requestId = await fund.methods.getLastRequestId().call();
+          await fund.methods.executeRequest(requestId).send({from: worker, gas: 3000000});
+          const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
+          const postTotalShares = Number(await fund.methods.totalSupply().call());
+          const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
+          const post = await getAllBalances();
+
+          expect(investorPostShares).toEqual(investorPreShares - test.wantedShares);
+          expect(postTotalShares).toEqual(preTotalShares - test.wantedShares);
+          expect(workerPostMln).toEqual(workerPreMln + test.incentive);
+          expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken + test.wantedValue);
+          expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+          expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+          expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+          expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+          expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+        });
       });
     });
   });
