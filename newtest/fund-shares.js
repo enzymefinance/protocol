@@ -2,7 +2,6 @@ const addressBook = require('../address-book.json');
 const BigNumber = require('bignumber.js');
 const environmentConfig = require('../deployment/environment.config.js');
 const fs = require('fs');
-const path = require('path');
 const rp = require('request-promise');
 const Web3 = require('web3');
 // TODO: should we have a separate token config for development network?
@@ -119,16 +118,15 @@ describe('Fund shares', () => {
       await updateDatafeed();
       await version.methods.setupFund(
         'Melon Portfolio',  // name
-        'MLN-P',            // share symbol
-        18,                 // share decimals
-        5,                  // management reward
-        7,                  // performance reward
+        addresses.MlnToken, // reference asset
+        config.protocol.fund.managementReward,
+        config.protocol.fund.performanceReward,
         addresses.Participation,
         addresses.RMMakeOrders,
         addresses.Sphere
       ).send({from: manager, gas: 6900000});
       const fundId = await version.methods.getLastFundId().call();
-      const fundAddress = await version.methods.getFund(fundId).call();
+      const fundAddress = await version.methods.getFundById(fundId).call();
       fund = await new web3.eth.Contract(
         JSON.parse(fs.readFileSync('out/Fund.abi')), fundAddress
       );
@@ -137,9 +135,11 @@ describe('Fund shares', () => {
     });
 
     it('initial calculations', async () => {
-      const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations().call(opts));
+      const [gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice] = Object.values(await fund.methods.performCalculations().call(opts));
 
       expect(Number(gav)).toEqual(0);
+      expect(Number(managementReward)).toEqual(0);
+      expect(Number(performanceReward)).toEqual(0);
       expect(Number(unclaimedRewards)).toEqual(0);
       expect(Number(nav)).toEqual(0);
       expect(Number(sharePrice)).toEqual(10 ** 18);
@@ -161,36 +161,45 @@ describe('Fund shares', () => {
   const testArray = [
     { wantedShares: 10000, offeredValue: 10000, incentive: 100 },
     { wantedShares: 20143783, offeredValue: 30000000, incentive: 5000 },
-    { wantedShares: 500, offeredValue: 30000000, incentive: 5000 },
+    { wantedShares: 500, offeredValue: 2000, incentive: 5000 },
   ];
   testArray.forEach((test, index) => {
     describe(`Subscription request and execution, round ${index + 1}`, async () => {
-      it('subscribe request transfers offer plus incentive to fund contract', async () => {
+      let fundPreCalculations;
+      let offerRemainder;
+      beforeAll(async () => {
+        fundPreCalculations = Object.values(await fund.methods.performCalculations().call(opts));
+      });
+      afterAll(async () => {
+        fundPreCalculations = [];
+      });
+      it('funds approved, and subscribe request issued, but tokens do not change ownership', async () => {
         const pre = await getAllBalances();
         const inputAllowance = test.offeredValue + test.incentive;
+        const fundPreAllowance = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
         await mlnToken.methods.approve(fund.options.address, inputAllowance).send({from: investor});
-        const fundAllowance = await mlnToken.methods.allowance(investor, fund.options.address).call();
+        const fundPostAllowance = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
 
-        expect(Number(fundAllowance)).toEqual(inputAllowance);
+        expect(fundPostAllowance).toEqual(fundPreAllowance + inputAllowance);
 
         await fund.methods.requestSubscription(
-          test.wantedShares, test.offeredValue, test.incentive
+          test.offeredValue, test.wantedShares, test.incentive
         ).send({from: investor, gas: config.gas});
         const post = await getAllBalances();
 
-        expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - fundAllowance);
+        expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
         expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
         expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
         expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
-        expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + Number(fundAllowance));
+        expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
         expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
       });
       it('logs request event', async () => {
-        const events = await fund.getPastEvents('SubscribeRequest');
+        const events = await fund.getPastEvents('RequestUpdated');
 
         expect(events.length).toEqual(1);
       });
-      it('executing subscribe request transfers from fund: incentive to worker, shares to investor, and remainder of subscription offer to investor', async () => {
+      it('executing subscribe request transfers incentive to worker, shares to investor, and remainder of subscription offer to investor', async () => {
         await updateDatafeed();
         await web3.mineBlock();
         await updateDatafeed();
@@ -199,40 +208,43 @@ describe('Fund shares', () => {
         const baseUnits = await fund.methods.getBaseUnits().call();
         const sharePrice = await fund.methods.calcSharePrice().call();
         const requestedSharesTotalValue = test.wantedShares * sharePrice / baseUnits;
-        const offerRemainder = test.offeredValue - requestedSharesTotalValue;
+        offerRemainder = test.offeredValue - requestedSharesTotalValue;
         const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
+        const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
         const requestId = await fund.methods.getLastRequestId().call();
         await fund.methods.executeRequest(requestId).send({from: worker, gas: 6000000});
-        const investorShareBalance = await fund.methods.balanceOf(investor).call();
-        const remainingApprovedMln = await mlnToken.methods.allowance(investor, fund.options.address).call();
         const post = await getAllBalances();
+        const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
         const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
 
-        expect(Number(investorShareBalance)).toEqual(test.wantedShares);
-        expect(Number(remainingApprovedMln)).toEqual(0);
+        expect(Number(investorPostShares)).toEqual(investorPreShares + test.wantedShares);
         expect(workerPostMln).toEqual(workerPreMln + test.incentive);
-        expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+        expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - test.incentive - test.offeredValue + offerRemainder);
         expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
         expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
-        expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken + offerRemainder);
-        expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken - test.incentive);
+        expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+        expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + test.offeredValue - offerRemainder);
         expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
       });
-      it('logs share creation', async () => {
-        const events = await fund.getPastEvents('Subscribed');
+      it('reduce leftover allowance of investor MLN to zero', async () => {
+        await mlnToken.methods.approve(fund.options.address, 0).send({from: investor});
+        const remainingApprovedMln = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
 
-        expect(events.length).toEqual(1);
+        expect(remainingApprovedMln).toEqual(0);
       });
       it('performs calculation correctly', async () => {
         await web3.mineBlock();
-        const [gav, , , unclaimedRewards, nav, sharePrice] = Object.values(
+        const [preGav, preManagementReward, prePerformanceReward, preUnclaimedRewards, preNav, preSharePrice] = fundPreCalculations.map(element => Number(element));
+        const [postGav, postManagementReward, postPerformanceReward, postUnclaimedRewards, postNav, postSharePrice] = Object.values(
           await fund.methods.performCalculations().call()
         );
 
-        expect(Number(gav)).toEqual(test.offeredValue);
-        expect(Number(unclaimedRewards)).toEqual(0);
-        expect(Number(nav)).toEqual(test.offeredValue);
-        expect(Number(sharePrice)).toEqual(10 ** 18);
+        expect(Number(postGav)).toEqual(preGav + test.offeredValue - offerRemainder);
+        expect(Number(postManagementReward)).toEqual(preManagementReward);
+        expect(Number(postPerformanceReward)).toEqual(prePerformanceReward);
+        expect(Number(postUnclaimedRewards)).toEqual(preUnclaimedRewards);
+        expect(Number(postNav)).toEqual(preNav + test.offeredValue - offerRemainder);
+        expect(Number(postSharePrice)).toEqual(preSharePrice); // no trades have been made
       });
     });
   });
