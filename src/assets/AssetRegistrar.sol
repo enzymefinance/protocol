@@ -12,20 +12,20 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     // TYPES
 
     struct Asset {
-        string name;
-        string symbol;
-        uint256 decimal;
-        string url;
-        bytes32 ipfsHash;
-        bytes32 chainId;
-        address breakIn;
-        address breakOut;
-        bool exists;
+        string name; // Human-readable name of the Asset as in ERC223 token standard
+        string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
+        uint256 decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
+        string url; // URL for additional information of Asset
+        bytes32 ipfsHash; // Same as url but for ipfs
+        bytes32 chainId; // On which chain this asset resides
+        address breakIn; // Break in contract on destination chain
+        address breakOut; // Break out contract on this chain; A way to leave
+        bool exists; // Is this asset registered
     }
 
     // FIELDS
 
-    // Function fields
+    // Methods fields
     mapping (address => Asset) public information;
     address[] public registeredAssets;
 
@@ -133,8 +133,9 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
-        post_cond(notRegistered(ofAsset))
+        //post_cond(notRegistered(ofAsset)) // Wait for next release of solidity
     {
         delete information[ofAsset]; // Sets exists boolean to false
+        assert(notRegistered(ofAsset));
     }
 }

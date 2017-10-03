@@ -39,7 +39,7 @@ describe('Fund shares', () => {
 
     // retrieve deployed contracts
     version = await new web3.eth.Contract(
-      JSON.parse(fs.readFileSync('out/governance/Version.abi')), addresses.Version
+      JSON.parse(fs.readFileSync('out/version/Version.abi')), addresses.Version
     );
     datafeed = await new web3.eth.Contract(
       JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi')), addresses.DataFeed
