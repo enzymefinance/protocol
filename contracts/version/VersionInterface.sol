@@ -18,6 +18,8 @@ contract VersionInterface {
 
       // NON-CONSTANT METHODS
 
+      function shutDown() external {}
+
       function setupFund(
           string withName,
           string withSymbol,
