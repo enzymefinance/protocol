@@ -159,7 +159,7 @@ describe('Fund shares', () => {
     expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
     expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
   });
-  it('allows subscribe request', async () => {
+  it('subscribe request transfers offer plus incentive to fund contract', async () => {
     const pre = await getAllBalances();
     const inputAllowance = offeredValue + incentive;
     await mlnToken.methods.approve(fund.options.address, inputAllowance).send({from: investor});
@@ -184,30 +184,32 @@ describe('Fund shares', () => {
 
     expect(events.length).toEqual(1);
   });
-  // TODO: investigate failing assertion (fund "losing" mln on subscribe execution)
-  it('allows execution of subscribe request', async () => {
+  it('executing subscribe request transfers from fund: incentive to worker, shares to investor, and remainder of subscription offer to investor', async () => {
     await updateDatafeed();
     await web3.mineBlock();
     await updateDatafeed();
     await web3.mineBlock();
-    const initiallyApprovedMln = offeredValue + incentive;
     const pre = await getAllBalances();
     const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
     const requestId = await fund.methods.getLastRequestId().call();
     await fund.methods.executeRequest(requestId).send({from: worker, gas: 6000000});
-    const investorBalance = await fund.methods.balanceOf(investor).call();
+    const sharePrice = await fund.methods.calcSharePrice().call();
+    const baseUnits = await fund.methods.getBaseUnits().call();
+    const requestedSharesTotalValue = wantedShares * sharePrice / baseUnits;
+    const offerRemainder = offeredValue - requestedSharesTotalValue;
+    const investorShareBalance = await fund.methods.balanceOf(investor).call();
     const remainingApprovedMln = await mlnToken.methods.allowance(investor, fund.options.address).call();
     const post = await getAllBalances();
     const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
 
-    expect(Number(investorBalance)).toEqual(wantedShares);
+    expect(Number(investorShareBalance)).toEqual(wantedShares);
     expect(Number(remainingApprovedMln)).toEqual(0);
     expect(workerPostMln).toEqual(workerPreMln + incentive);
     expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
     expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
     expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
-    expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
-    expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+    expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken + offerRemainder);
+    expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken - incentive);
     expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
   });
   it('logs share creation', async () => {
