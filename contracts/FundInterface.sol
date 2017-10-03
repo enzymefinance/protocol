@@ -44,7 +44,7 @@ contract FundInterface is AssetInterface {
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external returns (bool, string) {}
     function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemOwnedProportion(uint shareQuantity) external returns (bool, string) {}
+    function redeemOwnedAssets(uint shareQuantity) external returns (bool, string) {}
     // Administration by Manager
     function toogleSubscription() external {}
     function toggleRedemption() external {}
