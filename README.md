@@ -39,13 +39,19 @@ This repository contains a reference implementation of the Melon protocol writte
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/governance.png" width = "100%">
 
+The main functionality of the [Governance](contracts/system/Governance.sol) contract is to add new protocol _versions_ such as this [Version](contracts/version/Version.sol) contracts and to shut down existing versions.
+
+Adding new protocol version is done by anyone _proposing_ a version to be added and is _executed_ once authority consensus has been established.
+
+Shutting down an existing protocol version is done by anyone _proposing_ a version to be shut down and is _executed_ once authority consensus has been established.
+
+Shutting down a version disables the ability to setup new funds using this version and enables anyone to shut down any existing funds of this version.
+
 ### Funds
 
-<img src = "https://github.com/melonproject/branding/blob/master/explanation/vault.png" width = "100%">
+<img src = "https://github.com/melonproject/branding/blob/master/explanation/fund.png" width = "100%">
 
 ### Modules
-
-<img src = "https://github.com/melonproject/branding/blob/master/explanation/modules.png" width = "100%">
 
 ### List of Melon modules
 
