@@ -3,6 +3,7 @@ const path = require('path');
 const solc = require('solc');
 const Web3 = require('web3');
 const environmentConfig = require('./environment.config.js');
+const pkgInfo = require('../package.json');
 const tokenInfo = require('./token.info.js');
 
 function getPlaceholderFromPath(libPath) {
@@ -105,8 +106,8 @@ async function deploy(environment) {
     console.log('Deployed riskmgmt');
 
     // deploy governance
-    abi = JSON.parse(fs.readFileSync('out/governance/Governance.abi'));
-    bytecode = fs.readFileSync('out/governance/Governance.bin');
+    abi = JSON.parse(fs.readFileSync('out/system/Governance.abi'));
+    bytecode = fs.readFileSync('out/system/Governance.bin');
     const governance = await (new web3.eth.Contract(abi).deploy({
       data: `0x${bytecode}`,
       arguments: [mlnAddr],
@@ -138,16 +139,20 @@ async function deploy(environment) {
     libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
     fundBytecode = solc.linkBytecode(fundBytecode, libObject);
     fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-    fs.writeFileSync('out/governance/Fund.bin', fundBytecode, 'utf8');
 
     // deploy version (can use identical libs object as above)
-    const versionAbi = JSON.parse(fs.readFileSync('out/governance/Version.abi', 'utf8'));
-    let versionBytecode = fs.readFileSync('out/governance/Version.bin', 'utf8');
+    const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
+    let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
     versionBytecode = solc.linkBytecode(versionBytecode, libObject);
     const version = await (new web3.eth.Contract(versionAbi).deploy({
       data: `0x${versionBytecode}`,
-      arguments: [mlnAddr],
+      arguments: [
+        pkgInfo.version,
+        governance.options.address,
+        mlnAddr
+      ],
     }).send(opts));
+    console.log('Deployed version')
 
     let addressBook;
     const addressBookFile = './address-book.json';
@@ -168,15 +173,14 @@ async function deploy(environment) {
         data: `0x${bytecode}`,
         arguments: [
           accounts[1],
-          'Melon Portfolio',  // name
-          'MLN-P',            // share symbol
-          18,                 // share decimals
-          0,                  // management reward
-          0,                  // performance reward
-          mlnToken.options.address,
-          participation.options.address,
-          riskMgmt.options.address,
-          sphere.options.address,
+          'Melon Portfolio',                // name
+          mlnToken.options.address,         // reference asset
+          0,                                // management reward
+          0,                                // performance reward
+          mlnToken.options.address,         // melon asset
+          participation.options.address,    // participation
+          riskMgmt.options.address,         // riskMgmt
+          sphere.options.address,           // sphere
         ],
       }).send({from: accounts[0], gas: config.gas}));
       console.log('Deployed fund');

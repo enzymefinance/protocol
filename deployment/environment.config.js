@@ -35,6 +35,10 @@ module.exports = {
         interval: 0,
         validity: 60,
       },
+      fund: {
+        managementReward: 0,
+        performanceReward: 0
+      }
     },
   },
 }
