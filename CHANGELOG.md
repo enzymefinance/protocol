@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Cleaned up Version and Version Interface
 - Cleaned up Governance
 - Input ReferenceAsset in Fund, Version setup
-- redeemUsingSlice in (err,,msg) format
+- redeemOwnedProportion in (err,,msg) format
 - natspecs comments
 - Add (err,errMsg) format to PoE and manualSettlemnt
 - quantityHeldInCustodyOfExchange() function to fix accounting issue

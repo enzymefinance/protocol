@@ -450,7 +450,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
     /// @param numShares numer of shares owned by msg.sender which msg.sender would like to receive
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate numShares of shares.
-    function redeemUsingSlice(uint numShares)
+    function redeemOwnedProportion(uint numShares)
         external
         pre_cond(balancesOfHolderAtLeast(msg.sender, numShares))
     {

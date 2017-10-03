@@ -454,7 +454,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
     /// @param shareQuantity numer of shares owned by participant which participant would like to receive
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
-    function redeemUsingSlice(uint shareQuantity)
+    function redeemOwnedProportion(uint shareQuantity)
         external
         returns (bool, string)
     {
