@@ -49,8 +49,6 @@ Shutting down a version disables the ability to setup new funds using this versi
 
 ### Funds
 
-<img src = "https://github.com/melonproject/branding/blob/master/explanation/fund.png" width = "100%">
-
 The Participation module takes as input the following parameters:
 
 **Requests:** Describes and logs whenever asset enter and leave fund due to Participants
@@ -85,6 +83,8 @@ timestamp | `uint256` | Time in seconds when this order was created
 fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
 
 ### Modules
+
+<img src = "https://github.com/melonproject/branding/blob/master/explanation/fund.png" width = "100%">
 
 ### List of Melon modules
 
