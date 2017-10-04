@@ -39,7 +39,7 @@ This repository contains a reference implementation of the Melon protocol writte
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/governance.png" width = "100%">
 
-The main functionality of the [Governance](contracts/system/Governance.sol) contract is to add new protocol _versions_ such as this [Version](contracts/version/Version.sol) contracts and to shut down existing versions.
+The main functionality of the [Governance](contracts/system/Governance.sol) contract is to add new protocol _versions_ such as this [Version](contracts/version/Version.sol) contract and to shut down existing versions once they become obsolete.
 
 Adding new protocol version is done by anyone _proposing_ a version to be added and is _executed_ once authority consensus has been established.
 
@@ -50,39 +50,6 @@ Shutting down a version disables the ability to setup new funds using this versi
 ### Funds
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/fund.png" width = "100%">
-
-### Modules
-
-### List of Melon modules
-
-Melon has six different module classes:
-- Exchange Adapters
-- Rewards
-- Participation
-- Risk Management
-- Asset registrars
-- Data feeds
-
-Which can be categorized into three sub sets:
-- Libraries
-- Boolean function
-- Infrastructure
-
-#### Libraries
-
-These Melon modules are:
-- Exchange Adapters
-- Rewards
-
-They interact with the Melon protocol using as pre-linked libraries to the Melon version contract.
-
-#### Boolean functions
-
-These Melon modules are:
-- Participation
-- Risk Managment
-
-They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false.
 
 The Participation module takes as input the following parameters:
 
@@ -116,6 +83,39 @@ sellQuantity | `uint256` | Quantity of sellAsset to be sold
 buyQuantity | `uint256` |  Quantity of sellAsset to be bought
 timestamp | `uint256` | Time in seconds when this order was created
 fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
+
+### Modules
+
+### List of Melon modules
+
+Melon has six different module classes:
+- Exchange Adapters
+- Rewards
+- Participation
+- Risk Management
+- Asset registrars
+- Data feeds
+
+Which can be categorized into three sub sets:
+- Libraries
+- Boolean function
+- Infrastructure
+
+#### Libraries
+
+These Melon modules are:
+- Exchange Adapters
+- Rewards
+
+They interact with the Melon protocol using as pre-linked libraries to the Melon version contract.
+
+#### Boolean functions
+
+These Melon modules are:
+- Participation
+- Risk Managment
+
+They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false.
 
 #### Infrastructure
 
