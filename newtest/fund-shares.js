@@ -18,15 +18,22 @@ describe('Fund shares', () => {
   let investor;
   let opts;
   let datafeed;
+  let simpleMarket;
   let mlnToken;
   let ethToken;
   let eurToken;
   let participation;
+  let riskMgmt;
+  let runningGasTotal;
   let fund;
   let worker;
   let version;
 
   const addresses = addressBook[environment];
+
+  beforeEach(() => {
+    runningGasTotal = 0;
+  });
 
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
@@ -53,6 +60,12 @@ describe('Fund shares', () => {
     );
     participation = await new web3.eth.Contract(
       JSON.parse(fs.readFileSync('out/participation/Participation.abi')), addresses.Participation
+    );
+    riskMgmt = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/riskmgmt/RMMakeOrders.abi')), addresses.RMMakeOrders
+    );
+    simpleMarket = await new web3.eth.Contract(
+      JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi')), addresses.SimpleMarket
     );
 
     participation.methods.attestForIdentity(investor).send(opts);   // whitelist investor
@@ -95,6 +108,7 @@ describe('Fund shares', () => {
     ).send(opts);
   }
 
+  // TODO: account for ether movement as well
   async function getAllBalances() {
     return {
       investor: {
@@ -147,8 +161,8 @@ describe('Fund shares', () => {
       expect(Number(nav)).toEqual(0);
       expect(Number(sharePrice)).toEqual(10 ** 18);
     });
-    const initialTokenAmount = 10000000000;
-    it('investor receives initial token from liquidity provider', async () => {
+    const initialTokenAmount = 10 ** 14;
+    it('investor receives initial mlnToken for testing', async () => {
       const pre = await getAllBalances();
       await mlnToken.methods.transfer(investor, initialTokenAmount).send({from: accounts[0]});
       const post = await getAllBalances();
@@ -161,7 +175,7 @@ describe('Fund shares', () => {
       expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
     });
   });
-  describe('Subscription : ', async () => {
+  xdescribe('Subscription : ', async () => {
     const testArray = [
       { wantedShares: 10000, offeredValue: 10000, incentive: 100 },
       { wantedShares: 20143783, offeredValue: 30000000, incentive: 5000 },
@@ -253,7 +267,7 @@ describe('Fund shares', () => {
       });
     });
   });
-  describe('Redemption : ', async () => {
+  xdescribe('Redemption : ', async () => {
     beforeEach(() => {
       jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000; // datafeed updates take a few seconds
     });
@@ -347,6 +361,115 @@ describe('Fund shares', () => {
 
       expect(finalInvestorShares).toEqual(0);
       expect(finalTotalShares).toEqual(0);
+    });
+  });
+  // TODO: place in own file (replicate this file's setup, or outsource to module)
+  describe('Trading', async () => {
+    beforeEach(() => {
+      jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
+    });
+    const incentive = 500;
+    const offeredValue = 10 ** 10;
+    const wantedShares = 10 ** 10;
+    const sellQuantity = 1000;
+    const buyQuantity = 1000;
+    it('fund receives investment', async () => {
+      const pre = await getAllBalances();
+      const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
+      await mlnToken.methods.approve(
+        fund.options.address, incentive + offeredValue
+      ).send({from: investor});
+      await fund.methods.requestSubscription(
+        offeredValue, wantedShares, incentive
+      ).send({from: investor, gas: config.gas});
+      await updateDatafeed();
+      await web3.mineBlock();
+      await updateDatafeed();
+      await web3.mineBlock();
+      const requestId = await fund.methods.getLastRequestId().call();
+      await fund.methods.executeRequest(requestId).send({from: worker, gas: 3000000});
+      const post = await getAllBalances();
+      const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
+
+      expect(workerPostMln).toEqual(workerPreMln + incentive);
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - offeredValue - incentive);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + offeredValue);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+    });
+    it('manager makes order, and sellToken is transferred to exchange', async () => {
+      const pre = await getAllBalances();
+      await fund.methods.makeOrder(
+        mlnToken.options.address, ethToken.options.address, sellQuantity, buyQuantity
+      ).send({from: manager, gas: 6000000});
+      const post = await getAllBalances();
+
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken - sellQuantity);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+    });
+    it('third party takes entire order, allowing fund to receive ethToken', async () => {
+      const pre = await getAllBalances();
+      const orderId = await simpleMarket.methods.last_offer_id().call();
+      const buyerPreMln = Number(await mlnToken.methods.balanceOf(accounts[0]).call());
+      const buyerPreEthToken = Number(await ethToken.methods.balanceOf(accounts[0]).call());
+      await ethToken.methods.approve(simpleMarket.options.address, buyQuantity).send({from: accounts[0]});
+      await simpleMarket.methods.buy(
+        orderId, buyQuantity
+      ).send({from: accounts[0], gas: 6000000});
+      const buyerPostMln = Number(await mlnToken.methods.balanceOf(accounts[0]).call());
+      const buyerPostEthToken = Number(await ethToken.methods.balanceOf(accounts[0]).call());
+      const post = await getAllBalances();
+
+      expect(buyerPostMln).toEqual(buyerPreMln + sellQuantity);
+      expect(buyerPostEthToken).toEqual(buyerPreEthToken - buyQuantity);
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken + buyQuantity);
+    });
+    it('third party makes order (sell MLN-T for ETH-T)', async () => {
+      const pre = await getAllBalances();
+      const buyerPreMln = Number(await mlnToken.methods.balanceOf(accounts[0]).call());
+      const buyerPreEthToken = Number(await ethToken.methods.balanceOf(accounts[0]).call());
+      await mlnToken.methods.approve(simpleMarket.options.address, buyQuantity).send({from: accounts[0]});
+      await simpleMarket.methods.offer(
+        sellQuantity, mlnToken.options.address, buyQuantity, ethToken.options.address
+      ).send({from: accounts[0], gas: 6000000});
+      const buyerPostMln = Number(await mlnToken.methods.balanceOf(accounts[0]).call());
+      const buyerPostEthToken = Number(await ethToken.methods.balanceOf(accounts[0]).call());
+      const post = await getAllBalances();
+
+      expect(buyerPostMln).toEqual(buyerPreMln);
+      expect(buyerPostEthToken).toEqual(buyerPreEthToken - sellQuantity);
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+    });
+    it('manager takes order', async () => {
+      const pre = await getAllBalances();
+      const orderId = await simpleMarket.methods.last_offer_id().call();
+      await fund.methods.takeOrder(
+        orderId, buyQuantity
+      ).send({from: manager, gas: 6000000});
+      const post = await getAllBalances();
+
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + sellQuantity);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken - buyQuantity);
     });
   });
 });
