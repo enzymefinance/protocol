@@ -9,7 +9,7 @@ const exchangeInfo = require('./config/exchange_info.js');
 module.exports = (deployer, network) => {
   if (network !== 'development') {
     const mpDataFeedAddr = dataFeedInfo[network].find(t => t.name === 'Melonport').address;
-    const simpleMarketAddr = exchangeInfo[network].find(t => t.name === 'OasisDex').address;
+    const simpleMarketAddr = exchangeInfo[network].find(t => t.name === 'Melonport').address;
     // deployer.deploy(DataFeed, mlnAddr, 120, 60) // As a second option
     // .then(() =>
     deployer.deploy(Sphere, mpDataFeedAddr, simpleMarketAddr)
