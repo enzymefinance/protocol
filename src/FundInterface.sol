@@ -55,7 +55,7 @@ contract FundInterface is AssetInterface {
     ) external returns (uint) {}
     function executeRequest(uint requestId) external {}
     function cancelRequest(uint requestId) external {}
-    function redeemUsingSlice(uint numShares) external {}
+    function redeemOwnedAssets(uint numShares) external {}
     // Managing
     function makeOrder(
         address sellAsset,

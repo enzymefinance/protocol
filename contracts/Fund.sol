@@ -89,7 +89,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
     uint public openMakeOrderId; // exchange id of open make order, if no open make orders uint is zero
-    bool public isShutDown; // Security features, if yes than investing, managing, convertUnclaimedRewards gets blocked
+    bool public isShutDown; // Security feature, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
@@ -454,7 +454,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
     /// @param shareQuantity numer of shares owned by participant which participant would like to receive
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
-    function redeemUsingSlice(uint shareQuantity)
+    function redeemOwnedAssets(uint shareQuantity)
         external
         returns (bool, string)
     {
