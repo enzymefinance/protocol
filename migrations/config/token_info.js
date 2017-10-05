@@ -290,4 +290,5 @@ module.exports = {
       ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
     },
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
+  ]
 };
