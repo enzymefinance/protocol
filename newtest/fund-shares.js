@@ -135,6 +135,16 @@ describe('Fund shares', () => {
         mlnToken: Number(await mlnToken.methods.balanceOf(fund.options.address).call()),
         ethToken: Number(await ethToken.methods.balanceOf(fund.options.address).call()),
         ether: new BigNumber(await web3.eth.getBalance(fund.options.address))
+      },
+      worker: {
+        mlnToken: Number(await mlnToken.methods.balanceOf(worker).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(worker).call()),
+        ether: new BigNumber(await web3.eth.getBalance(worker))
+      },
+      deployer: {
+        mlnToken: Number(await mlnToken.methods.balanceOf(deployer).call()),
+        ethToken: Number(await ethToken.methods.balanceOf(deployer).call()),
+        ether: new BigNumber(await web3.eth.getBalance(deployer))
       }
     }
   }
@@ -254,15 +264,11 @@ describe('Fund shares', () => {
           const sharePrice = await fund.methods.calcSharePrice().call();
           const requestedSharesTotalValue = test.wantedShares * sharePrice / baseUnits;
           offerRemainder = test.offeredValue - requestedSharesTotalValue;
-          const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
-          const workerPreEth = new BigNumber(await web3.eth.getBalance(worker));
           const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
           const requestId = await fund.methods.getLastRequestId().call();
           receipt = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
           workerGasTotal = workerGasTotal.plus(receipt.gasUsed)
           const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
-          const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
-          const workerPostEth = new BigNumber(await web3.eth.getBalance(worker));
           // reduce leftover allowance of investor to zero
           receipt = await mlnToken.methods.approve(fund.options.address, 0).send({from: investor, gasPrice: config.gasPrice});
           investorGasTotal = investorGasTotal.plus(receipt.gasUsed)
@@ -271,8 +277,9 @@ describe('Fund shares', () => {
 
           expect(remainingApprovedMln).toEqual(0);
           expect(Number(investorPostShares)).toEqual(investorPreShares + test.wantedShares);
-          expect(workerPostMln).toEqual(workerPreMln + test.incentive);
-          expect(workerPostEth).toEqual(workerPreEth.minus(workerGasTotal.times(gasPrice)));
+          expect(post.worker.mlnToken).toEqual(pre.worker.mlnToken + test.incentive);
+          expect(post.worker.ethToken).toEqual(pre.worker.ethToken);
+          expect(post.worker.ether).toEqual(pre.worker.ether.minus(workerGasTotal.times(gasPrice)));
           expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - test.incentive - test.offeredValue + offerRemainder);
           expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
           expect(post.investor.ether).toEqual(pre.investor.ether.minus(investorGasTotal.times(gasPrice)));
@@ -291,7 +298,7 @@ describe('Fund shares', () => {
           );
 
           expect(Number(postGav)).toEqual(preGav + test.offeredValue - offerRemainder);
-          expect(Number(postManagementReward)).toEqual(preManagementReward);
+          expect(Number(postManagementReward)).toEqual(preManagementReward); // not enough time has passed
           expect(Number(postPerformanceReward)).toEqual(prePerformanceReward);
           expect(Number(postUnclaimedRewards)).toEqual(preUnclaimedRewards);
           expect(Number(postNav)).toEqual(preNav + test.offeredValue - offerRemainder);
@@ -350,10 +357,8 @@ describe('Fund shares', () => {
           await updateDatafeed();
           await web3.mineBlock();
           const pre = await getAllBalances();
-          const workerPreEth = new BigNumber(await web3.eth.getBalance(worker));
           const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
           const preTotalShares = Number(await fund.methods.totalSupply().call());
-          const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
           const requestId = await fund.methods.getLastRequestId().call();
           receipt = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
           workerGasTotal = runningGasTotal.plus(receipt.gasUsed);
@@ -361,17 +366,16 @@ describe('Fund shares', () => {
           receipt = await mlnToken.methods.approve(fund.options.address, 0).send({from: investor, gasPrice: config.gasPrice});
           investorGasTotal = runningGasTotal.plus(receipt.gasUsed);
           const remainingApprovedMln = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
-          const workerPostEth = new BigNumber(await web3.eth.getBalance(worker));
           const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
           const postTotalShares = Number(await fund.methods.totalSupply().call());
-          const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
           const post = await getAllBalances();
 
           expect(remainingApprovedMln).toEqual(0);
           expect(investorPostShares).toEqual(investorPreShares - test.wantedShares);
-          expect(workerPostEth).toEqual(workerPreEth.minus(workerGasTotal.times(gasPrice)));
+          expect(post.worker.mlnToken).toEqual(pre.worker.mlnToken + test.incentive);
+          expect(post.worker.ethToken).toEqual(pre.worker.ethToken);
+          expect(post.worker.ether).toEqual(pre.worker.ether.minus(workerGasTotal.times(gasPrice)));
           expect(postTotalShares).toEqual(preTotalShares - test.wantedShares);
-          expect(workerPostMln).toEqual(workerPreMln + test.incentive);
           expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken + test.wantedValue - test.incentive);
           expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
           expect(post.investor.ether).toEqual(pre.investor.ether.minus(investorGasTotal.times(gasPrice)));
@@ -390,7 +394,7 @@ describe('Fund shares', () => {
           );
 
           expect(Number(postGav)).toEqual(preGav - test.wantedValue);
-          expect(Number(postManagementReward)).toEqual(preManagementReward);
+          expect(Number(postManagementReward)).toEqual(preManagementReward); // not enough time has passed
           expect(Number(postPerformanceReward)).toEqual(prePerformanceReward);
           expect(Number(postUnclaimedRewards)).toEqual(preUnclaimedRewards);
           expect(Number(postNav)).toEqual(preNav - test.wantedValue);
@@ -419,12 +423,10 @@ describe('Fund shares', () => {
       buyQuantity: 500
     }
 
-    it('fund receives investment', async () => {
+    it('fund receives MLN from a subscription (request & execute)', async () => {
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       const pre = await getAllBalances();
-      const workerPreMln = Number(await mlnToken.methods.balanceOf(worker).call());
-      const workerPreEth = new BigNumber(await web3.eth.getBalance(worker));
       receipt = await mlnToken.methods.approve(
         fund.options.address, incentive + offeredValue
       ).send({from: investor, gasPrice: config.gasPrice});
@@ -441,11 +443,10 @@ describe('Fund shares', () => {
       receipt = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
       workerGasTotal = workerGasTotal.plus(receipt.gasUsed)
       const post = await getAllBalances();
-      const workerPostMln = Number(await mlnToken.methods.balanceOf(worker).call());
-      const workerPostEth = new BigNumber(await web3.eth.getBalance(worker));
 
-      expect(workerPostEth).toEqual(workerPreEth.minus(workerGasTotal.times(gasPrice)));
-      expect(workerPostMln).toEqual(workerPreMln + incentive);
+      expect(post.worker.mlnToken).toEqual(pre.worker.mlnToken + incentive);
+      expect(post.worker.ethToken).toEqual(pre.worker.ethToken);
+      expect(post.worker.ether).toEqual(pre.worker.ether.minus(workerGasTotal.times(gasPrice)));
       expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - offeredValue - incentive);
       expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
       expect(post.investor.ether).toEqual(pre.investor.ether.minus(investorGasTotal.times(gasPrice)));
@@ -456,14 +457,20 @@ describe('Fund shares', () => {
       expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
       expect(post.fund.ether).toEqual(pre.fund.ether);
     });
-    it('manager makes order, and sellToken is transferred to exchange', async () => {
+    it('manager makes order, and sellToken (MLN-T) is transferred to exchange', async () => {
       const pre = await getAllBalances();
+      const exchangePreMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePreEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       receipt = await fund.methods.makeOrder(
         mlnToken.options.address, ethToken.options.address, trade1.sellQuantity, trade1.buyQuantity
       ).send({from: manager, gas: config.gas, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
+      const exchangePostMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePostEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       const post = await getAllBalances();
 
+      expect(exchangePostMln).toEqual(exchangePreMln + trade1.sellQuantity);
+      expect(exchangePostEthToken).toEqual(exchangePreEthToken);
       expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
       expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
       expect(post.investor.ether).toEqual(pre.investor.ether);
@@ -477,23 +484,23 @@ describe('Fund shares', () => {
     it('third party takes entire order, allowing fund to receive ethToken', async () => {
       const pre = await getAllBalances();
       const orderId = await simpleMarket.methods.last_offer_id().call();
-      const deployerPreEth = new BigNumber(await web3.eth.getBalance(deployer));
-      const buyerPreMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const buyerPreEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
+      const exchangePreMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePreEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       receipt = await ethToken.methods.approve(simpleMarket.options.address, trade1.buyQuantity).send({from: deployer, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
       receipt = await simpleMarket.methods.buy(
         orderId, trade1.buyQuantity
       ).send({from: deployer, gas: config.gas, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
-      const deployerPostEth = new BigNumber(await web3.eth.getBalance(deployer));
-      const buyerPostMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const buyerPostEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
+      const exchangePostMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePostEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       const post = await getAllBalances();
 
-      expect(deployerPostEth).toEqual(deployerPreEth.minus(runningGasTotal.times(gasPrice)));
-      expect(buyerPostMln).toEqual(buyerPreMln + trade1.sellQuantity);
-      expect(buyerPostEthToken).toEqual(buyerPreEthToken - trade1.buyQuantity);
+      expect(exchangePostMln).toEqual(exchangePreMln - trade1.buyQuantity);
+      expect(exchangePostEthToken).toEqual(exchangePreEthToken);
+      expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
+      expect(post.deployer.mlnToken).toEqual(pre.deployer.mlnToken + trade1.sellQuantity);
+      expect(post.deployer.ethToken).toEqual(pre.deployer.ethToken - trade1.buyQuantity);
       expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
       expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
       expect(post.investor.ether).toEqual(pre.investor.ether);
@@ -504,25 +511,25 @@ describe('Fund shares', () => {
       expect(post.fund.ethToken).toEqual(pre.fund.ethToken + trade1.buyQuantity);
       expect(post.fund.ether).toEqual(pre.fund.ether);
     });
-    it('third party makes order (sell MLN-T for ETH-T)', async () => {
+    it('third party makes order (sell MLN-T for ETH-T), and MLN-T is transferred to exchange', async () => {
       const pre = await getAllBalances();
-      const deployerPreMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const deployerPreEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
-      const deployerPreEth = new BigNumber(await web3.eth.getBalance(deployer));
+      const exchangePreMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePreEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       receipt = await mlnToken.methods.approve(simpleMarket.options.address, trade2.sellQuantity).send({from: deployer, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
       receipt = await simpleMarket.methods.offer(
         trade2.sellQuantity, mlnToken.options.address, trade2.buyQuantity, ethToken.options.address
       ).send({from: deployer, gas: config.gas, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
-      const deployerPostMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const deployerPostEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
-      const deployerPostEth = new BigNumber(await web3.eth.getBalance(deployer));
+      const exchangePostMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePostEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       const post = await getAllBalances();
 
-      expect(deployerPostMln).toEqual(deployerPreMln);
-      expect(deployerPostEthToken).toEqual(deployerPreEthToken - trade2.sellQuantity);
-      expect(deployerPostEth).toEqual(deployerPreEth.minus(runningGasTotal.times(gasPrice)));
+      expect(exchangePostMln).toEqual(exchangePreMln + trade2.sellQuantity);
+      expect(exchangePostEthToken).toEqual(exchangePreEthToken);
+      expect(post.deployer.mlnToken).toEqual(pre.deployer.mlnToken);
+      expect(post.deployer.ethToken).toEqual(pre.deployer.ethToken - trade2.sellQuantity);
+      expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
       expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
       expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
       expect(post.investor.ether).toEqual(pre.investor.ether);
@@ -535,19 +542,22 @@ describe('Fund shares', () => {
     });
     it('manager takes order (buys MLN-T for ETH-T)', async () => {
       const pre = await getAllBalances();
-      const deployerPreMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const deployerPreEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
+      const exchangePreMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePreEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       const orderId = await simpleMarket.methods.last_offer_id().call();
       receipt = await fund.methods.takeOrder(
         orderId, trade2.sellQuantity
       ).send({from: manager, gas: config.gas, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
-      const deployerPostMln = Number(await mlnToken.methods.balanceOf(deployer).call());
-      const deployerPostEthToken = Number(await ethToken.methods.balanceOf(deployer).call());
+      const exchangePostMln = Number(await mlnToken.methods.balanceOf(simpleMarket.options.address).call());
+      const exchangePostEthToken = Number(await ethToken.methods.balanceOf(simpleMarket.options.address).call());
       const post = await getAllBalances();
 
-      expect(deployerPostEthToken).toEqual(deployerPreEthToken + trade2.buyQuantity);
-      expect(deployerPostMln).toEqual(deployerPreMln); // mlnToken already in escrow
+      expect(exchangePostMln).toEqual(exchangePreMln - trade2.sellQuantity);
+      expect(exchangePostEthToken).toEqual(exchangePreEthToken);
+      expect(post.deployer.mlnToken).toEqual(pre.deployer.mlnToken); // mlnToken already in escrow
+      expect(post.deployer.ethToken).toEqual(pre.deployer.ethToken + trade2.buyQuantity);
+      expect(post.deployer.ether).toEqual(pre.deployer.ether);
       expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
       expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
       expect(post.investor.ether).toEqual(pre.investor.ether);
