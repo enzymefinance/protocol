@@ -252,6 +252,24 @@ describe('Fund shares', () => {
 
           expect(events.length).toEqual(1);
         });
+        it('executing subscribe request before pricefeed updates gives error message', async () => {
+          const pre = await getAllBalances();
+          const requestId = await fund.methods.getLastRequestId().call();
+          const result = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
+          const message = result.events.ErrorMessage.returnValues.errorMessage;
+          const post = await getAllBalances();
+
+          expect(message).toEqual('ERR: DataFeed Module: Wait at least for two updates before continuing');
+          expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+          expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+          expect(post.investor.ether).toEqual(pre.investor.ether);
+          expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+          expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+          expect(post.manager.ether).toEqual(pre.manager.ether);
+          expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+          expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+          expect(post.fund.ether).toEqual(pre.fund.ether);
+        });
         it('executing subscribe request transfers incentive to worker, shares to investor, and remainder of subscription offer to investor', async () => {
           let investorGasTotal = new BigNumber(0);
           let workerGasTotal = new BigNumber(0)
