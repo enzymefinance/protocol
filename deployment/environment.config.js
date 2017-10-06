@@ -36,7 +36,7 @@ module.exports = {
         validity: 60,
       },
       fund: {
-        managementReward: 0,
+        managementReward: 10,
         performanceReward: 0
       }
     },

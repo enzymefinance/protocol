@@ -77,10 +77,17 @@ describe('Fund shares', () => {
 
   // register block force mining method
   web3.extend({
-    methods: [{
-      name: 'mineBlock',
-      call: 'evm_mine'
-    }]
+    methods: [
+      {
+        name: 'mineBlock',
+        call: 'evm_mine'
+      },
+      {
+        name: 'increaseTime',
+        call: 'evm_increaseTime',
+        params: 1
+      }
+    ]
   });
 
   // convenience functions
@@ -554,12 +561,15 @@ describe('Fund shares', () => {
   });
   describe('Rewards', async () => {
     it('converts rewards and manager receives them', async () => {
+      await web3.increaseTime(60 * 60 * 24 * 100); // 100 days
+      await web3.mineBlock();
+      await updateDatafeed();
       const pre = await getAllBalances();
       const preManagerShares = Number(await fund.methods.balanceOf(manager).call());
       const totalSupply = Number(await fund.methods.totalSupply().call());
       const [gav, , , unclaimedRewards, , ] = 
         Object.values(await fund.methods.performCalculations().call());
-      const shareQuantity = totalSupply * unclaimedRewards / gav;
+      const shareQuantity = Math.floor(totalSupply * unclaimedRewards / gav);
       receipt = await fund.methods.convertUnclaimedRewards().send({from: manager, gas: config.gas, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
       const postManagerShares = Number(await fund.methods.balanceOf(manager).call());
