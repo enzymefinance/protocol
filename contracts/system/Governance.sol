@@ -2,6 +2,7 @@ pragma solidity ^0.4.11;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
+import '../version/VersionInterface.sol';
 
 /// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>
@@ -30,15 +31,14 @@ contract Governance is DBC, Owned {
     // PRE, POST, INVARIANT CONDITIONS
 
     function isActive(uint id) internal returns (bool active) {
-        (, active, ) = getVersion(id);
+        (, active, ) = getVersionById(id);
     }
 
     // MODIFIERS
 
     // CONSTANT METHODS
 
-    function getLastVersionId() constant returns (uint) { return versions.length -1; }
-    function getVersion(uint id) constant returns (address, bool, uint) {
+    function getVersionById(uint id) constant returns (address, bool, uint) {
         return (
             versions[id].version,
             versions[id].active,
@@ -49,10 +49,7 @@ contract Governance is DBC, Owned {
     // NON-CONSTANT METHODS
 
     /// @notice Propose new versions of Melon
-    function proposeVersion(address ofVersion)
-        // In later version
-        //  require Only authorities
-    {}
+    function proposeVersion(address ofVersion) {}
 
     /// @notice Add an approved version of Melon
     function addVersion(
@@ -68,14 +65,19 @@ contract Governance is DBC, Owned {
         info.active = true;
         info.timestamp = now;
         versions.push(info);
-        VersionUpdated(getLastVersionId());
+        VersionUpdated(versions.length - 1);
     }
 
-    /// @notice Remove an decommissioned version of Melon
-    function decommissionVersion(uint id)
+    /// @notice Remove an shut down version of Melon
+    function shutDownVersion(uint id)
         pre_cond(isOwner())
-        pre_cond(isActive(id))
         // In later version
         //  require Authorities consensus
-    {}
+        pre_cond(isActive(id))
+    {
+        VersionInterface Version = VersionInterface(versions[id].version);
+        Version.shutDown();
+        delete versions[id];
+        VersionUpdated(id);
+    }
 }
