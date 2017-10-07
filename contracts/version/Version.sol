@@ -36,6 +36,9 @@ contract Version is DBC, Owned {
 
     // NON-CONSTANT METHODS
 
+    /// @param versionNumber SemVer of Melon protocol version
+    /// @param ofGovernance Address of Melon governance contract
+    /// @param ofMelonAsset Address of Melon asset contract
     function Version(
         string versionNumber,
         address ofGovernance,
@@ -48,6 +51,14 @@ contract Version is DBC, Owned {
 
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
 
+    /// @param withName human-readable describive name (not necessarily unique)
+    /// @param ofReferenceAsset asset against which performance reward is measured against§
+    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
+    /// @param ofParticipation Address of participation module
+    /// @param ofRiskMgmt Address of risk management module
+    /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
         string withName,
         address ofReferenceAsset,
