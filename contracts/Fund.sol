@@ -231,16 +231,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS
 
-    /*/// @param ofManger owner of this fund, person who can manage asset holdings
-    /// @param name human-readable describive name (not necessarily unique)
+    /// @dev Should only be called via Version.setupFund(..)
+    /// @param withName human-readable describive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against§
-    /// @param ofManagementRewardRate
-    /// @param ofPerformanceRewardRate
-    /// @param ofMelonAsset
-    /// @param ofParticipation
-    /// @param ofRiskMgmt
-    /// @param ofSphere*/
-    function Fund(
+    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
+    /// @param ofMelonAsset Address of Melon asset contract
+    /// @param ofParticipation Address of participation module
+    /// @param ofRiskMgmt Address of risk management module
+    /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @return Deployed Fund with manager set as ofManager
+        function Fund(
         address ofManager,
         string withName,
         address ofReferenceAsset,
@@ -404,7 +405,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             "ERR: DataFeed Module: Wait at least for two updates before continuing"
         );
 
-        uint actualQuantity = request.shareQuantity
+        uint costQuantity = request.shareQuantity
             .mul(calcSharePrice()) // denominated in [base unit of MELON_ASSET]
             .div(MELON_IN_BASE_UNITS);
 
@@ -412,14 +413,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         if (
             request.requestType == RequestType.subscribe &&
-            actualQuantity <= request.giveQuantity
+            costQuantity <= request.giveQuantity
         ) {
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
-            assert(MELON_CONTRACT.transferFrom(request.participant, this, actualQuantity)); // Allocate Value
+            assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
-            request.receiveQuantity <= actualQuantity
+            request.receiveQuantity <= costQuantity
         ) {
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
