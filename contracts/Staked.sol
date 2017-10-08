@@ -18,6 +18,8 @@ contract Staked is Fund {
 
     InternalAccounting internalAccounting; // Accounts for assets not held in custody of fund
 
+    function balancesOfHolderAtLeast(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] >= x; }
+
     function increaseStake(uint shareQuantity)
         external
         pre_cond(isOwner())
@@ -53,19 +55,17 @@ contract Staked is Fund {
     {
         bytes32 assetPair = sha3(sellAsset, buyAsset);
 
-        returnError(
-            isFalse(internalAccounting.existsMakeOrder[assetPair]),
-            "ERR: Make order for input asset pair not found"
-        );
+        if (internalAccounting.existsMakeOrder[assetPair]) {
+            return logError("ERR: Make order for input asset pair not found");
+        }
 
         uint id = internalAccounting.makeOrderId[assetPair];
         Order memory order = orders[id];
         var (error, ) = proofOfEmbezzlement(order.sellAsset, order.buyAsset);
 
-        returnError(
-            isFalse(error),
-            "ERR: Embezzlement has been determined"
-        );
+        if (error) {
+            return logError("ERR: Embezzlement has been determined");
+        }
 
         // TODO: update order.status = OrderStatus.fullyFilled;
         // TODO: abstract below into function
@@ -88,14 +88,11 @@ contract Staked is Fund {
     function proofOfEmbezzlement(address sellAsset, address buyAsset)
         returns (bool, string)
     {
-        returnCriticalError(
-            (
-                ERC20(sellAsset).balanceOf(this) <=
-                internalAccounting.holdingsAtLastManualSettlement[sellAsset]
-                    .sub(quantitySentToExchange(sellAsset))
-            ), // TODO: Allocate staked shares from this to msg.sender
-            "CRITICAL ERR: Sold more than expected!"
-        );
+
+        uint sellAssetHoldExpectations = internalAccounting.holdingsAtLastManualSettlement[sellAsset].sub(quantitySentToExchange(sellAsset));
+        if (sellAssetHoldExpectations > ERC20(sellAsset).balanceOf(this)) {
+            return shutDownAndLogError("CRITICAL ERR: Sold more than expected!");
+        }
 
         // What is held in custody is less or equal than accounted for sell quantity (good)
         uint factor = MELON_IN_BASE_UNITS; // Want to receive proportionally as much as sold
@@ -105,15 +102,10 @@ contract Staked is Fund {
             .div(quantitySentToExchange(sellAsset));
         // Revise return expectations, for example in case of partial fill of order
         uint revisedReturnExpectations = quantityExpectedToReturn(buyAsset).mul(factor).div(divisor);
-
-        returnCriticalError(
-            (
-                ERC20(buyAsset).balanceOf(this) >=
-                internalAccounting.holdingsAtLastManualSettlement[buyAsset]
-                    .add(revisedReturnExpectations)
-            ), // TODO: Allocate staked shares from this to msg.sender
-            "CRITICAL ERR: Received (proportionally) less than expected buy quantity!"
-        );
+        uint buyAssetHoldExpectations = internalAccounting.holdingsAtLastManualSettlement[buyAsset].add(revisedReturnExpectations);
+        if (buyAssetHoldExpectations < ERC20(buyAsset).balanceOf(this)) {
+            return shutDownAndLogError("CRITICAL ERR: Received (proportionally) less than expected buy quantity!");
+        }
 
         return (false, "");
     }

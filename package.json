@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.3.8-alpha.3",
+  "version": "0.3.8-alpha.4",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
