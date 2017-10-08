@@ -381,15 +381,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Request is not active");
         }
 
-        if (isPastZero(totalSupply) && now < request.timestamp.add(module.datafeed.getInterval())) {
+        if (isPastZero(totalSupply) && (now < request.timestamp.add(module.datafeed.getInterval()))) {
             return logError("ERR: DataFeed Module: Wait at least one interval before continuing");
         }
 
-        if (isPastZero(totalSupply) && module.datafeed.getLastUpdateId() < request.lastDataFeedUpdateId.add(2)) {
+        if (isPastZero(totalSupply) && (module.datafeed.getLastUpdateId() < request.lastDataFeedUpdateId.add(2))) {
             return logError("ERR: DataFeed Module: Wait at least for two updates before continuing");
         }
 
-        if (request.requestType == RequestType.redeem && balancesOfHolderLessThan(request.participant, request.shareQuantity)) {
+        if ((request.requestType == RequestType.redeem) && balancesOfHolderLessThan(request.participant, request.shareQuantity)) {
             return logError("ERR: Sender does not own enough shares");
         }
 
