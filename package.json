@@ -14,6 +14,8 @@
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "deploy": "export SOLC_FLAGS='--optimize' && make all && babel-node deployment/deploy-all.js kovan",
+    "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
+    "deploy:development": "babel-node deployment/deploy-all.js development",
     "dev-compile": "node_modules/.bin/solcjs --abi $(find contracts/ -name '*.sol')",
     "dev-delete": "find . -name '*.abi' -type f -delete ",
     "dev-deploy": "rm -rf build && truffle migrate --network kovan --reset"
