@@ -1,6 +1,6 @@
 {
   "spec_dir": "newtest",
-  "spec_files": ["*.js"],
+  "spec_files": ["fund-shares.js"],
   "helpers": [],
   "stopSpecOnExpectationFailure": false,
   "random": false

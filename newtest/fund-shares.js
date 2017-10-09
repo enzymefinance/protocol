@@ -14,7 +14,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${c
 
 // TODO: factor out redundant assertions
 // TODO: factor out tests into multiple files
-fdescribe('Fund shares', () => {
+describe('Fund shares', () => {
   let accounts;
   let deployer;
   let gasPrice;
@@ -149,7 +149,7 @@ fdescribe('Fund shares', () => {
     }
   }
 
-  fdescribe('Setup', async () => {
+  describe('Setup', async () => {
     it('can set up new fund', async () => {
       const preManagerEth = new BigNumber(await web3.eth.getBalance(manager));
       await updateDatafeed();
@@ -428,7 +428,7 @@ fdescribe('Fund shares', () => {
       expect(finalTotalShares).toEqual(0);
     });
   });
-  fdescribe('Trading', async () => {
+  describe('Trading', async () => {
     const incentive = 500;
     const offeredValue = 10 ** 10;
     const wantedShares = 10 ** 10;
