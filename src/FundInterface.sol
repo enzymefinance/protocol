@@ -44,36 +44,19 @@ contract FundInterface is AssetInterface {
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external returns (bool, string) {}
     function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemUsingSlice(uint shareQuantity) external returns (bool, string) {}
+    function redeemOwnedAssets(uint shareQuantity) external returns (bool, string) {}
     // Administration by Manager
     function toogleSubscription() external {}
     function toggleRedemption() external {}
-    function shutDown() {}
-    // Participation
-    function requestSubscription(
-        uint numShares,
-        uint offeredValue,
-        uint incentiveValue
-    ) external returns(uint) {}
-    function requestRedemption(
-        uint numShares,
-        uint requestedValue,
-        uint incentiveValue
-    ) external returns (uint) {}
-    function executeRequest(uint requestId) external {}
-    function cancelRequest(uint requestId) external {}
-    function redeemOwnedAssets(uint numShares) external {}
-    // Managing
-    function makeOrder(
-        address sellAsset,
-        address buyAsset,
-        uint sellQuantity,
-        uint buyQuantity
-    ) external returns (uint) {}
-    function takeOrder(uint id, uint quantity) external returns (bool) {}
-    function cancelOrder(uint id) external returns (bool) {}
-    function closeOpenOrders(address ofBase, address ofQuote) constant {}
-    function proofOfEmbezzlement(address ofBase, address ofQuote) constant returns (bool) {}
-    // Rewards
-    function convertUnclaimedRewards() external {}
+    function increaseStake(uint shareQuantity) external {}
+    function decreaseStake(uint shareQuantity) external {}
+    function shutDown() external {}
+    // Managing by Manager
+    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
+    function takeOrder(uint id, uint quantity) external returns (bool, string) {}
+    function cancelOrder(uint id) external returns (bool, string) {}
+    function manualSettlement(address sellAsset, address buyAsset) returns (bool, string) {}
+    function proofOfEmbezzlement(address sellAsset, address buyAsset) returns (bool, string) {}
+    // Rewards by Manager
+    function convertUnclaimedRewards() external returns (bool, string) {}
 }

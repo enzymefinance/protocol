@@ -15,7 +15,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // TYPES
 
-    struct Data {
+    struct Data  {
         uint timestamp; // Timestamp of last price update of this asset
         uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
     }
