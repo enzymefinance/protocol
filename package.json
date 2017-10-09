@@ -9,7 +9,7 @@
     "test": "truffle compile && truffle test test/exchange.js test/datafeed.js test/asset.js test/participation.js test/fund-shares.js test/fund-trading.js test/version.js",
     "test:jasmine": "babel-node newtest/run.js",
     "localnode": "node_modules/.bin/testrpc -l 6990000",
-    "compile": "dapp build",
+    "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
@@ -65,6 +65,7 @@
     "truffle": "^3.4.4"
   },
   "dependencies": {
+    "bignumber.js": "^4.1.0",
     "chai": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
     "file-system": "^2.2.2",

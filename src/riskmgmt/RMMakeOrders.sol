@@ -21,7 +21,10 @@ contract RMMakeOrders is RiskMgmtInterface {
       function isMakePermitted(
           uint orderPrice,
           uint referencePrice,
-          uint orderQuantity
+          address sellAsset,
+          address buyAsset,
+          uint sellQuantity,
+          uint buyQuantity
       )
           returns (bool)
       {
@@ -32,7 +35,10 @@ contract RMMakeOrders is RiskMgmtInterface {
       function isTakePermitted(
           uint orderPrice,
           uint referencePrice,
-          uint orderQuantity
+          address sellAsset,
+          address buyAsset,
+          uint sellQuantity,
+          uint buyQuantity
       )
           returns (bool)
       {

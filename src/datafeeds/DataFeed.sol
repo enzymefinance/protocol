@@ -27,7 +27,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds data is considered valid
-    // Function fields
+    // Methods fields
     // XXX: change to array, or make access clearer in update()
     mapping (uint => mapping(address => Data)) public dataHistory; // maps integers to asset addresses, which map to data structs
     uint public nextUpdateId;

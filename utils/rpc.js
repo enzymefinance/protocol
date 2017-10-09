@@ -1,6 +1,11 @@
-// `web3` must be available in the calling context
+const Web3 = require('web3');
+const environmentConfig = require('../deployment/environment.config.js');
+
+const environment = 'development';
+const config = environmentConfig[environment];
+const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
+
 function rpcCall(method, arg) {
-  if (!web3) throw new Error('web3 not available in this context');
   const req = {
     jsonrpc: '2.0',
     method,

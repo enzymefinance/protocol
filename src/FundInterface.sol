@@ -11,34 +11,41 @@ contract FundInterface is AssetInterface {
     // EVENTS
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
-    event SubscribeRequest(uint requestId, address indexed ofParticipant, uint atTimestamp, uint numShares);
-    event RedeemRequest(uint requestId, address indexed ofParticipant, uint atTimestamp, uint numShares);
-    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint numShares);
-    event Redeemed(address indexed ofParticipant, uint atTimestamp, uint numShares);
+    event RequestUpdated(uint id);
+    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
+    event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
-    event RewardsConverted(uint atTimestamp, uint numSharesConverted, uint unclaimed);
+    event RewardsConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
     event LogError(uint ERROR_CODE);
+    event ErrorMessage(string errorMessage);
 
     // CONSTANT METHODS
 
     // Get general information
+    function getCreationTime() constant returns (uint) {}
+    function getBaseUnits() constant returns (uint) {}
     function getModules() constant returns (address ,address, address, address) {}
     function getStake() constant returns (uint) {}
-    // Get accounting specific information
-    function calcGav() constant returns (uint) {}
-    function calcUnclaimedRewards(uint) constant returns (uint, uint, uint) {}
-    function calcNav(uint, uint) constant returns (uint) {}
-    function calcValuePerShare(uint) constant returns (uint) {}
+    function getLastOrderId() constant returns (uint) {}
+    function getLastRequestId() constant returns (uint) {}
+    // Get staking information
+    function quantitySentToExchange(address ofAsset) constant returns (uint) {}
+    function quantityExpectedToReturn(address ofAsset) constant returns (uint) {}
+    // Get accounting information
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
     function calcSharePrice() constant returns (uint) {}
 
     // NON-CONSTANT METHODS
 
-    // Administration
-    function increaseStake(uint numShares) external {}
-    function decreaseStake(uint numShares) external {}
+    // Participation by Investor
+    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
+    function executeRequest(uint requestId) external returns (bool, string) {}
+    function cancelRequest(uint requestId) external returns (bool, string) {}
+    function redeemUsingSlice(uint shareQuantity) external returns (bool, string) {}
+    // Administration by Manager
     function toogleSubscription() external {}
     function toggleRedemption() external {}
     function shutDown() {}
