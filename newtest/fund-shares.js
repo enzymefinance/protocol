@@ -5,7 +5,7 @@ const fs = require('fs');
 const rp = require('request-promise');
 const Web3 = require('web3');
 // TODO: should we have a separate token config for development network? much of the information is identical
-const tokenInfo = require('../migrations/config/token_info.js').kovan;
+const tokenInfo = require('../deployment/token.info.js').kovan;
 
 const environment = 'development';
 const apiPath = 'https://min-api.cryptocompare.com/data/price';
