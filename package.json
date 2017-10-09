@@ -6,7 +6,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "babel-node newtest/run.js",
+    "test": "babel-node test/run.js",
     "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
     "localnode:background": "npm run localnode > testrpc.log &",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
