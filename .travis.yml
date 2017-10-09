@@ -18,7 +18,11 @@ addons:
     - clang
 cache: yarn
 before_script:
-- testrpc -l 6979000 > testrpc.log &
+  - npm run localnode:background
+script:
+- npm run compile
+- npm run deploy:development
+- npm run test
 after_script:
 - npm run coveralls
 - cat testrpc.log
