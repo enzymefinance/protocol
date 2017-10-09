@@ -14,7 +14,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${c
 
 // TODO: factor out redundant assertions
 // TODO: factor out tests into multiple files
-describe('Fund shares', () => {
+fdescribe('Fund shares', () => {
   let accounts;
   let deployer;
   let gasPrice;
@@ -149,7 +149,7 @@ describe('Fund shares', () => {
     }
   }
 
-  describe('Setup', async () => {
+  fdescribe('Setup', async () => {
     it('can set up new fund', async () => {
       const preManagerEth = new BigNumber(await web3.eth.getBalance(manager));
       await updateDatafeed();
@@ -428,7 +428,7 @@ describe('Fund shares', () => {
       expect(finalTotalShares).toEqual(0);
     });
   });
-  describe('Trading', async () => {
+  fdescribe('Trading', async () => {
     const incentive = 500;
     const offeredValue = 10 ** 10;
     const wantedShares = 10 ** 10;
@@ -440,7 +440,6 @@ describe('Fund shares', () => {
       sellQuantity: 1000,
       buyQuantity: 500
     }
-
     it('fund receives MLN from a subscription (request & execute)', async () => {
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
@@ -585,6 +584,61 @@ describe('Fund shares', () => {
       expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + trade2.sellQuantity);
       expect(post.fund.ethToken).toEqual(pre.fund.ethToken - trade2.buyQuantity);
       expect(post.fund.ether).toEqual(pre.fund.ether);
+    });
+    describe('Redeeming after trading', async () => {
+      const redemptions = [
+        { amount: new BigNumber(100000), incentive: 500 },
+        { amount: new BigNumber(150000), incentive: 500 }
+      ];
+      redemptions.forEach((redemption, index) => {
+        it(`succeeds on redemption ${index + 1}`, async () => {
+          let investorGasTotal = new BigNumber(0);
+          let workerGasTotal = new BigNumber(0);
+          const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
+          const preTotalShares = Number(await fund.methods.totalSupply().call());
+          const sharePrice = await fund.methods.calcSharePrice().call();
+          const wantedValue = redemption.amount.times(sharePrice).floor();
+          const pre = await getAllBalances();
+          receipt = await mlnToken.methods.approve(
+            fund.options.address, incentive
+          ).send({from: investor, gasPrice: config.gasPrice});
+          investorGasTotal = investorGasTotal.plus(receipt.gasUsed)
+          receipt = await fund.methods.requestRedemption(
+            redemption.amount, wantedValue, incentive
+          ).send({from: investor, gas: config.gas, gasPrice: config.gasPrice});
+          investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
+          await updateDatafeed();
+          await web3.mineBlock();
+          await updateDatafeed();
+          await web3.mineBlock();
+          const requestId = await fund.methods.getLastRequestId().call();
+          receipt = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
+          workerGasTotal = runningGasTotal.plus(receipt.gasUsed);
+          // reduce remaining allowance to zero
+          receipt = await mlnToken.methods.approve(fund.options.address, 0).send({from: investor, gasPrice: config.gasPrice});
+          investorGasTotal = runningGasTotal.plus(receipt.gasUsed);
+          const remainingApprovedMln = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
+          const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
+          const postTotalShares = Number(await fund.methods.totalSupply().call());
+          const post = await getAllBalances();
+
+          expect(remainingApprovedMln).toEqual(0);
+          expect(postTotalShares).toEqual(preTotalShares - redemption.amount);
+          expect(investorPostShares).toEqual(investorPreShares - redemption.amount);
+          expect(post.worker.mlnToken).toEqual(pre.worker.mlnToken);
+          expect(post.worker.ethToken).toEqual(pre.worker.ethToken);
+          expect(post.worker.ether).toEqual(pre.worker.ether.minus(workerGasTotal.times(gasPrice)));
+          expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
+          expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+          expect(post.investor.ether).toEqual(pre.investor.ether.minus(investorGasTotal.times(gasPrice)));
+          expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+          expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+          expect(post.manager.ether).toEqual(pre.manager.ether);
+          expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
+          expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+          expect(post.fund.ether).toEqual(pre.fund.ether);
+        });
+      });
     });
   });
   describe('Rewards', async () => {
