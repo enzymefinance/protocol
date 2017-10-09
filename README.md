@@ -39,7 +39,7 @@ This repository contains a reference implementation of the Melon protocol writte
 
 <img src = "https://github.com/melonproject/branding/blob/master/explanation/governance.png" width = "100%">
 
-The main functionality of the [Governance](contracts/system/Governance.sol) contract is to add new protocol _versions_ such as this [Version](contracts/version/Version.sol) contract and to shut down existing versions once they become obsolete.
+The main functionality of the [Governance](src/system/Governance.sol) contract is to add new protocol _versions_ such as this [Version](src/version/Version.sol) contract and to shut down existing versions once they become obsolete.
 
 Adding new protocol version is done by anyone _proposing_ a version to be added and is _executed_ once authority consensus has been established.
 
