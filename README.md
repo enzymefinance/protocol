@@ -106,7 +106,7 @@ Which can be categorized into three sub sets:
 They interact with the Melon protocol using as pre-linked libraries to the Melon version contract. These Melon modules are:
 
 - **Exchange Adapters**:
-These are adapters betweens Melon protocol and decentralized exchanges. Responsible for relaying information, making and taking orders on exchanges.
+These are adapters between Melon protocol and decentralized exchanges. Responsible for relaying information, making and taking orders on exchanges.
 
 - **Rewards**:
 This module defines functions for calculating management and performance rewards for the fund manager. Management reward is calculated on the time managed irrespective of performance of the fund while performance reward is calculated based on the performance.
@@ -168,7 +168,7 @@ managementRewardRate | `uint` | Reward rate in referenceAsset per delta improvem
 performanceRewardRate | `uint` | Reward rate in referenceAsset per managed seconds
 participation | `address` | Participation module
 riskMgmt | `address` | Risk management module
-sphere | `address` | Data feed module specific timestamp of last update
+sphere | `address` | Sphere module
 
 **Participant invests in a Melon fund**
 
