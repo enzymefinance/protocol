@@ -15,7 +15,7 @@
     "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
     "deploy:development": "babel-node deployment/deploy-all.js development",
-    "dev-delete": "find . -name '*.abi' -type f -delete ",
+    "dev-delete": "find . -name '*.abi' -type f -delete "
   },
   "files": [
     "build",
@@ -60,7 +60,7 @@
     "jasmine": "^2.8.0",
     "mocha-lcov-reporter": "^1.3.0",
     "prettier-eslint": "^8.1.1",
-    "solidity-coverage": "^0.2.1",
+    "solidity-coverage": "^0.2.1"
   },
   "dependencies": {
     "bignumber.js": "^4.1.0",
