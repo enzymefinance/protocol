@@ -1,6 +1,5 @@
-language: node_js
-node_js:
-- '8'
+language: nix
+sudo: required
 compiler:
 - gcc
 - clang
@@ -8,6 +7,7 @@ os:
 - linux
 env:
 - CXX=g++-4.8
+- TRAVIS_NODE_VERSION=8
 addons:
   apt:
     sources:
@@ -17,8 +17,11 @@ addons:
     - g++-4.8
     - clang
 cache: yarn
+install:
+- ./scripts/install.sh
+- npm install
 before_script:
-  - npm run localnode:background
+- npm run localnode:background
 script:
 - npm run compile
 - npm run deploy:development
