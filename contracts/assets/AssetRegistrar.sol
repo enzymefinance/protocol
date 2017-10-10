@@ -14,7 +14,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     struct Asset {
         string name; // Human-readable name of the Asset as in ERC223 token standard
         string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
-        uint256 decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
+        uint decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
         string url; // URL for additional information of Asset
         bytes32 ipfsHash; // Same as url but for ipfs
         bytes32 chainId; // On which chain this asset resides
