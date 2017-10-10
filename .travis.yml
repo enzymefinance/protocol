@@ -1,6 +1,5 @@
-language: node_js
-node_js:
-- '8'
+language: nix
+sudo: required
 compiler:
 - gcc
 - clang
@@ -17,8 +16,13 @@ addons:
     - g++-4.8
     - clang
 cache: yarn
+install:
+- ./scripts/install.sh
+- nvm install 8
+- nvm use 8
+- npm install
 before_script:
-  - npm run localnode:background
+- npm run localnode:background
 script:
 - npm run compile
 - npm run deploy:development
