@@ -7,5 +7,5 @@ nix-channel --add https://nix.dapphub.com/pkgs/dapphub
 nix-channel --update
 nix-env -i seth solc
 git clone https://github.com/dapphub/dapp
-make link -C dapp
+sudo make link -C dapp
 
