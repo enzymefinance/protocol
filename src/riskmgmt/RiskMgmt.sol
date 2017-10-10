@@ -11,7 +11,10 @@ contract RiskMgmt is RiskMgmtInterface {
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
-        uint orderQuantity
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     )
         returns (bool)
     {
@@ -21,7 +24,10 @@ contract RiskMgmt is RiskMgmtInterface {
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
-        uint orderQuantity
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
     )
         returns (bool)
     {

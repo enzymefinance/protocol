@@ -15,7 +15,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // TYPES
 
-    struct Data {
+    struct Data  {
         uint timestamp; // Timestamp of last price update of this asset
         uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
     }
@@ -27,8 +27,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds data is considered valid
-    // Function fields
-    // XXX: change to array, or make access clearer in update()
+    // Methods fields
     mapping (uint => mapping(address => Data)) public dataHistory; // maps integers to asset addresses, which map to data structs
     uint public nextUpdateId;
     uint public lastUpdateTimestamp;
@@ -45,18 +44,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
-    function getLastUpdateId() constant
-        pre_cond(nextUpdateId > 0)
-        returns (uint)
-    {
-        return nextUpdateId - 1;
-    }
-    function getLastUpdateTimestamp() constant returns (uint) {
-        return lastUpdateTimestamp;
-    }
+    function getLastUpdateId() constant pre_cond(nextUpdateId > 0) returns (uint) { return nextUpdateId - 1; }
+    function getLastUpdateTimestamp() constant returns (uint) { return lastUpdateTimestamp; }
+
     /// @notice Get asset specific information
-    /// @dev Pre: Asset has been initialised
-    /// @dev Post Returns boolean if data is valid
+    /// @dev Asset has been initialised
+    /// @return Whether data is valid or not
     function isValid(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -64,6 +57,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     {
         return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
     }
+
+    /// @dev Prices are only upated against QUOTE_ASSET
+    /// @return Whether assets egist for given asset pair
     function existsData(address sellAsset, address buyAsset)
         constant
         returns (bool)
@@ -74,6 +70,11 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
+
+    /// @dev Returns data feed history in an blockchain node friendly way, i.e. as efficient bulk call
+    /// @param ofAsset Asset for which history should be return
+    /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
+    /// @return Array of timestamps and prices of ofAsset
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
@@ -93,6 +94,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @dev Asset has been initialised and is active
+    /// @param ofAsset Asset for which price should be return
     /// @return Price of baseUnits(QUOTE_ASSET).ofAsset
     function getPrice(address ofAsset)
         constant
@@ -104,6 +106,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @dev Asset has been initialised and is active
+    /// @param ofAsset Asset for which inverted price should be return
     /// @return Inverted price of baseUnits(ofAsset).QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
         constant
@@ -144,8 +147,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             .div(sellQuantity);
     }
 
-    /// @dev Pre: Asset has been initialised and is active
-    /// @dev Post Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
+    /// @dev Asset has been initialised and is active
+    /// @return Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
     function getData(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
@@ -160,8 +163,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     // NON-CONSTANT PUBLIC METHODS
 
-    /// @dev Pre: Define and register a quote asset against which all prices are measured/based against
-    /// @dev Post Price Feed contract w Backup Owner
+    /// @dev Define and register a quote asset against which all prices are measured/based against
+    /// @return Price Feed contract w Backup Owner
     function DataFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         uint interval,
@@ -172,8 +175,8 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         VALIDITY = validity;
     }
 
-    /// @dev Pre: Only Owner; Same sized input arrays
-    /// @dev Post Update price of asset relative to QUOTE_ASSET
+    /// @dev Only Owner; Same sized input arrays
+    /// @return Update price of asset relative to QUOTE_ASSET
     /** Ex:
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN

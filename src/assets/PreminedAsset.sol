@@ -7,11 +7,11 @@ import '../libraries/safeMath.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice Premined amount used to make markets
 contract PreminedAsset is Asset {
-    using safeMath for uint256;
+    using safeMath for uint;
 
     // METHODS
 
-    function PreminedAsset(string name, string symbol, uint decimals, uint256 amount)
+    function PreminedAsset(string name, string symbol, uint decimals, uint amount)
         Asset(name, symbol, decimals)
     {
         balances[msg.sender] = balances[msg.sender].add(amount);

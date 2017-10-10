@@ -1,6 +1,5 @@
 pragma solidity ^0.4.11;
 
-import '../ExchangeInterface.sol';
 import '../../dependencies/ERC20.sol';
 import '../thirdparty/SimpleMarket.sol';
 
@@ -52,6 +51,13 @@ library simpleAdapter {
             sellQuantity,
             buyQuantity
         );
+    }
+    function getTimestamp(address onExchange, uint id)
+        constant
+        returns (uint)
+    {
+        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
+        return timestamp;
     }
 
     // NON-CONSTANT METHODS
