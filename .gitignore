@@ -13,3 +13,4 @@ out/
 # ignore generated coverage data
 coverage.json
 coverage/
+/out

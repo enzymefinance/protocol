@@ -1,0 +1,6 @@
+name            protocol
+description     A newly-created dapp
+version         0.0.0
+
+author          reto
+license         Apache-2.0

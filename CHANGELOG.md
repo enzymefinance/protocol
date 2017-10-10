@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.8]
+
+### Added
+
+- Added documentation for interaction
+- Added documentation for modules
+- Jasmine tests for main protocol functions
+
+### Changed
+
+- Using Dapp for tests
+- Using Dapp for deployment
+- Allow first supscription w/o waiting time;
+- Prevent redeem w not sufficient shares
+- Way how errors are logged
+- redeemUsingSlice -> redeemOwnedAssets
+- Refactor: Governance contract
+- Refactor: Version contract
+- Update README
+- getFundById, getFundByManager functions in Version
+
+### Removed
+
+- Truffle components
+
 ## [0.3.6]
 
 ### Added
@@ -36,7 +61,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Cleaned up Version and Version Interface
 - Cleaned up Governance
 - Input ReferenceAsset in Fund, Version setup
-- redeemUsingSlice in (err,,msg) format
+- redeemOwnedAssets in (err,,msg) format
 - natspecs comments
 - Add (err,errMsg) format to PoE and manualSettlemnt
 - quantityHeldInCustodyOfExchange() function to fix accounting issue
