@@ -6,7 +6,7 @@ compiler:
 os:
 - linux
 env:
-- CXX=g++-4.8 TRAVIS_NODE_VERSION=8
+- CXX=g++-4.8
 addons:
   apt:
     sources:
@@ -18,6 +18,8 @@ addons:
 cache: yarn
 install:
 - ./scripts/install.sh
+- nvm install 8
+- nvm use 8
 - npm install
 before_script:
 - npm run localnode:background

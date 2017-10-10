@@ -587,8 +587,8 @@ describe('Fund shares', () => {
     });
     describe('Redeeming after trading', async () => {
       const redemptions = [
-        { amount: new BigNumber(100000), incentive: 500 },
-        { amount: new BigNumber(150000), incentive: 500 }
+        { amount: new BigNumber(100000000), incentive: 500 },
+        { amount: new BigNumber(150000000), incentive: 500 }
       ];
       redemptions.forEach((redemption, index) => {
         it(`allows redemption ${index + 1}`, async () => {
