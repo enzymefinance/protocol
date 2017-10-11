@@ -3,7 +3,6 @@ node_modules/
 npm-debug.log
 *.orig
 *.swp
-package-lock.json
 
 # ignore built contracts
 out/
