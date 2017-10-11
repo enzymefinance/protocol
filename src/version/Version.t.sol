@@ -8,6 +8,7 @@ import "../assets/PreminedAsset.sol";
 import "../riskmgmt/RiskMgmt.sol";
 import "../exchange/thirdparty/SimpleMarket.sol";
 import "../sphere/Sphere.sol";
+import "../Fund.sol";
 import "./Version.sol";
 
 
@@ -33,6 +34,8 @@ contract VersionTest is DSTest {
     address MANAGER_ADDRESS = this;
 
 
+//TODO: uncomment these tests when ds-test issue is resolved:
+//      https://github.com/dapphub/ds-test/issues/6
     function setUp() {
         governance = new Governance();
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
@@ -44,7 +47,7 @@ contract VersionTest is DSTest {
 //        participation = new Participation();
     }
 
-    function testSetupFund() {
+//    function testSetupFund() {
 //        version.setupFund(
 //            FUND_NAME,
 //            melonToken,
@@ -54,5 +57,30 @@ contract VersionTest is DSTest {
 //            riskMgmt,
 //            sphere
 //        );
-    }
+//        uint fundId = version.getLastFundById();
+//        address fundAddressFromManager = version.managerToFunds(this);
+//        address fundAddressFromId = version.getFundById(fundId);
+//
+//        assertEq(fundAddressFromId, fundAddressFromManager);
+//        assertEq(fundId, 0);
+//    }
+//
+//    function testShutdownFund() {
+//        version.setupFund(
+//            FUND_NAME,
+//            melonToken,
+//            MANAGEMENT_REWARD,
+//            PERFORMANCE_REWARD,
+//            participation,
+//            riskMgmt,
+//            sphere
+//        );
+//        uint fundId = version.getLastFundById();
+//        address fundAddress = version.getFundById(fundId);
+//        Fund fund = Fund(fundAddress);
+//        version.shutDownFund(fundId);
+//        bool fundIsShutDown = fund.isShutDown();
+//
+//        assert(isShutDown);
+//    }
 }
