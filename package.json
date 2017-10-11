@@ -16,8 +16,9 @@
     "dev-delete": "find . -name '*.abi' -type f -delete "
   },
   "files": [
-    "build",
-    "Migrations/config/token_info.js"
+    "out",
+    "deployment/token.info.js",
+    "address-book.json"
   ],
   "publishConfig": {
     "access": "public"
@@ -55,7 +56,6 @@
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
     "jasmine": "^2.8.0",
-    "mocha-lcov-reporter": "^1.3.0",
     "prettier-eslint": "^8.1.1"
   },
   "dependencies": {
