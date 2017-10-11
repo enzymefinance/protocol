@@ -70,7 +70,7 @@ contract DataFeedTest is DSTest {
     function testToggles() {
         bool preSubscriptionAllowed = fund.isSubscribeAllowed();
         bool preRedemptionAllowed = fund.isRedeemAllowed();
-        fund.toggleSubscription();
+        fund.toogleSubscription();
         fund.toggleRedemption();
         bool postSubscriptionAllowed = fund.isSubscribeAllowed();
         bool postRedemptionAllowed = fund.isRedeemAllowed();
