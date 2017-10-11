@@ -15,6 +15,6 @@ contract AssetRegistrarInterface {
     function getDescriptiveInformation(address ofAsset) constant returns (string, string, string, bytes32) {}
     function getName(address ofAsset) constant returns (string) {}
     function getSymbol(address ofAsset) constant returns (string) {}
-    function getDecimals(address ofAsset) constant returns (uint256) {}
-    function getSpecificInformation(address ofAsset) constant returns (uint256, bytes32, address, address) {}
+    function getDecimals(address ofAsset) constant returns (uint) {}
+    function getSpecificInformation(address ofAsset) constant returns (uint, bytes32, address, address) {}
 }

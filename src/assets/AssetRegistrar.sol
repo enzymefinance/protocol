@@ -14,7 +14,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     struct Asset {
         string name; // Human-readable name of the Asset as in ERC223 token standard
         string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
-        uint256 decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
+        uint decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
         string url; // URL for additional information of Asset
         bytes32 ipfsHash; // Same as url but for ipfs
         bytes32 chainId; // On which chain this asset resides
@@ -42,7 +42,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     // Get asset specific information
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
-    function getDecimals(address ofAsset) constant returns (uint256) { return information[ofAsset].decimal; }
+    function getDecimals(address ofAsset) constant returns (uint) { return information[ofAsset].decimal; }
 
     /// @notice Get human-readable information about an Asset
     /// @param ofAsset address for which descriptive information is requested
@@ -62,7 +62,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     /// @param ofAsset address for which specific information is requested
     function getSpecificInformation(address ofAsset)
         constant
-        returns (uint256, bytes32, address, address)
+        returns (uint, bytes32, address, address)
     {
         return (
             information[ofAsset].decimal,
@@ -80,7 +80,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         address ofAsset,
         string name,
         string symbol,
-        uint256 decimal,
+        uint decimal,
         string url,
         bytes32 ipfsHash,
         bytes32 chainId,
