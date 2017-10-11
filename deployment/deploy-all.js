@@ -23,7 +23,7 @@ async function deploy(environment) {
     let ethToken;
     const config = environmentConfig[environment];
     const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
-    if((config.networkId !== await web3.eth.net.getId()) && (config.networkId !== '*')) {
+    if((Number(config.networkId) !== await web3.eth.net.getId()) && (config.networkId !== '*')) {
       throw new Error(`Deployment for environment ${environment} not defined`);
     }
     const accounts = await web3.eth.getAccounts();
@@ -144,6 +144,7 @@ async function deploy(environment) {
     const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
     let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
     versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+    fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
     const version = await (new web3.eth.Contract(versionAbi).deploy({
       data: `0x${versionBytecode}`,
       arguments: [
@@ -152,16 +153,16 @@ async function deploy(environment) {
         mlnAddr
       ],
     }).send(opts));
-    console.log('Deployed version')
+    console.log('Deployed version');
 
     let addressBook;
     const addressBookFile = './address-book.json';
-    if(environment === 'development') {
-      // TODO: factor out any redundant step here
-      // mock information for development
-      const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-      const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
+    // TODO: factor out any redundant step here
+    // mock information for development
+    const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+    const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
 
+    if(environment === 'development') {
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
       bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
@@ -233,11 +234,11 @@ async function deploy(environment) {
           token.symbol,
           token.decimals,
           token.url,
-          token.ipfsHash,
-          token.chainId,
-          token.breakIn,
-          token.breakOut,
-        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
+        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
       }
 
       // update address book
