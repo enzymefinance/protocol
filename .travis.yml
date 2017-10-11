@@ -28,5 +28,4 @@ script:
 - npm run deploy:development
 - npm run test
 after_script:
-- npm run coveralls
 - cat testrpc.log
