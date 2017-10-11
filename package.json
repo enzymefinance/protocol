@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.3.8-alpha.5",
+  "version": "0.4.0",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
@@ -11,16 +11,14 @@
     "localnode:background": "npm run localnode > testrpc.log &",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
-    "coverage": "./node_modules/.bin/solidity-coverage",
-    "coveralls": "npm run coverage && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
     "deploy:development": "babel-node deployment/deploy-all.js development",
-    "dev-delete": "find . -name '*.abi' -type f -delete ",
-    "dev-deploy": "rm -rf build && truffle migrate --network kovan --reset"
+    "dev-delete": "find . -name '*.abi' -type f -delete "
   },
   "files": [
-    "build",
-    "Migrations/config/token_info.js"
+    "out",
+    "deployment/token.info.js",
+    "address-book.json"
   ],
   "publishConfig": {
     "access": "public"
@@ -49,7 +47,6 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-0": "^6.24.1",
     "babel-runtime": "^6.26.0",
-    "coveralls": "^2.13.1",
     "eslint": "^4.7.2",
     "eslint-config-airbnb": "^15.1.0",
     "eslint-config-prettier": "^2.6.0",
@@ -59,10 +56,7 @@
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
     "jasmine": "^2.8.0",
-    "mocha-lcov-reporter": "^1.3.0",
-    "prettier-eslint": "^8.1.1",
-    "solidity-coverage": "^0.2.1",
-    "truffle": "^3.4.4"
+    "prettier-eslint": "^8.1.1"
   },
   "dependencies": {
     "bignumber.js": "^4.1.0",

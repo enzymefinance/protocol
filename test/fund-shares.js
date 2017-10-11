@@ -206,13 +206,60 @@ describe('Fund shares', () => {
     });
   });
   describe('Subscription : ', async () => {
-    const testArray = [
-      { wantedShares: 20000, offeredValue: 20000, incentive: 100 },
+    // TODO: reduce code duplication between this and subsequent tests
+    // split first and subsequent tests due to differing behaviour
+    const firstTest = { wantedShares: 20000, offeredValue: 20000, incentive: 100 };
+    const subsequentTests = [
       { wantedShares: 20143783, offeredValue: 30000000, incentive: 5000 },
       { wantedShares: 500, offeredValue: 2000, incentive: 5000 },
     ];
-    testArray.forEach((test, index) => {
-      describe(`request and execution, round ${index + 1}`, async () => {
+    it('allows request and execution without datafeed updates on the first subscription', async () => {
+      let investorGasTotal = new BigNumber(0);
+      let workerGasTotal = new BigNumber(0)
+      const pre = await getAllBalances();
+      receipt = await fund.methods.requestSubscription(
+        firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive
+      ).send({from: investor, gas: config.gas, gasPrice: config.gasPrice});
+      investorGasTotal = investorGasTotal.plus(receipt.gasUsed)
+      const inputAllowance = firstTest.offeredValue + firstTest.incentive;
+      const fundPreAllowance = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
+      receipt = await mlnToken.methods.approve(fund.options.address, inputAllowance).send({from: investor, gasPrice: config.gasPrice});
+      investorGasTotal = investorGasTotal.plus(receipt.gasUsed)
+      const fundPostAllowance = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
+      const baseUnits = await fund.methods.getBaseUnits().call();
+      const sharePrice = await fund.methods.calcSharePrice().call();
+      const requestedSharesTotalValue = firstTest.wantedShares * sharePrice / baseUnits;
+      const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
+      const investorPreShares = Number(await fund.methods.balanceOf(investor).call());
+      const requestId = await fund.methods.getLastRequestId().call();
+      receipt = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
+      workerGasTotal = workerGasTotal.plus(receipt.gasUsed)
+      const investorPostShares = Number(await fund.methods.balanceOf(investor).call());
+      // reduce leftover allowance of investor to zero
+      receipt = await mlnToken.methods.approve(fund.options.address, 0).send({from: investor, gasPrice: config.gasPrice});
+      investorGasTotal = investorGasTotal.plus(receipt.gasUsed)
+      const remainingApprovedMln = Number(await mlnToken.methods.allowance(investor, fund.options.address).call());
+      const post = await getAllBalances();
+
+      expect(remainingApprovedMln).toEqual(0);
+      expect(Number(investorPostShares)).toEqual(investorPreShares + firstTest.wantedShares);
+      expect(fundPostAllowance).toEqual(fundPreAllowance + inputAllowance);
+      expect(post.worker.mlnToken).toEqual(pre.worker.mlnToken + firstTest.incentive);
+      expect(post.worker.ethToken).toEqual(pre.worker.ethToken);
+      expect(post.worker.ether).toEqual(pre.worker.ether.minus(workerGasTotal.times(gasPrice)));
+      expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken - firstTest.incentive - firstTest.offeredValue + offerRemainder);
+      expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
+      expect(post.investor.ether).toEqual(pre.investor.ether.minus(investorGasTotal.times(gasPrice)));
+      expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
+      expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
+      expect(post.manager.ether).toEqual(pre.manager.ether);
+      expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
+      expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken + firstTest.offeredValue - offerRemainder);
+      expect(post.fund.ether).toEqual(pre.fund.ether);
+
+    });
+    subsequentTests.forEach((test, index) => {
+      describe(`request and execution, round ${index + 2}`, async () => {
         let fundPreCalculations;
         let offerRemainder;
         beforeAll(async () => {
@@ -252,7 +299,7 @@ describe('Fund shares', () => {
 
           expect(events.length).toEqual(1);
         });
-        it('executing subscribe request before pricefeed updates gives error message', async () => {
+        it('after first subscription, executing subscribe request before pricefeed updates gives error message', async () => {
           const pre = await getAllBalances();
           const requestId = await fund.methods.getLastRequestId().call();
           const result = await fund.methods.executeRequest(requestId).send({from: worker, gas: config.gas, gasPrice: config.gasPrice});
