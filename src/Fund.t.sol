@@ -22,6 +22,7 @@ contract DataFeedTest is DSTest {
     Sphere sphere;
 
     // constants
+    string FUND_NAME = "My Fund";
     uint INTERVAL = 0;
     uint VALIDITY = 60;
     uint MELON_DECIMALS = 18;
@@ -43,7 +44,7 @@ contract DataFeedTest is DSTest {
         participation = new Participation();
         fund = new Fund(
             MANAGER_ADDRESS,
-            "My Fund",
+            FUND_NAME,
             melonToken,
             MANAGEMENT_REWARD,
             PERFORMANCE_REWARD,
@@ -64,13 +65,15 @@ contract DataFeedTest is DSTest {
         assertEq(returnedExchange, simpleMarket);
         assertEq(returnedParticipation, participation);
         assertEq(returnedRiskMgmt, riskManagement);
+        //assertEq(returnedName, FUND_NAME); //TODO: uncomment when assertEq implemented for strings
+        assertEq(returnedDecimals, MELON_DECIMALS);
         assertEq(stake, 0);
     }
 
     function testToggles() {
         bool preSubscriptionAllowed = fund.isSubscribeAllowed();
         bool preRedemptionAllowed = fund.isRedeemAllowed();
-        fund.toogleSubscription();
+        fund.toggleSubscription();
         fund.toggleRedemption();
         bool postSubscriptionAllowed = fund.isSubscribeAllowed();
         bool postRedemptionAllowed = fund.isRedeemAllowed();
