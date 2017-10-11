@@ -23,7 +23,7 @@ async function deploy(environment) {
     let ethToken;
     const config = environmentConfig[environment];
     const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
-    if((config.networkId !== await web3.eth.net.getId()) && (config.networkId !== '*')) {
+    if((Number(config.networkId) !== await web3.eth.net.getId()) && (config.networkId !== '*')) {
       throw new Error(`Deployment for environment ${environment} not defined`);
     }
     const accounts = await web3.eth.getAccounts();
@@ -157,12 +157,12 @@ async function deploy(environment) {
 
     let addressBook;
     const addressBookFile = './address-book.json';
-    if(environment === 'development') {
-      // TODO: factor out any redundant step here
-      // mock information for development
-      const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
-      const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
+    // TODO: factor out any redundant step here
+    // mock information for development
+    const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+    const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
 
+    if(environment === 'development') {
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
       bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
@@ -234,10 +234,10 @@ async function deploy(environment) {
           token.symbol,
           token.decimals,
           token.url,
-          token.ipfsHash,
-          token.chainId,
-          token.breakIn,
-          token.breakOut,
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
         ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
       }
 
