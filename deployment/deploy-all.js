@@ -144,6 +144,7 @@ async function deploy(environment) {
     const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
     let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
     versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+    fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
     const version = await (new web3.eth.Contract(versionAbi).deploy({
       data: `0x${versionBytecode}`,
       arguments: [
@@ -152,7 +153,7 @@ async function deploy(environment) {
         mlnAddr
       ],
     }).send(opts));
-    console.log('Deployed version')
+    console.log('Deployed version');
 
     let addressBook;
     const addressBookFile = './address-book.json';
@@ -237,7 +238,7 @@ async function deploy(environment) {
           token.chainId,
           token.breakIn,
           token.breakOut,
-        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`))
+        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
       }
 
       // update address book
