@@ -1,3 +1,2 @@
 # ignore built contracts
-contracts/
-migrations/
+out/
