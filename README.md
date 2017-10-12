@@ -222,7 +222,10 @@ incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity execut
 
 ## Get started
 
+
 ### Installation
+
+You will need the `dapp` developer tools, which you can install using [these steps](http://dapp.tools/).
 
 1. Clone this repository
     ```
@@ -250,7 +253,13 @@ After installation is complete, go to the above `protocol` directory, open a ter
     npm run localnode
     ```
 
-2. Open a second terminal and run the test framework:
+2. Open a second terminal and deploy the contracts to the development network:
+
+    ```
+    npm run deploy:development
+    ```
+
+3. Run the test framework:
     ```
     npm test
     ```
@@ -266,14 +275,14 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
-1. Launch a ethereum client. For example something similar to this:
+1. Launch an ethereum client. For example something similar to this:
     ```
     parity --chain kovan --author <some address> --unlock <some address> --password <some password file>
     ```
 
-2. Open a second terminal and deploy contracts using truffle
+2. Open a second terminal and deploy the contracts:
     ```
-    truffle migrate --network kovan
+    npm run deploy:kovan
     ```
 
 ## Contribute
