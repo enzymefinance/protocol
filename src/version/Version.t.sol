@@ -58,7 +58,7 @@ contract VersionTest is DSTest {
             sphere
         );
         uint fundId = version.getLastFundId();
-        address fundAddressFromManager = version.getFundByManager(this);
+        address fundAddressFromManager = version.getFundByManager(MANAGER_ADDRESS);
         address fundAddressFromId = version.getFundById(fundId);
 
         assertEq(fundAddressFromId, fundAddressFromManager);
