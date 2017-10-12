@@ -6,7 +6,7 @@ Melon ([méllō], μέλλω; Greek for "destined to be") is blockchain software
 
 It does so by leveraging off the fact that digital assets on distributed quasi turing complete machines can be held solely by smart-contract code and spent only if its preprogrammed within this code. The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund. It's meant to protect the investor and fund manager from malevolent behaviour of each other.
 
-Melon is for wealth management what Bitcoin is for accounting, a set of rules, enforced by blockchain technology, legitimized by the consent of its participants.
+Melon is for asset management what Bitcoin is for accounting, a set of rules, enforced by blockchain technology, legitimized by the consent of its participants.
 
 This repository contains a reference implementation of the Melon protocol written in Solidity, as specified in our [paper][paper-url].
 
