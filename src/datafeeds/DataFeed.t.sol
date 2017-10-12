@@ -37,7 +37,7 @@ contract DataFeedTest is DSTest {
         assertEq(returnedValidity, VALIDITY);
     }
 
-    function testFailOnUnsetPrice() {
+    function testFailGetPriceBeforeSet() {
         datafeed.getPrice(etherToken);
     }
 

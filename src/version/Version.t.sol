@@ -39,48 +39,48 @@ contract VersionTest is DSTest {
     function setUp() {
         governance = new Governance();
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
-//        version = new Version(VERSION_NUMBER, governance, melonToken);
-//        datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
-//        riskMgmt = new RiskMgmt();
-//        simpleMarket = new SimpleMarket();
-//        sphere = new Sphere(datafeed, simpleMarket);
-//        participation = new Participation();
+        version = new Version(VERSION_NUMBER, governance, melonToken);
+        datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
+        riskMgmt = new RiskMgmt();
+        simpleMarket = new SimpleMarket();
+        sphere = new Sphere(datafeed, simpleMarket);
+        participation = new Participation();
     }
 
-//    function testSetupFund() {
-//        version.setupFund(
-//            FUND_NAME,
-//            melonToken,
-//            MANAGEMENT_REWARD,
-//            PERFORMANCE_REWARD,
-//            participation,
-//            riskMgmt,
-//            sphere
-//        );
-//        uint fundId = version.getLastFundById();
-//        address fundAddressFromManager = version.managerToFunds(this);
-//        address fundAddressFromId = version.getFundById(fundId);
-//
-//        assertEq(fundAddressFromId, fundAddressFromManager);
-//        assertEq(fundId, 0);
-//    }
-//
-//    function testShutdownFund() {
-//        version.setupFund(
-//            FUND_NAME,
-//            melonToken,
-//            MANAGEMENT_REWARD,
-//            PERFORMANCE_REWARD,
-//            participation,
-//            riskMgmt,
-//            sphere
-//        );
-//        uint fundId = version.getLastFundById();
-//        address fundAddress = version.getFundById(fundId);
-//        Fund fund = Fund(fundAddress);
-//        version.shutDownFund(fundId);
-//        bool fundIsShutDown = fund.isShutDown();
-//
-//        assert(isShutDown);
-//    }
+    function testSetupFund() {
+        version.setupFund(
+            FUND_NAME,
+            melonToken,
+            MANAGEMENT_REWARD,
+            PERFORMANCE_REWARD,
+            participation,
+            riskMgmt,
+            sphere
+        );
+        uint fundId = version.getLastFundId();
+        address fundAddressFromManager = version.getFundByManager(this);
+        address fundAddressFromId = version.getFundById(fundId);
+
+        assertEq(fundAddressFromId, fundAddressFromManager);
+        assertEq(fundId, 0);
+    }
+
+    function testShutdownFund() {
+        version.setupFund(
+            FUND_NAME,
+            melonToken,
+            MANAGEMENT_REWARD,
+            PERFORMANCE_REWARD,
+            participation,
+            riskMgmt,
+            sphere
+        );
+        uint fundId = version.getLastFundId();
+        address fundAddress = version.getFundById(fundId);
+        Fund fund = Fund(fundAddress);
+        version.shutDownFund(fundId);
+        bool fundIsShutDown = fund.isShutDown();
+
+        assert(fundIsShutDown);
+    }
 }

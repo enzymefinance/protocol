@@ -240,7 +240,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofSphere Address of sphere, which contains address of data feed module
     /// @return Deployed Fund with manager set as ofManager
-        function Fund(
+    function Fund(
         address ofManager,
         string withName,
         address ofReferenceAsset,
