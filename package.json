@@ -8,7 +8,7 @@
   "scripts": {
     "test": "npm run test:ds-test && npm run test:jasmine",
     "test:jasmine": "babel-node test/run.js",
-    "test:ds-test": "export DAPP_NO_HEVM=1 && dapp test -v",
+    "test:ds-test": "export DAPP_NO_HEVM=1 && mv src/exchange/adapter/externalAdapter.sol . && dapp test -v && mv ./externalAdapter.sol src/exchange/adapter",
     "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
     "localnode:background": "npm run localnode > testrpc.log &",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
