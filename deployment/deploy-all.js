@@ -37,7 +37,7 @@ async function deploy(environment) {
     let simpleMarket;
     let sphere;
     let version;
-    const datafeedOnly = true;
+    const datafeedOnly = false;
     const addressBookFile = './address-book.json';
     const config = environmentConfig[environment];
     const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
@@ -219,7 +219,7 @@ async function deploy(environment) {
           DataFeed: datafeed.options.address,
         };
       } else if(!datafeedOnly) {
-        const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'ThomsonReuters').address;
+        const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'Thomson Reuters').address;
         const oasisDexAddress = exchangeInfo[environment].find(exchange => exchange.name === 'OasisDex').address;
         // deploy sphere
         abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
