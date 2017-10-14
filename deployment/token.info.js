@@ -186,14 +186,14 @@ module.exports = {
       url: 'https://makerdao.com/',
       ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
     },
-    {
-      address: '0xecf8f87f810ecf450940c9f60066b4a7a501d6a7',
-      name: 'Wrapped ETH contract - Ether in ERC20 format',
-      symbol: 'W-ETH',
-      decimals: 18,
-      url: 'https://makerdao.com/',
-      ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
-    },
+    //{
+    //  address: '0xecf8f87f810ecf450940c9f60066b4a7a501d6a7',
+    //  name: 'Wrapped ETH contract - Ether in ERC20 format',
+    //  symbol: 'W-ETH',
+    //  decimals: 18,
+    //  url: 'https://makerdao.com/',
+    //  ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
+    //},
     // {
     //   address: '0xecf8f87f810ecf450940c9f60066b4a7a501d6a7',
     //   name: '',
@@ -234,14 +234,14 @@ module.exports = {
       url: 'https://golem.network/',
       ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
     },
-    {
-      address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
-      name: 'Wrapped Golem Network Token',
-      symbol: 'W-GNT',
-      decimals: 9,
-      url: 'https://golem.network/',
-      ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
-    },
+    //{
+    //  address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
+    //  name: 'Wrapped Golem Network Token',
+    //  symbol: 'W-GNT',
+    //  decimals: 9,
+    //  url: 'https://golem.network/',
+    //  ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
+    //},
 
     {
       address: '0xe94327d07fc17907b4db788e5adf2ed424addff6',
