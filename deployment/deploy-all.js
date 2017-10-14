@@ -20,6 +20,7 @@ function getPlaceholderFromPath(libPath) {
 async function deploy(environment) {
   try {
     let abi;
+    let addressBook;
     let bytecode;
     let mlnAddr;
     let mlnToken;
@@ -27,6 +28,7 @@ async function deploy(environment) {
     let ethToken;
     let libObject = {};
     let datafeed;
+    let fund;
     let governance;
     let participation;
     let rewards;
@@ -36,6 +38,7 @@ async function deploy(environment) {
     let sphere;
     let version;
     const datafeedOnly = true;
+    const addressBookFile = './address-book.json';
     const config = environmentConfig[environment];
     const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
     const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
@@ -48,35 +51,7 @@ async function deploy(environment) {
 
     if(environment === 'kovan') {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN-T').address;
-    } else if(environment === 'live') {
-      mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN').address;
-    } else if(environment === 'development') {
-      const preminedAmount = 10 ** 20;
 
-      abi = JSON.parse(fs.readFileSync('./out/assets/PreminedAsset.abi'));
-      bytecode = fs.readFileSync('./out/assets/PreminedAsset.bin');
-      ethToken = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: ['Ether token', 'ETH-T', 18, preminedAmount],
-      }).send(opts));
-      console.log('Deployed ether token');
-
-      mlnToken = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: ['Melon token', 'MLN-T', 18, preminedAmount],
-      }).send(opts));
-      console.log('Deployed melon token');
-
-      eurToken = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: ['Euro token', 'EUR-T', 18, preminedAmount],
-      }).send(opts));
-      console.log('Deployed euro token');
-
-      mlnAddr = mlnToken.options.address;
-    }
-
-    if(environment === 'kovan' || environment === 'development') {
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
       bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
@@ -173,18 +148,8 @@ async function deploy(environment) {
         ],
       }).send(opts));
       console.log('Deployed version');
-    }
 
-    if(environment === 'live' && datafeedOnly) {
-      // deploy datafeed
-      abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
-      bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
-      datafeed = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
-      }).send(opts));
-      console.log('Deployed datafeed');
-
+      // register assets
       for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
         console.log(`Registering ${assetSymbol}`);
         const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
@@ -200,19 +165,186 @@ async function deploy(environment) {
           mockAddress,
         ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
       }
-    }
 
-    if(environment === 'live' && datafeedOnly === false) {
-      const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'ThomsonReuters').address;
-      const oasisDexAddress = exchangeInfo[environment].find(exchange => exchange.name === 'OasisDex').address;
+      // update address book
+      if(fs.existsSync(addressBookFile)) {
+        addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+      } else addressBook = {};
+
+      addressBook[environment] = {
+        DataFeed: datafeed.options.address,
+        SimpleMarket: simpleMarket.options.address,
+        Sphere: sphere.options.address,
+        Participation: participation.options.address,
+        RMMakeOrders: riskMgmt.options.address,
+        Governance: governance.options.address,
+        rewards: rewards.options.address,
+        simpleAdapter: simpleAdapter.options.address,
+        Version: version.options.address,
+      };
+    } else if(environment === 'live') {
+      mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN').address;
+
+      if(datafeedOnly) {
+        // deploy datafeed
+        abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
+        bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
+        datafeed = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
+        }).send(opts));
+        console.log('Deployed datafeed');
+
+        for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
+          console.log(`Registering ${assetSymbol}`);
+          const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
+          await datafeed.methods.register(
+            token.address,
+            token.name,
+            token.symbol,
+            token.decimals,
+            token.url,
+            mockBytes,
+            mockBytes,
+            mockAddress,
+            mockAddress,
+          ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
+        }
+        // update address book
+        if(fs.existsSync(addressBookFile)) {
+          addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+        } else addressBook = {};
+
+        addressBook[environment] = {
+          DataFeed: datafeed.options.address,
+        };
+      } else if(!datafeedOnly) {
+        const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'ThomsonReuters').address;
+        const oasisDexAddress = exchangeInfo[environment].find(exchange => exchange.name === 'OasisDex').address;
+        // deploy sphere
+        abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
+        bytecode = fs.readFileSync('out/sphere/Sphere.bin');
+        sphere = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [
+            thomsonReutersAddress,
+            oasisDexAddress,
+          ],
+        }).send(opts));
+        console.log('Deployed sphere');
+
+        // deploy participation
+        abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
+        bytecode = fs.readFileSync('out/participation/Participation.bin');
+        participation = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [],
+        }).send(opts));
+        console.log('Deployed participation');
+
+        // deploy riskmgmt
+        abi = JSON.parse(fs.readFileSync('out/riskmgmt/RMMakeOrders.abi'));
+        bytecode = fs.readFileSync('out/riskmgmt/RMMakeOrders.bin');
+        riskMgmt = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [],
+        }).send(opts));
+        console.log('Deployed riskmgmt');
+
+        // deploy rewards
+        abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
+        bytecode = fs.readFileSync('out/libraries/rewards.bin');
+        rewards = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [],
+        }).send(opts));
+        console.log('Deployed rewards');
+
+        // deploy simpleAdapter
+        abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
+        bytecode = fs.readFileSync('out/exchange/adapter/simpleAdapter.bin');
+        simpleAdapter = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [],
+        }).send(opts));
+        console.log('Deployed simpleadapter');
+
+        // link libs to fund (needed to deploy version)
+        let fundBytecode = fs.readFileSync('out/Fund.bin', 'utf8');
+        libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
+        libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
+        fundBytecode = solc.linkBytecode(fundBytecode, libObject);
+        fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
+        fund = await (new web3.eth.Contract(abi).deploy({
+          data: `0x${bytecode}`,
+          arguments: [],
+        }).send(opts));
+        console.log('Deployed fund');
+        // update address book
+        if(fs.existsSync(addressBookFile)) {
+          addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+        } else addressBook = {};
+
+        addressBook[environment] = {
+          Sphere: sphere.options.address,
+          Participation: participation.options.address,
+          RMMakeOrders: riskMgmt.options.address,
+          rewards: rewards.options.address,
+          simpleAdapter: simpleAdapter.options.address,
+          fund: fund.options.address,
+        };
+      }
+    } else if(environment === 'development') {
+      const preminedAmount = 10 ** 20;
+
+      abi = JSON.parse(fs.readFileSync('./out/assets/PreminedAsset.abi'));
+      bytecode = fs.readFileSync('./out/assets/PreminedAsset.bin');
+      ethToken = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: ['Ether token', 'ETH-T', 18, preminedAmount],
+      }).send(opts));
+      console.log('Deployed ether token');
+
+      mlnToken = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: ['Melon token', 'MLN-T', 18, preminedAmount],
+      }).send(opts));
+      console.log('Deployed melon token');
+
+      eurToken = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: ['Euro token', 'EUR-T', 18, preminedAmount],
+      }).send(opts));
+      console.log('Deployed euro token');
+
+      mlnAddr = mlnToken.options.address;
+
+      // deploy datafeed
+      abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
+      bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
+      datafeed = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
+      }).send(opts));
+      console.log('Deployed datafeed');
+
+      // deploy simplemarket
+      abi = JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi'));
+      bytecode = fs.readFileSync('out/exchange/thirdparty/SimpleMarket.bin');
+      simpleMarket = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: [],
+      }).send(opts));
+      console.log('Deployed simplemarket');
+
       // deploy sphere
       abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
       bytecode = fs.readFileSync('out/sphere/Sphere.bin');
       sphere = await (new web3.eth.Contract(abi).deploy({
         data: `0x${bytecode}`,
         arguments: [
-          thomsonReutersAddress,
-          oasisDexAddress,
+          datafeed.options.address,
+          simpleMarket.options.address,
         ],
       }).send(opts));
       console.log('Deployed sphere');
@@ -234,6 +366,15 @@ async function deploy(environment) {
         arguments: [],
       }).send(opts));
       console.log('Deployed riskmgmt');
+
+      // deploy governance
+      abi = JSON.parse(fs.readFileSync('out/system/Governance.abi'));
+      bytecode = fs.readFileSync('out/system/Governance.bin');
+      governance = await (new web3.eth.Contract(abi).deploy({
+        data: `0x${bytecode}`,
+        arguments: [mlnAddr],
+      }).send(opts));
+      console.log('Deployed governance');
 
       // deploy rewards
       abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
@@ -259,14 +400,22 @@ async function deploy(environment) {
       libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
       fundBytecode = solc.linkBytecode(fundBytecode, libObject);
       fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-    }
 
-    let addressBook;
-    const addressBookFile = './address-book.json';
-    // TODO: factor out any redundant step here
-    // mock information for development
+      // deploy version (can use identical libs object as above)
+      const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
+      let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
+      versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+      fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
+      version = await (new web3.eth.Contract(versionAbi).deploy({
+        data: `0x${versionBytecode}`,
+        arguments: [
+          pkgInfo.version,
+          governance.options.address,
+          mlnAddr
+        ],
+      }).send(opts));
+      console.log('Deployed version');
 
-    if(environment === 'development') {
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
       bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
@@ -324,53 +473,6 @@ async function deploy(environment) {
         EurToken: eurToken.options.address,
         EthToken: ethToken.options.address,
         Fund: fund.options.address,
-      };
-    }
-
-    // TODO: introduce dependency instead of looped await
-    if(environment === 'kovan') {
-      for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
-        console.log(`Registering ${assetSymbol}`);
-        const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-        await datafeed.methods.register(
-          token.address,
-          token.name,
-          token.symbol,
-          token.decimals,
-          token.url,
-          mockBytes,
-          mockBytes,
-          mockAddress,
-          mockAddress,
-        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
-      }
-
-      // update address book
-      if(fs.existsSync(addressBookFile)) {
-        addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-      } else addressBook = {};
-
-      addressBook[environment] = {
-        DataFeed: datafeed.options.address,
-        SimpleMarket: simpleMarket.options.address,
-        Sphere: sphere.options.address,
-        Participation: participation.options.address,
-        RMMakeOrders: riskMgmt.options.address,
-        Governance: governance.options.address,
-        rewards: rewards.options.address,
-        simpleAdapter: simpleAdapter.options.address,
-        Version: version.options.address,
-      };
-    }
-
-    if(environment === 'live' && datafeedOnly) {
-      // update address book
-      if(fs.existsSync(addressBookFile)) {
-        addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-      } else addressBook = {};
-
-      addressBook[environment] = {
-        DataFeed: datafeed.options.address,
       };
     }
 
