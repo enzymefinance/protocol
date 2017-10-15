@@ -22,7 +22,8 @@
   "files": [
     "out",
     "deployment/token.info.js",
-    "address-book.json"
+    "address-book.json",
+    "build"
   ],
   "publishConfig": {
     "access": "public"
