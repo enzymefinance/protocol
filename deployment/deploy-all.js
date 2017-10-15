@@ -127,13 +127,8 @@ async function deploy(environment) {
       }).send(opts));
       console.log('Deployed simpleadapter');
 
-      // link libs to fund (needed to deploy version)
-      let fundBytecode = fs.readFileSync('out/Fund.bin', 'utf8');
       libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
       libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
-      fundBytecode = solc.linkBytecode(fundBytecode, libObject);
-      fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
       let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
@@ -221,7 +216,7 @@ async function deploy(environment) {
       } else if(!datafeedOnly) {
         const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'Thomson Reuters').address;
         const oasisDexAddress = exchangeInfo[environment].find(exchange => exchange.name === 'OasisDex').address;
-        // deploy sphere
+
         abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
         bytecode = fs.readFileSync('out/sphere/Sphere.bin');
         sphere = await (new web3.eth.Contract(abi).deploy({
@@ -270,16 +265,28 @@ async function deploy(environment) {
         console.log('Deployed simpleadapter');
 
         // link libs to fund (needed to deploy version)
-        let fundBytecode = fs.readFileSync('out/Fund.bin', 'utf8');
+        let fundBytecode = fs.readFileSync('out/Fund.bin');
+        const fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'));
         libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
         libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
         fundBytecode = solc.linkBytecode(fundBytecode, libObject);
         fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-        fund = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [],
+        fund = await (new web3.eth.Contract(fundAbi).deploy({
+          data: `0x${fundBytecode}`,
+          arguments: [
+            accounts[0],
+            'Genesis',
+            mlnAddr,
+            0,
+            0,
+            mlnAddr,
+            participation.options.address,
+            riskMgmt.options.address,
+            sphere.options.address
+          ],
         }).send(opts));
         console.log('Deployed fund');
+
         // update address book
         if(fs.existsSync(addressBookFile)) {
           addressBook = JSON.parse(fs.readFileSync(addressBookFile));
