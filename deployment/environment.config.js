@@ -1,9 +1,28 @@
 module.exports = {
+  live: {
+    networkId: '1',
+    host: 'localhost',
+    port: 8545,
+    gas: 6700000,
+    gasPrice: 100000000000,
+    protocol: {
+      registrar: {
+        assetsToRegister: [
+          'OW-ETH', 'SAI', 'MKR', 'DGD', 'GNT',
+          'REP', 'ICN', 'MLN'
+        ],
+      },
+      datafeed: {
+        interval: 60 * 60, // one hour
+        validity: 60 * 60,
+      },
+    },
+  },
   kovan: {
     networkId: '42',
     host: 'localhost',
     port: 8545,
-    gas: 6900000,
+    gas: 6690000,
     gasPrice: 100000000000,
     protocol: {
       registrar: {

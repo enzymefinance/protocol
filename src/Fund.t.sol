@@ -2,8 +2,7 @@ pragma solidity ^0.4.11;
 
 import "ds-test/test.sol";
 import "./datafeeds/DataFeed.sol";
-import "./assets/PreminedAsset.sol";
-import "./assets/EtherToken.sol";
+import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./sphere/Sphere.sol";
 import "./participation/Participation.sol";
@@ -22,6 +21,7 @@ contract DataFeedTest is DSTest {
     Sphere sphere;
 
     // constants
+    string FUND_NAME = "My Fund";
     uint INTERVAL = 0;
     uint VALIDITY = 60;
     uint MELON_DECIMALS = 18;
@@ -33,6 +33,7 @@ contract DataFeedTest is DSTest {
     // mock data
     uint inputEtherTokenPrice = 4152823920265781000;
     uint inputMelonTokenPrice = 1000000000000000000;
+    uint mockQuantity = 1 ether;
 
     function setUp() {
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
@@ -43,7 +44,7 @@ contract DataFeedTest is DSTest {
         participation = new Participation();
         fund = new Fund(
             MANAGER_ADDRESS,
-            "My Fund",
+            FUND_NAME,
             melonToken,
             MANAGEMENT_REWARD,
             PERFORMANCE_REWARD,
@@ -64,13 +65,15 @@ contract DataFeedTest is DSTest {
         assertEq(returnedExchange, simpleMarket);
         assertEq(returnedParticipation, participation);
         assertEq(returnedRiskMgmt, riskManagement);
+        //assertEq(returnedName, FUND_NAME); //TODO: uncomment when assertEq implemented for strings
+        assertEq(returnedDecimals, MELON_DECIMALS);
         assertEq(stake, 0);
     }
 
     function testToggles() {
         bool preSubscriptionAllowed = fund.isSubscribeAllowed();
         bool preRedemptionAllowed = fund.isRedeemAllowed();
-        fund.toogleSubscription();
+        fund.toggleSubscription();
         fund.toggleRedemption();
         bool postSubscriptionAllowed = fund.isSubscribeAllowed();
         bool postRedemptionAllowed = fund.isRedeemAllowed();
@@ -80,4 +83,31 @@ contract DataFeedTest is DSTest {
         assert(!postSubscriptionAllowed);
         assert(!postRedemptionAllowed);
     }
+
+    function testShutDown() {
+        fund.shutDown();
+        bool fundShutDown = fund.isShutDown();
+
+        assert(fundShutDown);
+    }
+
+// TODO: enable these tests when we can update datafeed from within EVM.
+//       This depends on github.com/dapphub/ds-test/issues/5
+//    function testRequestsFromUnapprovedParties() {
+//        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+//        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+//
+//        assert(erroredOnUnapprovedSubscribeRequest);
+//        assert(!erroredOnUnapprovedRedeemRequest);    // no initial approval needed for redeem
+//
+//    }
+//
+//    function testRequestFromApprovedParties() {
+//        participation.attestForIdentity(this);
+//        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+//        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+//
+//        assert(!erroredOnApprovedSubscribeRequest);
+//        assert(!erroredOnApprovedRedeemRequest);
+//    }
 }

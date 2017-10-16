@@ -1,16 +1,20 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.4.0",
+  "version": "0.4.0-live.2",
   "description": "Blockchain protocol for asset management",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "babel-node test/run.js",
+    "test": "npm run test:ds-test && npm run test:jasmine",
+    "test:jasmine": "babel-node test/run.js",
+    "test:ds-test": "export DAPP_NO_HEVM=1 && mv src/exchange/adapter/externalAdapter.sol . && dapp test -v && mv ./externalAdapter.sol src/exchange/adapter",
+    "oyente": "oyente -s src/Fund.sol",
     "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
     "localnode:background": "npm run localnode > testrpc.log &",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
+    "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
     "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
     "deploy:development": "babel-node deployment/deploy-all.js development",
     "dev-delete": "find . -name '*.abi' -type f -delete "
@@ -18,7 +22,8 @@
   "files": [
     "out",
     "deployment/token.info.js",
-    "address-book.json"
+    "address-book.json",
+    "build"
   ],
   "publishConfig": {
     "access": "public"

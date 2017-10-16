@@ -27,5 +27,6 @@ script:
 - npm run compile
 - npm run deploy:development
 - npm run test
+- npm run oyente
 after_script:
 - cat testrpc.log
