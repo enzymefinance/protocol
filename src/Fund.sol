@@ -240,7 +240,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofSphere Address of sphere, which contains address of data feed module
     /// @return Deployed Fund with manager set as ofManager
-        function Fund(
+    function Fund(
         address ofManager,
         string withName,
         address ofReferenceAsset,
@@ -284,7 +284,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - ADMINISTRATION
 
-    function toogleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
+    function toggleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
     function toggleRedemption() external pre_cond(isOwner()) { isRedeemAllowed = !isRedeemAllowed; }
     function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
 

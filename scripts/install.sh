@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 
+# install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
 tar -xvf ethrun-v0.2.4-linux.tar.gz
-sudo cp ethrun-v0.2.4-linux.tar.gz /usr/local/bin/ethrun
+sudo cp ethrun /usr/local/bin/
 nix-channel --add https://nix.dapphub.com/pkgs/dapphub
 nix-channel --update
-nix-env -i seth solc
-git clone https://github.com/dapphub/dapp
-sudo make link -C dapp
+nix-env -iA dapphub.{dapp,hevm,seth,solc}
 
+# install oyente
+sudo apt-get install software-properties-common
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install ethereum
+sudo pip2 install z3
+sudo pip2 install z3-solver
+sudo pip2 install oyente

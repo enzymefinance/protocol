@@ -15,4 +15,13 @@ module.exports = {
       githubHint: '',
     },
   ],
+  live: [
+    {
+      address: '0xF7A11CA7BcbA058eFebE86232fA071456f9eeDC4',
+      name: 'Thomson Reuters',
+      data: '',
+      url: 'thomsonreuters.com',
+      githubHint: '',
+    },
+  ]
 };
