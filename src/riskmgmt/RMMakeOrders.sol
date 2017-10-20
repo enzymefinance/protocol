@@ -28,7 +28,8 @@ contract RMMakeOrders is RiskMgmtInterface {
       )
           returns (bool)
       {
-          // Don't buy at much higher price
+          // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
+          require((referencePrice - orderPrice) / referencePrice <= RISK_LEVEL / RISK_DIVISOR);
           return true;
       }
 
@@ -42,7 +43,8 @@ contract RMMakeOrders is RiskMgmtInterface {
       )
           returns (bool)
       {
-          // Don't buy at much higher price
+          // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
+          require((orderPrice - referencePrice) / referencePrice <= RISK_LEVEL / RISK_DIVISOR);
           return true;
       }
 }

@@ -105,7 +105,7 @@ async function deploy(environment) {
       bytecode = fs.readFileSync('out/system/Governance.bin');
       governance = await (new web3.eth.Contract(abi).deploy({
         data: `0x${bytecode}`,
-        arguments: [mlnAddr],
+        arguments: [mlnAddr, 0, 100000],
       }).send(opts));
       console.log('Deployed governance');
 
@@ -379,7 +379,7 @@ async function deploy(environment) {
       bytecode = fs.readFileSync('out/system/Governance.bin');
       governance = await (new web3.eth.Contract(abi).deploy({
         data: `0x${bytecode}`,
-        arguments: [mlnAddr],
+        arguments: [[], 0, 100000],
       }).send(opts));
       console.log('Deployed governance');
 
