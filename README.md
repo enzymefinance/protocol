@@ -10,9 +10,9 @@ Melon is for investment funds what Bitcoin is for accounting, a set of rules, en
 
 This repository contains a reference implementation of the Melon protocol written in Solidity, as specified in our [paper][paper-url].
 
-[![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter][gitter-badge]][gitter-url]
 [![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-bright)
+[![License: GPL v3][license-badge]][license-badge-url]
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
 ## Table of Contents
