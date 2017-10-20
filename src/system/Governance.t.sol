@@ -30,22 +30,26 @@ contract GovernanceTest is DSTest {
 
     function testAddAndGetVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
-        governance.proposeVersion(version);
+        pal.proposeVersion(governance, version);
+        pal.approveVersion(governance, version);
         hal.approveVersion(governance, version);
         hal.triggerVersion(governance, version);
         var (returnedVersion, active, ) = governance.getVersionById(0);
-
         assertEq(returnedVersion, version);
-        assert(!active);
+        assert(active);
     }
 
     function testShutDownVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
-        governance.proposeShutdown(0);
+        pal.proposeVersion(governance, version);
+        pal.approveVersion(governance, version);
+        hal.approveVersion(governance, version);
+        hal.triggerVersion(governance, version);
+        hal.proposeShutdown(governance, 0);
+        hal.approveShutdown(governance, 0);
         pal.approveShutdown(governance, 0);
         pal.triggerShutdown(governance, 0);
         var (, active, ) = governance.getVersionById(0);
-
         assert(!active);
     }
 }
