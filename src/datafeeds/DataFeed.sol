@@ -59,11 +59,13 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @notice Checks whether data exists for a given asset pair
-    /// @dev Prices are only updated against QUOTE_ASSET
-    /// @param sellAsset Asset for which check to be done if data exists
+    /// @dev Prices are only upated against QUOTE_ASSET
     /// @param buyAsset Asset for which check to be done if data exists
-    /// @return exists Whether data exists for a given asset pair
+    /// @param sellAsset Asset for which check to be done if data exists
+    /// @return Whether assets exist for given asset pair
     function existsData(address sellAsset, address buyAsset)
+    /// @dev Prices are only upated against QUOTE_ASSET
+    /// @return Whether assets exist for given asset pair
         constant
         returns (bool exists)
     {
@@ -78,12 +80,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @dev Uses an efficient bulk call
     /// @param ofAsset Asset for which data history should be returned
     /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
-    /**
-    @return {
-      "timestampArray": "Array of timestamps",
-      "priceArray": "Array of prices"
-    }
-    */
+    /// @return Arrays of timestamps and prices of ofAsset
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
@@ -187,10 +184,17 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     // NON-CONSTANT PUBLIC METHODS
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
-    /// @param ofQuoteAsset Address of the asset of a portfolio against which all other assets are priced
-    /// @param interval Frequency of updates in seconds
-    /// @param validity Time in seconds for which data is considered valid
-    /// @return Price Feed contract w Backup Owner
+    /// @param ofQuoteAsset Address of quote asset
+    /// @param quoteAssetName Name of quote asset
+    /// @param quoteAssetSymbol Symbol for quote asset
+    /// @param quoteAssetDecimals Decimal places for quote asset
+    /// @param quoteAssetUrl URL related to quote asset
+    /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
+    /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
+    /// @param quoteAssetBreakIn Break-in address for the quote asset
+    /// @param quoteAssetBreakOut Break-out address for the quote asset
+    /// @param interval Number of seconds between datafeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    /// @param validity Number of seconds that datafeed update information is valid for
     function DataFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         string quoteAssetName,
@@ -221,7 +225,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @dev Only Owner; Same sized input arrays
-    /// @return Update price of asset relative to
+    /// @dev Updates price of asset relative to QUOTE_ASSET
     /** Ex:
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
