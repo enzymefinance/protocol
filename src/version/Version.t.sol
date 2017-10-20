@@ -37,7 +37,7 @@ contract VersionTest is DSTest {
 //TODO: uncomment these tests when ds-test issue is resolved:
 //      https://github.com/dapphub/ds-test/issues/6
     function setUp() {
-        governance = new Governance();
+        governance = new Governance(new address[](0), 0, 1000000);
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
         version = new Version(VERSION_NUMBER, governance, melonToken);
         datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
