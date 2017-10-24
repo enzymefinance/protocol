@@ -1,6 +1,7 @@
 pragma solidity ^0.4.11;
 
 import '../../dependencies/ERC20.sol';
+import '../thirdparty/SimpleMarket.sol';
 
 
 /// @title SimpleAdapter Contract
@@ -8,7 +9,7 @@ import '../../dependencies/ERC20.sol';
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-library externalAdapter {
+library simpleAdapter {
 
     // EVENTS
 
@@ -16,39 +17,47 @@ library externalAdapter {
 
     // CONSTANT METHODS
 
-    /// @dev External, thirdparty, centralised API call needed for interface
     function getLastOrderId(address onExchange)
         constant
         returns (uint)
     {
-        throw;
+        return SimpleMarket(onExchange).last_offer_id();
     }
-    /// @dev External, thirdparty, centralised API call needed for interface
     function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
-        throw;
+        return SimpleMarket(onExchange).isActive(id);
     }
-    /// @dev External, thirdparty, centralised API call needed for interface
     function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
-        throw;
+        return SimpleMarket(onExchange).getOwner(id);
     }
-    /// @dev External, thirdparty, centralised API call needed for interface
     function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
     {
-        throw;
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = SimpleMarket(onExchange).getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
     }
     function getTimestamp(address onExchange, uint id)
         constant
         returns (uint)
     {
-        throw;
+        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
+        return timestamp;
     }
 
     // NON-CONSTANT METHODS
@@ -63,11 +72,16 @@ library externalAdapter {
     )
         returns (uint id)
     {
-        id = ERC20(sellAsset).transfer(msg.sender, sellQuantity) ? 1 : 0; // Convert bool to uint
+        id = SimpleMarket(onExchange).offer(
+            sellQuantity,
+            ERC20(sellAsset),
+            buyQuantity,
+            ERC20(buyAsset)
+        );
         OrderUpdated(id);
     }
 
-    /// @dev For this subset of adapter no immediate settlement can be expected
+    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
     function takeOrder(
         address onExchange,
         uint id,
@@ -75,7 +89,8 @@ library externalAdapter {
     )
         returns (bool success)
     {
-        throw; // Not allowed since no immediate settlement expectation
+        success = SimpleMarket(onExchange).buy(id, quantity);
+        OrderUpdated(id);
     }
 
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
@@ -85,7 +100,7 @@ library externalAdapter {
     )
         returns (bool success)
     {
-        success = true; // Always succeeds, just needs updating of internalAccounting
+        success = SimpleMarket(onExchange).cancel(id);
         OrderUpdated(id);
     }
 }

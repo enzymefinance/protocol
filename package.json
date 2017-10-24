@@ -64,6 +64,7 @@
     "prettier-eslint": "^8.1.1"
   },
   "dependencies": {
+    "@parity/api": "^2.0.14",
     "bignumber.js": "^4.1.0",
     "chai": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
