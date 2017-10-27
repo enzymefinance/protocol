@@ -56,100 +56,101 @@ async function deploy(environment) {
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
       bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
-      datafeed = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      datafeed = await (api.newContract(abi).deploy(opts,
+        [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity]
+      ));
       console.log('Deployed datafeed');
 
       // deploy simplemarket
       abi = JSON.parse(fs.readFileSync('out/exchange/thirdparty/SimpleMarket.abi'));
       bytecode = fs.readFileSync('out/exchange/thirdparty/SimpleMarket.bin');
-      simpleMarket = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      simpleMarket = await (api.newContract(abi).deploy(opts,
+        []
+      ));
       console.log('Deployed simplemarket');
 
       // deploy sphere
       abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
       bytecode = fs.readFileSync('out/sphere/Sphere.bin');
-      sphere = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [
-          datafeed.options.address,
-          simpleMarket.options.address,
-        ],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      sphere = await (api.newContract(abi).deploy(opts,
+        [
+          datafeed.address,
+          simpleMarket.address,
+        ]
+      ));
       console.log('Deployed sphere');
 
       // deploy participation
       abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
       bytecode = fs.readFileSync('out/participation/Participation.bin');
-      participation = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      participation = await (api.newContract(abi).deploy(opts,
+        []
+      ));
       console.log('Deployed participation');
 
       // deploy riskmgmt
       abi = JSON.parse(fs.readFileSync('out/riskmgmt/RMMakeOrders.abi'));
       bytecode = fs.readFileSync('out/riskmgmt/RMMakeOrders.bin');
-      riskMgmt = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      riskMgmt = await (api.newContract(abi).deploy(opts,
+        []
+      ));
       console.log('Deployed riskmgmt');
 
       // deploy governance
       abi = JSON.parse(fs.readFileSync('out/system/Governance.abi'));
       bytecode = fs.readFileSync('out/system/Governance.bin');
-      governance = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [mlnAddr, 0, 100000],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      governance = await (api.newContract(abi).deploy(opts,
+        [mlnAddr, 0, 100000]
+      ));
       console.log('Deployed governance');
 
       // deploy rewards
       abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
       bytecode = fs.readFileSync('out/libraries/rewards.bin');
-      rewards = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      rewards = await (api.newContract(abi).deploy(opts,
+        []
+      ));
       console.log('Deployed rewards');
 
       // deploy simpleAdapter
       abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
       bytecode = fs.readFileSync('out/exchange/adapter/simpleAdapter.bin');
-      simpleAdapter = await (new web3.eth.Contract(abi).deploy({
-        data: `0x${bytecode}`,
-        arguments: [],
-      }).send(opts));
+      opts.data = `0x${bytecode}`;
+      simpleAdapter = await (api.newContract(abi).deploy(opts,
+        []
+      ));
       console.log('Deployed simpleadapter');
 
-      libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
-      libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
+      libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.address;
+      libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.address;
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
       let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
-      version = await (new web3.eth.Contract(versionAbi).deploy({
-        data: `0x${versionBytecode}`,
-        arguments: [
+      opts.data = `0x${versionBytecode}`;
+      version = await (api.newContract(versionAbi).deploy(opts,
+        [
           pkgInfo.version,
-          governance.options.address,
+          governance.address,
           mlnAddr
-        ],
-      }).send(opts));
+        ]
+      ));
       console.log('Deployed version');
 
       // register assets
       for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
         console.log(`Registering ${assetSymbol}`);
         const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-        await datafeed.methods.register(
+        await datafeed.instance.register.postTransaction(opts,
+          [
           token.address,
           token.name,
           token.symbol,
@@ -158,8 +159,8 @@ async function deploy(environment) {
           mockBytes,
           mockBytes,
           mockAddress,
-          mockAddress,
-        ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
+          mockAddress]
+        ).then(() => console.log(`Registered ${assetSymbol}`));
       }
 
       // update address book
@@ -168,15 +169,15 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        DataFeed: datafeed.options.address,
-        SimpleMarket: simpleMarket.options.address,
-        Sphere: sphere.options.address,
-        Participation: participation.options.address,
-        RMMakeOrders: riskMgmt.options.address,
-        Governance: governance.options.address,
-        rewards: rewards.options.address,
-        simpleAdapter: simpleAdapter.options.address,
-        Version: version.options.address,
+        DataFeed: datafeed.address,
+        SimpleMarket: simpleMarket.address,
+        Sphere: sphere.address,
+        Participation: participation.address,
+        RMMakeOrders: riskMgmt.address,
+        Governance: governance.address,
+        rewards: rewards.address,
+        simpleAdapter: simpleAdapter.address,
+        Version: version.address,
       };
     } else if(environment === 'live') {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN').address;
@@ -185,16 +186,17 @@ async function deploy(environment) {
         // deploy datafeed
         abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
         bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
-        datafeed = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity],
-        }).send(opts));
+        opts.data = `0x${bytecode}`;
+        datafeed = await (api.newContract(abi).deploy(opts,
+          [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity]
+        ));
         console.log('Deployed datafeed');
 
         for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
           console.log(`Registering ${assetSymbol}`);
           const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-          await datafeed.methods.register(
+          await datafeed.instance.register.postTransaction(opts,
+            [
             token.address,
             token.name,
             token.symbol,
@@ -203,8 +205,8 @@ async function deploy(environment) {
             mockBytes,
             mockBytes,
             mockAddress,
-            mockAddress,
-          ).send(opts).then(() => console.log(`Registered ${assetSymbol}`));
+            mockAddress]
+          ).then(() => console.log(`Registered ${assetSymbol}`));
         }
         // update address book
         if(fs.existsSync(addressBookFile)) {
@@ -212,7 +214,7 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          DataFeed: datafeed.options.address,
+          DataFeed: datafeed.address,
         };
       } else if(!datafeedOnly) {
         const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'Thomson Reuters').address;
@@ -220,72 +222,72 @@ async function deploy(environment) {
 
         abi = JSON.parse(fs.readFileSync('out/sphere/Sphere.abi'));
         bytecode = fs.readFileSync('out/sphere/Sphere.bin');
-        sphere = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [
+        opts.data = `0x${bytecode}`;
+        sphere = await (api.newContract(abi).deploy(opts,
+          [
             thomsonReutersAddress,
             oasisDexAddress,
-          ],
-        }).send(opts));
+          ]
+        ));
         console.log('Deployed sphere');
 
         // deploy participation
         abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
         bytecode = fs.readFileSync('out/participation/Participation.bin');
-        participation = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [],
-        }).send(opts));
+        opts.data = `0x${bytecode}`;
+        participation = await (api.newContract(abi).deploy(opts,
+          []
+        ));
         console.log('Deployed participation');
 
         // deploy riskmgmt
         abi = JSON.parse(fs.readFileSync('out/riskmgmt/RMMakeOrders.abi'));
         bytecode = fs.readFileSync('out/riskmgmt/RMMakeOrders.bin');
-        riskMgmt = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [],
-        }).send(opts));
+        opts.data = `0x${bytecode}`;
+        riskMgmt = await (api.newContract(abi).deploy(opts,
+          []
+        ));
         console.log('Deployed riskmgmt');
 
         // deploy rewards
         abi = JSON.parse(fs.readFileSync('out/libraries/rewards.abi'));
         bytecode = fs.readFileSync('out/libraries/rewards.bin');
-        rewards = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [],
-        }).send(opts));
+        opts.data = `0x${bytecode}`;
+        rewards = await (api.newContract(abi).deploy(opts,
+          []
+        ));
         console.log('Deployed rewards');
 
         // deploy simpleAdapter
         abi = JSON.parse(fs.readFileSync('out/exchange/adapter/simpleAdapter.abi'));
         bytecode = fs.readFileSync('out/exchange/adapter/simpleAdapter.bin');
-        simpleAdapter = await (new web3.eth.Contract(abi).deploy({
-          data: `0x${bytecode}`,
-          arguments: [],
-        }).send(opts));
+        opts.data = `0x${bytecode}`;
+        simpleAdapter = await (api.newContract(abi).deploy(opts,
+          []
+        ));
         console.log('Deployed simpleadapter');
 
         // link libs to fund (needed to deploy version)
         let fundBytecode = fs.readFileSync('out/Fund.bin');
         const fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'));
-        libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.options.address;
-        libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.options.address;
+        libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.address;
+        libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.address;
         fundBytecode = solc.linkBytecode(fundBytecode, libObject);
         fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-        fund = await (new web3.eth.Contract(fundAbi).deploy({
-          data: `0x${fundBytecode}`,
-          arguments: [
+        opts.data = `0x${fundBytecode}`;
+        fund = await (api.newContract(fundAbi).deploy(opts,
+          [
             accounts[0],
             'Genesis',
             mlnAddr,
             0,
             0,
             mlnAddr,
-            participation.options.address,
-            riskMgmt.options.address,
-            sphere.options.address
-          ],
-        }).send(opts));
+            participation.address,
+            riskMgmt.address,
+            sphere.address
+          ]
+        ));
         console.log('Deployed fund');
 
         // update address book
@@ -294,12 +296,12 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          Sphere: sphere.options.address,
-          Participation: participation.options.address,
-          RMMakeOrders: riskMgmt.options.address,
-          rewards: rewards.options.address,
-          simpleAdapter: simpleAdapter.options.address,
-          fund: fund.options.address,
+          Sphere: sphere.address,
+          Participation: participation.address,
+          RMMakeOrders: riskMgmt.address,
+          rewards: rewards.address,
+          simpleAdapter: simpleAdapter.address,
+          fund: fund.address,
         };
       }
     } else if(environment === 'development') {
@@ -325,7 +327,6 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       datafeed = await (api.newContract(abi).deploy(opts,[mlnToken, config.protocol.datafeed.interval, config.protocol.datafeed.validity]));
       const datafeedContract = await (api.newContract(abi, datafeed));
-      console.log(datafeedContract);
       console.log('Deployed datafeed');
 
       // deploy simplemarket
@@ -390,8 +391,8 @@ async function deploy(environment) {
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
       opts.data = `0x${versionBytecode}`;
-      opts.gas = 5141225;
-      version = await (api.newContract(versionAbi).deploy(opts, [pkgInfo.version, governance, mlnToken]));
+      opts.gas = 5790000;
+      version = await (api.newContract(versionAbi).deploy(opts, [pkgInfo.version, governance, mlnToken], () => {}, true));
       console.log('Deployed version');
 
       // deploy fund to test with
@@ -402,6 +403,7 @@ async function deploy(environment) {
       libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter;
       bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
+      opts.gas = 5790000;
       const fund = await (api.newContract(abi).deploy(opts, [
         accounts[0],
         'Melon Portfolio',                // name
@@ -412,11 +414,10 @@ async function deploy(environment) {
         participation,    // participation
         riskMgmt,         // riskMgmt
         sphere,           // sphere
-      ]));
+      ], () => {}, true));
       console.log('Deployed fund');
 
       // register assets
-      console.log(datafeedContract);
       await datafeedContract.instance.register.postTransaction(
         {},
         [ethToken, 'Ether token', 'ETH-T', 18, 'ethereum.org',

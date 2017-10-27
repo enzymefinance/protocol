@@ -41,7 +41,7 @@ describe("Fund shares", () => {
 
   beforeEach(() => {
     runningGasTotal = new BigNumber(0);
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // datafeed updates take a few seconds
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 9999999; // datafeed updates take a few seconds
   });
 
   beforeAll(async () => {
@@ -762,7 +762,6 @@ describe("Fund shares", () => {
         mlnToken.address,
         ethToken.address,
       ]);
-      console.log(`asd${  price}`);
       receipt = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
@@ -811,7 +810,7 @@ describe("Fund shares", () => {
         [simpleMarket.address, trade1.buyQuantity],
       );
       // runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
-      receipt = await simpleMarket.instance.buy.send(
+      receipt = await simpleMarket.instance.buy.postTransaction(
         { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
         [orderId, trade1.buyQuantity],
       );
