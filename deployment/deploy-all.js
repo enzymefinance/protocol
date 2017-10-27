@@ -1,8 +1,8 @@
+import Api from '@parity/api';
+
 const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
-const Web3 = require('web3');
-import Api from '@parity/api';
 const environmentConfig = require('./environment.config.js');
 const pkgInfo = require('../package.json');
 const tokenInfo = require('./token.info.js');
@@ -29,6 +29,7 @@ async function deploy(environment) {
     let ethToken;
     let libObject = {};
     let datafeed;
+    let datafeedContract
     let fund;
     let governance;
     let participation;
@@ -41,17 +42,19 @@ async function deploy(environment) {
     const datafeedOnly = false;
     const addressBookFile = './address-book.json';
     const config = environmentConfig[environment];
-    const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
+    const provider = new Api.Provider.Http('http://localhost:8545');
+    const api = new Api(provider);
     const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
-    if((Number(config.networkId) !== await web3.eth.net.getId()) && (config.networkId !== '*')) {
+    if((Number(config.networkId) !== await api.net.version()) && (config.networkId !== '*')) {
       throw new Error(`Deployment for environment ${environment} not defined`);
     }
-    const accounts = await web3.eth.getAccounts();
+    const accounts = await api.eth.accounts();
     const opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice, };
 
     if(environment === 'kovan') {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN-T').address;
+      console.log(mlnAddr);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
@@ -60,6 +63,7 @@ async function deploy(environment) {
       datafeed = await (api.newContract(abi).deploy(opts,
         [mlnAddr, config.protocol.datafeed.interval, config.protocol.datafeed.validity]
       ));
+      datafeedContract = await api.newContract(abi, datafeed);
       console.log('Deployed datafeed');
 
       // deploy simplemarket
@@ -77,8 +81,8 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       sphere = await (api.newContract(abi).deploy(opts,
         [
-          datafeed.address,
-          simpleMarket.address,
+          datafeed,
+          simpleMarket,
         ]
       ));
       console.log('Deployed sphere');
@@ -106,7 +110,7 @@ async function deploy(environment) {
       bytecode = fs.readFileSync('out/system/Governance.bin');
       opts.data = `0x${bytecode}`;
       governance = await (api.newContract(abi).deploy(opts,
-        [mlnAddr, 0, 100000]
+        [[], 0, 100000]
       ));
       console.log('Deployed governance');
 
@@ -128,28 +132,29 @@ async function deploy(environment) {
       ));
       console.log('Deployed simpleadapter');
 
-      libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.address;
-      libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.address;
+      libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards;
+      libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter;
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(fs.readFileSync('out/version/Version.abi', 'utf8'));
       let versionBytecode = fs.readFileSync('out/version/Version.bin', 'utf8');
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
       opts.data = `0x${versionBytecode}`;
+      opts.gas = 5790000;
       version = await (api.newContract(versionAbi).deploy(opts,
         [
-          pkgInfo.version,
-          governance.address,
+          pkgInfo,
+          governance,
           mlnAddr
-        ]
-      ));
+        ],
+      () => {}, true));
       console.log('Deployed version');
 
       // register assets
       for(const assetSymbol of config.protocol.registrar.assetsToRegister) {
         console.log(`Registering ${assetSymbol}`);
         const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-        await datafeed.instance.register.postTransaction(opts,
+        await datafeedContract.instance.register.postTransaction(opts,
           [
           token.address,
           token.name,
@@ -169,15 +174,15 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        DataFeed: datafeed.address,
-        SimpleMarket: simpleMarket.address,
-        Sphere: sphere.address,
-        Participation: participation.address,
-        RMMakeOrders: riskMgmt.address,
-        Governance: governance.address,
-        rewards: rewards.address,
-        simpleAdapter: simpleAdapter.address,
-        Version: version.address,
+        DataFeed: datafeed,
+        SimpleMarket: simpleMarket,
+        Sphere: sphere,
+        Participation: participation,
+        RMMakeOrders: riskMgmt,
+        Governance: governance,
+        rewards: rewards,
+        simpleAdapter: simpleAdapter,
+        Version: version,
       };
     } else if(environment === 'live') {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === 'MLN').address;
@@ -214,7 +219,7 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          DataFeed: datafeed.address,
+          DataFeed: datafeed,
         };
       } else if(!datafeedOnly) {
         const thomsonReutersAddress = datafeedInfo[environment].find(feed => feed.name === 'Thomson Reuters').address;
@@ -268,26 +273,25 @@ async function deploy(environment) {
         console.log('Deployed simpleadapter');
 
         // link libs to fund (needed to deploy version)
-        let fundBytecode = fs.readFileSync('out/Fund.bin');
-        const fundAbi = JSON.parse(fs.readFileSync('out/Fund.abi'));
-        libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards.address;
-        libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter.address;
-        fundBytecode = solc.linkBytecode(fundBytecode, libObject);
-        fs.writeFileSync('out/Fund.bin', fundBytecode, 'utf8');
-        opts.data = `0x${fundBytecode}`;
-        fund = await (api.newContract(fundAbi).deploy(opts,
-          [
-            accounts[0],
-            'Genesis',
-            mlnAddr,
-            0,
-            0,
-            mlnAddr,
-            participation.address,
-            riskMgmt.address,
-            sphere.address
-          ]
-        ));
+        abi = JSON.parse(fs.readFileSync('out/Fund.abi'));
+        bytecode = fs.readFileSync('out/Fund.bin', 'utf8');
+        libObject = {};
+        libObject[getPlaceholderFromPath('out/libraries/rewards')] = rewards;
+        libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter;
+        bytecode = solc.linkBytecode(bytecode, libObject);
+        opts.data = `0x${bytecode}`;
+        opts.gas = 5790000;
+        fund = await (api.newContract(abi).deploy(opts, [
+          accounts[0],
+          'Melon Portfolio', // name
+          mlnAddr,           // reference asset
+          0,                 // management reward
+          0,                 // performance reward
+          mlnAddr,           // melon asset
+          participation,     // participation
+          riskMgmt,          // riskMgmt
+          sphere,            // sphere
+        ], () => {}, true));
         console.log('Deployed fund');
 
         // update address book
@@ -296,12 +300,12 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          Sphere: sphere.address,
-          Participation: participation.address,
-          RMMakeOrders: riskMgmt.address,
-          rewards: rewards.address,
-          simpleAdapter: simpleAdapter.address,
-          fund: fund.address,
+          Sphere: sphere,
+          Participation: participation,
+          RMMakeOrders: riskMgmt,
+          rewards: rewards,
+          simpleAdapter: simpleAdapter,
+          fund: fund,
         };
       }
     } else if(environment === 'development') {
@@ -309,8 +313,6 @@ async function deploy(environment) {
 
       abi = JSON.parse(fs.readFileSync('./out/assets/PreminedAsset.abi'));
       bytecode = fs.readFileSync('./out/assets/PreminedAsset.bin');
-      const provider = new Api.Provider.Http('http://localhost:8545');
-      const api = new Api(provider);
       opts.data = `0x${bytecode}`;
       ethToken = await (api.newContract(abi).deploy(opts, ['Ether token', 'ETH-T', 18, preminedAmount]));
       console.log('Deployed ether token');
@@ -326,7 +328,7 @@ async function deploy(environment) {
       bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
       opts.data = `0x${bytecode}`;
       datafeed = await (api.newContract(abi).deploy(opts,[mlnToken, config.protocol.datafeed.interval, config.protocol.datafeed.validity]));
-      const datafeedContract = await (api.newContract(abi, datafeed));
+      datafeedContract = await (api.newContract(abi, datafeed));
       console.log('Deployed datafeed');
 
       // deploy simplemarket
@@ -404,16 +406,16 @@ async function deploy(environment) {
       bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
       opts.gas = 5790000;
-      const fund = await (api.newContract(abi).deploy(opts, [
+      fund = await (api.newContract(abi).deploy(opts, [
         accounts[0],
-        'Melon Portfolio',                // name
-        mlnToken,         // reference asset
-        0,                                // management reward
-        0,                                // performance reward
-        mlnToken,         // melon asset
-        participation,    // participation
-        riskMgmt,         // riskMgmt
-        sphere,           // sphere
+        'Melon Portfolio', // name
+        mlnToken,          // reference asset
+        0,                 // management reward
+        0,                 // performance reward
+        mlnToken,          // melon asset
+        participation,     // participation
+        riskMgmt,          // riskMgmt
+        sphere,            // sphere
       ], () => {}, true));
       console.log('Deployed fund');
 
