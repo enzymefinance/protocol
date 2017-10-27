@@ -1,4 +1,4 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%202-01.jpg" width = "25%">
+<img src = "https://github.com/melonproject/branding/blob/master/melon/03_M_logo.jpg" width = "25%">
 
 # protocol
 
