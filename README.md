@@ -248,10 +248,21 @@ You will need the `dapp` developer tools, which you can install using [these ste
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
-1. Launch a testrpc client:
+1. Launch a parity dev chain with the provided genesis settings file
     ```
-    npm run localnode
+    parity --chain test/parity-genesis.config --jsonrpc-apis all
     ```
+
+2. Import the predefined accounts into parity and fund them:
+    ```
+    npm run before-tests
+    ```
+
+3. Create an empty file named password. Close already running parity instance and run:
+    ```
+    parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password password --force-ui --no-persistent-txqueue --jsonrpc-apis all
+    ```
+
 
 2. Open a second terminal and deploy the contracts to the development network:
 
