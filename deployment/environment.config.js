@@ -41,8 +41,8 @@ module.exports = {
     networkId: '*',
     host: 'localhost',
     port: 8545,
-    gas: 5900000,
-    gasPrice: 0,
+    gas: 6900000,
+    gasPrice: 100000000000,
     protocol: {
       registrar: {
         assetsToRegister: [

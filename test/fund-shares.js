@@ -18,6 +18,7 @@ const api = new Api(provider);
 // TODO: factor out redundant assertions
 // TODO: factor out tests into multiple files
 describe("Fund shares", () => {
+  // Using contract name directly instead of nameContract as in other tests as they are already deployed
   let accounts;
   let deployer;
   let gasPrice;
@@ -37,7 +38,6 @@ describe("Fund shares", () => {
   let version;
 
   const addresses = addressBook[environment];
-  console.log(addresses);
 
   beforeEach(() => {
     runningGasTotal = new BigNumber(0);
@@ -190,7 +190,6 @@ describe("Fund shares", () => {
         ],
       );
       // runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
-      console.log(receipt);
       const fundId = await version.instance.getLastFundId.call({}, []);
       const fundAddress = await version.instance.getFundById.call({}, [fundId]);
       fund = await api.newContract(
@@ -229,11 +228,9 @@ describe("Fund shares", () => {
         { from: deployer, gasPrice: config.gasPrice },
         [investor, initialTokenAmount],
       );
-      console.log(receipt);
       // runningGasTotal = runningGasTotal.plus(receipt.gasUsed)
       const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
       const post = await getAllBalances();
-      console.log(post);
 
       // expect(postDeployerEth.toString()).toEqual(preDeployerEth.minus(runningGasTotal.times(gasPrice)).toString());
       expect(post.investor.mlnToken).toEqual(
