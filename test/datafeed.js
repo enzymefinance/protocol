@@ -1,14 +1,17 @@
-const fs = require('fs');
-const environmentConfig = require('../deployment/environment.config.js');
-const Web3 = require('web3');
+import Api from "@parity/api";
 
-const environment = 'development';
+const fs = require("fs");
+const environmentConfig = require("../deployment/environment.config.js");
+
+const environment = "development";
 const config = environmentConfig[environment];
-const web3 = new Web3(new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`));
+const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
+const api = new Api(provider);
 
 // TODO: move these test files into `test` rather than `newtest` when we remove truffle
-describe('DataFeed', async () => {
+describe("DataFeed", async () => {
   let datafeed;
+  let datafeedContract;
   let btcToken;
   let ethToken;
   let mlnToken;
@@ -21,70 +24,94 @@ describe('DataFeed', async () => {
   // mock data
   let mockBreakIn;
   let mockBreakOut;
-  const someBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
+  const someBytes =
+    "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // data reading functions take some time
-    accounts = await web3.eth.getAccounts();
+    accounts = await api.eth.accounts();
     mockBreakIn = accounts[5];
     mockBreakOut = accounts[6];
     opts = { from: accounts[0], gas: config.gas };
 
     let abi;
     let bytecode;
-    abi = JSON.parse(fs.readFileSync('./out/assets/Asset.abi'));
-    bytecode = fs.readFileSync('./out/assets/Asset.bin');
-    btcToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Bitcoin token', 'BTC-T', 18],
-    }).send(opts));
-    console.log('Deployed bitcoin token');
+    abi = JSON.parse(fs.readFileSync("./out/assets/Asset.abi"));
+    bytecode = fs.readFileSync("./out/assets/Asset.bin");
+    opts.data = `0x${bytecode}`;
+    btcToken = await api
+      .newContract(abi)
+      .deploy(opts, ["Bitcoin token", "BTC-T", 18]);
+    console.log("Deployed bitcoin token");
 
-    ethToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Ether token', 'ETH-T', 18],
-    }).send(opts));
-    console.log('Deployed ether token');
+    ethToken = await api
+      .newContract(abi)
+      .deploy(opts, ["Ether token", "ETH-T", 18]);
+    console.log("Deployed ether token");
 
-    mlnToken = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: ['Melon token', 'MLN-T', 18],
-    }).send(opts));
-    console.log('Deployed melon token');
+    mlnToken = await api
+      .newContract(abi)
+      .deploy(opts, ["Melon token", "MLN-T", 18]);
+    console.log("Deployed melon token");
 
-    abi = JSON.parse(fs.readFileSync('out/datafeeds/DataFeed.abi'));
-    bytecode = fs.readFileSync('out/datafeeds/DataFeed.bin');
-    datafeed = await (new web3.eth.Contract(abi).deploy({
-      data: `0x${bytecode}`,
-      arguments: [
-        mlnToken.options.address,
+    abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
+    bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+    opts.data = `0x${bytecode}`;
+    datafeed = await api
+      .newContract(abi)
+      .deploy(opts, [
+        mlnToken,
         config.protocol.datafeed.interval,
-        config.protocol.datafeed.validity
-      ],
-    }).send(opts));
-    console.log('Deployed datafeed');
+        config.protocol.datafeed.validity,
+      ]);
+    datafeedContract = await api.newContract(abi, datafeed);
+    console.log("Deployed datafeed");
   });
-  describe('AssetRegistrar', async () => {
-    it('registers twice without error', async () => {   // using accts as fake addresses
-      await datafeed.methods.register(
-        btcToken.options.address, 'Bitcoin', 'BTC', 18, 'bitcoin.org',
-        someBytes, someBytes, mockBreakIn, mockBreakOut
-      ).send(opts)
-      await datafeed.methods.register(
-        ethToken.options.address, 'Ethereum', 'ETH', 18, 'ethereum.org',
-        someBytes, someBytes, mockBreakIn, mockBreakOut
-      ).send(opts);
+
+  describe("AssetRegistrar", async () => {
+    it("registers twice without error", async () => {
+      // using accts as fake addresses
+      await datafeedContract.instance.register.postTransaction(opts, [
+        btcToken,
+        "Bitcoin",
+        "BTC",
+        18,
+        "bitcoin.org",
+        someBytes,
+        someBytes,
+        mockBreakIn,
+        mockBreakOut,
+      ]);
+      await datafeedContract.instance.register.postTransaction(opts, [
+        ethToken,
+        "Ethereum",
+        "ETH",
+        18,
+        "ethereum.org",
+        someBytes,
+        someBytes,
+        mockBreakIn,
+        mockBreakOut,
+      ]);
     });
-    it('gets descriptive information', async () => {
-      const result = await datafeed.methods.getDescriptiveInformation(btcToken.options.address).call(opts);
+
+    it("gets descriptive information", async () => {
+      const result = await datafeedContract.instance.getDescriptiveInformation.call(
+        opts,
+        [btcToken],
+      );
       const [name, symbol, url, hash] = Object.values(result);
 
-      expect(name).toEqual('Bitcoin');
-      expect(symbol).toEqual('BTC');
-      expect(url).toEqual('bitcoin.org');
+      expect(name).toEqual("Bitcoin");
+      expect(symbol).toEqual("BTC");
+      expect(url).toEqual("bitcoin.org");
       expect(hash).toEqual(someBytes);
     });
-    it('gets specific information', async () => {
-      const result = await datafeed.methods.getSpecificInformation(btcToken.options.address).call(opts);
+
+    it("gets specific information", async () => {
+      const result = await datafeedContract.instance.getSpecificInformation.call(
+        opts,
+        [btcToken],
+      );
       const [decimals, chainId, breakIn, breakOut] = Object.values(result);
 
       expect(Number(decimals)).toEqual(18);
@@ -92,38 +119,59 @@ describe('DataFeed', async () => {
       expect(breakIn).toEqual(mockBreakIn);
       expect(breakOut).toEqual(mockBreakOut);
     });
-    it('can get assets', async () => {
+
+    it("can get assets", async () => {
       const assetsRegistered = 2;
-      const numAssetsResult = await datafeed.methods.numRegisteredAssets().call(opts);
-      assetA = await datafeed.methods.getRegisteredAssetAt(0).call(opts);
-      assetB = await datafeed.methods.getRegisteredAssetAt(1).call(opts);
+      const numAssetsResult = await datafeedContract.instance.numRegisteredAssets.call(
+        opts,
+        [],
+      );
+      assetA = await datafeedContract.instance.getRegisteredAssetAt.call(opts, [
+        0,
+      ]);
+      assetB = await datafeedContract.instance.getRegisteredAssetAt.call(opts, [
+        1,
+      ]);
 
       expect(Number(numAssetsResult)).toEqual(assetsRegistered);
     });
   });
-  describe('DataFeed updating', async () => {
-    it('registers datafeed update', async () => {
-      await datafeed.methods.update(
+
+  describe("DataFeed updating", async () => {
+    it("registers datafeed update", async () => {
+      await datafeedContract.instance.update.postTransaction(opts, [
         [assetA, assetB],
-        [inputPriceAssetA, inputPriceAssetB]
-      ).send(opts);
-      const newUid = await datafeed.methods.getLastUpdateId().call(opts);
+        [inputPriceAssetA, inputPriceAssetB],
+      ]);
+      const newUid = await datafeedContract.instance.getLastUpdateId.call(
+        opts,
+        [],
+      );
 
       expect(Number(newUid)).toEqual(0);
     });
-    it('price updates are valid', async () => {
-      const isValidA = await datafeed.methods.isValid(assetA).call(opts);
-      const isValidB = await datafeed.methods.isValid(assetB).call(opts);
+
+    it("price updates are valid", async () => {
+      const isValidA = await datafeedContract.instance.isValid.call(opts, [
+        assetA,
+      ]);
+      const isValidB = await datafeedContract.instance.isValid.call(opts, [
+        assetB,
+      ]);
 
       expect(isValidA).toBe(true);
       expect(isValidB).toBe(true);
     });
-    it('price updates are correct', async () => {
-      let result = await datafeed.methods.getData(assetA).call(opts);
+
+    it("price updates are correct", async () => {
+      let result = await datafeedContract.instance.getData.call(opts, [assetA]);
       const [timeAssetA, priceAssetA] = Object.values(result);
-      result = await datafeed.methods.getData(assetB).call(opts);
+      result = await datafeedContract.instance.getData.call(opts, [assetB]);
       const [timeAssetB, priceAssetB] = Object.values(result);
-      const getPriceResult = await datafeed.methods.getPrice(assetB).call(opts);
+      const getPriceResult = await datafeedContract.instance.getPrice.call(
+        opts,
+        [assetB],
+      );
 
       expect(Number(priceAssetA)).toEqual(inputPriceAssetA);
       expect(Number(priceAssetB)).toEqual(inputPriceAssetB);
@@ -131,16 +179,24 @@ describe('DataFeed', async () => {
       expect(Number(timeAssetA)).toEqual(Number(timeAssetB));
     });
   });
-  describe('DataFeed history', async () => {
-    it('returns non-empty first chunk of data history for first asset', async () => {
-      const dataHistory = await datafeed.methods.getDataHistory(assetA, 0).call(opts);
+
+  describe("DataFeed history", async () => {
+    it("returns non-empty first chunk of data history for first asset", async () => {
+      const dataHistory = await datafeedContract.instance.getDataHistory.call(
+        opts,
+        [assetA, 0],
+      );
       const [timesA, pricesA] = Object.values(dataHistory);
 
       expect(Number(timesA[0])).not.toEqual(0);
       expect(Number(pricesA[0])).not.toEqual(0);
     });
-    it('returns non-empty first chunk of data history for second asset', async () => {
-      const dataHistory = await datafeed.methods.getDataHistory(assetB, 0).call(opts);
+
+    it("returns non-empty first chunk of data history for second asset", async () => {
+      const dataHistory = await datafeedContract.instance.getDataHistory.call(
+        opts,
+        [assetB, 0],
+      );
       const [timesB, pricesB] = Object.values(dataHistory);
 
       expect(Number(timesB[0])).not.toEqual(0);
