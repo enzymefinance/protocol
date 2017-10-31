@@ -174,13 +174,14 @@ describe("Fund shares", () => {
   }
 
   describe("Setup", async () => {
+    const fundName = "Melon Portfolio";
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
       // await updateDatafeed();
       receipt = await version.instance.setupFund.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
-          "Melon Portfolio", // name
+          fundName, // name
           addresses.MlnToken, // reference asset
           config.protocol.fund.managementReward,
           config.protocol.fund.performanceReward,
@@ -199,6 +200,7 @@ describe("Fund shares", () => {
       const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
 
       expect(Number(fundId)).toEqual(0);
+      expect(version.instance.fundNameExists(fundName)).toEqual(true);
       // expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
     });
 
