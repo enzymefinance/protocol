@@ -5,8 +5,7 @@ import "./version/VersionInterface.sol";
 
 // return the shareprice of every Fund, with the fund ID
 contract Ranking {
-    struct FundInfo = {
-        string name;
+    struct FundInfo {
         address ofFund;
         uint sharePrice;
     }
@@ -24,9 +23,9 @@ contract Ranking {
         address fundAddress = version.getFundById(i);
         FundInterface fund = FundInterface(fundAddress);
         uint sharePrice = fund.calcSharePrice();
-        string fundName = fund.getName();
-            fundArray.push(FundInfo({
-            fundName, fundAddress, sharePrice
+        fundArray.push(FundInfo({
+            ofFund: fundAddress,
+            sharePrice: sharePrice
         }));
     }
         return fundArray;
