@@ -170,6 +170,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     // NON-CONSTANT PUBLIC METHODS
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
+    /// @param ofQuoteAsset Address of the asset of a portfolio against which all other assets are priced
+    /// @param interval Frequency of updates in seconds
+    /// @param validity Time in seconds for which data is considered valid
     /// @return Price Feed contract w Backup Owner
     function DataFeed(
         address ofQuoteAsset, // Initial entry in asset registrar contract is Melon (QUOTE_ASSET)

@@ -587,7 +587,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (order.sellQuantity < quantity) {
-            return logError("ERR: Not enough quantity of order for what is trying to be bhought");
+            return logError("ERR: Not enough quantity of order for what is trying to be bought");
         }
 
         uint spendQuantity = quantity.mul(order.buyQuantity).div(order.sellQuantity);

@@ -53,6 +53,6 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       )
           returns (bool)
       {
-          return orderOwner == LIQUIDITY_PROVIDER; // Inital version of risk management restricts trading to liquidity provider
+          return orderOwner == LIQUIDITY_PROVIDER; // Initial version of risk management restricts trading to liquidity provider
       }
 }

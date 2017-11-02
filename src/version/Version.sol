@@ -15,11 +15,11 @@ contract Version is DBC, Owned {
 
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
-    address public MELON_ASSET; // Adresss of Melon asset contract
+    address public MELON_ASSET; // Address of Melon asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
-    mapping (address => address) public managerToFunds; // Links manager address to fund addresseses created using this version
+    mapping (address => address) public managerToFunds; // Links manager address to fund addresses created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
 
     // EVENTS
@@ -51,8 +51,8 @@ contract Version is DBC, Owned {
 
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
 
-    /// @param withName human-readable describive name (not necessarily unique)
-    /// @param ofReferenceAsset asset against which performance reward is measured against§
+    /// @param withName human-readable descriptive name (not necessarily unique)
+    /// @param ofReferenceAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
     /// @param ofParticipation Address of participation module

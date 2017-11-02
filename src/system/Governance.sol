@@ -53,6 +53,7 @@ contract Governance is DBC, Owned, DSGroup {
     // INTERNAL METHODS
 
     /// @notice Add an approved version of Melon
+    /// @param ofVersion Address of the version to add
     function addVersion(
         address ofVersion
     )
@@ -69,6 +70,7 @@ contract Governance is DBC, Owned, DSGroup {
     }
 
     /// @notice Remove and shut down version of Melon
+    /// @param id Id of the version to shutdown
     function shutDownVersion(uint id)
         pre_cond(isActive(id)) internal
     {
