@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import '../dependencies/ERC20.sol';
 import './AssetInterface.sol';
 
-/// @title Asset Contract.
+/// @title Asset Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
 contract Asset is AssetInterface, ERC20 {
 

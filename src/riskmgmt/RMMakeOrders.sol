@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 import '../dependencies/ERC20.sol';
 import './RiskMgmtInterface.sol';
 
-/// @title RiskMgmt Contract
+/// @title Risk Management Make Orders Contract
 /// @author Melonport AG <team@melonport.com>
 contract RMMakeOrders is RiskMgmtInterface {
 
@@ -18,6 +18,14 @@ contract RMMakeOrders is RiskMgmtInterface {
 
       // NON-CONSTANT METHODS
 
+      /// @notice Checks if the makeOrder price is within maximum allowed deviation from reference price
+      /// @param orderPrice Price of Order
+      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+      /// @param buyAsset Asset (as registered in Asset registrar) to be bought
+      /// @param sellQuantity Quantity of sellAsset to be sold
+      /// @param buyQuantity Quantity of buyAsset to be bought
+      /// @return If makeOrder is permitted
       function isMakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -35,6 +43,14 @@ contract RMMakeOrders is RiskMgmtInterface {
           return true;
       }
 
+      /// @notice Checks if the takeOrder price is within maximum allowed deviation from reference price
+      /// @param orderPrice Price of Order
+      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+      /// @param buyAsset Asset (as registered in Asset registrar) to be bought
+      /// @param sellQuantity Quantity of sellAsset to be sold
+      /// @param buyQuantity Quantity of buyAsset to be bought
+      /// @return If takeOrder is permitted
       function isTakePermitted(
           uint orderPrice,
           uint referencePrice,

@@ -7,7 +7,7 @@ contract ParticipationInterface {
 
     // CONSTANT METHODS
 
-    /// @notice Required for Melon protocol interaction.
+    /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
@@ -18,7 +18,7 @@ contract ParticipationInterface {
         uint256 shareQuantity
     ) returns (bool isEligible) {}
 
-    /// @notice Required for Melon protocol interaction.
+    /// @notice Checks whether redemption is permitted for a participant
     /// @param ofParticipant Address requesting to redeem from a Melon fund
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
     /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity

@@ -21,9 +21,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // TYPES
 
-    struct Modules { // Describes all modular parts, standardized through an interface
+    struct Modules { // Describes all modular parts, standardised through an interface
         DataFeedInterface datafeed; // Provides all external data
-        ExchangeInterface exchange; // Wrapes exchange adapter into exchange interface
+        ExchangeInterface exchange; // Wraps exchange adapter into exchange interface
         ParticipationInterface participation; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
@@ -32,11 +32,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint gav; // Gross asset value
         uint managementReward; // Time based reward
         uint performanceReward; // Performance based reward measured against REFERENCE_ASSET
-        uint unclaimedRewards; // Rewards not yet allocated to fund manager
+        uint unclaimedRewards; // Rewards not yet allocated to the fund manager
         uint nav; // Net asset value
         uint sharePrice; // A measure of fund performance
         uint totalSupply; // Total supply of shares
-        uint timestamp; // When above has been calculated
+        uint timestamp; // Time when calculations are performed in seconds
     }
 
     enum RequestStatus { active, cancelled, executed }
@@ -49,9 +49,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
-        uint lastDataFeedUpdateId; // Data feed module specifc id of last update
-        uint lastDataFeedUpdateTime; // Data feed module specifc timestamp of last update
-        uint timestamp; // Time of request creation
+        uint lastDataFeedUpdateId; // Data feed module specific id of last update
+        uint lastDataFeedUpdateTime; // Data feed module specific timestamp of last update
+        uint timestamp; // Time of request creation in seconds
     }
 
     enum OrderStatus { active, partiallyFilled, fullyFilled, cancelled }
@@ -60,11 +60,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint exchangeId; // Id as returned from exchange
         OrderStatus status; // Enum: active, partiallyFilled, fullyFilled, cancelled
         OrderType orderType; // Enum: make, take
-        address sellAsset; // Asset (as registred in Asset registrar) to be sold
-        address buyAsset; // Asset (as registred in Asset registrar) to be bought
+        address sellAsset; // Asset (as registered in Asset registrar) to be sold
+        address buyAsset; // Asset (as registered in Asset registrar) to be bought
         uint sellQuantity; // Quantity of sellAsset to be sold
         uint buyQuantity; // Quantity of sellAsset to be bought
-        uint timestamp; // Time in seconds when this order was created
+        uint timestamp; // Time of order creation in seconds
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
@@ -72,13 +72,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // Constant fields
     string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
-    uint256 public constant DECIMALS = 18; // Amount of deciamls sharePrice is denominated in
+    uint256 public constant DECIMALS = 18; // Amount of decimals sharePrice is denominated in
     uint public constant DIVISOR_FEE = 10 ** uint256(15); // Reward are divided by this number
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
     uint public MELON_IN_BASE_UNITS; // One unit of share equals 10 ** uint256(DECIMALS) of base unit of shares
-    uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvment
+    uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
     address public EXCHANGE; // Other then redeem, assets can only be transferred to this, eg to an exchange
@@ -92,7 +92,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     bool public isShutDown; // Security feature, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
-    bool public isRedeemAllowed; // User option, if false fund rejects Melon redeemals; Reedemal using slices always possible
+    bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
 
     // PRE, POST, INVARIANT CONDITIONS
@@ -136,6 +136,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // CONSTANT METHODS - ACCOUNTING
 
+    /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// @return gav Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
@@ -150,10 +151,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @param gav gross asset value of this fund
+    /// @notice Calculates unclaimed rewards of the fund manager
+    /// @param gav Gross asset value denominated in [base unit of melonAsset] of this fund
     /// @return managementReward A time (seconds) based reward
     /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
-    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
+    /// @return unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -184,10 +186,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         unclaimedRewards = managementReward.add(performanceReward);
     }
 
-    /// @dev Calculates the Net Asset Value
-    /// @param gav gross asset value of this fund denominated in [base unit of melonAsset]
-    /// @param unclaimedRewards the sum of all earned rewards denominated in [base unit of melonAsset]
-    /// @return nav net asset value denominated in [base unit of melonAsset]
+    /// @notice Calculates the Net asset value of this fund
+    /// @param gav Gross asset value of this fund denominated in [base unit of melonAsset]
+    /// @param unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
+    /// @return nav Net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
         constant
         returns (uint nav)
@@ -195,8 +197,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         nav = gav.sub(unclaimedRewards);
     }
 
+    /// @notice Calculates the share price of the fund
     /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @return Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
+    /// @return valuePerShare Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint value)
         constant
         pre_cond(isPastZero(totalSupply))
@@ -206,14 +209,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates essential fund metrics
-    /// @return gav gross asset value of this fund denominated in [base unit of melonAsset]
+    /// @return gav Gross asset value of this fund denominated in [base unit of melonAsset]
     /// @return managementReward A time (seconds) based reward
     /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
-    /// @return unclaimedRewards The sum of above two rewards denominated in [base unit of melonAsset]
-    /// @return nav net asset value denominated in [base unit of melonAsset]
-    /// @return sharePrice denominated in [base unit of melonAsset]
+    /// @return unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
+    /// @return nav Net asset value denominated in [base unit of melonAsset]
+    /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
-        uint gav = calcGav(); // Reflects value indepentent of fees
+        uint gav = calcGav(); // Reflects value independent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         uint nav = calcNav(gav, unclaimedRewards);
         uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
@@ -221,7 +224,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
-    /// @return sharePrice denominated in [base unit of melonAsset]
+    /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function calcSharePrice() constant returns (uint)
     {
         var (, , , , , sharePrice) = performCalculations();
@@ -231,8 +234,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // NON-CONSTANT METHODS
 
     /// @dev Should only be called via Version.setupFund(..)
-    /// @param withName human-readable describive name (not necessarily unique)
-    /// @param ofReferenceAsset asset against which performance reward is measured against§
+    /// @param withName human-readable descriptive name (not necessarily unique)
+    /// @param ofReferenceAsset asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
     /// @param ofMelonAsset Address of Melon asset contract
@@ -290,12 +293,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
-    /// @notice Give melons to receive shares of this fund
+    /// @notice Give melon tokens to receive shares of this fund
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
-    /// @param incentiveQuantity Quantity in Melon asset to give to person executing request
-    /// @return active subscription request
+    /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
+    /// @return Active subscription request
     function requestSubscription(
         uint giveQuantity,
         uint shareQuantity,
@@ -306,7 +309,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         returns(bool, string)
     {
         if (!isSubscribeAllowed) {
-            return logError("ERR: Subscription using Melon has been deactivated by Manager");
+            return logError("ERR: Subscription using Melon has been deactivated by the Manager");
         }
 
         if (!module.participation.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity)) {
@@ -328,12 +331,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RequestUpdated(getLastRequestId());
     }
 
-    /// @notice Give shares to receive melons of this fund
+    /// @notice Give shares of this fund to receive melon tokens
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
     /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
-    /// @param incentiveQuantity Quantity in Melon asset to give to person executing request
-    /// @return active redemption request
+    /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
+    /// @return Active redemption request
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
@@ -366,10 +369,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         RequestUpdated(getLastRequestId());
     }
 
-    /// @notice Executes active subscription and redemption requests, in a way that minimizes information advantages of investor
-    /// @dev Distributes melon and shares according to request
+    /// @notice Executes active subscription and redemption requests, in a way that minimises information advantages of investor
+    /// @dev Distributes melon and shares according to the request
     /// @param id Index of request to be executed
-    /// @dev active subscription or redemption request executed
+    /// @dev Active subscription or redemption request executed
     function executeRequest(uint id)
         external
         pre_cond(notShutDown())
@@ -425,9 +428,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @notice Cancelles active subscription and redemption requests
+    /// @notice Cancels active subscription and redemption requests
     /// @param id Index of request to be executed
-    /// @return active subscription or redemption request cancelled
+    /// @return Active subscription or redemption request cancelled
     function cancelRequest(uint id)
         external
         returns (bool, string)
@@ -445,9 +448,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         request.status = RequestStatus.cancelled;
     }
 
-    /// @notice Redeems by allocating a ownership percentage of each asset to participant
+    /// @notice Redeems by allocating an ownership percentage of each asset to the participant
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
-    /// @param shareQuantity numer of shares owned by participant which participant would like to receive
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
     function redeemOwnedAssets(uint shareQuantity)
         external
@@ -491,13 +494,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - MANAGING
 
-    /// @notice These are orders that are not expected to settle immediately
-    /// @dev Sufficient balance (== sellQuantity) of sellAsset
-    /// @param sellAsset Asset (as registred in Asset registrar) to be sold
-    /// @param buyAsset Asset (as registred in Asset registrar) to be bought
+    /// @notice Makes an order on the selected exchange
+    /// @dev These are orders that are not expected to settle immediately.  Sufficient balance (== sellQuantity) of sellAsset
+    /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
-    /// @param buyQuantity Quantity of sellAsset to be bought
-    /// @return Make offer on selected Exchange
+    /// @param buyQuantity Quantity of buyAsset to be bought
+    /// @return Make an offer on the selected exchange
     function makeOrder(
         address sellAsset,
         address buyAsset,
@@ -551,10 +554,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-    /// @notice These are orders that are expected to settle immediately
+    /// @notice Takes an active order on the selected exchange
+    /// @dev These are orders that are expected to settle immediately
     /// @param id Active order id
     /// @param quantity Buy quantity of what others are selling on selected Exchange
-    /// @return Take offer on selected Exchange
+    /// @return Take an offer on the selected Exchange
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
@@ -607,8 +611,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-    /// @notice Reduce exposure with exchange interaction
-    /// @dev Cancel orders that were not expected to settle immediately, i.e. makeOrders
+    /// @notice Cancels orders that were not expected to settle immediately, i.e. makeOrders
+    /// @dev Reduce exposure with exchange interaction
     /// @param id Active order id of this order array with order owner of this contract on selected Exchange
     /// @return Whether order successfully cancelled on selected Exchange
     function cancelOrder(uint id)
@@ -630,8 +634,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - REWARDS
 
+    /// @notice Converts unclaimed fees of the manager into fund shares
     /// @dev Only Owner
-    /// @return Unclaimed fees of manager are converted into shares of the Owner of this fund.
+    /// @return Unclaimed fees of the manager are converted into fund shares with manager as the owner
     function convertUnclaimedRewards()
         external
         pre_cond(isOwner())

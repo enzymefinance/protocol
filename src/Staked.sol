@@ -13,7 +13,7 @@ contract Staked is Fund {
         mapping (bytes32 => uint) makeOrderId; // sha3(sellAsset, buyAsset) to order id
         mapping (address => uint) quantitySentToExchange; // Quantity of asset held in custody of exchange
         mapping (address => uint) quantityExpectedToReturn; // Quantity expected to receive of asset of what has been sent to exchange
-        mapping (address => uint) holdingsAtLastManualSettlement; // Quantity of asset held in custody of fund at time of manuel settlement
+        mapping (address => uint) holdingsAtLastManualSettlement; // Quantity of asset held in custody of fund at time of manual settlement
     }
 
     InternalAccounting internalAccounting; // Accounts for assets not held in custody of fund

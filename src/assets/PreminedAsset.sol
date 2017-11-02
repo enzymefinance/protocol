@@ -5,7 +5,7 @@ import '../libraries/safeMath.sol';
 
 /// @title PreminedAsset Contract.
 /// @author Melonport AG <team@melonport.com>
-/// @notice Premined amount used to make markets
+/// @notice An Asset with premined amount assigned to the creator, used to make markets
 contract PreminedAsset is Asset {
     using safeMath for uint;
 
