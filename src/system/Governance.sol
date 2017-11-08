@@ -130,4 +130,6 @@ contract Governance is DBC, Owned, DSGroup {
         trigger(versionIdToShutdownIds[ofVersionId]);
         shutDownVersion(ofVersionId);
     }
+
+    function() payable { }
 }

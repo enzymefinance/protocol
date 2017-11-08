@@ -46,10 +46,14 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     /// @notice Gets human-readable information about an Asset
     /// @param ofAsset address for which descriptive information is requested
-    /// @return Human-readable name of the Asset as in ERC223 token standard
-    /// @return Human-readable symbol of the Asset as in ERC223 token standard
-    /// @return Url for extended information of the asset
-    /// @return Same as url but for ipfs
+    /**
+    @return {
+      "name": "Human-readable name of the Asset as in ERC223 token standard",
+      "symbol": "Human-readable symbol of the Asset as in ERC223 token standard",
+      "url": "Url for extended information of the asset",
+      "ipfsHash": "Same as url but for ipfs"
+    }
+    */
     function getDescriptiveInformation(address ofAsset)
         constant
         returns (string, string, string, bytes32)
@@ -64,10 +68,14 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     /// @notice Gets fund accounting related information about an Asset
     /// @param ofAsset address for which specific information is requested
-    /// @return Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
-    /// @return Chain where the asset resides
-    /// @return Address of break in contract on destination chain
-    /// @return Address of break out contract on this chain
+    /**
+    @return {
+      "decimal": "Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard",
+      "chainId": "Chain where the asset resides",
+      "breakIn": "Address of break in contract on destination chain",
+      "breakOut": "Address of break out contract on this chain"
+    }
+    */
     function getSpecificInformation(address ofAsset)
         constant
         returns (uint, bytes32, address, address)

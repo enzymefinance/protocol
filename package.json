@@ -18,7 +18,9 @@
     "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
     "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
     "deploy:development": "babel-node deployment/deploy-all.js development",
-    "dev-delete": "find . -name '*.abi' -type f -delete "
+    "dev-delete": "find . -name '*.abi' -type f -delete ",
+    "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
+    "docs:build": "doxity build"
   },
   "files": [
     "out",
@@ -45,6 +47,7 @@
   },
   "homepage": "https://github.com/melonproject/protocol#readme",
   "devDependencies": {
+    "@digix/doxity": "^0.5.2",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^7.2.3",

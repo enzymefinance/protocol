@@ -153,9 +153,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Calculates unclaimed rewards of the fund manager
     /// @param gav Gross asset value denominated in [base unit of melonAsset] of this fund
-    /// @return managementReward A time (seconds) based reward
-    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
-    /// @return unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
+    /**
+    @return {
+      "managementReward": "A time (seconds) based reward",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]"
+    }
+    */
     function calcUnclaimedRewards(uint gav)
         constant
         returns (
@@ -209,12 +213,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates essential fund metrics
-    /// @return gav Gross asset value of this fund denominated in [base unit of melonAsset]
-    /// @return managementReward A time (seconds) based reward
-    /// @return performanceReward A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward
-    /// @return unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
-    /// @return nav Net asset value denominated in [base unit of melonAsset]
-    /// @return sharePrice Share price denominated in [base unit of melonAsset]
+    /**
+    @return {
+      "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
+      "managementReward": "A time (seconds) based reward",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]",
+      "nav": "Net asset value denominated in [base unit of melonAsset]",
+      "sharePrice": "Share price denominated in [base unit of melonAsset]"
+    }
+    */
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
         uint gav = calcGav(); // Reflects value independent of fees
         var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);

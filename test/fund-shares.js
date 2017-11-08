@@ -463,7 +463,7 @@ describe("Fund shares", () => {
             { from: investor, gasPrice: config.gasPrice },
             [fund.address, 0],
           );
-          gasUsed = await api.eth.getTransactionReceipt(receipt);
+          gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
           investorGasTotal = investorGasTotal.plus(gasUsed);
           const remainingApprovedMln = Number(
             await mlnToken.instance.allowance.call({}, [
@@ -744,7 +744,7 @@ describe("Fund shares", () => {
         { from: worker, gas: config.gas, gasPrice: config.gasPrice },
         [requestId],
       );
-      gasUsed = await api.eth.getTransactionReceipt(receipt);
+      gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const post = await getAllBalances();
 
@@ -841,8 +841,7 @@ describe("Fund shares", () => {
         await ethToken.instance.balanceOf.call({}, simpleMarket.address),
       );
       const post = await getAllBalances();
-
-      expect(exchangePostMln).toEqual(exchangePreMln - trade1.buyQuantity);
+      expect(exchangePostMln).toEqual(exchangePreMln + trade1.buyQuantity);
       expect(exchangePostEthToken).toEqual(exchangePreEthToken);
       expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
       expect(post.deployer.mlnToken).toEqual(
