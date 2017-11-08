@@ -19,7 +19,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
       /// @param buyQuantity Quantity of buyAsset to be bought
-      /// @return If makeOrder is permitted
+      /// @return isPermitted If makeOrder is permitted
       function isMakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -28,7 +28,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint sellQuantity,
           uint buyQuantity
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
           return false; // Inital version of risk management does not allow to make orders
       }
@@ -40,7 +40,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
       /// @param buyQuantity Quantity of buyAsset to be bought
-      /// @return If takeOrder is permitted
+      /// @return isPermitted If takeOrder is permitted
       function isTakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -51,7 +51,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint buyQuantity,
           address orderOwner
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
           return orderOwner == LIQUIDITY_PROVIDER; // Initial version of risk management restricts trading to liquidity provider
       }

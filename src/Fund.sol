@@ -223,19 +223,29 @@ contract Fund is DBC, Owned, Shares, FundInterface {
       "sharePrice": "Share price denominated in [base unit of melonAsset]"
     }
     */
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {
-        uint gav = calcGav(); // Reflects value independent of fees
-        var (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
-        uint nav = calcNav(gav, unclaimedRewards);
-        uint sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
+    function performCalculations()
+        constant
+        returns (
+            uint gav,
+            uint managementReward,
+            uint performanceReward,
+            uint unclaimedRewards,
+            uint nav,
+            uint sharePrice
+        )
+    {
+        gav = calcGav(); // Reflects value independent of fees
+        (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
+        nav = calcNav(gav, unclaimedRewards);
+        sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
-    function calcSharePrice() constant returns (uint)
+    function calcSharePrice() constant returns (uint sharePrice)
     {
-        var (, , , , , sharePrice) = performCalculations();
+        (, , , , , sharePrice) = performCalculations();
         return sharePrice;
     }
 
@@ -306,7 +316,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
     /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
-    /// @return Active subscription request
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function requestSubscription(
         uint giveQuantity,
         uint shareQuantity,
@@ -314,7 +329,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     )
         external
         pre_cond(notShutDown())
-        returns(bool, string)
+        returns (bool err, string errMsg)
     {
         if (!isSubscribeAllowed) {
             return logError("ERR: Subscription using Melon has been deactivated by the Manager");
@@ -344,7 +359,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
     /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
     /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
-    /// @return Active redemption request
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
@@ -352,7 +372,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
       )
         external
         pre_cond(notShutDown())
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         if (!isRedeemAllowed) {
             return logError("ERR: Redemption using Melon has been deactivated by Manager");
@@ -381,10 +401,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Distributes melon and shares according to the request
     /// @param id Index of request to be executed
     /// @dev Active subscription or redemption request executed
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function executeRequest(uint id)
         external
         pre_cond(notShutDown())
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         Request request = requests[id];
 
@@ -438,10 +464,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Cancels active subscription and redemption requests
     /// @param id Index of request to be executed
-    /// @return Active subscription or redemption request cancelled
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function cancelRequest(uint id)
         external
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         Request request = requests[id];
 
@@ -459,10 +490,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @notice Redeems by allocating an ownership percentage of each asset to the participant
     /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @return Transfer percentage of all assets from Fund to Investor and annihilate shareQuantity of shares.
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function redeemOwnedAssets(uint shareQuantity)
         external
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         if (balancesOfHolderLessThan(msg.sender, shareQuantity)) {
             return logError("ERR: Sender does not own enough shares");
@@ -508,7 +544,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return Make an offer on the selected exchange
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function makeOrder(
         address sellAsset,
         address buyAsset,
@@ -518,7 +559,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         if (isPastZero(quantityHeldInCustodyOfExchange(sellAsset))) {
             return logError("ERR: Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.");
@@ -566,12 +607,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev These are orders that are expected to settle immediately
     /// @param id Active order id
     /// @param quantity Buy quantity of what others are selling on selected Exchange
-    /// @return Take an offer on the selected Exchange
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         Order memory order; // Inverse variable terminology! Buying what another person is selling
         (
@@ -622,11 +668,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @notice Cancels orders that were not expected to settle immediately, i.e. makeOrders
     /// @dev Reduce exposure with exchange interaction
     /// @param id Active order id of this order array with order owner of this contract on selected Exchange
-    /// @return Whether order successfully cancelled on selected Exchange
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function cancelOrder(uint id)
         external
         pre_cond(isOwner() || isShutDown)
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         Order memory order = orders[id];
 
@@ -644,12 +695,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Converts unclaimed fees of the manager into fund shares
     /// @dev Only Owner
-    /// @return Unclaimed fees of the manager are converted into fund shares with manager as the owner
+    /**
+    @return {
+      "err": "If there is an error",
+      "errMsg": "Error message"
+    }
+    */
     function convertUnclaimedRewards()
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
-        returns (bool, string)
+        returns (bool err, string errMsg)
     {
         var (
             gav,

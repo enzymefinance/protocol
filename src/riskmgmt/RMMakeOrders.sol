@@ -25,7 +25,7 @@ contract RMMakeOrders is RiskMgmtInterface {
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
       /// @param buyQuantity Quantity of buyAsset to be bought
-      /// @return If makeOrder is permitted
+      /// @return isPermitted If makeOrder is permitted
       function isMakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -34,7 +34,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           uint sellQuantity,
           uint buyQuantity
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
           // if(((referencePrice - orderPrice) / referencePrice) <= RISK_LEVEL / RISK_DIVISOR) {
@@ -50,7 +50,7 @@ contract RMMakeOrders is RiskMgmtInterface {
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
       /// @param buyQuantity Quantity of buyAsset to be bought
-      /// @return If takeOrder is permitted
+      /// @return isPermitted If takeOrder is permitted
       function isTakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -59,12 +59,12 @@ contract RMMakeOrders is RiskMgmtInterface {
           uint sellQuantity,
           uint buyQuantity
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          // if(((orderPrice - referencePrice) / referencePrice) <= RISK_LEVEL / RISK_DIVISOR) {
+          //if(((orderPrice - referencePrice) / referencePrice) <= RISK_LEVEL / RISK_DIVISOR) {
           //    return true;
-          // }
+          //}
           return true;
       }
 }

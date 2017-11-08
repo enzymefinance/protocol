@@ -49,21 +49,23 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     /// @notice Gets asset specific information
     /// @dev Asset has been initialised
-    /// @return Whether data is valid or not
+    /// @return valid Whether data is valid or not
     function isValid(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
-        returns (bool)
+        returns (bool valid)
     {
         return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
     }
 
     /// @notice Checks whether data exists for a given asset pair
     /// @dev Prices are only updated against QUOTE_ASSET
-    /// @return Whether data exists for a given asset pair
+    /// @param sellAsset Asset for which check to be done if data exists
+    /// @param buyAsset Asset for which check to be done if data exists
+    /// @return exists Whether data exists for a given asset pair
     function existsData(address sellAsset, address buyAsset)
         constant
-        returns (bool)
+        returns (bool exists)
     {
         return
             isValid(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
@@ -76,11 +78,16 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @dev Uses an efficient bulk call
     /// @param ofAsset Asset for which data history should be returned
     /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
-    /// @return Array of timestamps and prices of ofAsset
+    /**
+    @return {
+      "timestampArray": "Array of timestamps",
+      "priceArray": "Array of prices"
+    }
+    */
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
-        returns (uint[1024], uint[1024])
+        returns (uint[1024] timestampArray, uint[1024] priceArray)
     {
         uint indexCounter;
         uint[1024] memory timestamps;
@@ -98,12 +105,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets price of an asset
     /// @dev Asset has been initialised and is active
     /// @param ofAsset Asset for which price should be return
-    /// @return Price of baseUnits(QUOTE_ASSET).ofAsset
+    /// @return price Price of baseUnits(QUOTE_ASSET).ofAsset
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint)
+        returns (uint price)
     {
         return dataHistory[getLastUpdateId()][ofAsset].price;
     }
@@ -111,12 +118,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets inverted price of an asset
     /// @dev Asset has been initialised and is active
     /// @param ofAsset Asset for which inverted price should be return
-    /// @return Inverted price of baseUnits(ofAsset).QUOTE_ASSET
+    /// @return price Inverted price of baseUnits(ofAsset).QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint)
+        returns (uint price)
     {
         return uint(10 ** uint(getDecimals(ofAsset)))
             .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
@@ -126,8 +133,10 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets reference price of an asset pair
     /// @dev One of the address is equal to quote asset
     /// @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
-    /// @return Price of baseUnits(ofBase).ofQuote
-    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {
+    /// @param ofBase Address of base asset
+    /// @param ofQuote Address of quote asset
+    /// @return price Price of baseUnits(ofBase).ofQuote
+    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint price) {
         if (getQuoteAsset() == ofQuote) {
             getPrice(ofBase);
         } else if (getQuoteAsset() == ofBase) {
@@ -140,12 +149,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets price of Order
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
-    /// @return Price of baseUnits(QUOTE_ASSET).ofAsset
+    /// @return price Price of baseUnits(QUOTE_ASSET).ofAsset
     function getOrderPrice(
         uint sellQuantity,
         uint buyQuantity
     )
-        constant returns (uint)
+        constant returns (uint price)
     {
         return buyQuantity
             .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
@@ -154,12 +163,18 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     /// @notice Gets timestamp and price data of an asset
     /// @dev Asset has been initialised and is active
-    /// @return Timestamp and price of asset, where last updated not longer than `VALIDITY` seconds ago
+    /// @param ofAsset Asset for which data should be returned
+    /**
+    @return {
+      "timestamp": "Timestamp of asset",
+      "price": "Price of asset"
+    }
+    */
     function getData(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint, uint)
+        returns (uint timestamp, uint price)
     {
         return (
             dataHistory[getLastUpdateId()][ofAsset].timestamp,

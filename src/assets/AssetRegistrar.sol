@@ -56,7 +56,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     */
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, string, bytes32)
+        returns (string name, string symbol, string url, bytes32 ipfsHash)
     {
         return (
             information[ofAsset].name,
@@ -78,7 +78,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     */
     function getSpecificInformation(address ofAsset)
         constant
-        returns (uint, bytes32, address, address)
+        returns (uint decimal, bytes32 chainId, address breakIn, address breakOut)
     {
         return (
             information[ofAsset].decimal,

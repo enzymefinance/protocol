@@ -16,7 +16,7 @@ contract RiskMgmt is RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return If makeOrder is permitted
+    /// @return isPermitted If makeOrder is permitted
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -25,7 +25,7 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-        returns (bool)
+        returns (bool isPermitted)
     {
         return true; // For testing purposes
     }
@@ -37,7 +37,7 @@ contract RiskMgmt is RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return If takeOrder is permitted
+    /// @return isPermitted If takeOrder is permitted
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -46,7 +46,7 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-        returns (bool)
+        returns (bool isPermitted)
     {
         return true; // For testing purposes
     }
