@@ -18,6 +18,7 @@ async function main() {
       value: 10 ** 30,
     }, "");
   }
+  process.exit()
 }
 
 main();

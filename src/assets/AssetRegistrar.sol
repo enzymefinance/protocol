@@ -14,7 +14,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     struct Asset {
         string name; // Human-readable name of the Asset as in ERC223 token standard
         string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
-        uint decimal; // Decimal, order of magnitude of precission, of the Asset as in ERC223 token standard
+        uint decimal; // Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
         string url; // URL for additional information of Asset
         bytes32 ipfsHash; // Same as url but for ipfs
         bytes32 chainId; // On which chain this asset resides
@@ -44,11 +44,19 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) constant returns (uint) { return information[ofAsset].decimal; }
 
-    /// @notice Get human-readable information about an Asset
+    /// @notice Gets human-readable information about an Asset
     /// @param ofAsset address for which descriptive information is requested
+    /**
+    @return {
+      "name": "Human-readable name of the Asset as in ERC223 token standard",
+      "symbol": "Human-readable symbol of the Asset as in ERC223 token standard",
+      "url": "Url for extended information of the asset",
+      "ipfsHash": "Same as url but for ipfs"
+    }
+    */
     function getDescriptiveInformation(address ofAsset)
         constant
-        returns (string, string, string, bytes32)
+        returns (string name, string symbol, string url, bytes32 ipfsHash)
     {
         return (
             information[ofAsset].name,
@@ -58,11 +66,19 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         );
     }
 
-    /// @notice Get fund accounting related information about an Asset
+    /// @notice Gets fund accounting related information about an Asset
     /// @param ofAsset address for which specific information is requested
+    /**
+    @return {
+      "decimal": "Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard",
+      "chainId": "Chain where the asset resides",
+      "breakIn": "Address of break in contract on destination chain",
+      "breakOut": "Address of break out contract on this chain"
+    }
+    */
     function getSpecificInformation(address ofAsset)
         constant
-        returns (uint, bytes32, address, address)
+        returns (uint decimal, bytes32 chainId, address breakIn, address breakOut)
     {
         return (
             information[ofAsset].decimal,
@@ -74,8 +90,18 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // NON-CONSTANT METHODS
 
-    /// @dev Pre:  Only registrar owner should be able to register
+    /// @notice Registers an Asset residing in a chain
+    /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address ofAsset is registered
+    /// @param ofAsset Address of asset to be registered
+    /// @param name Human-readable name of the Asset as in ERC223 token standard
+    /// @param symbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param decimal Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param url Url for extended information of the asset
+    /// @param ipfsHash Same as url but for ipfs
+    /// @param chainId Chain where the asset resides
+    /// @param breakIn Address of break in contract on destination chain
+    /// @param breakOut Address of break out contract on this chain
     function register(
         address ofAsset,
         string name,
@@ -106,8 +132,14 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         assert(isRegistered(ofAsset));
     }
 
+    /// @notice Updates description information of a registered Asset
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
+    /// @param ofAsset Address of the asset to be updated
+    /// @param name Human-readable name of the Asset as in ERC223 token standard
+    /// @param symbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param url Url for extended information of the asset
+    /// @param ipfsHash Same as url but for ipfs
     function updateDescriptiveInformation(
         address ofAsset,
         string name,
@@ -125,9 +157,9 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         asset.ipfsHash = ipfsHash;
     }
 
+    /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
     /// @param ofAsset address for which specific information is requested
-    /// @return deletes an existing entry
     function remove(
         address ofAsset
     )

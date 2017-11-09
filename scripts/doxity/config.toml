@@ -1,0 +1,15 @@
+linkPrefix = "/protocol"
+name = "@melonproject/protocol"
+license = "GPL-3.0"
+version = "0.4.0-live.2"
+description = "Blockchain protocol for asset management"
+homepage = "https://github.com/melonproject/protocol#readme"
+author = "“Reto Trinkler <“rt@melonport.com”>"
+buildTime = 2017-11-08T15:29:24.795Z
+target = "scripts/doxity"
+src = "$(find ./src -type f -name '*.sol' -not -name '*.t.sol' -not -name 'Governance.sol')"
+dir = "pages/docs"
+source = "https://github.com/DigixGlobal/doxity-gatsby-starter-project/archive/a4886b7a7a04c018ac04fed3125d7d4785e74bed.tar.gz"
+out = "docs"
+
+[interaction]

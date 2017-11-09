@@ -1,4 +1,4 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%202-01.jpg" width = "25%">
+<img src = "https://github.com/melonproject/branding/blob/master/melon/03_M_logo.jpg" width = "25%">
 
 # protocol
 
@@ -10,9 +10,9 @@ Melon is for investment funds what Bitcoin is for accounting, a set of rules, en
 
 This repository contains a reference implementation of the Melon protocol written in Solidity, as specified in our [paper][paper-url].
 
-[![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter][gitter-badge]][gitter-url]
 [![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-bright
+[![License: GPL v3][license-badge]][license-badge-url]
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
 ## Table of Contents
@@ -260,7 +260,7 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 3. Create an empty file named password. Close already running parity instance and run:
     ```
-    parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password password --force-ui --no-persistent-txqueue --jsonrpc-apis all
+    parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0
     ```
 
 
@@ -324,7 +324,7 @@ When considering design proposals for implementations, we are looking for:
 - Discussion of the tradeoffs involved
 - Discussion of the proposed solution
 
-[paper-url]: https://github.com/melonproject/paper/blob/master/melon.pdf
+[paper-url]: https://github.com/melonproject/paper/blob/master/melonprotocol.pdf
 [gitter-badge]: https://img.shields.io/gitter/room/melonproject/general.js.svg?style=flat-square
 [gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [license-badge]: https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square

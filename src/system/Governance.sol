@@ -7,7 +7,7 @@ import '../version/VersionInterface.sol';
 
 /// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Work in process: Intended to be a system contract w/in Melon chain
+/// @notice Defines a set of authorities who can propose new versions or shutdown old versions
 contract Governance is DBC, Owned, DSGroup {
 
     // TYPES
@@ -53,6 +53,7 @@ contract Governance is DBC, Owned, DSGroup {
     // INTERNAL METHODS
 
     /// @notice Add an approved version of Melon
+    /// @param ofVersion Address of the version to add
     function addVersion(
         address ofVersion
     )
@@ -69,6 +70,7 @@ contract Governance is DBC, Owned, DSGroup {
     }
 
     /// @notice Remove and shut down version of Melon
+    /// @param id Id of the version to shutdown
     function shutDownVersion(uint id)
         pre_cond(isActive(id)) internal
     {
@@ -92,34 +94,42 @@ contract Governance is DBC, Owned, DSGroup {
     {}
 
     /// @notice Propose new versions of Melon
+    /// @param ofVersion Address of version contract to be proposed
     function proposeVersion(address ofVersion) {
         versionToProposalIds[ofVersion] = propose(address(this), new bytes(0), 0);
     }
 
     /// @notice Approve new versions of Melon
+    /// @param ofVersion Address of version contract to be approved
     function approveVersion(address ofVersion) {
         confirm(versionToProposalIds[ofVersion]);
     }
 
     /// @notice Trigger new versions of Melon
+    /// @param ofVersion Address of version contract to be triggered
     function triggerVersion(address ofVersion) {
         trigger(versionToProposalIds[ofVersion]);
         addVersion(ofVersion);
     }
 
     /// @notice Propose shutdown of Melon version
+    /// @param ofVersionId Version id to be proposed for shutdown
     function proposeShutdown(uint ofVersionId) {
         versionIdToShutdownIds[ofVersionId] = propose(address(this), new bytes(0), 0);
     }
 
     /// @notice Approve shutdown of Melon version
+    /// @param ofVersionId Version id to be approved for shutdown
     function approveShutdown(uint ofVersionId) {
         confirm(versionIdToShutdownIds[ofVersionId]);
     }
 
     /// @notice Trigger shutdown of Melon version
+    /// @param ofVersionId Version id to be triggered for shutdown
     function triggerShutdown(uint ofVersionId) {
         trigger(versionIdToShutdownIds[ofVersionId]);
         shutDownVersion(ofVersionId);
     }
+
+    function() payable { }
 }
