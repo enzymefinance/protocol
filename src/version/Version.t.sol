@@ -36,8 +36,6 @@ contract VersionTest is DSTest {
     bytes32 r = 0x325088a245d1d91855570677e222a9c1d7bdbefb69245a383e1d29414013ed9f;
     bytes32 s = 0x4c53315f5a99f39a3d753fba87aba6c021804c3be305a084f60d74ddd38b1e0e;
 
-//TODO: uncomment these tests when ds-test issue is resolved:
-//      https://github.com/dapphub/ds-test/issues/6
     function setUp() {
         governance = new Governance(new address[](0), 0, 1000000);
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);

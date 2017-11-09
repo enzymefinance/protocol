@@ -176,8 +176,9 @@ describe("Fund shares", () => {
   describe("Setup", async () => {
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
+      console.log(manager);
       const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-      let sig = await api.eth.sign(manager, hash);
+      let sig = await api.eth.sign('0x00248D782B4c27b5C6F42FEB3f36918C24b211A5', hash);
       sig = sig.substr(2, sig.length);
       const r = `0x${sig.substr(0, 64)}`;
       const s = `0x${sig.substr(64, 64)}`;
