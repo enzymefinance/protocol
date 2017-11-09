@@ -8,7 +8,7 @@
   "scripts": {
     "test": "npm run test:ds-test && npm run test:jasmine",
     "test:jasmine": "babel-node test/run.js",
-    "test:ds-test": "export DAPP_NO_HEVM=1 && mv src/exchange/adapter/externalAdapter.sol . && dapp test -v && mv ./externalAdapter.sol src/exchange/adapter",
+    "test:ds-test": "dapp test -v",
     "before-tests": "babel-node test/before-tests.js",
     "oyente": "oyente -s src/Fund.sol",
     "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
