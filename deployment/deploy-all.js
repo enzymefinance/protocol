@@ -462,6 +462,7 @@ async function deploy(environment) {
     // write out addressBook
     console.log(`Writing addresses to ${addressBookFile}`);
     fs.writeFileSync(addressBookFile, JSON.stringify(addressBook, null, '\t'), 'utf8');
+    process.exit();
   } catch (err) { console.log(err.stack); }
 }
 
