@@ -13,6 +13,8 @@ contract Version is DBC, Owned {
 
     // FIELDS
 
+    // Constant fields
+    bytes32 public constant TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions as displayed on IPFS.
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public MELON_ASSET; // Address of Melon asset contract
@@ -25,6 +27,29 @@ contract Version is DBC, Owned {
     // EVENTS
 
     event FundUpdated(uint id);
+
+    // PRE, POST, INVARIANT CONDITIONS
+
+    /// @dev Proofs that terms and conditions have been read and understood
+    /// @param v ellipitc curve parameter v
+    /// @param r ellipitc curve parameter r
+    /// @param s ellipitc curve parameter s
+    /// @return signed Whether or not terms and conditions have been read and understood
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool signed) {
+        return ecrecover(
+            // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
+            //  Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
+            //  it will return rsv (same as geth; where v is [27, 28]).
+            // Note that if you are using ecrecover, v will be either "00" or "01".
+            //  As a result, in order to use this value, you will have to parse it to an
+            //  integer and then add 27. This will result in either a 27 or a 28.
+            //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
+            sha3("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
+            v,
+            r,
+            s
+        ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
+    }
 
     // CONSTANT METHODS
 
@@ -58,6 +83,9 @@ contract Version is DBC, Owned {
     /// @param ofParticipation Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @param v ellipitc curve parameter v
+    /// @param r ellipitc curve parameter r
+    /// @param s ellipitc curve parameter s
     /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
         string withName,
@@ -66,8 +94,12 @@ contract Version is DBC, Owned {
         uint ofPerformanceRewardRate,
         address ofParticipation,
         address ofRiskMgmt,
-        address ofSphere
+        address ofSphere,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     )
+        pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
     {
         address fund = new Fund(

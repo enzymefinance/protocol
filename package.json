@@ -1,7 +1,7 @@
 {
   "name": "@melonproject/protocol",
   "version": "0.4.0-live.2",
-  "description": "Blockchain protocol for asset management",
+  "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "test"
   },
@@ -40,7 +40,7 @@
     "Protocol",
     "Melon"
   ],
-  "author": "“Reto Trinkler <“rt@melonport.com”>",
+  "author": "“Melonport AG <“team@melonport.com”>",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/melonproject/protocol/issues"

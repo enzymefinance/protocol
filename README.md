@@ -1,4 +1,4 @@
-<img src = "https://github.com/melonproject/branding/blob/master/melon/Social%20Media%20Profile%20Picture%202-01.jpg" width = "25%">
+<img src = "https://github.com/melonproject/branding/blob/master/melon/03_M_logo.jpg" width = "25%">
 
 # protocol
 
@@ -10,9 +10,9 @@ Melon is for investment funds what Bitcoin is for accounting, a set of rules, en
 
 This repository contains a reference implementation of the Melon protocol written in Solidity, as specified in our [paper][paper-url].
 
-[![Gitter](https://badges.gitter.im/melonproject/general.svg)](https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter][gitter-badge]][gitter-url]
 [![Build Status](https://travis-ci.org/melonproject/protocol.svg?branch=master)](https://travis-ci.org/melonproject/protocol)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-bright
+[![License: GPL v3][license-badge]][license-badge-url]
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
 ## Table of Contents
@@ -324,7 +324,7 @@ When considering design proposals for implementations, we are looking for:
 - Discussion of the tradeoffs involved
 - Discussion of the proposed solution
 
-[paper-url]: https://github.com/melonproject/paper/blob/master/melon.pdf
+[paper-url]: https://github.com/melonproject/paper/blob/master/melonprotocol.pdf
 [gitter-badge]: https://img.shields.io/gitter/room/melonproject/general.js.svg?style=flat-square
 [gitter-url]: https://gitter.im/melonproject/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [license-badge]: https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square

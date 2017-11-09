@@ -176,6 +176,15 @@ describe("Fund shares", () => {
   describe("Setup", async () => {
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
+      const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
+      let sig = await api.eth.sign(manager, hash);
+      sig = sig.substr(2, sig.length);
+      const r = `0x${sig.substr(0, 64)}`;
+      const s = `0x${sig.substr(64, 64)}`;
+      const v = parseFloat(sig.substr(128, 2)) + 27;
+      console.log(v);
+      console.log(r);
+      console.log(s);
       // await updateDatafeed();
       receipt = await version.instance.setupFund.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -187,6 +196,9 @@ describe("Fund shares", () => {
           addresses.Participation,
           addresses.RMMakeOrders,
           addresses.Sphere,
+          v,
+          r,
+          s
         ],
       );
       // Since postTransaction returns transaction hash instead of object as in Web3
@@ -817,7 +829,7 @@ describe("Fund shares", () => {
       const pre = await getAllBalances();
       const orderId = await simpleMarket.instance.last_offer_id.call({}, []);
       const exchangePreMln = Number(
-        await mlnToken.instance.balanceOf.call({}, simpleMarket.address),
+        await mlnToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       const exchangePreEthToken = Number(
         await ethToken.instance.balanceOf.call({}, [simpleMarket.address]),
@@ -838,10 +850,10 @@ describe("Fund shares", () => {
         await mlnToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       const exchangePostEthToken = Number(
-        await ethToken.instance.balanceOf.call({}, simpleMarket.address),
+        await ethToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       const post = await getAllBalances();
-      expect(exchangePostMln).toEqual(exchangePreMln + trade1.buyQuantity);
+      expect(exchangePostMln).toEqual(exchangePreMln - trade1.buyQuantity);
       expect(exchangePostEthToken).toEqual(exchangePreEthToken);
       expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
       expect(post.deployer.mlnToken).toEqual(

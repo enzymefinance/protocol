@@ -393,7 +393,7 @@ async function deploy(environment) {
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
       opts.data = `0x${versionBytecode}`;
-      opts.gas = 5790000;
+      opts.gas = 5990000;
       version = await (api.newContract(versionAbi).deploy(opts, [pkgInfo.version, governance, mlnToken], () => {}, true));
       console.log('Deployed version');
 
@@ -405,7 +405,7 @@ async function deploy(environment) {
       libObject[getPlaceholderFromPath('out/exchange/adapter/simpleAdapter')] = simpleAdapter;
       bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
-      opts.gas = 5790000;
+      opts.gas = 5990000;
       fund = await (api.newContract(abi).deploy(opts, [
         accounts[0],
         'Melon Portfolio', // name

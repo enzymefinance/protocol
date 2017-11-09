@@ -32,7 +32,9 @@ contract VersionTest is DSTest {
     uint MANAGEMENT_REWARD = 0;
     uint PERFORMANCE_REWARD = 0;
     address MANAGER_ADDRESS = this;
-
+    uint8 v = 28;
+    bytes32 r = 0x325088a245d1d91855570677e222a9c1d7bdbefb69245a383e1d29414013ed9f;
+    bytes32 s = 0x4c53315f5a99f39a3d753fba87aba6c021804c3be305a084f60d74ddd38b1e0e;
 
 //TODO: uncomment these tests when ds-test issue is resolved:
 //      https://github.com/dapphub/ds-test/issues/6
@@ -55,7 +57,10 @@ contract VersionTest is DSTest {
             PERFORMANCE_REWARD,
             participation,
             riskMgmt,
-            sphere
+            sphere,
+            v,
+            r,
+            s
         );
         uint fundId = version.getLastFundId();
         address fundAddressFromManager = version.getFundByManager(MANAGER_ADDRESS);
@@ -73,7 +78,10 @@ contract VersionTest is DSTest {
             PERFORMANCE_REWARD,
             participation,
             riskMgmt,
-            sphere
+            sphere,
+            v,
+            r,
+            s
         );
         uint fundId = version.getLastFundId();
         address fundAddress = version.getFundById(fundId);
