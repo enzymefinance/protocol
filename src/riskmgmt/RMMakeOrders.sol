@@ -37,10 +37,10 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          // if(((referencePrice - orderPrice) / referencePrice) <= RISK_LEVEL / RISK_DIVISOR) {
-          //    return true;
-          // }
-          return true;
+          if (orderPrice <= referencePrice + RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+              return true;
+          }
+          return false;
       }
 
       /// @notice Checks if the takeOrder price is within maximum allowed deviation from reference price
@@ -62,9 +62,9 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          //if(((orderPrice - referencePrice) / referencePrice) <= RISK_LEVEL / RISK_DIVISOR) {
-          //    return true;
-          //}
-          return true;
+          if (orderPrice <= referencePrice + RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+              return true;
+          }
+          return false;
       }
 }

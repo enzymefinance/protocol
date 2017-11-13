@@ -141,7 +141,6 @@ async function deploy(environment) {
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync('out/version/Version.bin', versionBytecode, 'utf8');
       opts.data = `0x${versionBytecode}`;
-      opts.gas = 5790000;
       version = await (api.newContract(versionAbi).deploy(opts,
         [
           pkgInfo,
