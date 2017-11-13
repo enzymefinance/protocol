@@ -173,7 +173,7 @@ describe("Fund shares", () => {
       console.log(s);
       // await updateDatafeed();
       receipt = await version.instance.setupFund.postTransaction(
-        { from: imvestor, gas: config.gas, gasPrice: config.gasPrice },
+        { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
           "Melon Portfolio", // name
           addresses.MlnToken, // reference asset
@@ -188,11 +188,6 @@ describe("Fund shares", () => {
         ],
       );
       // Since postTransaction returns transaction hash instead of object as in Web3
-      console.log(`---------------------`);
-      console.log(`Setup Fund receipt ${receipt}`);
-      console.log((await api.parity.pendingTransactions()).length)
-      console.log(receipt);
-      console.log(await api.eth.getTransactionReceipt(receipt))
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const fundId = await version.instance.getLastFundId.call({}, []);
