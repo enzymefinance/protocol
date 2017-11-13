@@ -42,8 +42,9 @@ async function deploy(environment) {
     const datafeedOnly = false;
     const addressBookFile = './address-book.json';
     const config = environmentConfig[environment];
-    const provider = new Api.Provider.Http('http://localhost:8545');
+    const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
     const api = new Api(provider);
+
     const mockBytes = '0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b';
     const mockAddress = '0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183';
     if((Number(config.networkId) !== await api.net.version()) && (config.networkId !== '*')) {
@@ -462,6 +463,7 @@ async function deploy(environment) {
     // write out addressBook
     console.log(`Writing addresses to ${addressBookFile}`);
     fs.writeFileSync(addressBookFile, JSON.stringify(addressBook, null, '\t'), 'utf8');
+    process.exit();
   } catch (err) { console.log(err.stack); }
 }
 

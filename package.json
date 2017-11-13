@@ -8,11 +8,12 @@
   "scripts": {
     "test": "npm run test:ds-test && npm run test:jasmine",
     "test:jasmine": "babel-node test/run.js",
-    "test:ds-test": "export DAPP_NO_HEVM=1 && mv src/exchange/adapter/externalAdapter.sol . && dapp test -v && mv ./externalAdapter.sol src/exchange/adapter",
+    "test:ds-test": "dapp test -v",
     "before-tests": "babel-node test/before-tests.js",
     "oyente": "oyente -s src/Fund.sol",
     "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
     "localnode:background": "npm run localnode > testrpc.log &",
+    "localnode:parity": "parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
     "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
@@ -68,7 +69,7 @@
     "prettier-eslint": "^8.1.1"
   },
   "dependencies": {
-    "@parity/api": "^2.0.14",
+    "@parity/api": "^2.1.3",
     "bignumber.js": "^4.1.0",
     "chai": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",

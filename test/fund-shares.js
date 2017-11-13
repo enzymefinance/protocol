@@ -82,24 +82,8 @@ describe("Fund shares", () => {
       JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi")),
       addresses.SimpleMarket,
     );
-
-    participation.instance.attestForIdentity.postTransaction(opts, [investor]); // whitelist investor
+    await participation.instance.attestForIdentity.postTransaction(opts, [investor]); // whitelist investor
   });
-
-  // register block force mining method
-  /* web3.extend({
-    methods: [
-      {
-        name: "mineBlock",
-        call: "evm_mine",
-      },
-      {
-        name: "increaseTime",
-        call: "evm_increaseTime",
-        params: 1,
-      },
-    ],
-  }); */
 
   // convenience functions
   function timeout(ms) {
@@ -176,7 +160,7 @@ describe("Fund shares", () => {
   describe("Setup", async () => {
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
-      console.log(manager);
+      console.log(`Pre manager Eth ${preManagerEth}`);
       const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
       let sig = await api.eth.sign('0x00248D782B4c27b5C6F42FEB3f36918C24b211A5', hash);
       sig = sig.substr(2, sig.length);
