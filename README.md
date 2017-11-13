@@ -269,7 +269,13 @@ After installation is complete, go to the above `protocol` directory, open a ter
     npm run deploy:development
     ```
 
-5. Run the test framework:
+5. Compile all the contracts:
+
+    ```
+    npm run compile
+    ```
+
+6. Run the test framework:
     ```
     npm test
     ```

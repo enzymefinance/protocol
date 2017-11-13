@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.0]
+
+
+### Added
+
+- Dapp suite for compilation, package management, testing
+- new Logo
+- [err, errMsg] style error logging
+- Dapp (solidity) tests for more modules
+- Main network deployment script
+- Thomson-Reuters datafeed address
+- Use OasisDex on main network
+- better documentation (natspec)
+- integrate oyente into our build process
+- integrate dapp testing into our build process
+- use Jasmine for JS testing
+- use Web3 1.0 for contract deployment
+- use Web3 1.0 to interact with contracts
+
+### Updated
+
+- refactor large parts of protocol
+- refactor and redesign our tests
+- installation instructions in README
+
+### Removed
+
+- deprecated truffle
+- remove Mocha for testing
+- logger contract
+
 ## [0.3.8]
 
 ### Added
