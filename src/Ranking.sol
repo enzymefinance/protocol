@@ -5,29 +5,24 @@ import "./version/VersionInterface.sol";
 
 // return the shareprice of every Fund, with the fund ID
 contract Ranking {
-    struct FundInfo {
-        address ofFund;
-        uint sharePrice;
-    }
 
     VersionInterface version;
-    FundInfo[] fundArray;
+    address VersionAddress;
 
     function Ranking(address ofVersion) {
-        version = VersionInterface(ofVersion);
+      VersionAddress = ofVersion;
+      version = VersionInterface(VersionAddress);
     }
 
-    function getFundInfo() returns(FundInfo[]) {
-    uint lastId = version.getLastFundId();
-    for (uint i = 0; i <= lastId; i++) {
-        address fundAddress = version.getFundById(i);
-        FundInterface fund = FundInterface(fundAddress);
-        uint sharePrice = fund.calcSharePrice();
-        fundArray.push(FundInfo({
-            ofFund: fundAddress,
-            sharePrice: sharePrice
-        }));
-    }
-        return fundArray;
+    function getFundInfo() constant returns(address[] fundAddresses, uint[] fundSharePrices) {
+        uint lastId = version.getLastFundId();
+        for (uint i = 0; i <= lastId; i++) {
+            address fundAddress = version.getFundById(i);
+            FundInterface fund = FundInterface(fundAddress);
+            uint sharePrice = fund.calcSharePrice();
+            fundAddresses[i] = fundAddress;
+            fundSharePrices[i] = sharePrice;
+        }
+        return (fundAddresses, fundSharePrices);
     }
 }
