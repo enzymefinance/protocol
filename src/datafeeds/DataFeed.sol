@@ -74,11 +74,11 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
-    /// @notice Returns data feed history in an blockchain node friendly way
-    /// @dev Uses an efficient bulk call
-    /// @param ofAsset Asset for which data history should be returned
-    /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
     /**
+    @notice Returns data feed history in an blockchain node friendly way
+    @dev Uses an efficient bulk call
+    @param ofAsset Asset for which data history should be returned
+    @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
     @return {
       "timestampArray": "Array of timestamps",
       "priceArray": "Array of prices"
@@ -102,15 +102,15 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         return (timestamps, prices);
     }
 
-    /// @notice Gets price of an asset
+    /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
     /// @dev Asset has been initialised and is active
     /// @param ofAsset Asset for which price should be return
-    /// @return price Price of baseUnits(QUOTE_ASSET).ofAsset
+    /// @return dataFeedPrice Price of dataFeedPrice = inputPrice * 10 ** assetDecimals(ofAsset) where inputPrice s.t. quote == QUOTE_ASSET
     function getPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint price)
+        returns (uint dataFeedPrice)
     {
         return dataHistory[getLastUpdateId()][ofAsset].price;
     }
@@ -118,12 +118,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets inverted price of an asset
     /// @dev Asset has been initialised and is active
     /// @param ofAsset Asset for which inverted price should be return
-    /// @return price Inverted price of baseUnits(ofAsset).QUOTE_ASSET
+    /// @return invertedDataFeedPrice Inverted getPrice()
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(isDataSet(ofAsset))
         pre_cond(isDataValid(ofAsset))
-        returns (uint price)
+        returns (uint invertedDataFeedPrice)
     {
         return uint(10 ** uint(getDecimals(ofAsset)))
             .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
@@ -135,12 +135,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
     /// @param ofBase Address of base asset
     /// @param ofQuote Address of quote asset
-    /// @return price Price of baseUnits(ofBase).ofQuote
+    /// @return dataFeedPrice
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint price) {
         if (getQuoteAsset() == ofQuote) {
-            getPrice(ofBase);
+            price = getPrice(ofBase);
         } else if (getQuoteAsset() == ofBase) {
-            getInvertedPrice(ofBase);
+            price = getInvertedPrice(ofQuote);
         } else {
             throw; // Log Error: No suitable reference price available
         }
@@ -149,22 +149,23 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @notice Gets price of Order
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
-    /// @return price Price of baseUnits(QUOTE_ASSET).ofAsset
+    /// @return orderPrice Price as determined by an order
     function getOrderPrice(
+        address ofBase,
         uint sellQuantity,
         uint buyQuantity
     )
-        constant returns (uint price)
+        constant returns (uint orderPrice)
     {
         return buyQuantity
-            .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
+            .mul(10 ** uint(getDecimals(ofBase)))
             .div(sellQuantity);
     }
 
-    /// @notice Gets timestamp and price data of an asset
-    /// @dev Asset has been initialised and is active
-    /// @param ofAsset Asset for which data should be returned
     /**
+    @notice Gets timestamp and price data of an asset
+    @dev Asset has been initialised and is active
+    @param ofAsset Asset for which data should be returned
     @return {
       "timestamp": "Timestamp of asset",
       "price": "Price of asset"
@@ -203,9 +204,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @return Update price of asset relative to QUOTE_ASSET
     /** Ex:
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
-     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN
+     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
      *  and let EUR-T decimals == 8.
-     *  Input would be: dataHistory[getLastUpdateId()][EUR-T].price = 8045678 [BaseUnits/ (EUR-T * 10**8)]
+     *  Input would be: dataHistory[getLastUpdateId()][EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     function update(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())

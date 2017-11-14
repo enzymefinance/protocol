@@ -570,7 +570,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (!module.riskmgmt.isMakePermitted(
-                module.datafeed.getOrderPrice(sellQuantity, buyQuantity),
+                module.datafeed.getOrderPrice(sellAsset, sellQuantity, buyQuantity),
                 module.datafeed.getReferencePrice(sellAsset, buyAsset),
                 sellAsset, buyAsset, sellQuantity, buyQuantity
             )
