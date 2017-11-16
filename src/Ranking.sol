@@ -1,20 +1,22 @@
 pragma solidity ^0.4.11;
 
 import "./FundInterface.sol";
-import "./version/VersionInterface.sol";
+import "./version/Version.sol";
 
-// return the shareprice of every Fund, with the fund ID
+/// @title Ranking Contract
+/// @author Melonport AG <team@melonport.com>
+/// @notice Reading contract to enable fund ranking
 contract Ranking {
 
-    VersionInterface version;
-    address VersionAddress;
+    Version version;
 
     function Ranking(address ofVersion) {
-      VersionAddress = ofVersion;
-      version = VersionInterface(VersionAddress);
+        version = Version(ofVersion);
     }
 
-    function getFundInfo() constant returns(address[] fundAddresses, uint[] fundSharePrices) {
+    // TODO: This function will need to be updated if there are more than 1024 funds on the version
+    /// @notice Returns an array of fund addresses and an array of share price associated
+    function getFundsSharePrices() constant returns(address[1024] fundAddresses, uint[1024] fundSharePrices) {
         uint lastId = version.getLastFundId();
         for (uint i = 0; i <= lastId; i++) {
             address fundAddress = version.getFundById(i);
