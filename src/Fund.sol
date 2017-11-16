@@ -632,7 +632,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (!module.riskmgmt.isTakePermitted(
-                module.datafeed.getOrderPrice(order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
+                module.datafeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
                 module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
                 order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
             )

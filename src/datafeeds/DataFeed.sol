@@ -147,6 +147,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @notice Gets price of Order
+    /// @param ofBase Address of the Base Asset
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
     /// @return orderPrice Price as determined by an order
@@ -201,7 +202,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     }
 
     /// @dev Only Owner; Same sized input arrays
-    /// @return Update price of asset relative to QUOTE_ASSET
+    /// @return Update price of asset relative to
     /** Ex:
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T

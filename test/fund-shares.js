@@ -158,6 +158,8 @@ describe("Fund shares", () => {
   }
 
   describe("Setup", async () => {
+    // For unique fundName on each test run
+    const fundName = "Melon Portfolio" + Math.floor(Math.random() * 1000000) + 1;
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
       console.log(`Pre manager Eth ${preManagerEth}`);
@@ -174,7 +176,7 @@ describe("Fund shares", () => {
       receipt = await version.instance.setupFund.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
-          "Melon Portfolio", // name
+          fundName, // name
           addresses.MlnToken, // reference asset
           config.protocol.fund.managementReward,
           config.protocol.fund.performanceReward,
@@ -199,7 +201,8 @@ describe("Fund shares", () => {
 
       expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
       expect(Number(fundId)).toEqual(0);
-
+      expect(await version.instance.fundNameTaken.call({}, [fundName])).toEqual(true);
+      // expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
     });
 
     it("initial calculations", async () => {

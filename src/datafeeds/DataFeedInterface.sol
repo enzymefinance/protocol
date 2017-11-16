@@ -27,7 +27,7 @@ contract DataFeedInterface is AssetRegistrarInterface {
     function getPrice(address ofAsset) constant returns (uint) {}
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
-    function getOrderPrice(uint sellQuantity, uint buyQuantity) constant returns (uint) {}
+    function getOrderPrice(address ofBase, uint sellQuantity, uint buyQuantity) constant returns (uint) {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
     function getData(address ofAsset) constant returns (uint, uint) {}
 
