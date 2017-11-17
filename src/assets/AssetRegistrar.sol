@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
@@ -71,7 +71,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        //post_cond(isRegistered(ofAsset)) // Wait for next release of solidity
+        post_cond(isRegistered(ofAsset))
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -85,7 +85,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
             breakOut: breakOut,
             exists: true
         });
-        assert(isRegistered(ofAsset));
     }
 
     /// @notice Updates description information of a registered Asset

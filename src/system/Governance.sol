@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import 'ds-group/group.sol';
 import '../dependencies/DBC.sol';
