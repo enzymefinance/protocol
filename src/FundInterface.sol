@@ -48,8 +48,6 @@ contract FundInterface is AssetInterface {
     // Administration by Manager
     function toggleSubscription() external {}
     function toggleRedemption() external {}
-    function increaseStake(uint shareQuantity) external {}
-    function decreaseStake(uint shareQuantity) external {}
     function shutDown() external {}
     // Managing by Manager
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
