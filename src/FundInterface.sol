@@ -1,7 +1,6 @@
 pragma solidity ^0.4.17;
 
 import './assets/AssetInterface.sol';
-import './exchange/ExchangeInterface.sol';
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -10,12 +9,9 @@ contract FundInterface is AssetInterface {
 
     // EVENTS
 
-    event PortfolioContent(uint holdings, uint price, uint decimals);
     event RequestUpdated(uint id);
     event Subscribed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
-    event SpendingApproved(address onConsigned, address ofAsset, uint amount);
-    event RewardsConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
     event LogError(uint ERROR_CODE);
