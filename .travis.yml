@@ -24,6 +24,7 @@ install:
 before_script:
 - parity --chain test/parity-genesis.config --jsonrpc-apis all &
 - npm run before-tests
+- sleep 20
 - killall parity
 script:
 - npm run compile
