@@ -22,7 +22,7 @@ install:
 - nvm use 8
 - npm install
 before_script:
-- parity --chain test/parity-genesis.config --jsonrpc-apis all
+- parity --chain test/parity-genesis.config --jsonrpc-apis all &
 - npm run before-tests
 - killall parity
 script:
