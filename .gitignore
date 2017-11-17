@@ -17,6 +17,3 @@ coverage/
 # ignore cache
 .cache/
 
-#ignore script
-scripts/
-

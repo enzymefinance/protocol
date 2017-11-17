@@ -74,11 +74,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
+
+    /// @notice Returns data feed history in an blockchain node friendly way
+    /// @dev Uses an efficient bulk call
+    /// @param ofAsset Asset for which data history should be returned
+    /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
     /**
-    @notice Returns data feed history in an blockchain node friendly way
-    @dev Uses an efficient bulk call
-    @param ofAsset Asset for which data history should be returned
-    @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
     @return {
       "timestampArray": "Array of timestamps",
       "priceArray": "Array of prices"
@@ -163,10 +164,10 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             .div(sellQuantity);
     }
 
+    /// @notice Gets timestamp and price data of an asset
+    /// @dev Asset has been initialised and is active
+    /// @param ofAsset Asset for which data should be returned
     /**
-    @notice Gets timestamp and price data of an asset
-    @dev Asset has been initialised and is active
-    @param ofAsset Asset for which data should be returned
     @return {
       "timestamp": "Timestamp of asset",
       "price": "Price of asset"
