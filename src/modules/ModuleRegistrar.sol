@@ -7,7 +7,7 @@ contract ModuleRegistrar is DBC {
 
     // TYPES
 
-    struct Module {
+    struct Module { // Information about the module
         string name; // Human-readable name of the Module
         uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
         address creator; // Address of Module creator, also address of inflation distribution amount
@@ -23,16 +23,18 @@ contract ModuleRegistrar is DBC {
     // Constructor fields
     SimpleCertifier public PICOPS; // Parity KYC verification contract
     // Methods fields
-    mapping (string => bool) moduleNameExists; // Links module names to boolean based on existence
-    mapping (address => address) public creatorOperatesModules; // Links module creator addresses to boolean based on current operation
-    mapping (address => Module) public information;
-    address[] public registeredModules;
+    mapping (string => bool) moduleNameExists; // Maps module names to boolean based on existence
+    mapping (address => address) public creatorOperatesModules; // Maps module creator address to module address
+    mapping (address => Module) public information; // Maps module address to information about the module
+    address[] public registeredModules; // List registered module addresses
 
     // PRE, POST AND INVARIANT CONDITIONS
 
+    /// @param a Module address to be checked for whether registered or not
     function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
     function isCreator(address a) internal constant returns (bool) { return information[a].creator == msg.sender; }
-    function isUniqueName(address a) internal constant returns (bool) { return information[a].creator == msg.sender; }
+    /// @param x String to be checked for uniqueness
+    function isUniqueName(string x) internal constant returns (bool) { return moduleNameExists[x]; }
     /// @dev Whether message sender is KYC verified through PICOPS
     /// @param x Address to be checked for KYC verification
     function isKYCVerified(address x) internal returns (bool) { return PICOPS.certified(x); }
@@ -52,9 +54,8 @@ contract ModuleRegistrar is DBC {
 
     // USER INTERFACE
 
-    /// @notice Registers a Module residing in a chain
-    /// @dev Pre: Only non-registered modules
-    /// @dev Post: Address ofModule is registered
+    /// @notice Registers a Module
+    /// @dev Only non-registered modules
     /// @param ofModule Address of module to be registered
     /// @param name Human-readable name of the Module
     /// @param moduleClass Enum: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
@@ -87,7 +88,7 @@ contract ModuleRegistrar is DBC {
     }
 
     /// @notice Updates description information of a registered module
-    /// @dev Owner can change an existing entry for registered modules
+    /// @dev Creator of module can change her existing registered modules
     /// @param ofModule Address of module to be registered
     /// @param name Human-readable name of the Module
     /// @param url URL for additional information of Module
@@ -108,7 +109,7 @@ contract ModuleRegistrar is DBC {
     }
 
     /// @notice Deletes an existing entry
-    /// @dev Owner can delete an existing entry
+    /// @dev Creator of module can delete her existing registered module
     /// @param ofModule address for which specific information is requested
     function remove(
         address ofModule
@@ -122,14 +123,16 @@ contract ModuleRegistrar is DBC {
         creatorOperatesModules[msg.sender] = 0;
     }
 
+    /// @notice Votes on an existing registered module
+    /// @dev Only KYC registered users can vote on registered modules w rating betw 0 and 10
+    /// @param ofModule address for which specific information is requested
+    /// @param rating uint between 0 and 10; 0 being worst, 10 being best
     function vote(address ofModule, uint rating) public
         pre_cond(isRegistered(ofModule))
-        pre_cond(isCreator(ofModule))
         pre_cond(isKYCVerified(msg.sender))
+        pre_cond(rating <= 10)
     {
-        if (rating <= 10) {
-            information[ofModule].sumOfRating += rating;
-            information[ofModule].numberOfReviewers += 1;
-        }
+        information[ofModule].sumOfRating += rating;
+        information[ofModule].numberOfReviewers += 1;
     }
 }
