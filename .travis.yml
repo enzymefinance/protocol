@@ -22,7 +22,9 @@ install:
 - nvm use 8
 - npm install
 before_script:
-- npm run localnode:background
+- parity --chain test/parity-genesis.config --jsonrpc-apis all
+- npm run before-tests
+- killall parity
 script:
 - npm run compile
 - npm run deploy:development
