@@ -1,0 +1,406 @@
+{
+  "nodes": {
+    "SitePage /dev-404-page/": {
+      "layout": null,
+      "jsonName": "dev-404-page.json",
+      "internalComponentName": "ComponentDev404Page",
+      "path": "/dev-404-page/",
+      "component": "/home/x3/Melon/protocol/.cache/dev-404-page.js",
+      "componentChunkName": "component---cache-dev-404-page-js",
+      "context": {},
+      "updatedAt": 1510925224519,
+      "pluginCreator___NODE": "Plugin dev-404-page",
+      "pluginCreatorId": "Plugin dev-404-page",
+      "componentPath": "/home/x3/Melon/protocol/.cache/dev-404-page.js",
+      "id": "SitePage /dev-404-page/",
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "type": "SitePage",
+        "contentDigest": "cceae2002142abc53c876058a1fc6156",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin component-page-creator": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/component-page-creator",
+      "id": "Plugin component-page-creator",
+      "name": "component-page-creator",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "createPagesStatefully"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/component-page-creator",
+      "packageJson": {
+        "name": "component-page-creator",
+        "description": "An internal Gatsby plugin that creates pages from component files in src/pages",
+        "version": "1.0.0",
+        "main": "index.js",
+        "keywords": [
+          "gatsby",
+          "gatsby-plugin"
+        ],
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "053fe8c7e82f321f379ecacd967b62c2",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin component-layout-creator": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/component-layout-creator",
+      "id": "Plugin component-layout-creator",
+      "name": "component-layout-creator",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "createLayouts"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/component-layout-creator",
+      "packageJson": {
+        "name": "component-layout-creator",
+        "description": "An internal Gatsby plugin that creates pages from component files in src/layouts",
+        "version": "1.0.0",
+        "main": "index.js",
+        "keywords": [
+          "gatsby",
+          "gatsby-plugin"
+        ],
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "f8821f28c0bccf43b88a05259d02d6e3",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin internal-data-bridge": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/internal-data-bridge",
+      "id": "Plugin internal-data-bridge",
+      "name": "internal-data-bridge",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "sourceNodes",
+        "onCreatePage"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/internal-data-bridge",
+      "packageJson": {
+        "name": "internal-data-bridge",
+        "description": "An internal Gatsby plugin which creates data nodes from internal data",
+        "version": "1.0.0",
+        "main": "index.js",
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "18ab13ea8e229872bf15c792d83f1056",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin dev-404-page": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/dev-404-page",
+      "id": "Plugin dev-404-page",
+      "name": "dev-404-page",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "createPages"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/dev-404-page",
+      "packageJson": {
+        "name": "dev-404-page",
+        "description": "Internal plugin to add a 404 page in development with helpful information",
+        "version": "1.0.0",
+        "main": "index.js",
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "cec05570f91d7235f512892372ce5f29",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin prod-404": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/prod-404",
+      "id": "Plugin prod-404",
+      "name": "prod-404",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "onCreatePage"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/prod-404",
+      "packageJson": {
+        "name": "prod-404",
+        "description": "Internal plugin to detect various flavors of 404 pages and ensure there's a 404.html path created as well to ensure compatability with static hosts",
+        "version": "1.0.0",
+        "main": "index.js",
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "f192ad46b33b39352816fcda59f50146",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin query-runner": {
+      "resolve": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/query-runner",
+      "id": "Plugin query-runner",
+      "name": "query-runner",
+      "version": "1.0.0",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [
+        "onCreatePage",
+        "onCreateLayout"
+      ],
+      "pluginFilepath": "/home/x3/Melon/protocol/node_modules/gatsby/dist/internal-plugins/query-runner",
+      "packageJson": {
+        "name": "query-runner",
+        "description": "Internal plugin for running queries",
+        "version": "1.0.0",
+        "main": "index.js",
+        "author": "",
+        "license": "MIT",
+        "dependencies": [],
+        "devDependencies": [],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "c4dee7a78ae95dfb21a73c6635adfd0b",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Plugin default-site-plugin": {
+      "resolve": "/home/x3/Melon/protocol",
+      "id": "Plugin default-site-plugin",
+      "name": "default-site-plugin",
+      "version": "d41d8cd98f00b204e9800998ecf8427e",
+      "pluginOptions": {
+        "plugins": []
+      },
+      "nodeAPIs": [],
+      "pluginFilepath": "/home/x3/Melon/protocol",
+      "packageJson": {
+        "name": "@melonproject/protocol",
+        "description": "Technology Regulated Investment Funds",
+        "version": "0.4.0-live.2",
+        "keywords": [
+          "Ethereum",
+          "Protocol",
+          "Melon"
+        ],
+        "author": "“Melonport AG <“team@melonport.com”>",
+        "license": "GPL-3.0",
+        "dependencies": [
+          {
+            "name": "@parity/api",
+            "version": "^2.1.3"
+          },
+          {
+            "name": "bignumber.js",
+            "version": "^4.1.0"
+          },
+          {
+            "name": "chai",
+            "version": "^4.1.0"
+          },
+          {
+            "name": "ethereumjs-testrpc",
+            "version": "^4.1.3"
+          },
+          {
+            "name": "file-system",
+            "version": "^2.2.2"
+          },
+          {
+            "name": "gatsby",
+            "version": "^1.9.114"
+          },
+          {
+            "name": "request-promise",
+            "version": "^4.2.2"
+          },
+          {
+            "name": "solc",
+            "version": "^0.4.17"
+          },
+          {
+            "name": "web3",
+            "version": "^1.0.0-beta.21"
+          }
+        ],
+        "devDependencies": [
+          {
+            "name": "@digix/doxity",
+            "version": "^0.5.2"
+          },
+          {
+            "name": "babel-cli",
+            "version": "^6.26.0"
+          },
+          {
+            "name": "babel-core",
+            "version": "^6.26.0"
+          },
+          {
+            "name": "babel-eslint",
+            "version": "^7.2.3"
+          },
+          {
+            "name": "babel-plugin-transform-runtime",
+            "version": "^6.23.0"
+          },
+          {
+            "name": "babel-preset-es2015",
+            "version": "^6.24.1"
+          },
+          {
+            "name": "babel-preset-flow",
+            "version": "^6.23.0"
+          },
+          {
+            "name": "babel-preset-stage-0",
+            "version": "^6.24.1"
+          },
+          {
+            "name": "babel-runtime",
+            "version": "^6.26.0"
+          },
+          {
+            "name": "eslint",
+            "version": "^4.7.2"
+          },
+          {
+            "name": "eslint-config-airbnb",
+            "version": "^15.1.0"
+          },
+          {
+            "name": "eslint-config-prettier",
+            "version": "^2.6.0"
+          },
+          {
+            "name": "eslint-plugin-flowtype",
+            "version": "^2.36.0"
+          },
+          {
+            "name": "eslint-plugin-import",
+            "version": "^2.7.0"
+          },
+          {
+            "name": "eslint-plugin-jasmine",
+            "version": "^2.8.4"
+          },
+          {
+            "name": "eslint-plugin-jsx-a11y",
+            "version": "^5.1.1"
+          },
+          {
+            "name": "eslint-plugin-react",
+            "version": "^7.4.0"
+          },
+          {
+            "name": "jasmine",
+            "version": "^2.8.0"
+          },
+          {
+            "name": "prettier-eslint",
+            "version": "^8.1.1"
+          }
+        ],
+        "peerDependencies": [],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "7b7dde215d7a967de9d3886e61376304",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
+    "Site": {
+      "siteMetadata": {},
+      "port": "8000",
+      "host": "localhost",
+      "pathPrefix": "",
+      "polyfill": true,
+      "buildTime": "2017-11-17T13:27:02.931Z",
+      "id": "Site",
+      "parent": "SOURCE",
+      "children": [],
+      "internal": {
+        "contentDigest": "f62d2036f371a832afd1aa6c247e64c4",
+        "type": "Site",
+        "owner": "internal-data-bridge"
+      }
+    }
+  },
+  "status": {
+    "plugins": {},
+    "PLUGINS_HASH": "25a095b4a13616ec86dc6d9ce30661ea"
+  },
+  "componentDataDependencies": {
+    "nodes": {},
+    "connections": {}
+  }
+}
