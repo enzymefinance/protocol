@@ -33,8 +33,6 @@ contract ModuleRegistrar is DBC {
     /// @param a Module address to be checked for whether registered or not
     function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
     function isCreator(address a) internal constant returns (bool) { return information[a].creator == msg.sender; }
-    /// @param x String to be checked for uniqueness
-    function isUniqueName(string x) internal constant returns (bool) { return moduleNameExists[x]; }
     /// @dev Whether message sender is KYC verified through PICOPS
     /// @param x Address to be checked for KYC verification
     function isKYCVerified(address x) internal returns (bool) { return PICOPS.certified(x); }
