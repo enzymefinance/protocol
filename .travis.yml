@@ -23,9 +23,8 @@ install:
 - npm install
 before_script:
 - parity --chain test/parity-genesis.config --jsonrpc-apis all &
-- PARITY_PID=$!
 - npm run before-tests
-- kill PARITY_PID
+- killall parity
 script:
 - npm run compile:quiet
 - npm run localnode:parity &
