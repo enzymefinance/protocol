@@ -27,9 +27,9 @@ before_script:
 - killall parity
 script:
 - npm run compile:quiet
-- npm run localnode:parity &
+- npm run localnode:parity &> parity.log
 - npm run deploy:development
 - npm run test
 - npm run oyente
 after_script:
-- cat testrpc.log
+- cat parity.log
