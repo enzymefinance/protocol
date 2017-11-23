@@ -740,9 +740,6 @@ describe("Fund shares", () => {
     });
 
     it("fund receives MLN from a subscription (request & execute)", async () => {
-      console.log(trade1);
-      console.log(trade2);
-      console.log(trade3);
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       const pre = await getAllBalances();
