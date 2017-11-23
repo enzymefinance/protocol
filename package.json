@@ -15,9 +15,9 @@
     "test:jasmine": "babel-node tests/run.js",
     "test:ds-test": "dapp test -v",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
-    "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
-    "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
-    "deploy:development": "npm run compile && babel-node deployment/deploy-all.js development",
+    "deploy:live": "babel-node deployment/deploy-all.js live",
+    "deploy:kovan": "babel-node deployment/deploy-all.js kovan",
+    "deploy:development": "babel-node deployment/deploy-all.js development",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build"
   },
