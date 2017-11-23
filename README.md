@@ -244,29 +244,41 @@ You will need the `dapp` developer tools, which you can install using [these ste
     npm run compile
     ```
 
-### Testing
+### Setup
 
-After installation is complete, go to the above `vesting` directory, open a terminal and:
+After [installation](#installation) is complete, go to the above `vesting` directory, open a terminal and:
 
-1. Launch parity dev chain (If you have already run before-tests earlier, skip to the third step):
+1. Launch parity dev chain (If you have already run before-tests earlier, skip to [deploy](#devchain-deployment) section):
     ```
     npm run devchain:before-tests
     ```
 
-2. Open a second terminal import the predefined accounts into parity and fund them by executing:
+2. Import the predefined accounts into parity and fund them by executing:
 
     ```
     npm run before-tests
     ```
 
-3. Close the already running parity node and run:
+### Devchain Deployment
+
+After [Setup](#setup) is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
+    ```
+    npm run devchain:before-tests
+    ```
+
+2. Open a second terminal and deploy the contracts to the development network:
 
     ```
-    npm run devchain:parity
+    npm run deploy:development
     ```
 
-4. While keeping above parity node running execute in second terminal to deploy contracts:
+### Testing
 
+After [deploy](#devchain-deployment) is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
     ```
     npm run deploy:development
     ```
@@ -279,12 +291,13 @@ After installation is complete, go to the above `vesting` directory, open a term
 
 ### Linting
 
-After installation is complete, go to the above `protocol` directory, open a terminal and run:
+After [installation](#installation) is complete, go to the above `protocol` directory, open a terminal and run:
+    ```
+    npm run lint
+    ```
 
-`npm run lint`
 
-
-### Deployment
+### Kovan Deployment
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 

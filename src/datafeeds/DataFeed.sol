@@ -74,7 +74,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
-
     /// @notice Returns data feed history in an blockchain node friendly way
     /// @dev Uses an efficient bulk call
     /// @param ofAsset Asset for which data history should be returned

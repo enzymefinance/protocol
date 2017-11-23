@@ -22,11 +22,14 @@ install:
 - nvm use 8
 - npm install
 before_script:
-- npm run localnode:background
+- npm run devchain:before-tests &
+- npm run before-tests
+- killall parity
 script:
-- npm run compile
+- npm run compile &> compile.log || cat compile.log
+- npm run devchain:parity &> parity.log &
 - npm run deploy:development
 - npm run test
 - npm run oyente
 after_script:
-- cat testrpc.log
+- cat parity.log

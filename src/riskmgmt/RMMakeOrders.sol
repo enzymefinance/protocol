@@ -9,7 +9,7 @@ contract RMMakeOrders is RiskMgmtInterface {
 
       // FIELDS
 
-      uint public constant RISK_LEVEL = 200; // Allows 2 percent deviation from referencePrice
+      uint public constant RISK_LEVEL = 1000; // Allows 10 percent deviation from referencePrice
       uint public constant RISK_DIVISOR = 10000;
 
       // PRE, POST, INVARIANT CONDITIONS
@@ -37,10 +37,10 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= referencePrice + RISK_LEVEL * referencePrice / RISK_DIVISOR) {
-              return true;
+          if (orderPrice <= referencePrice - RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+              return false;
           }
-          return false;
+          return true;
       }
 
       /// @notice Checks if the takeOrder price is within maximum allowed deviation from reference price
@@ -62,9 +62,9 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= referencePrice + RISK_LEVEL * referencePrice / RISK_DIVISOR) {
-              return true;
+          if (orderPrice <= referencePrice - RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+              return false;
           }
-          return false;
+          return true;
       }
 }
