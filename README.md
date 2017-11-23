@@ -246,7 +246,7 @@ You will need the `dapp` developer tools, which you can install using [these ste
 
 ### Setup
 
-After installation is complete, go to the above `vesting` directory, open a terminal and:
+After [installation](#installation) is complete, go to the above `vesting` directory, open a terminal and:
 
 1. Launch parity dev chain (If you have already run before-tests earlier, skip to [deploy](#devchain-deployment) section):
     ```
@@ -261,7 +261,7 @@ After installation is complete, go to the above `vesting` directory, open a term
 
 ### Devchain Deployment
 
-After setup is complete, go to the above `protocol` directory, open a terminal and:
+After [Setup](#setup) is complete, go to the above `protocol` directory, open a terminal and:
 
 1. Launch parity dev chain:
     ```
@@ -276,7 +276,7 @@ After setup is complete, go to the above `protocol` directory, open a terminal a
 
 ### Testing
 
-After deploy is complete, go to the above `protocol` directory, open a terminal and:
+After [deploy](#devchain-deployment) is complete, go to the above `protocol` directory, open a terminal and:
 
 1. Launch parity dev chain:
     ```
@@ -291,7 +291,7 @@ After deploy is complete, go to the above `protocol` directory, open a terminal 
 
 ### Linting
 
-After installation is complete, go to the above `protocol` directory, open a terminal and run:
+After [installation](#installation) is complete, go to the above `protocol` directory, open a terminal and run:
     ```
     npm run lint
     ```
