@@ -1,7 +1,6 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import './assets/AssetInterface.sol';
-import './exchange/ExchangeInterface.sol';
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -30,9 +29,6 @@ contract FundInterface is AssetInterface {
     function getStake() constant returns (uint) {}
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
-    // Get staking information
-    function quantitySentToExchange(address ofAsset) constant returns (uint) {}
-    function quantityExpectedToReturn(address ofAsset) constant returns (uint) {}
     // Get accounting information
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
     function calcSharePrice() constant returns (uint) {}
@@ -48,15 +44,11 @@ contract FundInterface is AssetInterface {
     // Administration by Manager
     function toggleSubscription() external {}
     function toggleRedemption() external {}
-    function increaseStake(uint shareQuantity) external {}
-    function decreaseStake(uint shareQuantity) external {}
     function shutDown() external {}
     // Managing by Manager
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
     function takeOrder(uint id, uint quantity) external returns (bool, string) {}
     function cancelOrder(uint id) external returns (bool, string) {}
-    function manualSettlement(address sellAsset, address buyAsset) returns (bool, string) {}
-    function proofOfEmbezzlement(address sellAsset, address buyAsset) returns (bool, string) {}
     // Rewards by Manager
     function convertUnclaimedRewards() external returns (bool, string) {}
 }

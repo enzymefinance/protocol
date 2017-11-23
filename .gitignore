@@ -13,3 +13,7 @@ address-book.json
 # ignore generated coverage data
 coverage.json
 coverage/
+
+# ignore cache
+.cache/
+

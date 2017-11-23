@@ -246,9 +246,9 @@ You will need the `dapp` developer tools, which you can install using [these ste
 
 ### Setup
 
-After installation is complete, go to the above `protocol` directory, open a terminal and:
+After installation is complete, go to the above `vesting` directory, open a terminal and:
 
-1. Launch parity dev chain (If you have already run before-tests earlier, skip to deply section):
+1. Launch parity dev chain (If you have already run before-tests earlier, skip to [deploy](#devchain-deployment) section):
     ```
     npm run devchain:before-tests
     ```
@@ -280,10 +280,11 @@ After deploy is complete, go to the above `protocol` directory, open a terminal 
 
 1. Launch parity dev chain:
     ```
-    npm run devchain:before-tests
+    npm run deploy:development
     ```
 
-2. Run the test framework:
+5. Run the tests using:
+
     ```
     npm test
     ```

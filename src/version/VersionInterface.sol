@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
@@ -44,50 +44,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) constant returns (uint) { return information[ofAsset].decimal; }
 
-    /// @notice Gets human-readable information about an Asset
-    /// @param ofAsset address for which descriptive information is requested
-    /**
-    @return {
-      "name": "Human-readable name of the Asset as in ERC223 token standard",
-      "symbol": "Human-readable symbol of the Asset as in ERC223 token standard",
-      "url": "Url for extended information of the asset",
-      "ipfsHash": "Same as url but for ipfs"
-    }
-    */
-    function getDescriptiveInformation(address ofAsset)
-        constant
-        returns (string name, string symbol, string url, bytes32 ipfsHash)
-    {
-        return (
-            information[ofAsset].name,
-            information[ofAsset].symbol,
-            information[ofAsset].url,
-            information[ofAsset].ipfsHash
-        );
-    }
-
-    /// @notice Gets fund accounting related information about an Asset
-    /// @param ofAsset address for which specific information is requested
-    /**
-    @return {
-      "decimal": "Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard",
-      "chainId": "Chain where the asset resides",
-      "breakIn": "Address of break in contract on destination chain",
-      "breakOut": "Address of break out contract on this chain"
-    }
-    */
-    function getSpecificInformation(address ofAsset)
-        constant
-        returns (uint decimal, bytes32 chainId, address breakIn, address breakOut)
-    {
-        return (
-            information[ofAsset].decimal,
-            information[ofAsset].chainId,
-            information[ofAsset].breakIn,
-            information[ofAsset].breakOut
-        );
-    }
-
     // NON-CONSTANT METHODS
 
     /// @notice Registers an Asset residing in a chain
@@ -115,7 +71,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        //post_cond(isRegistered(ofAsset)) // Wait for next release of solidity
+        post_cond(isRegistered(ofAsset))
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -129,7 +85,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
             breakOut: breakOut,
             exists: true
         });
-        assert(isRegistered(ofAsset));
     }
 
     /// @notice Updates description information of a registered Asset
@@ -165,9 +120,8 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
-        //post_cond(notRegistered(ofAsset)) // Wait for next release of solidity
+        post_cond(notRegistered(ofAsset))
     {
         delete information[ofAsset]; // Sets exists boolean to false
-        assert(notRegistered(ofAsset));
     }
 }

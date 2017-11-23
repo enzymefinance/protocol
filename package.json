@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.4.0-live.2",
+  "version": "0.5.0-alpha.1",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "test"
@@ -12,7 +12,7 @@
     "before-tests": "babel-node test/before-tests.js",
     "devchain:parity": "parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
     "test": "npm run test:ds-test && npm run test:jasmine",
-    "test:jasmine": "babel-node test/run.js",
+    "test:jasmine": "babel-node tests/run.js",
     "test:ds-test": "dapp test -v",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
     "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
@@ -55,16 +55,16 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-0": "^6.24.1",
     "babel-runtime": "^6.26.0",
-    "eslint": "^4.7.2",
+    "eslint": "^4.11.0",
     "eslint-config-airbnb": "^15.1.0",
-    "eslint-config-prettier": "^2.6.0",
-    "eslint-plugin-flowtype": "^2.36.0",
-    "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-jasmine": "^2.8.4",
+    "eslint-config-prettier": "^2.7.0",
+    "eslint-plugin-flowtype": "^2.39.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jasmine": "^2.9.1",
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
     "jasmine": "^2.8.0",
-    "prettier-eslint": "^8.1.1"
+    "prettier-eslint": "^8.2.2"
   },
   "dependencies": {
     "@parity/api": "^2.1.3",
@@ -73,7 +73,7 @@
     "ethereumjs-testrpc": "^4.1.3",
     "file-system": "^2.2.2",
     "request-promise": "^4.2.2",
-    "solc": "^0.4.17",
-    "web3": "^1.0.0-beta.21"
+    "solc": "^0.4.18",
+    "web3": "^1.0.0-beta2"
   }
 }

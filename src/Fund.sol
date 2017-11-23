@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './dependencies/DBC.sol';
@@ -34,7 +34,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint performanceReward; // Performance based reward measured against REFERENCE_ASSET
         uint unclaimedRewards; // Rewards not yet allocated to the fund manager
         uint nav; // Net asset value
-        uint sharePrice; // A measure of fund performance
+        uint highWaterMark; // A record of best all-time fund performance
         uint totalSupply; // Total supply of shares
         uint timestamp; // Time when calculations are performed in seconds
     }
@@ -177,11 +177,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         );
         performanceReward = 0;
         if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav); // TODO Multiply w getInvertedPrice(ofReferenceAsset)
-            if (currSharePrice > atLastConversion.sharePrice) {
+            uint currSharePrice = calcValuePerShare(gav).mul(module.datafeed.getInvertedPrice(REFERENCE_ASSET));
+            if (currSharePrice > atLastConversion.highWaterMark) {
               performanceReward = rewards.performanceReward(
                   PERFORMANCE_REWARD_RATE,
-                  int(currSharePrice - atLastConversion.sharePrice),
+                  int(currSharePrice - atLastConversion.highWaterMark),
                   totalSupply,
                   DIVISOR_FEE
               );
@@ -285,6 +285,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
+        // Require reference assets exists in datafeed
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
         MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
@@ -296,7 +297,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            sharePrice: MELON_IN_BASE_UNITS,
+            highWaterMark: MELON_IN_BASE_UNITS,
             totalSupply: totalSupply,
             timestamp: now
         });
@@ -729,13 +730,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         totalSupply = totalSupply.sub(shareQuantity); // Annihilate ownerless shares
         addShares(owner, shareQuantity); // Create shares and allocate them to manager
         // Update Calculations
+        uint updatedHighWaterMark = atLastConversion.highWaterMark >= sharePrice ? atLastConversion.highWaterMark : sharePrice;
         atLastConversion = Calculations({
             gav: gav,
             managementReward: managementReward,
             performanceReward: performanceReward,
             unclaimedRewards: unclaimedRewards,
             nav: nav,
-            sharePrice: sharePrice,
+            highWaterMark: updatedHighWaterMark,
             totalSupply: totalSupply,
             timestamp: now
         });

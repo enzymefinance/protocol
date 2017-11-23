@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 /// @title Math operations with safety checks
 /// @author Melonport AG <team@melonport.com>
