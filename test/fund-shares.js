@@ -844,13 +844,13 @@ describe("Fund shares", () => {
       );
       receipt = await ethToken.instance.approve.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
-        [simpleMarket.address, trade1.buyQuantity],
+        [simpleMarket.address, trade1.buyQuantity + 100],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
       receipt = await simpleMarket.instance.buy.postTransaction(
         { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-        [orderId, trade1.buyQuantity],
+        [orderId, trade1.sellQuantity],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -862,7 +862,7 @@ describe("Fund shares", () => {
       );
       const post = await getAllBalances();
 
-      expect(exchangePostMln).toEqual(exchangePreMln - trade1.buyQuantity);
+      expect(exchangePostMln).toEqual(exchangePreMln - trade1.sellQuantity);
       expect(exchangePostEthToken).toEqual(exchangePreEthToken);
       expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
       expect(post.deployer.mlnToken).toEqual(
