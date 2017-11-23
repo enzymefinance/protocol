@@ -83,8 +83,8 @@ async function deploy(environment) {
       console.log('Deployed sphere');
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync('out/participation/Participation.abi'));
-      bytecode = fs.readFileSync('out/participation/Participation.bin');
+      abi = JSON.parse(fs.readFileSync('out/participation/ParticipationOpen.abi'));
+      bytecode = fs.readFileSync('out/participation/ParticipationOpen.bin');
       participation = await (new web3.eth.Contract(abi).deploy({
         data: `0x${bytecode}`,
         arguments: [],
