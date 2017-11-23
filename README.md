@@ -244,38 +244,46 @@ You will need the `dapp` developer tools, which you can install using [these ste
     npm run compile
     ```
 
-### Testing
+### Setup
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
-1. Launch a parity dev chain with the provided genesis settings file
+1. Launch parity dev chain (If you have already run before-tests earlier, skip to deply section):
     ```
-    parity --chain test/parity-genesis.config --jsonrpc-apis all
+    npm run devchain:before-tests
     ```
 
 2. Import the predefined accounts into parity and fund them by executing:
+
     ```
     npm run before-tests
     ```
 
-3. Close the already running parity instance and run:
+### Devchain Deployment
+
+After setup is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
     ```
-    parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0
+    npm run devchain:before-tests
     ```
 
-4. Open a second terminal and deploy the contracts to the development network:
+2. Open a second terminal and deploy the contracts to the development network:
 
     ```
-    npm run compile && npm run deploy:development
+    npm run deploy:development
     ```
 
-5. Compile all the contracts:
+### Testing
 
+After deploy is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
     ```
-    npm run compile
+    npm run devchain:before-tests
     ```
 
-6. Run the test framework:
+2. Run the test framework:
     ```
     npm test
     ```
@@ -283,11 +291,12 @@ After installation is complete, go to the above `protocol` directory, open a ter
 ### Linting
 
 After installation is complete, go to the above `protocol` directory, open a terminal and run:
+    ```
+    npm run lint
+    ```
 
-`npm run lint`
 
-
-### Deployment
+### Kovan Deployment
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
