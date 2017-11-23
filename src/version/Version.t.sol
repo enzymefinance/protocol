@@ -1,3 +1,4 @@
+/*
 pragma solidity ^0.4.11;
 
 import "ds-test/test.sol";
@@ -90,3 +91,4 @@ contract VersionTest is DSTest {
         assert(fundIsShutDown);
     }
 }
+*/
