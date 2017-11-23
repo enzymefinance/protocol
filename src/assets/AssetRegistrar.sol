@@ -71,7 +71,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        post_cond(isRegistered(ofAsset))
+        // post_cond(isRegistered(ofAsset))
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({

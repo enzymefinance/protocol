@@ -10,7 +10,7 @@ import "./riskmgmt/RiskMgmt.sol";
 import "./Fund.sol";
 
 
-contract DataFeedTest is DSTest {
+contract FundTest is DSTest {
     DataFeed datafeed;
     EtherToken etherToken;
     Fund fund;
@@ -35,61 +35,61 @@ contract DataFeedTest is DSTest {
     uint inputMelonTokenPrice = 1000000000000000000;
     uint mockQuantity = 1 ether;
 
-    function setUp() {
-        melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
-        etherToken = new EtherToken();
-        datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
-        simpleMarket = new SimpleMarket();
-        sphere = new Sphere(datafeed, simpleMarket);
-        participation = new Participation();
-        fund = new Fund(
-            MANAGER_ADDRESS,
-            FUND_NAME,
-            melonToken,
-            MANAGEMENT_REWARD,
-            PERFORMANCE_REWARD,
-            melonToken,
-            participation,
-            riskManagement,
-            sphere
-        );
-    }
+    //function setUp() {
+    //    melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
+    //    etherToken = new EtherToken();
+    //    datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
+    //    simpleMarket = new SimpleMarket();
+    //    sphere = new Sphere(datafeed, simpleMarket);
+    //    participation = new Participation();
+    //    fund = new Fund(
+    //        MANAGER_ADDRESS,
+    //        FUND_NAME,
+    //        melonToken,
+    //        MANAGEMENT_REWARD,
+    //        PERFORMANCE_REWARD,
+    //        melonToken,
+    //        participation,
+    //        riskManagement,
+    //        sphere
+    //    );
+    //}
 
-    function testVariablesSetCorrectly() {
-        var returnedName = fund.getName();
-        uint returnedDecimals = fund.getDecimals();
-        var (returnedDatafeed, returnedExchange, returnedParticipation, returnedRiskMgmt) = fund.getModules();
-        uint stake = fund.getStake();
+    //function testVariablesSetCorrectly() {
+    //    var returnedName = fund.getName();
+    //    uint returnedDecimals = fund.getDecimals();
+    //    var (returnedDatafeed, returnedExchange, returnedParticipation, returnedRiskMgmt) = fund.getModules();
+    //    uint stake = fund.getStake();
 
-        assertEq(returnedDatafeed, datafeed);
-        assertEq(returnedExchange, simpleMarket);
-        assertEq(returnedParticipation, participation);
-        assertEq(returnedRiskMgmt, riskManagement);
-        //assertEq(returnedName, FUND_NAME); //TODO: uncomment when assertEq implemented for strings
-        assertEq(returnedDecimals, MELON_DECIMALS);
-        assertEq(stake, 0);
-    }
+    //    assertEq(returnedDatafeed, datafeed);
+    //    assertEq(returnedExchange, simpleMarket);
+    //    assertEq(returnedParticipation, participation);
+    //    assertEq(returnedRiskMgmt, riskManagement);
+    //    //assertEq(returnedName, FUND_NAME); //TODO: uncomment when assertEq implemented for strings
+    //    assertEq(returnedDecimals, MELON_DECIMALS);
+    //    assertEq(stake, 0);
+    //}
 
-    function testToggles() {
-        bool preSubscriptionAllowed = fund.isSubscribeAllowed();
-        bool preRedemptionAllowed = fund.isRedeemAllowed();
-        fund.toggleSubscription();
-        fund.toggleRedemption();
-        bool postSubscriptionAllowed = fund.isSubscribeAllowed();
-        bool postRedemptionAllowed = fund.isRedeemAllowed();
+    //function testToggles() {
+    //    bool preSubscriptionAllowed = fund.isSubscribeAllowed();
+    //    bool preRedemptionAllowed = fund.isRedeemAllowed();
+    //    fund.toggleSubscription();
+    //    fund.toggleRedemption();
+    //    bool postSubscriptionAllowed = fund.isSubscribeAllowed();
+    //    bool postRedemptionAllowed = fund.isRedeemAllowed();
 
-        assert(preSubscriptionAllowed);
-        assert(preRedemptionAllowed);
-        assert(!postSubscriptionAllowed);
-        assert(!postRedemptionAllowed);
-    }
+    //    assert(preSubscriptionAllowed);
+    //    assert(preRedemptionAllowed);
+    //    assert(!postSubscriptionAllowed);
+    //    assert(!postRedemptionAllowed);
+    //}
 
-    function testShutDown() {
-        fund.shutDown();
-        bool fundShutDown = fund.isShutDown();
+    //function testShutDown() {
+    //    fund.shutDown();
+    //    bool fundShutDown = fund.isShutDown();
 
-        assert(fundShutDown);
-    }
+    //    assert(fundShutDown);
+    //}
 
 // TODO: enable these tests when we can update datafeed from within EVM.
 //       This depends on github.com/dapphub/ds-test/issues/5
