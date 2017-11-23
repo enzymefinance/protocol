@@ -47,47 +47,46 @@ contract VersionTest is DSTest {
         participation = new Participation();
     }
 
-    function testSetupFund() {
-        version.setupFund(
-            FUND_NAME,
-            melonToken,
-            MANAGEMENT_REWARD,
-            PERFORMANCE_REWARD,
-            participation,
-            riskMgmt,
-            sphere,
-            v,
-            r,
-            s
-        );
-        uint fundId = version.getLastFundId();
-        address fundAddressFromManager = version.getFundByManager(MANAGER_ADDRESS);
-        address fundAddressFromId = version.getFundById(fundId);
+    // function testSetupFund() {
+    //     version.setupFund(
+    //         FUND_NAME,
+    //         melonToken,
+    //         MANAGEMENT_REWARD,
+    //         PERFORMANCE_REWARD,
+    //         participation,
+    //         riskMgmt,
+    //         sphere,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     uint fundId = version.getLastFundId();
+    //     address fundAddressFromManager = version.getFundByManager(MANAGER_ADDRESS);
+    //     address fundAddressFromId = version.getFundById(fundId);
 
-        assertEq(fundAddressFromId, fundAddressFromManager);
-        assertEq(fundId, 0);
-    }
+    //     assertEq(fundAddressFromId, fundAddressFromManager);
+    //     assertEq(fundId, 0);
+    // }
 
-    function testShutdownFund() {
-        version.setupFund(
-            FUND_NAME,
-            melonToken,
-            MANAGEMENT_REWARD,
-            PERFORMANCE_REWARD,
-            participation,
-            riskMgmt,
-            sphere,
-            v,
-            r,
-            s
-        );
-        uint fundId = version.getLastFundId();
-        address fundAddress = version.getFundById(fundId);
-        Fund fund = Fund(fundAddress);
-        version.shutDownFund(fundId);
-        bool fundIsShutDown = fund.isShutDown();
+    // function testShutdownFund() {
+    //     version.setupFund(
+    //         FUND_NAME,
+    //         melonToken,
+    //         MANAGEMENT_REWARD,
+    //         PERFORMANCE_REWARD,
+    //         participation,
+    //         riskMgmt,
+    //         sphere,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     uint fundId = version.getLastFundId();
+    //     address fundAddress = version.getFundById(fundId);
+    //     Fund fund = Fund(fundAddress);
+    //     version.shutDownFund(fundId);
+    //     bool fundIsShutDown = fund.isShutDown();
 
-        assert(fundIsShutDown);
-    }
+    //     assert(fundIsShutDown);
+    // }
 }
-*/
