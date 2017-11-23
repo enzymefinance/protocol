@@ -172,7 +172,6 @@ describe("Fund shares", () => {
       console.log(v);
       console.log(r);
       console.log(s);
-      // await updateDatafeed();
       receipt = await version.instance.setupFund.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
@@ -436,9 +435,7 @@ describe("Fund shares", () => {
           let investorGasTotal = new BigNumber(0);
           let workerGasTotal = new BigNumber(0);
           await updateDatafeed();
-          // await web3.mineBlock();
           await updateDatafeed();
-          // await web3.mineBlock();
           const pre = await getAllBalances();
           const baseUnits = await fund.instance.getBaseUnits.call({}, []);
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
@@ -597,9 +594,7 @@ describe("Fund shares", () => {
           let workerGasTotal = new BigNumber(0);
           let investorGasTotal = new BigNumber(0);
           await updateDatafeed();
-          // await web3.mineBlock();
           await updateDatafeed();
-          // await web3.mineBlock();
           const pre = await getAllBalances();
           const investorPreShares = Number(
             await fund.instance.balanceOf.call({}, [investor]),
@@ -711,15 +706,30 @@ describe("Fund shares", () => {
     const incentive = 500;
     const offeredValue = 10 ** 10;
     const wantedShares = 10 ** 10;
-    const trade1 = {
-      sellQuantity: 1000,
-      buyQuantity: 1000,
-    };
-    const trade2 = {
-      sellQuantity: 500,
-      buyQuantity: 1000,
-    };
+    let trade1;
+    let trade2;
+
+    beforeEach(async () => {
+      await updateDatafeed();
+      const referencePrice = await datafeed.instance.getReferencePrice.call({}, [
+        mlnToken.address,
+        ethToken.address,
+      ]);
+      console.log(referencePrice);
+      const sellQuantity1 = 1000;
+      trade1 = {
+        sellQuantity: sellQuantity1,
+        buyQuantity: (referencePrice / 10 ** 18).toFixed(2) * sellQuantity1,
+      };
+      const sellQuantity2 = 500;
+      trade2 = {
+        sellQuantity: sellQuantity2,
+        buyQuantity: (referencePrice / 10 ** 18).toFixed(2) * sellQuantity2,
+      };
+    });
+
     it("fund receives MLN from a subscription (request & execute)", async () => {
+      console.log(trade1);
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       const pre = await getAllBalances();
@@ -736,9 +746,7 @@ describe("Fund shares", () => {
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed)
       await updateDatafeed();
-      // await web3.mineBlock();
       await updateDatafeed();
-      // await web3.mineBlock();
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       receipt = await fund.instance.executeRequest.postTransaction(
         { from: worker, gas: config.gas, gasPrice: config.gasPrice },
@@ -774,9 +782,8 @@ describe("Fund shares", () => {
         await ethToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       await updateDatafeed();
-      const price = await datafeed.instance.getReferencePrice.call({}, [
-        mlnToken.address,
-        ethToken.address,
+      const order = await datafeed.instance.getOrderPrice.call({}, [
+        mlnToken.address, trade1.sellQuantity, trade1.buyQuantity
       ]);
       receipt = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -816,6 +823,7 @@ describe("Fund shares", () => {
     it("third party takes entire order, allowing fund to receive ethToken", async () => {
       const pre = await getAllBalances();
       const orderId = await simpleMarket.instance.last_offer_id.call({}, []);
+      console.log(orderId);
       const exchangePreMln = Number(
         await mlnToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
@@ -841,6 +849,7 @@ describe("Fund shares", () => {
         await ethToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       const post = await getAllBalances();
+
       expect(exchangePostMln).toEqual(exchangePreMln - trade1.buyQuantity);
       expect(exchangePostEthToken).toEqual(exchangePreEthToken);
       expect(post.deployer.ether).toEqual(pre.deployer.ether.minus(runningGasTotal.times(gasPrice)));
@@ -1003,9 +1012,7 @@ describe("Fund shares", () => {
           gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
           investorGasTotal = investorGasTotal.plus(gasUsed);
           await updateDatafeed();
-          // await web3.mineBlock();
           await updateDatafeed();
-          // await web3.mineBlock();
           const requestId = await fund.instance.getLastRequestId.call({}, []);
           receipt = await fund.instance.executeRequest.postTransaction(
             { from: worker, gas: config.gas, gasPrice: config.gasPrice },
@@ -1062,8 +1069,6 @@ describe("Fund shares", () => {
 
   describe("Rewards", async () => {
     it("converts rewards and manager receives them", async () => {
-      // await web3.increaseTime(60 * 60 * 24 * 100); // 100 days
-      // await web3.mineBlock();
       await updateDatafeed();
       const pre = await getAllBalances();
       const preManagerShares = Number(
