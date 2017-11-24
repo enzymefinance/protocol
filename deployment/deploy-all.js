@@ -102,8 +102,8 @@ async function deploy(environment) {
       console.log("Deployed sphere");
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/participation/Participation.abi"));
-      bytecode = fs.readFileSync("out/participation/Participation.bin");
+      abi = JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi"));
+      bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
       opts.data = `0x${bytecode}`;
       participation = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed participation");
@@ -193,7 +193,7 @@ async function deploy(environment) {
         DataFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
-        Participation: participation,
+        ParticipationOpen: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
         rewards,
@@ -263,9 +263,9 @@ async function deploy(environment) {
 
         // deploy participation
         abi = JSON.parse(
-          fs.readFileSync("out/participation/Participation.abi"),
+          fs.readFileSync("out/participation/ParticipationOpen.abi"),
         );
-        bytecode = fs.readFileSync("out/participation/Participation.bin");
+        bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
         opts.data = `0x${bytecode}`;
         participation = await api.newContract(abi).deploy(opts, []);
         console.log("Deployed participation");
@@ -329,7 +329,7 @@ async function deploy(environment) {
 
         addressBook[environment] = {
           Sphere: sphere,
-          Participation: participation,
+          ParticipationOpen: participation,
           RMMakeOrders: riskMgmt,
           rewards,
           simpleAdapter,
@@ -390,8 +390,8 @@ async function deploy(environment) {
       console.log("Deployed sphere");
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/participation/Participation.abi"));
-      bytecode = fs.readFileSync("out/participation/Participation.bin");
+      abi = JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi"));
+      bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
       opts.data = `0x${bytecode}`;
       participation = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed participation");
@@ -523,7 +523,7 @@ async function deploy(environment) {
         DataFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
-        Participation: participation,
+        ParticipationOpen: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
         rewards,
