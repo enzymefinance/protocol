@@ -4,8 +4,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [0.4.0]
+## [0.5.0]
 
+### Added
+
+- high water mark calculation inside Fund (accounting)
+- automatic documentation generation for Solidity contracts using Doxity
+- docstrings for all relevant functions in contracts
+- external bulk parsing contract to get Fund data for off-chain ranking (`Ranking.sol`)
+- Simple risk management implementation using market price deviation (`RMMakeOrders.sol`)
+- Governance implementation (proposal, approval and triggering actions for Version creation and shutdown)
+- Elliptic curve signing of Terms and Conditions to create a Fund
+- `ModuleRegistrar.sol` to keep track of registered modules on-chain
+- `SimpleCertifier.sol` dependency
+
+### Changed
+
+- switch to Parity.js for deployment, contract interaction, and testing
+- switch to Parity dev chain for local deployment and testing
+- using more permissive ParticipationOpen instead of regular Participation module
+- enforce rule that Fund names within a Version must be unique
+- modify tests to fit code alterations
+
+### Updated
+
+- old docstrings in contract functions
+- enforcing a newer Solidity compiler version (`^0.4.17`)
+- improved terminology for prices inside `DataFeed.sol`
+
+### Removed
+
+- `Staked.sol` contract
+- bulk data reading functions inside `AssetRegistrar.sol` 
+- `BackupOwned.sol` dependency
+- Remnants of `Logger.sol` contract
+- `Permissioned.sol`
+- `ExternalAdapter.sol`
+- testrpc for local deployment and testing
+
+## [0.4.0]
 
 ### Added
 
