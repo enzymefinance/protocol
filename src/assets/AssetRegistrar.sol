@@ -25,6 +25,9 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // FIELDS
 
+    // Constant fields
+    uint constant MAX_ASSETS = 50; // Max number of registrable assets
+
     // Methods fields
     mapping (address => Asset) public information;
     address[] public registeredAssets;
@@ -71,7 +74,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(notRegistered(ofAsset))
-        post_cond(isRegistered(ofAsset))
+        pre_cond(numRegisteredAssets() < MAX_ASSETS)
     {
         registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
@@ -85,6 +88,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
             breakOut: breakOut,
             exists: true
         });
+        assert(isRegistered(ofAsset));
     }
 
     /// @notice Updates description information of a registered Asset
@@ -120,8 +124,8 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
-        post_cond(notRegistered(ofAsset))
     {
         delete information[ofAsset]; // Sets exists boolean to false
+        assert(notRegistered(ofAsset));
     }
 }

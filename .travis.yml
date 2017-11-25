@@ -21,10 +21,6 @@ install:
 - nvm install 8
 - nvm use 8
 - npm install
-before_script:
-- npm run devchain:before-tests &
-- npm run before-tests
-- killall parity
 script:
 - npm run compile &> compile.log || cat compile.log
 - npm run devchain:parity &> parity.log &
