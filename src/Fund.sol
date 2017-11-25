@@ -583,14 +583,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Could not approve spending of sellQuantity of sellAsset");
         }
 
-        uint id = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+        // Since there is only one openMakeOrder allowed, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
+        openMakeOrderId = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
 
-        if (isZero(id)) {
-            return logError("ERR: Exchange Adapter: Failed to make order; id is zero");
+        if (isZero(openMakeOrderId)) {
+            return logError("ERR: Exchange Adapter: Failed to make order; openMakeOrderId is zero");
         }
 
         orders.push(Order({
-            exchangeId: id,
+            exchangeId: openMakeOrderId,
             status: OrderStatus.active,
             orderType: OrderType.make,
             sellAsset: sellAsset,
@@ -601,7 +602,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             fillQuantity: 0
         }));
 
-        OrderUpdated(id);
+        OrderUpdated(openMakeOrderId);
     }
 
     /// @notice Takes an active order on the selected exchange
