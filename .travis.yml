@@ -24,7 +24,7 @@ install:
 script:
 - npm run compile &> compile.log || cat compile.log
 - npm run devchain:parity > parity.log &
-- sleep 5
+- sleep 20
 - npm run deploy:development
 - npm run test
 - npm run oyente
