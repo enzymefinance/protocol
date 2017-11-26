@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
-    "devchain:parity": "parity db kill && parity --chain tests/parity-genesis.config --jsonrpc-apis all & babel-node tests/before-tests.js && killall parity && parity --chain tests/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
+    "devchain:parity": "parity db kill & parity --chain tests/parity-genesis.config --jsonrpc-apis all & babel-node tests/before-tests.js && killall parity && parity --chain tests/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
     "test": "npm run test:ds-test && npm run test:jasmine",
     "test:jasmine": "babel-node tests/run.js",
     "test:ds-test": "dapp test -v",
