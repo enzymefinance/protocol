@@ -26,7 +26,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     // FIELDS
 
     // Constant fields
-    uint constant MAX_ASSETS = 50; // Max number of registrable assets
+    uint constant MAX_ASSETS = 90; // Max number of registrable assets (Based on gas limitations)
 
     // Methods fields
     mapping (address => Asset) public information;
