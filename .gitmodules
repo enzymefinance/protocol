@@ -4,3 +4,6 @@
 [submodule "lib/ds-group"]
 	path = lib/ds-group
 	url = https://github.com/dapphub/ds-group
+[submodule "lib/ds-token"]
+	path = lib/ds-token
+	url = https://github.com/dapphub/ds-token
