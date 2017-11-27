@@ -265,9 +265,9 @@ After [deploy](#devchain-deployment) is complete, go to the above `protocol` dir
 
 Run the tests using:
 
-    ```
+    
     npm test
-    ```
+    
 
 ### Linting
 
