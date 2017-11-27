@@ -78,7 +78,12 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @dev Uses an efficient bulk call
     /// @param ofAsset Asset for which data history should be returned
     /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
-    /// @return Arrays of timestamps and prices of ofAsset
+    /**
+    @return {
+      "timestampArray": "Array of timestamps",
+      "priceArray": "Array of prices"
+    }
+    */
     function getDataHistory(address ofAsset, uint withStartId)
         constant
         pre_cond(isHistory(withStartId))
