@@ -9,38 +9,68 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - high water mark calculation inside Fund (accounting)
+- added Parity dev chain for local deployment and testing
 - automatic documentation generation for Solidity contracts using Doxity
 - docstrings for all relevant functions in contracts
 - external bulk parsing contract to get Fund data for off-chain ranking (`Ranking.sol`)
 - Simple risk management implementation using market price deviation (`RMMakeOrders.sol`)
 - Governance implementation (proposal, approval and triggering actions for Version creation and shutdown)
-- Elliptic curve signing of Terms and Conditions to create a Fund
+- multisig functionality to Governance.sol
+- script for initialising and funding predefined accounts for tests
+- elliptic curve signing of Terms and Conditions to create a Fund
 - `ModuleRegistrar.sol` to keep track of registered modules on-chain
 - `SimpleCertifier.sol` dependency
+- more Dapp tests
+- Dappsys libraries (ds-group, ds-token, and their dependencies)
+- live deployment configuration
+- empty password file
+- Parity localnode script
+- pull request template
 
 ### Changed
 
 - switch to Parity.js for deployment, contract interaction, and testing
-- switch to Parity dev chain for local deployment and testing
+- deploy scripts from web3 to parity.js
+- Jasmine tests from web3 to parity.js
 - using more permissive ParticipationOpen instead of regular Participation module
-- enforce rule that Fund names within a Version must be unique
+- enforce rule that Fund names within a Version must be unique (using fund name mapping)
 - modify tests to fit code alterations
+- readme instructions to reflect latest deploy and testing steps
+- documentation in PriceFeed
+- simplify AssetRegistrar
+- rename `sharePrice` to `highWaterMark` in Calculations struct 
+- rename `test/` to `tests/`
+- accounting to include assets held on exchange (#227)
 
 ### Updated
 
 - old docstrings in contract functions
 - enforcing a newer Solidity compiler version (`^0.4.17`)
 - improved terminology for prices inside `DataFeed.sol`
+- updated NPM scripts
+- updated Install instructions readme
 
 ### Removed
 
 - `Staked.sol` contract
 - bulk data reading functions inside `AssetRegistrar.sol` 
 - `BackupOwned.sol` dependency
-- Remnants of `Logger.sol` contract
+- remnants of `Logger.sol` contract
 - `Permissioned.sol`
 - `ExternalAdapter.sol`
+- `Fundhistory.sol`
 - testrpc for local deployment and testing
+- web3 dependency for tests and deployment
+- unnecessary functions in FundInterface.sol
+- redundant code and unnecessary comments in tests
+- failing post-conditions (changed to asserts)
+
+### Fixed
+
+- gas price checks in jasmine tests
+- bugs in jasmine tests
+- bug in risk management / simplemarket tests
+- ds-test contract naming
 
 ## [0.4.0]
 
