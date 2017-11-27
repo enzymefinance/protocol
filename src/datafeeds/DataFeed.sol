@@ -64,8 +64,6 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @param sellAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
     function existsData(address sellAsset, address buyAsset)
-    /// @dev Prices are only upated against QUOTE_ASSET
-    /// @return Whether assets exist for given asset pair
         constant
         returns (bool exists)
     {
