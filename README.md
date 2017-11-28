@@ -244,13 +244,28 @@ You will need the `dapp` developer tools, which you can install using [these ste
     npm run compile
     ```
 
-### Testing
+### Setup
 
-After installation is complete, go to the above `protocol` directory, open a terminal and:
+After [installation](#installation) is complete, go to the above `vesting` directory, open a terminal and:
 
-1. Launch a testrpc client:
+1. Launch parity dev chain (If you have already run before-tests earlier, skip to [deploy](#devchain-deployment) section):
     ```
-    npm run localnode
+    npm run devchain:before-tests
+    ```
+
+2. Import the predefined accounts into parity and fund them by executing:
+
+    ```
+    npm run before-tests
+    ```
+
+### Devchain Deployment
+
+After [Setup](#setup) is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
+    ```
+    npm run devchain:before-tests
     ```
 
 2. Open a second terminal and deploy the contracts to the development network:
@@ -259,19 +274,30 @@ After installation is complete, go to the above `protocol` directory, open a ter
     npm run deploy:development
     ```
 
-3. Run the test framework:
+### Testing
+
+After [deploy](#devchain-deployment) is complete, go to the above `protocol` directory, open a terminal and:
+
+1. Launch parity dev chain:
+    ```
+    npm run deploy:development
+    ```
+
+5. Run the tests using:
+
     ```
     npm test
     ```
 
 ### Linting
 
-After installation is complete, go to the above `protocol` directory, open a terminal and run:
+After [installation](#installation) is complete, go to the above `protocol` directory, open a terminal and run:
+    ```
+    npm run lint
+    ```
 
-`npm run lint`
 
-
-### Deployment
+### Kovan Deployment
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 

@@ -1,23 +1,23 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Technology Regulated Investment Funds",
   "directories": {
-    "test": "test"
+    "test": "tests"
   },
   "scripts": {
-    "test": "npm run test:ds-test && npm run test:jasmine",
-    "test:jasmine": "babel-node test/run.js",
-    "test:ds-test": "export DAPP_NO_HEVM=1 && mv src/exchange/adapter/externalAdapter.sol . && dapp test -v && mv ./externalAdapter.sol src/exchange/adapter",
-    "oyente": "oyente -s src/Fund.sol",
-    "localnode": "node_modules/.bin/testrpc --gasLimit 6900000 --gasPrice=100000000000",
-    "localnode:background": "npm run localnode > testrpc.log &",
-    "compile": "export SOLC_FLAGS='--optimize' && make all",
     "lint": "eslint .",
-    "deploy:live": "npm run compile && babel-node deployment/deploy-all.js live",
-    "deploy:kovan": "npm run compile && babel-node deployment/deploy-all.js kovan",
+    "oyente": "oyente -s src/Fund.sol",
+    "devchain:before-tests": "parity --chain tests/parity-genesis.config --jsonrpc-apis all",
+    "before-tests": "babel-node tests/before-tests.js",
+    "devchain:parity": "parity --chain tests/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
+    "test": "npm run test:ds-test && npm run test:jasmine",
+    "test:jasmine": "babel-node tests/run.js",
+    "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_VERBOSE=1 && dapp test",
+    "compile": "export SOLC_FLAGS='--optimize' && make all",
+    "deploy:live": "babel-node deployment/deploy-all.js live",
+    "deploy:kovan": "babel-node deployment/deploy-all.js kovan",
     "deploy:development": "babel-node deployment/deploy-all.js development",
-    "dev-delete": "find . -name '*.abi' -type f -delete ",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build"
   },
@@ -55,24 +55,25 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-0": "^6.24.1",
     "babel-runtime": "^6.26.0",
-    "eslint": "^4.7.2",
+    "eslint": "^4.11.0",
     "eslint-config-airbnb": "^15.1.0",
-    "eslint-config-prettier": "^2.6.0",
-    "eslint-plugin-flowtype": "^2.36.0",
-    "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-jasmine": "^2.8.4",
+    "eslint-config-prettier": "^2.7.0",
+    "eslint-plugin-flowtype": "^2.39.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jasmine": "^2.9.1",
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
     "jasmine": "^2.8.0",
-    "prettier-eslint": "^8.1.1"
+    "prettier-eslint": "^8.2.2"
   },
   "dependencies": {
+    "@parity/api": "^2.1.3",
     "bignumber.js": "^4.1.0",
     "chai": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
     "file-system": "^2.2.2",
     "request-promise": "^4.2.2",
-    "solc": "^0.4.17",
-    "web3": "^1.0.0-beta.21"
+    "solc": "^0.4.18",
+    "web3": "^1.0.0-beta2"
   }
 }

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# install parity
+bash <(curl https://get.parity.io -kL)
+
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
 tar -xvf ethrun-v0.2.4-linux.tar.gz

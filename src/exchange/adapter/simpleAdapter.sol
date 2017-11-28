@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import '../../dependencies/ERC20.sol';
 import '../thirdparty/SimpleMarket.sol';
@@ -62,7 +62,14 @@ library simpleAdapter {
 
     // NON-CONSTANT METHODS
 
+    /// @notice Makes an order on the given exchange
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
+    /// @param onExchange Address of the exchange
+    /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+    /// @param buyAsset Asset (as registered in Asset registrar) to be bought
+    /// @param sellQuantity Quantity of sellAsset to be sold
+    /// @param buyQuantity Quantity of buyAsset to be bought
+    /// @return Order id
     function makeOrder(
         address onExchange,
         address sellAsset,
@@ -81,7 +88,12 @@ library simpleAdapter {
         OrderUpdated(id);
     }
 
-    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
+    /// @notice Takes an order on the given exchange
+    /// @dev For this subset of adapter no immediate settlement can be expected
+    /// @param onExchange Address of the exchange
+    /// @param id Order id
+    /// @param quantity Quantity of order to be executed (For partial taking)
+    /// @return Whether the takeOrder is successfully executed
     function takeOrder(
         address onExchange,
         uint id,
@@ -93,7 +105,11 @@ library simpleAdapter {
         OrderUpdated(id);
     }
 
+    /// @notice Cancels an order on the given exchange
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
+    /// @param onExchange Address of the exchange
+    /// @param id Order id
+    /// @return Whether the order is successfully cancelled
     function cancelOrder(
         address onExchange,
         uint id

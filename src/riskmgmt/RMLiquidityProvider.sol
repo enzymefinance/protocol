@@ -1,8 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.17;
 
 import './RiskMgmtInterface.sol';
 
-/// @title RiskMgmt Contract
+/// @title Risk Management Liquidity Provider Contract
 /// @author Melonport AG <team@melonport.com>
 contract RMLiquididtyProvider is RiskMgmtInterface {
 
@@ -12,6 +12,14 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       // NON-CONSTANT METHODS
 
+      /// @notice All makeOrders disabled
+      /// @param orderPrice Price of Order
+      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+      /// @param buyAsset Asset (as registered in Asset registrar) to be bought
+      /// @param sellQuantity Quantity of sellAsset to be sold
+      /// @param buyQuantity Quantity of buyAsset to be bought
+      /// @return isPermitted If makeOrder is permitted
       function isMakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -20,11 +28,19 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint sellQuantity,
           uint buyQuantity
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
           return false; // Inital version of risk management does not allow to make orders
       }
 
+      /// @notice takeOrders are checked if the order owner matches liquidity provider
+      /// @param orderPrice Price of Order
+      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param sellAsset Asset (as registered in Asset registrar) to be sold
+      /// @param buyAsset Asset (as registered in Asset registrar) to be bought
+      /// @param sellQuantity Quantity of sellAsset to be sold
+      /// @param buyQuantity Quantity of buyAsset to be bought
+      /// @return isPermitted If takeOrder is permitted
       function isTakePermitted(
           uint orderPrice,
           uint referencePrice,
@@ -35,8 +51,8 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
           uint buyQuantity,
           address orderOwner
       )
-          returns (bool)
+          returns (bool isPermitted)
       {
-          return orderOwner == LIQUIDITY_PROVIDER; // Inital version of risk management restricts trading to liquidity provider
+          return orderOwner == LIQUIDITY_PROVIDER; // Initial version of risk management restricts trading to liquidity provider
       }
 }
