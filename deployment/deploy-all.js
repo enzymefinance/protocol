@@ -67,7 +67,11 @@ async function deploy(environment) {
 
     if (environment === "kovan") {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T").address;
-      console.log(mlnAddr);
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnAddr);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
@@ -77,6 +81,14 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnAddr,
+          mlnName,
+          mlnSymbol,
+          mlnDecimals,
+          'melonport.com',
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
@@ -102,8 +114,8 @@ async function deploy(environment) {
       console.log("Deployed sphere");
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/participation/Participation.abi"));
-      bytecode = fs.readFileSync("out/participation/Participation.bin");
+      abi = JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi"));
+      bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
       opts.data = `0x${bytecode}`;
       participation = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed participation");
@@ -193,7 +205,7 @@ async function deploy(environment) {
         DataFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
-        Participation: participation,
+        ParticipationOpen: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
         rewards,
@@ -203,6 +215,11 @@ async function deploy(environment) {
       };
     } else if (environment === "live") {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnAddr);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       if (datafeedOnly) {
         // deploy datafeed
@@ -213,6 +230,14 @@ async function deploy(environment) {
           .newContract(abi)
           .deploy(opts, [
             mlnAddr,
+            mlnName,
+            mlnSymbol,
+            mlnDecimals,
+            'melonport.com',
+            mockBytes,
+            mockBytes,
+            mockAddress,
+            mockAddress,
             config.protocol.datafeed.interval,
             config.protocol.datafeed.validity,
           ]);
@@ -263,9 +288,9 @@ async function deploy(environment) {
 
         // deploy participation
         abi = JSON.parse(
-          fs.readFileSync("out/participation/Participation.abi"),
+          fs.readFileSync("out/participation/ParticipationOpen.abi"),
         );
-        bytecode = fs.readFileSync("out/participation/Participation.bin");
+        bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
         opts.data = `0x${bytecode}`;
         participation = await api.newContract(abi).deploy(opts, []);
         console.log("Deployed participation");
@@ -329,7 +354,7 @@ async function deploy(environment) {
 
         addressBook[environment] = {
           Sphere: sphere,
-          Participation: participation,
+          ParticipationOpen: participation,
           RMMakeOrders: riskMgmt,
           rewards,
           simpleAdapter,
@@ -357,6 +382,12 @@ async function deploy(environment) {
         .deploy(opts, ["Euro token", "EUR-T", 18, preminedAmount]);
       console.log("Deployed euro token");
 
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnToken);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
+
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
       bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
@@ -365,6 +396,14 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnToken,
+          mlnName,
+          mlnSymbol,
+          mlnDecimals,
+          'melonport.com',
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
@@ -390,8 +429,8 @@ async function deploy(environment) {
       console.log("Deployed sphere");
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/participation/Participation.abi"));
-      bytecode = fs.readFileSync("out/participation/Participation.bin");
+      abi = JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi"));
+      bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
       opts.data = `0x${bytecode}`;
       participation = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed participation");
@@ -523,7 +562,7 @@ async function deploy(environment) {
         DataFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
-        Participation: participation,
+        ParticipationOpen: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
         rewards,

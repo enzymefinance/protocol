@@ -75,14 +75,13 @@ describe("Fund shares", () => {
       addresses.EurToken,
     );
     participation = await api.newContract(
-      JSON.parse(fs.readFileSync("out/participation/Participation.abi")),
-      addresses.Participation,
+      JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi")),
+      addresses.ParticipationOpen,
     );
     simpleMarket = await api.newContract(
       JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi")),
       addresses.SimpleMarket,
     );
-    await participation.instance.attestForIdentity.postTransaction(opts, [investor]); // whitelist investor
   });
 
   // convenience functions
@@ -175,7 +174,7 @@ describe("Fund shares", () => {
           addresses.MlnToken, // reference asset
           config.protocol.fund.managementReward,
           config.protocol.fund.performanceReward,
-          addresses.Participation,
+          addresses.ParticipationOpen,
           addresses.RMMakeOrders,
           addresses.Sphere,
           v,
