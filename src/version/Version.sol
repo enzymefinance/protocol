@@ -127,7 +127,6 @@ contract Version is DBC, Owned {
     {
         FundInterface Fund = FundInterface(getFundById(id));
         Fund.shutDown();
-        delete listOfFunds[id];
         FundUpdated(id);
     }
 }
