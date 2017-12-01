@@ -74,6 +74,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     string constant SYMBOL = "MLN-Fund"; // Melon Fund Symbol
     uint256 public constant DECIMALS = 18; // Amount of decimals sharePrice is denominated in
     uint public constant DIVISOR_FEE = 10 ** uint256(15); // Reward are divided by this number
+    uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
     string public NAME; // Name of this fund
     uint public CREATED; // Timestamp of Fund creation
@@ -88,12 +89,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from assets to exchange ids of open make orders for respective assets, if no open make orders uint is zero
+    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from asset to exchange id of open make order for the asset, if no open make orders uint is zero
     bool public isShutDown; // Security feature, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
+    address[] public fundAssetList; // List of all assets owned by the fund
+    mapping (address => bool) public assetInFundAssetList; // Mapping from asset to whether the asset exists in fundAssetList
+    mapping (address => bool) public assetInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -132,16 +136,27 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev
     /// @return gav Gross asset value denominated in [base unit of melonAsset]
     function calcGav() constant returns (uint gav) {
-        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
-            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
+        address[] newFundAssetList;
+        for (uint i = 0; i < fundAssetList.length; ++i) {
+            address ofAsset = fundAssetList[i];
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
                 .add(quantityHeldInCustodyOfExchange(ofAsset));
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            if (assetHoldings != 0 || ofAsset == MELON_ASSET || assetInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+                newFundAssetList.push(ofAsset);
+            } else {
+                assetInFundAssetList[ofAsset] = false; // Remove from fundAssetList if asset holdings are zero
+            }
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
+        // If some asset has been deleted from the list
+        if (newFundAssetList.length != fundAssetList.length) {
+            fundAssetList = newFundAssetList;
         }
     }
 
@@ -282,6 +297,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Require reference assets exists in datafeed
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
+        fundAssetList.push(MELON_ASSET);
+        assetInFundAssetList[MELON_ASSET] = true;
         MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -512,8 +529,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
         // Transfer ownershipQuantity of Assets
-        for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
-            address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
+        for (uint i = 0; i < fundAssetList.length; ++i) {
+            address ofAsset = fundAssetList[i];
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
             uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
@@ -582,6 +599,17 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
 
+        if (!assetInFundAssetList[buyAsset]) {
+            if (fundAssetList.length >= MAX_FUND_ASSETS) {
+                if (uint(ERC20(sellAsset).balanceOf(this)) != sellQuantity || sellAsset == MELON_ASSET) {
+                    return logError("ERR: Limit for max ownable assets by the fund reached");
+                }
+            }
+            fundAssetList.push(buyAsset);
+            assetInFundAssetList[buyAsset] = true;
+            assetInOpenMakeOrder[buyAsset] = true;
+        }
+
         if (isZero(assetsToOpenMakeOrderIds[sellAsset])) {
             return logError("ERR: Exchange Adapter: Failed to make order; openMakeOrderId for the sellAsset is zero");
         }
@@ -629,6 +657,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: DataFeed module: Requested asset pair not valid");
         }
 
+        if (fundAssetList.length >= MAX_FUND_ASSETS) {
+            return logError("ERR: Limit for max ownable assets by the fund reached");
+        }
+
         if (!module.riskmgmt.isTakePermitted(
                 module.datafeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
                 module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
@@ -646,6 +678,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         if (!approveSpending(order.buyAsset, spendQuantity)) {
             return logError("ERR: Could not approve spending of spendQuantity of order.buyAsset");
+        }
+
+        if (!assetInFundAssetList[order.sellAsset]) {
+            if (fundAssetList.length >= MAX_FUND_ASSETS) {
+                if (uint(ERC20(order.buyAsset).balanceOf(this)) != order.buyQuantity || order.buyAsset == MELON_ASSET) {
+                    return logError("ERR: Limit for max ownable assets by the fund reached");
+                }
+            }
+            fundAssetList.push(order.sellAsset);
+            assetInFundAssetList[order.sellAsset] = true;
         }
 
         bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
@@ -745,8 +787,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
         if (assetsToOpenMakeOrderIds[ofAsset] == 0) return 0;
-        var ( , , sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, assetsToOpenMakeOrderIds[ofAsset]);
-        if (sellQuantity == 0) assetsToOpenMakeOrderIds[ofAsset] = 0;
+        var ( , buyAsset, sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, assetsToOpenMakeOrderIds[ofAsset]);
+        if (sellQuantity == 0) {
+            assetsToOpenMakeOrderIds[ofAsset] = 0;
+            assetInOpenMakeOrder[buyAsset] = false;
+        }
         return sellQuantity;
     }
 
