@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.2]
+
+### Added
+
+- register reference asset when datafeed is initially deployed
+- maximum number of registered assets
+- test shutting down Version via Governance
+- test assets can register without error
+
+### Changed
+
+- deployment script to use new datafeed constructor parameters
+- use authority address to deploy Governance to mainnet
+- integrate initiation of Version by Governance into deployment
+- anyone can shut down Fund of an already shut down Version
+
+### Updated
+
+- README.md installation instructions
+- Thomson-Reuters datafeed address
+- adjust datafeed tests to new constructor parameters
+
+### Fixed
+
+- remove double registration of MLN in registrar
+- GNT address in info file
+- bug deleting blockchain data in devchain script
+
 ## [0.5.0]
 
 ### Added
