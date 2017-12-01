@@ -10,7 +10,7 @@ contract AssetInterface is ERC20Interface {
 
     // CONSTANT METHODS
 
-    function getName() constant returns (string) {}
-    function getSymbol() constant returns (string) {}
-    function getDecimals() constant returns (uint) {}
+    function name() constant returns (string) {}
+    function symbol() constant returns (string) {}
+    function decimals() constant returns (uint) {}
 }

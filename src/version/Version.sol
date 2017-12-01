@@ -123,7 +123,7 @@ contract Version is DBC, Owned {
 
     /// @dev Dereference Fund and trigger selfdestruct
     function shutDownFund(uint id)
-        pre_cond(isOwner() || isShutDown)
+        pre_cond(isShutDown)
     {
         FundInterface Fund = FundInterface(getFundById(id));
         Fund.shutDown();

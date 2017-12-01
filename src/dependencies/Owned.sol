@@ -14,4 +14,9 @@ contract Owned {
 
     function Owned() { owner = msg.sender; }
 
+    function changeOwner(address ofNewOwner) {
+      require(isOwner());
+      owner = ofNewOwner;
+    }
+
 }

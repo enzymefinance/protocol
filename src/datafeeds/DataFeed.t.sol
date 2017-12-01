@@ -51,6 +51,23 @@ contract DataFeedTest is DSTest {
         datafeed.getPrice(etherToken);
     }
 
+    function testAssetRegistrationDoesNotError() {
+        bytes32 sampleBytes = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
+        address sampleAddress = 0x9aD216d7FBE6dF26F5F29810F2e45f229376372A;
+
+        datafeed.register(
+            0x4b28c7f4bEb488989A2E01333eB67511e07dFf31,
+            "Sample Token",
+            "ABC",
+            10,
+            "SampleToken.io",
+            sampleBytes,
+            sampleBytes,
+            sampleAddress,
+            sampleAddress
+        );
+    }
+
 // TODO: uncomment when dapphub/ds-test#5 is resolved
 //    function testUpdateAndGetPrice() {
 //        address[] storage assetArray;
