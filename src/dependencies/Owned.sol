@@ -1,6 +1,8 @@
 pragma solidity ^0.4.17;
 
-contract Owned {
+import './DBC.sol';
+
+contract Owned is DBC {
 
     // FIELDS
 
@@ -14,9 +16,6 @@ contract Owned {
 
     function Owned() { owner = msg.sender; }
 
-    function changeOwner(address ofNewOwner) {
-      require(isOwner());
-      owner = ofNewOwner;
-    }
+    function changeOwner(address ofNewOwner) pre_cond(isOwner()) { owner = ofNewOwner; }
 
 }
