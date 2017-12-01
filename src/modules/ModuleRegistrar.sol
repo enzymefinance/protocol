@@ -68,7 +68,6 @@ contract ModuleRegistrar is DBC {
     )
         pre_cond(!moduleNameExists[name])
         pre_cond(notRegistered(ofModule))
-        post_cond(isRegistered(ofModule))
     {
         registeredModules.push(ofModule);
         information[ofModule] = Module({
@@ -83,6 +82,7 @@ contract ModuleRegistrar is DBC {
         });
         moduleNameExists[name] = true;
         creatorOperatesModules[msg.sender] = ofModule;
+        assert(isRegistered(ofModule));
     }
 
     /// @notice Updates description information of a registered module
@@ -114,11 +114,11 @@ contract ModuleRegistrar is DBC {
     )
         pre_cond(isCreator(ofModule))
         pre_cond(isRegistered(ofModule))
-        post_cond(notRegistered(ofModule))
     {
         moduleNameExists[information[ofModule].name] = false;
         delete information[ofModule]; // Sets exists boolean to false
         creatorOperatesModules[msg.sender] = 0;
+        assert(notRegistered(ofModule));
     }
 
     /// @notice Votes on an existing registered module

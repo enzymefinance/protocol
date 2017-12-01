@@ -204,7 +204,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         string quoteAssetSymbol,
         uint quoteAssetDecimals,
         string quoteAssetUrl,
-        bytes32 quoteAssetIpfsHash,
+        bytes quoteAssetIpfsHash,
         bytes32 quoteAssetChainId,
         address quoteAssetBreakIn,
         address quoteAssetBreakOut,

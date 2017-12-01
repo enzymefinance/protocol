@@ -78,6 +78,7 @@ contract FundTest is DSTest {
     //}
 
     //function testToggles() {
+    // Change this to enable and disable pattern as toggle function is depracated
     //    bool preSubscriptionAllowed = fund.isSubscribeAllowed();
     //    bool preRedemptionAllowed = fund.isRedeemAllowed();
     //    fund.toggleSubscription();

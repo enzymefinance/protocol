@@ -88,7 +88,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    uint public openMakeOrderId; // exchange id of open make order, if no open make orders uint is zero
+    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from assets to exchange ids of open make orders for respective assets, if no open make orders uint is zero
     bool public isShutDown; // Security feature, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -127,12 +127,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getStake() constant returns (uint) { return balanceOf(this); }
     function getLastOrderId() constant returns (uint) { return orders.length - 1; }
     function getLastRequestId() constant returns (uint) { return requests.length - 1; }
-    function quantityHeldInCustodyOfExchange(address ofAsset) constant returns (uint) {
-        if (openMakeOrderId == 0) return 0;
-        var ( , , sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, openMakeOrderId);
-        if (sellQuantity == 0) openMakeOrderId = 0;
-        return sellQuantity;
-    }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -306,8 +300,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // NON-CONSTANT METHODS - ADMINISTRATION
 
-    function toggleSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = !isSubscribeAllowed; }
-    function toggleRedemption() external pre_cond(isOwner()) { isRedeemAllowed = !isRedeemAllowed; }
+    function enableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = true; }
+    function disableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = false; }
+    function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
+    function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
     function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
 
     // NON-CONSTANT METHODS - PARTICIPATION
@@ -583,15 +579,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Could not approve spending of sellQuantity of sellAsset");
         }
 
-        // Since there is only one openMakeOrder allowed, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
-        openMakeOrderId = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+        // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
+        assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
 
-        if (isZero(openMakeOrderId)) {
-            return logError("ERR: Exchange Adapter: Failed to make order; openMakeOrderId is zero");
+        if (isZero(assetsToOpenMakeOrderIds[sellAsset])) {
+            return logError("ERR: Exchange Adapter: Failed to make order; openMakeOrderId for the sellAsset is zero");
         }
 
         orders.push(Order({
-            exchangeId: openMakeOrderId,
+            exchangeId: assetsToOpenMakeOrderIds[sellAsset],
             status: OrderStatus.active,
             orderType: OrderType.make,
             sellAsset: sellAsset,
@@ -602,7 +598,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             fillQuantity: 0
         }));
 
-        OrderUpdated(openMakeOrderId);
+        OrderUpdated(assetsToOpenMakeOrderIds[sellAsset]);
     }
 
     /// @notice Takes an active order on the selected exchange
@@ -745,6 +741,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         RewardsConverted(now, shareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+    }
+
+    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
+        if (assetsToOpenMakeOrderIds[ofAsset] == 0) return 0;
+        var ( , , sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, assetsToOpenMakeOrderIds[ofAsset]);
+        if (sellQuantity == 0) assetsToOpenMakeOrderIds[ofAsset] = 0;
+        return sellQuantity;
     }
 
     // INTERNAL METHODS
