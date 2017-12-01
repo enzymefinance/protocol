@@ -26,8 +26,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Thomson-Reuters datafeed address
 - adjust datafeed tests to new constructor parameters
 
-### Removed
-
 ### Fixed
 
 - remove double registration of MLN in registrar
