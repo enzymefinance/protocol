@@ -35,7 +35,7 @@ contract VersionTest is DSTest {
     string MELON_NAME = "Melon Token";
     string MELON_SYMBOL = "MLN-T";
     string MELON_URL = "https://www.melonport.com";
-    bytes MOCK_IPFS_HASH = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+    string MOCK_IPFS_HASH = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
     bytes32 MOCK_CHAIN_ID = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
     address MOCK_BREAK_IN = 0x2186C5EaAf6CbF55BF1b9cD8130D8a6A71E4486a;
     address MOCK_BREAK_OUT = 0xd9AE70149D256D4645c03aB9D5423A1B70d8804d;

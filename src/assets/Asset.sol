@@ -14,12 +14,6 @@ contract Asset is AssetInterface, ERC20 {
     string public symbol;
     uint public decimals;
 
-    // CONSTANT METHODS
-
-    function name() constant returns (string) { return name; }
-    function symbol() constant returns (string) { return symbol; }
-    function decimals() constant returns (uint) { return decimals; }
-
     // NON-CONSTANT METHODS
 
     function Asset(string _name, string _symbol, uint _decimals) {

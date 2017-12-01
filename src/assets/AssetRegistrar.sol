@@ -16,7 +16,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
         uint decimal; // Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
         string url; // URL for additional information of Asset
-        bytes ipfsHash; // Same as url but for ipfs
+        string ipfsHash; // Same as url but for ipfs
         bytes32 chainId; // On which chain this asset resides
         address breakIn; // Break in contract on destination chain
         address breakOut; // Break out contract on this chain; A way to leave
@@ -67,7 +67,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         string symbol,
         uint decimal,
         string url,
-        bytes ipfsHash,
+        string ipfsHash,
         bytes32 chainId,
         address breakIn,
         address breakOut
@@ -104,7 +104,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         string name,
         string symbol,
         string url,
-        bytes ipfsHash
+        string ipfsHash
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
