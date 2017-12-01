@@ -9,7 +9,7 @@ module.exports = {
       registrar: {
         assetsToRegister: [
           'OW-ETH', 'SAI', 'MKR', 'DGD', 'GNT',
-          'REP', 'ICN', 'MLN'
+          'REP', 'ICN'
         ],
       },
       datafeed: {
@@ -28,7 +28,7 @@ module.exports = {
       registrar: {
         assetsToRegister: [
           'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
-          'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
+          'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
       datafeed: {
@@ -47,7 +47,7 @@ module.exports = {
       registrar: {
         assetsToRegister: [
           'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
-          'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T', 'MLN-T',
+          'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
       datafeed: {

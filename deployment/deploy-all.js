@@ -52,6 +52,7 @@ async function deploy(environment) {
     const mockBytes =
       "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
     const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
+    const yearInSeconds = 60 * 60 * 24 * 365;
     if (
       Number(config.networkId) !== Number(await api.net.version()) &&
       config.networkId !== "*"
@@ -67,7 +68,11 @@ async function deploy(environment) {
 
     if (environment === "kovan") {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T").address;
-      console.log(mlnAddr);
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnAddr);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
@@ -77,6 +82,14 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnAddr,
+          mlnName,
+          mlnSymbol,
+          mlnDecimals,
+          'melonport.com',
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
@@ -119,8 +132,9 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
       bytecode = fs.readFileSync("out/system/Governance.bin");
       opts.data = `0x${bytecode}`;
-      governance = await api.newContract(abi).deploy(opts, [[], 0, 100000]);
+      governance = await api.newContract(abi).deploy(opts, [[accounts[0]], 1, yearInSeconds]);
       console.log("Deployed governance");
+      const governanceContract = await api.newContract(abi, governance);
 
       // deploy rewards
       abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
@@ -150,11 +164,16 @@ async function deploy(environment) {
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
-      opts.gas = 6990000;
+      opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, [pkgInfo, governance, mlnAddr], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
       console.log("Deployed version");
+
+      // add Version to Governance tracking
+      await governanceContract.instance.proposeVersion.postTransaction({from: accounts[0]}, [version]);
+      await governanceContract.instance.approveVersion.postTransaction({from: accounts[0]}, [version]);
+      await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
 
       // deploy ranking contract
       abi = JSON.parse(fs.readFileSync("out/Ranking.abi"));
@@ -203,6 +222,11 @@ async function deploy(environment) {
       };
     } else if (environment === "live") {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnAddr);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       if (datafeedOnly) {
         // deploy datafeed
@@ -213,6 +237,14 @@ async function deploy(environment) {
           .newContract(abi)
           .deploy(opts, [
             mlnAddr,
+            mlnName,
+            mlnSymbol,
+            mlnDecimals,
+            'melonport.com',
+            mockBytes,
+            mockBytes,
+            mockAddress,
+            mockAddress,
             config.protocol.datafeed.interval,
             config.protocol.datafeed.validity,
           ]);
@@ -259,7 +291,7 @@ async function deploy(environment) {
         sphere = await api
           .newContract(abi)
           .deploy(opts, [thomsonReutersAddress, oasisDexAddress]);
-        console.log("Deployed sphere");
+        console.log(`Deployed sphere at ${sphere}`);
 
         // deploy participation
         abi = JSON.parse(
@@ -268,21 +300,21 @@ async function deploy(environment) {
         bytecode = fs.readFileSync("out/participation/ParticipationOpen.bin");
         opts.data = `0x${bytecode}`;
         participation = await api.newContract(abi).deploy(opts, []);
-        console.log("Deployed participation");
+        console.log(`Deployed participation at ${participation}`);
 
         // deploy riskmgmt
         abi = JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi"));
         bytecode = fs.readFileSync("out/riskmgmt/RMMakeOrders.bin");
         opts.data = `0x${bytecode}`;
         riskMgmt = await api.newContract(abi).deploy(opts, []);
-        console.log("Deployed riskmgmt");
+        console.log(`Deployed riskmgmt at ${riskMgmt}`);
 
         // deploy rewards
         abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
         bytecode = fs.readFileSync("out/libraries/rewards.bin");
         opts.data = `0x${bytecode}`;
         rewards = await api.newContract(abi).deploy(opts, []);
-        console.log("Deployed rewards");
+        console.log(`Deployed rewards at ${rewards}`);
 
         // deploy simpleAdapter
         abi = JSON.parse(
@@ -291,7 +323,21 @@ async function deploy(environment) {
         bytecode = fs.readFileSync("out/exchange/adapter/simpleAdapter.bin");
         opts.data = `0x${bytecode}`;
         simpleAdapter = await api.newContract(abi).deploy(opts, []);
-        console.log("Deployed simpleadapter");
+        console.log(`Deployed simpleadapter at ${simpleAdapter}`);
+
+        // deploy governance
+        // TODO: move this to config
+        const authorityAddress = '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B';
+        abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
+        bytecode = fs.readFileSync("out/system/Governance.bin");
+        opts.data = `0x${bytecode}`;
+        governance = await api.newContract(abi).deploy(opts, [
+          [authorityAddress],
+          1,
+          yearInSeconds
+        ]);
+        console.log(`Deployed governance at ${governance}`);
+        const governanceContract = await api.newContract(abi, governance);
 
         // link libs to fund (needed to deploy version)
         abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
@@ -303,24 +349,26 @@ async function deploy(environment) {
         ] = simpleAdapter;
         bytecode = solc.linkBytecode(bytecode, libObject);
         opts.data = `0x${bytecode}`;
-        opts.gas = 5790000;
-        fund = await api.newContract(abi).deploy(
-          opts,
-          [
-            accounts[0],
-            "Melon Portfolio", // name
-            mlnAddr, // reference asset
-            0, // management reward
-            0, // performance reward
-            mlnAddr, // melon asset
-            participation, // participation
-            riskMgmt, // riskMgmt
-            sphere, // sphere
-          ],
-          () => {},
-          true,
+        opts.gas = 6700000;
+
+        // deploy version (can use identical libs object as above)
+        const versionAbi = JSON.parse(
+          fs.readFileSync("out/version/Version.abi", "utf8"),
         );
-        console.log("Deployed fund");
+        let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
+        versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+        fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
+        opts.data = `0x${versionBytecode}`;
+        opts.gas = 6700000;
+        version = await api
+          .newContract(versionAbi)
+          .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
+        console.log(`Deployed Version at ${version}`);
+
+        // add Version to Governance tracking
+        await governanceContract.instance.proposeVersion.postTransaction({from: authorityAddress}, [version]);
+        await governanceContract.instance.approveVersion.postTransaction({from: authorityAddress}, [version]);
+        await governanceContract.instance.triggerVersion.postTransaction({from: authorityAddress}, [version]);
 
         // update address book
         if (fs.existsSync(addressBookFile)) {
@@ -333,7 +381,6 @@ async function deploy(environment) {
           RMMakeOrders: riskMgmt,
           rewards,
           simpleAdapter,
-          fund,
         };
       }
     } else if (environment === "development") {
@@ -357,6 +404,12 @@ async function deploy(environment) {
         .deploy(opts, ["Euro token", "EUR-T", 18, preminedAmount]);
       console.log("Deployed euro token");
 
+      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
+      const mlnTokenContract = await api.newContract(abi, mlnToken);
+      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
+
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
       bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
@@ -365,6 +418,14 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnToken,
+          mlnName,
+          mlnSymbol,
+          mlnDecimals,
+          'melonport.com',
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
@@ -407,8 +468,9 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
       bytecode = fs.readFileSync("out/system/Governance.bin");
       opts.data = `0x${bytecode}`;
-      governance = await api.newContract(abi).deploy(opts, [[], 0, 100000]);
+      governance = await api.newContract(abi).deploy(opts, [[accounts[0]], 1, 100000]);
       console.log("Deployed governance");
+      const governanceContract = await api.newContract(abi, governance);
 
       // deploy rewards
       abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
@@ -448,6 +510,12 @@ async function deploy(environment) {
         .newContract(versionAbi)
         .deploy(opts, [pkgInfo.version, governance, mlnToken], () => {}, true);
       console.log("Deployed version");
+
+      // add Version to Governance tracking
+      await governanceContract.instance.proposeVersion.postTransaction({from: accounts[0]}, [version]);
+      await governanceContract.instance.approveVersion.postTransaction({from: accounts[0]}, [version]);
+      await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
+      console.log('Version added to Governance');
 
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync("out/Fund.abi"));

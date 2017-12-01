@@ -14,9 +14,7 @@ function timeout(ms) {
 
 async function main() {
   const numAccounts = testAccounts.length;
-  console.log(numAccounts)
   for (let i = 0; i < numAccounts; i += 1) {
-    console.log('account ' + i)
     const newAccount = await api.parity.newAccountFromPhrase(testAccounts[i], "password");
     await timeout(2000);
     await api.personal.sendTransaction({

@@ -14,7 +14,15 @@ contract DataFeedTest is DSTest {
     // constants
     uint INTERVAL = 0;
     uint VALIDITY = 60;
+    string MELON_NAME = "Melon Token";
+    string MELON_SYMBOL = "MLN-T";
     uint MELON_DECIMALS = 18;
+    string MELON_URL = "https://www.melonport.com";
+    bytes32 MOCK_IPFS_HASH = 0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b;
+    bytes32 MOCK_CHAIN_ID = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
+    address MOCK_BREAK_IN = 0x2186C5EaAf6CbF55BF1b9cD8130D8a6A71E4486a;
+    address MOCK_BREAK_OUT = 0xd9AE70149D256D4645c03aB9D5423A1B70d8804d;
+
     uint PREMINED_AMOUNT = 10 ** 28;
 
     // mock data
@@ -22,23 +30,42 @@ contract DataFeedTest is DSTest {
     uint inputMelonTokenPrice = 1000000000000000000;
 
     function setUp() {
-        melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
+        melonToken = new PreminedAsset(MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, PREMINED_AMOUNT);
         etherToken = new EtherToken();
-        datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
+        datafeed = new DataFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
 
-    function testVariablesSetCorrectly() {
+    function testSetupSucceeded() {
         address quoteAsset = datafeed.getQuoteAsset();
         uint returnedInterval = datafeed.getInterval();
         uint returnedValidity = datafeed.getValidity();
+        bool quoteAssetIsRegistered = datafeed.isRegistered(quoteAsset);
 
         assertEq(quoteAsset, melonToken);
         assertEq(returnedInterval, INTERVAL);
         assertEq(returnedValidity, VALIDITY);
+        assert(quoteAssetIsRegistered);
     }
 
     function testFailGetPriceBeforeSet() {
         datafeed.getPrice(etherToken);
+    }
+
+    function testAssetRegistrationDoesNotError() {
+        bytes32 sampleBytes = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
+        address sampleAddress = 0x9aD216d7FBE6dF26F5F29810F2e45f229376372A;
+
+        datafeed.register(
+            0x4b28c7f4bEb488989A2E01333eB67511e07dFf31,
+            "Sample Token",
+            "ABC",
+            10,
+            "SampleToken.io",
+            sampleBytes,
+            sampleBytes,
+            sampleAddress,
+            sampleAddress
+        );
     }
 
 // TODO: uncomment when dapphub/ds-test#5 is resolved
