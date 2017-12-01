@@ -1,7 +1,10 @@
 pragma solidity ^0.4.17;
 
+import '../libraries/safeMath.sol';
+
 // Fully functional calculation library
 library rewards {
+    using safeMath for uint;
 
     // CONSTANT METHODS
 
@@ -18,8 +21,8 @@ library rewards {
         constant
         returns (uint)
     {
-        uint absoluteChange = timeDifference * gav;
-        return absoluteChange * managementRewardRate / divisorFee;
+        uint absoluteChange = timeDifference.mul(gav);
+        return absoluteChange.mul(managementRewardRate).div(divisorFee);
     }
 
     /* Function invariant
@@ -36,7 +39,7 @@ library rewards {
         returns (uint)
     {
         if (deltaPrice <= 0) return 0;
-        uint absoluteChange = uint(deltaPrice) * totalSupply;
-        return absoluteChange * performanceRewardRate / divisorFee;
+        uint absoluteChange = uint(deltaPrice).mul(totalSupply);
+        return absoluteChange.mul(performanceRewardRate).div(divisorFee);
     }
 }
