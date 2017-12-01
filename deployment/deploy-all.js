@@ -167,7 +167,7 @@ async function deploy(environment) {
       opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, ['0.5.2', governance, mlnAddr], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
       console.log("Deployed version");
 
       // add Version to Governance tracking
@@ -362,7 +362,7 @@ async function deploy(environment) {
         opts.gas = 6700000;
         version = await api
           .newContract(versionAbi)
-          .deploy(opts, ['0.5.2', governance, mlnAddr], () => {}, true);
+          .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
         console.log(`Deployed Version at ${version}`);
 
         // add Version to Governance tracking
