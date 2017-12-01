@@ -17,7 +17,7 @@ module.exports = {
   ],
   live: [
     {
-      address: '0xF7A11CA7BcbA058eFebE86232fA071456f9eeDC4',
+      address: '0x2A7B1d904B278755A10D83fad63c7F828432Cd5C',
       name: 'Thomson Reuters',
       data: '',
       url: 'thomsonreuters.com',

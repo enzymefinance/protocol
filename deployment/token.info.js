@@ -227,7 +227,7 @@ module.exports = {
       ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
     },
     {
-      address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
+      address: '0xa74476443119A942dE498590Fe1f2454d7D4aC0d',
       name: 'Golem Network Token',
       symbol: 'GNT',
       decimals: 18,
