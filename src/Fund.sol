@@ -448,7 +448,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
-            return logError("ERR: Invalid Request or invalid giveQuantity / receiveQuantity");  
+            return logError("ERR: Invalid Request or invalid giveQuantity / receiveQuantity");
         }
     }
 
@@ -697,7 +697,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     {
         Order memory order = orders[id];
 
-        bytes32 assetPair = sha3(order.sellAsset, order.buyAsset);
         bool success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
 
         if (isFalse(success)) {
