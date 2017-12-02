@@ -134,32 +134,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // CONSTANT METHODS - ACCOUNTING
 
-    /// @notice Calculates gross asset value of the fund
-    /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// @dev
-    /// @return gav Gross asset value denominated in [base unit of melonAsset]
-    function calcGav() constant returns (uint gav) {
-        address[] newFundAssetList;
-        for (uint i = 0; i < fundAssetList.length; ++i) {
-            address ofAsset = fundAssetList[i];
-            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(quantityHeldInCustodyOfExchange(ofAsset));
-            uint assetPrice = module.datafeed.getPrice(ofAsset);
-            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == MELON_ASSET || assetInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
-                newFundAssetList.push(ofAsset);
-            } else {
-                assetInFundAssetList[ofAsset] = false; // Remove from fundAssetList if asset holdings are zero
-            }
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
-        }
-        // If some asset has been deleted from the list
-        if (newFundAssetList.length != fundAssetList.length) {
-            fundAssetList = newFundAssetList;
-        }
-    }
-
     /// @notice Calculates unclaimed rewards of the fund manager
     /// @param gav Gross asset value denominated in [base unit of melonAsset] of this fund
     /**
@@ -473,6 +447,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
+        } else {
+            return logError("ERR: Invalid Request or invalid giveQuantity / receiveQuantity");  
         }
     }
 
@@ -783,6 +759,32 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         RewardsConverted(now, shareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+    }
+
+    /// @notice Calculates gross asset value of the fund
+    /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
+    /// @dev
+    /// @return gav Gross asset value denominated in [base unit of melonAsset]
+    function calcGav() returns (uint gav) {
+        address[] newFundAssetList;
+        for (uint i = 0; i < fundAssetList.length; ++i) {
+            address ofAsset = fundAssetList[i];
+            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
+                .add(quantityHeldInCustodyOfExchange(ofAsset));
+            uint assetPrice = module.datafeed.getPrice(ofAsset);
+            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
+            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            if (assetHoldings != 0 || ofAsset == MELON_ASSET || assetInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+                newFundAssetList.push(ofAsset);
+            } else {
+                assetInFundAssetList[ofAsset] = false; // Remove from fundAssetList if asset holdings are zero
+            }
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
+        }
+        // If some asset has been deleted from the list
+        if (newFundAssetList.length != fundAssetList.length) {
+            fundAssetList = newFundAssetList;
+        }
     }
 
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
