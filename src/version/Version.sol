@@ -21,7 +21,7 @@ contract Version is DBC, Owned {
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
-    mapping (address => address) public managerToFunds; // Links manager address to fund addresses created using this version
+    mapping (address => address[]) public managerToFunds; // Links manager address to fund addresses created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
     mapping (string => bool) fundNameExists; // Links fund names to boolean based on existence
     // EVENTS
@@ -57,7 +57,6 @@ contract Version is DBC, Owned {
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) constant returns (address) { return listOfFunds[withId]; }
     function getLastFundId() constant returns (uint) { return listOfFunds.length -1; }
-    function getFundByManager(address ofManager) constant returns (address) { return managerToFunds[ofManager]; }
     function fundNameTaken(string withName) constant returns (bool) { return fundNameExists[withName]; }
 
     // NON-CONSTANT METHODS
@@ -117,7 +116,7 @@ contract Version is DBC, Owned {
         );
         listOfFunds.push(fund);
         fundNameExists[withName] = true;
-        managerToFunds[msg.sender] = fund;
+        managerToFunds[msg.sender].push(fund);
         FundUpdated(getLastFundId());
     }
 
