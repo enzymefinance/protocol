@@ -34,12 +34,11 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // PRE, POST AND INVARIANT CONDITIONS
 
-    function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
+    function isRegistered(address ofAsset) constant returns (bool) { return information[ofAsset].exists; }
 
     // CONSTANT METHODS
 
     // Get registration specific information
-    function isRegistered(address ofAsset) constant returns (bool) { return !notRegistered(ofAsset); }
     function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
     function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
     // Get asset specific information
@@ -73,7 +72,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         address breakOut
     )
         pre_cond(isOwner())
-        pre_cond(notRegistered(ofAsset))
+        pre_cond(!isRegistered(ofAsset))
         pre_cond(numRegisteredAssets() < MAX_ASSETS)
     {
         registeredAssets.push(ofAsset);
@@ -126,6 +125,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         pre_cond(isRegistered(ofAsset))
     {
         delete information[ofAsset]; // Sets exists boolean to false
-        assert(notRegistered(ofAsset));
+        assert(!isRegistered(ofAsset));
     }
 }
