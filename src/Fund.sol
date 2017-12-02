@@ -463,15 +463,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         }
     }
