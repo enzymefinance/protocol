@@ -38,7 +38,8 @@ library rewards {
         constant
         returns (uint)
     {
-        if (deltaPrice <= 0) return 0;
+        if (deltaPrice <= 0)
+            return 0;
         uint absoluteChange = uint(deltaPrice).mul(totalSupply);
         return absoluteChange.mul(performanceRewardRate).div(divisorFee);
     }

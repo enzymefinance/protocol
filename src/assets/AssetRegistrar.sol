@@ -68,19 +68,17 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(!isRegistered(ofAsset))
+        post_cond(isRegistered(ofAsset))
     {
-        information[ofAsset] = Asset({
-            name: name,
-            symbol: symbol,
-            decimal: decimal,
-            url: url,
-            ipfsHash: ipfsHash,
-            chainId: chainId,
-            breakIn: breakIn,
-            breakOut: breakOut,
-            exists: true
-        });
-        assert(isRegistered(ofAsset));
+        Asset asset = information[ofAsset];
+        asset.name = name;
+        asset.symbol = symbol;
+        asset.decimal = decimal;
+        asset.url = url;
+        asset.ipfsHash = ipfsHash;
+        asset.breakIn = breakIn;
+        asset.breakOut = breakOut;
+        asset.exists = true;
     }
 
     /// @notice Updates description information of a registered Asset
@@ -116,8 +114,8 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(isRegistered(ofAsset))
+        post_cond(!isRegistered(ofAsset))
     {
         delete information[ofAsset]; // Sets exists boolean to false
-        assert(!isRegistered(ofAsset));
     }
 }

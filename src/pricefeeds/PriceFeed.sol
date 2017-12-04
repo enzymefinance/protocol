@@ -35,7 +35,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         constant
         returns (bool isRecent)
     {
-        return now.sub(information[ofAsset].timestamp <= VALIDITY);
+        return now.sub(information[ofAsset].timestamp) <= VALIDITY;
     }
 
     /// @notice All assets entered have a recent price defined on this pricefeed
