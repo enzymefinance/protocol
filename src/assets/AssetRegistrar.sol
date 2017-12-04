@@ -30,10 +30,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     // Methods fields
     mapping (address => Asset) public information;
 
-    // PRE, POST AND INVARIANT CONDITIONS
-
-    function isRegistered(address ofAsset) constant returns (bool) { return information[ofAsset].exists; }
-
     // CONSTANT METHODS
 
     // Get asset specific information
@@ -67,8 +63,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         address breakOut
     )
         pre_cond(isOwner())
-        pre_cond(!isRegistered(ofAsset))
-        post_cond(isRegistered(ofAsset))
+        pre_cond(!information[ofAsset].exists)
     {
         Asset asset = information[ofAsset];
         asset.name = name;
@@ -79,6 +74,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         asset.breakIn = breakIn;
         asset.breakOut = breakOut;
         asset.exists = true;
+        assert(information[ofAsset].exists);
     }
 
     /// @notice Updates description information of a registered Asset
@@ -97,7 +93,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         string ipfsHash
     )
         pre_cond(isOwner())
-        pre_cond(isRegistered(ofAsset))
+        pre_cond(information[ofAsset].exists)
     {
         Asset asset = information[ofAsset];
         asset.name = name;
@@ -113,9 +109,9 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
         address ofAsset
     )
         pre_cond(isOwner())
-        pre_cond(isRegistered(ofAsset))
-        post_cond(!isRegistered(ofAsset))
+        pre_cond(information[ofAsset].exists)
     {
         delete information[ofAsset]; // Sets exists boolean to false
+        assert(!information[ofAsset].exists);
     }
 }

@@ -39,7 +39,7 @@ contract PriceFeedTest is DSTest {
         address quoteAsset = datafeed.getQuoteAsset();
         uint returnedInterval = datafeed.getInterval();
         uint returnedValidity = datafeed.getValidity();
-        bool quoteAssetIsRegistered = datafeed.isRegistered(quoteAsset);
+        bool quoteAssetIsRegistered = datafeed.information[quoteAsset].exists;
 
         assertEq(quoteAsset, melonToken);
         assertEq(returnedInterval, INTERVAL);
