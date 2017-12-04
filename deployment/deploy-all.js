@@ -70,9 +70,9 @@ async function deploy(environment) {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T").address;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
       const mlnTokenContract = await api.newContract(abi, mlnAddr);
-      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
+      const mlnName = await mlnTokenContract.instance.name.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -224,9 +224,9 @@ async function deploy(environment) {
       mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
       const mlnTokenContract = await api.newContract(abi, mlnAddr);
-      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
+      const mlnName = await mlnTokenContract.instance.name.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
 
       if (datafeedOnly) {
         // deploy datafeed
@@ -406,9 +406,9 @@ async function deploy(environment) {
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
       const mlnTokenContract = await api.newContract(abi, mlnToken);
-      const mlnName = await mlnTokenContract.instance.getName.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.getSymbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
+      const mlnName = await mlnTokenContract.instance.name.call({}, []);
+      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
+      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -505,7 +505,7 @@ async function deploy(environment) {
       versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
-      opts.gas = 5990000;
+      opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
         .deploy(opts, [pkgInfo.version, governance, mlnToken], () => {}, true);
