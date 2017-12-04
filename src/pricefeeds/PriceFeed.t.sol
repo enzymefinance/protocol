@@ -7,7 +7,7 @@ import "../assets/EtherToken.sol";
 
 
 contract PriceFeedTest is DSTest {
-    PriceFeed datafeed;
+    PriceFeed pricefeed;
     PreminedAsset melonToken;
     EtherToken etherToken;
 
@@ -32,14 +32,14 @@ contract PriceFeedTest is DSTest {
     function setUp() {
         melonToken = new PreminedAsset(MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, PREMINED_AMOUNT);
         etherToken = new EtherToken();
-        datafeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
+        pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
 
     function testSetupSucceeded() {
-        address quoteAsset = datafeed.getQuoteAsset();
-        uint returnedInterval = datafeed.getInterval();
-        uint returnedValidity = datafeed.getValidity();
-        bool quoteAssetIsRegistered = datafeed.information[quoteAsset].exists;
+        address quoteAsset = pricefeed.getQuoteAsset();
+        uint returnedInterval = pricefeed.getInterval();
+        uint returnedValidity = pricefeed.getValidity();
+        var ( , , , , quoteAssetIsRegistered, , , , , , ) = pricefeed.information(quoteAsset);
 
         assertEq(quoteAsset, melonToken);
         assertEq(returnedInterval, INTERVAL);
@@ -47,15 +47,11 @@ contract PriceFeedTest is DSTest {
         assert(quoteAssetIsRegistered);
     }
 
-    function testFailGetPriceBeforeSet() {
-        datafeed.getPrice(etherToken);
-    }
-
     function testAssetRegistrationDoesNotError() {
         bytes32 sampleBytes = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
         address sampleAddress = 0x9aD216d7FBE6dF26F5F29810F2e45f229376372A;
 
-        datafeed.register(
+        pricefeed.register(
             0x4b28c7f4bEb488989A2E01333eB67511e07dFf31,
             "Sample Token",
             "ABC",
@@ -77,9 +73,9 @@ contract PriceFeedTest is DSTest {
 //        priceArray.push(inputEtherTokenPrice);
 //        priceArray.push(inputMelonTokenPrice);
 //
-//        datafeed.update(assetArray, priceArray);
-//        uint returnedEtherTokenPrice = datafeed.getPrice(etherToken);
-//        uint returnedMelonTokenPrice = datafeed.getPrice(melonToken);
+//        pricefeed.update(assetArray, priceArray);
+//        uint returnedEtherTokenPrice = pricefeed.getPrice(etherToken);
+//        uint returnedMelonTokenPrice = pricefeed.getPrice(melonToken);
 //
 //        assertEq(returnedEtherTokenPrice, inputEtherTokenPrice);
 //        assertEq(returnedMelonTokenPrice, inputMelonTokenPrice);
