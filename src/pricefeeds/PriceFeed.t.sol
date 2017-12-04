@@ -1,13 +1,13 @@
 pragma solidity ^0.4.17;
 
 import "ds-test/test.sol";
-import "./DataFeed.sol";
+import "./PriceFeed.sol";
 import "../assets/PreminedAsset.sol";
 import "../assets/EtherToken.sol";
 
 
-contract DataFeedTest is DSTest {
-    DataFeed datafeed;
+contract PriceFeedTest is DSTest {
+    PriceFeed datafeed;
     PreminedAsset melonToken;
     EtherToken etherToken;
 
@@ -32,7 +32,7 @@ contract DataFeedTest is DSTest {
     function setUp() {
         melonToken = new PreminedAsset(MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, PREMINED_AMOUNT);
         etherToken = new EtherToken();
-        datafeed = new DataFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
+        datafeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
 
     function testSetupSucceeded() {

@@ -7,7 +7,7 @@ contract SphereInterface {
 
     // CONSTANT METHODS
 
-    function getDataFeed() external constant returns (address) {}
+    function getPriceFeed() external constant returns (address) {}
     function getExchange() external constant returns (address) {}
     function getExchangeAdapter() external constant returns (address) {}
     function ofSubSet() external constant returns (uint) {}

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
 import "ds-test/test.sol";
-import "./datafeeds/DataFeed.sol";
+import "./pricefeeds/PriceFeed.sol";
 import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./sphere/Sphere.sol";
@@ -11,7 +11,7 @@ import "./Fund.sol";
 
 
 contract FundTest is DSTest {
-    DataFeed datafeed;
+    PriceFeed datafeed;
     EtherToken etherToken;
     Fund fund;
     Participation participation;
@@ -45,7 +45,7 @@ contract FundTest is DSTest {
     //function setUp() {
     //    melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
     //    etherToken = new EtherToken();
-    //    datafeed = new DataFeed(melonToken, INTERVAL, VALIDITY);
+    //    datafeed = new PriceFeed(melonToken, INTERVAL, VALIDITY);
     //    simpleMarket = new SimpleMarket();
     //    sphere = new Sphere(datafeed, simpleMarket);
     //    participation = new Participation();

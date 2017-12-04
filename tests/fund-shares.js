@@ -59,8 +59,8 @@ describe("Fund shares", () => {
       addresses.Version,
     );
     datafeed = await api.newContract(
-      JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi")),
-      addresses.DataFeed,
+      JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi")),
+      addresses.PriceFeed,
     );
     mlnToken = await api.newContract(
       JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
@@ -414,7 +414,7 @@ describe("Fund shares", () => {
           // const message = result.events.ErrorMessage.returnValues.errorMessage;
           const post = await getAllBalances();
 
-          // expect(message).toEqual('ERR: DataFeed Module: Wait at least for two updates before continuing');
+          // expect(message).toEqual('ERR: PriceFeed Module: Wait at least for two updates before continuing');
           expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
           expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
           expect(post.investor.ether).toEqual(pre.investor.ether);

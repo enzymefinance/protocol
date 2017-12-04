@@ -90,12 +90,12 @@
 <td>Quantity in Melon asset to give to person executing request</td>
 </tr>
 <tr>
-<td>lastDataFeedUpdateId</td>
+<td>lastPriceFeedUpdateId</td>
 <td><code>uint256</code></td>
 <td>Data feed module specific id of last update</td>
 </tr>
 <tr>
-<td>lastDataFeedUpdateTime</td>
+<td>lastPriceFeedUpdateTime</td>
 <td><code>uint256</code></td>
 <td>Data feed module specific timestamp of last update</td>
 </tr>
@@ -364,7 +364,7 @@ Data feeds route external information such as asset prices to Melon fund smart c
 </table>
 <ol start="2">
 <li>R parameters are checked against restriction rules specified in the participation module P by the boolean function P.isSubscriptionPermitted (E.g Participant being an attested Uport identity).</li>
-<li>R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if <em>currentTimestamp - R.timestamp &gt;= DF.INTERVAL</em> (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if <em>DF.getLastUpdateId &gt;= R.lastDataFeedUpdateId + 2</em>. This is to minimize unfair advantage from information asymmetries associated with the investor.</li>
+<li>R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if <em>currentTimestamp - R.timestamp &gt;= DF.INTERVAL</em> (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if <em>DF.getLastUpdateId &gt;= R.lastPriceFeedUpdateId + 2</em>. This is to minimize unfair advantage from information asymmetries associated with the investor.</li>
 </ol>
 <p><strong>Participant redeems from a Melon fund</strong></p>
 <ol>
@@ -402,14 +402,14 @@ Data feeds route external information such as asset prices to Melon fund smart c
 </ol>
 <p><strong>Manager makes an order</strong></p>
 <ol>
-<li>Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.</li>
+<li>Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.</li>
 <li>The specified quantity of the asset is given allowance to the selected exchanging via ERC20’s approve function.</li>
 <li>Order is then placed on the selected exchange through the exchangeAdapter contract E via E.makeOrder by specifying the exchange and order parameters as parameters.</li>
 <li>The order is filled on the selected exchange (In future, can be any compatible decentralized exchange like OasisDex, Kyber, e.t.c)  when the price is met.</li>
 </ol>
 <p><strong>Manager takes an orders</strong></p>
 <ol>
-<li>Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.</li>
+<li>Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.</li>
 <li>The specified quantity of the asset is given allowance to the selected exchanging via ERC20’s approve function.</li>
 <li>Order id must correspond to a valid, existing order on the selected exchange. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.takeOrder by specifying the exchange and order parameters as parameters.</li>
 </ol>

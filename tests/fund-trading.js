@@ -70,8 +70,8 @@ describe("Fund shares", async () => {
     eurTokenContract = await api.newContract(abi, eurToken);
     console.log("Deployed euro token");
 
-    abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
-    bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+    abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+    bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
     opts.data = `0x${bytecode}`;
     datafeed = await api
       .newContract(abi)

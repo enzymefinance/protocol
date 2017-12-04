@@ -8,9 +8,6 @@ contract AssetRegistrarInterface {
 
     // CONSTANT METHODS
 
-    // Get general information
-    function numRegisteredAssets() constant returns (uint) {}
-    function getRegisteredAssetAt(uint id) constant returns (address) {}
     // Get specific information
     function getDescriptiveInformation(address ofAsset) constant returns (string, string, string, bytes32) {}
     function getName(address ofAsset) constant returns (string) {}

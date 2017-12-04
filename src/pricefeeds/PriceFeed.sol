@@ -3,19 +3,19 @@ pragma solidity ^0.4.17;
 import '../dependencies/ERC20.sol';
 import '../libraries/safeMath.sol';
 import '../assets/AssetRegistrar.sol';
-import './DataFeedInterface.sol';
+import './PriceFeedInterface.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
-/// @notice DataFeed operator could be staked and sharePrice input validated on chain
-contract DataFeed is DataFeedInterface, AssetRegistrar {
+/// @notice PriceFeed operator could be staked and sharePrice input validated on chain
+contract PriceFeed is PriceFeedInterface, AssetRegistrar {
     using safeMath for uint;
 
     // TYPES
 
-    struct Data  {
+    struct Price  {
         uint timestamp; // Timestamp of last price update of this asset
         uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
     }
@@ -26,16 +26,14 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
-    uint public VALIDITY; // Time in seconds for which data is considered valid
+    uint public VALIDITY; // Time in seconds for which data is considered recent
     // Methods fields
-    mapping (uint => mapping(address => Data)) public dataHistory; // Maps integers to asset addresses, which map to data structs
+    mapping (uint => mapping(address => Price)) public dataHistory; // Maps integers to asset addresses, which map to data structs
     uint public nextUpdateId;
     uint public lastUpdateTimestamp;
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isDataSet(address ofAsset) internal returns (bool) { return dataHistory[getLastUpdateId()][ofAsset].timestamp > 0; }
-    function isDataValid(address ofAsset) internal returns (bool) { return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY; }
     function isHistory(uint x) internal returns (bool) { return 0 <= x && x < nextUpdateId; }
 
     // CONSTANT METHODS
@@ -49,13 +47,24 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
 
     /// @notice Gets asset specific information
     /// @dev Asset has been initialised
-    /// @return valid Whether data is valid or not
-    function isValid(address ofAsset)
+    /// @return recent Whether data is recent or not
+    function hasRecentPrice(address ofAsset)
         constant
-        pre_cond(isDataSet(ofAsset))
-        returns (bool valid)
+        returns (bool isRecent)
     {
         return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
+    }
+
+    /// @notice All assets entered have a recent price defined on this pricefeed
+    /// @return Whether prices for these assets are *all* recent
+    function hasRecentPrices(address[] ofAssets)
+        constant
+        returns (bool)
+    {
+        for (uint i; i < ofAssets.length; i++) {
+            if(!hasRecentPrice(ofAssets[i])) return false;
+        }
+        return true;
     }
 
     /// @notice Checks whether data exists for a given asset pair
@@ -63,67 +72,49 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @param buyAsset Asset for which check to be done if data exists
     /// @param sellAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
-    function existsData(address sellAsset, address buyAsset)
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset)
         constant
         returns (bool exists)
     {
         return
-            isValid(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            isValid(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
-    /// @notice Returns data feed history in an blockchain node friendly way
-    /// @dev Uses an efficient bulk call
-    /// @param ofAsset Asset for which data history should be returned
-    /// @param withStartId Index at which history should be started, this is due to the limitation of non dynamic array size returns
-    /**
-    @return {
-      "timestampArray": "Array of timestamps",
-      "priceArray": "Array of prices"
-    }
-    */
-    function getDataHistory(address ofAsset, uint withStartId)
-        constant
-        pre_cond(isHistory(withStartId))
-        returns (uint[1024] timestampArray, uint[1024] priceArray)
-    {
-        uint indexCounter;
-        uint[1024] memory timestamps;
-        uint[1024] memory prices;
-        while (indexCounter != 1024 || withStartId + indexCounter < nextUpdateId) {
-            timestamps[withStartId + indexCounter] =
-                dataHistory[withStartId + indexCounter][ofAsset].timestamp;
-            prices[withStartId + indexCounter] =
-                dataHistory[withStartId + indexCounter][ofAsset].price;
-            ++indexCounter;
-        }
-        return (timestamps, prices);
-    }
-
     /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
-    /// @dev Asset has been initialised and is active
-    /// @param ofAsset Asset for which price should be return
+    /// @dev Asset has been registered and has been recently updated
+    /// @param ofAsset Asset for which price should be returned
     /// @return dataFeedPrice Price of dataFeedPrice = inputPrice * 10 ** assetDecimals(ofAsset) where inputPrice s.t. quote == QUOTE_ASSET
     function getPrice(address ofAsset)
         constant
-        pre_cond(isDataSet(ofAsset))
-        pre_cond(isDataValid(ofAsset))
         returns (uint dataFeedPrice)
     {
         return dataHistory[getLastUpdateId()][ofAsset].price;
     }
 
+    /// @notice Gets price of an assetList multiplied by ten to the power of assetDecimals
+    /// @dev Assets have been registered and have been recently updated
+    /// @param ofAssets Assets for which prices should be returned
+    /// @return dataFeedPrices Prices of dataFeedPrice = inputPrice * 10 ** assetDecimals(ofAsset) where inputPrice s.t. quote == QUOTE_ASSET
+    function getPrices(address[] ofAssets)
+        constant
+        returns (uint[] dataFeedPrices)
+    {
+        for (uint i; i < ofAssets.length; i++) {
+            dataFeedPrices[i] = getPrice(ofAssets[i]);
+        }
+    }
+
     /// @notice Gets inverted price of an asset
     /// @dev Asset has been initialised and is active
     /// @param ofAsset Asset for which inverted price should be return
-    /// @return invertedDataFeedPrice Inverted getPrice()
+    /// @return invertedPriceFeedPrice Inverted getPrice()
     function getInvertedPrice(address ofAsset)
         constant
-        pre_cond(isDataSet(ofAsset))
-        pre_cond(isDataValid(ofAsset))
-        returns (uint invertedDataFeedPrice)
+        pre_cond(hasRecentPrice(ofAsset))
+        returns (uint invertedPriceFeedPrice)
     {
         return uint(10 ** uint(getDecimals(ofAsset)))
             .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
@@ -174,8 +165,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     */
     function getData(address ofAsset)
         constant
-        pre_cond(isDataSet(ofAsset))
-        pre_cond(isDataValid(ofAsset))
+        pre_cond(hasRecentPrice(ofAsset))
         returns (uint timestamp, uint price)
     {
         return (
@@ -196,9 +186,9 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
     /// @param quoteAssetBreakIn Break-in address for the quote asset
     /// @param quoteAssetBreakOut Break-out address for the quote asset
-    /// @param interval Number of seconds between datafeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     /// @param validity Number of seconds that datafeed update information is valid for
-    function DataFeed(
+    function PriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         string quoteAssetName,
         string quoteAssetSymbol,
@@ -243,13 +233,13 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         for (uint i = 0; i < ofAssets.length; ++i) {
             if(thisId > 0)  // prevent multiple updates in one block
                 require(dataHistory[thisId - 1][ofAssets[i]].timestamp != now);
-            dataHistory[thisId][ofAssets[i]] = Data({
+            dataHistory[thisId][ofAssets[i]] = Price({
                 timestamp: now,
                 price: newPrices[i]
             });
         }
         lastUpdateTimestamp = now;
-        DataUpdated(thisId);
+        PriceUpdated(thisId);
         nextUpdateId++;
     }
 }

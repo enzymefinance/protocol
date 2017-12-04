@@ -7,7 +7,7 @@ import './sphere/SphereInterface.sol';
 import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
-import './datafeeds/DataFeedInterface.sol';
+import './pricefeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
 import {simpleAdapter as exchangeAdapter} from './exchange/adapter/simpleAdapter.sol';
@@ -22,7 +22,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
-        DataFeedInterface datafeed; // Provides all external data
+        PriceFeedInterface pricefeed; // Provides all external data
         ExchangeInterface exchange; // Wraps exchange adapter into exchange interface
         ParticipationInterface participation; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
@@ -49,8 +49,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
-        uint lastDataFeedUpdateId; // Data feed module specific id of last update
-        uint lastDataFeedUpdateTime; // Data feed module specific timestamp of last update
+        uint lastPriceFeedUpdateId; // Data feed module specific id of last update
+        uint lastPriceFeedUpdateTime; // Data feed module specific timestamp of last update
         uint timestamp; // Time of request creation in seconds
     }
 
@@ -122,7 +122,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
     function getModules() constant returns (address ,address, address, address) {
         return (
-            address(module.datafeed),
+            address(module.pricefeed),
             address(EXCHANGE),
             address(module.participation),
             address(module.riskmgmt)
@@ -160,7 +160,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         );
         performanceReward = 0;
         if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav).mul(module.datafeed.getInvertedPrice(REFERENCE_ASSET));
+            uint currSharePrice = calcValuePerShare(gav).mul(module.pricefeed.getInvertedPrice(REFERENCE_ASSET));
             if (currSharePrice > atLastConversion.highWaterMark) {
               performanceReward = rewards.performanceReward(
                   PERFORMANCE_REWARD_RATE,
@@ -256,7 +256,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         address ofSphere
     ) {
         SphereInterface sphere = SphereInterface(ofSphere);
-        module.datafeed = DataFeedInterface(sphere.getDataFeed());
+        module.pricefeed = PriceFeedInterface(sphere.getPriceFeed());
         // For later release initiate exchangeAdapter here: eg as exchangeAdapter = ExchangeInterface(sphere.getExchangeAdapter());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
@@ -268,12 +268,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
-        // Require reference assets exists in datafeed
+        // Require reference assets exists in pricefeed
         MELON_CONTRACT = ERC20(MELON_ASSET);
-        require(MELON_ASSET == module.datafeed.getQuoteAsset()); // Sanity check
+        require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         fundAssetList.push(MELON_ASSET);
         assetInFundAssetList[MELON_ASSET] = true;
-        MELON_IN_BASE_UNITS = 10 ** uint256(module.datafeed.getDecimals(MELON_ASSET));
+        MELON_IN_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
         module.participation = ParticipationInterface(ofParticipation);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
@@ -335,8 +335,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastDataFeedUpdateId: module.datafeed.getLastUpdateId(),
-            lastDataFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
+            lastPriceFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastPriceFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -378,8 +378,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastDataFeedUpdateId: module.datafeed.getLastUpdateId(),
-            lastDataFeedUpdateTime: module.datafeed.getLastUpdateTimestamp(),
+            lastPriceFeedUpdateId: module.pricefeed.getLastUpdateId(),
+            lastPriceFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -408,16 +408,16 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         if (
             isPastZero(totalSupply) &&
-            now < request.timestamp.add(module.datafeed.getInterval())
+            now < request.timestamp.add(module.pricefeed.getInterval())
         ) {
-            return logError("ERR: DataFeed Module: Wait at least one interval before continuing");
+            return logError("ERR: PriceFeed Module: Wait at least one interval before continuing");
         }
 
         if (
             isPastZero(totalSupply) &&
-            module.datafeed.getLastUpdateId() < request.lastDataFeedUpdateId.add(2)
+            module.pricefeed.getLastUpdateId() < request.lastPriceFeedUpdateId.add(2)
         ) {
-            return logError("ERR: DataFeed Module: Wait at least for two updates before continuing");
+            return logError("ERR: PriceFeed Module: Wait at least for two updates before continuing");
         }
 
         if (
@@ -478,7 +478,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Redeems by allocating an ownership percentage of each asset to the participant
-    /// @dev Independent of running price feed! Contains evil for loop, module.datafeed.numRegisteredAssets() needs to be limited
+    /// @dev Independent of running price feed!
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /**
     @return {
@@ -490,37 +490,46 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         returns (bool err, string errMsg)
     {
-        if (balancesOfHolderLessThan(msg.sender, shareQuantity)) {
+        if (balancesOfHolderLessThan(msg.sender, shareQuantity) && balances[msg.sender] > 0) {
             return logError("ERR: Sender does not own enough shares");
         }
 
         // Quantity of shares which belong to the investors
-        var (gav, , , , nav, ) = performCalculations();
-        uint participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
-
+        uint participantsTotalSupplyBeforeRedeem = totalSupply;
+        if (module.pricefeed.hasRecentPrices(fundAssetList)) {
+            var (gav, , , , nav, ) = performCalculations();
+            participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
+        }
 
         if (isZero(participantsTotalSupplyBeforeRedeem)) {
             return logError("ERR: Zero participants total supply");
         }
 
-        annihilateShares(msg.sender, shareQuantity); // Annihilate shares before external calls to prevent reentrancy
-        // Transfer ownershipQuantity of Assets
+        // Check whether enough assets held by fund
+        uint[] memory ownershipQuantities;
         for (uint i = 0; i < fundAssetList.length; ++i) {
             address ofAsset = fundAssetList[i];
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
+
+            ownershipQuantities[i] = assetHoldings // ownership percentage of participant of asset holdings
                 .mul(shareQuantity)
                 .div(participantsTotalSupplyBeforeRedeem);
 
             // Less available than what is owed - Eg in case of unreturned asset quantity at EXCHANGE address
-            if (isLessThan(assetHoldings, ownershipQuantity)) {
+            if (isLessThan(assetHoldings, ownershipQuantities[i])) {
                 return shutDownAndLogError("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
             }
+        }
 
+        // Annihilate shares before external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity);
+
+        // Transfer ownershipQuantity of Assets
+        for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
-            if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantity)) {
-                return shutDownAndLogError("CRITICAL ERR: Transfer of an asset failed!");
+            if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+                revert();
             }
         }
         Redeemed(msg.sender, now, shareQuantity);
@@ -555,13 +564,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.");
         }
 
-        if (!module.datafeed.existsData(sellAsset, buyAsset)) {
-            return logError("ERR: DataFeed module: Requested asset pair not valid");
+        if (!module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)) {
+            return logError("ERR: PriceFeed module: Requested asset pair not valid");
         }
 
         if (!module.riskmgmt.isMakePermitted(
-                module.datafeed.getOrderPrice(sellAsset, sellQuantity, buyQuantity),
-                module.datafeed.getReferencePrice(sellAsset, buyAsset),
+                module.pricefeed.getOrderPrice(sellAsset, sellQuantity, buyQuantity),
+                module.pricefeed.getReferencePrice(sellAsset, buyAsset),
                 sellAsset, buyAsset, sellQuantity, buyQuantity
             )
         ) {
@@ -629,8 +638,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
 
-        if (!module.datafeed.existsData(order.buyAsset, order.sellAsset)) {
-            return logError("ERR: DataFeed module: Requested asset pair not valid");
+        if (!module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)) {
+            return logError("ERR: PriceFeed module: Requested asset pair not valid");
         }
 
         if (fundAssetList.length >= MAX_FUND_ASSETS) {
@@ -638,8 +647,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (!module.riskmgmt.isTakePermitted(
-                module.datafeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
-                module.datafeed.getReferencePrice(order.buyAsset, order.sellAsset),
+                module.pricefeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
+                module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset),
                 order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
             )
         ) {
@@ -740,9 +749,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         // Convert unclaimed rewards in form of ownerless shares into shares which belong to manager
-        uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
-        totalSupply = totalSupply.sub(shareQuantity); // Annihilate ownerless shares
-        addShares(owner, shareQuantity); // Create shares and allocate them to manager
+        uint rewardsShareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
+        createShares(owner, rewardsShareQuantity); // Create shares and allocate them to manager
+
         // Update Calculations
         uint updatedHighWaterMark = atLastConversion.highWaterMark >= sharePrice ? atLastConversion.highWaterMark : sharePrice;
         atLastConversion = Calculations({
@@ -756,13 +765,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
 
-        RewardsConverted(now, shareQuantity, unclaimedRewards);
+        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
-    /// @dev
     /// @return gav Gross asset value denominated in [base unit of melonAsset]
     function calcGav() returns (uint gav) {
         address[] newFundAssetList;
@@ -770,8 +778,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             address ofAsset = fundAssetList[i];
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
                 .add(quantityHeldInCustodyOfExchange(ofAsset));
-            uint assetPrice = module.datafeed.getPrice(ofAsset);
-            uint assetDecimals = module.datafeed.getDecimals(ofAsset);
+            uint assetPrice = module.pricefeed.getPrice(ofAsset);
+            uint assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == MELON_ASSET || assetInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
                 newFundAssetList.push(ofAsset);

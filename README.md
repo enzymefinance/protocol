@@ -62,8 +62,8 @@ shareQuantity | `uint256` | Quantity of Melon fund shares
 giveQuantity | `uint256` | Quantity in Melon asset to give to Melon fund to receive shareQuantity
 receiveQuantity | `uint256` | Quantity in Melon asset to receive from Melon fund for given shareQuantity
 incentiveQuantity | `uint256` | Quantity in Melon asset to give to person executing request
-lastDataFeedUpdateId | `uint256` | Data feed module specific id of last update
-lastDataFeedUpdateTime | `uint256` | Data feed module specific timestamp of last update
+lastPriceFeedUpdateId | `uint256` | Data feed module specific id of last update
+lastPriceFeedUpdateTime | `uint256` | Data feed module specific timestamp of last update
 timestamp | `uint256` | Time of request creation
 
 While the Risk Management module takes as input the following parameters:
@@ -181,7 +181,7 @@ shareQuantity | `uint` | Quantity of fund shares to receive
 incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity executing the request
 
 2. R parameters are checked against restriction rules specified in the participation module P by the boolean function P.isSubscriptionPermitted (E.g Participant being an attested Uport identity).
-3. R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if *currentTimestamp - R.timestamp >= DF.INTERVAL* (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if *DF.getLastUpdateId >= R.lastDataFeedUpdateId + 2*. This is to minimize unfair advantage from information asymmetries associated with the investor.
+3. R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if *currentTimestamp - R.timestamp >= DF.INTERVAL* (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if *DF.getLastUpdateId >= R.lastPriceFeedUpdateId + 2*. This is to minimize unfair advantage from information asymmetries associated with the investor.
 
 **Participant redeems from a Melon fund**
 
@@ -198,14 +198,14 @@ incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity execut
 
 **Manager makes an order**
 
-1. Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.
+1. Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.
 2. The specified quantity of the asset is given allowance to the selected exchanging via ERC20's approve function.
 3. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.makeOrder by specifying the exchange and order parameters as parameters.
 4. The order is filled on the selected exchange (In future, can be any compatible decentralized exchange like OasisDex, Kyber, e.t.c)  when the price is met.
 
 **Manager takes an orders**
 
-1. Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.
+1. Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.
 2. The specified quantity of the asset is given allowance to the selected exchanging via ERC20's approve function.
 3. Order id must correspond to a valid, existing order on the selected exchange. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.takeOrder by specifying the exchange and order parameters as parameters.
 

@@ -9,7 +9,7 @@ const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
 
 // TODO: move these test files into `test` rather than `newtest` when we remove truffle
-describe("DataFeed", async () => {
+describe("PriceFeed", async () => {
   let datafeed;
   let datafeedContract;
   let btcToken;
@@ -53,8 +53,8 @@ describe("DataFeed", async () => {
       .deploy(opts, ["Melon token", "MLN-T", 18]);
     console.log("Deployed melon token");
 
-    abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
-    bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+    abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+    bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
     opts.data = `0x${bytecode}`;
     datafeed = await api
       .newContract(abi)
@@ -137,7 +137,7 @@ describe("DataFeed", async () => {
     });
   });
 
-  describe("DataFeed updating", async () => {
+  describe("PriceFeed updating", async () => {
     it("registers datafeed update", async () => {
       await datafeedContract.instance.update.postTransaction(opts, [
         [assetA, assetB],
@@ -180,7 +180,7 @@ describe("DataFeed", async () => {
     });
   });
 
-  describe("DataFeed history", async () => {
+  describe("PriceFeed history", async () => {
     it("returns non-empty first chunk of data history for first asset", async () => {
       const dataHistory = await datafeedContract.instance.getDataHistory.call(
         opts,

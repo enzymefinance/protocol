@@ -66,7 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - readme instructions to reflect latest deploy and testing steps
 - documentation in PriceFeed
 - simplify AssetRegistrar
-- rename `sharePrice` to `highWaterMark` in Calculations struct 
+- rename `sharePrice` to `highWaterMark` in Calculations struct
 - rename `test/` to `tests/`
 - accounting to include assets held on exchange (#227)
 
@@ -74,14 +74,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - old docstrings in contract functions
 - enforcing a newer Solidity compiler version (`^0.4.17`)
-- improved terminology for prices inside `DataFeed.sol`
+- improved terminology for prices inside `PriceFeed.sol`
 - updated NPM scripts
 - updated Install instructions readme
 
 ### Removed
 
 - `Staked.sol` contract
-- bulk data reading functions inside `AssetRegistrar.sol` 
+- bulk data reading functions inside `AssetRegistrar.sol`
 - `BackupOwned.sol` dependency
 - remnants of `Logger.sol` contract
 - `Permissioned.sol`

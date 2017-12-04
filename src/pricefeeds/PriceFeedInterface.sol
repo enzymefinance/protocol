@@ -3,15 +3,15 @@ pragma solidity ^0.4.17;
 import '../dependencies/ERC20.sol';
 import '../assets/AssetRegistrarInterface.sol';
 
-/// @title DataFeed Interface Contract
+/// @title PriceFeed Interface Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice DataFeed according to the Standard Data Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
-/// @notice This is to be considered as an interface on how to access the underlying DataFeed Contract
-contract DataFeedInterface is AssetRegistrarInterface {
+/// @notice PriceFeed according to the Standard Price Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
+/// @notice This is to be considered as an interface on how to access the underlying PriceFeed Contract
+contract PriceFeedInterface is AssetRegistrarInterface {
 
     // EVENTS
 
-    event DataUpdated(uint id);
+    event PriceUpdated(uint id);
 
     // CONSTANT METHODS
 
@@ -23,8 +23,11 @@ contract DataFeedInterface is AssetRegistrarInterface {
     function getLastUpdateTimestamp() constant returns (uint) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
-    function existsData(address sellAsset, address buyAsset) constant returns (bool) {}
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset) constant returns (bool) {}
+    function hasRecentPrice(address ofAsset) constant returns (bool) {}
     function getPrice(address ofAsset) constant returns (uint) {}
+    function hasRecentPrices(address[] ofAssets) constant returns (bool) {}
+    function getPrices(address[] ofAssets) constant returns (uint[]) {}
     function getInvertedPrice(address ofAsset) constant returns (uint) {}
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
     function getOrderPrice(address ofBase, uint sellQuantity, uint buyQuantity) constant returns (uint) {}

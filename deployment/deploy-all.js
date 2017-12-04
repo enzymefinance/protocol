@@ -75,8 +75,8 @@ async function deploy(environment) {
       const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       // deploy datafeed
-      abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
-      bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
       opts.data = `0x${bytecode}`;
       datafeed = await api
         .newContract(abi)
@@ -209,7 +209,7 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        DataFeed: datafeed,
+        PriceFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
         ParticipationOpen: participation,
@@ -230,8 +230,8 @@ async function deploy(environment) {
 
       if (datafeedOnly) {
         // deploy datafeed
-        abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
-        bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+        abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+        bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
         opts.data = `0x${bytecode}`;
         datafeed = await api
           .newContract(abi)
@@ -275,7 +275,7 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          DataFeed: datafeed,
+          PriceFeed: datafeed,
         };
       } else if (!datafeedOnly) {
         const thomsonReutersAddress = datafeedInfo[environment].find(
@@ -411,8 +411,8 @@ async function deploy(environment) {
       const mlnDecimals = await mlnTokenContract.instance.getDecimals.call({}, []);
 
       // deploy datafeed
-      abi = JSON.parse(fs.readFileSync("out/datafeeds/DataFeed.abi"));
-      bytecode = fs.readFileSync("out/datafeeds/DataFeed.bin");
+      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
       opts.data = `0x${bytecode}`;
       datafeed = await api
         .newContract(abi)
@@ -588,7 +588,7 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        DataFeed: datafeed,
+        PriceFeed: datafeed,
         SimpleMarket: simpleMarket,
         Sphere: sphere,
         ParticipationOpen: participation,

@@ -25,12 +25,8 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // FIELDS
 
-    // Constant fields
-    uint constant MAX_ASSETS = 90; // Max number of registrable assets (Based on gas limitations)
-
     // Methods fields
     mapping (address => Asset) public information;
-    address[] public registeredAssets;
 
     // PRE, POST AND INVARIANT CONDITIONS
 
@@ -38,9 +34,6 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // CONSTANT METHODS
 
-    // Get registration specific information
-    function numRegisteredAssets() constant returns (uint) { return registeredAssets.length; }
-    function getRegisteredAssetAt(uint id) constant returns (address) { return registeredAssets[id]; }
     // Get asset specific information
     function getName(address ofAsset) constant returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) constant returns (string) { return information[ofAsset].symbol; }
@@ -73,9 +66,7 @@ contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
     )
         pre_cond(isOwner())
         pre_cond(!isRegistered(ofAsset))
-        pre_cond(numRegisteredAssets() < MAX_ASSETS)
     {
-        registeredAssets.push(ofAsset);
         information[ofAsset] = Asset({
             name: name,
             symbol: symbol,
