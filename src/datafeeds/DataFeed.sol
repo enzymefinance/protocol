@@ -241,6 +241,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     {
         uint thisId = nextUpdateId;
         for (uint i = 0; i < ofAssets.length; ++i) {
+            require(isRegistered(ofAssets[i]));
             if(thisId > 0)  // prevent multiple updates in one block
                 require(dataHistory[thisId - 1][ofAssets[i]].timestamp != now);
             dataHistory[thisId][ofAssets[i]] = Data({
