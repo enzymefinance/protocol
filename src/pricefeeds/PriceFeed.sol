@@ -13,13 +13,6 @@ import './PriceFeedInterface.sol';
 contract PriceFeed is PriceFeedInterface, AssetRegistrar {
     using safeMath for uint;
 
-    // TYPES
-
-    struct Price  {
-        uint timestamp; // Timestamp of last price update of this asset
-        uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
-    }
-
     // FIELDS
 
     // Constructor fields
@@ -27,23 +20,13 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds for which data is considered recent
-    // Methods fields
-    mapping (uint => mapping(address => Price)) public dataHistory; // Maps integers to asset addresses, which map to data structs
-    uint public nextUpdateId;
-    uint public lastUpdateTimestamp;
-
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isHistory(uint x) internal returns (bool) { return 0 <= x && x < nextUpdateId; }
 
     // CONSTANT METHODS
 
-    // Get data feed specific information
+    // Get pricefeed specific information
     function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
     function getInterval() constant returns (uint) { return INTERVAL; }
     function getValidity() constant returns (uint) { return VALIDITY; }
-    function getLastUpdateId() constant pre_cond(nextUpdateId > 0) returns (uint) { return nextUpdateId - 1; }
-    function getLastUpdateTimestamp() constant returns (uint) { return lastUpdateTimestamp; }
 
     /// @notice Gets asset specific information
     /// @dev Asset has been initialised
@@ -52,7 +35,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         constant
         returns (bool isRecent)
     {
-        return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
+        return now.sub(information[ofAsset].timestamp <= VALIDITY);
     }
 
     /// @notice All assets entered have a recent price defined on this pricefeed
@@ -62,7 +45,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         returns (bool)
     {
         for (uint i; i < ofAssets.length; i++) {
-            if(!hasRecentPrice(ofAssets[i])) return false;
+            if (!hasRecentPrice(ofAssets[i]))
+                return false;
         }
         return true;
     }
@@ -91,7 +75,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         constant
         returns (uint dataFeedPrice)
     {
-        return dataHistory[getLastUpdateId()][ofAsset].price;
+        return information[ofAsset].price;
     }
 
     /// @notice Gets price of an assetList multiplied by ten to the power of assetDecimals
@@ -133,7 +117,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         } else if (getQuoteAsset() == ofBase) {
             price = getInvertedPrice(ofQuote);
         } else {
-            throw; // Log Error: No suitable reference price available
+            revert(); // Log Error: No suitable reference price available
         }
     }
 
@@ -152,26 +136,6 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         return buyQuantity
             .mul(10 ** uint(getDecimals(ofBase)))
             .div(sellQuantity);
-    }
-
-    /// @notice Gets timestamp and price data of an asset
-    /// @dev Asset has been initialised and is active
-    /// @param ofAsset Asset for which data should be returned
-    /**
-    @return {
-      "timestamp": "Timestamp of asset",
-      "price": "Price of asset"
-    }
-    */
-    function getData(address ofAsset)
-        constant
-        pre_cond(hasRecentPrice(ofAsset))
-        returns (uint timestamp, uint price)
-    {
-        return (
-            dataHistory[getLastUpdateId()][ofAsset].timestamp,
-            dataHistory[getLastUpdateId()][ofAsset].price
-        );
     }
 
     // NON-CONSTANT PUBLIC METHODS
@@ -223,23 +187,18 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
      *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
      *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
      *  and let EUR-T decimals == 8.
-     *  Input would be: dataHistory[getLastUpdateId()][EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
+     *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     function update(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())
         pre_cond(ofAssets.length == newPrices.length)
     {
-        uint thisId = nextUpdateId;
         for (uint i = 0; i < ofAssets.length; ++i) {
-            if(thisId > 0)  // prevent multiple updates in one block
-                require(dataHistory[thisId - 1][ofAssets[i]].timestamp != now);
-            dataHistory[thisId][ofAssets[i]] = Price({
-                timestamp: now,
-                price: newPrices[i]
-            });
+            require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
+            require(information[ofAssets[i]].exists);
+            information[ofAssets[i]].timestamp = now;
+            information[ofAssets[i]].price = newPrices[i];
         }
-        lastUpdateTimestamp = now;
-        PriceUpdated(thisId);
-        nextUpdateId++;
+        PriceUpdated(now);
     }
 }

@@ -49,8 +49,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
-        uint lastPriceFeedUpdateId; // Data feed module specific id of last update
-        uint lastPriceFeedUpdateTime; // Data feed module specific timestamp of last update
         uint timestamp; // Time of request creation in seconds
     }
 
@@ -110,7 +108,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         success = ERC20(ofAsset).approve(EXCHANGE, quantity);
         SpendingApproved(EXCHANGE, ofAsset, quantity);
     }
-    function balancesOfHolderLessThan(address ofHolder, uint x) internal returns (bool) { return balances[ofHolder] < x; }
     function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // CONSTANT METHODS
@@ -335,8 +332,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastPriceFeedUpdateId: module.pricefeed.getLastUpdateId(),
-            lastPriceFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -378,8 +373,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
             incentiveQuantity: incentiveQuantity,
-            lastPriceFeedUpdateId: module.pricefeed.getLastUpdateId(),
-            lastPriceFeedUpdateTime: module.pricefeed.getLastUpdateTimestamp(),
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -398,45 +391,23 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function executeRequest(uint id)
         external
         pre_cond(notShutDown())
+        pre_cond(requests[id].status != RequestStatus.active)
+        pre_cond(requests[id].requestType == RequestType.redeem && balances[request.participant] < requests[id].shareQuantity) // Sender does not own enough shares
+        pre_cond(0 < totalSupply && now < requests[id].timestamp.add(uint(2).mul(module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(module.pricefeed.hasRecentPrices(fundAssetList)) // PriceFeed Module: No recent updates for fund asset list
         returns (bool err, string errMsg)
     {
-        Request request = requests[id];
-
-        if (request.status != RequestStatus.active) {
-            return logError("ERR: Request is not active");
-        }
-
-        if (
-            isPastZero(totalSupply) &&
-            now < request.timestamp.add(module.pricefeed.getInterval())
-        ) {
-            return logError("ERR: PriceFeed Module: Wait at least one interval before continuing");
-        }
-
-        if (
-            isPastZero(totalSupply) &&
-            module.pricefeed.getLastUpdateId() < request.lastPriceFeedUpdateId.add(2)
-        ) {
-            return logError("ERR: PriceFeed Module: Wait at least for two updates before continuing");
-        }
-
-        if (
-            request.requestType == RequestType.redeem &&
-            balancesOfHolderLessThan(request.participant, request.shareQuantity)
-        ) {
-            return logError("ERR: Sender does not own enough shares");
-        }
-
         uint costQuantity = request.shareQuantity
             .mul(calcSharePrice()) // denominated in [base unit of MELON_ASSET]
             .div(MELON_IN_BASE_UNITS);
 
-        request.status = RequestStatus.executed;
+        Request request = requests[id];
 
         if (
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
+            request.status = RequestStatus.executed;
             assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
@@ -444,6 +415,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
+            request.status = RequestStatus.executed;
             assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
             assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
@@ -490,7 +462,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         returns (bool err, string errMsg)
     {
-        if (balancesOfHolderLessThan(msg.sender, shareQuantity) && balances[msg.sender] > 0) {
+        if (balances[msg.sender] < shareQuantity && balances[msg.sender] > 0) {
             return logError("ERR: Sender does not own enough shares");
         }
 

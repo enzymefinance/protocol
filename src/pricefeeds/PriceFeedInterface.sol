@@ -11,7 +11,7 @@ contract PriceFeedInterface is AssetRegistrarInterface {
 
     // EVENTS
 
-    event PriceUpdated(uint id);
+    event PriceUpdated(uint timestamp);
 
     // CONSTANT METHODS
 
@@ -19,8 +19,6 @@ contract PriceFeedInterface is AssetRegistrarInterface {
     function getQuoteAsset() constant returns (address) {}
     function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
-    function getLastUpdateId() constant returns (uint) {}
-    function getLastUpdateTimestamp() constant returns (uint) {}
     // Get asset specific information
     function isValid(address ofAsset) constant returns (bool) {}
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) constant returns (bool) {}
@@ -32,7 +30,6 @@ contract PriceFeedInterface is AssetRegistrarInterface {
     function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
     function getOrderPrice(address ofBase, uint sellQuantity, uint buyQuantity) constant returns (uint) {}
     function getTimestamp(address ofAsset) constant returns (uint) {}
-    function getData(address ofAsset) constant returns (uint, uint) {}
 
     // NON-CONSTANT METHODS
 
