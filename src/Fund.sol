@@ -760,7 +760,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             } else {
                 assetInFundAssetList[ofAsset] = false; // Remove from fundAssetList if asset holdings are zero
             }
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
         // If some asset has been deleted from the list
         if (newFundAssetList.length != fundAssetList.length) {
