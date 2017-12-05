@@ -8,10 +8,10 @@ library rewards {
 
     // CONSTANT METHODS
 
-    /* Function invariant
-     *  for timeDifference == 0 => returns 0
-     */
     /// @dev Post Reward denominated in referenceAsset
+    /** Function invariant
+     *   for timeDifference == 0 => returns 0
+     */
     function managementReward(
         uint managementRewardRate,
         uint timeDifference,
@@ -25,13 +25,13 @@ library rewards {
         return absoluteChange.mul(managementRewardRate).div(divisorFee);
     }
 
-    /* Function invariant
-     *  for deltaDifference == 0 => returns 0
-     */
     /// @dev Post Reward denominated in referenceAsset
+    /** Function invariant
+     *   for deltaDifference == 0 => returns 0
+     */
     function performanceReward(
         uint performanceRewardRate,
-        int deltaPrice, // Price Difference measured agains referenceAsset
+        int deltaPrice, // Price Difference measured against referenceAsset
         uint totalSupply,
         uint divisorFee
     )

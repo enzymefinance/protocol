@@ -2,12 +2,12 @@ import Api from "@parity/api";
 
 const addressBook = require("../address-book.json");
 const BigNumber = require("bignumber.js");
-const environmentConfig = require("../deployment/environment.config.js");
+const environmentConfig = require("../deployment/environmentConfig.js");
 const fs = require("fs");
 const rp = require("request-promise");
 
 // TODO: should we have a separate token config for development network? much of the information is identical
-const tokenInfo = require("../deployment/token.info.js").kovan;
+const tokenInfo = require("../deployment/tokenInfo.js").kovan;
 
 const environment = "development";
 const apiPath = "https://min-api.cryptocompare.com/data/price";
