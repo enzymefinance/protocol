@@ -87,15 +87,15 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastConversion; // Calculation results at last convertUnclaimedRewards() call
-    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from asset to exchange id of open make order for the asset, if no open make orders uint is zero
     bool public isShutDown; // Security feature, if yes than investing, managing, convertUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
-    address[] public fundAssetList; // List of all assets owned by the fund
-    mapping (address => bool) public assetInFundAssetList; // Mapping from asset to whether the asset exists in fundAssetList
-    mapping (address => bool) public assetInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
+    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from asset to exchange id of open make order for the asset, if no open make orders uint is zero
+    address[] public ownedAssets; // List of all assets owned by the fund
+    mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
+    mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -268,8 +268,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Require reference assets exists in pricefeed
         MELON_CONTRACT = ERC20(MELON_ASSET);
         require(MELON_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        fundAssetList.push(MELON_ASSET);
-        assetInFundAssetList[MELON_ASSET] = true;
+        ownedAssets.push(MELON_ASSET);
+        isInAssetList[MELON_ASSET] = true;
         MELON_IN_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
         module.participation = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -394,7 +394,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(requests[id].status != RequestStatus.active)
         pre_cond(requests[id].requestType == RequestType.redeem && balances[request.participant] < requests[id].shareQuantity) // Sender does not own enough shares
         pre_cond(0 < totalSupply && now < requests[id].timestamp.add(uint(2).mul(module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrices(fundAssetList)) // PriceFeed Module: No recent updates for fund asset list
+        pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
         returns (bool err, string errMsg)
     {
         uint costQuantity = request.shareQuantity
@@ -468,7 +468,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         // Quantity of shares which belong to the investors
         uint participantsTotalSupplyBeforeRedeem = totalSupply;
-        if (module.pricefeed.hasRecentPrices(fundAssetList)) {
+        if (module.pricefeed.hasRecentPrices(ownedAssets)) {
             var (gav, , , , nav, ) = performCalculations();
             participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
         }
@@ -479,8 +479,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         // Check whether enough assets held by fund
         uint[] memory ownershipQuantities;
-        for (uint i = 0; i < fundAssetList.length; ++i) {
-            address ofAsset = fundAssetList[i];
+        for (uint i = 0; i < ownedAssets.length; ++i) {
+            address ofAsset = ownedAssets[i];
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
 
@@ -532,43 +532,27 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(notShutDown())
         returns (bool err, string errMsg)
     {
-        if (isPastZero(quantityHeldInCustodyOfExchange(sellAsset))) {
-            return logError("ERR: Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.");
-        }
-
-        if (!module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)) {
-            return logError("ERR: PriceFeed module: Requested asset pair not valid");
-        }
-
-        if (!module.riskmgmt.isMakePermitted(
+        require(0 < quantityHeldInCustodyOfExchange(sellAsset)); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
+        require(!module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
+        require(!module.riskmgmt.isMakePermitted(
                 module.pricefeed.getOrderPrice(sellAsset, sellQuantity, buyQuantity),
                 module.pricefeed.getReferencePrice(sellAsset, buyAsset),
                 sellAsset, buyAsset, sellQuantity, buyQuantity
-            )
-        ) {
-            return logError("ERR: RiskMgmt module: Make order not permitted");
-        }
-
-        if (!approveSpending(sellAsset, sellQuantity)) {
-            return logError("ERR: Could not approve spending of sellQuantity of sellAsset");
-        }
+        )); // RiskMgmt module: Make order not permitted
+        require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
+        require(!approveSpending(sellAsset, sellQuantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
 
-        if (!assetInFundAssetList[buyAsset]) {
-            if (fundAssetList.length >= MAX_FUND_ASSETS) {
-                if (uint(ERC20(sellAsset).balanceOf(this)) != sellQuantity || sellAsset == MELON_ASSET) {
-                    return logError("ERR: Limit for max ownable assets by the fund reached");
-                }
-            }
-            fundAssetList.push(buyAsset);
-            assetInFundAssetList[buyAsset] = true;
-            assetInOpenMakeOrder[buyAsset] = true;
-        }
+        // Success defined as non-zero order id
+        require(assetsToOpenMakeOrderIds[sellAsset] != 0);
 
-        if (isZero(assetsToOpenMakeOrderIds[sellAsset])) {
-            return logError("ERR: Exchange Adapter: Failed to make order; openMakeOrderId for the sellAsset is zero");
+        // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
+        isInOpenMakeOrder[buyAsset] = true;
+        if (!isInAssetList[buyAsset]) {
+            ownedAssets.push(buyAsset);
+            isInAssetList[buyAsset] = true;
         }
 
         orders.push(Order({
@@ -600,8 +584,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         external
         pre_cond(isOwner())
         pre_cond(notShutDown())
+
         returns (bool err, string errMsg)
     {
+        // Get information of order by order id
         Order memory order; // Inverse variable terminology! Buying what another person is selling
         (
             order.sellAsset,
@@ -609,48 +595,25 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.sellQuantity,
             order.buyQuantity
         ) = exchangeAdapter.getOrder(EXCHANGE, id);
-
-        if (!module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)) {
-            return logError("ERR: PriceFeed module: Requested asset pair not valid");
-        }
-
-        if (fundAssetList.length >= MAX_FUND_ASSETS) {
-            return logError("ERR: Limit for max ownable assets by the fund reached");
-        }
-
-        if (!module.riskmgmt.isTakePermitted(
-                module.pricefeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity), // TODO check: Buying what is being sold and selling what is being bought
-                module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset),
-                order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
-            )
-        ) {
-            return logError("ERR: RiskMgmt module: Take order not permitted");
-        }
-
-        if (order.sellQuantity < quantity) {
-            return logError("ERR: Not enough quantity of order for what is trying to be bought");
-        }
-
+        // Check pre conditions
+        require(module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)); // PriceFeed module: Requested asset pair not valid
+        require(isInAssetList[order.sellAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
+        require(module.riskmgmt.isTakePermitted(
+            module.pricefeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity),
+            module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset),
+            order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
+        )); // RiskMgmt module: Take order not permitted
+        require(quantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = quantity.mul(order.buyQuantity).div(order.sellQuantity);
+        require(approveSpending(order.buyAsset, spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
 
-        if (!approveSpending(order.buyAsset, spendQuantity)) {
-            return logError("ERR: Could not approve spending of spendQuantity of order.buyAsset");
-        }
+        // Execute request
+        require(exchangeAdapter.takeOrder(EXCHANGE, id, quantity));
 
-        if (!assetInFundAssetList[order.sellAsset]) {
-            if (fundAssetList.length >= MAX_FUND_ASSETS) {
-                if (uint(ERC20(order.buyAsset).balanceOf(this)) != order.buyQuantity || order.buyAsset == MELON_ASSET) {
-                    return logError("ERR: Limit for max ownable assets by the fund reached");
-                }
-            }
-            fundAssetList.push(order.sellAsset);
-            assetInFundAssetList[order.sellAsset] = true;
-        }
-
-        bool success = exchangeAdapter.takeOrder(EXCHANGE, id, quantity);
-
-        if (isFalse(success)) {
-            return logError("ERR: Exchange Adapter: Failed to take order");
+        // Update ownedAssets array and isInAssetList mapping
+        if (!isInAssetList[order.sellAsset]) {
+            ownedAssets.push(order.sellAsset);
+            isInAssetList[order.sellAsset] = true;
         }
 
         order.exchangeId = id;
@@ -676,15 +639,12 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner() || isShutDown)
         returns (bool err, string errMsg)
     {
+        // Get information of fund order by order id
         Order memory order = orders[id];
 
-        bool success = exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId);
+        require(exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId)); // Exchange Adapter: Failed to cancel order
 
-        if (isFalse(success)) {
-            return logError("ERR: Exchange Adapter: Failed to cancel order");
-        }
-
-        order.status = OrderStatus.active;
+        order.status = OrderStatus.cancelled;
 
         OrderUpdated(id);
     }
@@ -747,33 +707,37 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in Universe
     /// @return gav Gross asset value denominated in [base unit of melonAsset]
     function calcGav() returns (uint gav) {
-        address[] newFundAssetList;
-        for (uint i = 0; i < fundAssetList.length; ++i) {
-            address ofAsset = fundAssetList[i];
+        address[] updatedOwnedAssets;
+        for (uint i = 0; i < ownedAssets.length; ++i) {
+            address ofAsset = ownedAssets[i];
             uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
                 .add(quantityHeldInCustodyOfExchange(ofAsset));
             uint assetPrice = module.pricefeed.getPrice(ofAsset);
             uint assetDecimals = module.pricefeed.getDecimals(ofAsset);
             gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == MELON_ASSET || assetInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
-                newFundAssetList.push(ofAsset);
+            if (assetHoldings != 0 || ofAsset == MELON_ASSET || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+                updatedOwnedAssets.push(ofAsset);
             } else {
-                assetInFundAssetList[ofAsset] = false; // Remove from fundAssetList if asset holdings are zero
+                isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
         // If some asset has been deleted from the list
-        if (newFundAssetList.length != fundAssetList.length) {
-            fundAssetList = newFundAssetList;
+        if (updatedOwnedAssets.length != ownedAssets.length) {
+            ownedAssets = updatedOwnedAssets;
         }
     }
 
+    /// @dev Quantity of asset held in exchange according to associated order id
+    /// @param ofAsset Address of asset
+    /// @return Quantity of input asset held in exchange
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
-        if (assetsToOpenMakeOrderIds[ofAsset] == 0) return 0;
+        if (assetsToOpenMakeOrderIds[ofAsset] == 0)
+            return 0;
         var ( , buyAsset, sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, assetsToOpenMakeOrderIds[ofAsset]);
         if (sellQuantity == 0) {
             assetsToOpenMakeOrderIds[ofAsset] = 0;
-            assetInOpenMakeOrder[buyAsset] = false;
+            isInOpenMakeOrder[buyAsset] = false;
         }
         return sellQuantity;
     }
