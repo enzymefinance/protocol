@@ -1,16 +1,15 @@
 pragma solidity ^0.4.19;
 
-import '../libraries/safeMath.sol';
 import './AssetRegistrar.sol';
 import './PriceFeedInterface.sol';
+import 'ds-math/math.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract PriceFeed is PriceFeedInterface, AssetRegistrar {
-    using safeMath for uint;
+contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
 
     // FIELDS
 
@@ -34,7 +33,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
         constant
         returns (bool isRecent)
     {
-        return now.sub(information[ofAsset].timestamp) <= VALIDITY;
+        return sub(now, information[ofAsset].timestamp) <= VALIDITY;
     }
 
     /// @notice All assets entered have a recent price defined on this pricefeed
@@ -97,11 +96,13 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
     function getInvertedPrice(address ofAsset)
         constant
         pre_cond(hasRecentPrice(ofAsset))
-        returns (uint invertedPriceFeedPrice)
+        returns (uint)
     {
-        return uint(10 ** uint(getDecimals(ofAsset)))
-            .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
-            .div(getPrice(ofAsset));
+        uint decimalConversionFactor = mul(
+            uint(10 ** uint(getDecimals(ofAsset))),
+            uint(10 ** uint(getDecimals(QUOTE_ASSET)))
+        );
+        return decimalConversionFactor / getPrice(ofAsset);
     }
 
     /// @notice Gets reference price of an asset pair
@@ -132,9 +133,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar {
     )
         constant returns (uint orderPrice)
     {
-        return buyQuantity
-            .mul(10 ** uint(getDecimals(ofBase)))
-            .div(sellQuantity);
+        return mul(buyQuantity, 10 ** uint(getDecimals(ofBase))) / sellQuantity;
     }
 
     // NON-CONSTANT PUBLIC METHODS

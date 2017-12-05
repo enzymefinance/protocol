@@ -2,13 +2,13 @@ pragma solidity ^0.4.19;
 
 import '../dependencies/DBC.sol';
 import './PreminedAsset.sol';
+import 'ds-math/math.sol';
 
 /// @title EtherToken Contract.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/dapphub/ds-eth-token/blob/master/src/eth_wrapper.sol
 contract EtherToken is DBC, PreminedAsset {
-    using safeMath for uint256;
 
     // FIELDS
 
@@ -34,14 +34,14 @@ contract EtherToken is DBC, PreminedAsset {
     function deposit()
         payable
     {
-        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        balances[msg.sender] = add(balances[msg.sender], msg.value);
         Deposit(msg.sender, msg.value);
     }
 
     function withdraw(uint amount)
         pre_cond(balances[msg.sender] >= amount)
     {
-        balances[msg.sender] = balances[msg.sender].sub(amount);
+        balances[msg.sender] = sub(balances[msg.sender], amount);
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
     }

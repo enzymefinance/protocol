@@ -1,28 +1,27 @@
 pragma solidity ^0.4.19;
 
 import './ERC20Interface.sol';
-import '../libraries/safeMath.sol';
+import 'ds-math/math.sol';
 
 /// @title ERC20 Token
 /// @author Melonport AG <team@melonport.com>
 /// @notice Original taken from https://github.com/ethereum/EIPs/issues/20
 /// @notice Checked against integer overflow
-contract ERC20 is ERC20Interface {
-    using safeMath for uint;
+contract ERC20 is ERC20Interface, DSMath {
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        require(balances[msg.sender] >= _value && balances[_to].add(_value) > balances[_to]);
-        balances[msg.sender] = balances[msg.sender].sub(_value);
-        balances[_to] = balances[_to].add(_value);
+        require(balances[msg.sender] >= _value && add(balances[_to], _value) > balances[_to]);
+        balances[msg.sender] = sub(balances[msg.sender], _value);
+        balances[_to] = add(balances[_to], _value);
         Transfer(msg.sender, _to, _value);
         return true;
     }
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        require(balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to].add(_value) > balances[_to]);
-        balances[_to] = balances[_to].add(_value);
-        balances[_from] = balances[_from].sub(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        require(balances[_from] >= _value && allowed[_from][msg.sender] >= _value && add(balances[_to], _value) > balances[_to]);
+        balances[_to] = add(balances[_to], _value);
+        balances[_from] = sub(balances[_from], _value);
+        allowed[_from][msg.sender] = sub(allowed[_from][msg.sender], _value);
         Transfer(_from, _to, _value);
         return true;
     }
