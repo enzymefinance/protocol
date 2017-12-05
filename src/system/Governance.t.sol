@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
 import "./Governance.sol";

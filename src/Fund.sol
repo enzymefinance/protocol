@@ -1,9 +1,8 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
-import './sphere/SphereInterface.sol';
 import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
 import './compliance/ComplianceInterface.sol';
@@ -24,7 +23,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     struct Modules { // Describes all modular parts, standardised through an interface
         PriceFeedInterface pricefeed; // Provides all external data
         ExchangeInterface exchange; // Wraps exchange adapter into exchange interface
-        ComplianceInterface participation; // Boolean functions regarding invest/redeem
+        ComplianceInterface compliance; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
 
@@ -80,7 +79,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    address public EXCHANGE; // Other then redeem, assets can only be transferred to this, eg to an exchange
     address public MELON_ASSET; // Address of Melon asset contract
     ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
@@ -105,29 +103,29 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function isLessThan(uint x, uint y) internal returns (bool) { return x < y; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
-        success = ERC20(ofAsset).approve(EXCHANGE, quantity);
-        SpendingApproved(EXCHANGE, ofAsset, quantity);
+        success = ERC20(ofAsset).approve(address(module.exchange), quantity);
+        SpendingApproved(address(module.exchange), ofAsset, quantity);
     }
     function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // CONSTANT METHODS
 
-    function getName() constant returns (string) { return NAME; }
-    function getSymbol() constant returns (string) { return SYMBOL; }
-    function getDecimals() constant returns (uint) { return DECIMALS; }
-    function getCreationTime() constant returns (uint) { return CREATED; }
-    function getBaseUnits() constant returns (uint) { return MELON_IN_BASE_UNITS; }
-    function getModules() constant returns (address ,address, address, address) {
+    function getName() view returns (string) { return NAME; }
+    function getSymbol() view returns (string) { return SYMBOL; }
+    function getDecimals() view returns (uint) { return DECIMALS; }
+    function getCreationTime() view returns (uint) { return CREATED; }
+    function getBaseUnits() view returns (uint) { return MELON_IN_BASE_UNITS; }
+    function getModules() view returns (address ,address, address, address) {
         return (
             address(module.pricefeed),
-            address(EXCHANGE),
-            address(module.participation),
+            address(module.exchange),
+            address(module.compliance),
             address(module.riskmgmt)
         );
     }
-    function getStake() constant returns (uint) { return balanceOf(this); }
-    function getLastOrderId() constant returns (uint) { return orders.length - 1; }
-    function getLastRequestId() constant returns (uint) { return requests.length - 1; }
+    function getStake() view returns (uint) { return balanceOf(this); }
+    function getLastOrderId() view returns (uint) { return orders.length - 1; }
+    function getLastRequestId() view returns (uint) { return requests.length - 1; }
 
     // CONSTANT METHODS - ACCOUNTING
 
@@ -141,7 +139,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
     */
     function calcUnclaimedRewards(uint gav)
-        constant
+        view
         returns (
             uint managementReward,
             uint performanceReward,
@@ -175,7 +173,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param unclaimedRewards The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]
     /// @return nav Net asset value denominated in [base unit of melonAsset]
     function calcNav(uint gav, uint unclaimedRewards)
-        constant
+        view
         returns (uint nav)
     {
         nav = gav.sub(unclaimedRewards);
@@ -185,7 +183,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
     /// @return valuePerShare Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint value)
-        constant
+        view
         pre_cond(isPastZero(totalSupply))
         returns (uint valuePerShare)
     {
@@ -204,7 +202,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     }
     */
     function performCalculations()
-        constant
+        view
         returns (
             uint gav,
             uint managementReward,
@@ -223,7 +221,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
-    function calcSharePrice() constant returns (uint sharePrice)
+    function calcSharePrice() view returns (uint sharePrice)
     {
         (, , , , , sharePrice) = performCalculations();
         return sharePrice;
@@ -237,9 +235,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
     /// @param ofMelonAsset Address of Melon asset contract
-    /// @param ofCompliance Address of participation module
+    /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
-    /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @param ofPriceFeed Address of price feed module
+    /// @param ofExchange Address of exchange on which this fund can trade
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
@@ -250,11 +249,9 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         address ofMelonAsset,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofSphere
+        address ofPriceFeed,
+        address ofExchange
     ) {
-        SphereInterface sphere = SphereInterface(ofSphere);
-        module.pricefeed = PriceFeedInterface(sphere.getPriceFeed());
-        // For later release initiate exchangeAdapter here: eg as exchangeAdapter = ExchangeInterface(sphere.getExchangeAdapter());
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
@@ -262,7 +259,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        EXCHANGE = sphere.getExchange(); // Bridged to Melon exchange interface by exchangeAdapter library
         MELON_ASSET = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
         // Require reference assets exists in pricefeed
@@ -271,8 +267,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         ownedAssets.push(MELON_ASSET);
         isInAssetList[MELON_ASSET] = true;
         MELON_IN_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
-        module.participation = ComplianceInterface(ofCompliance);
+        module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
+        module.pricefeed = PriceFeedInterface(ofPriceFeed);
+        // Bridged to Melon exchange interface by exchangeAdapter library
+        module.exchange = ExchangeInterface(ofExchange);
         atLastConversion = Calculations({
             gav: 0,
             managementReward: 0,
@@ -293,6 +292,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
     function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
     function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
+
+    function changeComplianceModule(address ofNewCompliance)
+        external
+        pre_cond(isOwner())
+    {
+        module.compliance = ComplianceInterface(ofNewCompliance);
+    }
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
@@ -320,7 +326,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Subscription using Melon has been deactivated by the Manager");
         }
 
-        if (!module.participation.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity)) {
+        if (!module.compliance.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity)) {
             return logError("ERR: Compliance Module: Subscription not permitted");
         }
 
@@ -361,7 +367,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Redemption using Melon has been deactivated by Manager");
         }
 
-        if (!module.participation.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) {
+        if (!module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) {
             return logError("ERR: Compliance Module: Redemption not permitted");
         }
 
@@ -488,7 +494,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
                 .mul(shareQuantity)
                 .div(participantsTotalSupplyBeforeRedeem);
 
-            // Less available than what is owed - Eg in case of unreturned asset quantity at EXCHANGE address
+            // Less available than what is owed - Eg in case of unreturned asset quantity at address(module.exchange) address
             if (isLessThan(assetHoldings, ownershipQuantities[i])) {
                 return shutDownAndLogError("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
             }
@@ -543,7 +549,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         require(!approveSpending(sellAsset, sellQuantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
-        assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(EXCHANGE, sellAsset, buyAsset, sellQuantity, buyQuantity);
+        assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(address(module.exchange), sellAsset, buyAsset, sellQuantity, buyQuantity);
 
         // Success defined as non-zero order id
         require(assetsToOpenMakeOrderIds[sellAsset] != 0);
@@ -594,7 +600,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = exchangeAdapter.getOrder(EXCHANGE, id);
+        ) = exchangeAdapter.getOrder(address(module.exchange), id);
         // Check pre conditions
         require(module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)); // PriceFeed module: Requested asset pair not valid
         require(isInAssetList[order.sellAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
@@ -608,7 +614,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         require(approveSpending(order.buyAsset, spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
 
         // Execute request
-        require(exchangeAdapter.takeOrder(EXCHANGE, id, quantity));
+        require(exchangeAdapter.takeOrder(address(module.exchange), id, quantity));
 
         // Update ownedAssets array and isInAssetList mapping
         if (!isInAssetList[order.sellAsset]) {
@@ -642,7 +648,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         // Get information of fund order by order id
         Order memory order = orders[id];
 
-        require(exchangeAdapter.cancelOrder(EXCHANGE, order.exchangeId)); // Exchange Adapter: Failed to cancel order
+        require(exchangeAdapter.cancelOrder(address(module.exchange), order.exchangeId)); // Exchange Adapter: Failed to cancel order
 
         order.status = OrderStatus.cancelled;
 
@@ -734,7 +740,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
         if (assetsToOpenMakeOrderIds[ofAsset] == 0)
             return 0;
-        var ( , buyAsset, sellQuantity, ) = exchangeAdapter.getOrder(EXCHANGE, assetsToOpenMakeOrderIds[ofAsset]);
+        var ( , buyAsset, sellQuantity, ) = exchangeAdapter.getOrder(address(module.exchange), assetsToOpenMakeOrderIds[ofAsset]);
         if (sellQuantity == 0) {
             assetsToOpenMakeOrderIds[ofAsset] = 0;
             isInOpenMakeOrder[buyAsset] = false;

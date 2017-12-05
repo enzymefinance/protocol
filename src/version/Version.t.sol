@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
 import "../pricefeeds/PriceFeed.sol";
@@ -7,19 +7,17 @@ import "../compliance/Compliance.sol";
 import "../assets/PreminedAsset.sol";
 import "../riskmgmt/RiskMgmt.sol";
 import "../exchange/thirdparty/SimpleMarket.sol";
-import "../sphere/Sphere.sol";
 import "../Fund.sol";
 import "./Version.sol";
 
 
 contract VersionTest is DSTest {
-    PriceFeed datafeed;
+    PriceFeed pricefeed;
     Governance governance;
     Compliance participation;
     PreminedAsset melonToken;
     RiskMgmt riskMgmt;
     SimpleMarket simpleMarket;
-    Sphere sphere;
     Version version;
 
     // constants
@@ -47,10 +45,9 @@ contract VersionTest is DSTest {
         governance = new Governance(new address[](0), 0, 1000000);
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
         version = new Version(VERSION_NUMBER, governance, melonToken);
-        datafeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
+        pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
         riskMgmt = new RiskMgmt();
         simpleMarket = new SimpleMarket();
-        sphere = new Sphere(datafeed, simpleMarket);
         participation = new Compliance();
     }
 

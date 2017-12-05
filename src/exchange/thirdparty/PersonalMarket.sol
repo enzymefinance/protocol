@@ -10,7 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND (express or implied).
 
 /*pragma solidity ^0.4.13;*/
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 contract DSMath {
     function add(uint x, uint y) constant internal returns (uint z) {
@@ -144,7 +144,7 @@ contract EventfulMarket {
     );
 }
 
-contract PersonalMarket is EventfulMarket, DSMath, Owned{
+contract PersonalMarket is EventfulMarket, DSMath, Owned {
 
     uint public last_offer_id;
 

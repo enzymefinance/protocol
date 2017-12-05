@@ -1,10 +1,9 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
 import "./pricefeeds/PriceFeed.sol";
 import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
-import "./sphere/Sphere.sol";
 import "./compliance/Compliance.sol";
 import "./riskmgmt/RiskMgmt.sol";
 import "./Fund.sol";
@@ -18,7 +17,6 @@ contract FundTest is DSTest {
     PreminedAsset melonToken;
     RiskMgmt riskManagement;
     SimpleMarket simpleMarket;
-    Sphere sphere;
 
     // constants
     string FUND_NAME = "My Fund";
@@ -47,7 +45,6 @@ contract FundTest is DSTest {
     //    etherToken = new EtherToken();
     //    datafeed = new PriceFeed(melonToken, INTERVAL, VALIDITY);
     //    simpleMarket = new SimpleMarket();
-    //    sphere = new Sphere(datafeed, simpleMarket);
     //    participation = new Compliance();
     //    fund = new Fund(
     //        MANAGER_ADDRESS,
@@ -58,7 +55,8 @@ contract FundTest is DSTest {
     //        melonToken,
     //        participation,
     //        riskManagement,
-    //        sphere
+    //        datafeed,
+    //        simpleMarket
     //    );
     //}
 

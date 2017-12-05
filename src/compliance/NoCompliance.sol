@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import './ComplianceInterface.sol';
 import '../dependencies/DBC.sol';

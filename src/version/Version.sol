@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../Fund.sol';
 import '../FundInterface.sol';
@@ -53,11 +53,11 @@ contract Version is DBC, Owned {
 
     // CONSTANT METHODS
 
-    function getMelonAsset() constant returns (address) { return MELON_ASSET; }
+    function getMelonAsset() view returns (address) { return MELON_ASSET; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
-    function getFundById(uint withId) constant returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() constant returns (uint) { return listOfFunds.length -1; }
-    function fundNameTaken(string withName) constant returns (bool) { return fundNameExists[withName]; }
+    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
+    function fundNameTaken(string withName) view returns (bool) { return fundNameExists[withName]; }
 
     // NON-CONSTANT METHODS
 
@@ -82,7 +82,8 @@ contract Version is DBC, Owned {
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
-    /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @param ofPriceFeed Address of price feed module
+    /// @param ofExchange Address of exchange on which this fund can trade
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
@@ -94,15 +95,16 @@ contract Version is DBC, Owned {
         uint ofPerformanceRewardRate,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofSphere,
+        address ofPriceFeed,
+        address ofExchange,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
-        pre_cond(!fundNameExists[withName])
     {
+        require(!fundNameExists[withName]);
         address fund = new Fund(
             msg.sender,
             withName,
@@ -112,7 +114,8 @@ contract Version is DBC, Owned {
             MELON_ASSET,
             ofCompliance,
             ofRiskMgmt,
-            ofSphere
+            ofPriceFeed,
+            ofExchange
         );
         listOfFunds.push(fund);
         fundNameExists[withName] = true;

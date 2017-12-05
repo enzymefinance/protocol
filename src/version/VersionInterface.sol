@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
@@ -28,7 +28,8 @@ contract VersionInterface {
           uint ofPerformanceRewardRate,
           address ofCompliance,
           address ofRiskMgmt,
-          address ofSphere
+          address ofPriceFeed,
+          address ofExchange
       ) {}
       function shutDownFund(uint id) {}
 }

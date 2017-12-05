@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 /// @title PriceFeed Interface Contract
 /// @author Melonport AG <team@melonport.com>
