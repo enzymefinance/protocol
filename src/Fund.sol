@@ -97,16 +97,10 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
     // PRE, POST, INVARIANT CONDITIONS
 
-    function isZero(uint x) internal returns (bool) { x == 0; }
-    function isFalse(bool x) internal returns (bool) { return x == false; }
-    function isPastZero(uint x) internal returns (bool) { return 0 < x; }
-    function isLessThan(uint x, uint y) internal returns (bool) { return x < y; }
-    function notShutDown() internal returns (bool) { return !isShutDown; }
     function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
         success = ERC20(ofAsset).approve(address(module.exchange), quantity);
         SpendingApproved(address(module.exchange), ofAsset, quantity);
     }
-    function isVersion() internal returns (bool) { return msg.sender == VERSION; }
 
     // CONSTANT METHODS
 
@@ -184,7 +178,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @return valuePerShare Share price denominated in [base unit of melonAsset * base unit of share / base unit of share] == [base unit of melonAsset]
     function calcValuePerShare(uint value)
         view
-        pre_cond(isPastZero(totalSupply))
+        pre_cond(totalSupply > 0)
         returns (uint valuePerShare)
     {
         valuePerShare = value.mul(MELON_IN_BASE_UNITS).div(totalSupply);
@@ -215,7 +209,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         gav = calcGav(); // Reflects value independent of fees
         (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
         nav = calcNav(gav, unclaimedRewards);
-        sharePrice = isPastZero(totalSupply) ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
+        sharePrice = totalSupply > 0 ? calcValuePerShare(nav) : MELON_IN_BASE_UNITS; // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, nav, sharePrice);
     }
 
@@ -291,7 +285,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function disableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = false; }
     function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
     function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
-    function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
+    function shutDown() external pre_cond(msg.sender == VERSION || isOwner()) { isShutDown = true; }
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
@@ -312,7 +306,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint incentiveQuantity
     )
         external
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
         returns (bool err, string errMsg)
     {
         if (!isSubscribeAllowed) {
@@ -353,7 +347,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint incentiveQuantity
       )
         external
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
         returns (bool err, string errMsg)
     {
         if (!isRedeemAllowed) {
@@ -389,7 +383,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     */
     function executeRequest(uint id)
         external
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
         pre_cond(requests[id].status != RequestStatus.active)
         pre_cond(requests[id].requestType == RequestType.redeem && balances[request.participant] < requests[id].shareQuantity) // Sender does not own enough shares
         pre_cond(0 < totalSupply && now < requests[id].timestamp.add(uint(2).mul(module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
@@ -441,7 +435,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Request is not active");
         }
 
-        if (request.participant != msg.sender && notShutDown()) {
+        if (request.participant != msg.sender && !isShutDown) {
             return logError("ERR: Neither request creator nor is fund shut down");
         }
 
@@ -472,7 +466,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
         }
 
-        if (isZero(participantsTotalSupplyBeforeRedeem)) {
+        if (participantsTotalSupplyBeforeRedeem == 0) {
             return logError("ERR: Zero participants total supply");
         }
 
@@ -488,7 +482,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
                 .div(participantsTotalSupplyBeforeRedeem);
 
             // Less available than what is owed - Eg in case of unreturned asset quantity at address(module.exchange) address
-            if (isLessThan(assetHoldings, ownershipQuantities[i])) {
+            if (assetHoldings < ownershipQuantities[i]) {
                 return shutDownAndLogError("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
             }
         }
@@ -528,7 +522,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     )
         external
         pre_cond(isOwner())
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
         returns (bool err, string errMsg)
     {
         require(0 < quantityHeldInCustodyOfExchange(sellAsset)); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
@@ -582,8 +576,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function takeOrder(uint id, uint quantity)
         external
         pre_cond(isOwner())
-        pre_cond(notShutDown())
-
+        pre_cond(!isShutDown)
         returns (bool err, string errMsg)
     {
         // Get information of order by order id
@@ -661,7 +654,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function convertUnclaimedRewards()
         external
         pre_cond(isOwner())
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
         returns (bool err, string errMsg)
     {
         var (
@@ -673,11 +666,11 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             sharePrice
         ) = performCalculations();
 
-        if (isZero(gav)) {
+        if (gav == 0) {
             return logError("ERR: Gross asset value can't be zero");
         }
 
-        if (isZero(unclaimedRewards)) {
+        if (unclaimedRewards == 0) {
             return logError("ERR: Nothing to convert as of now");
         }
 
