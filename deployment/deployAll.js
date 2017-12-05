@@ -37,7 +37,6 @@ async function deploy(environment) {
     let riskMgmt;
     let simpleAdapter;
     let simpleMarket;
-    let sphere;
     let version;
     let ranking;
     let rankingContract;

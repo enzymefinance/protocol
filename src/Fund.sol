@@ -293,13 +293,6 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
     function shutDown() external pre_cond(isVersion() || isOwner()) { isShutDown = true; }
 
-    function changeComplianceModule(address ofNewCompliance)
-        external
-        pre_cond(isOwner())
-    {
-        module.compliance = ComplianceInterface(ofNewCompliance);
-    }
-
     // NON-CONSTANT METHODS - PARTICIPATION
 
     /// @notice Give melon tokens to receive shares of this fund
