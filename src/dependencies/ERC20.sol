@@ -9,23 +9,22 @@ import '../libraries/safeMath.sol';
 /// @notice Checked against integer overflow
 contract ERC20 is ERC20Interface {
     using safeMath for uint;
+
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (balances[msg.sender] >= _value && balances[_to].add(_value) > balances[_to]) {
-            balances[msg.sender] = balances[msg.sender].sub(_value);
-            balances[_to] = balances[_to].add(_value);
-            Transfer(msg.sender, _to, _value);
-            return true;
-        } else { throw; }
+        require(balances[msg.sender] >= _value && balances[_to].add(_value) > balances[_to]);
+        balances[msg.sender] = balances[msg.sender].sub(_value);
+        balances[_to] = balances[_to].add(_value);
+        Transfer(msg.sender, _to, _value);
+        return true;
     }
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to].add(_value) > balances[_to]) {
-            balances[_to] = balances[_to].add(_value);
-            balances[_from] = balances[_from].sub(_value);
-            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
-            Transfer(_from, _to, _value);
-            return true;
-        } else { throw; }
+        require(balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to].add(_value) > balances[_to]);
+        balances[_to] = balances[_to].add(_value);
+        balances[_from] = balances[_from].sub(_value);
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        Transfer(_from, _to, _value);
+        return true;
     }
 
     function balanceOf(address _owner) constant returns (uint256 balance) {
