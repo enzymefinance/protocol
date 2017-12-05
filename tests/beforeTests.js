@@ -1,7 +1,7 @@
 import Api from "@parity/api";
 
-const testAccounts = require("./test-accounts.json");
-const environmentConfig = require("../deployment/environment.config.js");
+const testAccounts = require("./testAccounts.json");
+const environmentConfig = require("../deployment/environmentConfig.js");
 
 const config = environmentConfig.development;
 const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);

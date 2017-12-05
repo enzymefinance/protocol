@@ -1,13 +1,10 @@
 pragma solidity ^0.4.17;
 
-import '../dependencies/ERC20.sol';
-import '../assets/AssetRegistrarInterface.sol';
-
 /// @title PriceFeed Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice PriceFeed according to the Standard Price Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
 /// @notice This is to be considered as an interface on how to access the underlying PriceFeed Contract
-contract PriceFeedInterface is AssetRegistrarInterface {
+contract PriceFeedInterface {
 
     // EVENTS
 
@@ -15,11 +12,17 @@ contract PriceFeedInterface is AssetRegistrarInterface {
 
     // CONSTANT METHODS
 
-    // Get data feed specific information
+    // Get asset specific information
+    function getDescriptiveInformation(address ofAsset) constant returns (string, string, string, bytes32) {}
+    function getName(address ofAsset) constant returns (string) {}
+    function getSymbol(address ofAsset) constant returns (string) {}
+    function getDecimals(address ofAsset) constant returns (uint) {}
+    function getSpecificInformation(address ofAsset) constant returns (uint, bytes32, address, address) {}
+    // Get price feed operation specific information
     function getQuoteAsset() constant returns (address) {}
     function getInterval() constant returns (uint) {}
     function getValidity() constant returns (uint) {}
-    // Get asset specific information
+    // Get asset specific information as updated in price feed
     function isValid(address ofAsset) constant returns (bool) {}
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) constant returns (bool) {}
     function hasRecentPrice(address ofAsset) constant returns (bool) {}

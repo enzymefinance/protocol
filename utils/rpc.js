@@ -1,5 +1,5 @@
 const Web3 = require('web3');
-const environmentConfig = require('../deployment/environment.config.js');
+const environmentConfig = require('../deployment/environmentConfig.js');
 
 const environment = 'development';
 const config = environmentConfig[environment];
