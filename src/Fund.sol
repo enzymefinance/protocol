@@ -1,10 +1,10 @@
 pragma solidity ^0.4.17;
 
 import {ERC20 as Shares} from './dependencies/ERC20.sol';
+import 'ds-math/math.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './sphere/SphereInterface.sol';
-import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
 import './participation/ParticipationInterface.sol';
 import './datafeeds/DataFeedInterface.sol';
@@ -16,9 +16,7 @@ import './FundInterface.sol';
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DBC, Owned, Shares, FundInterface {
-    using safeMath for uint;
-
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
@@ -142,11 +140,13 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     function calcGav() constant returns (uint gav) {
         for (uint i = 0; i < module.datafeed.numRegisteredAssets(); ++i) {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
-            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(this)) // Amount of asset base units this vault holds
-                .add(quantityHeldInCustodyOfExchange(ofAsset));
+            uint assetHoldings = add(
+                uint(ERC20(ofAsset).balanceOf(this)),       // holdings in base units
+                quantityHeldInCustodyOfExchange(ofAsset)
+            );
             uint assetPrice = module.datafeed.getPrice(ofAsset);
             uint assetDecimals = module.datafeed.getDecimals(ofAsset);
-            gav = gav.add(assetHoldings.mul(assetPrice).div(10 ** uint256(assetDecimals))); // Sum up product of asset holdings of this vault and asset prices
+            gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)));
             PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
@@ -168,7 +168,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             uint unclaimedRewards
         )
     {
-        uint timeDifference = now.sub(atLastConversion.timestamp);
+        uint timeDifference = sub(now, atLastConversion.timestamp);
         managementReward = rewards.managementReward(
             MANAGEMENT_REWARD_RATE,
             timeDifference,
@@ -177,7 +177,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         );
         performanceReward = 0;
         if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav).mul(module.datafeed.getInvertedPrice(REFERENCE_ASSET));
+            uint currSharePrice = mul(calcValuePerShare(gav), module.datafeed.getInvertedPrice(REFERENCE_ASSET));
             if (currSharePrice > atLastConversion.highWaterMark) {
               performanceReward = rewards.performanceReward(
                   PERFORMANCE_REWARD_RATE,
@@ -187,7 +187,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
               );
             }
         }
-        unclaimedRewards = managementReward.add(performanceReward);
+        unclaimedRewards = add(managementReward, performanceReward);
     }
 
     /// @notice Calculates the Net asset value of this fund
@@ -198,7 +198,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         constant
         returns (uint nav)
     {
-        nav = gav.sub(unclaimedRewards);
+        nav = sub(gav, unclaimedRewards);
     }
 
     /// @notice Calculates the share price of the fund
@@ -209,7 +209,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         pre_cond(isPastZero(totalSupply))
         returns (uint valuePerShare)
     {
-        valuePerShare = value.mul(MELON_IN_BASE_UNITS).div(totalSupply);
+        valuePerShare = mul(value, MELON_IN_BASE_UNITS) / totalSupply;
     }
 
     /// @notice Calculates essential fund metrics
@@ -421,14 +421,14 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         if (
             isPastZero(totalSupply) &&
-            now < request.timestamp.add(module.datafeed.getInterval())
+            now < add(request.timestamp, module.datafeed.getInterval())
         ) {
             return logError("ERR: DataFeed Module: Wait at least one interval before continuing");
         }
 
         if (
             isPastZero(totalSupply) &&
-            module.datafeed.getLastUpdateId() < request.lastDataFeedUpdateId.add(2)
+            module.datafeed.getLastUpdateId() < add(request.lastDataFeedUpdateId, 2)
         ) {
             return logError("ERR: DataFeed Module: Wait at least for two updates before continuing");
         }
@@ -440,10 +440,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Sender does not own enough shares");
         }
 
-        uint costQuantity = request.shareQuantity
-            .mul(calcSharePrice()) // denominated in [base unit of MELON_ASSET]
-            .div(MELON_IN_BASE_UNITS);
-
+        uint costQuantity = mul(request.shareQuantity, calcSharePrice()) / MELON_IN_BASE_UNITS;
         request.status = RequestStatus.executed;
 
         if (
@@ -507,7 +504,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
 
         // Quantity of shares which belong to the investors
         var (gav, , , , nav, ) = performCalculations();
-        uint participantsTotalSupplyBeforeRedeem = totalSupply.mul(nav).div(gav);
+        uint participantsTotalSupplyBeforeRedeem = mul(totalSupply, nav) / gav;
 
 
         if (isZero(participantsTotalSupplyBeforeRedeem)) {
@@ -520,10 +517,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             address ofAsset = address(module.datafeed.getRegisteredAssetAt(i));
             uint assetHoldings = ERC20(ofAsset).balanceOf(this);
             if (assetHoldings == 0) continue;
-            uint ownershipQuantity = assetHoldings // ownership percentage of participant of asset holdings
-                .mul(shareQuantity)
-                .div(participantsTotalSupplyBeforeRedeem);
-
+            uint ownershipQuantity = mul(assetHoldings, shareQuantity) / participantsTotalSupplyBeforeRedeem; // assetHoldings is ownership percentage of participant of asset holdings
             // Less available than what is owed - Eg in case of unreturned asset quantity at EXCHANGE address
             if (isLessThan(assetHoldings, ownershipQuantity)) {
                 return shutDownAndLogError("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
@@ -646,7 +640,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Not enough quantity of order for what is trying to be bought");
         }
 
-        uint spendQuantity = quantity.mul(order.buyQuantity).div(order.sellQuantity);
+        uint spendQuantity = mul(quantity, order.buyQuantity) / order.sellQuantity;
 
         if (!approveSpending(order.buyAsset, spendQuantity)) {
             return logError("ERR: Could not approve spending of spendQuantity of order.buyAsset");
@@ -727,8 +721,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         // Convert unclaimed rewards in form of ownerless shares into shares which belong to manager
-        uint shareQuantity = totalSupply.mul(unclaimedRewards).div(gav);
-        totalSupply = totalSupply.sub(shareQuantity); // Annihilate ownerless shares
+        uint shareQuantity = mul(totalSupply, unclaimedRewards) / gav;
+        totalSupply = sub(totalSupply, shareQuantity); // Annihilate ownerless shares
         addShares(owner, shareQuantity); // Create shares and allocate them to manager
         // Update Calculations
         uint updatedHighWaterMark = atLastConversion.highWaterMark >= sharePrice ? atLastConversion.highWaterMark : sharePrice;
@@ -750,20 +744,20 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     // INTERNAL METHODS
 
     function createShares(address recipient, uint shareQuantity) internal {
-        totalSupply = totalSupply.add(shareQuantity);
+        totalSupply = add(totalSupply, shareQuantity);
         addShares(recipient, shareQuantity);
         Subscribed(msg.sender, now, shareQuantity);
     }
 
     function annihilateShares(address recipient, uint shareQuantity) internal {
-        totalSupply = totalSupply.sub(shareQuantity);
+        totalSupply = sub(totalSupply, shareQuantity);
         subShares(recipient, shareQuantity);
         Redeemed(msg.sender, now, shareQuantity);
     }
 
-    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].add(shareQuantity); }
+    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = add(balances[recipient], shareQuantity); }
 
-    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = balances[recipient].sub(shareQuantity); }
+    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = sub(balances[recipient], shareQuantity); }
 
     function logError(string message) internal returns (bool, string) {
         ErrorMessage(message);

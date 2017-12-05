@@ -1,18 +1,16 @@
 pragma solidity ^0.4.17;
 
 import '../dependencies/ERC20.sol';
-import '../libraries/safeMath.sol';
 import '../assets/AssetRegistrar.sol';
 import './DataFeedInterface.sol';
+import 'ds-math/math.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice DataFeed operator could be staked and sharePrice input validated on chain
-contract DataFeed is DataFeedInterface, AssetRegistrar {
-    using safeMath for uint;
-
+contract DataFeed is DataFeedInterface, AssetRegistrar, DSMath {
     // TYPES
 
     struct Data  {
@@ -35,7 +33,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     // PRE, POST, INVARIANT CONDITIONS
 
     function isDataSet(address ofAsset) internal returns (bool) { return dataHistory[getLastUpdateId()][ofAsset].timestamp > 0; }
-    function isDataValid(address ofAsset) internal returns (bool) { return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY; }
+    function isDataValid(address ofAsset) internal returns (bool) { return sub(now, dataHistory[getLastUpdateId()][ofAsset].timestamp) <= VALIDITY; }
     function isHistory(uint x) internal returns (bool) { return 0 <= x && x < nextUpdateId; }
 
     // CONSTANT METHODS
@@ -55,7 +53,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         pre_cond(isDataSet(ofAsset))
         returns (bool valid)
     {
-        return now - dataHistory[getLastUpdateId()][ofAsset].timestamp <= VALIDITY;
+        return sub(now, dataHistory[getLastUpdateId()][ofAsset].timestamp) <= VALIDITY;
     }
 
     /// @notice Checks whether data exists for a given asset pair
@@ -125,9 +123,11 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
         pre_cond(isDataValid(ofAsset))
         returns (uint invertedDataFeedPrice)
     {
-        return uint(10 ** uint(getDecimals(ofAsset)))
-            .mul(10 ** uint(getDecimals(QUOTE_ASSET)))
-            .div(getPrice(ofAsset));
+        uint conversionFactor = mul(
+            uint(10 ** uint(getDecimals(ofAsset))),
+            uint(10 ** uint(getDecimals(QUOTE_ASSET)))
+        );
+        return conversionFactor / getPrice(ofAsset);
     }
 
     /// @notice Gets reference price of an asset pair
@@ -158,9 +158,7 @@ contract DataFeed is DataFeedInterface, AssetRegistrar {
     )
         constant returns (uint orderPrice)
     {
-        return buyQuantity
-            .mul(10 ** uint(getDecimals(ofBase)))
-            .div(sellQuantity);
+        return mul(buyQuantity, 10 ** uint(getDecimals(ofBase))) / sellQuantity;
     }
 
     /// @notice Gets timestamp and price data of an asset

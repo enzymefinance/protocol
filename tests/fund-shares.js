@@ -341,7 +341,7 @@ describe("Fund shares", () => {
       );
 
       expect(post.fund.ether).toEqual(pre.fund.ether);
-      });
+    });
     subsequentTests.forEach((test, index) => {
       describe(`request and execution, round ${index + 2}`, async () => {
         let fundPreCalculations;
