@@ -1,8 +1,7 @@
 pragma solidity ^0.4.17;
 
-import '../dependencies/ERC20.sol';
 import '../libraries/safeMath.sol';
-import '../assets/AssetRegistrar.sol';
+import './AssetRegistrar.sol';
 import './PriceFeedInterface.sol';
 
 /// @title Price Feed Template

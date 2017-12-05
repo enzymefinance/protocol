@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
 
 import '../dependencies/ERC20.sol';
-import '../assets/AssetRegistrarInterface.sol';
+import './AssetRegistrarInterface.sol';
 
 /// @title PriceFeed Interface Contract
 /// @author Melonport AG <team@melonport.com>
