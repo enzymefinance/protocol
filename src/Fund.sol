@@ -684,6 +684,8 @@ contract Fund is DBC, Owned, Shares, FundInterface {
             return logError("ERR: Exchange Adapter: Failed to cancel order");
         }
 
+        order.status = OrderStatus.active;
+
         OrderUpdated(id);
     }
 
