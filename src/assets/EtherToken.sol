@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../dependencies/DBC.sol';
 import './PreminedAsset.sol';

@@ -91,6 +91,7 @@ contract DSMath {
 }
 
 import '../../dependencies/ERC20.sol';
+import '../../dependencies/Owned.sol';
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
@@ -143,7 +144,7 @@ contract EventfulMarket {
     );
 }
 
-contract SimpleMarket is EventfulMarket, DSMath {
+contract PersonalMarket is EventfulMarket, DSMath, Owned {
 
     uint public last_offer_id;
 
@@ -162,6 +163,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier can_buy(uint id) {
+        require(isOwner() || tx.origin == owner);
         require(isActive(id));
         _;
     }
@@ -173,6 +175,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier can_offer {
+        require(isOwner() ||  tx.origin == owner);
         _;
     }
 

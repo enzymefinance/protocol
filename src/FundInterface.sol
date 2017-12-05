@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import './assets/AssetInterface.sol';
 
@@ -35,7 +35,7 @@ contract FundInterface is AssetInterface {
 
     // NON-CONSTANT METHODS
 
-    // Participation by Investor
+    // Compliance by Investor
     function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
     function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
     function executeRequest(uint requestId) external returns (bool, string) {}

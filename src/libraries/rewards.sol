@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../libraries/safeMath.sol';
 
@@ -9,9 +9,6 @@ library rewards {
     // CONSTANT METHODS
 
     /// @dev Post Reward denominated in referenceAsset
-    /** Function invariant
-     *   for timeDifference == 0 => returns 0
-     */
     function managementReward(
         uint managementRewardRate,
         uint timeDifference,
@@ -26,9 +23,6 @@ library rewards {
     }
 
     /// @dev Post Reward denominated in referenceAsset
-    /** Function invariant
-     *   for deltaDifference == 0 => returns 0
-     */
     function performanceReward(
         uint performanceRewardRate,
         int deltaPrice, // Price Difference measured against referenceAsset

@@ -1,18 +1,18 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "./Participation.sol";
+import "./Compliance.sol";
 
 
-contract ParticipationTest is DSTest {
+contract ComplianceTest is DSTest {
 
-    Participation participation;
+    Compliance participation;
     uint numberOfShares = 1;
     uint offeredValue = 1;
     address mockAddress = 0xAA959664FE49c5734748d80d11805c3909d9C147;
 
     function setUp() {
-        participation = new Participation();
+        participation = new Compliance();
     }
 
     // subscribe not permitted by default, but redeem permitted by default

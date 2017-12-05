@@ -1,9 +1,9 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-/// @title Participation Interface Contract
+/// @title Compliance Interface Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as an interface on how to access the underlying Participation Contract
-contract ParticipationInterface {
+/// @notice This is to be considered as an interface on how to access the underlying Compliance Contract
+contract ComplianceInterface {
 
     // CONSTANT METHODS
 

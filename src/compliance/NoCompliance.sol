@@ -1,13 +1,13 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-import './ParticipationInterface.sol';
+import './ComplianceInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 
-/// @title Participation Contract
+/// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Participation Module.
-contract ParticipationOpen is ParticipationInterface, DBC, Owned {
+/// @notice Simple and static Compliance Module.
+contract NoCompliance is ComplianceInterface, DBC, Owned {
 
     // CONSTANT METHODS
 

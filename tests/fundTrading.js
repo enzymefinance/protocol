@@ -106,8 +106,8 @@ describe("Fund shares", async () => {
     riskManagement = await api.newContract(abi).deploy(opts, []);
     console.log("Deployed risk management");
 
-    abi = JSON.parse(fs.readFileSync("out/participation/Participation.abi"));
-    bytecode = fs.readFileSync("out/participation/Participation.bin");
+    abi = JSON.parse(fs.readFileSync("out/compliance/Compliance.abi"));
+    bytecode = fs.readFileSync("out/compliance/Compliance.bin");
     opts.data = `0x${bytecode}`;
     participation = await api.newContract(abi).deploy(opts, []);
     participationContract = await api.newContract(abi, participation);

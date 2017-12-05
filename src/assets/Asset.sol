@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../dependencies/ERC20.sol';
 import './AssetInterface.sol';

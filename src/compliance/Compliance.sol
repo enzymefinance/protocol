@@ -1,13 +1,13 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
-import './ParticipationInterface.sol';
+import './ComplianceInterface.sol';
 
-/// @title Participation Contract
+/// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Example for uPort, Zug Gov, Melonport collaboration
-contract Participation is ParticipationInterface, DBC, Owned {
+contract Compliance is ComplianceInterface, DBC, Owned {
 
     // TYPES
 

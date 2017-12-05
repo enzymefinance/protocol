@@ -75,8 +75,8 @@ describe("Fund shares", () => {
       addresses.EurToken,
     );
     participation = await api.newContract(
-      JSON.parse(fs.readFileSync("out/participation/ParticipationOpen.abi")),
-      addresses.ParticipationOpen,
+      JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi")),
+      addresses.NoCompliance,
     );
     simpleMarket = await api.newContract(
       JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi")),
@@ -174,7 +174,7 @@ describe("Fund shares", () => {
           addresses.MlnToken, // reference asset
           config.protocol.fund.managementReward,
           config.protocol.fund.performanceReward,
-          addresses.ParticipationOpen,
+          addresses.NoCompliance,
           addresses.RMMakeOrders,
           addresses.Sphere,
           v,

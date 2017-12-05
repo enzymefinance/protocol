@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - switch to Parity.js for deployment, contract interaction, and testing
 - deploy scripts from web3 to parity.js
 - Jasmine tests from web3 to parity.js
-- using more permissive ParticipationOpen instead of regular Participation module
+- using more permissive NoCompliance instead of regular Compliance module
 - enforce rule that Fund names within a Version must be unique (using fund name mapping)
 - modify tests to fit code alterations
 - readme instructions to reflect latest deploy and testing steps
@@ -262,7 +262,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Actual implementation of SimpleMarket - OasisDex exchange
 - InternalAccounting cleanup
 - Natspecs comments
-- Participation example uPort
+- Compliance example uPort
 - Competition contract
 - LogError event in Fund
 - Gross asset calculations accounts for externally held assets
