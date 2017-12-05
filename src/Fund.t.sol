@@ -5,7 +5,7 @@ import "./pricefeeds/PriceFeed.sol";
 import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./sphere/Sphere.sol";
-import "./participation/Participation.sol";
+import "./compliance/Compliance.sol";
 import "./riskmgmt/RiskMgmt.sol";
 import "./Fund.sol";
 
@@ -14,7 +14,7 @@ contract FundTest is DSTest {
     PriceFeed datafeed;
     EtherToken etherToken;
     Fund fund;
-    Participation participation;
+    Compliance participation;
     PreminedAsset melonToken;
     RiskMgmt riskManagement;
     SimpleMarket simpleMarket;
@@ -48,7 +48,7 @@ contract FundTest is DSTest {
     //    datafeed = new PriceFeed(melonToken, INTERVAL, VALIDITY);
     //    simpleMarket = new SimpleMarket();
     //    sphere = new Sphere(datafeed, simpleMarket);
-    //    participation = new Participation();
+    //    participation = new Compliance();
     //    fund = new Fund(
     //        MANAGER_ADDRESS,
     //        FUND_NAME,
@@ -65,12 +65,12 @@ contract FundTest is DSTest {
     //function testVariablesSetCorrectly() {
     //    var returnedName = fund.getName();
     //    uint returnedDecimals = fund.getDecimals();
-    //    var (returnedDatafeed, returnedExchange, returnedParticipation, returnedRiskMgmt) = fund.getModules();
+    //    var (returnedDatafeed, returnedExchange, returnedCompliance, returnedRiskMgmt) = fund.getModules();
     //    uint stake = fund.getStake();
 
     //    assertEq(returnedDatafeed, datafeed);
     //    assertEq(returnedExchange, simpleMarket);
-    //    assertEq(returnedParticipation, participation);
+    //    assertEq(returnedCompliance, participation);
     //    assertEq(returnedRiskMgmt, riskManagement);
     //    //assertEq(returnedName, FUND_NAME); //TODO: uncomment when assertEq implemented for strings
     //    assertEq(returnedDecimals, MELON_DECIMALS);

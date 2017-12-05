@@ -1,7 +1,6 @@
 pragma solidity ^0.4.17;
 
 import './SphereInterface.sol';
-import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 
 

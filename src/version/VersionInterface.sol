@@ -26,7 +26,7 @@ contract VersionInterface {
           uint withDecimals,
           uint ofManagementRewardRate,
           uint ofPerformanceRewardRate,
-          address ofParticipation,
+          address ofCompliance,
           address ofRiskMgmt,
           address ofSphere
       ) {}

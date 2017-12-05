@@ -80,7 +80,7 @@ contract Version is DBC, Owned {
     /// @param ofReferenceAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
-    /// @param ofParticipation Address of participation module
+    /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofSphere Address of sphere, which contains address of data feed module
     /// @param v ellipitc curve parameter v
@@ -92,7 +92,7 @@ contract Version is DBC, Owned {
         address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
-        address ofParticipation,
+        address ofCompliance,
         address ofRiskMgmt,
         address ofSphere,
         uint8 v,
@@ -110,7 +110,7 @@ contract Version is DBC, Owned {
             ofManagementRewardRate,
             ofPerformanceRewardRate,
             MELON_ASSET,
-            ofParticipation,
+            ofCompliance,
             ofRiskMgmt,
             ofSphere
         );

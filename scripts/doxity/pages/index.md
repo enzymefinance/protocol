@@ -49,7 +49,7 @@ Shutting down a version disables the ability to setup new funds using this versi
 
 ### Funds
 
-The Participation module takes as input the following parameters:
+The Compliance module takes as input the following parameters:
 
 **Requests:** Describes and logs whenever asset enter and leave fund due to Participants
 
@@ -91,7 +91,7 @@ fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
 Melon has six different module classes:
 - Exchange Adapters
 - Rewards
-- Participation
+- Compliance
 - Risk Management
 - Asset registrars
 - Data feeds
@@ -115,7 +115,7 @@ This module defines functions for calculating management and performance rewards
 
 They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false. These Melon modules are:
 
-- **Participation**:
+- **Compliance**:
 It comprises of two primary boolean functions isSubscriptionPermitted and isRedemptionPermitted which enforce rules for investing and redemption from the fund. They take the parameter inputs as specified in the earlier section.
 
 - **Risk Management**:
@@ -166,7 +166,7 @@ name | `string` |A human readable name of the fund
 referenceAsset | `address` | Asset against which performance reward is measured against
 managementRewardRate | `uint` | Reward rate in referenceAsset per delta improvement
 performanceRewardRate | `uint` | Reward rate in referenceAsset per managed seconds
-participation | `address` | Participation module
+participation | `address` | Compliance module
 riskMgmt | `address` | Risk management module
 sphere | `address` | Sphere module
 

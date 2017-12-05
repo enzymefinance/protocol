@@ -1,9 +1,13 @@
 pragma solidity ^0.4.17;
 
-/// @title Participation Interface Contract
+import './ComplianceInterface.sol';
+import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
+
+/// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as an interface on how to access the underlying Participation Contract
-contract ParticipationInterface {
+/// @notice Simple and static Compliance Module.
+contract NoCompliance is ComplianceInterface, DBC, Owned {
 
     // CONSTANT METHODS
 
@@ -16,7 +20,11 @@ contract ParticipationInterface {
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity
-    ) returns (bool isEligible) {}
+    )
+        returns (bool isEligible)
+    {
+        isEligible = true;
+    }
 
     /// @notice Checks whether redemption is permitted for a participant
     /// @param ofParticipant Address requesting to redeem from a Melon fund
@@ -27,5 +35,9 @@ contract ParticipationInterface {
         address ofParticipant,
         uint256 shareQuantity,
         uint256 receiveQuantity
-    ) returns (bool isEligible) {}
+    )
+        returns (bool isEligible)
+    {
+        isEligible = true;
+    }
 }

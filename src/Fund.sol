@@ -6,7 +6,7 @@ import './dependencies/Owned.sol';
 import './sphere/SphereInterface.sol';
 import './libraries/safeMath.sol';
 import './libraries/rewards.sol';
-import './participation/ParticipationInterface.sol';
+import './compliance/ComplianceInterface.sol';
 import './pricefeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
@@ -24,7 +24,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     struct Modules { // Describes all modular parts, standardised through an interface
         PriceFeedInterface pricefeed; // Provides all external data
         ExchangeInterface exchange; // Wraps exchange adapter into exchange interface
-        ParticipationInterface participation; // Boolean functions regarding invest/redeem
+        ComplianceInterface participation; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
 
@@ -237,7 +237,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
     /// @param ofMelonAsset Address of Melon asset contract
-    /// @param ofParticipation Address of participation module
+    /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofSphere Address of sphere, which contains address of data feed module
     /// @return Deployed Fund with manager set as ofManager
@@ -248,7 +248,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofMelonAsset,
-        address ofParticipation,
+        address ofCompliance,
         address ofRiskMgmt,
         address ofSphere
     ) {
@@ -271,7 +271,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         fundAssetList.push(MELON_ASSET);
         assetInFundAssetList[MELON_ASSET] = true;
         MELON_IN_BASE_UNITS = 10 ** uint256(module.pricefeed.getDecimals(MELON_ASSET));
-        module.participation = ParticipationInterface(ofParticipation);
+        module.participation = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
         atLastConversion = Calculations({
             gav: 0,
@@ -321,7 +321,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (!module.participation.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity)) {
-            return logError("ERR: Participation Module: Subscription not permitted");
+            return logError("ERR: Compliance Module: Subscription not permitted");
         }
 
         requests.push(Request({
@@ -362,7 +362,7 @@ contract Fund is DBC, Owned, Shares, FundInterface {
         }
 
         if (!module.participation.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) {
-            return logError("ERR: Participation Module: Redemption not permitted");
+            return logError("ERR: Compliance Module: Redemption not permitted");
         }
 
         requests.push(Request({

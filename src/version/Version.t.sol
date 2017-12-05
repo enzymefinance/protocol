@@ -3,7 +3,7 @@ pragma solidity ^0.4.17;
 import "ds-test/test.sol";
 import "../pricefeeds/PriceFeed.sol";
 import "../system/Governance.sol";
-import "../participation/Participation.sol";
+import "../compliance/Compliance.sol";
 import "../assets/PreminedAsset.sol";
 import "../riskmgmt/RiskMgmt.sol";
 import "../exchange/thirdparty/SimpleMarket.sol";
@@ -15,7 +15,7 @@ import "./Version.sol";
 contract VersionTest is DSTest {
     PriceFeed datafeed;
     Governance governance;
-    Participation participation;
+    Compliance participation;
     PreminedAsset melonToken;
     RiskMgmt riskMgmt;
     SimpleMarket simpleMarket;
@@ -51,7 +51,7 @@ contract VersionTest is DSTest {
         riskMgmt = new RiskMgmt();
         simpleMarket = new SimpleMarket();
         sphere = new Sphere(datafeed, simpleMarket);
-        participation = new Participation();
+        participation = new Compliance();
     }
 
     // function testSetupFund() {

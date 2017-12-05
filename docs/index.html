@@ -43,7 +43,7 @@
 <p>Shutting down an existing protocol version is done by anyone <em>proposing</em> a version to be shut down and is <em>executed</em> once authority consensus has been established.</p>
 <p>Shutting down a version disables the ability to setup new funds using this version and enables anyone to shut down any existing funds of this version.</p>
 <h3>Funds</h3>
-<p>The Participation module takes as input the following parameters:</p>
+<p>The Compliance module takes as input the following parameters:</p>
 <p><strong>Requests:</strong> Describes and logs whenever asset enter and leave fund due to Participants</p>
 <table>
 <thead>
@@ -171,7 +171,7 @@
 <ul>
 <li>Exchange Adapters</li>
 <li>Rewards</li>
-<li>Participation</li>
+<li>Compliance</li>
 <li>Risk Management</li>
 <li>Asset registrars</li>
 <li>Data feeds</li>
@@ -198,7 +198,7 @@ This module defines functions for calculating management and performance rewards
 <p>They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false. These Melon modules are:</p>
 <ul>
 <li>
-<p><strong>Participation</strong>:
+<p><strong>Compliance</strong>:
 It comprises of two primary boolean functions isSubscriptionPermitted and isRedemptionPermitted which enforce rules for investing and redemption from the fund. They take the parameter inputs as specified in the earlier section.</p>
 </li>
 <li>
@@ -318,7 +318,7 @@ Data feeds route external information such as asset prices to Melon fund smart c
 <tr>
 <td>participation</td>
 <td><code>address</code></td>
-<td>Participation module</td>
+<td>Compliance module</td>
 </tr>
 <tr>
 <td>riskMgmt</td>
