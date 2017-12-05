@@ -105,15 +105,6 @@ async function deploy(environment) {
       simpleMarket = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simplemarket");
 
-      // deploy sphere
-      abi = JSON.parse(fs.readFileSync("out/sphere/Sphere.abi"));
-      bytecode = fs.readFileSync("out/sphere/Sphere.bin");
-      opts.data = `0x${bytecode}`;
-      sphere = await api
-        .newContract(abi)
-        .deploy(opts, [datafeed, simpleMarket]);
-      console.log("Deployed sphere");
-
       // deploy participation
       abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
       bytecode = fs.readFileSync("out/compliance/NoCompliance.bin");
@@ -211,7 +202,6 @@ async function deploy(environment) {
       addressBook[environment] = {
         PriceFeed: datafeed,
         SimpleMarket: simpleMarket,
-        Sphere: sphere,
         NoCompliance: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
@@ -284,14 +274,6 @@ async function deploy(environment) {
         const oasisDexAddress = exchangeInfo[environment].find(
           exchange => exchange.name === "OasisDex",
         ).address;
-
-        abi = JSON.parse(fs.readFileSync("out/sphere/Sphere.abi"));
-        bytecode = fs.readFileSync("out/sphere/Sphere.bin");
-        opts.data = `0x${bytecode}`;
-        sphere = await api
-          .newContract(abi)
-          .deploy(opts, [thomsonReutersAddress, oasisDexAddress]);
-        console.log(`Deployed sphere at ${sphere}`);
 
         // deploy participation
         abi = JSON.parse(
@@ -376,7 +358,6 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          Sphere: sphere,
           NoCompliance: participation,
           RMMakeOrders: riskMgmt,
           rewards,
@@ -440,15 +421,6 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       simpleMarket = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simplemarket");
-
-      // deploy sphere
-      abi = JSON.parse(fs.readFileSync("out/sphere/Sphere.abi"));
-      bytecode = fs.readFileSync("out/sphere/Sphere.bin");
-      opts.data = `0x${bytecode}`;
-      sphere = await api
-        .newContract(abi)
-        .deploy(opts, [datafeed, simpleMarket]);
-      console.log("Deployed sphere");
 
       // deploy participation
       abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
@@ -539,7 +511,6 @@ async function deploy(environment) {
           mlnToken, // melon asset
           participation, // participation
           riskMgmt, // riskMgmt
-          sphere, // sphere
         ],
         () => {},
         true,
@@ -590,7 +561,6 @@ async function deploy(environment) {
       addressBook[environment] = {
         PriceFeed: datafeed,
         SimpleMarket: simpleMarket,
-        Sphere: sphere,
         NoCompliance: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
