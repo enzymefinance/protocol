@@ -213,7 +213,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix #148
 - Fix VersionInterface inheritance in Version err
 - Fix calculations in redeeumUsingSlice
-- Fix calculations in convertUnclaimedRewards
+- Fix calculations in allocateUnclaimedRewards
 
 ## [0.3.4]
 

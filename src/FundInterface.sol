@@ -30,7 +30,7 @@ contract FundInterface is AssetInterface {
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
     // Get accounting information
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
     function calcSharePrice() constant returns (uint) {}
 
     // NON-CONSTANT METHODS
@@ -52,5 +52,5 @@ contract FundInterface is AssetInterface {
     function takeOrder(uint id, uint quantity) external {}
     function cancelOrder(uint id) external {}
     // Rewards by Manager
-    function convertUnclaimedRewards() external {}
+    function allocateUnclaimedRewards() {}
 }

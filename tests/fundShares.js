@@ -1208,7 +1208,7 @@ describe("Fund shares", () => {
         await fund.instance.performCalculations.call({}, []),
       );
       const shareQuantity = Math.floor(totalSupply * unclaimedRewards / gav);
-      receipt = await fund.instance.convertUnclaimedRewards.postTransaction(
+      receipt = await fund.instance.allocateUnclaimedRewards.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [],
       );

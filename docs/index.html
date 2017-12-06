@@ -415,13 +415,13 @@ Data feeds route external information such as asset prices to Melon fund smart c
 </ol>
 <p><strong>Manager converts rewards into shares</strong></p>
 <ol>
-<li>Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.convertUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.</li>
+<li>Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.allocateUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.</li>
 <li>A share quantity of <em>unclaimedRewards * gav</em> (from Calculations) is assigned to the manager.</li>
 </ol>
 <p><strong>Manager shuts down the fund</strong></p>
 <ol>
 <li>A Manager can shut down a fund F he owns via F.shutdown function.</li>
-<li>Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, convertUnclaimedRewards are rendered disabled.</li>
+<li>Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, allocateUnclaimedRewards are rendered disabled.</li>
 </ol>
 <h2>Get started</h2>
 <h3>Installation</h3>

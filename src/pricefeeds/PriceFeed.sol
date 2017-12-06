@@ -22,87 +22,97 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     // CONSTANT METHODS
 
     // Get pricefeed specific information
-    function getQuoteAsset() constant returns (address) { return QUOTE_ASSET; }
-    function getInterval() constant returns (uint) { return INTERVAL; }
-    function getValidity() constant returns (uint) { return VALIDITY; }
+    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
+    function getInterval() view returns (uint) { return INTERVAL; }
+    function getValidity() view returns (uint) { return VALIDITY; }
 
-    /// @notice Gets asset specific information
-    /// @dev Asset has been initialised
-    /// @return recent Whether data is recent or not
+    /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
+    /// @param ofAsset Existend asset in AssetRegistrar
+    /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
-        constant
+        view
+        pre_cond(information[ofAsset].exists)
         returns (bool isRecent)
     {
         return sub(now, information[ofAsset].timestamp) <= VALIDITY;
     }
 
-    /// @notice All assets entered have a recent price defined on this pricefeed
-    /// @return Whether prices for these assets are *all* recent
+    /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
+    /// @param ofAssets All asstes existend in AssetRegistrar
+    /// @return isRecent Price information ofAssets array is recent
     function hasRecentPrices(address[] ofAssets)
-        constant
-        returns (bool)
+        view
+        returns (bool areRecent)
     {
         for (uint i; i < ofAssets.length; i++) {
-            if (!hasRecentPrice(ofAssets[i]))
+            if (!hasRecentPrice(ofAssets[i])) {
                 return false;
+            }
         }
         return true;
     }
 
-    /// @notice Checks whether data exists for a given asset pair
-    /// @dev Prices are only upated against QUOTE_ASSET
-    /// @param buyAsset Asset for which check to be done if data exists
-    /// @param sellAsset Asset for which check to be done if data exists
-    /// @return Whether assets exist for given asset pair
-    function existsPriceOnAssetPair(address sellAsset, address buyAsset)
-        constant
-        returns (bool exists)
-    {
-        return
-            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
-            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
-    }
-
     /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
-    /// @dev Asset has been registered and has been recently updated
+    /// @dev Asset has been registered
     /// @param ofAsset Asset for which price should be returned
-    /// @return dataFeedPrice Price of dataFeedPrice = inputPrice * 10 ** assetDecimals(ofAsset) where inputPrice s.t. quote == QUOTE_ASSET
+    /**
+    @return {
+      "isRecent": "Whether the returned price is valid (as defined by VALIDITY)",
+      "price": "Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers",
+      "decimal": "Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard",
+    }
+    */
     function getPrice(address ofAsset)
-        constant
-        returns (uint dataFeedPrice)
+        view
+        returns (bool isRecent, uint price, uint decimal)
     {
-        return information[ofAsset].price;
+        return (
+            hasRecentPrice(ofAsset),
+            information[ofAsset].price,
+            information[ofAsset].decimal
+        );
     }
 
-    /// @notice Gets price of an assetList multiplied by ten to the power of assetDecimals
-    /// @dev Assets have been registered and have been recently updated
+    /// @notice Price of a registered asset in format (bool areRecent, uint[] prices, uint[] decimals)
+    /// @dev Convention for price formatting: mul(price, 10 ** decimal), to avoid floating numbers
     /// @param ofAssets Assets for which prices should be returned
-    /// @return dataFeedPrices Prices of dataFeedPrice = inputPrice * 10 ** assetDecimals(ofAsset) where inputPrice s.t. quote == QUOTE_ASSET
+    /// @return areRecent Whether the returned prices are all valid (as defined by VALIDITY)
+    /// @return prices Array of prices
     function getPrices(address[] ofAssets)
-        constant
-        returns (uint[] dataFeedPrices)
+        view
+        returns (bool areRecent, uint[] prices, uint[] decimals)
     {
+        areRecent = true;
         for (uint i; i < ofAssets.length; i++) {
-            dataFeedPrices[i] = getPrice(ofAssets[i]);
+            var (isRecent, price, decimal) = getPrice(ofAssets[i]);
+            if (!isRecent) {
+                areRecent = false;
+            }
+            prices[i] = price;
+            decimals[i] = decimal;
         }
     }
 
     /// @notice Gets inverted price of an asset
-    /// @dev Asset has been initialised and is active
+    /// @dev Asset has been initialised and its price is non-zero
+    /// @dev Existing price ofAssets quoted in QUOTE_ASSET (convention)
     /// @param ofAsset Asset for which inverted price should be return
-    /// @return invertedPriceFeedPrice Inverted getPrice()
+    /// @return invertedPrice Price based (instead of quoted) against QUOTE_ASSET
     function getInvertedPrice(address ofAsset)
-        constant
-        pre_cond(hasRecentPrice(ofAsset))
-        returns (uint)
+        view
+        returns (bool isRecent, uint invertedPrice, uint decimal)
     {
-        uint decimalConversionFactor = mul(
-            uint(10 ** uint(getDecimals(ofAsset))),
-            uint(10 ** uint(getDecimals(QUOTE_ASSET)))
+        // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
+        var (isRecent, inputPrice, assetDecimal) = getPrice(ofAsset);
+
+        // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
+        uint quoteDecimal = getDecimals(QUOTE_ASSET);
+
+        return (
+            isRecent,
+            mul(10 ** uint(quoteDecimal), 10 ** uint(assetDecimal)) / inputPrice,
+            quoteDecimal
         );
-        return decimalConversionFactor / getPrice(ofAsset);
     }
 
     /// @notice Gets reference price of an asset pair
@@ -110,14 +120,17 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
     /// @param ofBase Address of base asset
     /// @param ofQuote Address of quote asset
-    /// @return dataFeedPrice
-    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint price) {
+    /// @return referencePrice
+    function getReferencePrice(address ofBase, address ofQuote)
+        view
+        returns (bool isRecent, uint referencePrice, uint decimal)
+    {
         if (getQuoteAsset() == ofQuote) {
-            price = getPrice(ofBase);
+            (isRecent, referencePrice, decimal) = getPrice(ofBase);
         } else if (getQuoteAsset() == ofBase) {
-            price = getInvertedPrice(ofQuote);
+            (isRecent, referencePrice, decimal) = getInvertedPrice(ofQuote);
         } else {
-            revert(); // Log Error: No suitable reference price available
+            revert(); // no suitable reference price available
         }
     }
 
@@ -127,13 +140,31 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @param buyQuantity Quantity in base units being bought of buyAsset
     /// @return orderPrice Price as determined by an order
     function getOrderPrice(
-        address ofBase,
+        address sellAsset,
+        address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     )
-        constant returns (uint orderPrice)
+        view
+        returns (uint orderPrice)
     {
-        return mul(buyQuantity, 10 ** uint(getDecimals(ofBase))) / sellQuantity;
+        return mul(buyQuantity, 10 ** uint(getDecimals(sellAsset))) / sellQuantity;
+    }
+
+    /// @notice Checks whether data exists for a given asset pair
+    /// @dev Prices are only upated against QUOTE_ASSET
+    /// @param buyAsset Asset for which check to be done if data exists
+    /// @param sellAsset Asset for which check to be done if data exists
+    /// @return Whether assets exist for given asset pair
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset)
+        view
+        returns (bool isExistent)
+    {
+        return
+            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
+            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
     // NON-CONSTANT PUBLIC METHODS

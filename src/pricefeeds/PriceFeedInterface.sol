@@ -13,26 +13,29 @@ contract PriceFeedInterface {
     // CONSTANT METHODS
 
     // Get asset specific information
-    function getDescriptiveInformation(address ofAsset) constant returns (string, string, string, bytes32) {}
-    function getName(address ofAsset) constant returns (string) {}
-    function getSymbol(address ofAsset) constant returns (string) {}
-    function getDecimals(address ofAsset) constant returns (uint) {}
-    function getSpecificInformation(address ofAsset) constant returns (uint, bytes32, address, address) {}
+    function getDescriptiveInformation(address ofAsset) view returns (string, string, string, bytes32) {}
+    function getName(address ofAsset) view returns (string) {}
+    function getSymbol(address ofAsset) view returns (string) {}
+    function getDecimals(address ofAsset) view returns (uint) {}
+    function getSpecificInformation(address ofAsset) view returns (uint, bytes32, address, address) {}
     // Get price feed operation specific information
-    function getQuoteAsset() constant returns (address) {}
-    function getInterval() constant returns (uint) {}
-    function getValidity() constant returns (uint) {}
+    function getQuoteAsset() view returns (address) {}
+    function getInterval() view returns (uint) {}
+    function getValidity() view returns (uint) {}
     // Get asset specific information as updated in price feed
-    function isValid(address ofAsset) constant returns (bool) {}
-    function existsPriceOnAssetPair(address sellAsset, address buyAsset) constant returns (bool) {}
-    function hasRecentPrice(address ofAsset) constant returns (bool) {}
-    function getPrice(address ofAsset) constant returns (uint) {}
-    function hasRecentPrices(address[] ofAssets) constant returns (bool) {}
-    function getPrices(address[] ofAssets) constant returns (uint[]) {}
-    function getInvertedPrice(address ofAsset) constant returns (uint) {}
-    function getReferencePrice(address ofBase, address ofQuote) constant returns (uint) {}
-    function getOrderPrice(address ofBase, uint sellQuantity, uint buyQuantity) constant returns (uint) {}
-    function getTimestamp(address ofAsset) constant returns (uint) {}
+    function hasRecentPrice(address ofAsset) view returns (bool isRecent) {}
+    function hasRecentPrices(address[] ofAssets) view returns (bool areRecent) {}
+    function getPrice(address ofAsset) view returns (bool isRecent, uint price, uint decimal) {}
+    function getPrices(address[] ofAssets) view returns (bool areRecent, uint[] prices, uint[] decimals) {}
+    function getInvertedPrice(address ofAsset) view returns (bool isRecent, uint invertedPrice, uint decimal) {}
+    function getReferencePrice(address ofBase, address ofQuote) view returns (bool isRecent, uint referencePrice, uint decimal) {}
+    function getOrderPrice(
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
+    ) view returns (uint orderPrice) {}
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset) view returns (bool isExistent) {}
 
     // NON-CONSTANT METHODS
 

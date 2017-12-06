@@ -211,13 +211,13 @@ incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity execut
 
 **Manager converts rewards into shares**
 
-1. Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.convertUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.
+1. Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.allocateUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.
 2. A share quantity of *unclaimedRewards * gav* (from Calculations) is assigned to the manager.
 
 **Manager shuts down the fund**
 
 1. A Manager can shut down a fund F he owns via F.shutdown function.
-2. Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, convertUnclaimedRewards are rendered disabled.
+2. Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, allocateUnclaimedRewards are rendered disabled.
 
 
 ## Get started
