@@ -103,13 +103,13 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         returns (bool isRecent, uint invertedPrice, uint decimal)
     {
         // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        var (isRecent, inputPrice, assetDecimal) = getPrice(ofAsset);
+        var (isInvertedRecent, inputPrice, assetDecimal) = getPrice(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
         uint quoteDecimal = getDecimals(QUOTE_ASSET);
 
         return (
-            isRecent,
+            isInvertedRecent,
             mul(10 ** uint(quoteDecimal), 10 ** uint(assetDecimal)) / inputPrice,
             quoteDecimal
         );
@@ -135,7 +135,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     }
 
     /// @notice Gets price of Order
-    /// @param ofBase Address of the Base Asset
+    /// @param sellAsset Address of the Base Asset
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
     /// @return orderPrice Price as determined by an order

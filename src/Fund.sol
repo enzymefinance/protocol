@@ -148,7 +148,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** fundDecimals)
-            gav = add(gav, toSmallestFundUnit(mul(assetHoldings, assetPrice) / mul(10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
+            gav = add(gav, toSmallestFundUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == MELON_ASSET || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
                 ownedAssets.push(ofAsset);
             } else {
@@ -184,7 +184,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         );
         performanceReward = 0;
         if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav); // denominated in REFERENCE_ASSET
+            uint currSharePrice = calcValuePerShare(gav, totalSupply); // TODO: verify
             if (currSharePrice > atLastPerformCalculations.highWaterMark) {
               performanceReward = rewards.performanceReward(
                   PERFORMANCE_REWARD_RATE,
@@ -251,7 +251,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         nav = calcNav(gav, unclaimedRewards);
 
         // The value of unclaimedRewards measured in shares of this fund at current value
-        uint rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
+        rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
         // The total share supply including the value of unclaimedRewards, measured in shares of this fund
         // The shares supply of
         uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
@@ -550,12 +550,18 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner())
         pre_cond(!isShutDown)
     {
-        require(buyAsset != this); // Prevent buying of own fund token
+        require(buyAsset != address(this)); // Prevent buying of own fund token
         require(0 < quantityHeldInCustodyOfExchange(sellAsset)); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
         require(!module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
+        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
         require(!module.riskmgmt.isMakePermitted(
-                module.pricefeed.getOrderPrice(sellAsset, sellQuantity, buyQuantity),
-                module.pricefeed.getReferencePrice(sellAsset, buyAsset),
+                module.pricefeed.getOrderPrice(
+                    sellAsset,
+                    buyAsset,
+                    sellQuantity,
+                    buyQuantity
+                ),
+                referencePrice,
                 sellAsset, buyAsset, sellQuantity, buyQuantity
         )); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
@@ -607,12 +613,18 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             order.buyQuantity
         ) = exchangeAdapter.getOrder(address(module.exchange), id);
         // Check pre conditions
-        require(order.sellAsset != this); // Prevent buying of own fund token
+        require(order.sellAsset != address(this)); // Prevent buying of own fund token
         require(module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)); // PriceFeed module: Requested asset pair not valid
         require(isInAssetList[order.sellAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
+        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset);
         require(module.riskmgmt.isTakePermitted(
-            module.pricefeed.getOrderPrice(order.sellAsset, order.buyQuantity, order.sellQuantity),
-            module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset),
+            module.pricefeed.getOrderPrice(
+                order.sellAsset,
+                order.buyAsset,
+                order.sellQuantity,
+                order.buyQuantity
+            ),
+            referencePrice,
             order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
         )); // RiskMgmt module: Take order not permitted
         require(quantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
