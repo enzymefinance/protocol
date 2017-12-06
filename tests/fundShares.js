@@ -497,7 +497,6 @@ describe("Fund shares", () => {
         });
 
         it("performs calculation correctly", async () => {
-          // await web3.mineBlock();
           const [
             preGav,
             preManagementReward,
@@ -655,7 +654,6 @@ describe("Fund shares", () => {
         });
 
         it("calculations are performed correctly", async () => {
-          // await web3.mineBlock();
           const [
             preGav,
             preManagementReward,
