@@ -1,60 +1,51 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "./EtherToken.sol";
-
+import "ds-weth/weth9.sol";
 
 contract AssetTest is DSTest {
 
-    EtherToken etherToken;
-    uint preminedAmount = 10 ** 28;
+    WETH9_ weth;
 
     function setUp() {
-        etherToken = new EtherToken();
-    }
-
-    function testPreminedAmountCorrect() {
-        uint contractBalance = etherToken.balanceOf(this);
-
-        assertEq(contractBalance, preminedAmount);
+        weth = new WETH9_();
     }
 
     function testDeposit() {
         uint depositAmount = 1 ether;
-        uint userPreTokenBalance = etherToken.balanceOf(this);
+        uint userPreWethBalance = weth.balanceOf(this);
         uint userPreEthBalance = this.balance;
-        uint contractPreEthBalance = etherToken.balance;
-        etherToken.deposit.value(depositAmount)();
-        uint userPostTokenBalance = etherToken.balanceOf(this);
+        uint contractPreEthBalance = weth.balance;
+        weth.deposit.value(depositAmount)();
+        uint userPostWethBalance = weth.balanceOf(this);
         uint userPostEthBalance = this.balance;
-        uint contractPostEthBalance = etherToken.balance;
-        uint userTokenIncrease = userPostTokenBalance - userPreTokenBalance;
+        uint contractPostEthBalance = weth.balance;
+        uint userWethIncrease = userPostWethBalance - userPreWethBalance;
         uint userEthDecrease = userPreEthBalance - userPostEthBalance;
         uint contractEthIncrease = contractPostEthBalance - contractPreEthBalance;
 
-        assertEq(userTokenIncrease, depositAmount);
+        assertEq(userWethIncrease, depositAmount);
         assertEq(userEthDecrease, depositAmount);
         assertEq(contractEthIncrease, depositAmount);
     }
 
-    // TODO: fix this; not clear why it throws on etherToken.withdraw()
-    event Log(address a);
-    function testWithdraw() {
-        uint depositAmount = 1 ether;
-        uint withdrawAmount = 500 finney;
-        etherToken.deposit.value(depositAmount)();
+    // TODO: check whether `withdraw()` must be implemented in this test contract
+    // function testWithdraw() {
+    //     uint depositAmount = 1 ether;
+    //     uint withdrawAmount = 500 finney;
+    //     weth.deposit.value(depositAmount)();
 
-        assertEq(etherToken.balance, depositAmount);
+    //     assertEq(weth.balance, depositAmount);
 
-        uint preTokenBalance = etherToken.balanceOf(this);
-        uint preEthBalance = this.balance;
-        //etherToken.withdraw(withdrawAmount);
-        //uint postTokenBalance = etherToken.balanceOf(this);
-        //uint postEthBalance = this.balance;
-        //uint tokenDecrease = preTokenBalance - postTokenBalance;
-        //uint ethIncrease = postEthBalance - preEthBalance;
+    //     uint preWethBalance = weth.balanceOf(this);
+    //     uint preEthBalance = this.balance;
+    //     weth.withdraw(0);
+    //     uint postWethBalance = weth.balanceOf(this);
+    //     uint postEthBalance = this.balance;
+    //     uint wethDecrease = preWethBalance - postWethBalance;
+    //     uint ethIncrease = postEthBalance - preEthBalance;
 
-        //assertEq(tokenDecrease, withdrawAmount);
-        //assertEq(ethIncrease, withdrawAmount);
-    }
+    //     assertEq(wethDecrease, withdrawAmount);
+    //     assertEq(ethIncrease, withdrawAmount);
+    // }
 }

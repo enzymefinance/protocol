@@ -1,15 +1,15 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "ds-weth/weth9.sol";
 import "./PriceFeed.sol";
 import "../assets/PreminedAsset.sol";
-import "../assets/EtherToken.sol";
 
 
 contract PriceFeedTest is DSTest {
     PriceFeed pricefeed;
     PreminedAsset melonToken;
-    EtherToken etherToken;
+    WETH9_ weth;
 
     // constants
     uint INTERVAL = 0;
@@ -26,12 +26,12 @@ contract PriceFeedTest is DSTest {
     uint PREMINED_AMOUNT = 10 ** 28;
 
     // mock data
-    uint inputEtherTokenPrice = 4152823920265781000;
+    uint inputWethPrice = 4152823920265781000;
     uint inputMelonTokenPrice = 1000000000000000000;
 
     function setUp() {
         melonToken = new PreminedAsset(MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, PREMINED_AMOUNT);
-        etherToken = new EtherToken();
+        weth = new WETH9_();
         pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
 
@@ -68,16 +68,16 @@ contract PriceFeedTest is DSTest {
 //    function testUpdateAndGetPrice() {
 //        address[] storage assetArray;
 //        uint[] storage priceArray;
-//        assetArray.push(etherToken);
+//        assetArray.push(weth);
 //        assetArray.push(melonToken);
-//        priceArray.push(inputEtherTokenPrice);
+//        priceArray.push(inputWethPrice);
 //        priceArray.push(inputMelonTokenPrice);
 //
 //        pricefeed.update(assetArray, priceArray);
-//        uint returnedEtherTokenPrice = pricefeed.getPrice(etherToken);
+//        uint returnedWethPrice = pricefeed.getPrice(weth);
 //        uint returnedMelonTokenPrice = pricefeed.getPrice(melonToken);
 //
-//        assertEq(returnedEtherTokenPrice, inputEtherTokenPrice);
+//        assertEq(returnedWethPrice, inputWethPrice);
 //        assertEq(returnedMelonTokenPrice, inputMelonTokenPrice);
 //    }
 }
