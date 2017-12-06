@@ -36,11 +36,11 @@ contract FundInterface is AssetInterface {
     // NON-CONSTANT METHODS
 
     // Compliance by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
-    function executeRequest(uint requestId) external returns (bool, string) {}
-    function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemOwnedAssets(uint shareQuantity) external returns (bool, string) {}
+    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external {}
+    function executeRequest(uint requestId) external {}
+    function cancelRequest(uint requestId) external {}
+    function redeemOwnedAssets(uint shareQuantity) external returns (bool) {}
     // Administration by Manager
     function enableSubscription() external {}
     function disableSubscription() external {}
@@ -48,9 +48,9 @@ contract FundInterface is AssetInterface {
     function disableRedemption() external {}
     function shutDown() external {}
     // Managing by Manager
-    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
-    function takeOrder(uint id, uint quantity) external returns (bool, string) {}
-    function cancelOrder(uint id) external returns (bool, string) {}
+    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
+    function takeOrder(uint id, uint quantity) external {}
+    function cancelOrder(uint id) external {}
     // Rewards by Manager
-    function convertUnclaimedRewards() external returns (bool, string) {}
+    function convertUnclaimedRewards() external {}
 }
