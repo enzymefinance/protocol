@@ -1,8 +1,9 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "ds-weth/weth9.sol";
 import "./pricefeeds/PriceFeed.sol";
-import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
+import "./assets/PreminedAsset.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./compliance/Compliance.sol";
 import "./riskmgmt/RiskMgmt.sol";
@@ -11,7 +12,7 @@ import "./Fund.sol";
 
 contract FundTest is DSTest {
     PriceFeed datafeed;
-    EtherToken etherToken;
+    WETH9_ weth;
     Fund fund;
     Compliance participation;
     PreminedAsset melonToken;
@@ -36,13 +37,14 @@ contract FundTest is DSTest {
     address MOCK_BREAK_OUT = 0xd9AE70149D256D4645c03aB9D5423A1B70d8804d;
 
     // mock data
-    uint inputEtherTokenPrice = 4152823920265781000;
+    uint inputWethPrice = 4152823920265781000;
     uint inputMelonTokenPrice = 1000000000000000000;
     uint mockQuantity = 1 ether;
 
     //function setUp() {
     //    melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
-    //    etherToken = new EtherToken();
+    //    weth = new WETH9_();
+    //    weth.deposit.value(100 ether)();
     //    datafeed = new PriceFeed(melonToken, INTERVAL, VALIDITY);
     //    simpleMarket = new SimpleMarket();
     //    participation = new Compliance();
