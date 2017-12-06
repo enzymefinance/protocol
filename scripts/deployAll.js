@@ -3,11 +3,11 @@ import Api from "@parity/api";
 const fs = require("fs");
 const path = require("path");
 const solc = require("solc");
-const environmentConfig = require("./environmentConfig.js");
+const environmentConfig = require("../utils/config/environmentConfig.js");
 const pkgInfo = require("../package.json");
-const tokenInfo = require("./tokenInfo.js");
-const exchangeInfo = require("./exchangeInfo.js");
-const datafeedInfo = require("./priceFeedInfo.js");
+const tokenInfo = require("../utils/info/tokenInfo.js");
+const exchangeInfo = require("../utils/info/exchangeInfo.js");
+const datafeedInfo = require("../utils/info/priceFeedInfo.js");
 
 function getPlaceholderFromPath(libPath) {
   const libContractName = path.basename(libPath);
