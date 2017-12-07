@@ -22,7 +22,8 @@ contract Version is DBC, Owned {
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
-    mapping (string => bool) fundNameExists; // Links fund names to boolean based on existence
+    mapping (string => address) fundNamesToOwners; // Links fund names to address based on ownership
+
     // EVENTS
 
     event FundUpdated(uint id);
@@ -56,7 +57,7 @@ contract Version is DBC, Owned {
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
-    function fundNameTaken(string withName) view returns (bool) { return fundNameExists[withName]; }
+    function fundNameTaken(string withName) view returns (bool) { return fundNamesToOwners[withName] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -103,7 +104,8 @@ contract Version is DBC, Owned {
         pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
     {
-        require(!fundNameExists[withName]);
+        // Either novel fund name or previous owner of fund name
+        require(fundNamesToOwners[withName] == 0 || fundNamesToOwners[withName] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
@@ -118,7 +120,7 @@ contract Version is DBC, Owned {
             ofExchange
         );
         listOfFunds.push(fund);
-        fundNameExists[withName] = true;
+        fundNamesToOwners[withName] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }
