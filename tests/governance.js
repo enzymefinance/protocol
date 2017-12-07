@@ -1,4 +1,5 @@
 import Api from "@parity/api";
+//import test from 'ava';
 
 const addressBook = require("../address-book.json");
 const BigNumber = require("bignumber.js");
@@ -15,49 +16,46 @@ const config = environmentConfig[environment];
 const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
 
-describe("Version", () => {
-  let accounts;
-  let deployer;
-  let manager;
-  let investor;
-  let worker
-  let opts;
-  let governance;
-  let version;
+let accounts;
+let deployer;
+let manager;
+let investor;
+let worker
+let opts;
+let governance;
+let version;
 
-  const addresses = addressBook[environment];
+const addresses = addressBook[environment];
 
-  beforeAll(async () => {
-    accounts = await api.eth.accounts();
-    deployer = accounts[0];
-    manager = accounts[1];
-    investor = accounts[2];
-    worker = accounts[3];
-    opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
+test.before(async t => {
+  accounts = await api.eth.accounts();
+  deployer = accounts[0];
+  manager = accounts[1];
+  investor = accounts[2];
+  worker = accounts[3];
+  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 
-    // retrieve deployed contracts
-    governance = await api.newContract(
-      JSON.parse(fs.readFileSync("out/system/Governance.abi")),
-      addresses.Governance,
-    );
+  // retrieve deployed contracts
+  governance = await api.newContract(
+    JSON.parse(fs.readFileSync("out/system/Governance.abi")),
+    addresses.Governance,
+  );
 
-    version = await api.newContract(
-      JSON.parse(fs.readFileSync("out/version/Version.abi")),
-      addresses.Version,
-    );
-  });
+  version = await api.newContract(
+    JSON.parse(fs.readFileSync("out/version/Version.abi")),
+    addresses.Version,
+  );
+});
 
-  it("Version is already active", async () => {
-    const versionShutDown = await version.instance.isShutDown.call({}, []);
+test('Version is already active', async t => {
+  const versionShutDown = await version.instance.isShutDown.call({}, []);
+  t.falsy(versionShutDown);
+});
 
-    expect(versionShutDown).toEqual(false);
-  });
-  it("Governance can shut down Version", async () => {
-    await governance.instance.proposeShutdown.postTransaction(opts, [0]);
-    await governance.instance.approveShutdown.postTransaction(opts, [0]);
-    await governance.instance.triggerShutdown.postTransaction(opts, [0]);
-    const versionShutDown = await version.instance.isShutDown.call({}, []);
-
-    expect(versionShutDown).toEqual(true);
-  });
+test('Governance can shut down Version', async t => {
+  await governance.instance.proposeShutdown.postTransaction(opts, [0]);
+  await governance.instance.approveShutdown.postTransaction(opts, [0]);
+  await governance.instance.triggerShutdown.postTransaction(opts, [0]);
+  const versionShutDown = await version.instance.isShutDown.call({}, []);
+  t.truthy(versionShutDown);
 });
