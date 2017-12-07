@@ -57,7 +57,7 @@ contract Version is DBC, Owned {
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
-    function fundNameTaken(string withName) view returns (bool) { return fundNamesToOwners[withName] != 0; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[ofFundName] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -76,7 +76,7 @@ contract Version is DBC, Owned {
 
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
 
-    /// @param withName human-readable descriptive name (not necessarily unique)
+    /// @param ofFundName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
@@ -89,7 +89,7 @@ contract Version is DBC, Owned {
     /// @param s ellipitc curve parameter s
     /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
-        string withName,
+        string ofFundName,
         address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
@@ -105,11 +105,11 @@ contract Version is DBC, Owned {
         pre_cond(notShutDown())
     {
         // Either novel fund name or previous owner of fund name
-        require(fundNamesToOwners[withName] == 0 || fundNamesToOwners[withName] == msg.sender);
+        require(fundNamesToOwners[ofFundName] == 0 || fundNamesToOwners[ofFundName] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
-            withName,
+            ofFundName,
             ofReferenceAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
@@ -120,7 +120,7 @@ contract Version is DBC, Owned {
             ofExchange
         );
         listOfFunds.push(fund);
-        fundNamesToOwners[withName] = msg.sender;
+        fundNamesToOwners[ofFundName] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }
