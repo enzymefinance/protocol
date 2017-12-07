@@ -92,6 +92,8 @@ contract ModuleRegistrar is DBC {
     {
         Module module = information[ofModule];
         module.name = name;
+        moduleNameExists[module.name] = false;
+        moduleNameExists[name] = true;
         module.url = url;
         module.ipfsHash = ipfsHash;
     }
