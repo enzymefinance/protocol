@@ -15,6 +15,7 @@ contract VersionInterface {
       function getFundById(uint withId) constant returns (address) {}
       function getLastFundId() constant returns (uint) {}
       function getFundByManager(address ofManager) constant returns (address) {}
+      function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {}
 
       // NON-CONSTANT METHODS
 

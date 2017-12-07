@@ -22,7 +22,7 @@ contract Version is DBC, Owned {
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
-    mapping (string => address) fundNamesToOwners; // Links fund names to address based on ownership
+    mapping (string => address) public fundNamesToOwners; // Links fund names to address based on ownership
 
     // EVENTS
 
@@ -35,7 +35,7 @@ contract Version is DBC, Owned {
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     /// @return signed Whether or not terms and conditions have been read and understood
-    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool signed) {
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {
         return ecrecover(
             // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
             //  Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
