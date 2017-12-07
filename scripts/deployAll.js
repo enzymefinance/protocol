@@ -410,6 +410,7 @@ async function deploy(environment) {
           config.protocol.datafeed.validity,
         ]);
       datafeedContract = await api.newContract(abi, datafeed);
+      const qu = await datafeedContract.instance.getQuoteAsset.call({from: accounts[0]}, []);
       console.log("Deployed datafeed");
 
       // deploy simplemarket
@@ -498,7 +499,7 @@ async function deploy(environment) {
       ] = simpleAdapter;
       bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
-      opts.gas = 5990000;
+      opts.gas = 6900000;
       fund = await api.newContract(abi).deploy(
         opts,
         [
@@ -510,6 +511,8 @@ async function deploy(environment) {
           mlnToken, // melon asset
           participation, // participation
           riskMgmt, // riskMgmt
+          datafeed, // pricefeed
+          simpleMarket // simple market
         ],
         () => {},
         true,
