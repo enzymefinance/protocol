@@ -1,11 +1,11 @@
 pragma solidity ^0.4.19;
 
-import {ERC20Custom as ERC20} from '../dependencies/ERC20Custom.sol';
+import '../dependencies/ERC20Token.sol';
 import './AssetInterface.sol';
 
 /// @title Asset Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
-contract Asset is AssetInterface, ERC20 {
+contract Asset is AssetInterface, ERC20Token {
 
     // FIELDS
 

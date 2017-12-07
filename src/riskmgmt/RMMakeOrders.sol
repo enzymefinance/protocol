@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import {ERC20Custom as ERC20} from '../dependencies/ERC20Custom.sol';
+import '../dependencies/ERC20Token.sol';
 import './RiskMgmtInterface.sol';
 
 /// @title Risk Management Make Orders Contract

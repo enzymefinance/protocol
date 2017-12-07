@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import {ERC20Custom as ERC20} from '../../dependencies/ERC20Custom.sol';
+import '../../dependencies/ERC20Token.sol';
 import '../thirdparty/SimpleMarket.sol';
 
 
@@ -81,9 +81,9 @@ library simpleAdapter {
     {
         id = SimpleMarket(onExchange).offer(
             sellQuantity,
-            ERC20(sellAsset),
+            ERC20Token(sellAsset),
             buyQuantity,
-            ERC20(buyAsset)
+            ERC20Token(buyAsset)
         );
         OrderUpdated(id);
     }

@@ -11,7 +11,7 @@
 
 pragma solidity ^0.4.19;
 
-import {ERC20Custom as ERC20} from '../../dependencies/ERC20Custom.sol';
+import '../../dependencies/ERC20Token.sol';
 import '../../dependencies/Owned.sol';
 import 'ds-math/math.sol';
 
@@ -24,8 +24,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        ERC20Token        pay_gem,
+        ERC20Token        buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -35,8 +35,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        ERC20Token        pay_gem,
+        ERC20Token        buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -46,8 +46,8 @@ contract EventfulMarket {
         bytes32           id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        ERC20Token        pay_gem,
+        ERC20Token        buy_gem,
         address  indexed  taker,
         uint128           take_amt,
         uint128           give_amt,
@@ -58,8 +58,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        ERC20Token        pay_gem,
+        ERC20Token        buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -75,13 +75,13 @@ contract PersonalMarket is EventfulMarket, DSMath, Owned {
     bool locked;
 
     struct OfferInfo {
-        uint     pay_amt;
-        ERC20    pay_gem;
-        uint     buy_amt;
-        ERC20    buy_gem;
-        address  owner;
-        bool     active;
-        uint64   timestamp;
+        uint          pay_amt;
+        ERC20Token    pay_gem;
+        uint          buy_amt;
+        ERC20Token    buy_gem;
+        address       owner;
+        bool          active;
+        uint64        timestamp;
     }
 
     modifier can_buy(uint id) {
@@ -116,7 +116,7 @@ contract PersonalMarket is EventfulMarket, DSMath, Owned {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) constant returns (uint, ERC20Token, uint, ERC20Token) {
       var offer = offers[id];
       return (offer.pay_amt, offer.pay_gem,
               offer.buy_amt, offer.buy_gem);
@@ -218,16 +218,16 @@ contract PersonalMarket is EventfulMarket, DSMath, Owned {
     }
 
     function make(
-        ERC20    pay_gem,
-        ERC20    buy_gem,
-        uint128  pay_amt,
-        uint128  buy_amt
+        ERC20Token    pay_gem,
+        ERC20Token    buy_gem,
+        uint128       pay_amt,
+        uint128       buy_amt
     ) returns (bytes32 id) {
         return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
+    function offer(uint pay_amt, ERC20Token pay_gem, uint buy_amt, ERC20Token buy_gem)
         can_offer
         synchronized
         returns (uint id)
@@ -235,9 +235,9 @@ contract PersonalMarket is EventfulMarket, DSMath, Owned {
         require(uint128(pay_amt) == pay_amt);
         require(uint128(buy_amt) == buy_amt);
         require(pay_amt > 0);
-        require(pay_gem != ERC20(0x0));
+        require(pay_gem != ERC20Token(0x0));
         require(buy_amt > 0);
-        require(buy_gem != ERC20(0x0));
+        require(buy_gem != ERC20Token(0x0));
         require(pay_gem != buy_gem);
 
         OfferInfo memory info;

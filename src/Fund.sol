@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import {ERC20Custom as ERC20} from './dependencies/ERC20Custom.sol';
+import './dependencies/ERC20Token.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './libraries/rewards.sol';
@@ -15,7 +15,7 @@ import 'ds-math/math.sol';
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
+contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
@@ -77,7 +77,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
     address public MELON_ASSET; // Address of Melon asset contract
-    ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
+    ERC20Token public MELON_CONTRACT; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -95,7 +95,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
     // PRE, POST, INVARIANT CONDITIONS
 
     function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
-        success = ERC20(ofAsset).approve(address(module.exchange), quantity);
+        success = ERC20Token(ofAsset).approve(address(module.exchange), quantity);
         SpendingApproved(address(module.exchange), ofAsset, quantity);
     }
 
@@ -139,7 +139,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(ERC20Token(ofAsset).balanceOf(this)), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -342,7 +342,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
         // Bridged to Melon exchange interface by exchangeAdapter library
         module.exchange = ExchangeInterface(ofExchange);
         // Require reference assets exists in pricefeed
-        MELON_CONTRACT = ERC20(MELON_ASSET);
+        MELON_CONTRACT = ERC20Token(MELON_ASSET);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         DECIMALS = module.pricefeed.getDecimals(REFERENCE_ASSET);
         atLastPerformCalculations = Calculations({
@@ -500,7 +500,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
             uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(this)),
+                uint(ERC20Token(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -524,7 +524,7 @@ contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
         // Transfer ownershipQuantity of Assets
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
-            if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            if (!ERC20Token(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
         }

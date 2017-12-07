@@ -1,13 +1,13 @@
 pragma solidity ^0.4.19;
 
-import './ERC20CustomInterface.sol';
+import './ERC20TokenInterface.sol';
 import 'ds-math/math.sol';
 
 /// @title ERC20 Token
 /// @author Melonport AG <team@melonport.com>
 /// @notice Original taken from https://github.com/ethereum/EIPs/issues/20
 /// @notice Checked against integer overflow
-contract ERC20Custom is ERC20CustomInterface, DSMath {
+contract ERC20Token is ERC20TokenInterface, DSMath {
 
     function transfer(address _to, uint256 _value) returns (bool success) {
         require(balances[msg.sender] >= _value && add(balances[_to], _value) > balances[_to]);
