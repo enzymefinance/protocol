@@ -28,19 +28,9 @@ contract ModuleRegistrar is DBC {
     mapping (address => Module) public information; // Maps module address to information about the module
     address[] public registeredModules; // List registered module addresses
 
-    // PRE, POST AND INVARIANT CONDITIONS
-
-    /// @param a Module address to be checked for whether registered or not
-    function notRegistered(address a) internal constant returns (bool) { return information[a].exists == false; }
-    function isCreator(address a) internal constant returns (bool) { return information[a].creator == msg.sender; }
-    /// @dev Whether message sender is KYC verified through PICOPS
-    /// @param x Address to be checked for KYC verification
-    function isKYCVerified(address x) internal returns (bool) { return PICOPS.certified(x); }
-
     // CONSTANT METHODS
 
     // Get registration specific information
-    function isRegistered(address ofModule) constant returns (bool) { return !notRegistered(ofModule); }
     function numregisteredModules() constant returns (uint) { return registeredModules.length; }
     function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
 
@@ -67,7 +57,7 @@ contract ModuleRegistrar is DBC {
         bytes32 ipfsHash
     )
         pre_cond(!moduleNameExists[name])
-        pre_cond(notRegistered(ofModule))
+        pre_cond(!information[ofModule].exists)
     {
         registeredModules.push(ofModule);
         information[ofModule] = Module({
@@ -82,7 +72,7 @@ contract ModuleRegistrar is DBC {
         });
         moduleNameExists[name] = true;
         creatorOperatesModules[msg.sender] = ofModule;
-        assert(isRegistered(ofModule));
+        assert(information[ofModule].exists);
     }
 
     /// @notice Updates description information of a registered module
@@ -97,8 +87,8 @@ contract ModuleRegistrar is DBC {
         string url,
         bytes32 ipfsHash
     )
-        pre_cond(isCreator(ofModule))
-        pre_cond(isRegistered(ofModule))
+        pre_cond(information[ofModule].creator == msg.sender)
+        pre_cond(information[ofModule].exists)
     {
         Module module = information[ofModule];
         module.name = name;
@@ -112,13 +102,13 @@ contract ModuleRegistrar is DBC {
     function remove(
         address ofModule
     )
-        pre_cond(isCreator(ofModule))
-        pre_cond(isRegistered(ofModule))
+        pre_cond(information[ofModule].creator == msg.sender)
+        pre_cond(information[ofModule].exists)
     {
         moduleNameExists[information[ofModule].name] = false;
         delete information[ofModule]; // Sets exists boolean to false
         creatorOperatesModules[msg.sender] = 0;
-        assert(notRegistered(ofModule));
+        assert(!information[ofModule].exists);
     }
 
     /// @notice Votes on an existing registered module
@@ -126,8 +116,8 @@ contract ModuleRegistrar is DBC {
     /// @param ofModule address for which specific information is requested
     /// @param rating uint between 0 and 10; 0 being worst, 10 being best
     function vote(address ofModule, uint rating) public
-        pre_cond(isRegistered(ofModule))
-        pre_cond(isKYCVerified(msg.sender))
+        pre_cond(information[ofModule].exists)
+        pre_cond(PICOPS.certified(msg.sender))
         pre_cond(rating <= 10)
     {
         information[ofModule].sumOfRating += rating;
