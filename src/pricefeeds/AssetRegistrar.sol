@@ -2,11 +2,12 @@ pragma solidity ^0.4.19;
 
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
+import './AssetRegistrarInterface.sol';
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract AssetRegistrar is DBC, Owned {
+contract AssetRegistrar is DBC, Owned, AssetRegistrarInterface {
 
     // TYPES
 
@@ -34,7 +35,8 @@ contract AssetRegistrar is DBC, Owned {
     // Get asset specific information
     function getName(address ofAsset) view returns (string) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) view returns (string) { return information[ofAsset].symbol; }
-    function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
+    function getDecimal(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
+    function isExistent(address ofAsset) view returns (bool) { return information[ofAsset].exists; }
 
     // NON-CONSTANT METHODS
 

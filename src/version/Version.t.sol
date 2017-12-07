@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "../pricefeeds/AssetRegistrar.sol";
 import "../pricefeeds/PriceFeed.sol";
 import "../system/Governance.sol";
 import "../compliance/Compliance.sol";
@@ -12,6 +13,7 @@ import "./Version.sol";
 
 
 contract VersionTest is DSTest {
+    AssetRegistrar assetRegistrar;
     PriceFeed pricefeed;
     Governance governance;
     Compliance participation;
@@ -45,7 +47,8 @@ contract VersionTest is DSTest {
         governance = new Governance(new address[](0), 0, 1000000);
         melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
         version = new Version(VERSION_NUMBER, governance, melonToken);
-        pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
+        assetRegistrar = new AssetRegistrar();
+        pricefeed = new PriceFeed(assetRegistrar, melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
         riskMgmt = new RiskMgmt();
         simpleMarket = new SimpleMarket();
         participation = new Compliance();
