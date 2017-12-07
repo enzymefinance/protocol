@@ -102,7 +102,7 @@ contract Version is DBC, Owned {
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
-        pre_cond(managerToFunds[msg.sender] != 0) // Add limitation for simpler migration process of shutting down and setting up fund
+        pre_cond(managerToFunds[msg.sender] == 0) // Add limitation for simpler migration process of shutting down and setting up fund
     {
         require(!fundNameExists[withName]);
         address fund = new Fund(
