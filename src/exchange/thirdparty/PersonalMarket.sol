@@ -11,8 +11,9 @@
 
 pragma solidity ^0.4.19;
 
-import '../../dependencies/ERC20.sol';
+import {ERC20Custom as ERC20} from '../../dependencies/ERC20Custom.sol';
 import '../../dependencies/Owned.sol';
+import 'ds-math/math.sol';
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);

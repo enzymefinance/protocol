@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 /// @title ERC20 Token Interface
 /// @author Melonport AG <team@melonport.com>
 /// @notice See https://github.com/ethereum/EIPs/issues/20
-contract ERC20Interface {
+contract ERC20CustomInterface {
 
     // EVENTS
 

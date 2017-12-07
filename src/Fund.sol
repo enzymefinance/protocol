@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import {ERC20 as Shares} from './dependencies/ERC20.sol';
+import {ERC20Custom as ERC20} from './dependencies/ERC20Custom.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './libraries/rewards.sol';
@@ -15,7 +15,7 @@ import 'ds-math/math.sol';
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
+contract Fund is DSMath, DBC, Owned, ERC20, FundInterface {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
