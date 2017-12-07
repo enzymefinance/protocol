@@ -261,7 +261,7 @@ describe("Fund shares", () => {
       { wantedShares: 20143783, offeredValue: 30000000, incentive: 5000 },
       { wantedShares: 500, offeredValue: 2000, incentive: 5000 },
     ];
-    it("allows request and execution without datafeed updates on the first subscription", async () => {
+    it("allows request and execution on the first subscription", async () => {
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       const pre = await getAllBalances();
@@ -295,6 +295,8 @@ describe("Fund shares", () => {
       const investorPreShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
       );
+      await updateDatafeed();
+      await updateDatafeed();
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       receipt = await fund.instance.executeRequest.postTransaction(
         { from: worker, gas: config.gas, gasPrice: config.gasPrice },
