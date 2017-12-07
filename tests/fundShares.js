@@ -162,7 +162,7 @@ describe("Fund shares", () => {
     it("can set up new fund", async () => {
       const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
       const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-      let sig = await api.eth.sign('0x00248D782B4c27b5C6F42FEB3f36918C24b211A5', hash);
+      let sig = await api.eth.sign(manager, hash);
       sig = sig.substr(2, sig.length);
       const r = `0x${sig.substr(0, 64)}`;
       const s = `0x${sig.substr(64, 64)}`;
@@ -176,7 +176,8 @@ describe("Fund shares", () => {
           config.protocol.fund.performanceReward,
           addresses.NoCompliance,
           addresses.RMMakeOrders,
-          addresses.Sphere,
+          addresses.PriceFeed,
+          addresses.SimpleMarket,
           v,
           r,
           s
@@ -184,6 +185,7 @@ describe("Fund shares", () => {
       );
       // Since postTransaction returns transaction hash instead of object as in Web3
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const fundId = await version.instance.getLastFundId.call({}, []);
       const fundAddress = await version.instance.getFundById.call({}, [fundId]);
@@ -194,6 +196,7 @@ describe("Fund shares", () => {
       const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
 
       expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
+      console.log(fundId);
       expect(Number(fundId)).toEqual(0);
       expect(await version.instance.fundNameTaken.call({}, [fundName])).toEqual(true);
       // expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
@@ -267,6 +270,8 @@ describe("Fund shares", () => {
         [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      receipt = await fund.instance.calcGav.call({}, []);
+      console.log(receipt);
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const inputAllowance = firstTest.offeredValue + firstTest.incentive;
       const fundPreAllowance = Number(
@@ -283,6 +288,7 @@ describe("Fund shares", () => {
       );
       const baseUnits = await fund.instance.getBaseUnits.call({}, []);
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
+      console.log(sharePrice);
       const requestedSharesTotalValue =
         firstTest.wantedShares * sharePrice / baseUnits;
       const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
@@ -295,6 +301,7 @@ describe("Fund shares", () => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      console.log(gasUsed);
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const investorPostShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
@@ -1208,7 +1215,7 @@ describe("Fund shares", () => {
         await fund.instance.performCalculations.call({}, []),
       );
       const shareQuantity = Math.floor(totalSupply * unclaimedRewards / gav);
-      receipt = await fund.instance.allocateUnclaimedRewards.postTransaction(
+      receipt = await fund.instance.convertUnclaimedRewards.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [],
       );
