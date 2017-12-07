@@ -5,21 +5,14 @@ pragma solidity ^0.4.19;
 /// @notice PriceFeed according to the Standard Price Feed Contract; See https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs#data-feeds
 /// @notice This is to be considered as an interface on how to access the underlying PriceFeed Contract
 contract PriceFeedInterface {
-
     // EVENTS
 
     event PriceUpdated(uint timestamp);
 
     // CONSTANT METHODS
 
-    // Get asset specific information
-    function getDescriptiveInformation(address ofAsset) view returns (string, string, string, bytes32) {}
-    function getName(address ofAsset) view returns (string) {}
-    function getSymbol(address ofAsset) view returns (string) {}
-    function getDecimals(address ofAsset) view returns (uint) {}
-    function getSpecificInformation(address ofAsset) view returns (uint, bytes32, address, address) {}
     // Get price feed operation specific information
-    function getQuoteAsset() view returns (address) {}
+    function getQuoteAsset() view returns (address ofAsset, uint decimal) {}
     function getInterval() view returns (uint) {}
     function getValidity() view returns (uint) {}
     // Get asset specific information as updated in price feed

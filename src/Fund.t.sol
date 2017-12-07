@@ -62,7 +62,7 @@ contract FundTest is DSTest {
 
     //function testVariablesSetCorrectly() {
     //    var returnedName = fund.getName();
-    //    uint returnedDecimals = fund.getDecimals();
+    //    uint returnedDecimals = fund.getDecimal();
     //    var (returnedDatafeed, returnedExchange, returnedCompliance, returnedRiskMgmt) = fund.getModules();
     //    uint stake = fund.getStake();
 

@@ -103,10 +103,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     function getName() view returns (string) { return NAME; }
     function getSymbol() view returns (string) { return SYMBOL; }
-    function getDecimals() view returns (uint) { return DECIMALS; }
+    function getDecimal() view returns (uint) { return DECIMALS; }
     function getCreationTime() view returns (uint) { return CREATED; }
-    function toSmallestFundUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); } // toWei
-    function toWholeFundUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); } //toEther
+    function toSmallestFundUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimal()); } // toWei
+    function toWholeFundUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimal()); } //toEther
 
     function getModules() view returns (address ,address, address, address) {
         return (
@@ -343,15 +343,16 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         module.exchange = ExchangeInterface(ofExchange);
         // Require reference assets exists in pricefeed
         MELON_CONTRACT = ERC20(MELON_ASSET);
-        require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        DECIMALS = module.pricefeed.getDecimals(REFERENCE_ASSET);
+        var (quoteAsset, quoteDecimal) = module.pricefeed.getQuoteAsset();
+        require(REFERENCE_ASSET == quoteAsset); // Sanity check
+        DECIMALS = quoteDecimal;
         atLastPerformCalculations = Calculations({
             gav: 0,
             managementReward: 0,
             performanceReward: 0,
             unclaimedRewards: 0,
             nav: 0,
-            highWaterMark: 10 ** getDecimals(),
+            highWaterMark: 10 ** getDecimal(),
             totalSupply: totalSupply,
             timestamp: now
         });

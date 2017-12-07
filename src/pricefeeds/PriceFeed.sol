@@ -10,19 +10,33 @@ import 'ds-math/math.sol';
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
+    // TYPES
+
+    struct Data  {
+        uint timestamp; // Timestamp of last price update of this asset
+        uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
+    }
 
     // FIELDS
 
     // Constructor fields
+    AssetRegistrar public ARC; // Asset registrar contract where asset specific information are registered
     address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds for which data is considered recent
+    // Method fields
+    mapping(address => Data) data;
 
     // CONSTANT METHODS
 
     // Get pricefeed specific information
-    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
+    function getQuoteAsset() view returns (address ofAsset, uint decimal) {
+        return (
+            QUOTE_ASSET,
+            ARC.getDecimal(QUOTE_ASSET)
+        );
+    }
     function getInterval() view returns (uint) { return INTERVAL; }
     function getValidity() view returns (uint) { return VALIDITY; }
 
@@ -31,10 +45,10 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        pre_cond(information[ofAsset].exists)
+        pre_cond(ARC.isExistent(ofAsset))
         returns (bool isRecent)
     {
-        return sub(now, information[ofAsset].timestamp) <= VALIDITY;
+        return sub(now, data[ofAsset].price) <= VALIDITY;
     }
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
@@ -68,8 +82,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     {
         return (
             hasRecentPrice(ofAsset),
-            information[ofAsset].price,
-            information[ofAsset].decimal
+            data[ofAsset].price,
+            ARC.getDecimal(ofAsset)
         );
     }
 
@@ -106,7 +120,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         var (isInvertedRecent, inputPrice, assetDecimal) = getPrice(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
-        uint quoteDecimal = getDecimals(QUOTE_ASSET);
+        uint quoteDecimal = ARC.getDecimal(QUOTE_ASSET);
 
         return (
             isInvertedRecent,
@@ -125,9 +139,9 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         view
         returns (bool isRecent, uint referencePrice, uint decimal)
     {
-        if (getQuoteAsset() == ofQuote) {
+        if (QUOTE_ASSET == ofQuote) {
             (isRecent, referencePrice, decimal) = getPrice(ofBase);
-        } else if (getQuoteAsset() == ofBase) {
+        } else if (QUOTE_ASSET == ofBase) {
             (isRecent, referencePrice, decimal) = getInvertedPrice(ofQuote);
         } else {
             revert(); // no suitable reference price available
@@ -148,7 +162,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         view
         returns (uint orderPrice)
     {
-        return mul(buyQuantity, 10 ** uint(getDecimals(sellAsset))) / sellQuantity;
+        return mul(buyQuantity, 10 ** uint(getDecimal(sellAsset))) / sellQuantity;
     }
 
     /// @notice Checks whether data exists for a given asset pair
@@ -182,6 +196,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     /// @param validity Number of seconds that datafeed update information is valid for
     function PriceFeed(
+        address ofAssetRegistrar,
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         string quoteAssetName,
         string quoteAssetSymbol,
@@ -197,17 +212,18 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         QUOTE_ASSET = ofQuoteAsset;
         INTERVAL = interval;
         VALIDITY = validity;
-        register(
-            QUOTE_ASSET,
-            quoteAssetName,
-            quoteAssetSymbol,
-            quoteAssetDecimals,
-            quoteAssetUrl,
-            quoteAssetIpfsHash,
-            quoteAssetChainId,
-            quoteAssetBreakIn,
-            quoteAssetBreakOut
-        );
+        if (!ARC.isExistent(QUOTE_ASSET))
+            ARC.register(
+                QUOTE_ASSET,
+                quoteAssetName,
+                quoteAssetSymbol,
+                quoteAssetDecimals,
+                quoteAssetUrl,
+                quoteAssetIpfsHash,
+                quoteAssetChainId,
+                quoteAssetBreakIn,
+                quoteAssetBreakOut
+            );
     }
 
     /// @dev Only Owner; Same sized input arrays
@@ -223,10 +239,10 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         pre_cond(ofAssets.length == newPrices.length)
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
-            require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
-            require(information[ofAssets[i]].exists);
-            information[ofAssets[i]].timestamp = now;
-            information[ofAssets[i]].price = newPrices[i];
+            require(data[ofAssets[i]].timestamp != now); // prevent two updates in one block
+            require(ARC.isExistent(ofAssets[i]));
+            data[ofAssets[i]].timestamp = now;
+            data[ofAssets[i]].price = newPrices[i];
         }
         PriceUpdated(now);
     }
