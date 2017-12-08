@@ -19,13 +19,20 @@ contract ComplianceTest is DSTest {
     function test_defaultPermissions() {
         bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
         bool redeemPermitted = participation.isRedemptionPermitted(mockAddress, numberOfShares, offeredValue);
+
         assert(!subscribePermitted);
         assert(redeemPermitted);
     }
 
-    function test_addPermissions() {
+    function test_addAndRemovePermissions() {
         participation.attestForIdentity(mockAddress);
         bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
+
         assert(subscribePermitted);
+        
+        participation.removeAttestation(mockAddress);
+        subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
+
+        assert(!subscribePermitted);
     }
 }
