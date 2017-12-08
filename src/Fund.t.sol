@@ -63,7 +63,7 @@ contract FundTest is DSTest {
     //    );
     //}
 
-    //function testVariablesSetCorrectly() {
+    //function test_variablesSetCorrectly() {
     //    var returnedName = fund.getName();
     //    uint returnedDecimals = fund.getDecimals();
     //    var (returnedDatafeed, returnedExchange, returnedCompliance, returnedRiskMgmt) = fund.getModules();
@@ -78,7 +78,7 @@ contract FundTest is DSTest {
     //    assertEq(stake, 0);
     //}
 
-    //function testToggles() {
+    //function test_toggles() {
     // Change this to enable and disable pattern as toggle function is depracated
     //    bool preSubscriptionAllowed = fund.isSubscribeAllowed();
     //    bool preRedemptionAllowed = fund.isRedeemAllowed();
@@ -93,7 +93,7 @@ contract FundTest is DSTest {
     //    assert(!postRedemptionAllowed);
     //}
 
-    //function testShutDown() {
+    //function test_shutDown() {
     //    fund.shutDown();
     //    bool fundShutDown = fund.isShutDown();
 
@@ -102,7 +102,7 @@ contract FundTest is DSTest {
 
 // TODO: enable these tests when we can update datafeed from within EVM.
 //       This depends on github.com/dapphub/ds-test/issues/5
-//    function testRequestsFromUnapprovedParties() {
+//    function test_requestsFromUnapprovedParties() {
 //        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
 //        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
 //
@@ -111,7 +111,7 @@ contract FundTest is DSTest {
 //
 //    }
 //
-//    function testRequestFromApprovedParties() {
+//    function test_requestFromApprovedParties() {
 //        participation.attestForIdentity(this);
 //        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
 //        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);

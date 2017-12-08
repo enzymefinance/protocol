@@ -29,7 +29,7 @@ contract GovernanceTest is DSTest {
         governance = new Governance(members, 1, 1000000);
     }
 
-    function testAddAndGetVersion() {
+    function test_addAndGetVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
@@ -40,7 +40,7 @@ contract GovernanceTest is DSTest {
         assert(active);
     }
 
-    function testShutDownVersion() {
+    function test_shutDownVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);

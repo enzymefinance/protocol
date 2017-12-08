@@ -16,14 +16,14 @@ contract ComplianceTest is DSTest {
     }
 
     // subscribe not permitted by default, but redeem permitted by default
-    function testDefaultPermissions() {
+    function test_defaultPermissions() {
         bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
         bool redeemPermitted = participation.isRedemptionPermitted(mockAddress, numberOfShares, offeredValue);
         assert(!subscribePermitted);
         assert(redeemPermitted);
     }
 
-    function testAddPermissions() {
+    function test_addPermissions() {
         participation.attestForIdentity(mockAddress);
         bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
         assert(subscribePermitted);

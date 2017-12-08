@@ -11,7 +11,7 @@ contract rewardsTest is DSTest {
     uint divisor = 10 ** 15;
     uint secondsInMonth = 60 * 60 * 24 * 30;  // 30 days
 
-    // function testZeroRewardRates() {
+    // function test_zeroRewardRates() {
     //     int mockPriceDelta = 500;
     //     uint managementReward = rewards.managementReward(0, secondsInMonth, mockGav, divisor);
     //     uint performanceReward = rewards.performanceReward(0, mockPriceDelta, totalSupply, divisor);
@@ -20,7 +20,7 @@ contract rewardsTest is DSTest {
     //     assertEq(performanceReward, 0);
     // }
 
-    // function testManagementReward() {
+    // function test_managementReward() {
     //     uint expectedMonthlyReward = mockGav / 10;  // expect 10% of GAV after one month
     //     uint oneMonthReward = rewards.managementReward(managementRate, secondsInMonth, mockGav, divisor);
     //     uint twoMonthReward = rewards.managementReward(managementRate, secondsInMonth * 2, mockGav, divisor);
@@ -33,7 +33,7 @@ contract rewardsTest is DSTest {
     //     assertEq(sevenMonthReward, expectedMonthlyReward * 7);
     // }
 
-    // function testPerformanceReward() {
+    // function test_performanceReward() {
     //     int deltaPrice1 = 500;
     //     uint expectedReward1 = uint(deltaPrice1) / 100 * totalSupply;
     //     int deltaPrice2 = -1000;
