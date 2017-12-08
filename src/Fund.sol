@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import './dependencies/ERC20Token.sol';
+import './assets/Shares.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
 import './libraries/rewards.sol';
@@ -15,7 +15,7 @@ import 'ds-math/math.sol';
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
@@ -66,18 +66,14 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
     // FIELDS
 
     // Constant fields
-    string constant SYMBOL = "MLNF"; // Melon Fund Symbol
     uint public constant DIVISOR_FEE = 10 ** uint(15); // Reward are divided by this number
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
-    string public NAME; // Name of this fund
-    uint public DECIMALS; // Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
-    uint public CREATED; // Timestamp of Fund creation
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    address public MELON_ASSET; // Address of Melon asset contract
-    ERC20Token public MELON_CONTRACT; // Melon as ERC20 contract
+    address public MELON; // Address of Melon asset contract
+    Asset public MELON_ASSET; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -95,18 +91,11 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
     // PRE, POST, INVARIANT CONDITIONS
 
     function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
-        success = ERC20Token(ofAsset).approve(address(module.exchange), quantity);
+        success = Asset(ofAsset).approve(address(module.exchange), quantity);
         SpendingApproved(address(module.exchange), ofAsset, quantity);
     }
 
-    // CONSTANT METHODS
-
-    function getName() view returns (string) { return NAME; }
-    function getSymbol() view returns (string) { return SYMBOL; }
-    function getDecimals() view returns (uint) { return DECIMALS; }
-    function getCreationTime() view returns (uint) { return CREATED; }
-    function toSmallestFundUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); } // toWei
-    function toWholeFundUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); } //toEther
+    // VIEW METHODS
 
     function getModules() view returns (address ,address, address, address) {
         return (
@@ -120,7 +109,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
     function getLastOrderId() view returns (uint) { return orders.length - 1; }
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
 
-    // CONSTANT METHODS - ACCOUNTING
+    // VIEW METHODS - ACCOUNTING
 
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
@@ -139,7 +128,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(ERC20Token(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(Asset(ofAsset).balanceOf(this)), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -148,8 +137,8 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** fundDecimals)
-            gav = add(gav, toSmallestFundUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == MELON_ASSET || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+            gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
+            if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
@@ -219,7 +208,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         pre_cond(numShares > 0)
         returns (uint valuePerShare)
     {
-        valuePerShare = toSmallestFundUnit(totalValue / numShares);
+        valuePerShare = toSmallestShareUnit(totalValue / numShares);
     }
 
     /// @notice Calculates essential fund metrics
@@ -255,7 +244,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         // The total share supply including the value of unclaimedRewards, measured in shares of this fund
         // The shares supply of
         uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
-        sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestFundUnit(1); // Handle potential division through zero by defining a default value
+        sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
         return (gav, managementReward, performanceReward, unclaimedRewards, rewardsShareQuantity, nav, sharePrice);
     }
 
@@ -326,15 +315,16 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         address ofRiskMgmt,
         address ofPriceFeed,
         address ofExchange
-    ) {
+    )
+        Shares(withName, "MLNF", 18, now)
+    {
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
-        NAME = withName;
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        MELON_ASSET = ofMelonAsset;
+        MELON = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
         module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -342,9 +332,8 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         // Bridged to Melon exchange interface by exchangeAdapter library
         module.exchange = ExchangeInterface(ofExchange);
         // Require reference assets exists in pricefeed
-        MELON_CONTRACT = ERC20Token(MELON_ASSET);
+        MELON_ASSET = Asset(MELON);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        DECIMALS = module.pricefeed.getDecimals(REFERENCE_ASSET);
         atLastPerformCalculations = Calculations({
             gav: 0,
             managementReward: 0,
@@ -355,7 +344,6 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        CREATED = now;
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
@@ -434,15 +422,15 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[request.participant] ) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now < add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrice(MELON_ASSET)) // PriceFeed Module: No recent updates for fund asset list
+        pre_cond(module.pricefeed.hasRecentPrice(MELON)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON_ASSET);
-        // TODO: check precision of below otherwise use; uint costQuantity = toWholeFundUnit(mul(request.shareQuantity, calcSharePrice()));
+        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON);
+        // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
-        uint costQuantity = mul(mul(request.shareQuantity, toWholeFundUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
+        uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
 
         Request request = requests[id];
 
@@ -450,21 +438,21 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
-            if (!isInAssetList[MELON_ASSET]) {
-                ownedAssets.push(MELON_ASSET);
-                isInAssetList[MELON_ASSET] = true;
+            if (!isInAssetList[MELON]) {
+                ownedAssets.push(MELON);
+                isInAssetList[MELON] = true;
             }
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
@@ -500,7 +488,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
             uint assetHoldings = add(
-                uint(ERC20Token(ofAsset).balanceOf(this)),
+                uint(Asset(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -524,7 +512,7 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         // Transfer ownershipQuantity of Assets
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
-            if (!ERC20Token(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
         }
@@ -683,21 +671,4 @@ contract Fund is DSMath, DBC, Owned, ERC20Token, FundInterface {
         return sellQuantity;
     }
 
-    // INTERNAL METHODS
-
-    function createShares(address recipient, uint shareQuantity) internal {
-        totalSupply = add(totalSupply, shareQuantity);
-        addShares(recipient, shareQuantity);
-        Subscribed(msg.sender, now, shareQuantity);
-    }
-
-    function annihilateShares(address recipient, uint shareQuantity) internal {
-        totalSupply = sub(totalSupply, shareQuantity);
-        subShares(recipient, shareQuantity);
-        Redeemed(msg.sender, now, shareQuantity);
-    }
-
-    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = add(balances[recipient], shareQuantity); }
-
-    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = sub(balances[recipient], shareQuantity); }
 }

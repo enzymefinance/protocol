@@ -9,7 +9,7 @@ contract VersionInterface {
 
       event FundUpdated(uint id);
 
-      // CONSTANT METHODS
+      // VIEW METHODS
 
       function getMelonAsset() constant returns (address) {}
       function getFundById(uint withId) constant returns (address) {}

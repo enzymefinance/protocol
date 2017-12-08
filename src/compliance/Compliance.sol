@@ -23,7 +23,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     // Methods fields
     mapping (address => Identity) public identities;
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
