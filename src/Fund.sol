@@ -654,6 +654,16 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
+    /// @notice allows manager to recover tokens sent the Fund
+    /// @param ofAsset Address of the token
+    /// @param toAddress Address to send the tokens to
+    /// @param amount Amount of the token to send
+    function recoverToken(address ofAsset, address toAddress, uint amount) 
+        pre_cond(isOwner())
+    {
+        require(Asset(ofAsset).transfer(toAddress, amount));
+    }
+
     // NON-CONSTANT METHODS - REWARDS
 
     /// @dev Quantity of asset held in exchange according to associated order id
