@@ -23,8 +23,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        Asset        pay_gem,
-        Asset        buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -34,8 +34,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        Asset        pay_gem,
-        Asset        buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -45,8 +45,8 @@ contract EventfulMarket {
         bytes32           id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        Asset        pay_gem,
-        Asset        buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         address  indexed  taker,
         uint128           take_amt,
         uint128           give_amt,
@@ -57,8 +57,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        Asset        pay_gem,
-        Asset        buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -74,13 +74,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
     bool locked;
 
     struct OfferInfo {
-        uint          pay_amt;
+        uint     pay_amt;
         Asset    pay_gem;
-        uint           buy_amt;
+        uint     buy_amt;
         Asset    buy_gem;
-        address       owner;
-        bool          active;
-        uint64        timestamp;
+        address  owner;
+        bool     active;
+        uint64   timestamp;
     }
 
     modifier can_buy(uint id) {
@@ -217,8 +217,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function make(
         Asset    pay_gem,
         Asset    buy_gem,
-        uint128       pay_amt,
-        uint128       buy_amt
+        uint128  pay_amt,
+        uint128  buy_amt
     ) returns (bytes32 id) {
         return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
     }
