@@ -1,10 +1,10 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "ds-token/token.sol";
 import "../pricefeeds/PriceFeed.sol";
 import "../system/Governance.sol";
 import "../compliance/Compliance.sol";
-import "../assets/PreminedAsset.sol";
 import "../riskmgmt/RiskMgmt.sol";
 import "../exchange/thirdparty/SimpleMarket.sol";
 import "../Fund.sol";
@@ -15,7 +15,7 @@ contract VersionTest is DSTest {
     PriceFeed pricefeed;
     Governance governance;
     Compliance participation;
-    PreminedAsset melonToken;
+    DSToken melonToken;
     RiskMgmt riskMgmt;
     SimpleMarket simpleMarket;
     Version version;
@@ -26,7 +26,7 @@ contract VersionTest is DSTest {
     uint INTERVAL = 0;
     uint VALIDITY = 60;
     uint MELON_DECIMALS = 18;
-    uint PREMINED_AMOUNT = 10 ** 28;
+    uint MINTED_AMOUNT = 10 ** 28;
     uint MANAGEMENT_REWARD = 0;
     uint PERFORMANCE_REWARD = 0;
     address MANAGER_ADDRESS = this;
@@ -43,7 +43,7 @@ contract VersionTest is DSTest {
 
     function setUp() {
         governance = new Governance(new address[](0), 0, 1000000);
-        melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
+        melonToken = new DSToken("MLN-T");
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
         riskMgmt = new RiskMgmt();

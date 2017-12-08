@@ -29,7 +29,7 @@ contract AssetRegistrar is DBC, Owned {
     // Methods fields
     mapping (address => Asset) public information;
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get asset specific information
     function getName(address ofAsset) view returns (string) { return information[ofAsset].name; }

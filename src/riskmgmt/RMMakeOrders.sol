@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import '../dependencies/ERC20.sol';
+import '../assets/Asset.sol';
 import './RiskMgmtInterface.sol';
 
 /// @title Risk Management Make Orders Contract
