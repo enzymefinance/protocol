@@ -11,7 +11,7 @@ contract Weth9 is DSTest {
         weth = new WETH9_();
     }
 
-    function testDeposit() {
+    function test_deposit() {
         uint depositAmount = 1 ether;
         uint userPreWethBalance = weth.balanceOf(this);
         uint userPreEthBalance = this.balance;
@@ -30,7 +30,7 @@ contract Weth9 is DSTest {
     }
 
     // TODO: check whether `withdraw()` must be implemented in this test contract
-    // function testWithdraw() {
+    // function test_withdraw() {
     //     uint depositAmount = 1 ether;
     //     uint withdrawAmount = 500 finney;
     //     weth.deposit.value(depositAmount)();

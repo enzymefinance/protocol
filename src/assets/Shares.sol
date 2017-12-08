@@ -30,10 +30,10 @@ contract Shares is Asset, SharesInterface {
     /// @param _decimal Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
     /// @param _creationTime Timestamp of share creation
     function Shares(string _name, string _symbol, uint _decimal, uint _creationTime) {
-          name = _name;
-          symbol = _symbol;
-          decimal = _decimal;
-          creationTime = _creationTime;
+        name = _name;
+        symbol = _symbol;
+        decimal = _decimal;
+        creationTime = _creationTime;
     }
 
     // INTERNAL METHODS
