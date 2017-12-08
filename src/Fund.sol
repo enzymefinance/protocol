@@ -86,13 +86,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
-        success = Asset(ofAsset).approve(address(module.exchange), quantity);
-        SpendingApproved(address(module.exchange), ofAsset, quantity);
-    }
-
     // VIEW METHODS
 
     function getModules() view returns (address ,address, address, address) {
@@ -176,6 +169,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
         }
 
+        // Sum of all rewards
         unclaimedRewards = add(managementReward, performanceReward);
     }
 
@@ -547,7 +541,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 sellAsset, buyAsset, sellQuantity, buyQuantity
         )); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        require(!approveSpending(sellAsset, sellQuantity)); // Approve exchange to spend assets
+        require(Asset(ofAsset).approve(address(module.exchange), quantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(address(module.exchange), sellAsset, buyAsset, sellQuantity, buyQuantity);
@@ -611,7 +605,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         )); // RiskMgmt module: Take order not permitted
         require(quantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(quantity, order.buyQuantity) / order.sellQuantity;
-        require(approveSpending(order.buyAsset, spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
+        require(Asset(ofAsset).approve(address(module.exchange), quantity)); // Could not approve spending of spendQuantity of order.buyAsset
 
         // Execute request
         require(exchangeAdapter.takeOrder(address(module.exchange), id, quantity));
@@ -641,10 +635,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Get information of fund order by order id
         Order memory order = orders[id];
 
+        // Execute request
         require(exchangeAdapter.cancelOrder(address(module.exchange), order.exchangeId)); // Exchange Adapter: Failed to cancel order
 
         order.status = OrderStatus.cancelled;
-
         OrderUpdated(id);
     }
 
