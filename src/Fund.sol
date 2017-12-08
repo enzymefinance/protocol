@@ -72,8 +72,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    address public MELON_ASSET; // Address of Melon asset contract
-    Asset public MELON_CONTRACT; // Melon as ERC20 contract
+    address public MELON; // Address of Melon asset contract
+    Asset public MELON_ASSET; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -138,7 +138,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** fundDecimals)
             gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == MELON_ASSET || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+            if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
@@ -324,7 +324,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
-        MELON_ASSET = ofMelonAsset;
+        MELON = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
         module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -332,7 +332,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Bridged to Melon exchange interface by exchangeAdapter library
         module.exchange = ExchangeInterface(ofExchange);
         // Require reference assets exists in pricefeed
-        MELON_CONTRACT = Asset(MELON_ASSET);
+        MELON_ASSET = Asset(MELON);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastPerformCalculations = Calculations({
             gav: 0,
@@ -422,12 +422,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[request.participant] ) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now < add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrice(MELON_ASSET)) // PriceFeed Module: No recent updates for fund asset list
+        pre_cond(module.pricefeed.hasRecentPrice(MELON)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON_ASSET);
+        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON);
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
@@ -438,21 +438,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
-            if (!isInAssetList[MELON_ASSET]) {
-                ownedAssets.push(MELON_ASSET);
-                isInAssetList[MELON_ASSET] = true;
+            if (!isInAssetList[MELON]) {
+                ownedAssets.push(MELON);
+                isInAssetList[MELON] = true;
             }
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
