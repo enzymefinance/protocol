@@ -3,7 +3,6 @@ pragma solidity ^0.4.19;
 import './assets/Shares.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
-import './libraries/rewards.sol';
 import './compliance/ComplianceInterface.sol';
 import './pricefeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
@@ -114,7 +113,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPrice(..) returns recent prices
-    /// @return gav Gross asset value quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @return gav Gross asset value quoted in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in REFERENCE_ASSET and multiplied by 10 ** assetDecimal
         /*bool areRecent;
@@ -136,7 +135,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (!isRecent) {
                 revert();
             }
-            // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** fundDecimals)
+            // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
@@ -148,12 +147,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates unclaimed rewards of the fund manager
-    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     /**
     @return {
-      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals",
-      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals"
+      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals"
     }
     */
     function calcUnclaimedRewards(uint gav)
@@ -164,32 +163,30 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             uint unclaimedRewards
         )
     {
+        // Management reward calculation
         uint timeDifference = sub(now, atLastPerformCalculations.timestamp);
-        managementReward = rewards.managementReward(
-            MANAGEMENT_REWARD_RATE,
-            timeDifference,
-            gav,
-            DIVISOR_FEE
-        );
+        uint absoluteChange = mul(timeDifference, gav) / (1 years);
+        managementReward = mul(absoluteChange, MANAGEMENT_REWARD_RATE) / DIVISOR_FEE;
+
+        // Performance reward calculation
         performanceReward = 0;
         if (totalSupply != 0) {
             uint currSharePrice = calcValuePerShare(gav, totalSupply); // TODO: verify
             if (currSharePrice > atLastPerformCalculations.highWaterMark) {
-              performanceReward = rewards.performanceReward(
-                  PERFORMANCE_REWARD_RATE,
-                  int(currSharePrice - atLastPerformCalculations.highWaterMark),
-                  totalSupply,
-                  DIVISOR_FEE
-              );
+                uint deltaPrice = int(currSharePrice - atLastPerformCalculations.highWaterMark);
+                if (0 < deltaPrice) {
+                    uint absoluteChange = uint(deltaPrice).mul(totalSupply);
+                    performanceReward = mul(absoluteChange, PERFORMANCE_REWARD_RATE) / DIVISOR_FEE;
+                }
             }
         }
         unclaimedRewards = add(managementReward, performanceReward);
     }
 
     /// @notice Calculates the Net asset value of this fund
-    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcNav(uint gav, uint unclaimedRewards)
         view
         returns (uint nav)
@@ -200,9 +197,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Calculates the share price of the fund
     /// @dev Convention for valuePerShare (== sharePrice) formatting: mul(totalValue / numShares, 10 ** decimal), to avoid floating numbers
     /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @param numShares the number of shares multiplied by 10 ** fundDecimals
-    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param numShares the number of shares multiplied by 10 ** shareDecimals
+    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcValuePerShare(uint totalValue, uint numShares)
         view
         pre_cond(numShares > 0)
@@ -425,11 +422,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(module.pricefeed.hasRecentPrice(MELON)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {
-        // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-        // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+        // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+        // based in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
         var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON);
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
-        // By definition quoteDecimals == fundDecimals
+        // By definition quoteDecimals == shareDecimals
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
 
         Request request = requests[id];
