@@ -5,8 +5,8 @@ import './SharesInterface.sol';
 
 /// @title Shares Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
-/// @notice
-contract Shares is Asset {
+/// @notice Fund
+contract Shares is Asset, SharesInterface {
 
     // FIELDS
 
@@ -41,13 +41,13 @@ contract Shares is Asset {
     function createShares(address recipient, uint shareQuantity) internal {
         totalSupply = add(totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
-        Subscribed(msg.sender, now, shareQuantity);
+        Created(msg.sender, now, shareQuantity);
     }
 
     function annihilateShares(address recipient, uint shareQuantity) internal {
         totalSupply = sub(totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);
-        Redeemed(msg.sender, now, shareQuantity);
+        Annihilated(msg.sender, now, shareQuantity);
     }
 
 }

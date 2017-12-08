@@ -8,6 +8,9 @@ import '../assets/AssetInterface.sol';
 /// @notice This extends the ERC20 Interface
 contract SharesInterface is AssetInterface {
 
+    event Created(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
+    event Annihilated(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
+
     // VIEW METHODS
 
     function getName() view returns (string) {}

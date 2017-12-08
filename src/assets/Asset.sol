@@ -1,11 +1,12 @@
 pragma solidity ^0.4.19;
 
+import 'ds-math/math.sol';
 import './AssetInterface.sol';
 
 /// @title Asset Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Implementation of ERC20 token contract.
-contract Asset is AssetInterface {
+contract Asset is DSMath, AssetInterface {
 
     function transfer(address _to, uint256 _value) returns (bool success) {
         require(balances[msg.sender] >= _value && add(balances[_to], _value) > balances[_to]);
