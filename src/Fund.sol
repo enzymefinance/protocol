@@ -65,7 +65,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // FIELDS
 
     // Constant fields
-    uint public constant DIVISOR_FEE = 10 ** uint(15); // Reward are divided by this number
+    uint public constant DIVISOR_FEE = 10 ** uint(18); // Reward are divided by this number
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
@@ -166,20 +166,18 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Management reward calculation
         uint timeDifference = sub(now, atLastPerformCalculations.timestamp);
         uint absoluteChange = mul(timeDifference, gav) / (1 years);
-        managementReward = mul(absoluteChange, MANAGEMENT_REWARD_RATE) / DIVISOR_FEE;
+        managementReward = wmul(absoluteChange, MANAGEMENT_REWARD_RATE);
 
         // Performance reward calculation
         performanceReward = 0;
-        if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav, totalSupply); // TODO: verify
-            if (currSharePrice > atLastPerformCalculations.highWaterMark) {
-                uint deltaPrice = int(currSharePrice - atLastPerformCalculations.highWaterMark);
-                if (0 < deltaPrice) {
-                    uint absoluteChange = uint(deltaPrice).mul(totalSupply);
-                    performanceReward = mul(absoluteChange, PERFORMANCE_REWARD_RATE) / DIVISOR_FEE;
-                }
-            }
+        // Handle potential division through zero by defining a default value
+        uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
+        if (valuePerShareExclPerfRewards > atLastPerformCalculations.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastPerformCalculations.highWaterMark);
+            uint investmentProfits = wmul(gainInSharePrice, totalSupply);
+            performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
         }
+
         unclaimedRewards = add(managementReward, performanceReward);
     }
 
@@ -318,6 +316,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
+        // TODO: require upper limits for MANAGEMENT_REWARD_RATE and PERFORMANCE_REWARD_RATE
         MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
         PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
         VERSION = msg.sender;
