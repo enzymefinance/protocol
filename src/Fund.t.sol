@@ -100,23 +100,23 @@ contract FundTest is DSTest {
     //    assert(fundShutDown);
     //}
 
-// TODO: enable these tests when we can update datafeed from within EVM.
-//       This depends on github.com/dapphub/ds-test/issues/5
-//    function test_requestsFromUnapprovedParties() {
-//        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
-//        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
-//
-//        assert(erroredOnUnapprovedSubscribeRequest);
-//        assert(!erroredOnUnapprovedRedeemRequest);    // no initial approval needed for redeem
-//
-//    }
-//
-//    function test_requestFromApprovedParties() {
-//        participation.attestForIdentity(this);
-//        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
-//        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
-//
-//        assert(!erroredOnApprovedSubscribeRequest);
-//        assert(!erroredOnApprovedRedeemRequest);
-//    }
+    // TODO: enable these tests when we can update datafeed from within EVM.
+    //       This depends on github.com/dapphub/ds-test/issues/5
+    //    function test_requestsFromUnapprovedParties() {
+    //        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+    //        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+    //
+    //        assert(erroredOnUnapprovedSubscribeRequest);
+    //        assert(!erroredOnUnapprovedRedeemRequest);    // no initial approval needed for redeem
+    //
+    //    }
+    //
+    //    function test_requestFromApprovedParties() {
+    //        participation.attestForIdentity(this);
+    //        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+    //        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+    //
+    //        assert(!erroredOnApprovedSubscribeRequest);
+    //        assert(!erroredOnApprovedRedeemRequest);
+    //    }
 }
