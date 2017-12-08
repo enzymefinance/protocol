@@ -22,7 +22,8 @@ contract Version is DBC, Owned {
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
-    mapping (string => bool) fundNameExists; // Links fund names to boolean based on existence
+    //mapping (string => address) public fundNamesToOwners; // Links fund names to address based on ownership
+
     // EVENTS
 
     event FundUpdated(uint id);
@@ -34,7 +35,7 @@ contract Version is DBC, Owned {
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     /// @return signed Whether or not terms and conditions have been read and understood
-    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool signed) {
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {
         return ecrecover(
             // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
             //  Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
@@ -56,7 +57,7 @@ contract Version is DBC, Owned {
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
-    function fundNameTaken(string withName) view returns (bool) { return fundNameExists[withName]; }
+    //function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[ofFundName] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -75,7 +76,7 @@ contract Version is DBC, Owned {
 
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
 
-    /// @param withName human-readable descriptive name (not necessarily unique)
+    /// @param ofFundName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
@@ -88,7 +89,7 @@ contract Version is DBC, Owned {
     /// @param s ellipitc curve parameter s
     /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
-        string withName,
+        string ofFundName,
         address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
@@ -102,12 +103,13 @@ contract Version is DBC, Owned {
     )
         pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
-        pre_cond(managerToFunds[msg.sender] == 0) // Add limitation for simpler migration process of shutting down and setting up fund
     {
-        require(!fundNameExists[withName]);
+        // Either novel fund name or previous owner of fund name
+        //require(fundNamesToOwners[ofFundName] == 0 || fundNamesToOwners[ofFundName] == msg.sender);
+        require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
-            withName,
+            ofFundName,
             ofReferenceAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
@@ -118,7 +120,7 @@ contract Version is DBC, Owned {
             ofExchange
         );
         listOfFunds.push(fund);
-        fundNameExists[withName] = true;
+        //fundNamesToOwners[ofFundName] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }
