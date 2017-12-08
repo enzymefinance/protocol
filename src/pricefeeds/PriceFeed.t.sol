@@ -36,7 +36,7 @@ contract PriceFeedTest is DSTest {
         pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
 
-    function testSetupSucceeded() {
+    function test_setupSucceeded() {
         address quoteAsset = pricefeed.getQuoteAsset();
         uint returnedInterval = pricefeed.getInterval();
         uint returnedValidity = pricefeed.getValidity();
@@ -48,7 +48,7 @@ contract PriceFeedTest is DSTest {
         assert(quoteAssetIsRegistered);
     }
 
-    function testAssetRegistrationDoesNotError() {
+    function test_assetRegistration() {
         bytes32 sampleBytes = 0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985;
         address sampleAddress = 0x9aD216d7FBE6dF26F5F29810F2e45f229376372A;
 
@@ -66,19 +66,19 @@ contract PriceFeedTest is DSTest {
     }
 
 // TODO: uncomment when dapphub/ds-test#5 is resolved
-//    function testUpdateAndGetPrice() {
-//        address[] storage assetArray;
-//        uint[] storage priceArray;
-//        assetArray.push(weth);
-//        assetArray.push(melonToken);
-//        priceArray.push(inputWethPrice);
-//        priceArray.push(inputMelonTokenPrice);
-//
-//        pricefeed.update(assetArray, priceArray);
-//        uint returnedWethPrice = pricefeed.getPrice(weth);
-//        uint returnedMelonTokenPrice = pricefeed.getPrice(melonToken);
-//
-//        assertEq(returnedWethPrice, inputWethPrice);
-//        assertEq(returnedMelonTokenPrice, inputMelonTokenPrice);
-//    }
+    // function test_updateAndGetPrice() {
+    //     address[] storage assetArray;
+    //     uint[] storage priceArray;
+    //     assetArray.push(weth);
+    //     assetArray.push(melonToken);
+    //     priceArray.push(inputWethPrice);
+    //     priceArray.push(inputMelonTokenPrice);
+
+    //     pricefeed.update(assetArray, priceArray);
+    //     var (, returnedWethPrice, ) = pricefeed.getPrice(weth);
+    //     var (, returnedMelonTokenPrice, ) = pricefeed.getPrice(melonToken);
+
+    //     assertEq(returnedWethPrice, inputWethPrice);
+    //     assertEq(returnedMelonTokenPrice, inputMelonTokenPrice);
+    // }
 }

@@ -51,7 +51,7 @@ contract VersionTest is DSTest {
         participation = new Compliance();
     }
 
-    // function testSetupFund() {
+    // function test_setupFund() {
     //     version.setupFund(
     //         FUND_NAME,
     //         melonToken,
@@ -72,7 +72,7 @@ contract VersionTest is DSTest {
     //     assertEq(fundId, 0);
     // }
 
-    // function testShutdownFund() {
+    // function test_shutdownFund() {
     //     version.setupFund(
     //         FUND_NAME,
     //         melonToken,
