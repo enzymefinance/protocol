@@ -10,3 +10,6 @@
 [submodule "lib/ds-token"]
 	path = lib/ds-token
 	url = https://github.com/dapphub/ds-token
+[submodule "lib/ds-weth"]
+	path = lib/ds-weth
+	url = https://github.com/dapphub/ds-weth
