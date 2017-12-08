@@ -164,9 +164,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         )
     {
         // Management reward calculation
-        uint timeDifference = sub(now, atLastPerformCalculations.timestamp);
-        uint absoluteChange = mul(timeDifference, gav) / (1 years);
-        managementReward = wmul(absoluteChange, MANAGEMENT_REWARD_RATE);
+        uint timePassed = sub(now, atLastPerformCalculations.timestamp);
+        uint gavPercentage = mul(timePassed, gav) / (1 years);
+        managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
 
         // Performance reward calculation
         performanceReward = 0;
