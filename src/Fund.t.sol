@@ -3,11 +3,11 @@ pragma solidity ^0.4.19;
 import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
 import "ds-token/token.sol";
-import "../pricefeeds/PriceFeed.sol";
-import "../exchange/thirdparty/SimpleMarket.sol";
-import "../compliance/Compliance.sol";
-import "../riskmgmt/RiskMgmt.sol";
-import "../Fund.sol";
+import "./pricefeeds/PriceFeed.sol";
+import "./exchange/thirdparty/SimpleMarket.sol";
+import "./compliance/Compliance.sol";
+import "./riskmgmt/RiskMgmt.sol";
+import "./Fund.sol";
 
 
 contract FundTest is DSTest {

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "../compliance/Compliance.sol";
+import "./Compliance.sol";
 
 
 contract ComplianceTest is DSTest {

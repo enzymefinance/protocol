@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
 import 'ds-test/test.sol';
-import '../modules/ModuleRegistrar.sol';
-import '../modules/SimpleCertifier.sol';
+import './ModuleRegistrar.sol';
+import './SimpleCertifier.sol';
 
 
 contract ModuleRegistrarTest is DSTest {
