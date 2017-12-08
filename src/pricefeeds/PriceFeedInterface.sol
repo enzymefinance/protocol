@@ -10,7 +10,7 @@ contract PriceFeedInterface {
 
     event PriceUpdated(uint timestamp);
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get asset specific information
     function getDescriptiveInformation(address ofAsset) view returns (string, string, string, bytes32) {}

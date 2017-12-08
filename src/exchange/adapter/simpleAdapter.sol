@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import '../../dependencies/ERC20Token.sol';
+import '../../assets/Asset.sol';
 import '../thirdparty/SimpleMarket.sol';
 
 
@@ -15,7 +15,7 @@ library simpleAdapter {
 
     event OrderUpdated(uint id);
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     function getLastOrderId(address onExchange)
         constant
@@ -81,9 +81,9 @@ library simpleAdapter {
     {
         id = SimpleMarket(onExchange).offer(
             sellQuantity,
-            ERC20Token(sellAsset),
+            Asset(sellAsset),
             buyQuantity,
-            ERC20Token(buyAsset)
+            Asset(buyAsset)
         );
         OrderUpdated(id);
     }

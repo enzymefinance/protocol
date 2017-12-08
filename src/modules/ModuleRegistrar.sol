@@ -28,7 +28,7 @@ contract ModuleRegistrar is DBC {
     mapping (address => Module) public information; // Maps module address to information about the module
     address[] public registeredModules; // List registered module addresses
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get registration specific information
     function numregisteredModules() constant returns (uint) { return registeredModules.length; }

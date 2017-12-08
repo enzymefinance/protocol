@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
 
-contract AssetTest is DSTest {
+contract Weth9 is DSTest {
 
     WETH9_ weth;
 

@@ -40,7 +40,7 @@ contract Governance is DBC, Owned, DSGroup {
 
     // MODIFIERS
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     function getVersionById(uint id) constant returns (address, bool, uint) {
         return (

@@ -51,7 +51,7 @@ contract Version is DBC, Owned {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     function getMelonAsset() view returns (address) { return MELON_ASSET; }
     function notShutDown() internal returns (bool) { return !isShutDown; }

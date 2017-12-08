@@ -6,7 +6,7 @@ import '../libraries/safeMath.sol';
 library rewards {
     using safeMath for uint;
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     /// @dev Post Reward denominated in referenceAsset
     function managementReward(
