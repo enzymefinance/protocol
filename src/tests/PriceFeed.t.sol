@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
 import "ds-token/token.sol";
-import "./PriceFeed.sol";
+import "../pricefeeds/PriceFeed.sol";
 
 
 contract PriceFeedTest is DSTest {

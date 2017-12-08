@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "./rewards.sol";
+// import "../rewards/rewards.sol";
 
 contract rewardsTest is DSTest {
     uint mockGav = 5000000;

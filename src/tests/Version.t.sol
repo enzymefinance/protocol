@@ -8,7 +8,7 @@ import "../compliance/Compliance.sol";
 import "../riskmgmt/RiskMgmt.sol";
 import "../exchange/thirdparty/SimpleMarket.sol";
 import "../Fund.sol";
-import "./Version.sol";
+import "../version/Version.sol";
 
 
 contract VersionTest is DSTest {

@@ -2,7 +2,7 @@ pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
 import "ds-token/token.sol";
-import "./Governance.sol";
+import "../system/Governance.sol";
 import "../version/Version.sol";
 
 
