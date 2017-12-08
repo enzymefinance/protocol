@@ -65,7 +65,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // FIELDS
 
     // Constant fields
-    uint public constant DIVISOR_FEE = 10 ** uint(18); // Reward are divided by this number
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
@@ -76,7 +75,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
-    Calculations public atLastPerformCalculations; // Calculation results at last allocateUnclaimedRewards() call
+    Calculations public atLastUnclaimedRewardAllocation; // Calculation results at last allocateUnclaimedRewards() call
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -164,16 +163,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         )
     {
         // Management reward calculation
-        uint timePassed = sub(now, atLastPerformCalculations.timestamp);
+        uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
         uint gavPercentage = mul(timePassed, gav) / (1 years);
         managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
 
         // Performance reward calculation
-        performanceReward = 0;
         // Handle potential division through zero by defining a default value
         uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
-        if (valuePerShareExclPerfRewards > atLastPerformCalculations.highWaterMark) {
-            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastPerformCalculations.highWaterMark);
+        if (valuePerShareExclPerfRewards > atLastUnclaimedRewardAllocation.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastUnclaimedRewardAllocation.highWaterMark);
             uint investmentProfits = wmul(gainInSharePrice, totalSupply);
             performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
         }
@@ -247,7 +245,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Only Owner
     function allocateUnclaimedRewards()
         pre_cond(isOwner())
-        pre_cond(!isShutDown)
     {
         var (
             gav,
@@ -262,8 +259,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
 
         // Update Calculations
-        uint updatedHighWaterMark = atLastPerformCalculations.highWaterMark >= sharePrice ? atLastPerformCalculations.highWaterMark : sharePrice;
-        atLastPerformCalculations = Calculations({
+        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
+        atLastUnclaimedRewardAllocation = Calculations({
             gav: gav,
             managementReward: managementReward,
             performanceReward: performanceReward,
@@ -291,8 +288,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against
-    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
+    /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 1 WAD
     /// @param ofMelonAsset Address of Melon asset contract
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
@@ -316,9 +313,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
-        // TODO: require upper limits for MANAGEMENT_REWARD_RATE and PERFORMANCE_REWARD_RATE
-        MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
-        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
+        require(ofManagementRewardRate < 10 ** 18); // Require management reward to be less than 100 percent
+        MANAGEMENT_REWARD_RATE = ofManagementRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
+        require(ofPerformanceRewardRate < 10 ** 18); // Require performance reward to be less than 100 percent
+        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
         VERSION = msg.sender;
         MELON = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
@@ -330,7 +328,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Require reference assets exists in pricefeed
         MELON_ASSET = Asset(MELON);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        atLastPerformCalculations = Calculations({
+        atLastUnclaimedRewardAllocation = Calculations({
             gav: 0,
             managementReward: 0,
             performanceReward: 0,
