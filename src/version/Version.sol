@@ -44,7 +44,7 @@ contract Version is DBC, Owned {
             //  As a result, in order to use this value, you will have to parse it to an
             //  integer and then add 27. This will result in either a 27 or a 28.
             //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
-            sha3("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
+            keccak256("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
             v,
             r,
             s
@@ -57,7 +57,7 @@ contract Version is DBC, Owned {
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
-    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[sha3(ofFundName)] != 0; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -105,7 +105,7 @@ contract Version is DBC, Owned {
     {
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
-        require(fundNamesToOwners[sha3(ofFundName)] == 0 || fundNamesToOwners[sha3(ofFundName)] == msg.sender);
+        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
@@ -120,7 +120,7 @@ contract Version is DBC, Owned {
             ofExchange
         );
         listOfFunds.push(fund);
-        fundNamesToOwners[sha3(ofFundName)] = msg.sender;
+        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }

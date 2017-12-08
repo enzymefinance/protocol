@@ -127,7 +127,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         var id = uint256(id_);
         LogBump(
             id_,
-            sha3(offers[id].pay_gem, offers[id].buy_gem),
+            keccak256(offers[id].pay_gem, offers[id].buy_gem),
             offers[id].owner,
             offers[id].pay_gem,
             offers[id].buy_gem,
@@ -165,7 +165,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogTake(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -198,7 +198,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogKill(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -253,7 +253,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogMake(
             bytes32(id),
-            sha3(pay_gem, buy_gem),
+            keccak256(pay_gem, buy_gem),
             msg.sender,
             pay_gem,
             buy_gem,
