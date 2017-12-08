@@ -7,9 +7,6 @@
 [submodule "lib/ds-math"]
 	path = lib/ds-math
 	url = https://github.com/dapphub/ds-math
-[submodule "lib/ds-weth"]
-	path = lib/ds-weth
-	url = https://github.com/dapphub/ds-weth
 [submodule "lib/ds-token"]
 	path = lib/ds-token
 	url = https://github.com/dapphub/ds-token
