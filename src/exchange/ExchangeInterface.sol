@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import '../dependencies/ERC20Token.sol';
+import '../assets/Asset.sol';
 
 /// @title Exchange Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -15,7 +15,7 @@ contract ExchangeInterface {
 
     event OrderUpdated(uint id);
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     function getLastOrderId(address onExchange) constant returns (uint) {}
     function isActive(address onExchange, uint id) constant returns (bool) {}

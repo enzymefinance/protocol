@@ -19,7 +19,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds for which data is considered recent
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get pricefeed specific information
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
