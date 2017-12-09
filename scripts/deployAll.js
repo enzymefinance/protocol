@@ -352,24 +352,25 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       ethToken = await api
         .newContract(abi)
-        .deploy(opts, ["Ether token", "ETH-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed ether token");
 
       mlnToken = await api
         .newContract(abi)
-        .deploy(opts, ["Melon token", "MLN-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed melon token");
 
       eurToken = await api
         .newContract(abi)
-        .deploy(opts, ["Euro token", "EUR-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed euro token");
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
       const mlnTokenContract = await api.newContract(abi, mlnToken);
-      const mlnName = await mlnTokenContract.instance.name.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
+      const mlnName = tokenInfo.live.find(t => t.name === "Melon").name;
+      const mlnSymbol = tokenInfo.live.find(t => t.name === "Melon").symbol;
+      const mlnDecimals = tokenInfo.live.find(t => t.name === "Melon").decimals;
+      const mlnUrl = tokenInfo.live.find(t => t.name === "Melon").url;
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -382,11 +383,11 @@ async function deploy(environment) {
           mlnName,
           mlnSymbol,
           mlnDecimals,
-          'melonport.com',
-          mockBytes,
-          mockBytes,
-          mockAddress,
-          mockAddress,
+          mlnUrl,
+          '',
+          '',
+          '',
+          '',
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);

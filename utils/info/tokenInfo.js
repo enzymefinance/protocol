@@ -125,7 +125,7 @@ module.exports = {
       name: 'Melon Token',
       symbol: 'MLN-T',
       decimals: 18,
-      url: 'https://melon.network/',
+      url: 'http://melon.fund/',
       ipfsHash: '', chainId: 42, breakIn: '0x', breakOut: '0x',
     },
     {
@@ -275,7 +275,7 @@ module.exports = {
       name: 'Melon',
       symbol: 'MLN',
       decimals: 18,
-      url: 'https://melon.network/',
+      url: 'http://melon.fund/',
       ipfsHash: '', chainId: 1, breakIn: '0x', breakOut: '0x',
     },
     // "RHOC": "0x168296bb09e24a88805cb9c33356536b980d3fc5",

@@ -16,12 +16,6 @@ async function main() {
   const numAccounts = testAccounts.length;
   for (let i = 0; i < numAccounts; i += 1) {
     const newAccount = await api.parity.newAccountFromPhrase(testAccounts[i], "password");
-    await timeout(2000);
-    await api.personal.sendTransaction({
-      from: genesisAccount,
-      to: newAccount,
-      value: 10 ** 30,
-    }, "password");
   }
   process.exit()
 }

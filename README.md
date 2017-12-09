@@ -15,18 +15,6 @@ This repository contains a reference implementation of the Melon protocol writte
 [![License: GPL v3][license-badge]][license-badge-url]
 [![Coverage Status](https://coveralls.io/repos/github/melonproject/protocol/badge.svg?branch=master)](https://coveralls.io/github/melonproject/protocol?branch=master)
 
-## Table of Contents
-
-* [Get started](#get-started)
-    * [Installation](#installation)
-    * [Testing](#testing)
-    * [Linting](#linting)
-    * [Deployment](#deployment)
-* [Contribute](#contribute)
-    * [Security Issues](#security-issues)
-    * [Protocol Design](#protocol-design)
-    * [Implementation Design](#implementation-design)
-
 ## Get started
 
 
@@ -34,69 +22,35 @@ This repository contains a reference implementation of the Melon protocol writte
 
 You will need the `dapp` developer tools, which you can install using [these steps](http://dapp.tools/).
 
-1. Clone this repository
-    ```
+    # Clone this repository
     git clone --recursive git@github.com:melonproject/protocol.git
     cd protocol
-    ```
-
-2. Install dependencies
-    ```
+    # Install dependencies
     npm install
-    ```
+    # Generate bytecode and abi of smart-contracts using [dapp](https://github.com/dapphub/dapp) suite
+    npm run compileparity --chain utils/chain/chainGenesis.json
 
-3. Generate bytecode and abi of smart-contracts using [dapp](https://github.com/dapphub/dapp) suite
-
-    ```
-    npm run compile
-    ```
-
-### Devchain Deployment
+### Deployment and testing
 
 After installation, go to the above `protocol` directory, open a terminal and:
 
-1. Launch parity dev chain:
-    ```
-    npm run devchain:parity
-    ```
-
-2. Open a second terminal and deploy the contracts to the development network:
-
-    ```
-    npm run deploy:development
-    ```
-
-### Testing
-
-After [deploy](#devchain-deployment) is complete, go to the above `protocol` directory, open a terminal and:
-
-Run the tests using:
-
-
+    # Launch parity dev chain:
+    npm run devchain
+    # Open a second terminal and deploy the contracts to the development network:
+    npm run deploy
+    # Run the tests using
     npm test
-
-
-### Linting
-
-After [installation](#installation) is complete, go to the above `protocol` directory, open a terminal and run:
-    ```
-    npm run lint
-    ```
 
 
 ### Kovan Deployment
 
 After installation is complete, go to the above `protocol` directory, open a terminal and:
 
-1. Launch an ethereum client. For example something similar to this:
-    ```
+    # Launch an ethereum client. For example something similar to this:
     parity --chain kovan --author <some address> --unlock <some address> --password <some password file>
-    ```
-
-2. Open a second terminal and deploy the contracts:
-    ```
+    # Open a second terminal and deploy the contracts:
     npm run deploy:kovan
-    ```
+
 
 ## Contribute
 
