@@ -1,8 +1,9 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "ds-weth/weth9.sol";
+import "ds-token/token.sol";
 import "./pricefeeds/PriceFeed.sol";
-import "./assets/PreminedAsset.sol"; import "./assets/EtherToken.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./compliance/Compliance.sol";
 import "./riskmgmt/RiskMgmt.sol";
@@ -11,10 +12,10 @@ import "./Fund.sol";
 
 contract FundTest is DSTest {
     PriceFeed datafeed;
-    EtherToken etherToken;
+    WETH9_ weth;
     Fund fund;
     Compliance participation;
-    PreminedAsset melonToken;
+    DSToken melonToken;
     RiskMgmt riskManagement;
     SimpleMarket simpleMarket;
 
@@ -23,7 +24,7 @@ contract FundTest is DSTest {
     uint INTERVAL = 0;
     uint VALIDITY = 60;
     uint MELON_DECIMALS = 18;
-    uint PREMINED_AMOUNT = 10 ** 28;
+    uint MINTED_AMOUNT = 10 ** 28;
     uint MANAGEMENT_REWARD = 0;
     uint PERFORMANCE_REWARD = 0;
     address MANAGER_ADDRESS = this;
@@ -36,13 +37,15 @@ contract FundTest is DSTest {
     address MOCK_BREAK_OUT = 0xd9AE70149D256D4645c03aB9D5423A1B70d8804d;
 
     // mock data
-    uint inputEtherTokenPrice = 4152823920265781000;
+    uint inputWethPrice = 4152823920265781000;
     uint inputMelonTokenPrice = 1000000000000000000;
     uint mockQuantity = 1 ether;
 
     //function setUp() {
-    //    melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
-    //    etherToken = new EtherToken();
+    //    melonToken = new DSToken("MLN-T");
+    //    melonToken.mint(MINTED_AMOUNT);
+    //    weth = new WETH9_();
+    //    weth.deposit.value(100 ether)();
     //    datafeed = new PriceFeed(melonToken, INTERVAL, VALIDITY);
     //    simpleMarket = new SimpleMarket();
     //    participation = new Compliance();
@@ -60,7 +63,7 @@ contract FundTest is DSTest {
     //    );
     //}
 
-    //function testVariablesSetCorrectly() {
+    //function test_variablesSetCorrectly() {
     //    var returnedName = fund.getName();
     //    uint returnedDecimals = fund.getDecimals();
     //    var (returnedDatafeed, returnedExchange, returnedCompliance, returnedRiskMgmt) = fund.getModules();
@@ -75,7 +78,7 @@ contract FundTest is DSTest {
     //    assertEq(stake, 0);
     //}
 
-    //function testToggles() {
+    //function test_toggles() {
     // Change this to enable and disable pattern as toggle function is depracated
     //    bool preSubscriptionAllowed = fund.isSubscribeAllowed();
     //    bool preRedemptionAllowed = fund.isRedeemAllowed();
@@ -90,30 +93,30 @@ contract FundTest is DSTest {
     //    assert(!postRedemptionAllowed);
     //}
 
-    //function testShutDown() {
+    //function test_shutDown() {
     //    fund.shutDown();
     //    bool fundShutDown = fund.isShutDown();
 
     //    assert(fundShutDown);
     //}
 
-// TODO: enable these tests when we can update datafeed from within EVM.
-//       This depends on github.com/dapphub/ds-test/issues/5
-//    function testRequestsFromUnapprovedParties() {
-//        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
-//        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
-//
-//        assert(erroredOnUnapprovedSubscribeRequest);
-//        assert(!erroredOnUnapprovedRedeemRequest);    // no initial approval needed for redeem
-//
-//    }
-//
-//    function testRequestFromApprovedParties() {
-//        participation.attestForIdentity(this);
-//        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
-//        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
-//
-//        assert(!erroredOnApprovedSubscribeRequest);
-//        assert(!erroredOnApprovedRedeemRequest);
-//    }
+    // TODO: enable these tests when we can update datafeed from within EVM.
+    //       This depends on github.com/dapphub/ds-test/issues/5
+    //    function test_requestsFromUnapprovedParties() {
+    //        var (erroredOnUnapprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+    //        var (erroredOnUnapprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+    //
+    //        assert(erroredOnUnapprovedSubscribeRequest);
+    //        assert(!erroredOnUnapprovedRedeemRequest);    // no initial approval needed for redeem
+    //
+    //    }
+    //
+    //    function test_requestFromApprovedParties() {
+    //        participation.attestForIdentity(this);
+    //        var (erroredOnApprovedSubscribeRequest, ) = fund.requestSubscription(mockQuantity, mockQuantity, mockQuantity);
+    //        var (erroredOnApprovedRedeemRequest, ) = fund.requestRedemption(mockQuantity, mockQuantity, mockQuantity);
+    //
+    //        assert(!erroredOnApprovedSubscribeRequest);
+    //        assert(!erroredOnApprovedRedeemRequest);
+    //    }
 }

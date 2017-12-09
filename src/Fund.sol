@@ -1,9 +1,8 @@
 pragma solidity ^0.4.19;
 
-import {ERC20 as Shares} from './dependencies/ERC20.sol';
+import './assets/Shares.sol';
 import './dependencies/DBC.sol';
 import './dependencies/Owned.sol';
-import './libraries/rewards.sol';
 import './compliance/ComplianceInterface.sol';
 import './pricefeeds/PriceFeedInterface.sol';
 import './riskmgmt/RiskMgmtInterface.sol';
@@ -66,22 +65,17 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // FIELDS
 
     // Constant fields
-    string constant SYMBOL = "MLNF"; // Melon Fund Symbol
-    uint public constant DIVISOR_FEE = 10 ** uint(15); // Reward are divided by this number
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
-    string public NAME; // Name of this fund
-    uint public DECIMALS; // Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
-    uint public CREATED; // Timestamp of Fund creation
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    address public MELON_ASSET; // Address of Melon asset contract
-    ERC20 public MELON_CONTRACT; // Melon as ERC20 contract
+    address public MELON; // Address of Melon asset contract
+    Asset public MELON_ASSET; // Melon as ERC20 contract
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
-    Calculations public atLastPerformCalculations; // Calculation results at last allocateUnclaimedRewards() call
+    Calculations public atLastUnclaimedRewardAllocation; // Calculation results at last allocateUnclaimedRewards() call
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedRewards gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
@@ -93,21 +87,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function approveSpending(address ofAsset, uint quantity) internal returns (bool success) {
-        success = ERC20(ofAsset).approve(address(module.exchange), quantity);
-        SpendingApproved(address(module.exchange), ofAsset, quantity);
-    }
-
-    // CONSTANT METHODS
-
-    function getName() view returns (string) { return NAME; }
-    function getSymbol() view returns (string) { return SYMBOL; }
-    function getDecimals() view returns (uint) { return DECIMALS; }
-    function getCreationTime() view returns (uint) { return CREATED; }
-    function toSmallestFundUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); } // toWei
-    function toWholeFundUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); } //toEther
+    // VIEW METHODS
 
     function getModules() view returns (address ,address, address, address) {
         return (
@@ -121,12 +101,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function getLastOrderId() view returns (uint) { return orders.length - 1; }
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
 
-    // CONSTANT METHODS - ACCOUNTING
+    // VIEW METHODS - ACCOUNTING
 
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPrice(..) returns recent prices
-    /// @return gav Gross asset value quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @return gav Gross asset value quoted in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in REFERENCE_ASSET and multiplied by 10 ** assetDecimal
         /*bool areRecent;
@@ -140,7 +120,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(Asset(ofAsset).balanceOf(this)), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -148,9 +128,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (!isRecent) {
                 revert();
             }
-            // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** fundDecimals)
-            gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimal))); // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == MELON_ASSET || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON_ASSET or in open make order
+            // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
+            gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / mul(10 ** uint256(assetDecimal),  10 ** uint256(assetDecimal)))); // Sum up product of asset holdings of this vault and asset prices
+            if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
@@ -160,12 +140,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     /// @notice Calculates unclaimed rewards of the fund manager
-    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     /**
     @return {
-      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals",
-      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals"
+      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals"
     }
     */
     function calcUnclaimedRewards(uint gav)
@@ -176,32 +156,28 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             uint unclaimedRewards
         )
     {
-        uint timeDifference = sub(now, atLastPerformCalculations.timestamp);
-        managementReward = rewards.managementReward(
-            MANAGEMENT_REWARD_RATE,
-            timeDifference,
-            gav,
-            DIVISOR_FEE
-        );
-        performanceReward = 0;
-        if (totalSupply != 0) {
-            uint currSharePrice = calcValuePerShare(gav, totalSupply); // TODO: verify
-            if (currSharePrice > atLastPerformCalculations.highWaterMark) {
-              performanceReward = rewards.performanceReward(
-                  PERFORMANCE_REWARD_RATE,
-                  int(currSharePrice - atLastPerformCalculations.highWaterMark),
-                  totalSupply,
-                  DIVISOR_FEE
-              );
-            }
+        // Management reward calculation
+        uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
+        uint gavPercentage = mul(timePassed, gav) / (1 years);
+        managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
+
+        // Performance reward calculation
+        // Handle potential division through zero by defining a default value
+        uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
+        if (valuePerShareExclPerfRewards > atLastUnclaimedRewardAllocation.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastUnclaimedRewardAllocation.highWaterMark);
+            uint investmentProfits = wmul(gainInSharePrice, totalSupply);
+            performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
         }
+
+        // Sum of all rewards
         unclaimedRewards = add(managementReward, performanceReward);
     }
 
     /// @notice Calculates the Net asset value of this fund
-    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcNav(uint gav, uint unclaimedRewards)
         view
         returns (uint nav)
@@ -212,15 +188,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Calculates the share price of the fund
     /// @dev Convention for valuePerShare (== sharePrice) formatting: mul(totalValue / numShares, 10 ** decimal), to avoid floating numbers
     /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
-    /// @param numShares the number of shares multiplied by 10 ** fundDecimals
-    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param numShares the number of shares multiplied by 10 ** shareDecimals
+    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcValuePerShare(uint totalValue, uint numShares)
         view
         pre_cond(numShares > 0)
         returns (uint valuePerShare)
     {
-        valuePerShare = toSmallestFundUnit(totalValue / numShares);
+        valuePerShare = toSmallestShareUnit(totalValue / numShares);
     }
 
     /// @notice Calculates essential fund metrics
@@ -263,7 +239,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Only Owner
     function allocateUnclaimedRewards()
         pre_cond(isOwner())
-        pre_cond(!isShutDown)
     {
         var (
             gav,
@@ -278,8 +253,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
 
         // Update Calculations
-        uint updatedHighWaterMark = atLastPerformCalculations.highWaterMark >= sharePrice ? atLastPerformCalculations.highWaterMark : sharePrice;
-        atLastPerformCalculations = Calculations({
+        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
+        atLastUnclaimedRewardAllocation = Calculations({
             gav: gav,
             managementReward: managementReward,
             performanceReward: performanceReward,
@@ -307,8 +282,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against
-    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by DIVISOR_FEE
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by DIVISOR_FEE
+    /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 1 WAD
     /// @param ofMelonAsset Address of Melon asset contract
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
@@ -326,15 +301,18 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         address ofRiskMgmt,
         address ofPriceFeed,
         address ofExchange
-    ) {
+    )
+        Shares(withName, "MLNF", 18, now)
+    {
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
-        NAME = withName;
-        MANAGEMENT_REWARD_RATE = ofManagementRewardRate;
-        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate;
+        require(ofManagementRewardRate < 10 ** 18); // Require management reward to be less than 100 percent
+        MANAGEMENT_REWARD_RATE = ofManagementRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
+        require(ofPerformanceRewardRate < 10 ** 18); // Require performance reward to be less than 100 percent
+        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
         VERSION = msg.sender;
-        MELON_ASSET = ofMelonAsset;
+        MELON = ofMelonAsset;
         REFERENCE_ASSET = ofReferenceAsset;
         module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -342,10 +320,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Bridged to Melon exchange interface by exchangeAdapter library
         module.exchange = ExchangeInterface(ofExchange);
         // Require reference assets exists in pricefeed
-        MELON_CONTRACT = ERC20(MELON_ASSET);
+        MELON_ASSET = Asset(MELON);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
-        DECIMALS = module.pricefeed.getDecimals(REFERENCE_ASSET);
-        atLastPerformCalculations = Calculations({
+        atLastUnclaimedRewardAllocation = Calculations({
             gav: 0,
             managementReward: 0,
             performanceReward: 0,
@@ -355,7 +332,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             totalSupply: totalSupply,
             timestamp: now
         });
-        CREATED = now;
     }
 
     // NON-CONSTANT METHODS - ADMINISTRATION
@@ -450,21 +426,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
-            if (!isInAssetList[MELON_ASSET]) {
-                ownedAssets.push(MELON_ASSET);
-                isInAssetList[MELON_ASSET] = true;
+            if (!isInAssetList[MELON]) {
+                ownedAssets.push(MELON);
+                isInAssetList[MELON] = true;
             }
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(MELON_CONTRACT.transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(MELON_CONTRACT.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(MELON_ASSET.transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
@@ -500,7 +476,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
             uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(this)),
+                uint(Asset(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -524,7 +500,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Transfer ownershipQuantity of Assets
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
-            if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
         }
@@ -565,7 +541,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 sellAsset, buyAsset, sellQuantity, buyQuantity
         )); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        require(approveSpending(sellAsset, sellQuantity)); // Approve exchange to spend assets
+        require(Asset(sellAsset).approve(address(module.exchange), sellQuantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         assetsToOpenMakeOrderIds[sellAsset] = exchangeAdapter.makeOrder(address(module.exchange), sellAsset, buyAsset, sellQuantity, buyQuantity);
@@ -629,7 +605,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         )); // RiskMgmt module: Take order not permitted
         require(quantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(quantity, order.buyQuantity) / order.sellQuantity;
-        require(approveSpending(order.buyAsset, spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
+        require(Asset(order.buyAsset).approve(address(module.exchange), spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
 
         // Execute request
         require(exchangeAdapter.takeOrder(address(module.exchange), id, quantity));
@@ -659,11 +635,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Get information of fund order by order id
         Order memory order = orders[id];
 
+        // Execute request
         require(exchangeAdapter.cancelOrder(address(module.exchange), order.exchangeId)); // Exchange Adapter: Failed to cancel order
 
         order.status = OrderStatus.cancelled;
-
         OrderUpdated(id);
+    }
+
+    /// @notice allows manager to recover tokens sent the Fund
+    /// @param ofAsset Address of the token
+    /// @param toAddress Address to send the tokens to
+    /// @param amount Amount of the token to send
+    function recoverToken(address ofAsset, address toAddress, uint amount)
+        pre_cond(isOwner())
+    {
+        require(Asset(ofAsset).transfer(toAddress, amount));
     }
 
     // NON-CONSTANT METHODS - REWARDS
@@ -683,21 +669,4 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         return sellQuantity;
     }
 
-    // INTERNAL METHODS
-
-    function createShares(address recipient, uint shareQuantity) internal {
-        totalSupply = add(totalSupply, shareQuantity);
-        addShares(recipient, shareQuantity);
-        Subscribed(msg.sender, now, shareQuantity);
-    }
-
-    function annihilateShares(address recipient, uint shareQuantity) internal {
-        totalSupply = sub(totalSupply, shareQuantity);
-        subShares(recipient, shareQuantity);
-        Redeemed(msg.sender, now, shareQuantity);
-    }
-
-    function addShares(address recipient, uint shareQuantity) internal { balances[recipient] = add(balances[recipient], shareQuantity); }
-
-    function subShares(address recipient, uint shareQuantity) internal { balances[recipient] = sub(balances[recipient], shareQuantity); }
 }

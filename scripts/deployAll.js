@@ -33,7 +33,6 @@ async function deploy(environment) {
     let fund;
     let governance;
     let participation;
-    let rewards;
     let riskMgmt;
     let simpleAdapter;
     let simpleMarket;
@@ -126,13 +125,6 @@ async function deploy(environment) {
       console.log("Deployed governance");
       const governanceContract = await api.newContract(abi, governance);
 
-      // deploy rewards
-      abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
-      bytecode = fs.readFileSync("out/libraries/rewards.bin");
-      opts.data = `0x${bytecode}`;
-      rewards = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed rewards");
-
       // deploy simpleAdapter
       abi = JSON.parse(
         fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
@@ -142,7 +134,6 @@ async function deploy(environment) {
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
 
-      libObject[getPlaceholderFromPath("out/libraries/rewards")] = rewards;
       libObject[
         getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
       ] = simpleAdapter;
@@ -204,7 +195,6 @@ async function deploy(environment) {
         NoCompliance: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
-        rewards,
         simpleAdapter,
         Version: version,
         Ranking: ranking,
@@ -290,13 +280,6 @@ async function deploy(environment) {
         riskMgmt = await api.newContract(abi).deploy(opts, []);
         console.log(`Deployed riskmgmt at ${riskMgmt}`);
 
-        // deploy rewards
-        abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
-        bytecode = fs.readFileSync("out/libraries/rewards.bin");
-        opts.data = `0x${bytecode}`;
-        rewards = await api.newContract(abi).deploy(opts, []);
-        console.log(`Deployed rewards at ${rewards}`);
-
         // deploy simpleAdapter
         abi = JSON.parse(
           fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
@@ -324,7 +307,6 @@ async function deploy(environment) {
         abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
         bytecode = fs.readFileSync("out/Fund.bin", "utf8");
         libObject = {};
-        libObject[getPlaceholderFromPath("out/libraries/rewards")] = rewards;
         libObject[
           getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
         ] = simpleAdapter;
@@ -359,7 +341,6 @@ async function deploy(environment) {
         addressBook[environment] = {
           NoCompliance: participation,
           RMMakeOrders: riskMgmt,
-          rewards,
           simpleAdapter,
         };
       }
@@ -444,13 +425,6 @@ async function deploy(environment) {
       console.log("Deployed governance");
       const governanceContract = await api.newContract(abi, governance);
 
-      // deploy rewards
-      abi = JSON.parse(fs.readFileSync("out/libraries/rewards.abi"));
-      bytecode = fs.readFileSync("out/libraries/rewards.bin");
-      opts.data = `0x${bytecode}`;
-      rewards = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed rewards");
-
       // deploy simpleAdapter
       abi = JSON.parse(
         fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
@@ -462,7 +436,6 @@ async function deploy(environment) {
 
       // link libs to fund (needed to deploy version)
       let fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      libObject[getPlaceholderFromPath("out/libraries/rewards")] = rewards;
       libObject[
         getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
       ] = simpleAdapter;
@@ -493,7 +466,6 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
       bytecode = fs.readFileSync("out/Fund.bin", "utf8");
       libObject = {};
-      libObject[getPlaceholderFromPath("out/libraries/rewards")] = rewards;
       libObject[
         getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
       ] = simpleAdapter;
@@ -566,7 +538,6 @@ async function deploy(environment) {
         NoCompliance: participation,
         RMMakeOrders: riskMgmt,
         Governance: governance,
-        rewards,
         simpleAdapter,
         Version: version,
         MlnToken: mlnToken,

@@ -6,13 +6,13 @@ import './ComplianceInterface.sol';
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Example for uPort, Zug Gov, Melonport collaboration
+/// @notice Compliance module to individually approve investors; This can also be done by the manager
 contract Compliance is ComplianceInterface, DBC, Owned {
 
     // TYPES
 
-    struct Identity { // Using uPort and attestation from Zug Government
-        bool hasUportId; // Whether identiy has registered a uPort identity w Zug Gov
+    struct Identity { // Information about identity
+        bool isEligible; // Whether identiy is eligible to invest
         /* .. additional information
          *   for example how much identity is eligible to invest
          */
@@ -23,7 +23,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     // Methods fields
     mapping (address => Identity) public identities;
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
@@ -37,7 +37,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     )
         returns (bool isEligible)
     {
-        isEligible = identities[ofParticipant].hasUportId; // Eligible iff has uPort identity
+        isEligible = identities[ofParticipant].isEligible; // Eligible iff has uPort identity
     }
 
     /// @notice Checks whether redemption is permitted for a participant
@@ -63,7 +63,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     function attestForIdentity(address ofParticipant)
         pre_cond(isOwner())
     {
-        identities[ofParticipant].hasUportId = true;
+        identities[ofParticipant].isEligible = true;
     }
 
     /// @notice Removes attestation for a participant
@@ -72,6 +72,6 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     function removeAttestation(address ofParticipant)
         pre_cond(isOwner())
     {
-        identities[ofParticipant].hasUportId = false;
+        identities[ofParticipant].isEligible = false;
     }
 }

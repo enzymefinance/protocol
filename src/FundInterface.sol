@@ -1,11 +1,12 @@
 pragma solidity ^0.4.19;
 
-import './assets/AssetInterface.sol';
+import './assets/SharesInterface.sol';
+import './assets/ERC223ReceivingContract.sol';
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Fund Contract
-contract FundInterface is AssetInterface {
+contract FundInterface is SharesInterface, ERC223ReceivingContract {
 
     // EVENTS
 
@@ -20,7 +21,7 @@ contract FundInterface is AssetInterface {
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get general information
     function getCreationTime() constant returns (uint) {}

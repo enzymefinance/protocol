@@ -22,7 +22,7 @@ contract Version is DBC, Owned {
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
-    //mapping (string => address) public fundNamesToOwners; // Links fund names to address based on ownership
+    mapping (bytes32 => address) public fundNamesToOwners; // Links fund names to address based on ownership
 
     // EVENTS
 
@@ -44,20 +44,20 @@ contract Version is DBC, Owned {
             //  As a result, in order to use this value, you will have to parse it to an
             //  integer and then add 27. This will result in either a 27 or a 28.
             //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
-            sha3("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
+            keccak256("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
             v,
             r,
             s
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     function getMelonAsset() view returns (address) { return MELON_ASSET; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
-    //function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[ofFundName] != 0; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -101,11 +101,11 @@ contract Version is DBC, Owned {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
     {
+        require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
-        //require(fundNamesToOwners[ofFundName] == 0 || fundNamesToOwners[ofFundName] == msg.sender);
+        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
@@ -120,7 +120,7 @@ contract Version is DBC, Owned {
             ofExchange
         );
         listOfFunds.push(fund);
-        //fundNamesToOwners[ofFundName] = msg.sender;
+        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }
