@@ -29,23 +29,4 @@ contract Weth9 is DSTest {
         assertEq(contractEthIncrease, depositAmount);
     }
 
-    // TODO: check whether `withdraw()` must be implemented in this test contract
-    // function test_withdraw() {
-    //     uint depositAmount = 1 ether;
-    //     uint withdrawAmount = 500 finney;
-    //     weth.deposit.value(depositAmount)();
-
-    //     assertEq(weth.balance, depositAmount);
-
-    //     uint preWethBalance = weth.balanceOf(this);
-    //     uint preEthBalance = this.balance;
-    //     weth.withdraw(0);
-    //     uint postWethBalance = weth.balanceOf(this);
-    //     uint postEthBalance = this.balance;
-    //     uint wethDecrease = preWethBalance - postWethBalance;
-    //     uint ethIncrease = postEthBalance - preEthBalance;
-
-    //     assertEq(wethDecrease, withdrawAmount);
-    //     assertEq(ethIncrease, withdrawAmount);
-    // }
 }

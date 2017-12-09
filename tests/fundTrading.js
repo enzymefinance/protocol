@@ -1,8 +1,7 @@
 import Api from "@parity/api";
 
 const fs = require("fs");
-const environmentConfig = require("../utils/config/environmentConfig.js");
-const rpc = require("../utils/rpc.js");
+const environmentConfig = require("../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
