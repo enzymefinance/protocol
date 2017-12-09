@@ -257,7 +257,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The shares supply of
         uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
         sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestFundUnit(1); // Handle potential division through zero by defining a default value
-        return (gav, managementReward, performanceReward, unclaimedRewards, rewardsShareQuantity, nav, sharePrice);
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -433,8 +432,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[request.participant] ) // request owner does not own enough shares
-        //pre_cond(totalSupply == 0 || now < add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant] ) // request owner does not own enough shares
+        // pre_cond(totalSupply == 0 || now < add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
         pre_cond(module.pricefeed.hasRecentPrice(MELON_ASSET)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {

@@ -431,6 +431,7 @@ describe("Fund shares", () => {
             preManagementReward,
             prePerformanceReward,
             preUnclaimedRewards,
+            preRewardsShareQuantity,
             preNav,
             preSharePrice,
           ] = fundPreCalculations.map(element => Number(element));
@@ -439,6 +440,7 @@ describe("Fund shares", () => {
             postManagementReward,
             postPerformanceReward,
             postUnclaimedRewards,
+            postRewardsShareQuantity,
             postNav,
             postSharePrice,
           ] = Object.values(
@@ -513,7 +515,6 @@ describe("Fund shares", () => {
           // expect(events.length).toEqual(1);
         });
 
-        /*
         it("executing request moves token from fund to investor, shares annihilated, and incentive to worker", async () => {
           let workerGasTotal = new BigNumber(0);
           let investorGasTotal = new BigNumber(0);
@@ -589,6 +590,7 @@ describe("Fund shares", () => {
             preManagementReward,
             prePerformanceReward,
             preUnclaimedRewards,
+            preRewardsShareQuantity,
             preNav,
             preSharePrice,
           ] = fundPreCalculations.map(element => Number(element));
@@ -597,6 +599,7 @@ describe("Fund shares", () => {
             postManagementReward,
             postPerformanceReward,
             postUnclaimedRewards,
+            postRewardsShareQuantity,
             postNav,
             postSharePrice,
           ] = Object.values(
@@ -610,7 +613,6 @@ describe("Fund shares", () => {
           expect(Number(postNav)).toEqual(preNav - test.wantedValue);
           expect(Number(postSharePrice)).toEqual(preSharePrice);
         });
-        */
       });
     });
     it("investor has redeemed all shares, and they have been annihilated", async () => {
@@ -626,7 +628,6 @@ describe("Fund shares", () => {
     });
   });
 
-/*
   describe("Trading", async () => {
     const incentive = 500;
     const offeredValue = 10 ** 10;
@@ -1188,5 +1189,4 @@ describe("Fund shares", () => {
       expect(post.fund.ether).toEqual(pre.fund.ether);
     });
   });
-  */
 });
