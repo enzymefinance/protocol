@@ -1,9 +1,9 @@
 import Api from "@parity/api";
-import updateDatafeed, * as deployedUtils from "./utils.js";
+import updateDatafeed, * as deployedUtils from "../utils.js";
 
-const addressBook = require("../address-book.json");
+const addressBook = require("../../address-book.json");
 const BigNumber = require("bignumber.js");
-const environmentConfig = require("../utils/config/environmentConfig.js");
+const environmentConfig = require("../../utils/config/environmentConfig.js");
 const fs = require("fs");
 
 const environment = "development";
@@ -128,7 +128,6 @@ describe("Fund shares", () => {
       );
       // Since postTransaction returns transaction hash instead of object as in Web3
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const fundId = await version.instance.getLastFundId.call({}, []);
       const fundAddress = await version.instance.getFundById.call({}, [fundId]);
@@ -139,7 +138,6 @@ describe("Fund shares", () => {
       const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
 
       expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
-      console.log(fundId);
       expect(Number(fundId)).toEqual(0);
       //expect(await version.instance.fundNameTaken.call({}, [fundName])).toEqual(true);
       // expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
@@ -241,9 +239,6 @@ describe("Fund shares", () => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
-      const sharePrice2 = await fund.instance.calcSharePrice.call({}, []);
-      console.log(sharePrice2);
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const investorPostShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
@@ -355,13 +350,6 @@ describe("Fund shares", () => {
           await updateDatafeed();
           const pre = await getAllBalances();
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-          console.log(sharePrice);
-          //const owned = await fund.instance.ownedAssets.call({}, []);
-          //console.log(owned);
-          let gav = await fund.instance.calcGav.postTransaction({ from: worker, gas: config.gas, gasPrice: config.gasPrice }, []);
-          console.log((await api.eth.getTransactionReceipt(gav)).gasUsed);
-          gav = await fund.instance.calcGav.call({}, []);
-          console.log(gav);
           const requestedSharesTotalValue =
             await fund.instance.toWholeFundUnit.call({}, [test.wantedShares * sharePrice]);
           offerRemainder = test.offeredValue - requestedSharesTotalValue;
@@ -374,7 +362,6 @@ describe("Fund shares", () => {
             [requestId],
           );
           let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-          console.log(gasUsed);
           workerGasTotal = workerGasTotal.plus(gasUsed);
           const investorPostShares = Number(
             await fund.instance.balanceOf.call({}, [investor]),
