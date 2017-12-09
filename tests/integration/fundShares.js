@@ -710,7 +710,7 @@ describe("Fund shares", () => {
       );
       await updateDatafeed();
       const order = await datafeed.instance.getOrderPrice.call({}, [
-        mlnToken.address, trade1.sellQuantity, trade1.buyQuantity
+        mlnToken.address, ethToken.address, trade1.sellQuantity, trade1.buyQuantity
       ]);
       receipt = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -722,6 +722,7 @@ describe("Fund shares", () => {
         ],
       );
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = Number(
         await mlnToken.instance.balanceOf.call({}, [simpleMarket.address]),

@@ -141,6 +141,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @return orderPrice Price as determined by an order
     function getOrderPrice(
         address sellAsset,
+        address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     )
