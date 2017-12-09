@@ -1,16 +1,12 @@
 import Api from "@parity/api";
+import updateDatafeed, * as deployedUtils from "../utils.js";
 
-const addressBook = require("../address-book.json");
+const addressBook = require("../../address-book.json");
 const BigNumber = require("bignumber.js");
-const environmentConfig = require("../utils/config/environmentConfig.js");
+const environmentConfig = require("../../utils/config/environmentConfig.js");
 const fs = require("fs");
-const rp = require("request-promise");
-
-// TODO: should we have a separate token config for development network? much of the information is identical
-const tokenInfo = require("../utils/info/tokenInfo.js").kovan;
 
 const environment = "development";
-const apiPath = "https://min-api.cryptocompare.com/data/price";
 const config = environmentConfig[environment];
 const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
@@ -45,74 +41,21 @@ describe("Fund shares", () => {
   });
 
   beforeAll(async () => {
-    accounts = await api.eth.accounts();
+    accounts = await deployedUtils.accounts;
     gasPrice = Number(await api.eth.gasPrice());
     deployer = accounts[0];
     manager = accounts[1];
     investor = accounts[2];
     worker = accounts[3];
     opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
-
-    // retrieve deployed contracts
-    version = await api.newContract(
-      JSON.parse(fs.readFileSync("out/version/Version.abi")),
-      addresses.Version,
-    );
-    datafeed = await api.newContract(
-      JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi")),
-      addresses.PriceFeed,
-    );
-    mlnToken = await api.newContract(
-      JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-      addresses.MlnToken,
-    );
-    ethToken = await api.newContract(
-      JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-      addresses.EthToken,
-    );
-    eurToken = await api.newContract(
-      JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-      addresses.EurToken,
-    );
-    participation = await api.newContract(
-      JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi")),
-      addresses.NoCompliance,
-    );
-    simpleMarket = await api.newContract(
-      JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi")),
-      addresses.SimpleMarket,
-    );
+    version = await deployedUtils.version;
+    datafeed = await deployedUtils.datafeed;
+    mlnToken = await deployedUtils.mlnToken;
+    ethToken = await deployedUtils.ethToken;
+    eurToken = await deployedUtils.eurToken;
+    participation = await deployedUtils.participation;
+    simpleMarket = await deployedUtils.simpleMarket;
   });
-
-  // convenience functions
-  function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async function updateDatafeed() {
-    const fromSymbol = 'MLN';
-    const toSymbols = ['ETH', 'EUR', 'MLN'];
-    const options = {
-      uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
-      json: true
-    }
-    const queryResult = await rp(options);
-    const ethDecimals = tokenInfo.filter(token => token.symbol === 'ETH-T')[0].decimals
-    const eurDecimals = tokenInfo.filter(token => token.symbol === 'EUR-T')[0].decimals
-    const mlnDecimals = tokenInfo.filter(token => token.symbol === 'MLN-T')[0].decimals
-    const inverseEth = new BigNumber(1).div(new BigNumber(queryResult.ETH)).toNumber().toFixed(15);
-    const inverseEur = new BigNumber(1).div(new BigNumber(queryResult.EUR)).toNumber().toFixed(15);
-    const inverseMln = new BigNumber(1).div(new BigNumber(queryResult.MLN)).toNumber().toFixed(15);
-    const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - mlnDecimals)).times(10 ** ethDecimals);
-    const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
-    const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
-    await timeout(3000);
-    await datafeed.instance.update.postTransaction(
-      opts,
-      [[ethToken.address, eurToken.address, mlnToken.address],
-      [convertedEth, convertedEur, convertedMln]]
-    );
-  }
 
   async function getAllBalances() {
     return {
@@ -185,7 +128,6 @@ describe("Fund shares", () => {
       );
       // Since postTransaction returns transaction hash instead of object as in Web3
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const fundId = await version.instance.getLastFundId.call({}, []);
       const fundAddress = await version.instance.getFundById.call({}, [fundId]);
@@ -196,9 +138,8 @@ describe("Fund shares", () => {
       const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
 
       expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
-      console.log(fundId);
       expect(Number(fundId)).toEqual(0);
-      expect(await version.instance.fundNameTaken.call({}, [fundName])).toEqual(true);
+      //expect(await version.instance.fundNameTaken.call({}, [fundName])).toEqual(true);
       // expect(postManagerEth).toEqual(preManagerEth.minus(runningGasTotal.times(gasPrice)));
     });
 
@@ -270,8 +211,6 @@ describe("Fund shares", () => {
         [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      receipt = await fund.instance.calcGav.call({}, []);
-      console.log(receipt);
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const inputAllowance = firstTest.offeredValue + firstTest.incentive;
       const fundPreAllowance = Number(
@@ -286,16 +225,13 @@ describe("Fund shares", () => {
       const fundPostAllowance = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address]),
       );
-      const baseUnits = await fund.instance.getBaseUnits.call({}, []);
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-      console.log(sharePrice);
       const requestedSharesTotalValue =
-        firstTest.wantedShares * sharePrice / baseUnits;
+        await fund.instance.toWholeFundUnit.call({}, [firstTest.wantedShares * sharePrice]);
       const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
       const investorPreShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
       );
-      await updateDatafeed();
       await updateDatafeed();
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       receipt = await fund.instance.executeRequest.postTransaction(
@@ -303,7 +239,6 @@ describe("Fund shares", () => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const investorPostShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
@@ -408,43 +343,15 @@ describe("Fund shares", () => {
           expect(post.fund.ether).toEqual(pre.fund.ether);
         });
 
-        it("logs request event", async () => {
-          // const events = await fund.getPastEvents('RequestUpdated');
-          // expect(events.length).toEqual(1);
-        });
-
-        it("after first subscription, executing subscribe request before pricefeed updates gives error message", async () => {
-          const pre = await getAllBalances();
-          const requestId = await fund.instance.getLastRequestId.call({}, []);
-          const result = await fund.instance.executeRequest.postTransaction(
-            { from: worker, gas: config.gas, gasPrice: config.gasPrice },
-            [requestId],
-          );
-          // const message = result.events.ErrorMessage.returnValues.errorMessage;
-          const post = await getAllBalances();
-
-          // expect(message).toEqual('ERR: PriceFeed Module: Wait at least for two updates before continuing');
-          expect(post.investor.mlnToken).toEqual(pre.investor.mlnToken);
-          expect(post.investor.ethToken).toEqual(pre.investor.ethToken);
-          expect(post.investor.ether).toEqual(pre.investor.ether);
-          expect(post.manager.ethToken).toEqual(pre.manager.ethToken);
-          expect(post.manager.mlnToken).toEqual(pre.manager.mlnToken);
-          expect(post.manager.ether).toEqual(pre.manager.ether);
-          expect(post.fund.ethToken).toEqual(pre.fund.ethToken);
-          expect(post.fund.mlnToken).toEqual(pre.fund.mlnToken);
-          expect(post.fund.ether).toEqual(pre.fund.ether);
-        });
-
         it("executing subscribe request transfers incentive to worker, shares to investor, and remainder of subscription offer to investor", async () => {
           let investorGasTotal = new BigNumber(0);
           let workerGasTotal = new BigNumber(0);
           await updateDatafeed();
           await updateDatafeed();
           const pre = await getAllBalances();
-          const baseUnits = await fund.instance.getBaseUnits.call({}, []);
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
           const requestedSharesTotalValue =
-            test.wantedShares * sharePrice / baseUnits;
+            await fund.instance.toWholeFundUnit.call({}, [test.wantedShares * sharePrice]);
           offerRemainder = test.offeredValue - requestedSharesTotalValue;
           const investorPreShares = Number(
             await fund.instance.balanceOf.call({}, [investor]),
@@ -511,6 +418,7 @@ describe("Fund shares", () => {
             preManagementReward,
             prePerformanceReward,
             preUnclaimedRewards,
+            preRewardsShareQuantity,
             preNav,
             preSharePrice,
           ] = fundPreCalculations.map(element => Number(element));
@@ -519,6 +427,7 @@ describe("Fund shares", () => {
             postManagementReward,
             postPerformanceReward,
             postUnclaimedRewards,
+            postRewardsShareQuantity,
             postNav,
             postSharePrice,
           ] = Object.values(
@@ -668,6 +577,7 @@ describe("Fund shares", () => {
             preManagementReward,
             prePerformanceReward,
             preUnclaimedRewards,
+            preRewardsShareQuantity,
             preNav,
             preSharePrice,
           ] = fundPreCalculations.map(element => Number(element));
@@ -676,6 +586,7 @@ describe("Fund shares", () => {
             postManagementReward,
             postPerformanceReward,
             postUnclaimedRewards,
+            postRewardsShareQuantity,
             postNav,
             postSharePrice,
           ] = Object.values(
@@ -799,7 +710,7 @@ describe("Fund shares", () => {
       );
       await updateDatafeed();
       const order = await datafeed.instance.getOrderPrice.call({}, [
-        mlnToken.address, trade1.sellQuantity, trade1.buyQuantity
+        mlnToken.address, ethToken.address, trade1.sellQuantity, trade1.buyQuantity
       ]);
       receipt = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -811,6 +722,7 @@ describe("Fund shares", () => {
         ],
       );
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = Number(
         await mlnToken.instance.balanceOf.call({}, [simpleMarket.address]),

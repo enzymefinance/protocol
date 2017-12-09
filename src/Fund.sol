@@ -83,6 +83,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     Order[] public orders; // All the orders this fund placed on exchanges
     mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from asset to exchange id of open make order for the asset, if no open make orders uint is zero
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
+    address[] public tempOwnedAssets;
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
@@ -113,7 +114,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint[] decimals;
         (areRecent, prices, decimals) = module.pricefeed.getPrices(ownedAssets);*/
 
-        address[] tempOwnedAssets = ownedAssets;
+        tempOwnedAssets = ownedAssets;
         delete ownedAssets;
         for (uint i = 0; i < tempOwnedAssets.length; ++i) {
             address ofAsset = tempOwnedAssets[i];
@@ -128,13 +129,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / (10 ** uint(mul(2, assetDecimal))))); // Sum up product of asset holdings of this vault and asset prices
+            gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / mul(10 ** uint256(assetDecimal),  10 ** uint256(assetDecimal)))); // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
-            PortfolioContent(assetHoldings, assetPrice, assetDecimal);
+            //PortfolioContent(assetHoldings, assetPrice, assetDecimal);
         }
     }
 
@@ -232,7 +233,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The shares supply of
         uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
         sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
-        return (gav, managementReward, performanceReward, unclaimedRewards, rewardsShareQuantity, nav, sharePrice);
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -408,19 +408,19 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[request.participant] ) // request owner does not own enough shares
-        pre_cond(totalSupply == 0 || now < add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrice(MELON)) // PriceFeed Module: No recent updates for fund asset list
+        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant] ) // request owner does not own enough shares
+        pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(module.pricefeed.hasRecentPrice(MELON_ASSET)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {
-        // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-        // based in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON);
+        // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+        // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON_ASSET);
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
-        // By definition quoteDecimals == shareDecimals
-        uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
-
+        // By definition quoteDecimals == fundDecimals
         Request request = requests[id];
+
+        uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
 
         if (
             request.requestType == RequestType.subscribe &&
@@ -527,10 +527,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(!isShutDown)
     {
         require(buyAsset != address(this)); // Prevent buying of own fund token
-        require(0 < quantityHeldInCustodyOfExchange(sellAsset)); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
-        require(!module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
+        require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
+        require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
         var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
-        require(!module.riskmgmt.isMakePermitted(
+        require(module.riskmgmt.isMakePermitted(
                 module.pricefeed.getOrderPrice(
                     sellAsset,
                     buyAsset,
@@ -646,7 +646,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param ofAsset Address of the token
     /// @param toAddress Address to send the tokens to
     /// @param amount Amount of the token to send
-    function recoverToken(address ofAsset, address toAddress, uint amount) 
+    function recoverToken(address ofAsset, address toAddress, uint amount)
         pre_cond(isOwner())
     {
         require(Asset(ofAsset).transfer(toAddress, amount));
