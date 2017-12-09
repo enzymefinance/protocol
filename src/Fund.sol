@@ -551,7 +551,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(!isShutDown)
     {
         require(buyAsset != address(this)); // Prevent buying of own fund token
-        require(0 >= quantityHeldInCustodyOfExchange(sellAsset)); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
+        require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
         require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
         var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
         require(module.riskmgmt.isMakePermitted(
