@@ -232,7 +232,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The total share supply including the value of unclaimedRewards, measured in shares of this fund
         // The shares supply of
         uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
-        sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestFundUnit(1); // Handle potential division through zero by defining a default value
+        sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -416,11 +416,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(MELON_ASSET);
-        // TODO: check precision of below otherwise use; uint costQuantity = toWholeFundUnit(mul(request.shareQuantity, calcSharePrice()));
+        // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
         Request request = requests[id];
 
-        uint costQuantity = mul(mul(request.shareQuantity, toWholeFundUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
+        uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
 
         if (
             request.requestType == RequestType.subscribe &&
