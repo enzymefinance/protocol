@@ -62,7 +62,7 @@ contract PriceFeedTest is DSTest {
         );
     }
 
-// TODO: uncomment when dapphub/ds-test#5 is resolved
+    // TODO: uncomment when dapphub/ds-test#5 is resolved
     // function test_updateAndGetPrice() {
     //     address[] storage assetArray;
     //     uint[] storage priceArray;
