@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "ds-token/token.sol";
+import "../assets/PreminedAsset.sol";
 import "../pricefeeds/PriceFeed.sol";
 import "../system/Governance.sol";
 import "../compliance/Compliance.sol";
@@ -15,7 +15,7 @@ contract VersionTest is DSTest {
     PriceFeed pricefeed;
     Governance governance;
     Compliance participation;
-    DSToken melonToken;
+    PreminedAsset melonToken;
     RiskMgmt riskMgmt;
     SimpleMarket simpleMarket;
     Version version;
@@ -43,7 +43,7 @@ contract VersionTest is DSTest {
 
     function setUp() {
         governance = new Governance(new address[](0), 0, 1000000);
-        melonToken = new DSToken("MLN-T");
+        melonToken = new PreminedAsset();
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
         riskMgmt = new RiskMgmt();

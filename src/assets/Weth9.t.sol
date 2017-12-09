@@ -1,6 +1,5 @@
 pragma solidity ^0.4.19;
 
-import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
 
 contract Weth9 is DSTest {

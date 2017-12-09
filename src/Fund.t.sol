@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
-import "ds-token/token.sol";
+import "ds-test/test.sol";
+import "./assets/PreminedAsset.sol";
 import "./pricefeeds/PriceFeed.sol";
 import "./exchange/thirdparty/SimpleMarket.sol";
 import "./compliance/Compliance.sol";
@@ -15,7 +15,7 @@ contract FundTest is DSTest {
     WETH9_ weth;
     Fund fund;
     Compliance participation;
-    DSToken melonToken;
+    PreminedAsset melonToken;
     RiskMgmt riskManagement;
     SimpleMarket simpleMarket;
 
@@ -42,7 +42,7 @@ contract FundTest is DSTest {
     uint mockQuantity = 1 ether;
 
     //function setUp() {
-    //    melonToken = new DSToken("MLN-T");
+    //    melonToken = new PreminedAsset();
     //    melonToken.mint(MINTED_AMOUNT);
     //    weth = new WETH9_();
     //    weth.deposit.value(100 ether)();

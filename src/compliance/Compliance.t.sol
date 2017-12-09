@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
-import "ds-test/test.sol";
+import "./assets/PreminedAsset.sol";
+
 import "./Compliance.sol";
 
 
