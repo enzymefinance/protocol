@@ -1,9 +1,9 @@
 import Api from "@parity/api";
 import test from 'ava';
 
-const addressBook = require("../../address-book.json");
+const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
-const environmentConfig = require("../../utils/config/environmentConfig.js");
+const environmentConfig = require("../../utils/config/environment.js");
 const fs = require("fs");
 const rp = require("request-promise");
 

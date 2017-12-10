@@ -3,8 +3,10 @@ import Api from "@parity/api";
 const fs = require("fs");
 const rp = require("request-promise");
 const BigNumber = require("bignumber.js");
-const addressBook = require("../address-book.json");
-const environmentConfig = require("../utils/config/environmentConfig.js");
+const addressBook = require("../../addressBook.json");
+const environmentConfig = require("../config/environment.js");
+import * as instances from "./instances.js";
+
 const environment = "development";
 const config = environmentConfig[environment];
 
@@ -14,52 +16,14 @@ const apiPath = "https://min-api.cryptocompare.com/data/price";
 const addresses = addressBook[environment];
 
 // TODO: should we have a separate token config for development network? much of the information is identical
-const tokenInfo = require("../utils/info/tokenInfo.js").kovan;
-
-// retrieve deployed contracts
-export const version = api.newContract(
-  JSON.parse(fs.readFileSync("out/version/Version.abi")),
-  addresses.Version,
-);
-
-export const datafeed = api.newContract(
-  JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi")),
-  addresses.PriceFeed,
-);
-
-export const mlnToken = api.newContract(
-  JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-  addresses.MlnToken,
-);
-
-export const ethToken = api.newContract(
-  JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-  addresses.EthToken,
-);
-
-export const eurToken = api.newContract(
-  JSON.parse(fs.readFileSync("out/assets/PreminedAsset.abi")),
-  addresses.EurToken,
-);
-
-export const participation = api.newContract(
-  JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi")),
-  addresses.NoCompliance,
-);
-
-export const simpleMarket = api.newContract(
-  JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi")),
-  addresses.SimpleMarket,
-);
-
-export const accounts = api.eth.accounts();
+const tokenInfo = require("../../utils/info/tokenInfo.js").kovan;
 
 // convenience functions
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export default async function updateDatafeed () {
+export default async function registerAsset () {
   const fromSymbol = 'MLN';
   const toSymbols = ['ETH', 'EUR', 'MLN'];
   const options = {
@@ -77,8 +41,8 @@ export default async function updateDatafeed () {
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
   await timeout(3000);
-  await datafeed.instance.update.postTransaction(
-    { from: (await accounts)[0], gas: config.gas, gasPrice: config.gasPrice },
+  await instances.datafeed.instance.update.postTransaction(
+    { from: (await instances.accounts)[0], gas: config.gas, gasPrice: config.gasPrice },
     [[ethToken.address, eurToken.address, mlnToken.address],
     [convertedEth, convertedEur, convertedMln]]
   );

@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
+import "../assets/PreminedAsset.sol";
 import "./Compliance.sol";
 
 
@@ -29,7 +30,7 @@ contract ComplianceTest is DSTest {
         bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
 
         assert(subscribePermitted);
-        
+
         participation.removeAttestation(mockAddress);
         subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
 

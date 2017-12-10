@@ -17,7 +17,7 @@ addons:
     - clang
 cache: yarn
 install:
-- ./scripts/install.sh
+- ./utils/travis/install.sh
 - nvm install 8
 - nvm use 8
 - npm install

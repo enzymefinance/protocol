@@ -2,13 +2,13 @@ pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
 import "ds-weth/weth9.sol";
-import "ds-token/token.sol";
+import "../assets/PreminedAsset.sol";
 import "./PriceFeed.sol";
 
 
 contract PriceFeedTest is DSTest {
     PriceFeed pricefeed;
-    DSToken melonToken;
+    PreminedAsset melonToken;
     WETH9_ weth;
 
     // constants
@@ -23,15 +23,12 @@ contract PriceFeedTest is DSTest {
     address MOCK_BREAK_IN = 0x2186C5EaAf6CbF55BF1b9cD8130D8a6A71E4486a;
     address MOCK_BREAK_OUT = 0xd9AE70149D256D4645c03aB9D5423A1B70d8804d;
 
-    uint MINTED_AMOUNT = 10 ** 28;
-
     // mock data
     uint inputWethPrice = 4152823920265781000;
     uint inputMelonTokenPrice = 1000000000000000000;
 
     function setUp() {
-        melonToken = new DSToken("MLN-T");
-        melonToken.mint(MINTED_AMOUNT);
+        melonToken = new PreminedAsset();
         weth = new WETH9_();
         pricefeed = new PriceFeed(melonToken, MELON_NAME, MELON_SYMBOL, MELON_DECIMALS, MELON_URL, MOCK_IPFS_HASH, MOCK_CHAIN_ID, MOCK_BREAK_IN, MOCK_BREAK_OUT, INTERVAL, VALIDITY);
     }
@@ -65,7 +62,7 @@ contract PriceFeedTest is DSTest {
         );
     }
 
-// TODO: uncomment when dapphub/ds-test#5 is resolved
+    // TODO: uncomment when dapphub/ds-test#5 is resolved
     // function test_updateAndGetPrice() {
     //     address[] storage assetArray;
     //     uint[] storage priceArray;

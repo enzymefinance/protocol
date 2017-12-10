@@ -3,13 +3,13 @@ import Api from "@parity/api";
 const fs = require("fs");
 const path = require("path");
 const solc = require("solc");
-const environmentConfig = require("../utils/config/environmentConfig.js");
-const pkgInfo = require("../package.json");
-const tokenInfo = require("../utils/info/tokenInfo.js");
-const exchangeInfo = require("../utils/info/exchangeInfo.js");
-const datafeedInfo = require("../utils/info/priceFeedInfo.js");
+const pkgInfo = require("../../package.json");
+const environmentConfig = require("../config/environment.js");
+const tokenInfo = require("../info/tokenInfo.js");
+const datafeedInfo = require("../info/priceFeedInfo.js");
+const exchangeInfo = require("../info/exchangeInfo.js");
 
-function getPlaceholderFromPath(libPath) {
+function getPlaceholderFromPath (libPath) {
   const libContractName = path.basename(libPath);
   let modifiedPath = libPath.replace("out", "src");
   modifiedPath = `${modifiedPath}.sol:${libContractName}`;
@@ -40,7 +40,7 @@ async function deploy(environment) {
     let ranking;
     let rankingContract;
     const datafeedOnly = false;
-    const addressBookFile = "./address-book.json";
+    const addressBookFile = "./addressBook.json";
     const config = environmentConfig[environment];
     const provider = new Api.Provider.Http(
       `http://${config.host}:${config.port}`,
@@ -352,24 +352,25 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       ethToken = await api
         .newContract(abi)
-        .deploy(opts, ["Ether token", "ETH-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed ether token");
 
       mlnToken = await api
         .newContract(abi)
-        .deploy(opts, ["Melon token", "MLN-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed melon token");
 
       eurToken = await api
         .newContract(abi)
-        .deploy(opts, ["Euro token", "EUR-T", 18, preminedAmount]);
+        .deploy(opts, []);
       console.log("Deployed euro token");
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
       const mlnTokenContract = await api.newContract(abi, mlnToken);
-      const mlnName = await mlnTokenContract.instance.name.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
+      const mlnName = tokenInfo.live.find(t => t.name === "Melon").name;
+      const mlnSymbol = tokenInfo.live.find(t => t.name === "Melon").symbol;
+      const mlnDecimals = tokenInfo.live.find(t => t.name === "Melon").decimals;
+      const mlnUrl = tokenInfo.live.find(t => t.name === "Melon").url;
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -382,11 +383,11 @@ async function deploy(environment) {
           mlnName,
           mlnSymbol,
           mlnDecimals,
-          'melonport.com',
-          mockBytes,
-          mockBytes,
-          mockAddress,
-          mockAddress,
+          mlnUrl,
+          '',
+          '',
+          '',
+          '',
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);

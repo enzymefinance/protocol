@@ -1,26 +1,24 @@
 pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "ds-token/token.sol";
-import "./Governance.sol";
+import "../assets/PreminedAsset.sol";
 import "../version/Version.sol";
+import "./Governance.sol";
 
 
 contract GovernanceTest is DSTest {
     Governance governance;
-    DSToken melonToken;
+    PreminedAsset melonToken;
     Version version;
     Caller hal;
     Caller pal;
 
     // constants
     uint MELON_DECIMALS = 18;
-    uint MINTED_AMOUNT = 10 ** 28;
     string VERSION_NUMBER = "1.2.3";
 
     function setUp() {
-        melonToken = new DSToken("MLN-T");
-        melonToken.mint(MINTED_AMOUNT);
+        melonToken = new PreminedAsset();
         hal = new Caller();
         pal = new Caller();
         address[] memory members = new address[](2);
