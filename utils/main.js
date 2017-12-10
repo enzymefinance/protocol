@@ -1,14 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env babel-node
 
-/**
- * Module dependencies.
- */
 import Api from "@parity/api";
 import program from 'commander';
 import pkgInfo from "../package.json";
 import environmentConfig from "./config/environment.js";
 import updateDatafeed, * as deployedUtils from "./lib/utils";
-
 
 program
   .version(pkgInfo.version)
