@@ -165,8 +165,6 @@ describe("Fund shares", () => {
     it("investor receives initial mlnToken for testing", async () => {
       const pre = await getAllBalances();
       const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
-      console.log(pre);
-
       receipt = await mlnToken.instance.transfer.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
         [investor, initialTokenAmount, ''],
@@ -176,8 +174,6 @@ describe("Fund shares", () => {
       const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
       const post = await getAllBalances();
 
-      console.log(pre);
-      console.log(post);
       expect(postDeployerEth.toString()).toEqual(preDeployerEth.minus(runningGasTotal.times(gasPrice)).toString());
       expect(post.investor.mlnToken).toEqual(
         new BigNumber(pre.investor.mlnToken).add(initialTokenAmount).toNumber(),
