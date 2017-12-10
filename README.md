@@ -28,7 +28,7 @@ You will need the `dapp` developer tools, which you can install using [these ste
     # Install dependencies
     npm install
     # Generate bytecode and abi of smart-contracts using [dapp](https://github.com/dapphub/dapp) suite
-    npm run compileparity --chain utils/chain/chainGenesis.json
+    npm run compile
 
 ### Deployment and testing
 
