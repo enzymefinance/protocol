@@ -231,7 +231,7 @@ describe("Fund shares", () => {
       );
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
       const requestedSharesTotalValue =
-        await fund.instance.toWholeFundUnit.call({}, [firstTest.wantedShares * sharePrice]);
+        await fund.instance.toWholeShareUnit.call({}, [firstTest.wantedShares * sharePrice]);
       const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
       const investorPreShares = Number(
         await fund.instance.balanceOf.call({}, [investor]),
@@ -355,7 +355,7 @@ describe("Fund shares", () => {
           const pre = await getAllBalances();
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
           const requestedSharesTotalValue =
-            await fund.instance.toWholeFundUnit.call({}, [test.wantedShares * sharePrice]);
+            await fund.instance.toWholeShareUnit.call({}, [test.wantedShares * sharePrice]);
           offerRemainder = test.offeredValue - requestedSharesTotalValue;
           const investorPreShares = Number(
             await fund.instance.balanceOf.call({}, [investor]),
