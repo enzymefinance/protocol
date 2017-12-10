@@ -9,7 +9,8 @@ contract PreminedAsset is Asset {
 
     /// @notice Asset with 10 ** 28 of premined token given to msg.sender
     function PreminedAsset() {
-        totalSupply = rpow(10, 28);
-        balances[msg.sender] = rpow(10, 28);
+        // Premine balances of contract creator and totalSupply
+        balances[msg.sender] = 10 ** uint256(28);
+        totalSupply = 10 ** uint256(28);
     }
 }

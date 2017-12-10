@@ -20,7 +20,7 @@ contract AssetInterface {
      * is replaced with:
      * uint256 public totalSupply;
      * This automatically creates a getter function for the totalSupply.
-     * This is moved to the base contract since public getter functions are not
+     * This is moved to this contract since public getter functions are not
      * currently recognised as an implementation of the matching abstract
      * function by the compiler.
      */
