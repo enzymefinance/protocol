@@ -26,7 +26,7 @@ contract ModuleRegistrar is DBC {
     mapping (bytes32 => bool) public moduleNameExists; // Maps module names to boolean based on existence
     mapping (address => address) public creatorOperatesModules; // Maps module creator address to module address
     mapping (address => Module) public information; // Maps module address to information about the module
-    mapping (address => bool) public hasVoted;
+    mapping (address => mapping (address => bool)) public hasVoted; // Whether this address has already voted
     address[] public registeredModules; // List registered module addresses
 
     // VIEW METHODS
@@ -121,10 +121,10 @@ contract ModuleRegistrar is DBC {
     function vote(address ofModule, uint rating) public
         pre_cond(information[ofModule].exists)
         pre_cond(PICOPS.certified(msg.sender))
-        pre_cond(!hasVoted[msg.sender])
+        pre_cond(!hasVoted[ofModule][msg.sender])
         pre_cond(rating <= 10)
     {
-        hasVoted[msg.sender] = true;
+        hasVoted[ofModule][msg.sender] = true;
         information[ofModule].sumOfRating += rating;
         information[ofModule].numberOfVoters += 1;
     }
