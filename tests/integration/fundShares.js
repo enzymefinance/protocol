@@ -710,7 +710,7 @@ describe("Fund shares", () => {
         await ethToken.instance.balanceOf.call({}, [simpleMarket.address]),
       );
       await updateDatafeed();
-      const [, orderPrice, ] = await datafeed.instance.getOrderPrice.call({}, [
+      const orderPrice = await datafeed.instance.getOrderPrice.call({}, [
         mlnToken.address, ethToken.address, trade1.sellQuantity, trade1.buyQuantity
       ]);
       receipt = await fund.instance.makeOrder.postTransaction(
