@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import '../Fund.sol';
 import '../FundInterface.sol';
@@ -10,7 +10,6 @@ import './VersionInterface.sol';
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
 contract Version is DBC, Owned {
-
     // FIELDS
 
     // Constant fields
@@ -21,9 +20,10 @@ contract Version is DBC, Owned {
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
-    mapping (address => address) public managerToFunds; // Links manager address to fund addresses created using this version
+    mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
-    mapping (string => bool) fundNameExists; // Links fund names to boolean based on existence
+    mapping (bytes32 => address) public fundNamesToOwners; // Links fund names to address based on ownership
+
     // EVENTS
 
     event FundUpdated(uint id);
@@ -35,7 +35,7 @@ contract Version is DBC, Owned {
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     /// @return signed Whether or not terms and conditions have been read and understood
-    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) internal returns (bool signed) {
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {
         return ecrecover(
             // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
             //  Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
@@ -44,21 +44,20 @@ contract Version is DBC, Owned {
             //  As a result, in order to use this value, you will have to parse it to an
             //  integer and then add 27. This will result in either a 27 or a 28.
             //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
-            sha3("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
+            keccak256("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
             v,
             r,
             s
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
-    function getMelonAsset() constant returns (address) { return MELON_ASSET; }
+    function getMelonAsset() view returns (address) { return MELON_ASSET; }
     function notShutDown() internal returns (bool) { return !isShutDown; }
-    function getFundById(uint withId) constant returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() constant returns (uint) { return listOfFunds.length -1; }
-    function getFundByManager(address ofManager) constant returns (address) { return managerToFunds[ofManager]; }
-    function fundNameTaken(string withName) constant returns (bool) { return fundNameExists[withName]; }
+    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 
     // NON-CONSTANT METHODS
 
@@ -77,46 +76,51 @@ contract Version is DBC, Owned {
 
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
 
-    /// @param withName human-readable descriptive name (not necessarily unique)
+    /// @param ofFundName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
     /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
-    /// @param ofParticipation Address of participation module
+    /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
-    /// @param ofSphere Address of sphere, which contains address of data feed module
+    /// @param ofPriceFeed Address of price feed module
+    /// @param ofExchange Address of exchange on which this fund can trade
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
-        string withName,
+        string ofFundName,
         address ofReferenceAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
-        address ofParticipation,
+        address ofCompliance,
         address ofRiskMgmt,
-        address ofSphere,
+        address ofPriceFeed,
+        address ofExchange,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
-        pre_cond(termsAndConditionsAreSigned(v, r, s))
         pre_cond(notShutDown())
-        pre_cond(!fundNameExists[withName])
     {
+        require(termsAndConditionsAreSigned(v, r, s));
+        // Either novel fund name or previous owner of fund name
+        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
+        require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address fund = new Fund(
             msg.sender,
-            withName,
+            ofFundName,
             ofReferenceAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
             MELON_ASSET,
-            ofParticipation,
+            ofCompliance,
             ofRiskMgmt,
-            ofSphere
+            ofPriceFeed,
+            ofExchange
         );
         listOfFunds.push(fund);
-        fundNameExists[withName] = true;
+        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
         managerToFunds[msg.sender] = fund;
         FundUpdated(getLastFundId());
     }

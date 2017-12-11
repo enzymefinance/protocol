@@ -1,11 +1,12 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-import './assets/AssetInterface.sol';
+import './assets/SharesInterface.sol';
+import './assets/ERC223ReceivingContract.sol';
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Fund Contract
-contract FundInterface is AssetInterface {
+contract FundInterface is SharesInterface, ERC223ReceivingContract {
 
     // EVENTS
 
@@ -20,7 +21,7 @@ contract FundInterface is AssetInterface {
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
-    // CONSTANT METHODS
+    // VIEW METHODS
 
     // Get general information
     function getCreationTime() constant returns (uint) {}
@@ -30,25 +31,27 @@ contract FundInterface is AssetInterface {
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
     // Get accounting information
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint) {}
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
     function calcSharePrice() constant returns (uint) {}
 
     // NON-CONSTANT METHODS
 
-    // Participation by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external returns (bool, string) {}
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external returns (bool, string) {}
-    function executeRequest(uint requestId) external returns (bool, string) {}
-    function cancelRequest(uint requestId) external returns (bool, string) {}
-    function redeemOwnedAssets(uint shareQuantity) external returns (bool, string) {}
+    // Compliance by Investor
+    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external {}
+    function executeRequest(uint requestId) external {}
+    function cancelRequest(uint requestId) external {}
+    function redeemOwnedAssets(uint shareQuantity) external returns (bool) {}
     // Administration by Manager
-    function toggleSubscription() external {}
-    function toggleRedemption() external {}
+    function enableSubscription() external {}
+    function disableSubscription() external {}
+    function enableRedemption() external {}
+    function disableRedemption() external {}
     function shutDown() external {}
     // Managing by Manager
-    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external returns (bool, string) {}
-    function takeOrder(uint id, uint quantity) external returns (bool, string) {}
-    function cancelOrder(uint id) external returns (bool, string) {}
+    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
+    function takeOrder(uint id, uint quantity) external {}
+    function cancelOrder(uint id) external {}
     // Rewards by Manager
-    function convertUnclaimedRewards() external returns (bool, string) {}
+    function allocateUnclaimedRewards() {}
 }

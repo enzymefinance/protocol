@@ -43,7 +43,7 @@
 <p>Shutting down an existing protocol version is done by anyone <em>proposing</em> a version to be shut down and is <em>executed</em> once authority consensus has been established.</p>
 <p>Shutting down a version disables the ability to setup new funds using this version and enables anyone to shut down any existing funds of this version.</p>
 <h3>Funds</h3>
-<p>The Participation module takes as input the following parameters:</p>
+<p>The Compliance module takes as input the following parameters:</p>
 <p><strong>Requests:</strong> Describes and logs whenever asset enter and leave fund due to Participants</p>
 <table>
 <thead>
@@ -90,12 +90,12 @@
 <td>Quantity in Melon asset to give to person executing request</td>
 </tr>
 <tr>
-<td>lastDataFeedUpdateId</td>
+<td>lastPriceFeedUpdateId</td>
 <td><code>uint256</code></td>
 <td>Data feed module specific id of last update</td>
 </tr>
 <tr>
-<td>lastDataFeedUpdateTime</td>
+<td>lastPriceFeedUpdateTime</td>
 <td><code>uint256</code></td>
 <td>Data feed module specific timestamp of last update</td>
 </tr>
@@ -171,7 +171,7 @@
 <ul>
 <li>Exchange Adapters</li>
 <li>Rewards</li>
-<li>Participation</li>
+<li>Compliance</li>
 <li>Risk Management</li>
 <li>Asset registrars</li>
 <li>Data feeds</li>
@@ -198,7 +198,7 @@ This module defines functions for calculating management and performance rewards
 <p>They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false. These Melon modules are:</p>
 <ul>
 <li>
-<p><strong>Participation</strong>:
+<p><strong>Compliance</strong>:
 It comprises of two primary boolean functions isSubscriptionPermitted and isRedemptionPermitted which enforce rules for investing and redemption from the fund. They take the parameter inputs as specified in the earlier section.</p>
 </li>
 <li>
@@ -318,7 +318,7 @@ Data feeds route external information such as asset prices to Melon fund smart c
 <tr>
 <td>participation</td>
 <td><code>address</code></td>
-<td>Participation module</td>
+<td>Compliance module</td>
 </tr>
 <tr>
 <td>riskMgmt</td>
@@ -364,7 +364,7 @@ Data feeds route external information such as asset prices to Melon fund smart c
 </table>
 <ol start="2">
 <li>R parameters are checked against restriction rules specified in the participation module P by the boolean function P.isSubscriptionPermitted (E.g Participant being an attested Uport identity).</li>
-<li>R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if <em>currentTimestamp - R.timestamp &gt;= DF.INTERVAL</em> (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if <em>DF.getLastUpdateId &gt;= R.lastDataFeedUpdateId + 2</em>. This is to minimize unfair advantage from information asymmetries associated with the investor.</li>
+<li>R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if <em>currentTimestamp - R.timestamp &gt;= DF.INTERVAL</em> (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if <em>DF.getLastUpdateId &gt;= R.lastPriceFeedUpdateId + 2</em>. This is to minimize unfair advantage from information asymmetries associated with the investor.</li>
 </ol>
 <p><strong>Participant redeems from a Melon fund</strong></p>
 <ol>
@@ -402,26 +402,26 @@ Data feeds route external information such as asset prices to Melon fund smart c
 </ol>
 <p><strong>Manager makes an order</strong></p>
 <ol>
-<li>Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.</li>
+<li>Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.</li>
 <li>The specified quantity of the asset is given allowance to the selected exchanging via ERC20’s approve function.</li>
 <li>Order is then placed on the selected exchange through the exchangeAdapter contract E via E.makeOrder by specifying the exchange and order parameters as parameters.</li>
 <li>The order is filled on the selected exchange (In future, can be any compatible decentralized exchange like OasisDex, Kyber, e.t.c)  when the price is met.</li>
 </ol>
 <p><strong>Manager takes an orders</strong></p>
 <ol>
-<li>Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.</li>
+<li>Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.</li>
 <li>The specified quantity of the asset is given allowance to the selected exchanging via ERC20’s approve function.</li>
 <li>Order id must correspond to a valid, existing order on the selected exchange. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.takeOrder by specifying the exchange and order parameters as parameters.</li>
 </ol>
 <p><strong>Manager converts rewards into shares</strong></p>
 <ol>
-<li>Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.convertUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.</li>
+<li>Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.allocateUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.</li>
 <li>A share quantity of <em>unclaimedRewards * gav</em> (from Calculations) is assigned to the manager.</li>
 </ol>
 <p><strong>Manager shuts down the fund</strong></p>
 <ol>
 <li>A Manager can shut down a fund F he owns via F.shutdown function.</li>
-<li>Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, convertUnclaimedRewards are rendered disabled.</li>
+<li>Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, allocateUnclaimedRewards are rendered disabled.</li>
 </ol>
 <h2>Get started</h2>
 <h3>Installation</h3>
@@ -454,7 +454,7 @@ cd protocol
 </li>
 <li>
 <p>Import the predefined accounts into parity and fund them by executing:</p>
-<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> before-tests
+<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> beforeTests
 </span></code></pre>
 </li>
 <li>

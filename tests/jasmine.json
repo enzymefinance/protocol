@@ -1,6 +1,6 @@
 {
   "spec_dir": "tests",
-  "spec_files": ["fund-shares.js", "governance.js"],
+  "spec_files": ["integration/fundShares.js"],
   "helpers": [],
   "stopSpecOnExpectationFailure": false,
   "random": false
