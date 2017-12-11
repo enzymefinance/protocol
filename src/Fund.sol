@@ -109,11 +109,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @return gav Gross asset value quoted in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in REFERENCE_ASSET and multiplied by 10 ** assetDecimal
-        /*bool areRecent;
-        uint[] prices;
-        uint[] decimals;
-        (areRecent, prices, decimals) = module.pricefeed.getPrices(ownedAssets);*/
-
         tempOwnedAssets = ownedAssets;
         delete ownedAssets;
         for (uint i = 0; i < tempOwnedAssets.length; ++i) {
@@ -129,14 +124,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            /*gav = add(gav, toSmallestShareUnit(mul(assetHoldings, assetPrice) / mul(10 ** uint256(assetDecimal),  10 ** uint256(assetDecimal)))); // Sum up product of asset holdings of this vault and asset prices*/
             gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimal))); // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == MELON || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is MELON or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
-            //PortfolioContent(assetHoldings, assetPrice, assetDecimal);
+            PortfolioContent(assetHoldings, assetPrice, assetDecimal);
         }
     }
 
@@ -531,6 +525,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
         require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
         var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
+        require(isRecent);  // Reference price is required to be recent
         require(module.riskmgmt.isMakePermitted(
                 module.pricefeed.getOrderPrice(
                     sellAsset,
@@ -539,7 +534,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                     buyQuantity
                 ),
                 referencePrice,
-                sellAsset, buyAsset, sellQuantity, buyQuantity
+                sellAsset,
+                buyAsset,
+                sellQuantity,
+                buyQuantity
         )); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
         require(Asset(sellAsset).approve(address(module.exchange), sellQuantity)); // Approve exchange to spend assets
@@ -575,8 +573,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Takes an active order on the selected exchange
     /// @dev These are orders that are expected to settle immediately
     /// @param id Active order id
-    /// @param quantity Buy quantity of what others are selling on selected Exchange
-    function takeOrder(uint id, uint quantity)
+    /// @param receiveQuantity Buy quantity of what others are selling on selected Exchange
+    function takeOrder(uint id, uint receiveQuantity)
         external
         pre_cond(isOwner())
         pre_cond(!isShutDown)
@@ -594,22 +592,26 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)); // PriceFeed module: Requested asset pair not valid
         require(isInAssetList[order.sellAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
         var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(order.buyAsset, order.sellAsset);
+        require(isRecent); // Reference price is required to be recent
+        require(receiveQuantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
+        uint spendQuantity = mul(receiveQuantity, order.buyQuantity) / order.sellQuantity;
+        require(Asset(order.buyAsset).approve(address(module.exchange), spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
         require(module.riskmgmt.isTakePermitted(
             module.pricefeed.getOrderPrice(
-                order.sellAsset,
                 order.buyAsset,
-                order.sellQuantity,
-                order.buyQuantity
+                order.sellAsset,
+                order.buyQuantity, // spendQuantity
+                order.sellQuantity // receiveQuantity
             ),
             referencePrice,
-            order.sellAsset, order.buyAsset, order.sellQuantity, order.buyQuantity
+            order.buyAsset,
+            order.sellAsset,
+            order.buyQuantity,
+            order.sellQuantity
         )); // RiskMgmt module: Take order not permitted
-        require(quantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
-        uint spendQuantity = mul(quantity, order.buyQuantity) / order.sellQuantity;
-        require(Asset(order.buyAsset).approve(address(module.exchange), spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
 
         // Execute request
-        require(exchangeAdapter.takeOrder(address(module.exchange), id, quantity));
+        require(exchangeAdapter.takeOrder(address(module.exchange), id, receiveQuantity));
 
         // Update ownedAssets array and isInAssetList mapping
         if (!isInAssetList[order.sellAsset]) {
@@ -621,7 +623,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         order.status = OrderStatus.fullyFilled;
         order.orderType = OrderType.take;
         order.timestamp = now;
-        order.fillQuantity = quantity;
+        order.fillQuantity = receiveQuantity;
         orders.push(order);
         OrderUpdated(id);
     }
