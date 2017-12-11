@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import './RiskMgmtInterface.sol';
 
@@ -14,7 +14,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       /// @notice All makeOrders disabled
       /// @param orderPrice Price of Order
-      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param referencePrice Reference price obtained through PriceFeed contract
       /// @param sellAsset Asset (as registered in Asset registrar) to be sold
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
@@ -35,7 +35,7 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
 
       /// @notice takeOrders are checked if the order owner matches liquidity provider
       /// @param orderPrice Price of Order
-      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param referencePrice Reference price obtained through PriceFeed contract
       /// @param sellAsset Asset (as registered in Asset registrar) to be sold
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold

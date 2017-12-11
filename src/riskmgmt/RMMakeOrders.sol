@@ -1,26 +1,22 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-import '../dependencies/ERC20.sol';
+import 'ds-math/math.sol';
+import '../assets/Asset.sol';
 import './RiskMgmtInterface.sol';
 
 /// @title Risk Management Make Orders Contract
 /// @author Melonport AG <team@melonport.com>
-contract RMMakeOrders is RiskMgmtInterface {
+contract RMMakeOrders is DSMath, RiskMgmtInterface {
 
       // FIELDS
 
-      uint public constant RISK_LEVEL = 1000; // Allows 10 percent deviation from referencePrice
-      uint public constant RISK_DIVISOR = 10000;
-
-      // PRE, POST, INVARIANT CONDITIONS
-
-      function isLessOrEqualThan(uint256 x, uint256 y) internal returns (bool) { return x <= y; }
+      uint public constant RISK_LEVEL = 10 ** uint256(17); // Allows 10 percent deviation from referencePrice; 10 percent is expressed as 0.1 * 10 ** 18
 
       // NON-CONSTANT METHODS
 
       /// @notice Checks if the makeOrder price is within maximum allowed deviation from reference price
       /// @param orderPrice Price of Order
-      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param referencePrice Reference price obtained through PriceFeed contract
       /// @param sellAsset Asset (as registered in Asset registrar) to be sold
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
@@ -37,7 +33,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= referencePrice - RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;
@@ -45,7 +41,7 @@ contract RMMakeOrders is RiskMgmtInterface {
 
       /// @notice Checks if the takeOrder price is within maximum allowed deviation from reference price
       /// @param orderPrice Price of Order
-      /// @param referencePrice Reference price obtained through DataFeed contract
+      /// @param referencePrice Reference price obtained through PriceFeed contract
       /// @param sellAsset Asset (as registered in Asset registrar) to be sold
       /// @param buyAsset Asset (as registered in Asset registrar) to be bought
       /// @param sellQuantity Quantity of sellAsset to be sold
@@ -62,7 +58,7 @@ contract RMMakeOrders is RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= referencePrice - RISK_LEVEL * referencePrice / RISK_DIVISOR) {
+          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;

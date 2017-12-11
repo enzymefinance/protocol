@@ -49,7 +49,7 @@ Shutting down a version disables the ability to setup new funds using this versi
 
 ### Funds
 
-The Participation module takes as input the following parameters:
+The Compliance module takes as input the following parameters:
 
 **Requests:** Describes and logs whenever asset enter and leave fund due to Participants
 
@@ -62,8 +62,8 @@ shareQuantity | `uint256` | Quantity of Melon fund shares
 giveQuantity | `uint256` | Quantity in Melon asset to give to Melon fund to receive shareQuantity
 receiveQuantity | `uint256` | Quantity in Melon asset to receive from Melon fund for given shareQuantity
 incentiveQuantity | `uint256` | Quantity in Melon asset to give to person executing request
-lastDataFeedUpdateId | `uint256` | Data feed module specific id of last update
-lastDataFeedUpdateTime | `uint256` | Data feed module specific timestamp of last update
+lastPriceFeedUpdateId | `uint256` | Data feed module specific id of last update
+lastPriceFeedUpdateTime | `uint256` | Data feed module specific timestamp of last update
 timestamp | `uint256` | Time of request creation
 
 While the Risk Management module takes as input the following parameters:
@@ -91,7 +91,7 @@ fillQuantity | `uint256` | Buy quantity filled; Always less than buy_quantity
 Melon has six different module classes:
 - Exchange Adapters
 - Rewards
-- Participation
+- Compliance
 - Risk Management
 - Asset registrars
 - Data feeds
@@ -115,7 +115,7 @@ This module defines functions for calculating management and performance rewards
 
 They interact with the Melon protocol using boolean functions. That is functions which take a certain set of inputs and return either true or false. These Melon modules are:
 
-- **Participation**:
+- **Compliance**:
 It comprises of two primary boolean functions isSubscriptionPermitted and isRedemptionPermitted which enforce rules for investing and redemption from the fund. They take the parameter inputs as specified in the earlier section.
 
 - **Risk Management**:
@@ -166,7 +166,7 @@ name | `string` |A human readable name of the fund
 referenceAsset | `address` | Asset against which performance reward is measured against
 managementRewardRate | `uint` | Reward rate in referenceAsset per delta improvement
 performanceRewardRate | `uint` | Reward rate in referenceAsset per managed seconds
-participation | `address` | Participation module
+participation | `address` | Compliance module
 riskMgmt | `address` | Risk management module
 sphere | `address` | Sphere module
 
@@ -181,7 +181,7 @@ shareQuantity | `uint` | Quantity of fund shares to receive
 incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity executing the request
 
 2. R parameters are checked against restriction rules specified in the participation module P by the boolean function P.isSubscriptionPermitted (E.g Participant being an attested Uport identity).
-3. R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if *currentTimestamp - R.timestamp >= DF.INTERVAL* (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if *DF.getLastUpdateId >= R.lastDataFeedUpdateId + 2*. This is to minimize unfair advantage from information asymmetries associated with the investor.
+3. R is then executed in by any entity via F.executeRequest after certain conditions are satisfied.  These conditions include if *currentTimestamp - R.timestamp >= DF.INTERVAL* (DF refers to datafeed module and INTERVAL corresponds to update frequency value) and if *DF.getLastUpdateId >= R.lastPriceFeedUpdateId + 2*. This is to minimize unfair advantage from information asymmetries associated with the investor.
 
 **Participant redeems from a Melon fund**
 
@@ -198,26 +198,26 @@ incentiveQuantity | `uint` | Quantity of Melon tokens to award the entity execut
 
 **Manager makes an order**
 
-1. Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.
+1. Manager can make an order by specifying asset pair, sell and buy quantities as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isMakePermitted.
 2. The specified quantity of the asset is given allowance to the selected exchanging via ERC20's approve function.
 3. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.makeOrder by specifying the exchange and order parameters as parameters.
 4. The order is filled on the selected exchange (In future, can be any compatible decentralized exchange like OasisDex, Kyber, e.t.c)  when the price is met.
 
 **Manager takes an orders**
 
-1. Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsData. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.
+1. Manager can take an order by specifying an order id and quantity as parameters. Asset pair is checked against datafeed module DF through the function DF.existsPriceOnAssetPair. Order parameters are then checked against restriction rules specified in the risk management module R via the boolean function R.isTakePermitted.
 2. The specified quantity of the asset is given allowance to the selected exchanging via ERC20's approve function.
 3. Order id must correspond to a valid, existing order on the selected exchange. Order is then placed on the selected exchange through the exchangeAdapter contract E via E.takeOrder by specifying the exchange and order parameters as parameters.
 
 **Manager converts rewards into shares**
 
-1. Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.convertUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.
+1. Manager rewards in the form of ownerless shares of the fund F can be allocated to the manager via F.allocateUnclaimedRewards function. Ownerless shares refer to the quantity of shares, representing unclaimed rewards by the Manager such as rewards for managing the fund and for performance. First internal stats of F are calculated using F.performCalculations function. The quantity of unclaimedRewards is calculated internally using calcUnclaimedRewards function.
 2. A share quantity of *unclaimedRewards * gav* (from Calculations) is assigned to the manager.
 
 **Manager shuts down the fund**
 
 1. A Manager can shut down a fund F he owns via F.shutdown function.
-2. Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, convertUnclaimedRewards are rendered disabled.
+2. Investing, redemption (Only in reference asset, investors can still redeem in the form of percentage of held assets), managing, making / taking orders, allocateUnclaimedRewards are rendered disabled.
 
 
 ## Get started
@@ -250,17 +250,17 @@ After installation is complete, go to the above `protocol` directory, open a ter
 
 1. Launch a parity dev chain with the provided genesis settings file
     ```
-    parity --chain test/parity-genesis.config --jsonrpc-apis all
+    parity --chain test/chainGenesis.json --jsonrpc-apis all
     ```
 
 2. Import the predefined accounts into parity and fund them by executing:
     ```
-    npm run before-tests
+    npm run beforeTests
     ```
 
 3. Close the already running parity instance and run:
     ```
-    parity --chain test/parity-genesis.config --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0
+    parity --chain test/chainGenesis.json --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0
     ```
 
 4. Open a second terminal and deploy the contracts to the development network:

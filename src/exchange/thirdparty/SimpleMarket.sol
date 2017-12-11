@@ -9,88 +9,10 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND (express or implied).
 
-/*pragma solidity ^0.4.13;*/
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-contract DSMath {
-    function add(uint x, uint y) constant internal returns (uint z) {
-        require((z = x + y) >= x);
-    }
-    function sub(uint x, uint y) constant internal returns (uint z) {
-        require((z = x - y) <= x);
-    }
-
-    function mul(uint x, uint y) constant internal returns (uint z) {
-        z = x * y;
-        require(x == 0 || z / x == y);
-    }
-    function div(uint x, uint y) constant internal returns (uint z) {
-        z = x / y;
-    }
-
-    function min(uint x, uint y) constant internal returns (uint z) {
-        return x <= y ? x : y;
-    }
-    function max(uint x, uint y) constant internal returns (uint z) {
-        return x >= y ? x : y;
-    }
-
-    function imin(int x, int y) constant internal returns (int z) {
-        return x <= y ? x : y;
-    }
-    function imax(int x, int y) constant internal returns (int z) {
-        return x >= y ? x : y;
-    }
-
-    uint constant WAD = 10 ** 18;
-
-    function wmul(uint x, uint y) constant internal returns (uint z) {
-        z = (x * y + WAD / 2) / WAD;
-        require(x == 0 || wdiv(z, x) == y);
-    }
-    function wdiv(uint x, uint y) constant internal returns (uint z) {
-        z = (x * WAD + y / 2) / y;
-    }
-
-    uint constant RAY = 10 ** 27;
-
-    function rmul(uint x, uint y) constant internal returns (uint z) {
-        z = (x * y + RAY / 2) / RAY;
-        require(x == 0 || rdiv(z, x) == y);
-    }
-    function rdiv(uint x, uint y) constant internal returns (uint z) {
-        z = (x * RAY + y / 2) / y;
-    }
-
-    function rpow(uint x, uint n) constant internal returns (uint z) {
-        // This famous algorithm is called "exponentiation by squaring"
-        // and calculates x^n with x as fixed-point and n as regular unsigned.
-        //
-        // It's O(log n), instead of O(n) for naive repeated multiplication.
-        //
-        // These facts are why it works:
-        //
-        //  If n is even, then x^n = (x^2)^(n/2).
-        //  If n is odd,  then x^n = x * x^(n-1),
-        //   and applying the equation for even x gives
-        //    x^n = x * (x^2)^((n-1) / 2).
-        //
-        //  Also, EVM division is flooring and
-        //    floor[(n-1) / 2] = floor[n / 2].
-
-        z = n % 2 != 0 ? x : RAY;
-
-        for (n /= 2; n != 0; n /= 2) {
-            x = rmul(x, x);
-
-            if (n % 2 != 0) {
-                z = rmul(z, x);
-            }
-        }
-    }
-}
-
-import '../../dependencies/ERC20.sol';
+import '../../assets/Asset.sol';
+import 'ds-math/math.sol';
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
@@ -101,8 +23,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -112,8 +34,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -123,8 +45,8 @@ contract EventfulMarket {
         bytes32           id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         address  indexed  taker,
         uint128           take_amt,
         uint128           give_amt,
@@ -135,8 +57,8 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        Asset             pay_gem,
+        Asset             buy_gem,
         uint128           pay_amt,
         uint128           buy_amt,
         uint64            timestamp
@@ -153,9 +75,9 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     struct OfferInfo {
         uint     pay_amt;
-        ERC20    pay_gem;
+        Asset    pay_gem;
         uint     buy_amt;
-        ERC20    buy_gem;
+        Asset    buy_gem;
         address  owner;
         bool     active;
         uint64   timestamp;
@@ -191,7 +113,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) constant returns (uint, Asset, uint, Asset) {
       var offer = offers[id];
       return (offer.pay_amt, offer.pay_gem,
               offer.buy_amt, offer.buy_gem);
@@ -205,7 +127,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         var id = uint256(id_);
         LogBump(
             id_,
-            sha3(offers[id].pay_gem, offers[id].buy_gem),
+            keccak256(offers[id].pay_gem, offers[id].buy_gem),
             offers[id].owner,
             offers[id].pay_gem,
             offers[id].buy_gem,
@@ -243,7 +165,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogTake(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -255,7 +177,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogTrade(quantity, offer.pay_gem, spend, offer.buy_gem);
 
         if (offers[id].pay_amt == 0) {
-          delete offers[id];
+            delete offers[id];
         }
 
         return true;
@@ -276,7 +198,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogKill(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -293,8 +215,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     function make(
-        ERC20    pay_gem,
-        ERC20    buy_gem,
+        Asset    pay_gem,
+        Asset    buy_gem,
         uint128  pay_amt,
         uint128  buy_amt
     ) returns (bytes32 id) {
@@ -302,7 +224,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
+    function offer(uint pay_amt, Asset pay_gem, uint buy_amt, Asset buy_gem)
         can_offer
         synchronized
         returns (uint id)
@@ -310,9 +232,9 @@ contract SimpleMarket is EventfulMarket, DSMath {
         require(uint128(pay_amt) == pay_amt);
         require(uint128(buy_amt) == buy_amt);
         require(pay_amt > 0);
-        require(pay_gem != ERC20(0x0));
+        require(pay_gem != Asset(0x0));
         require(buy_amt > 0);
-        require(buy_gem != ERC20(0x0));
+        require(buy_gem != Asset(0x0));
         require(pay_gem != buy_gem);
 
         OfferInfo memory info;
@@ -331,7 +253,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         LogItemUpdate(id);
         LogMake(
             bytes32(id),
-            sha3(pay_gem, buy_gem),
+            keccak256(pay_gem, buy_gem),
             msg.sender,
             pay_gem,
             buy_gem,
