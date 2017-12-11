@@ -1,6 +1,8 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
-contract Owned {
+import './DBC.sol';
+
+contract Owned is DBC {
 
     // FIELDS
 
@@ -13,5 +15,7 @@ contract Owned {
     // NON-CONSTANT METHODS
 
     function Owned() { owner = msg.sender; }
+
+    function changeOwner(address ofNewOwner) pre_cond(isOwner()) { owner = ofNewOwner; }
 
 }

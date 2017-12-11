@@ -1,9 +1,9 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 import "ds-test/test.sol";
-import "./Governance.sol";
 import "../assets/PreminedAsset.sol";
 import "../version/Version.sol";
+import "./Governance.sol";
 
 
 contract GovernanceTest is DSTest {
@@ -15,11 +15,10 @@ contract GovernanceTest is DSTest {
 
     // constants
     uint MELON_DECIMALS = 18;
-    uint PREMINED_AMOUNT = 10 ** 28;
     string VERSION_NUMBER = "1.2.3";
 
     function setUp() {
-        melonToken = new PreminedAsset("Melon Token", "MLN-T", MELON_DECIMALS, PREMINED_AMOUNT);
+        melonToken = new PreminedAsset();
         hal = new Caller();
         pal = new Caller();
         address[] memory members = new address[](2);
@@ -28,7 +27,7 @@ contract GovernanceTest is DSTest {
         governance = new Governance(members, 1, 1000000);
     }
 
-    function testAddAndGetVersion() {
+    function test_addAndGetVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
@@ -39,7 +38,7 @@ contract GovernanceTest is DSTest {
         assert(active);
     }
 
-    function testShutDownVersion() {
+    function test_shutDownVersion() {
         version = new Version(VERSION_NUMBER, governance, melonToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);

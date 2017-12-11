@@ -17,15 +17,15 @@ addons:
     - clang
 cache: yarn
 install:
-- ./scripts/install.sh
+- ./utils/travis/install.sh
 - nvm install 8
 - nvm use 8
 - npm install
 script:
 - npm run compile &> compile.log || cat compile.log
-- npm run devchain:parity > parity.log &
+- npm run devchain > parity.log &
 - sleep 20
-- npm run deploy:development
+- npm run deploy
 - npm run test
 - npm run oyente
 after_script:

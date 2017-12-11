@@ -4,3 +4,9 @@
 [submodule "lib/ds-group"]
 	path = lib/ds-group
 	url = https://github.com/dapphub/ds-group
+[submodule "lib/ds-math"]
+	path = lib/ds-math
+	url = https://github.com/dapphub/ds-math
+[submodule "lib/ds-weth"]
+	path = lib/ds-weth
+	url = https://github.com/dapphub/ds-weth

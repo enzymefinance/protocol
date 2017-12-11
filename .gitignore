@@ -4,11 +4,14 @@ npm-debug.log
 *.orig
 *.swp
 
+# doxity
+scripts/
+
 # ignore built contracts
 out/
 
-# ignore development address-book
-address-book.json
+# ignore development addressBook
+addressBook.json
 
 # ignore generated coverage data
 coverage.json
@@ -16,4 +19,3 @@ coverage/
 
 # ignore cache
 .cache/
-

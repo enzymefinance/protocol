@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.19;
 
 /// @title Risk Management Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -15,7 +15,7 @@ contract RiskMgmtInterface {
 
     /// @notice Checks if the makeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
-    /// @param referencePrice Reference price obtained through DataFeed contract
+    /// @param referencePrice Reference price obtained through PriceFeed contract
     /// @param sellAsset Asset (as registered in Asset registrar) to be sold
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
@@ -32,7 +32,7 @@ contract RiskMgmtInterface {
 
     /// @notice Checks if the takeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
-    /// @param referencePrice Reference price obtained through DataFeed contract
+    /// @param referencePrice Reference price obtained through PriceFeed contract
     /// @param sellAsset Asset (as registered in Asset registrar) to be sold
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold

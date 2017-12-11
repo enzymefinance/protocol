@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- use ds-math instead of safeMath.sol
+
 ## [0.5.2]
 
 ### Added
@@ -60,13 +66,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - switch to Parity.js for deployment, contract interaction, and testing
 - deploy scripts from web3 to parity.js
 - Jasmine tests from web3 to parity.js
-- using more permissive ParticipationOpen instead of regular Participation module
+- using more permissive NoCompliance instead of regular Compliance module
 - enforce rule that Fund names within a Version must be unique (using fund name mapping)
 - modify tests to fit code alterations
 - readme instructions to reflect latest deploy and testing steps
 - documentation in PriceFeed
 - simplify AssetRegistrar
-- rename `sharePrice` to `highWaterMark` in Calculations struct 
+- rename `sharePrice` to `highWaterMark` in Calculations struct
 - rename `test/` to `tests/`
 - accounting to include assets held on exchange (#227)
 
@@ -74,14 +80,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - old docstrings in contract functions
 - enforcing a newer Solidity compiler version (`^0.4.17`)
-- improved terminology for prices inside `DataFeed.sol`
+- improved terminology for prices inside `PriceFeed.sol`
 - updated NPM scripts
 - updated Install instructions readme
 
 ### Removed
 
 - `Staked.sol` contract
-- bulk data reading functions inside `AssetRegistrar.sol` 
+- bulk data reading functions inside `AssetRegistrar.sol`
 - `BackupOwned.sol` dependency
 - remnants of `Logger.sol` contract
 - `Permissioned.sol`
@@ -207,7 +213,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix #148
 - Fix VersionInterface inheritance in Version err
 - Fix calculations in redeeumUsingSlice
-- Fix calculations in convertUnclaimedRewards
+- Fix calculations in allocateUnclaimedRewards
 
 ## [0.3.4]
 
@@ -262,7 +268,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Actual implementation of SimpleMarket - OasisDex exchange
 - InternalAccounting cleanup
 - Natspecs comments
-- Participation example uPort
+- Compliance example uPort
 - Competition contract
 - LogError event in Fund
 - Gross asset calculations accounts for externally held assets
