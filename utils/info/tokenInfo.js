@@ -126,7 +126,7 @@ module.exports = {
       symbol: 'MLN-T',
       decimals: 18,
       url: 'http://melon.fund/',
-      ipfsHash: '', chainId: 42, breakIn: '', breakOut: '',
+      ipfsHash: 'http://melon.fund/', chainId: 42, breakIn: '', breakOut: '',
     },
     {
       address: 'e1b25BCaE898ab228A13EAC49EBBA8D3df9add70',

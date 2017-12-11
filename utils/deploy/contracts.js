@@ -371,6 +371,7 @@ async function deploy(environment) {
       const mlnSymbol = tokenInfo.live.find(t => t.name === "Melon").symbol;
       const mlnDecimals = tokenInfo.live.find(t => t.name === "Melon").decimals;
       const mlnUrl = tokenInfo.live.find(t => t.name === "Melon").url;
+      const mlnIpfsHash = tokenInfo.live.find(t => t.name === "Melon").ipfsHash;
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -384,17 +385,18 @@ async function deploy(environment) {
           mlnSymbol,
           mlnDecimals,
           mlnUrl,
-          '',
-          '',
-          '',
-          '',
+          mlnIpfsHash,
+          mockBytes,
+          mockAddress,
+          mockAddress,
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
       datafeedContract = await api.newContract(abi, datafeed);
       const qu = await datafeedContract.instance.getQuoteAsset.call({from: accounts[0]}, []);
-      console.log("Deployed datafeed");
-
+      const interval = await datafeedContract.instance.getInterval.call({from: accounts[0]}, []);
+      const validity = await datafeedContract.instance.getValidity.call({from: accounts[0]}, []);
+      console.log(`Deployed datafeed w quote asset ${qu} and interval ${interval} and validity ${validity}`);
       // deploy simplemarket
       abi = JSON.parse(
         fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),

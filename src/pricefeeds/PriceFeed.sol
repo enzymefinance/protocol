@@ -195,8 +195,6 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         uint validity
     ) {
         QUOTE_ASSET = ofQuoteAsset;
-        INTERVAL = interval;
-        VALIDITY = validity;
         register(
             QUOTE_ASSET,
             quoteAssetName,
@@ -208,6 +206,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
             quoteAssetBreakIn,
             quoteAssetBreakOut
         );
+        INTERVAL = interval;
+        VALIDITY = validity;
     }
 
     /// @dev Only Owner; Same sized input arrays
