@@ -150,6 +150,7 @@ describe("Fund shares", () => {
         managementReward,
         performanceReward,
         unclaimedRewards,
+        rewardsShareQuantity,
         nav,
         sharePrice,
       ] = Object.values(await fund.instance.performCalculations.call(opts, []));
@@ -159,7 +160,7 @@ describe("Fund shares", () => {
       expect(Number(performanceReward)).toEqual(0);
       expect(Number(unclaimedRewards)).toEqual(0);
       expect(Number(nav)).toEqual(0);
-      // expect(Number(sharePrice)).toEqual(10 ** 18);
+      expect(Number(sharePrice)).toEqual(10 ** 18);
     });
     const initialTokenAmount = new BigNumber(10 ** 14);
     it("investor receives initial mlnToken for testing", async () => {
@@ -226,6 +227,8 @@ describe("Fund shares", () => {
         await mlnToken.instance.allowance.call({}, [investor, fund.address]),
       );
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
+      const totalSupply = await fund.instance.totalSupply.call({}, []);
+      console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
       const requestedSharesTotalValue =
         await fund.instance.toWholeShareUnit.call({}, [firstTest.wantedShares * sharePrice]);
       const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
@@ -350,6 +353,8 @@ describe("Fund shares", () => {
           await updateDatafeed();
           const pre = await getAllBalances();
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
+          const totalSupply = await fund.instance.totalSupply.call({}, []);
+          console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
           const requestedSharesTotalValue =
             await fund.instance.toWholeShareUnit.call({}, [test.wantedShares * sharePrice]);
           offerRemainder = test.offeredValue - requestedSharesTotalValue;
@@ -455,7 +460,7 @@ describe("Fund shares", () => {
     const testArray = [
       { wantedShares: 20000, wantedValue: 20000, incentive: 100 },
       { wantedShares: 500, wantedValue: 500, incentive: 500 },
-      { wantedShares: 20143783, wantedValue: 2000, incentive: 5000 },
+      { wantedShares: new20143783, wantedValue: 20143783, incentive: 5000 },
     ];
     testArray.forEach((test, index) => {
       let fundPreCalculations;
@@ -1038,7 +1043,9 @@ describe("Fund shares", () => {
             await fund.instance.totalSupply.call({}, []),
           );
           const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-          console.log(`sharePrice ${sharePrice}`);
+          const totalSupply = await fund.instance.totalSupply.call({}, []);
+          console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
+
           const wantedValue = Number(
             redemption.amount
               .times(sharePrice)

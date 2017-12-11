@@ -15,20 +15,9 @@ contract AssetInterface {
      */
 
     /*
-     * This is a slight change to the ERC20 base standard.
-     * function totalSupply() constant returns (uint256 supply);
-     * is replaced with:
-     * uint256 public totalSupply;
-     * This automatically creates a getter function for the totalSupply.
-     * This is moved to this contract since public getter functions are not
-     * currently recognised as an implementation of the matching abstract
-     * function by the compiler.
-     */
-    uint256 public totalSupply;
-
-    /*
      * ERC 20
      */
+    function totalSupply() constant returns (uint256 totalSupply) {}
     function balanceOf(address _owner) public constant returns (uint256 balance);
     function transfer(address _to, uint256 _value) public returns (bool success);
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);

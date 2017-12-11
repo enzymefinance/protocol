@@ -14,6 +14,7 @@ contract Asset is DSMath, AssetInterface {
      */
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowed;
+    uint256 public totalSupply;
 
     /*
      * Public functions

@@ -225,9 +225,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The value of unclaimedRewards measured in shares of this fund at current value
         rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
         // The total share supply including the value of unclaimedRewards, measured in shares of this fund
-        // The shares supply of
-        uint newTotalSupply = add(totalSupply, rewardsShareQuantity);
-        sharePrice = newTotalSupply > 0 ? calcValuePerShare(nav, newTotalSupply) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+        uint totalSupplyAccountingForRewards = add(totalSupply, rewardsShareQuantity);
+        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -268,6 +267,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function calcSharePrice() view returns (uint sharePrice)
     {
+
         (, , , , , sharePrice) = performCalculations();
         return sharePrice;
     }
