@@ -460,7 +460,7 @@ describe("Fund shares", () => {
     const testArray = [
       { wantedShares: 20000, wantedValue: 20000, incentive: 100 },
       { wantedShares: 500, wantedValue: 500, incentive: 500 },
-      { wantedShares: new20143783, wantedValue: 20143783, incentive: 5000 },
+      { wantedShares: 20143783, wantedValue: 20143783, incentive: 5000 },
     ];
     testArray.forEach((test, index) => {
       let fundPreCalculations;
