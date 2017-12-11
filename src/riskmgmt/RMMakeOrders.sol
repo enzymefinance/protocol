@@ -10,8 +10,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
 
       // FIELDS
 
-      uint public constant RISK_LEVEL = 1000; // Allows 10 percent deviation from referencePrice
-      uint public constant RISK_DIVISOR = 10000;
+      uint public constant RISK_LEVEL = 10 ** uint256(17); // Allows 10 percent deviation from referencePrice; 10 percent is expressed as 0.1 * 10 ** 18
 
       // NON-CONSTANT METHODS
 
@@ -34,7 +33,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= mul(sub(referencePrice, RISK_LEVEL), referencePrice) / RISK_DIVISOR) {
+          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;
@@ -59,7 +58,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
           returns (bool isPermitted)
       {
           // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= mul(sub(referencePrice, RISK_LEVEL), referencePrice) / RISK_DIVISOR) {
+          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;
