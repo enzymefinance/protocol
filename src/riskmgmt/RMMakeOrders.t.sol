@@ -49,9 +49,9 @@ contract RMMakeOrdersTests is DSTest {
 
     function test_largeDeviationNotPermitted() {
         bool allowed;
-        // 10% deviation
+        // 10.01% deviation
         allowed = riskMgmt.isMakePermitted(
-            9000,
+            8999,
             10000,
             sellAsset,
             buyAsset,
