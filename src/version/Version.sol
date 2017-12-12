@@ -20,13 +20,13 @@ contract Version is DBC, Owned {
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
-    mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
+    mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     mapping (bytes32 => address) public fundNamesToOwners; // Links fund names to address based on ownership
 
     // EVENTS
 
-    event FundUpdated(uint id);
+    event FundUpdated(address ofFund);
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -54,9 +54,8 @@ contract Version is DBC, Owned {
     // VIEW METHODS
 
     function getMelonAsset() view returns (address) { return MELON_ASSET; }
-    function notShutDown() internal returns (bool) { return !isShutDown; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
     function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 
     // NON-CONSTANT METHODS
@@ -101,13 +100,13 @@ contract Version is DBC, Owned {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(notShutDown())
+        pre_cond(!isShutDown)
     {
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
         require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
-        address fund = new Fund(
+        address ofFund = new Fund(
             msg.sender,
             ofFundName,
             ofReferenceAsset,
@@ -119,18 +118,21 @@ contract Version is DBC, Owned {
             ofPriceFeed,
             ofExchange
         );
-        listOfFunds.push(fund);
+        listOfFunds.push(ofFund);
         fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
-        managerToFunds[msg.sender] = fund;
-        FundUpdated(getLastFundId());
+        managerToFunds[msg.sender] = ofFund;
+        FundUpdated(ofFund);
     }
 
+    /// @param ofFund Address of the fund to be shut down
     /// @dev Dereference Fund and trigger selfdestruct
-    function shutDownFund(uint id)
-        pre_cond(isShutDown)
+    function shutDownFund(address ofFund)
+        pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)
     {
-        FundInterface Fund = FundInterface(getFundById(id));
-        Fund.shutDown();
-        FundUpdated(id);
+        FundInterface fund = FundInterface(ofFund);
+        delete managerToFunds[msg.sender];
+        delete fundNamesToOwners[fund.getNameHash()];
+        fund.shutDown();
+        FundUpdated(ofFund);
     }
 }
