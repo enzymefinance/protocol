@@ -1,4 +1,4 @@
-import test from 'ava';
+import test from "ava";
 import Api from "@parity/api";
 
 const addressBook = require("../../../addressBook.json");
@@ -32,12 +32,18 @@ test.before(async t => {
   );
 });
 
-test('Anyone can perform subscription', async t => {
-  const isSubscriptionPermitted = await compliance.instance.isSubscriptionPermitted.call({}, [investor, 100, 100]);
+test("Anyone can perform subscription", async t => {
+  const isSubscriptionPermitted = await compliance.instance.isSubscriptionPermitted.call(
+    {},
+    [investor, 100, 100],
+  );
   t.truthy(isSubscriptionPermitted);
 });
 
-test('Anyone can perform redemption', async t => {
-  const isRedemptionPermitted = await compliance.instance.isRedemptionPermitted.call({}, [investor, 100, 100]);
+test("Anyone can perform redemption", async t => {
+  const isRedemptionPermitted = await compliance.instance.isRedemptionPermitted.call(
+    {},
+    [investor, 100, 100],
+  );
   t.truthy(isRedemptionPermitted);
 });
