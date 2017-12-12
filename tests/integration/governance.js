@@ -1,5 +1,5 @@
-import Api from "@parity/api";
 import test from 'ava';
+import Api from "@parity/api";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");

@@ -77,5 +77,15 @@
     "request-promise": "^4.2.2",
     "solc": "^0.4.18",
     "web3": "^1.0.0-beta2"
+  },
+  "ava": {
+    "files": [
+      "test/*.spec.js"
+    ],
+    "tap": true,
+    "babel": "inherit",
+    "require": [
+      "babel-register"
+    ]
   }
 }
