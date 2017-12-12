@@ -79,7 +79,8 @@
   },
   "ava": {
     "files": [
-      "tests/integration/fundShares.js"
+      "tests/integration/fundShares.js",
+      "tests/unit/priceFeed.js"
     ],
     "tap": true,
     "babel": "inherit",

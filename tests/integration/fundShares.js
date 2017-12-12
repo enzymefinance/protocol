@@ -1136,9 +1136,9 @@ test.serial('converts rewards and manager receives them', async t => {
 // describe("Other functions", async () => {
 test.serial('manager can shut down a fund', async t => {
   const pre = await getAllBalances();
-  receipt = await fund.instance.shutDown.postTransaction(
+  receipt = await version.instance.shutDownFund.postTransaction(
     { from: manager, gasPrice: config.gasPrice },
-    []
+    [fund.address]
   );
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   const isShutDown = await fund.instance.isShutDown.call({}, []);

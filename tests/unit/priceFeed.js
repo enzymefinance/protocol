@@ -1,206 +1,143 @@
+import test from "ava";
 import Api from "@parity/api";
+import updateDatafeed, * as deployed from "../../utils/lib/utils.js";
 
 const fs = require("fs");
-const environmentConfig = require("../utils/config/environment.js");
+const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
 const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
 
-// TODO: move these test files into `test` rather than `newtest` when we remove truffle
-describe("PriceFeed", async () => {
-  let datafeed;
-  let datafeedContract;
-  let btcToken;
-  let ethToken;
-  let mlnToken;
-  let accounts;
-  let assetA;
-  let assetB;
-  const inputPriceAssetA = 500;
-  const inputPriceAssetB = 2000;
-  let opts;
-  // mock data
-  let mockBreakIn;
-  let mockBreakOut;
-  const someBytes =
-    "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
-  beforeAll(async () => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // data reading functions take some time
-    accounts = await api.eth.accounts();
-    mockBreakIn = accounts[5];
-    mockBreakOut = accounts[6];
-    opts = { from: accounts[0], gas: config.gas };
+// hoisted variables
+let eurToken;
+let ethToken;
+let mlnToken;
+let accounts;
+let assetA;
+let assetB;
+const inputPriceAssetA = 500;
+const inputPriceAssetB = 2000;
+let opts;
 
-    let abi;
-    let bytecode;
-    abi = JSON.parse(fs.readFileSync("./out/assets/Asset.abi"));
-    bytecode = fs.readFileSync("./out/assets/Asset.bin");
-    opts.data = `0x${bytecode}`;
-    btcToken = await api
-      .newContract(abi)
-      .deploy(opts, ["Bitcoin token", "BTC-T", 18]);
-    console.log("Deployed bitcoin token");
+// mock data
+const mockIpfs = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
+const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockBreakIn = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
+const mockBreakOut = "0xc6Eb2A235627Ac97EAbc6452F98Ce296a1EF3984";
+const eurName = "Euro Token";
+const eurSymbol = "EUR-T";
+const eurDecimals = 8;
+const eurUrl = "europa.eu";
 
-    ethToken = await api
-      .newContract(abi)
-      .deploy(opts, ["Ether token", "ETH-T", 18]);
-    console.log("Deployed ether token");
+// helper functions
+function registerEur(pricefeed) {
+  return pricefeed.instance.register.postTransaction(opts, [
+    eurToken.address,
+    eurName,
+    eurSymbol,
+    eurDecimals,
+    eurUrl,
+    mockIpfs,
+    mockBytes,
+    mockBreakIn,
+    mockBreakOut,
+  ]);
+}
 
-    mlnToken = await api
-      .newContract(abi)
-      .deploy(opts, ["Melon token", "MLN-T", 18]);
-    console.log("Deployed melon token");
+function registerEth(pricefeed) {
+  return pricefeed.instance.register.postTransaction(opts, [
+    ethToken.address,
+    "Ethereum",
+    "ETH",
+    18,
+    "ethereum.org",
+    mockIpfs,
+    mockBytes,
+    mockBreakIn,
+    mockBreakOut,
+  ]);
+}
 
-    abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-    bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
-    opts.data = `0x${bytecode}`;
-    datafeed = await api
-      .newContract(abi)
-      .deploy(opts, [
-        mlnToken,
-        config.protocol.datafeed.interval,
-        config.protocol.datafeed.validity,
-      ]);
-    datafeedContract = await api.newContract(abi, datafeed);
-    console.log("Deployed datafeed");
-  });
+// hooks
 
-  describe("AssetRegistrar", async () => {
-    it("registers twice without error", async () => {
-      // using accts as fake addresses
-      await datafeedContract.instance.register.postTransaction(opts, [
-        btcToken,
-        "Bitcoin",
-        "BTC",
-        18,
-        "bitcoin.org",
-        someBytes,
-        someBytes,
-        mockBreakIn,
-        mockBreakOut,
-      ]);
-      await datafeedContract.instance.register.postTransaction(opts, [
-        ethToken,
-        "Ethereum",
-        "ETH",
-        18,
-        "ethereum.org",
-        someBytes,
-        someBytes,
-        mockBreakIn,
-        mockBreakOut,
-      ]);
-    });
+test.before(async t => {
+  accounts = await api.eth.accounts();
+  opts = { from: accounts[0], gas: config.gas };
+  ethToken = await deployed.ethToken;
+  eurToken = await deployed.eurToken;
+  mlnToken = await deployed.mlnToken;
+});
 
-    it("gets descriptive information", async () => {
-      const result = await datafeedContract.instance.getDescriptiveInformation.call(
-        opts,
-        [btcToken],
-      );
-      const [name, symbol, url, hash] = Object.values(result);
+test.beforeEach(async t => {
+  const abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
+  const bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
+  const pricefeedDeployment = await api.newContract(abi)
+    .deploy({from: accounts[0], data: `0x${bytecode}`}, [
+      mlnToken.address,
+      'Melon Token',
+      'MLN-T',
+      18,
+      'melonport.com',
+      mockBytes,
+      mockBytes,
+      mockBreakIn,
+      mockBreakOut,
+      config.protocol.datafeed.interval,
+      config.protocol.datafeed.validity,
+    ]);
+  t.context.pricefeed = (await api.newContract(abi, pricefeedDeployment));
+});
 
-      expect(name).toEqual("Bitcoin");
-      expect(symbol).toEqual("BTC");
-      expect(url).toEqual("bitcoin.org");
-      expect(hash).toEqual(someBytes);
-    });
+// tests (concurrent)
 
-    it("gets specific information", async () => {
-      const result = await datafeedContract.instance.getSpecificInformation.call(
-        opts,
-        [btcToken],
-      );
-      const [decimals, chainId, breakIn, breakOut] = Object.values(result);
+test("registers twice without error", async t => {
+  await registerEur(t.context.pricefeed);
+  await registerEth(t.context.pricefeed);
+  const eurRegistered = (await t.context.pricefeed.instance.information.call({}, [eurToken.address]))[4];
+  const ethRegistered = (await t.context.pricefeed.instance.information.call({}, [ethToken.address]))[4];
+  const mlnRegistered = (await t.context.pricefeed.instance.information.call({}, [mlnToken.address]))[4];
 
-      expect(Number(decimals)).toEqual(18);
-      expect(chainId).toEqual(someBytes);
-      expect(breakIn).toEqual(mockBreakIn);
-      expect(breakOut).toEqual(mockBreakOut);
-    });
+  t.true(eurRegistered);
+  t.true(ethRegistered);
+  t.true(mlnRegistered); // MLN registered by default
+});
 
-    it("can get assets", async () => {
-      const assetsRegistered = 2;
-      const numAssetsResult = await datafeedContract.instance.numRegisteredAssets.call(
-        opts,
-        [],
-      );
-      assetA = await datafeedContract.instance.getRegisteredAssetAt.call(opts, [
-        0,
-      ]);
-      assetB = await datafeedContract.instance.getRegisteredAssetAt.call(opts, [
-        1,
-      ]);
+test("gets registered information", async t => {
+  await registerEur(t.context.pricefeed);
+  let result = await t.context.pricefeed.instance.information.call({}, [eurToken.address]);
+  const [breakIn, breakOut, chainId, decimal, exists, ipfsHash, name, price, symbol, timestamp, url] = Object.values(result);
 
-      expect(Number(numAssetsResult)).toEqual(assetsRegistered);
-    });
-  });
+  t.is(breakIn, mockBreakIn);
+  t.is(breakOut, mockBreakOut);
+  t.is(Number(decimal), eurDecimals);
+  t.deepEqual(chainId, Array.from(Array(32), () => 0));
+  t.true(exists);
+  t.is(ipfsHash, mockIpfs);
+  t.is(name, eurName);
+  t.is(Number(price), 0);       // no price update yet
+  t.is(symbol, eurSymbol);
+  t.is(Number(timestamp), 0);   // no price update yet
+  t.is(url, eurUrl);
+});
 
-  describe("PriceFeed updating", async () => {
-    it("registers datafeed update", async () => {
-      await datafeedContract.instance.update.postTransaction(opts, [
-        [assetA, assetB],
-        [inputPriceAssetA, inputPriceAssetB],
-      ]);
-      const newUid = await datafeedContract.instance.getLastUpdateId.call(
-        opts,
-        [],
-      );
-
-      expect(Number(newUid)).toEqual(0);
-    });
-
-    it("price updates are valid", async () => {
-      const isValidA = await datafeedContract.instance.isValid.call(opts, [
-        assetA,
-      ]);
-      const isValidB = await datafeedContract.instance.isValid.call(opts, [
-        assetB,
-      ]);
-
-      expect(isValidA).toBe(true);
-      expect(isValidB).toBe(true);
-    });
-
-    it("price updates are correct", async () => {
-      let result = await datafeedContract.instance.getData.call(opts, [assetA]);
-      const [timeAssetA, priceAssetA] = Object.values(result);
-      result = await datafeedContract.instance.getData.call(opts, [assetB]);
-      const [timeAssetB, priceAssetB] = Object.values(result);
-      const getPriceResult = await datafeedContract.instance.getPrice.call(
-        opts,
-        [assetB],
-      );
-
-      expect(Number(priceAssetA)).toEqual(inputPriceAssetA);
-      expect(Number(priceAssetB)).toEqual(inputPriceAssetB);
-      expect(Number(priceAssetB)).toEqual(Number(getPriceResult));
-      expect(Number(timeAssetA)).toEqual(Number(timeAssetB));
-    });
-  });
-
-  describe("PriceFeed history", async () => {
-    it("returns non-empty first chunk of data history for first asset", async () => {
-      const dataHistory = await datafeedContract.instance.getDataHistory.call(
-        opts,
-        [assetA, 0],
-      );
-      const [timesA, pricesA] = Object.values(dataHistory);
-
-      expect(Number(timesA[0])).not.toEqual(0);
-      expect(Number(pricesA[0])).not.toEqual(0);
-    });
-
-    it("returns non-empty first chunk of data history for second asset", async () => {
-      const dataHistory = await datafeedContract.instance.getDataHistory.call(
-        opts,
-        [assetB, 0],
-      );
-      const [timesB, pricesB] = Object.values(dataHistory);
-
-      expect(Number(timesB[0])).not.toEqual(0);
-      expect(Number(pricesB[0])).not.toEqual(0);
-    });
-  });
+test("registers pricefeed update", async t => {
+  await registerEur(t.context.pricefeed);
+  await registerEth(t.context.pricefeed);
+  const inputPriceEur = 150000000;
+  const inputPriceEth = 2905;
+  const result = await t.context.pricefeed.instance.update.postTransaction({from: accounts[0], gas:6000000}, [
+    [eurToken.address, ethToken.address],
+    [inputPriceEur, inputPriceEth],
+  ]);
+  const [eurIsRecent, eurPrice, returnedEurDecimals] = Object.values(await t.context.pricefeed.instance.getPrice.call({}, [eurToken.address]));
+  const [ethIsRecent, ethPrice, returnedEthDecimals] = Object.values(await t.context.pricefeed.instance.getPrice.call({}, [ethToken.address]));
+ 
+  t.is(inputPriceEur, Number(eurPrice));
+  t.true(eurIsRecent);
+  t.is(eurDecimals, Number(returnedEurDecimals));
+  t.is(inputPriceEth, Number(ethPrice));
+  t.true(ethIsRecent);
+  t.is(18, Number(returnedEthDecimals));
 });
