@@ -19,7 +19,8 @@
     "deploy:kovan": "babel-node utils/deploy/contracts.js kovan",
     "deploy:live": "babel-node utils/deploy/contracts.js live",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
-    "docs:build": "doxity build"
+    "docs:build": "doxity build",
+    "publish": "find out/**/*.abi -exec mv '{}' '{}'.json ';' && npm publish"
   },
   "files": [
     "out",
