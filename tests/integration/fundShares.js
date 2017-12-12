@@ -376,8 +376,6 @@ subsequentTests.forEach((testInstance, index) => {
       const post = await getAllBalances();
 
       t.deepEqual(remainingApprovedMln, 0);
-      console.log('inv' + investorPostShares);
-      console.log(investorPreShares + testInstance.wantedShares);
       t.is(Number(investorPostShares), investorPreShares + testInstance.wantedShares);
       t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken + testInstance.incentive);
       t.deepEqual(post.worker.ethToken, pre.worker.ethToken);
@@ -991,7 +989,7 @@ test.serial('manager tried to take a bad order (buys ETH-T for MLN-T), RMMakeOrd
   t.deepEqual(exchangePostMln, exchangePreMln);
   t.deepEqual(exchangePostEthToken, exchangePreEthToken);
   t.deepEqual(post.deployer.mlnToken, pre.deployer.mlnToken);
-  t.deepEqual(post.deployer.ethToken, exchangePreEthToken);
+  t.deepEqual(post.deployer.ethToken, pre.deployer.ethToken);
   t.deepEqual(post.deployer.ether, pre.deployer.ether);
   t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
   t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
@@ -1090,7 +1088,7 @@ redemptions.forEach((redemption, index) => {
     );
     t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
     t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
-    t.deepEqual(post.manager.ether, 0);
+    t.deepEqual(post.manager.ether, pre.manager.ether);
     t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - wantedValue);
     t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
