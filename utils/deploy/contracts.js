@@ -47,8 +47,7 @@ async function deploy(environment) {
     );
     const api = new Api(provider);
 
-    const mockBytes =
-      "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+    const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
     const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
     const yearInSeconds = 60 * 60 * 24 * 365;
     if (
@@ -65,12 +64,8 @@ async function deploy(environment) {
     };
 
     if (environment === "kovan") {
-      mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T").address;
+      mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
-      const mlnTokenContract = await api.newContract(abi, mlnAddr);
-      const mlnName = await mlnTokenContract.instance.name.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -80,9 +75,9 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnAddr,
-          mlnName,
-          mlnSymbol,
-          mlnDecimals,
+          'Melon Token',
+          'MLN-T',
+          18,
           'melonport.com',
           mockBytes,
           mockBytes,
@@ -95,9 +90,7 @@ async function deploy(environment) {
       console.log("Deployed datafeed");
 
       // deploy simplemarket
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
-      );
+      abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
       bytecode = fs.readFileSync("out/exchange/thirdparty/SimpleMarket.bin");
       opts.data = `0x${bytecode}`;
       simpleMarket = await api.newContract(abi).deploy(opts, []);
@@ -166,12 +159,10 @@ async function deploy(environment) {
       // register assets
       for (const assetSymbol of config.protocol.registrar.assetsToRegister) {
         console.log(`Registering ${assetSymbol}`);
-        const token = tokenInfo[environment].filter(
-          token => token.symbol === assetSymbol,
-        )[0];
+        const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
         await datafeedContract.instance.register
           .postTransaction(opts, [
-            token.address,
+            `0x${token.address}`,
             token.name,
             token.symbol,
             token.decimals,
@@ -200,12 +191,8 @@ async function deploy(environment) {
         Ranking: ranking,
       };
     } else if (environment === "live") {
-      mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
+      mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
-      const mlnTokenContract = await api.newContract(abi, mlnAddr);
-      const mlnName = await mlnTokenContract.instance.name.call({}, []);
-      const mlnSymbol = await mlnTokenContract.instance.symbol.call({}, []);
-      const mlnDecimals = await mlnTokenContract.instance.decimals.call({}, []);
 
       if (datafeedOnly) {
         // deploy datafeed
@@ -216,9 +203,9 @@ async function deploy(environment) {
           .newContract(abi)
           .deploy(opts, [
             mlnAddr,
-            mlnName,
-            mlnSymbol,
-            mlnDecimals,
+            'Melon Token',
+            'MLN',
+            18,
             'melonport.com',
             mockBytes,
             mockBytes,
@@ -231,12 +218,10 @@ async function deploy(environment) {
 
         for (const assetSymbol of config.protocol.registrar.assetsToRegister) {
           console.log(`Registering ${assetSymbol}`);
-          const token = tokenInfo[environment].filter(
-            token => token.symbol === assetSymbol,
-          )[0];
+          const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
           await datafeed.instance.register
             .postTransaction(opts, [
-              token.address,
+              `0x${token.address}`,
               token.name,
               token.symbol,
               token.decimals,
@@ -350,6 +335,7 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("./out/assets/PreminedAsset.abi"));
       bytecode = fs.readFileSync("./out/assets/PreminedAsset.bin");
       opts.data = `0x${bytecode}`;
+      console.log(opts)
       ethToken = await api
         .newContract(abi)
         .deploy(opts, []);
@@ -366,12 +352,6 @@ async function deploy(environment) {
       console.log("Deployed euro token");
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
-      const mlnTokenContract = await api.newContract(abi, mlnToken);
-      const mlnName = tokenInfo.live.find(t => t.name === "Melon").name;
-      const mlnSymbol = tokenInfo.live.find(t => t.name === "Melon").symbol;
-      const mlnDecimals = tokenInfo.live.find(t => t.name === "Melon").decimals;
-      const mlnUrl = tokenInfo.live.find(t => t.name === "Melon").url;
-      const mlnIpfsHash = tokenInfo.live.find(t => t.name === "Melon").ipfsHash;
 
       // deploy datafeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
@@ -381,11 +361,11 @@ async function deploy(environment) {
         .newContract(abi)
         .deploy(opts, [
           mlnToken,
-          mlnName,
-          mlnSymbol,
-          mlnDecimals,
-          mlnUrl,
-          mlnIpfsHash,
+          'Melon Token',
+          'MLN-T',
+          18,
+          'melonport.com',
+          mockBytes,
           mockBytes,
           mockAddress,
           mockAddress,
