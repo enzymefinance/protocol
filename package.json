@@ -78,7 +78,7 @@
   },
   "ava": {
     "files": [
-      "tests/integration/*.js"
+      "tests/integration/fundShares.js"
     ],
     "tap": true,
     "babel": "inherit",
