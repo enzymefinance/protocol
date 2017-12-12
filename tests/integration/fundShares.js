@@ -462,7 +462,7 @@ testArray.forEach((testInstance, index) => {
       runningGasTotal = runningGasTotal.plus(gasUsed);
       receipt = await fund.instance.requestRedemption.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.wantedShares, testInstnace.wantedValue, testInstance.incentive]
+        [testInstance.wantedShares, testInstance.wantedValue, testInstance.incentive]
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -525,17 +525,17 @@ testArray.forEach((testInstance, index) => {
       const post = await getAllBalances();
 
       t.deepEqual(remainingApprovedMln, 0);
-      t.deepEqual(investorPostShares, investorPreShares - test.wantedShares);
-      t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken + test.incentive);
+      t.deepEqual(investorPostShares, investorPreShares - testInstance.wantedShares);
+      t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken + testInstance.incentive);
       t.deepEqual(post.worker.ethToken, pre.worker.ethToken);
       t.deepEqual(
         post.worker.ether,
         pre.worker.ether.minus(workerGasTotal.times(gasPrice))
       );
-      t.deepEqual(postTotalShares, preTotalShares - test.wantedShares);
+      t.deepEqual(postTotalShares, preTotalShares - testInstance.wantedShares);
       t.deepEqual(
         post.investor.mlnToken,
-        pre.investor.mlnToken + test.wantedValue - test.incentive
+        pre.investor.mlnToken + testInstance.wantedValue - testInstance.incentive
       );
       t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
       t.deepEqual(
@@ -545,7 +545,7 @@ testArray.forEach((testInstance, index) => {
       t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
       t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
       t.deepEqual(post.manager.ether, pre.manager.ether);
-      t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - test.wantedValue);
+      t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - testInstance.wantedValue);
       t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
       t.deepEqual(post.fund.ether, pre.fund.ether);
     });
@@ -570,11 +570,11 @@ testArray.forEach((testInstance, index) => {
         postSharePrice
       ] = Object.values(await fund.instance.performCalculations.call({}, []));
 
-      t.deepEqual(Number(postGav), preGav - test.wantedValue);
+      t.deepEqual(Number(postGav), preGav - testInstance.wantedValue);
       t.deepEqual(Number(postManagementReward), preManagementReward);
       t.deepEqual(Number(postPerformanceReward), prePerformanceReward);
       t.deepEqual(Number(postUnclaimedRewards), preUnclaimedRewards);
-      t.deepEqual(Number(postNav), preNav - test.wantedValue);
+      t.deepEqual(Number(postNav), preNav - testInstance.wantedValue);
       t.deepEqual(Number(postSharePrice), preSharePrice);
       fundPreCalculations = [];
     });
