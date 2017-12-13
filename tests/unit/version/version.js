@@ -37,7 +37,7 @@ test.before(async t => {
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 
-test("Can setup and new fund", async t => {
+test("Can setup a new fund", async t => {
   const hash =
     "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(manager, hash);
@@ -62,6 +62,7 @@ test("Can setup and new fund", async t => {
   const ownerOfFundName = await version.instance.fundNamesToOwners.call({}, [
     keccakedFundName,
   ]);
+
   t.is(fundOwned.length, 42);
   t.is(ownerOfFundName, manager);
 });

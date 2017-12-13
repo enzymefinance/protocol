@@ -49,6 +49,7 @@ test("Make order should be permitted for a high orderPrice w.r.t referencePrice"
     100,
     100,
   ]);
+
   t.truthy(isMakePermitted);
   t.truthy(isTakePermitted);
 });
@@ -72,6 +73,7 @@ test("Make order should be permitted for the cutoff orderPrice w.r.t referencePr
     100,
     100,
   ]);
+
   t.truthy(isMakePermitted);
   t.truthy(isTakePermitted);
 });
@@ -96,6 +98,7 @@ test("Make and take orders should not be permitted for a low orderPrice w.r.t re
     100,
     100,
   ]);
+
   t.falsy(isMakePermitted);
   t.falsy(isTakePermitted);
 });
