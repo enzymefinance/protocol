@@ -4,5 +4,14 @@
   "plugins": ["flowtype", "ava"],
   "env": {
     "node": true
+  },
+  "rules": {
+    "no-param-reassign": [
+      "error"
+      {
+        "props": true,
+        "ignorePropertyModificationsFor": [ "t" ]
+      }
+    ]
   }
 }
