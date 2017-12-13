@@ -82,7 +82,9 @@
     "files": [
       "tests/integration/fundShares.js",
       "tests/integration/fundTrading.js",
-      "tests/unit/priceFeed.js"
+      "tests/integration/governance.js",
+      "tests/unit/priceFeed.js",
+      "tests/unit/compliance/noCompliance.js"
     ],
     "tap": true,
     "babel": "inherit",
