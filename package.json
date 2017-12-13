@@ -84,7 +84,8 @@
       "tests/integration/fundTrading.js",
       "tests/integration/governance.js",
       "tests/unit/priceFeed.js",
-      "tests/unit/compliance/noCompliance.js"
+      "tests/unit/compliance/noCompliance.js",
+      "tests/unit/riskmgmt/rmMakeOrders.js"
     ],
     "tap": true,
     "babel": "inherit",
