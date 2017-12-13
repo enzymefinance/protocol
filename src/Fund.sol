@@ -100,6 +100,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function getStake() view returns (uint) { return balanceOf(this); }
     function getLastOrderId() view returns (uint) { return orders.length - 1; }
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
+    function getNameHash() view returns (bytes32) { return bytes32(keccak256(name)); }
 
     // VIEW METHODS - ACCOUNTING
 
@@ -335,7 +336,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function disableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = false; }
     function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
     function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
-    function shutDown() external pre_cond(msg.sender == VERSION || isOwner()) { isShutDown = true; }
+    function shutDown() external pre_cond(msg.sender == VERSION) { isShutDown = true; }
 
     // NON-CONSTANT METHODS - PARTICIPATION
 
@@ -477,9 +478,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
             if (assetHoldings == 0) continue;
 
-            // ownership percentage of participant of asset holdings (including inflation)
+            // participant's ownership percentage of asset holdings
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
-            /*ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupplyInclRewardsInflation;*/
 
             // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
             if (assetHoldings < ownershipQuantities[i]) {

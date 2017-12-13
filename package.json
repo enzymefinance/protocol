@@ -10,16 +10,17 @@
     "lint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
     "devchain": "parity --chain utils/chain/chainGenesis.json db kill & parity --chain utils/chain/chainGenesis.json --jsonrpc-apis all & babel-node tests/beforeTests.js && killall parity && parity --chain utils/chain/chainGenesis.json --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/chain/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
-    "test": "npm run test:ds-test && npm run test:jasmine && npm run test:ava",
-    "test:ava": "ava --files tests/integration/*.js",
-    "test:jasmine": "babel-node tests/run.js",
+    "test": "npm run test:ds-test && npm run test:ava",
+    "test:ava": "ava",
+    "test:unit": "ava --files tests/unit/**",
     "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_VERBOSE=1 && dapp test",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
     "deploy": "babel-node utils/deploy/contracts.js development",
     "deploy:kovan": "babel-node utils/deploy/contracts.js kovan",
     "deploy:live": "babel-node utils/deploy/contracts.js live",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
-    "docs:build": "doxity build"
+    "docs:build": "doxity build",
+    "publish": "find out/**/*.abi -exec mv '{}' '{}'.json ';' && npm publish"
   },
   "files": [
     "out",
@@ -64,7 +65,6 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
-    "jasmine": "^2.8.0",
     "prettier-eslint": "^8.2.2"
   },
   "dependencies": {
@@ -77,5 +77,16 @@
     "request-promise": "^4.2.2",
     "solc": "^0.4.18",
     "web3": "^1.0.0-beta2"
+  },
+  "ava": {
+    "files": [
+      "tests/integration/fundShares.js",
+      "tests/unit/priceFeed.js"
+    ],
+    "tap": true,
+    "babel": "inherit",
+    "require": [
+      "babel-register"
+    ]
   }
 }

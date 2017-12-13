@@ -30,6 +30,8 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     function getStake() constant returns (uint) {}
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}
+    function getNameHash() constant returns (bytes32) {}
+
     // Get accounting information
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
     function calcSharePrice() constant returns (uint) {}
