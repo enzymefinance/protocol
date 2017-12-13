@@ -1,5 +1,6 @@
 import test from "ava";
 import Api from "@parity/api";
+import { riskMgmt } from "../../../utils/lib/utils.js";
 
 const addressBook = require("../../../addressBook.json");
 const BigNumber = require("bignumber.js");
@@ -11,11 +12,11 @@ const config = environmentConfig[environment];
 const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
 
+// hoisted variables
 let accounts;
 let deployer;
 let mockAddress;
 let opts;
-let riskMgmt;
 let riskLevel;
 let referencePrice;
 
@@ -26,12 +27,6 @@ test.before(async t => {
   deployer = accounts[0];
   mockAddress = accounts[1];
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
-
-  // retrieve deployed contracts
-  riskMgmt = await api.newContract(
-    JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi")),
-    addresses.RMMakeOrders,
-  );
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);
   referencePrice = 100;
 });
