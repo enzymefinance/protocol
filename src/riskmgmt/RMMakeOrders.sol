@@ -32,8 +32,8 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
       )
           returns (bool isPermitted)
       {
-          // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
+          // Makes sure difference between orderPrice and referencePrice is less than or equal to maximum allowed deviation
+          if (orderPrice < sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;
@@ -57,8 +57,8 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
       )
           returns (bool isPermitted)
       {
-          // Makes sure orderPrice is less than or equal to maximum allowed deviation from reference price
-          if (orderPrice <= sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
+          // Makes sure difference between orderPrice and referencePrice is less than or equal to maximum allowed deviation
+          if (orderPrice < sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
               return false;
           }
           return true;

@@ -52,6 +52,11 @@ export const simpleMarket = api.newContract(
   addresses.SimpleMarket,
 );
 
+export const riskMgmt = api.newContract(
+  JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi")),
+  addresses.RMMakeOrders,
+);
+
 export const accounts = api.eth.accounts();
 
 // convenience functions
