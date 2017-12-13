@@ -3,13 +3,6 @@
   "extends": ["airbnb", "prettier", "plugin:ava/recommended"],
   "plugins": ["flowtype", "ava"],
   "env": {
-    "node": true,
-    "mocha": true,
-    "jasmine": true
-  },
-  "globals": { // Can be remove if once only Dapp suite used
-    "web3": true,
-    "contract": true,
-    "artifacts": true
+    "node": true
   }
 }
