@@ -17,14 +17,11 @@ const api = new Api(provider);
 let accounts;
 let deployer;
 let ethToken;
-let eurToken;
 let fund;
 let gasPrice;
 let investor;
 let manager;
 let mlnToken;
-let opts;
-let participation;
 let pricefeed;
 let receipt;
 let runningGasTotal;
@@ -72,20 +69,17 @@ async function getAllBalances() {
   };
 }
 
-test.before(async t => {
+test.before(async () => {
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   deployer = accounts[0];
   manager = accounts[1];
   investor = accounts[2];
   worker = accounts[3];
-  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
   pricefeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;
   ethToken = await deployedUtils.ethToken;
-  eurToken = await deployedUtils.eurToken;
-  participation = await deployedUtils.participation;
   simpleMarket = await deployedUtils.simpleMarket;
   const hash =
     "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
@@ -115,7 +109,7 @@ test.before(async t => {
   fund = api.newContract(fundAbi, fundAddress);
 });
 
-test.beforeEach(async t => {
+test.beforeEach(async () => {
   runningGasTotal = new BigNumber(0);
 
   await updateDatafeed();
@@ -166,14 +160,12 @@ test.serial('fund receives MLN from a subscription (request & execute)', async t
     [fund.address, incentive + offeredValue]
   );
   let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed)
   investorGasTotal = investorGasTotal.plus(gasUsed);
   receipt = await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [offeredValue, wantedShares, incentive]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed)
   investorGasTotal = investorGasTotal.plus(gasUsed);
   await updateDatafeed();
   await updateDatafeed();
@@ -183,7 +175,6 @@ test.serial('fund receives MLN from a subscription (request & execute)', async t
     [requestId]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed)
   workerGasTotal = workerGasTotal.plus(gasUsed);
   const post = await getAllBalances();
 
@@ -219,12 +210,6 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
     await ethToken.instance.balanceOf.call({}, [simpleMarket.address])
   );
   await updateDatafeed();
-  const orderPrice = await pricefeed.instance.getOrderPrice.call({}, [
-    mlnToken.address,
-    ethToken.address,
-    trade1.sellQuantity,
-    trade1.buyQuantity
-  ]);
   receipt = await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -542,9 +527,6 @@ redemptions.forEach((redemption, index) => {
     );
     const preTotalShares = Number(await fund.instance.totalSupply.call({}, []));
     const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-    const totalSupply = await fund.instance.totalSupply.call({}, []);
-    console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
-
     const wantedValue = Number(
       redemption.amount
         .times(sharePrice)
