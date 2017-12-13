@@ -21,12 +21,8 @@ let gasPrice;
 let manager;
 let investor;
 let opts;
-let datafeed;
-let simpleMarket;
 let mlnToken;
 let ethToken;
-let eurToken;
-let participation;
 let receipt;
 let runningGasTotal;
 let fund;
@@ -35,7 +31,7 @@ let version;
 
 const addresses = addressBook[environment];
 
-test.before(async t => {
+test.before(async () => {
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   deployer = accounts[0];
@@ -44,15 +40,11 @@ test.before(async t => {
   worker = accounts[3];
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
-  datafeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;
   ethToken = await deployedUtils.ethToken;
-  eurToken = await deployedUtils.eurToken;
-  participation = await deployedUtils.participation;
-  simpleMarket = await deployedUtils.simpleMarket;
 });
 
-test.beforeEach(t => {
+test.beforeEach(() => {
   runningGasTotal = new BigNumber(0);
 });
 
@@ -90,9 +82,9 @@ async function getAllBalances() {
   };
 }
 
-//describe("Setup", async () => {
+// Setup
 // For unique fundName on each test run
-const fundName = "Melon Portfolio" + Math.floor(Math.random() * 1000000) + 1;
+const fundName = `Melon Portfolio ${Math.floor(Math.random() * 1000000) + 1}`;
 test.serial('can set up new fund', async t => {
   const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
   const hash =
@@ -151,6 +143,7 @@ test.serial('initial calculations', async t => {
   t.deepEqual(Number(managementReward), 0);
   t.deepEqual(Number(performanceReward), 0);
   t.deepEqual(Number(unclaimedRewards), 0);
+  t.deepEqual(Number(rewardsShareQuantity), 0);
   t.deepEqual(Number(nav), 0);
   t.deepEqual(Number(sharePrice), 10 ** 18);
 });
@@ -186,7 +179,7 @@ test.serial('investor receives initial mlnToken for testing', async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-//describe("Subscription : ", async () => {
+// subscription
 // TODO: reduce code duplication between this and subsequent tests
 // split first and subsequent tests due to differing behaviour
 const firstTest = {
@@ -222,8 +215,6 @@ test.serial('allows request and execution on the first subscription', async t =>
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-  const totalSupply = await fund.instance.totalSupply.call({}, []);
-  console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
   const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
     {},
     [firstTest.wantedShares * sharePrice]
@@ -288,8 +279,7 @@ test.serial('allows request and execution on the first subscription', async t =>
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-subsequentTests.forEach((testInstance, index) => {
-  // describe(`request and execution, round ${index + 2}`, async () => {
+subsequentTests.forEach((testInstance) => {
     let fundPreCalculations;
     let offerRemainder;
 
@@ -343,8 +333,6 @@ subsequentTests.forEach((testInstance, index) => {
       await updateDatafeed();
       const pre = await getAllBalances();
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-      const totalSupply = await fund.instance.totalSupply.call({}, []);
-      console.log(`sharePrice ${sharePrice}, totalSupply ${totalSupply}`);
       const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
         {},
         [testInstance.wantedShares * sharePrice]
@@ -431,22 +419,21 @@ subsequentTests.forEach((testInstance, index) => {
       t.deepEqual(Number(postManagementReward), preManagementReward);
       t.deepEqual(Number(postPerformanceReward), prePerformanceReward);
       t.deepEqual(Number(postUnclaimedRewards), preUnclaimedRewards);
+      t.deepEqual(Number(preRewardsShareQuantity), Number(postRewardsShareQuantity));
       t.deepEqual(Number(postNav), preNav + testInstance.offeredValue - offerRemainder);
       t.deepEqual(Number(postSharePrice), preSharePrice);
       fundPreCalculations = [];
     });
 });
 
-// describe("Redemption : ", async () => {
+// redemption
 const testArray = [
   { wantedShares: 20000, wantedValue: 20000, incentive: 100 },
   { wantedShares: 500, wantedValue: 500, incentive: 500 },
   { wantedShares: 20143783, wantedValue: 20143783, incentive: 5000 }
 ];
-testArray.forEach((testInstance, index) => {
+testArray.forEach((testInstance) => {
   let fundPreCalculations;
-  // describe(`request and execution, round ${index + 1}`, async () => {
-
     test.serial('investor can request redemption from fund', async t => {
       fundPreCalculations = Object.values(
         await fund.instance.performCalculations.call(opts, [])
@@ -572,6 +559,7 @@ testArray.forEach((testInstance, index) => {
       t.deepEqual(Number(postManagementReward), preManagementReward);
       t.deepEqual(Number(postPerformanceReward), prePerformanceReward);
       t.deepEqual(Number(postUnclaimedRewards), preUnclaimedRewards);
+      t.deepEqual(Number(preRewardsShareQuantity), Number(postRewardsShareQuantity));
       t.deepEqual(Number(postNav), preNav - testInstance.wantedValue);
       t.deepEqual(Number(postSharePrice), preSharePrice);
       fundPreCalculations = [];
