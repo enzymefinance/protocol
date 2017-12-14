@@ -1,10 +1,10 @@
 #!/usr/bin/env babel-node
 
-import Api from "@parity/api";
+// import Api from "@parity/api";
 import program from 'commander';
 import pkgInfo from "../package.json";
-import environmentConfig from "./config/environment.js";
-import updateDatafeed, * as deployedUtils from "./lib/utils";
+// import environmentConfig from "./config/environment";
+// import updateDatafeed, * as deployedUtils from "./lib/utils";
 
 program
   .version(pkgInfo.version)
@@ -15,9 +15,9 @@ program
 console.log(` Selected network: ${program.network}`);
 console.log(` Deploy pricefeed: ${program.pricefeed}`);
 
-const addressBookFile = "../addressBook.json";
-const config = environmentConfig[program.network];
-const provider = new Api.Provider.Http(
-  `http://${config.host}:${config.port}`,
-);
-const api = new Api(provider);
+// const addressBookFile = "../addressBook.json";
+// const config = environmentConfig[program.network];
+// const provider = new Api.Provider.Http(
+//   `http://${config.host}:${config.port}`,
+// );
+// const api = new Api(provider);
