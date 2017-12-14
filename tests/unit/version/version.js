@@ -1,11 +1,9 @@
 import test from "ava";
 import Api from "@parity/api";
-import { version } from "../../../utils/lib/utils.js";
+import { version } from "../../../utils/lib/utils";
 
 const addressBook = require("../../../addressBook.json");
-const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const config = environmentConfig[environment];
@@ -14,26 +12,17 @@ const api = new Api(provider);
 
 // hoisted variables
 let accounts;
-let deployer;
 let manager;
-let worker;
-let investor;
 let opts;
 
 const addresses = addressBook[environment];
 
-// mock data
-const fundName = "Super Fund";
-// const keccakedName = await api.web3.sha3(['Super Fund']);
 const keccakedFundName =
   "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
-test.before(async t => {
+test.before(async () => {
   accounts = await api.eth.accounts();
-  deployer = accounts[0];
   manager = accounts[1];
-  investor = accounts[2];
-  worker = accounts[3];
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 
