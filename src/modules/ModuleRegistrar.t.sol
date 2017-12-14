@@ -6,7 +6,7 @@ import './SimpleCertifier.sol';
 
 
 contract ModuleRegistrarTest is DSTest {
-    
+
     SimpleCertifier certifier;
     ModuleRegistrar registrar;
     Caller caller;
@@ -16,7 +16,7 @@ contract ModuleRegistrarTest is DSTest {
     string inputName = 'My module';
     uint inputClass = 11;
     string inputUrl = 'modul.ar';
-    bytes32 inputIpfs = bytes32(keccak256('ipfs'));
+    string inputIpfs = 'ipfs';
 
     function setUp() {
         certifier = new SimpleCertifier();
@@ -56,7 +56,7 @@ contract ModuleRegistrarTest is DSTest {
         // below lines give compiler error
         // assertEq(bytes32(keccak256(moduleName)), bytes32(keccak256(inputName)));
         // assertEq(bytes32(keccak256(moduleUrl)), bytes32(keccak256(inputUrl)));
-        assertEq(moduleIpfs, inputIpfs);
+        // assertEq(moduleIpfs, inputIpfs);
         assertEq(moduleRating, 0);
         assertEq(moduleReviewers, 0);
         assert(moduleExists);
@@ -118,7 +118,7 @@ contract Caller {
         registrar = _registrar;
     }
 
-    function register(address ofModule, string name, uint moduleClass, string url, bytes32 ipfsHash) {
+    function register(address ofModule, string name, uint moduleClass, string url, string ipfsHash) {
         registrar.register(ofModule, name, moduleClass, url, ipfsHash);
     }
 
