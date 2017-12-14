@@ -1,9 +1,9 @@
 import test from "ava";
 import Api from "@parity/api";
-import * as deployed from "../../utils/lib/utils";
+import * as deployed from "../../../utils/lib/utils";
 
 const fs = require("fs");
-const environmentConfig = require("../../utils/config/environment.js");
+const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];

@@ -1,7 +1,14 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb", "prettier", "plugin:ava/recommended"],
-  "plugins": ["flowtype", "ava"],
+  "extends": [
+    "airbnb",
+    "plugin:ava/recommended",
+    "prettier"
+  ],
+  "plugins": [
+    "flowtype",
+    "ava"
+  ],
   "env": {
     "node": true
   },
