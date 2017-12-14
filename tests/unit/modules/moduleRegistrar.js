@@ -1,8 +1,6 @@
 import test from "ava";
 import Api from "@parity/api";
 
-const addressBook = require("../../../addressBook.json");
-const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../../utils/config/environment.js");
 const fs = require("fs");
 
@@ -37,14 +35,14 @@ async function registerModule() {
   ]);
 }
 
-test.before(async t => {
+test.before(async () => {
   accounts = await api.eth.accounts();
   deployer = accounts[0];
   operator = accounts[1];
   voter = accounts[2];
 });
 
-test.beforeEach(async t => {
+test.beforeEach(async () => {
   const opts = { from: deployer, gas: config.gas };
   // Deploy Simple Certifier
   let abi = JSON.parse(fs.readFileSync("./out/modules/SimpleCertifier.abi"));

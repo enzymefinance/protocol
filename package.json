@@ -85,7 +85,9 @@
       "tests/integration/governance.js",
       "tests/unit/priceFeed.js",
       "tests/unit/compliance/noCompliance.js",
-      "tests/unit/riskmgmt/rmMakeOrders.js"
+      "tests/unit/modules/moduleRegistrar.js",
+      "tests/unit/riskmgmt/rmMakeOrders.js",
+      "tests/unit/version/version.js"
     ],
     "tap": true,
     "babel": "inherit",

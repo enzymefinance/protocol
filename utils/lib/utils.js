@@ -5,6 +5,7 @@ const rp = require("request-promise");
 const BigNumber = require("bignumber.js");
 const addressBook = require("../../addressBook.json");
 const environmentConfig = require("../config/environment.js");
+
 const environment = "development";
 const config = environmentConfig[environment];
 
