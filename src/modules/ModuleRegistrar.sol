@@ -12,7 +12,7 @@ contract ModuleRegistrar is DBC {
         uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
         address creator; // Address of Module creator, also address of inflation distribution amount
         string url; // URL for additional information of Module
-        bytes32 ipfsHash; // Same as url but for ipfs
+        string ipfsHash; // Same as url but for ipfs
         uint sumOfRating; // Sum of comunity based rating of Module
         uint numberOfVoters; // How many ppl rated this module
         bool exists; // Is this module registered
@@ -55,7 +55,7 @@ contract ModuleRegistrar is DBC {
         string name,
         uint moduleClass,
         string url,
-        bytes32 ipfsHash
+        string ipfsHash
     )
         pre_cond(!moduleNameExists[keccak256(name)])
         pre_cond(!information[ofModule].exists)
@@ -86,7 +86,7 @@ contract ModuleRegistrar is DBC {
         address ofModule,
         string name,
         string url,
-        bytes32 ipfsHash
+        string ipfsHash
     )
         pre_cond(information[ofModule].creator == msg.sender)
         pre_cond(information[ofModule].exists)
