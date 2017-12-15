@@ -15,21 +15,6 @@ contract AssetInterface {
      */
 
     /*
-     * ERC 20
-     */
-    function totalSupply() constant returns (uint256 totalSupply) {}
-    function balanceOf(address _owner) public constant returns (uint256 balance);
-    function transfer(address _to, uint256 _value) public returns (bool success);
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
-    function approve(address _spender, uint256 _value) public returns (bool success);
-    function allowance(address _owner, address _spender) public constant returns (uint256 remaining);
-
-    /*
-     * ERC 223
-     */
-    function transfer(address _to, uint256 _value, bytes _data) public returns (bool success);
-
-    /*
      * Events
      */
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -37,4 +22,22 @@ contract AssetInterface {
 
     // There is no ERC223 compatible Transfer event, with `_data` included.
 
+
+    /*
+     * ERC 20
+     */
+    // PUBLIC METHODS
+    function transfer(address _to, uint256 _value) public returns (bool success);
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+    // PUBLIC CONSTANT METHODS
+    function totalSupply() constant returns (uint256 totalSupply) {}
+    function balanceOf(address _owner) public constant returns (uint256 balance);
+    function approve(address _spender, uint256 _value) public returns (bool success);
+    function allowance(address _owner, address _spender) public constant returns (uint256 remaining);
+
+    /*
+     * ERC 223
+     */
+     // PUBLIC METHODS
+    function transfer(address _to, uint256 _value, bytes _data) public returns (bool success);
 }
