@@ -13,6 +13,9 @@ pragma solidity ^0.4.19;
  */
 contract RiskMgmtInterface {
 
+    // METHODS
+    // PUBLIC VIEW METHODS
+
     /// @notice Checks if the makeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
     /// @param referencePrice Reference price obtained through PriceFeed contract
@@ -28,7 +31,7 @@ contract RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) returns (bool isPermitted) {}
+    ) view returns (bool isPermitted) {}
 
     /// @notice Checks if the takeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
@@ -45,5 +48,5 @@ contract RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) returns (bool isPermitted) {}
+    ) view returns (bool isPermitted) {}
 }

@@ -29,19 +29,15 @@ contract ModuleRegistrar is DBC {
     mapping (address => mapping (address => bool)) public hasVoted; // Whether this address has already voted
     address[] public registeredModules; // List registered module addresses
 
-    // VIEW METHODS
+    // METHODS
 
-    // Get registration specific information
-    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
-    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
-
-    // NON-CONSTANT METHODS
+    // CONSTRUCTOR
 
     function ModuleRegistrar(address ofSimpleCertifier) {
         PICOPS = SimpleCertifier(ofSimpleCertifier);
     }
 
-    // USER INTERFACE
+    // PUBLIC METHODS
 
     /// @notice Registers a Module
     /// @dev Only non-registered modules
@@ -128,4 +124,11 @@ contract ModuleRegistrar is DBC {
         information[ofModule].sumOfRating += rating;
         information[ofModule].numberOfVoters += 1;
     }
+
+    // PUBLIC VIEW METHODS
+
+    // Get registration specific information
+    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
+    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
+
 }
