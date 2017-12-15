@@ -7,7 +7,9 @@
   },
   "scripts": {
     "start": "babel-node utils/main.js",
-    "lint": "eslint .",
+    "lint": "npm run lint:eslint && npm run lint:solium",
+    "lint:solium": "solium --dir src",
+    "lint:eslint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
     "devchain": "parity --chain utils/chain/chainGenesis.json db kill & parity --chain utils/chain/chainGenesis.json --jsonrpc-apis all & babel-node tests/beforeTests.js && killall parity && parity --chain utils/chain/chainGenesis.json --unlock 0x00248D782B4c27b5C6F42FEB3f36918C24b211A5,0x00660f1C570b9387B9fA57Bbdf6804d82a9FDC53,0x00b71117fff2739e83CaDBA788873AdCe169563B,0x0015248B433A62FB2d17E19163449616510926B6,0x00f18CD3EA9a97828861AC9C965D09B94fcE746E,0x0089C3fB6a503c7a1eAB2D35CfBFA746252aaD15 --password=utils/chain/password --force-ui --no-persistent-txqueue --jsonrpc-apis all --reseal-min-period 0 --gas-floor-target 6900000",
     "test": "npm run test:ds-test && npm run test:ava",
@@ -65,7 +67,8 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
-    "prettier-eslint": "^8.2.2"
+    "prettier-eslint": "^8.2.2",
+    "solium": "^1.0.11"
   },
   "dependencies": {
     "@parity/api": "^2.1.3",
