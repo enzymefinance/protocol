@@ -89,6 +89,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     // METHODS
 
+    // CONSTRUCTOR
+
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against

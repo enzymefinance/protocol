@@ -29,14 +29,9 @@ contract AssetRegistrar is DBC, Owned {
     // Methods fields
     mapping (address => Asset) public information;
 
-    // VIEW METHODS
+    // METHODS
 
-    // Get asset specific information
-    function getName(address ofAsset) view returns (string) { return information[ofAsset].name; }
-    function getSymbol(address ofAsset) view returns (string) { return information[ofAsset].symbol; }
-    function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
-
-    // NON-CONSTANT METHODS
+    // PUBLIC METHODS
 
     /// @notice Registers an Asset residing in a chain
     /// @dev Pre: Only registrar owner should be able to register
@@ -113,4 +108,12 @@ contract AssetRegistrar is DBC, Owned {
         delete information[ofAsset]; // Sets exists boolean to false
         assert(!information[ofAsset].exists);
     }
+
+    // PUBLIC VIEW METHODS
+
+    // Get asset specific information
+    function getName(address ofAsset) view returns (string) { return information[ofAsset].name; }
+    function getSymbol(address ofAsset) view returns (string) { return information[ofAsset].symbol; }
+    function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
+
 }
