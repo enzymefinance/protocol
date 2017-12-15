@@ -45,5 +45,6 @@ test('Governance can shut down Version', async t => {
   await governance.instance.approveShutdown.postTransaction(opts, [0]);
   await governance.instance.triggerShutdown.postTransaction(opts, [0]);
   const versionShutDown = await version.instance.isShutDown.call({}, []);
+  console.log(versionShutDown)
   t.truthy(versionShutDown);
 });

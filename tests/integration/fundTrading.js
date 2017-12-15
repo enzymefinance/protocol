@@ -106,7 +106,7 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   const fundAbi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-  fund = api.newContract(fundAbi, fundAddress);
+  fund = await api.newContract(fundAbi, fundAddress);
 });
 
 test.beforeEach(async () => {
@@ -151,6 +151,38 @@ test.beforeEach(async () => {
   };
 });
 
+const initialTokenAmount = new BigNumber(10 ** 15);
+test.serial('investor receives initial mlnToken for testing', async t => {
+  const pre = await getAllBalances();
+  const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
+  receipt = await mlnToken.instance.transfer.postTransaction(
+    { from: deployer, gasPrice: config.gasPrice },
+    [investor, initialTokenAmount, ""]
+  );
+  const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  runningGasTotal = runningGasTotal.plus(gasUsed);
+  const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
+  const post = await getAllBalances();
+
+  t.deepEqual(
+    postDeployerEth.toString(),
+    preDeployerEth.minus(runningGasTotal.times(gasPrice)).toString()
+  );
+  t.deepEqual(
+    post.investor.mlnToken,
+    new BigNumber(pre.investor.mlnToken).add(initialTokenAmount).toNumber()
+  );
+
+  t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
+  t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken);
+  t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
 test.serial('fund receives MLN from a subscription (request & execute)', async t => {
   let investorGasTotal = new BigNumber(0);
   let workerGasTotal = new BigNumber(0);
@@ -172,7 +204,7 @@ test.serial('fund receives MLN from a subscription (request & execute)', async t
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   receipt = await fund.instance.executeRequest.postTransaction(
     { from: worker, gas: config.gas, gasPrice: config.gasPrice },
-    [requestId]
+    [ requestId ]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   workerGasTotal = workerGasTotal.plus(gasUsed);
@@ -638,7 +670,7 @@ test.serial('converts rewards and manager receives them', async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-// describe("Other functions", async () => {
+// shutdown fund
 test.serial('manager can shut down a fund', async t => {
   const pre = await getAllBalances();
   receipt = await version.instance.shutDownFund.postTransaction(

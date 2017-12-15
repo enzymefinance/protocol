@@ -1,5 +1,6 @@
 import test from "ava";
 import Api from "@parity/api";
+import * as instances from "../../../utils/lib/instances";
 import { version } from "../../../utils/lib/utils";
 
 const addressBook = require("../../../addressBook.json");
@@ -34,11 +35,11 @@ test("Can setup a new fund", async t => {
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
   const v = parseFloat(sig.substr(128, 2)) + 27;
-  await version.instance.setupFund.postTransaction(opts, [
-    "Super Fund", // name
+  const txId = await instances.version.instance.setupFund.postTransaction(opts, [
+    "Super Fund",       // name
     addresses.MlnToken, // reference asset
-    0,
-    0,
+    config.protocol.fund.managementReward,
+    config.protocol.fund.performanceReward,
     addresses.NoCompliance,
     addresses.RMMakeOrders,
     addresses.PriceFeed,
@@ -47,12 +48,14 @@ test("Can setup a new fund", async t => {
     r,
     s,
   ]);
-  const fundOwned = await version.instance.managerToFunds.call({}, [manager]);
-  const ownerOfFundName = await version.instance.fundNamesToOwners.call({}, [
+  const receipt = await api.eth.getTransactionReceipt(txId);
+  const fundAddress = api.util.toChecksumAddress(`0x${receipt.logs[0].data.slice(-40)}`);
+  const fundOwned = await instances.version.instance.managerToFunds.call({}, [manager]);
+  const ownerOfFundName = await instances.version.instance.fundNamesToOwners.call({}, [
     keccakedFundName,
   ]);
 
-  t.is(fundOwned.length, 42);
+  t.is(fundOwned, fundAddress);
   t.is(ownerOfFundName, manager);
 });
 
