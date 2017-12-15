@@ -1,2 +1,5 @@
-node_modules/
-scripts/
+node_modules
+scripts
+lib
+out
+src/exchange/thirdparty
