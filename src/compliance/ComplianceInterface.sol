@@ -5,7 +5,7 @@ pragma solidity ^0.4.19;
 /// @notice This is to be considered as an interface on how to access the underlying Compliance Contract
 contract ComplianceInterface {
 
-    // VIEW METHODS
+    // PUBLIC VIEW METHODS
 
     /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund

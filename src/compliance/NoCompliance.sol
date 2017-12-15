@@ -9,7 +9,7 @@ import '../dependencies/Owned.sol';
 /// @notice Simple and static Compliance Module.
 contract NoCompliance is ComplianceInterface, DBC, Owned {
 
-    // VIEW METHODS
+    // PUBLIC VIEW METHODS
 
     /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
