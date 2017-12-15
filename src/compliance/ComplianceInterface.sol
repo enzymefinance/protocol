@@ -16,7 +16,7 @@ contract ComplianceInterface {
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity
-    ) returns (bool isEligible) {}
+    ) view returns (bool isEligible) {}
 
     /// @notice Checks whether redemption is permitted for a participant
     /// @param ofParticipant Address requesting to redeem from a Melon fund
@@ -27,5 +27,5 @@ contract ComplianceInterface {
         address ofParticipant,
         uint256 shareQuantity,
         uint256 receiveQuantity
-    ) returns (bool isEligible) {}
+    ) view returns (bool isEligible) {}
 }

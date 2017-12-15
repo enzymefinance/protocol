@@ -21,6 +21,7 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
         uint256 giveQuantity,
         uint256 shareQuantity
     )
+        view
         returns (bool isEligible)
     {
         isEligible = true;
@@ -36,6 +37,7 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
         uint256 shareQuantity,
         uint256 receiveQuantity
     )
+        view
         returns (bool isEligible)
     {
         isEligible = true;

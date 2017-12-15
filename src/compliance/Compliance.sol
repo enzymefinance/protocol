@@ -23,6 +23,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
     // Methods fields
     mapping (address => Identity) public identities;
 
+    // METHODS
     // PUBLIC METHODS
 
     /// @notice Creates attestation for a participant
