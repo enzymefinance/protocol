@@ -19,6 +19,9 @@
         "props": true,
         "ignorePropertyModificationsFor": [ "t" ]
       }
+    ],
+    "ava/no-ignored-test-files": [
+      "warn"
     ]
   }
 }
