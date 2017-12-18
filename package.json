@@ -68,7 +68,7 @@
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.0.11"
+    "solium": "^1.1.0"
   },
   "dependencies": {
     "@parity/api": "^2.1.3",
