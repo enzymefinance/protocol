@@ -15,6 +15,12 @@
     "arg-overflow": [
       "warning",
       3
+    ],
+    "security/enforce-explicit-visibility": [
+      "warning"
+    ],
+    "security/no-block-members": [
+      "warning"
     ]
   }
 }
