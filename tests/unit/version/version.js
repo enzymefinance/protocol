@@ -23,7 +23,7 @@ const keccakedFundName =
 
 test.before(async () => {
   accounts = await api.eth.accounts();
-  manager = accounts[1];
+  manager = accounts[4];
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 

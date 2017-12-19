@@ -258,9 +258,6 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
     ]
   );
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
-  const modules = await fund.instance.module.call({}, []);
-  console.log(modules);
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const exchangePostMln = Number(
     await mlnToken.instance.balanceOf.call({}, [simpleMarket.address])
