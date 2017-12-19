@@ -21,8 +21,8 @@ contract VersionInterface {
         uint ofPerformanceRewardRate,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofPriceFeed,
-        address ofExchange
+        address[] ofExchanges,
+        address[] ofExchangeAdapters
     ) {}
     function shutDownFund(uint id) {}
 

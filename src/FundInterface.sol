@@ -35,11 +35,9 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     function disableRedemption() external {}
     function shutDown() external {}
     // Managing by Manager
-    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
-    function takeOrder(uint id, uint quantity) external {}
-    function cancelOrder(uint id) external {}
-
-    // PUBLIC METHODS
+    function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
+    function takeOrder(uint exchangeId, uint id, uint quantity) external {}
+    function cancelOrder(uint exchangeId, uint id) external {}
     // Rewards by Manager
     function allocateUnclaimedRewards() {}
 
@@ -47,7 +45,7 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     // Get general information
     function getCreationTime() constant returns (uint) {}
     function getBaseUnits() constant returns (uint) {}
-    function getModules() constant returns (address ,address, address, address) {}
+    function getModules() constant returns (address, address[], address, address) {}
     function getStake() constant returns (uint) {}
     function getLastOrderId() constant returns (uint) {}
     function getLastRequestId() constant returns (uint) {}

@@ -99,6 +99,7 @@ test.before(async () => {
       addresses.RMMakeOrders,
       addresses.PriceFeed,
       addresses.SimpleMarket,
+      addresses.simpleAdapter,
       v,
       r,
       s
@@ -186,6 +187,10 @@ test.serial('investor receives initial mlnToken for testing', async t => {
 test.serial('fund receives MLN from a subscription (request & execute)', async t => {
   let investorGasTotal = new BigNumber(0);
   let workerGasTotal = new BigNumber(0);
+  await mlnToken.instance.transfer.postTransaction(
+    { from: deployer, gasPrice: config.gasPrice },
+    [investor, 10 ** 14, ""]
+  );
   const pre = await getAllBalances();
   receipt = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
@@ -245,6 +250,7 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
   receipt = await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
+      0,
       mlnToken.address,
       ethToken.address,
       trade1.sellQuantity,
@@ -252,6 +258,9 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
     ]
   );
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
+  const modules = await fund.instance.module.call({}, []);
+  console.log(modules);
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const exchangePostMln = Number(
     await mlnToken.instance.balanceOf.call({}, [simpleMarket.address])
@@ -388,7 +397,7 @@ test.serial('manager takes order (buys MLN-T for ETH-T)', async t => {
   const orderId = await simpleMarket.instance.last_offer_id.call({}, []);
   receipt = await fund.instance.takeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [orderId, trade2.sellQuantity]
+    [0, orderId, trade2.sellQuantity]
   );
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -428,6 +437,7 @@ test.serial('manager tries to make a bad order (sell ETH-T for MLN-T), RMMakeOrd
   receipt = await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
+      0,
       ethToken.address,
       mlnToken.address,
       trade3.sellQuantity,
@@ -514,7 +524,7 @@ test.serial('manager tried to take a bad order (buys ETH-T for MLN-T), RMMakeOrd
   const orderId = await simpleMarket.instance.last_offer_id.call({}, []);
   receipt = await fund.instance.takeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [orderId, trade4.sellQuantity]
+    [0, orderId, trade4.sellQuantity]
   );
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
