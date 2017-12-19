@@ -22,12 +22,12 @@ install:
 - nvm use 8
 - npm install
 script:
-- npm run lint
 - npm run compile &> compile.log || cat compile.log
 - npm run devchain > parity.log &
 - sleep 20
 - npm run deploy
 - npm run test
 - npm run oyente
+- npm run lint
 after_script:
 - cat parity.log
