@@ -419,19 +419,23 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(receiveQuantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(receiveQuantity, order.buyQuantity) / order.sellQuantity;
         require(Asset(order.buyAsset).approve(address(module.exchange), spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
-        require(module.riskmgmt.isTakePermitted(
-            module.pricefeed.getOrderPrice(
-                order.buyAsset,
-                order.sellAsset,
-                order.buyQuantity, // spendQuantity
-                order.sellQuantity // receiveQuantity
-            ),
-            referencePrice,
+        uint orderPrice = module.pricefeed.getOrderPrice(
             order.buyAsset,
             order.sellAsset,
-            order.buyQuantity,
-            order.sellQuantity
-        )); // RiskMgmt module: Take order not permitted
+            order.buyQuantity, // spendQuantity
+            order.sellQuantity // receiveQuantity
+        );
+
+        require(
+            module.riskmgmt.isTakePermitted(
+                orderPrice,
+                referencePrice,
+                order.buyAsset,
+                order.sellAsset,
+                order.buyQuantity,
+                order.sellQuantity
+            )
+        ); // RiskMgmt module: Take order not permitted
 
         // Execute request
         require(exchangeAdapter.takeOrder(address(module.exchange), id, receiveQuantity));

@@ -42,11 +42,11 @@ contract ModuleRegistrarTest is DSTest {
         );
 
         var (
-            moduleName,
+            , // moduleName
             moduleClass,
             moduleCreator,
-            moduleUrl,
-            moduleIpfs,
+            , // moduleUrl
+            , // moduleIpfs
             moduleRating,
             moduleReviewers,
             moduleExists
