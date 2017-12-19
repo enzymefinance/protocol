@@ -15,15 +15,8 @@ contract ExchangeInterface {
 
     event OrderUpdated(uint id);
 
-    // VIEW METHODS
-
-    function getLastOrderId(address onExchange) constant returns (uint) {}
-    function isActive(address onExchange, uint id) constant returns (bool) {}
-    function getOwner(address onExchange, uint id) constant returns (address) {}
-    function getOrder(address onExchange, uint id) constant returns (address, address, uint, uint) {}
-    function getTimestamp(address onExchange, uint id) constant returns (uint) {}
-
-    // NON-CONSTANT METHODS
+    // METHODS
+    // EXTERNAL METHODS
 
     function makeOrder(
         address onExchange,
@@ -34,4 +27,15 @@ contract ExchangeInterface {
     ) external returns (uint) {}
     function takeOrder(address onExchange, uint id, uint quantity) external returns (bool) {}
     function cancelOrder(address onExchange, uint id) external returns (bool) {}
+
+
+    // PUBLIC METHODS
+    // PUBLIC VIEW METHODS
+
+    function getLastOrderId(address onExchange) view returns (uint) {}
+    function isActive(address onExchange, uint id) view returns (bool) {}
+    function getOwner(address onExchange, uint id) view returns (address) {}
+    function getOrder(address onExchange, uint id) view returns (address, address, uint, uint) {}
+    function getTimestamp(address onExchange, uint id) view returns (uint) {}
+
 }

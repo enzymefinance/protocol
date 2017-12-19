@@ -16,14 +16,9 @@ contract Shares is Asset, SharesInterface {
     uint public decimal;
     uint public creationTime;
 
-    // VIEW METHODS
+    // METHODS
 
-    function getName() view returns (string) { return name; }
-    function getSymbol() view returns (string) { return symbol; }
-    function getDecimals() view returns (uint) { return decimal; }
-    function getCreationTime() view returns (uint) { return creationTime; }
-    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
-    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
+    // CONSTRUCTOR
 
     /// @param _name Name these shares
     /// @param _symbol Symbol of shares
@@ -50,4 +45,13 @@ contract Shares is Asset, SharesInterface {
         Annihilated(msg.sender, now, shareQuantity);
     }
 
+    // PUBLIC METHODS
+    // PUBLIC VIEW METHODS
+
+    function getName() view returns (string) { return name; }
+    function getSymbol() view returns (string) { return symbol; }
+    function getDecimals() view returns (uint) { return decimal; }
+    function getCreationTime() view returns (uint) { return creationTime; }
+    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
+    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
 }

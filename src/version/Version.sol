@@ -51,14 +51,9 @@ contract Version is DBC, Owned {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // VIEW METHODS
+    // METHODS
 
-    function getMelonAsset() view returns (address) { return MELON_ASSET; }
-    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
-    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
-
-    // NON-CONSTANT METHODS
+    // CONSTRUCTOR
 
     /// @param versionNumber SemVer of Melon protocol version
     /// @param ofGovernance Address of Melon governance contract
@@ -73,7 +68,11 @@ contract Version is DBC, Owned {
         MELON_ASSET = ofMelonAsset;
     }
 
+    // EXTERNAL METHODS
+
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
+
+    // PUBLIC METHODS
 
     /// @param ofFundName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset Asset against which performance reward is measured against
@@ -135,4 +134,11 @@ contract Version is DBC, Owned {
         fund.shutDown();
         FundUpdated(ofFund);
     }
+
+    // PUBLIC VIEW METHODS
+
+    function getMelonAsset() view returns (address) { return MELON_ASSET; }
+    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 }

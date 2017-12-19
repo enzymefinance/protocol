@@ -15,52 +15,8 @@ library simpleAdapter {
 
     event OrderUpdated(uint id);
 
-    // VIEW METHODS
-
-    function getLastOrderId(address onExchange)
-        constant
-        returns (uint)
-    {
-        return SimpleMarket(onExchange).last_offer_id();
-    }
-    function isActive(address onExchange, uint id)
-        constant
-        returns (bool)
-    {
-        return SimpleMarket(onExchange).isActive(id);
-    }
-    function getOwner(address onExchange, uint id)
-        constant
-        returns (address)
-    {
-        return SimpleMarket(onExchange).getOwner(id);
-    }
-    function getOrder(address onExchange, uint id)
-        constant
-        returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = SimpleMarket(onExchange).getOffer(id);
-        return (
-            address(sellAsset),
-            address(buyAsset),
-            sellQuantity,
-            buyQuantity
-        );
-    }
-    function getTimestamp(address onExchange, uint id)
-        constant
-        returns (uint)
-    {
-        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
-        return timestamp;
-    }
-
-    // NON-CONSTANT METHODS
+    // METHODS
+    // PUBLIC METHODS
 
     /// @notice Makes an order on the given exchange
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
@@ -118,5 +74,54 @@ library simpleAdapter {
     {
         success = SimpleMarket(onExchange).cancel(id);
         OrderUpdated(id);
+    }
+
+    // PUBLIC VIEW METHODS
+
+    function getLastOrderId(address onExchange)
+        view
+        returns (uint)
+    {
+        return SimpleMarket(onExchange).last_offer_id();
+    }
+
+    function isActive(address onExchange, uint id)
+        view
+        returns (bool)
+    {
+        return SimpleMarket(onExchange).isActive(id);
+    }
+
+    function getOwner(address onExchange, uint id)
+        view
+        returns (address)
+    {
+        return SimpleMarket(onExchange).getOwner(id);
+    }
+
+    function getOrder(address onExchange, uint id)
+        view
+        returns (address, address, uint, uint)
+    {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = SimpleMarket(onExchange).getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
+    }
+
+    function getTimestamp(address onExchange, uint id)
+        view
+        returns (uint)
+    {
+        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
+        return timestamp;
     }
 }

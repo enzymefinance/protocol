@@ -19,7 +19,75 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds for which data is considered recent
 
-    // VIEW METHODS
+    // METHODS
+
+    // CONSTRUCTOR
+
+    /// @dev Define and register a quote asset against which all prices are measured/based against
+    /// @param ofQuoteAsset Address of quote asset
+    /// @param quoteAssetName Name of quote asset
+    /// @param quoteAssetSymbol Symbol for quote asset
+    /// @param quoteAssetDecimals Decimal places for quote asset
+    /// @param quoteAssetUrl URL related to quote asset
+    /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
+    /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
+    /// @param quoteAssetBreakIn Break-in address for the quote asset
+    /// @param quoteAssetBreakOut Break-out address for the quote asset
+    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    /// @param validity Number of seconds that datafeed update information is valid for
+    function PriceFeed(
+        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        string quoteAssetName,
+        string quoteAssetSymbol,
+        uint quoteAssetDecimals,
+        string quoteAssetUrl,
+        string quoteAssetIpfsHash,
+        bytes32 quoteAssetChainId,
+        address quoteAssetBreakIn,
+        address quoteAssetBreakOut,
+        uint interval,
+        uint validity
+    ) {
+        QUOTE_ASSET = ofQuoteAsset;
+        register(
+            QUOTE_ASSET,
+            quoteAssetName,
+            quoteAssetSymbol,
+            quoteAssetDecimals,
+            quoteAssetUrl,
+            quoteAssetIpfsHash,
+            quoteAssetChainId,
+            quoteAssetBreakIn,
+            quoteAssetBreakOut
+        );
+        INTERVAL = interval;
+        VALIDITY = validity;
+    }
+
+    // PUBLIC METHODS
+
+    /// @dev Only Owner; Same sized input arrays
+    /// @dev Updates price of asset relative to QUOTE_ASSET
+    /** Ex:
+     *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
+     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
+     *  and let EUR-T decimals == 8.
+     *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
+     */
+    function update(address[] ofAssets, uint[] newPrices)
+        pre_cond(isOwner())
+        pre_cond(ofAssets.length == newPrices.length)
+    {
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
+            require(information[ofAssets[i]].exists);
+            information[ofAssets[i]].timestamp = now;
+            information[ofAssets[i]].price = newPrices[i];
+        }
+        PriceUpdated(now);
+    }
+
+    // PUBLIC VIEW METHODS
 
     // Get pricefeed specific information
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
@@ -165,69 +233,5 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
             hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
-    }
-
-    // NON-CONSTANT PUBLIC METHODS
-
-    /// @dev Define and register a quote asset against which all prices are measured/based against
-    /// @param ofQuoteAsset Address of quote asset
-    /// @param quoteAssetName Name of quote asset
-    /// @param quoteAssetSymbol Symbol for quote asset
-    /// @param quoteAssetDecimals Decimal places for quote asset
-    /// @param quoteAssetUrl URL related to quote asset
-    /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
-    /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
-    /// @param quoteAssetBreakIn Break-in address for the quote asset
-    /// @param quoteAssetBreakOut Break-out address for the quote asset
-    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
-    /// @param validity Number of seconds that datafeed update information is valid for
-    function PriceFeed(
-        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        string quoteAssetName,
-        string quoteAssetSymbol,
-        uint quoteAssetDecimals,
-        string quoteAssetUrl,
-        string quoteAssetIpfsHash,
-        bytes32 quoteAssetChainId,
-        address quoteAssetBreakIn,
-        address quoteAssetBreakOut,
-        uint interval,
-        uint validity
-    ) {
-        QUOTE_ASSET = ofQuoteAsset;
-        register(
-            QUOTE_ASSET,
-            quoteAssetName,
-            quoteAssetSymbol,
-            quoteAssetDecimals,
-            quoteAssetUrl,
-            quoteAssetIpfsHash,
-            quoteAssetChainId,
-            quoteAssetBreakIn,
-            quoteAssetBreakOut
-        );
-        INTERVAL = interval;
-        VALIDITY = validity;
-    }
-
-    /// @dev Only Owner; Same sized input arrays
-    /// @dev Updates price of asset relative to QUOTE_ASSET
-    /** Ex:
-     *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
-     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
-     *  and let EUR-T decimals == 8.
-     *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
-     */
-    function update(address[] ofAssets, uint[] newPrices)
-        pre_cond(isOwner())
-        pre_cond(ofAssets.length == newPrices.length)
-    {
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
-            require(information[ofAssets[i]].exists);
-            information[ofAssets[i]].timestamp = now;
-            information[ofAssets[i]].price = newPrices[i];
-        }
-        PriceUpdated(now);
     }
 }
