@@ -441,8 +441,8 @@ async function deploy(environment) {
           participation, // participation
           riskMgmt, // riskMgmt
           datafeed, // pricefeed
-          simpleMarket, // simple market
-          simpleAdapter
+          [simpleMarket], // simple market
+          [simpleAdapter]
         ],
         () => {},
         true,

@@ -98,8 +98,8 @@ test.before(async () => {
       addresses.NoCompliance,
       addresses.RMMakeOrders,
       addresses.PriceFeed,
-      addresses.SimpleMarket,
-      addresses.simpleAdapter,
+      [addresses.SimpleMarket],
+      [addresses.simpleAdapter],
       v,
       r,
       s

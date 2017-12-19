@@ -81,7 +81,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
-    mapping (address => uint) public assetsToOpenMakeOrderIds; // Mapping from asset to exchange id of open make order for the asset, if no open make orders uint is zero
+    mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     address[] public tempOwnedAssets;
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
@@ -370,10 +370,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
       // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
       require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")), module.exchanges[exchangeNumber], sellAsset, buyAsset, sellQuantity, buyQuantity));
-      assetsToOpenMakeOrderIds[sellAsset] = module.exchangeAdapters[exchangeNumber].getLastOrderId(module.exchanges[exchangeNumber]);
+      exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] = module.exchangeAdapters[exchangeNumber].getLastOrderId(module.exchanges[exchangeNumber]);
 
       // Success defined as non-zero order id
-      require(assetsToOpenMakeOrderIds[sellAsset] != 0);
+      require(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] != 0);
 
       // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
       isInOpenMakeOrder[sellAsset] = true;
@@ -383,7 +383,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
       }
 
       orders.push(Order({
-          exchangeId: assetsToOpenMakeOrderIds[sellAsset],
+          exchangeId: exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset],
           status: OrderStatus.active,
           orderType: OrderType.make,
           sellAsset: sellAsset,
@@ -394,7 +394,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
           fillQuantity: 0
       }));
 
-      OrderUpdated(assetsToOpenMakeOrderIds[sellAsset]);
+      OrderUpdated(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset]);
     }
 
     /// @notice Takes an active order on the selected exchange
@@ -653,15 +653,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param ofAsset Address of asset
     /// @return Quantity of input asset held in exchange
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
-        if (assetsToOpenMakeOrderIds[ofAsset] == 0) {
-            return 0;
+        uint totalSellQuantity;     // quantity in custody across exchanges
+        for (uint i; i < module.exchanges.length; i++) {
+            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
+                continue;
+            }
+            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
+            if (sellQuantity == 0) {
+                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
+            }
+            totalSellQuantity += sellQuantity;
         }
-        var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[0].getOrder(module.exchanges[0], assetsToOpenMakeOrderIds[ofAsset]);
-        if (sellQuantity == 0) {
-            assetsToOpenMakeOrderIds[ofAsset] = 0;
+        if (totalSellQuantity == 0) {
             isInOpenMakeOrder[sellAsset] = false;
         }
-        return sellQuantity;
+        return totalSellQuantity;
     }
 
     // PUBLIC VIEW METHODS

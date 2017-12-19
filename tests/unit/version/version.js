@@ -17,7 +17,7 @@ let manager;
 let opts;
 
 const addresses = addressBook[environment];
-
+const fundName = "Super Fund";
 const keccakedFundName =
   "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
@@ -35,7 +35,7 @@ test("Can setup a new fund", async t => {
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
   const v = parseFloat(sig.substr(128, 2)) + 27;
-  await version.instance.setupFund.postTransaction(opts, [
+  const txId = await version.instance.setupFund.postTransaction(opts, [
     fundName, // name
     addresses.MlnToken, // reference asset
     config.protocol.fund.managementReward,

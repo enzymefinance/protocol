@@ -9,14 +9,58 @@ import '../thirdparty/SimpleMarket.sol';
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-library simpleAdapter {
+contract simpleAdapter {
 
     // EVENTS
 
     event OrderUpdated(uint id);
 
-    // METHODS
-    // PUBLIC METHODS
+    // VIEW METHODS
+
+    function getLastOrderId(address onExchange)
+        constant
+        returns (uint)
+    {
+        return SimpleMarket(onExchange).last_offer_id();
+    }
+    function isActive(address onExchange, uint id)
+        constant
+        returns (bool)
+    {
+        return SimpleMarket(onExchange).isActive(id);
+    }
+    function getOwner(address onExchange, uint id)
+        constant
+        returns (address)
+    {
+        return SimpleMarket(onExchange).getOwner(id);
+    }
+    function getOrder(address onExchange, uint id)
+        constant
+        returns (address, address, uint, uint)
+    {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = SimpleMarket(onExchange).getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
+    }
+    function getTimestamp(address onExchange, uint id)
+        constant
+        returns (uint)
+    {
+        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
+        return timestamp;
+    }
+
+    // NON-CONSTANT METHODS
 
     /// @notice Makes an order on the given exchange
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
@@ -74,54 +118,5 @@ library simpleAdapter {
     {
         success = SimpleMarket(onExchange).cancel(id);
         OrderUpdated(id);
-    }
-
-    // PUBLIC VIEW METHODS
-
-    function getLastOrderId(address onExchange)
-        view
-        returns (uint)
-    {
-        return SimpleMarket(onExchange).last_offer_id();
-    }
-
-    function isActive(address onExchange, uint id)
-        view
-        returns (bool)
-    {
-        return SimpleMarket(onExchange).isActive(id);
-    }
-
-    function getOwner(address onExchange, uint id)
-        view
-        returns (address)
-    {
-        return SimpleMarket(onExchange).getOwner(id);
-    }
-
-    function getOrder(address onExchange, uint id)
-        view
-        returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = SimpleMarket(onExchange).getOffer(id);
-        return (
-            address(sellAsset),
-            address(buyAsset),
-            sellQuantity,
-            buyQuantity
-        );
-    }
-
-    function getTimestamp(address onExchange, uint id)
-        view
-        returns (uint)
-    {
-        var (, , , , , , timestamp) = SimpleMarket(onExchange).offers(id);
-        return timestamp;
     }
 }
