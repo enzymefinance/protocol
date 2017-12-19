@@ -16,10 +16,19 @@
       "warning",
       3
     ],
+    "lbrace": [
+      "warning"
+    ],
+    "operator-whitespace": [
+      "warning"
+    ],
     "security/enforce-explicit-visibility": [
       "warning"
     ],
     "security/no-block-members": [
+      "warning"
+    ],
+    "security/no-inline-assembly": [
       "warning"
     ]
   }
