@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import './RiskMgmtInterface.sol';
+import "./RiskMgmtInterface.sol";
 
 /// @title Risk Management Contract
 /// @dev isMakePermitted and isTakePermitted can be extended to define custom risk management logic using order and reference prices

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import '../assets/Asset.sol';
-import './SharesInterface.sol';
+import "../assets/Asset.sol";
+import "./SharesInterface.sol";
 
 /// @title Shares Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>

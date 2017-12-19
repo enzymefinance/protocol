@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import './DBC.sol';
+import "./DBC.sol";
 
 contract Owned is DBC {
 

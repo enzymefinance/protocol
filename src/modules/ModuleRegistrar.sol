@@ -1,7 +1,7 @@
 pragma solidity ^0.4.8;
 
-import './SimpleCertifier.sol';
-import '../dependencies/DBC.sol';
+import "./SimpleCertifier.sol";
+import "../dependencies/DBC.sol";
 
 contract ModuleRegistrar is DBC {
 

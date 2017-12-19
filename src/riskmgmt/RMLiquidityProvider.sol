@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import './RiskMgmtInterface.sol';
+import "./RiskMgmtInterface.sol";
 
 /// @title Risk Management Liquidity Provider Contract
 /// @author Melonport AG <team@melonport.com>

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import '../assets/Asset.sol';
+import "../assets/Asset.sol";
 
 /// @title Exchange Interface Contract
 /// @author Melonport AG <team@melonport.com>

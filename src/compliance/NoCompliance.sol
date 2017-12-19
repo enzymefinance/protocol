@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import './ComplianceInterface.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
+import "./ComplianceInterface.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>

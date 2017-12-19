@@ -1,10 +1,10 @@
 pragma solidity ^0.4.19;
 
-import '../Fund.sol';
-import '../FundInterface.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
-import './VersionInterface.sol';
+import "../Fund.sol";
+import "../FundInterface.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
+import "./VersionInterface.sol";
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>

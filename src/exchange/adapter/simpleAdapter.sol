@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import '../../assets/Asset.sol';
-import '../thirdparty/SimpleMarket.sol';
+import "../../assets/Asset.sol";
+import "../thirdparty/SimpleMarket.sol";
 
 
 /// @title SimpleAdapter Contract

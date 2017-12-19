@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import 'ds-math/math.sol';
-import '../assets/Asset.sol';
-import './RiskMgmtInterface.sol';
+import "ds-math/math.sol";
+import "../assets/Asset.sol";
+import "./RiskMgmtInterface.sol";
 
 /// @title Risk Management Make Orders Contract
 /// @author Melonport AG <team@melonport.com>

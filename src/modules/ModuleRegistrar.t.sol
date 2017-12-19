@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import 'ds-test/test.sol';
-import './ModuleRegistrar.sol';
-import './SimpleCertifier.sol';
+import "ds-test/test.sol";
+import "./ModuleRegistrar.sol";
+import "./SimpleCertifier.sol";
 
 
 contract ModuleRegistrarTest is DSTest {
@@ -13,10 +13,10 @@ contract ModuleRegistrarTest is DSTest {
 
     // hoisted variables
     address inputAddress = 0xE01c10Fd900939D1EaB56eE373Ea5E2BD4E2cfB3;
-    string inputName = 'My module';
+    string inputName = "My module";
     uint inputClass = 11;
-    string inputUrl = 'modul.ar';
-    string inputIpfs = 'ipfs';
+    string inputUrl = "modul.ar";
+    string inputIpfs = "ipfs";
 
     function setUp() {
         certifier = new SimpleCertifier();

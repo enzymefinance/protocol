@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import './assets/SharesInterface.sol';
-import './assets/ERC223ReceivingContract.sol';
+import "./assets/SharesInterface.sol";
+import "./assets/ERC223ReceivingContract.sol";
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>

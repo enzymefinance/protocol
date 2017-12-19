@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import 'ds-math/math.sol';
-import './AssetInterface.sol';
-import './ERC223ReceivingContract.sol';
+import "ds-math/math.sol";
+import "./AssetInterface.sol";
+import "./ERC223ReceivingContract.sol";
 
 /// @title Asset Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>

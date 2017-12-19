@@ -1,15 +1,15 @@
 pragma solidity ^0.4.19;
 
-import './assets/Shares.sol';
-import './dependencies/DBC.sol';
-import './dependencies/Owned.sol';
-import './compliance/ComplianceInterface.sol';
-import './pricefeeds/PriceFeedInterface.sol';
-import './riskmgmt/RiskMgmtInterface.sol';
-import './exchange/ExchangeInterface.sol';
-import {simpleAdapter as exchangeAdapter} from './exchange/adapter/simpleAdapter.sol';
-import './FundInterface.sol';
-import 'ds-math/math.sol';
+import "./assets/Shares.sol";
+import "./dependencies/DBC.sol";
+import "./dependencies/Owned.sol";
+import "./compliance/ComplianceInterface.sol";
+import "./pricefeeds/PriceFeedInterface.sol";
+import "./riskmgmt/RiskMgmtInterface.sol";
+import "./exchange/ExchangeInterface.sol";
+import {simpleAdapter as exchangeAdapter} from "./exchange/adapter/simpleAdapter.sol";
+import "./FundInterface.sol";
+import "ds-math/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
@@ -295,7 +295,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
-            if (assetHoldings == 0) continue;
+            if (assetHoldings == 0) {
+                continue;
+            }
 
             // participant's ownership percentage of asset holdings
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
@@ -345,20 +347,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
         require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
         var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
+        uint orderPrice = module.pricefeed.getOrderPrice(
+            sellAsset, buyAsset, sellQuantity, buyQuantity
+        );
+
         require(isRecent);  // Reference price is required to be recent
-        require(module.riskmgmt.isMakePermitted(
-            module.pricefeed.getOrderPrice(
+        require(
+            module.riskmgmt.isMakePermitted(
+                orderPrice,
+                referencePrice,
                 sellAsset,
                 buyAsset,
                 sellQuantity,
                 buyQuantity
-            ),
-            referencePrice,
-            sellAsset,
-            buyAsset,
-            sellQuantity,
-            buyQuantity
-        )); // RiskMgmt module: Make order not permitted
+            )
+        ); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
         require(Asset(sellAsset).approve(address(module.exchange), sellQuantity)); // Approve exchange to spend assets
 
