@@ -8,11 +8,11 @@ const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
 const api = new Api(provider);
 
 async function main() {
-  testAccounts.forEach(async (account) => {
+  await Promise.all(testAccounts.map(async (account, index) => {
     await api.parity.newAccountFromPhrase(account, "password");
-  });
-  console.log("Done creating accounts");
-  process.exit()
+    console.log(`Created account ${index+1} of ${testAccounts.length}`);
+  }));
+  process.exit(0);
 }
 
 main();
