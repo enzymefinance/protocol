@@ -11,6 +11,7 @@ async function main() {
   testAccounts.forEach(async (account) => {
     await api.parity.newAccountFromPhrase(account, "password");
   });
+  console.log("Done creating accounts");
   process.exit()
 }
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+set -ex
 
 CHAIN_DIR='./utils/chain'
 
 parity --chain $CHAIN_DIR/chainGenesis.json db kill || echo 'No database to delete'
 parity --chain $CHAIN_DIR/chainGenesis.json --jsonrpc-apis all &
+sleep 3
 babel-node tests/beforeTests.js
 killall parity
 
