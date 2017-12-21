@@ -126,7 +126,10 @@ contract ModuleRegistrar is DBC {
     /// @dev Only KYC registered users can vote on registered modules w rating betw 0 and 10
     /// @param ofModule address for which specific information is requested
     /// @param rating uint between 0 and 10; 0 being worst, 10 being best
-    function vote(address ofModule, uint rating) public
+    function vote(
+        address ofModule,
+        uint rating
+    )
         pre_cond(information[ofModule].exists)
         pre_cond(PICOPS.certified(msg.sender))
         pre_cond(!hasVoted[ofModule][msg.sender])

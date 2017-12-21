@@ -33,12 +33,16 @@ contract Shares is Asset, SharesInterface {
 
     // INTERNAL METHODS
 
+    /// @param recipient Address the new shares should be sent to
+    /// @param shareQuantity Number of shares to be created
     function createShares(address recipient, uint shareQuantity) internal {
         totalSupply = add(totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
         Created(msg.sender, now, shareQuantity);
     }
 
+    /// @param recipient Address the new shares should be taken from when destroyed
+    /// @param shareQuantity Number of shares to be annihilated
     function annihilateShares(address recipient, uint shareQuantity) internal {
         totalSupply = sub(totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);

@@ -37,10 +37,12 @@ contract RMLiquididtyProvider is RiskMgmtInterface {
     /// @notice takeOrders are checked if the order owner matches liquidity provider
     /// @param orderPrice Price of Order
     /// @param referencePrice Reference price obtained through PriceFeed contract
+    /// @param orderQuantity Size of the order
     /// @param sellAsset Asset (as registered in Asset registrar) to be sold
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
+    /// @param orderOwner Address that created the order
     /// @return isPermitted If takeOrder is permitted
     function isTakePermitted(
         uint orderPrice,

@@ -74,6 +74,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
      *  and let EUR-T decimals == 8.
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
+    /// @param ofAssets list of asset addresses
+    /// @param newPrices list of prices for each of the assets
     function update(address[] ofAssets, uint[] newPrices)
         pre_cond(isOwner())
         pre_cond(ofAssets.length == newPrices.length)
@@ -141,11 +143,16 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         );
     }
 
-    /// @notice Price of a registered asset in format (bool areRecent, uint[] prices, uint[] decimals)
-    /// @dev Convention for price formatting: mul(price, 10 ** decimal), to avoid floating numbers
-    /// @param ofAssets Assets for which prices should be returned
-    /// @return areRecent Whether the returned prices are all valid (as defined by VALIDITY)
-    /// @return prices Array of prices
+    /**
+    @notice Price of a registered asset in format (bool areRecent, uint[] prices, uint[] decimals)
+    @dev Convention for price formatting: mul(price, 10 ** decimal), to avoid floating numbers
+    @param ofAssets Assets for which prices should be returned
+    @return {
+        "areRecent":    "Whether all of the prices are fresh, given VALIDITY interval",
+        "prices":       "Array of prices",
+        "decimals":     "Array of decimal places for returned assets"
+    }
+    */
     function getPrices(address[] ofAssets)
         view
         returns (bool areRecent, uint[] prices, uint[] decimals)
@@ -161,11 +168,17 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         }
     }
 
-    /// @notice Gets inverted price of an asset
-    /// @dev Asset has been initialised and its price is non-zero
-    /// @dev Existing price ofAssets quoted in QUOTE_ASSET (convention)
-    /// @param ofAsset Asset for which inverted price should be return
-    /// @return invertedPrice Price based (instead of quoted) against QUOTE_ASSET
+    /**
+    @notice Gets inverted price of an asset
+    @dev Asset has been initialised and its price is non-zero
+    @dev Existing price ofAssets quoted in QUOTE_ASSET (convention)
+    @param ofAsset Asset for which inverted price should be return
+    @return {
+        "isRecent": "Whether the price is fresh, given VALIDITY interval",
+        "invertedPrice": "Price based (instead of quoted) against QUOTE_ASSET",
+        "decimal": "Decimal places for this asset"
+    }
+    */
     function getInvertedPrice(address ofAsset)
         view
         returns (bool isRecent, uint invertedPrice, uint decimal)
@@ -183,12 +196,18 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         );
     }
 
-    /// @notice Gets reference price of an asset pair
-    /// @dev One of the address is equal to quote asset
-    /// @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
-    /// @param ofBase Address of base asset
-    /// @param ofQuote Address of quote asset
-    /// @return referencePrice
+    /**
+    @notice Gets reference price of an asset pair
+    @dev One of the address is equal to quote asset
+    @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
+    @param ofBase Address of base asset
+    @param ofQuote Address of quote asset
+    @return {
+        "isRecent": "Whether the price is fresh, given VALIDITY interval",
+        "referencePrice": "Reference price",
+        "decimal": "Decimal places for this asset"
+    }
+    */
     function getReferencePrice(address ofBase, address ofQuote)
         view
         returns (bool isRecent, uint referencePrice, uint decimal)
@@ -203,7 +222,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     }
 
     /// @notice Gets price of Order
-    /// @param sellAsset Address of the Base Asset
+    /// @param sellAsset Address of the asset to be sold
+    /// @param buyAsset Address of the asset to be bought
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
     /// @return orderPrice Price as determined by an order
@@ -221,8 +241,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
 
     /// @notice Checks whether data exists for a given asset pair
     /// @dev Prices are only upated against QUOTE_ASSET
-    /// @param buyAsset Asset for which check to be done if data exists
     /// @param sellAsset Asset for which check to be done if data exists
+    /// @param buyAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
         view

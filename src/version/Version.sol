@@ -85,7 +85,6 @@ contract Version is DBC, Owned {
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
-    /// @return Deployed Fund with manager set as msg.sender
     function setupFund(
         string ofFundName,
         address ofReferenceAsset,
@@ -123,8 +122,8 @@ contract Version is DBC, Owned {
         FundUpdated(ofFund);
     }
 
-    /// @param ofFund Address of the fund to be shut down
     /// @dev Dereference Fund and trigger selfdestruct
+    /// @param ofFund Address of the fund to be shut down
     function shutDownFund(address ofFund)
         pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)
     {

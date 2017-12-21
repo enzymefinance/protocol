@@ -11,7 +11,7 @@ contract Compliance is ComplianceInterface, DBC, Owned {
 
     // TYPES
 
-    struct Identity { // Information about identity
+    struct Identity {    // Information about identity
         bool isEligible; // Whether identiy is eligible to invest
         /* .. additional information
          *   for example how much identity is eligible to invest

@@ -99,7 +99,14 @@ contract Governance is DBC, Owned, DSGroup {
 
     // PUBLIC VIEW METHODS
 
-    function getVersionById(uint id) constant returns (address, bool, uint) {
+    /**
+    @return {
+        "ofVersion": "Address of the Version",
+        "active": "Whether the Version in question is active",
+        "timestamp": "When the Version in question was added to the list"
+    }
+    */
+    function getVersionById(uint id) view returns (address ofVersion, bool active, uint timestamp) {
         return (
             versions[id].version,
             versions[id].active,
@@ -111,6 +118,7 @@ contract Governance is DBC, Owned, DSGroup {
 
     /// @notice Add an approved version of Melon
     /// @param ofVersion Address of the version to add
+    /// @return id integer ID of the version (list index)
     function addVersion(
         address ofVersion
     )
@@ -136,5 +144,4 @@ contract Governance is DBC, Owned, DSGroup {
         delete versions[id];
         VersionUpdated(id);
     }
-
 }

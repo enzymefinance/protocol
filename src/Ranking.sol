@@ -15,7 +15,13 @@ contract Ranking {
     }
 
     // TODO: This function will need to be updated if there are more than 1024 funds on the version
-    /// @notice Returns an array of fund addresses and an array of share price associated
+    /**
+    @notice Get an array of fund addresses and an array of share price associated
+    @return {
+        "fundAddresses": "Array of Fund addresses",
+        "fundSharePrices": "Array of share prices, one for each Fund"
+    }
+    */
     function getFundsSharePrices() constant returns(address[1024] fundAddresses, uint[1024] fundSharePrices) {
         uint lastId = version.getLastFundId();
         for (uint i = 0; i <= lastId; i++) {

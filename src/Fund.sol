@@ -92,6 +92,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // CONSTRUCTOR
 
     /// @dev Should only be called via Version.setupFund(..)
+    /// @param ofManager address of the Fund manager
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
@@ -101,7 +102,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchange Address of exchange on which this fund can trade
-    /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
         string withName,
@@ -217,8 +217,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     /// @notice Executes active subscription and redemption requests, in a way that minimises information advantages of investor
     /// @dev Distributes melon and shares according to the request
-    /// @param id Index of request to be executed
     /// @dev Active subscription or redemption request executed
+    /// @param id Index of request to be executed
     function executeRequest(uint id)
         external
         pre_cond(!isShutDown)
@@ -275,7 +275,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Redeems by allocating an ownership percentage of each asset to the participant
     /// @dev Independent of running price feed!
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @return Whether all assets sent to shareholder or not
+    /// @return success Whether all assets sent to shareholder or not
     function redeemAllOwnedAssets(uint shareQuantity)
         external
         returns (bool success)
@@ -287,7 +287,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
-    /// @return Whether all assets sent to shareholder or not
+    /// @return success Whether all assets sent to shareholder or not
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
         public
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
@@ -484,7 +484,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         OrderUpdated(id);
     }
 
-
     // PUBLIC METHODS
 
     // PUBLIC METHODS : ACCOUNTING
@@ -518,100 +517,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             PortfolioContent(assetHoldings, assetPrice, assetDecimal);
         }
-    }
-
-    /// @notice Calculates unclaimed rewards of the fund manager
-    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    /**
-    @return {
-      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
-      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals"
-    }
-    */
-    function calcUnclaimedRewards(uint gav)
-        view
-        returns (
-            uint managementReward,
-            uint performanceReward,
-            uint unclaimedRewards)
-    {
-        // Management reward calculation
-        uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
-        uint gavPercentage = mul(timePassed, gav) / (1 years);
-        managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
-
-        // Performance reward calculation
-        // Handle potential division through zero by defining a default value
-        uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
-        if (valuePerShareExclPerfRewards > atLastUnclaimedRewardAllocation.highWaterMark) {
-            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastUnclaimedRewardAllocation.highWaterMark);
-            uint investmentProfits = wmul(gainInSharePrice, totalSupply);
-            performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
-        }
-
-        // Sum of all rewards
-        unclaimedRewards = add(managementReward, performanceReward);
-    }
-
-    /// @notice Calculates the Net asset value of this fund
-    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    function calcNav(uint gav, uint unclaimedRewards)
-        view
-        returns (uint nav)
-    {
-        nav = sub(gav, unclaimedRewards);
-    }
-
-    /// @notice Calculates the share price of the fund
-    /// @dev Convention for valuePerShare (== sharePrice) formatting: mul(totalValue / numShares, 10 ** decimal), to avoid floating numbers
-    /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    /// @param numShares the number of shares multiplied by 10 ** shareDecimals
-    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
-    function calcValuePerShare(uint totalValue, uint numShares)
-        view
-        pre_cond(numShares > 0)
-        returns (uint valuePerShare)
-    {
-        valuePerShare = toSmallestShareUnit(totalValue / numShares);
-    }
-
-    /// @notice Calculates essential fund metrics
-    /**
-    @return {
-      "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
-      "managementReward": "A time (seconds) based reward",
-      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]",
-      "rewardsShareQuantity": "The number of shares to be given as rewards to the manager",
-      "nav": "Net asset value denominated in [base unit of melonAsset]",
-      "sharePrice": "Share price denominated in [base unit of melonAsset]"
-    }
-    */
-    function performCalculations()
-        view
-        returns (
-            uint gav,
-            uint managementReward,
-            uint performanceReward,
-            uint unclaimedRewards,
-            uint rewardsShareQuantity,
-            uint nav,
-            uint sharePrice
-        )
-    {
-        gav = calcGav(); // Reflects value independent of fees
-        (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
-        nav = calcNav(gav, unclaimedRewards);
-
-        // The value of unclaimedRewards measured in shares of this fund at current value
-        rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
-        // The total share supply including the value of unclaimedRewards, measured in shares of this fund
-        uint totalSupplyAccountingForRewards = add(totalSupply, rewardsShareQuantity);
-        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -678,6 +583,105 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     // PUBLIC VIEW METHODS
 
+    // PUBLIC VIEW : ACCOUNTING
+
+    /**
+    @notice Calculates unclaimed rewards of the fund manager
+    @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    @return {
+      "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals"
+    }
+    */
+    function calcUnclaimedRewards(uint gav)
+        view
+        returns (
+            uint managementReward,
+            uint performanceReward,
+            uint unclaimedRewards
+        )
+    {
+        // Management reward calculation
+        uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
+        uint gavPercentage = mul(timePassed, gav) / (1 years);
+        managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
+
+        // Performance reward calculation
+        // Handle potential division through zero by defining a default value
+        uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
+        if (valuePerShareExclPerfRewards > atLastUnclaimedRewardAllocation.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastUnclaimedRewardAllocation.highWaterMark);
+            uint investmentProfits = wmul(gainInSharePrice, totalSupply);
+            performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
+        }
+
+        // Sum of all rewards
+        unclaimedRewards = add(managementReward, performanceReward);
+    }
+
+    /// @notice Calculates the Net asset value of this fund
+    /// @param gav Gross asset value of this fund in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param unclaimedRewards The sum of both managementReward and performanceReward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return nav Net asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    function calcNav(uint gav, uint unclaimedRewards)
+        view
+        returns (uint nav)
+    {
+        nav = sub(gav, unclaimedRewards);
+    }
+
+    /// @notice Calculates the share price of the fund
+    /// @dev Convention for valuePerShare (== sharePrice) formatting: mul(totalValue / numShares, 10 ** decimal), to avoid floating numbers
+    /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
+    /// @param totalValue the total value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param numShares the number of shares multiplied by 10 ** shareDecimals
+    /// @return valuePerShare Share price denominated in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
+    function calcValuePerShare(uint totalValue, uint numShares)
+        view
+        pre_cond(numShares > 0)
+        returns (uint valuePerShare)
+    {
+        valuePerShare = toSmallestShareUnit(totalValue / numShares);
+    }
+
+    /**
+    @notice Calculates essential fund metrics
+    @return {
+      "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
+      "managementReward": "A time (seconds) based reward",
+      "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]",
+      "rewardsShareQuantity": "The number of shares to be given as rewards to the manager",
+      "nav": "Net asset value denominated in [base unit of melonAsset]",
+      "sharePrice": "Share price denominated in [base unit of melonAsset]"
+    }
+    */
+    function performCalculations()
+        view
+        returns (
+            uint gav,
+            uint managementReward,
+            uint performanceReward,
+            uint unclaimedRewards,
+            uint rewardsShareQuantity,
+            uint nav,
+            uint sharePrice
+        )
+    {
+        gav = calcGav(); // Reflects value independent of fees
+        (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
+        nav = calcNav(gav, unclaimedRewards);
+
+        // The value of unclaimedRewards measured in shares of this fund at current value
+        rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
+        // The total share supply including the value of unclaimedRewards, measured in shares of this fund
+        uint totalSupplyAccountingForRewards = add(totalSupply, rewardsShareQuantity);
+        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+    }
+
+    // PUBLIC VIEW : OTHER
+
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function calcSharePrice() view returns (uint sharePrice) {
@@ -685,6 +689,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         return sharePrice;
     }
 
+    /// @notice Get the modules set for this Fund
     function getModules() view returns (address ,address, address, address) {
         return (
             address(module.pricefeed),

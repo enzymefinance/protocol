@@ -16,9 +16,9 @@ contract FundRanking {
         version = Version(ofVersion);
     }
 
-    /// @notice Returns an array of fund addresses and an associated array of share prices
-    /// @dev Return value only w.r.t. specified version contract
     /**
+    @notice Returns an array of fund addresses and an associated array of share prices
+    @dev Return value only w.r.t. specified version contract
     @return {
       "fundAddrs": "Array of addresses of Melon Funds",
       "sharePrices": "Array of uints containing share prices of above Melon Fund addresses"

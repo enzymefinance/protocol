@@ -9,16 +9,14 @@ import "./ERC223ReceivingContract.sol";
 /// @notice Implementation of ERC223 inspired by https://github.com/raiden-network/raiden-token/blob/master/contracts/token.sol
 contract Asset is DSMath, AssetInterface {
 
-    /*
-     * Data structures
-     */
+    // DATA STRUCTURES
+
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowed;
     uint256 public totalSupply;
 
-    /*
-     * Public functions
-     */
+    // PUBLIC METHODS
+
     /// @notice Send `_value` tokens to `_to` from `msg.sender`.
     /// @dev Transfers sender's tokens to a given address. Returns success.
     /// @param _to Address of token receiver.
@@ -115,9 +113,8 @@ contract Asset is DSMath, AssetInterface {
         return true;
     }
 
-    /*
-     * Read functions
-     */
+    // PUBLIC VIEW METHODS
+
     /// @dev Returns number of allowed tokens that a spender can transfer on
     /// behalf of a token owner.
     /// @param _owner Address of token owner.
