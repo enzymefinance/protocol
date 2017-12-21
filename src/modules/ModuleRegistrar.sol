@@ -13,6 +13,8 @@ contract ModuleRegistrar is DBC {
         address creator; // Address of Module creator, also address of inflation distribution amount
         string url; // URL for additional information of Module
         bytes32 ipfsHash; // Same as url but for ipfs
+        string accountSlashRepo; // Github account/repo url
+        bytes20 commitHash; // Github commit hash this module is referencing
         uint sumOfRating; // Sum of comunity based rating of Module
         uint numberOfVoters; // How many ppl rated this module
         bool exists; // Is this module registered
@@ -50,12 +52,16 @@ contract ModuleRegistrar is DBC {
     /// @param moduleClass Enum: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
     /// @param url URL for additional information of Module
     /// @param ipfsHash Same as url but for ipfs
+    /// @param accountSlashRepo Github account/repo url
+    /// @param commitHash Github commit hash this module is referencing
     function register(
         address ofModule,
         string name,
         uint moduleClass,
         string url,
-        bytes32 ipfsHash
+        bytes32 ipfsHash,
+        string accountSlashRepo,
+        bytes20 commitHash
     )
         pre_cond(!moduleNameExists[keccak256(name)])
         pre_cond(!information[ofModule].exists)
@@ -67,6 +73,8 @@ contract ModuleRegistrar is DBC {
             creator: msg.sender,
             url: url,
             ipfsHash: ipfsHash,
+            accountSlashRepo: accountSlashRepo,
+            commitHash: commitHash,
             sumOfRating: 0,
             numberOfVoters: 0,
             exists: true
@@ -82,11 +90,15 @@ contract ModuleRegistrar is DBC {
     /// @param name Human-readable name of the Module
     /// @param url URL for additional information of Module
     /// @param ipfsHash Same as url but for ipfs
+    /// @param accountSlashRepo Github account/repo url
+    /// @param commitHash Github commit hash this module is referencing
     function updateDescriptiveInformation(
         address ofModule,
         string name,
         string url,
-        bytes32 ipfsHash
+        bytes32 ipfsHash,
+        string accountSlashRepo,
+        bytes20 commitHash
     )
         pre_cond(information[ofModule].creator == msg.sender)
         pre_cond(information[ofModule].exists)
@@ -97,6 +109,8 @@ contract ModuleRegistrar is DBC {
         moduleNameExists[keccak256(name)] = true;
         module.url = url;
         module.ipfsHash = ipfsHash;
+        module.accountSlashRepo = accountSlashRepo;
+        module.commitHash = commitHash;
     }
 
     /// @notice Deletes an existing entry
