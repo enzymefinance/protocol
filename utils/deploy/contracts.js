@@ -319,7 +319,6 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("./out/assets/PreminedAsset.abi"));
       bytecode = fs.readFileSync("./out/assets/PreminedAsset.bin");
       opts.data = `0x${bytecode}`;
-      console.log(opts)
       ethToken = await api
         .newContract(abi)
         .deploy(opts, []);
