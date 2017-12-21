@@ -241,6 +241,7 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
   const exchangePreEthToken = Number(
     await ethToken.instance.balanceOf.call({}, [simpleMarket.address])
   );
+  const [ , , , , , preNav, preSharePrice] = Object.values(await fund.instance.performCalculations.call({}, []));
   await updateDatafeed();
   receipt = await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -259,6 +260,7 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
   const exchangePostEthToken = Number(
     await ethToken.instance.balanceOf.call({}, [simpleMarket.address])
   );
+  const [ , , , , , postNav, postSharePrice] = Object.values(await fund.instance.performCalculations.call({}, []));
   const post = await getAllBalances();
 
   t.deepEqual(exchangePostMln, exchangePreMln + trade1.sellQuantity);
@@ -275,6 +277,18 @@ test.serial('manager makes order, and sellToken (MLN-T) is transferred to exchan
   t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - trade1.sellQuantity);
   t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
   t.deepEqual(post.fund.ether, pre.fund.ether);
+  t.deepEqual(preNav, postNav);
+  t.deepEqual(preSharePrice, postSharePrice);
+});
+
+test.serial('Order was made with correct parameters', async t => {
+  const lastOrderId = Number(await simpleMarket.instance.last_offer_id.call({}, []));
+  const order = await simpleMarket.instance.getOffer.call({}, [lastOrderId]);
+
+  t.is(Number(order[0]), trade1.sellQuantity);
+  t.is(order[1], mlnToken.address);
+  t.is(Number(order[2]), trade1.buyQuantity);
+  t.is(order[3], ethToken.address);
 });
 
 test.serial('third party takes entire order, allowing fund to receive ethToken', async t => {
