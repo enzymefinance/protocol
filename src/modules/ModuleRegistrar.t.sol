@@ -20,6 +20,7 @@ contract ModuleRegistrarTest is DSTest {
     string accountSlashRepo = "https://github.com/melonproject/protocol"; // Github account/repo url
     bytes20 commitHash = bytes20(keccak256("ba69d16bf314cdd5eabd380163a13775d9b1a829"));
 
+
     function setUp() {
         certifier = new SimpleCertifier();
         registrar = new ModuleRegistrar(certifier);
