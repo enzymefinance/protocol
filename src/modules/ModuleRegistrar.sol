@@ -12,7 +12,7 @@ contract ModuleRegistrar is DBC {
         uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
         address creator; // Address of Module creator, also address of inflation distribution amount
         string url; // URL for additional information of Module
-        bytes32 ipfsHash; // Same as url but for ipfs
+        string ipfsHash; // Same as url but for ipfs
         uint sumOfRating; // Sum of comunity based rating of Module
         uint numberOfVoters; // How many ppl rated this module
         bool exists; // Is this module registered
@@ -29,19 +29,15 @@ contract ModuleRegistrar is DBC {
     mapping (address => mapping (address => bool)) public hasVoted; // Whether this address has already voted
     address[] public registeredModules; // List registered module addresses
 
-    // VIEW METHODS
+    // METHODS
 
-    // Get registration specific information
-    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
-    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
-
-    // NON-CONSTANT METHODS
+    // CONSTRUCTOR
 
     function ModuleRegistrar(address ofSimpleCertifier) {
         PICOPS = SimpleCertifier(ofSimpleCertifier);
     }
 
-    // USER INTERFACE
+    // PUBLIC METHODS
 
     /// @notice Registers a Module
     /// @dev Only non-registered modules
@@ -55,7 +51,7 @@ contract ModuleRegistrar is DBC {
         string name,
         uint moduleClass,
         string url,
-        bytes32 ipfsHash
+        string ipfsHash
     )
         pre_cond(!moduleNameExists[keccak256(name)])
         pre_cond(!information[ofModule].exists)
@@ -86,7 +82,7 @@ contract ModuleRegistrar is DBC {
         address ofModule,
         string name,
         string url,
-        bytes32 ipfsHash
+        string ipfsHash
     )
         pre_cond(information[ofModule].creator == msg.sender)
         pre_cond(information[ofModule].exists)
@@ -128,4 +124,11 @@ contract ModuleRegistrar is DBC {
         information[ofModule].sumOfRating += rating;
         information[ofModule].numberOfVoters += 1;
     }
+
+    // PUBLIC VIEW METHODS
+
+    // Get registration specific information
+    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
+    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
+
 }

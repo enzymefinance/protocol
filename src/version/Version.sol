@@ -51,14 +51,9 @@ contract Version is DBC, Owned {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // VIEW METHODS
+    // METHODS
 
-    function getMelonAsset() view returns (address) { return MELON_ASSET; }
-    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
-    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
-
-    // NON-CONSTANT METHODS
+    // CONSTRUCTOR
 
     /// @param versionNumber SemVer of Melon protocol version
     /// @param ofGovernance Address of Melon governance contract
@@ -73,7 +68,11 @@ contract Version is DBC, Owned {
         MELON_ASSET = ofMelonAsset;
     }
 
+    // EXTERNAL METHODS
+
     function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
+
+    // PUBLIC METHODS
 
     /// @param ofFundName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset Asset against which performance reward is measured against
@@ -82,7 +81,8 @@ contract Version is DBC, Owned {
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
-    /// @param ofExchange Address of exchange on which this fund can trade
+    /// @param ofExchanges Addresses of exchange on which this fund can trade
+    /// @param ofExchangeAdapters Addresses of exchange adapters
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
@@ -95,13 +95,14 @@ contract Version is DBC, Owned {
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
-        address ofExchange,
+        address[] ofExchanges,
+        address[] ofExchangeAdapters,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
-        pre_cond(!isShutDown)
     {
+        require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
         require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
@@ -116,7 +117,8 @@ contract Version is DBC, Owned {
             ofCompliance,
             ofRiskMgmt,
             ofPriceFeed,
-            ofExchange
+            ofExchanges,
+            ofExchangeAdapters
         );
         listOfFunds.push(ofFund);
         fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
@@ -135,4 +137,11 @@ contract Version is DBC, Owned {
         fund.shutDown();
         FundUpdated(ofFund);
     }
+
+    // PUBLIC VIEW METHODS
+
+    function getMelonAsset() view returns (address) { return MELON_ASSET; }
+    function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
+    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 }

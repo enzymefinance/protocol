@@ -1,9 +1,9 @@
 import test from "ava";
 import Api from "@parity/api";
-import updateDatafeed, * as deployed from "../../utils/lib/utils.js";
+import * as deployed from "../../../utils/lib/utils";
 
 const fs = require("fs");
-const environmentConfig = require("../../utils/config/environment.js");
+const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
@@ -15,10 +15,6 @@ let eurToken;
 let ethToken;
 let mlnToken;
 let accounts;
-let assetA;
-let assetB;
-const inputPriceAssetA = 500;
-const inputPriceAssetB = 2000;
 let opts;
 
 // mock data
@@ -62,7 +58,7 @@ function registerEth(pricefeed) {
 
 // hooks
 
-test.before(async t => {
+test.before(async () => {
   accounts = await api.eth.accounts();
   opts = { from: accounts[0], gas: config.gas };
   ethToken = await deployed.ethToken;
@@ -106,7 +102,7 @@ test("registers twice without error", async t => {
 
 test("gets registered information", async t => {
   await registerEur(t.context.pricefeed);
-  let result = await t.context.pricefeed.instance.information.call({}, [eurToken.address]);
+  const result = await t.context.pricefeed.instance.information.call({}, [eurToken.address]);
   const [breakIn, breakOut, chainId, decimal, exists, ipfsHash, name, price, symbol, timestamp, url] = Object.values(result);
 
   t.is(breakIn, mockBreakIn);
@@ -127,7 +123,7 @@ test("registers pricefeed update", async t => {
   await registerEth(t.context.pricefeed);
   const inputPriceEur = 150000000;
   const inputPriceEth = 2905;
-  const result = await t.context.pricefeed.instance.update.postTransaction({from: accounts[0], gas:6000000}, [
+  await t.context.pricefeed.instance.update.postTransaction({from: accounts[0], gas:6000000}, [
     [eurToken.address, ethToken.address],
     [inputPriceEur, inputPriceEth],
   ]);

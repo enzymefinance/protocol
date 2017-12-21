@@ -7,7 +7,7 @@ import './RiskMgmtInterface.sol';
 /// @author Melonport AG <team@melonport.com>
 contract RiskMgmt is RiskMgmtInterface {
 
-    // NON-CONSTANT METHODS
+    // PUBLIC VIEW METHODS
 
     /// @notice Checks if the makeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
@@ -25,6 +25,7 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
+        view
         returns (bool isPermitted)
     {
         return true; // For testing purposes
@@ -46,6 +47,7 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
+        view
         returns (bool isPermitted)
     {
         return true; // For testing purposes
