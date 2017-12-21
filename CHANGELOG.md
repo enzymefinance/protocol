@@ -151,7 +151,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Allow first supscription w/o waiting time;
 - Prevent redeem w not sufficient shares
 - Way how errors are logged
-- redeemUsingSlice -> redeemOwnedAssets
+- redeemUsingSlice -> redeemAllOwnedAssets
 - Refactor: Governance contract
 - Refactor: Version contract
 - Update README
@@ -193,7 +193,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Cleaned up Version and Version Interface
 - Cleaned up Governance
 - Input ReferenceAsset in Fund, Version setup
-- redeemOwnedAssets in (err,,msg) format
+- redeemAllOwnedAssets in (err,,msg) format
 - natspecs comments
 - Add (err,errMsg) format to PoE and manualSettlemnt
 - quantityHeldInCustodyOfExchange() function to fix accounting issue

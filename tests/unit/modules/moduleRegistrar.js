@@ -23,6 +23,8 @@ const mockName = "My Module";
 const mockUrl = "www.sample.com";
 const mockIpfsHash =
   "0xd8344c361317e3736173f8da91dec3ca1de32f3cc0a895fd6363fbc20fd21985";
+const mockAccountRepo = "melonport/protocol";
+const mockCommitHash = "0x892ba2d26d1a1dcca471a4d2babeff8efda0c3da";
 
 // helper functions
 async function registerModule() {
@@ -32,6 +34,8 @@ async function registerModule() {
     11,
     mockUrl,
     mockIpfsHash,
+    mockAccountRepo,
+    mockCommitHash
   ]);
 }
 
@@ -76,6 +80,8 @@ test("Operator can register a module", async t => {
     creator,
     url,
     ipfsHash,
+    accountRepo,
+    commitHash,
     sumOfRating,
     numberOfVoters,
     exists
@@ -87,6 +93,8 @@ test("Operator can register a module", async t => {
   t.is(creator, operator);
   t.is(url, mockUrl);
   t.is(ipfsHash, mockIpfsHash);
+  t.is(accountRepo, mockAccountRepo);
+  t.is(Api.util.bytesToHex(commitHash), mockCommitHash);
   t.is(Number(sumOfRating), 0);
   t.is(Number(numberOfVoters), 0);
   t.truthy(exists);
@@ -100,7 +108,7 @@ test("Voting updates rating and no of voters correctly", async t => {
   const result = await moduleRegistrar.instance.information.call({}, [
     registeredModule,
   ]);
-  const [, , , , , sumOfRating, numberOfVoters] = Object.values(result);
+  const [ , , , , , , , sumOfRating, numberOfVoters, ] = Object.values(result);
 
   t.is(Number(sumOfRating), 5);
   t.is(Number(numberOfVoters), 1);
@@ -118,7 +126,7 @@ test.serial("Operator removes a module", async t => {
     {},
     [operator],
   );
-  const [, , , , , , , exists] = Object.values(result);
+  const [ , , , , , , , , , exists] = Object.values(result);
 
   t.is(moduleOperated, "0x0000000000000000000000000000000000000000");
   t.falsy(exists);

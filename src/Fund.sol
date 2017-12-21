@@ -276,20 +276,32 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed!
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /// @return Whether all assets sent to shareholder or not
-    function redeemOwnedAssets(uint shareQuantity)
+    function redeemAllOwnedAssets(uint shareQuantity)
         external
+        returns (bool success)
+    {
+        return emergencyRedeem(shareQuantity, ownedAssets);
+    }
+
+    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
+    /// @return Whether all assets sent to shareholder or not
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
+        public
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool success)
     {
         // If there are recent price updates, update totalSupply, accounting for unpaid rewards
-        if (module.pricefeed.hasRecentPrices(ownedAssets)) {
+        if (module.pricefeed.hasRecentPrices(requestedAssets)) {
             allocateUnclaimedRewards(); // Updates state
         }
 
         // Check whether enough assets held by fund
         uint[] memory ownershipQuantities;
-        for (uint i = 0; i < ownedAssets.length; ++i) {
-            address ofAsset = ownedAssets[i];
+        for (uint i = 0; i < requestedAssets.length; ++i) {
+            address ofAsset = requestedAssets[i];
             uint assetHoldings = add(
                 uint(Asset(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
