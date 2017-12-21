@@ -44,7 +44,7 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     function executeRequest(uint requestId) external {}
     function cancelRequest(uint requestId) external {}
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool) {}
-    function redeemSharesAgainstAssets(uint shareQuantity, address[] requestedAssets) public returns (bool success) {}
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success) {}
     // Administration by Manager
     function enableSubscription() external {}
     function disableSubscription() external {}
