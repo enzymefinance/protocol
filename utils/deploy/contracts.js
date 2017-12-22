@@ -124,15 +124,11 @@ async function deploy(environment) {
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
 
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
       let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;
@@ -323,7 +319,6 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("./out/assets/PreminedAsset.abi"));
       bytecode = fs.readFileSync("./out/assets/PreminedAsset.bin");
       opts.data = `0x${bytecode}`;
-      console.log(opts)
       ethToken = await api
         .newContract(abi)
         .deploy(opts, []);
@@ -407,10 +402,6 @@ async function deploy(environment) {
 
       // link libs to fund (needed to deploy version)
       let fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
-      fundBytecode = solc.linkBytecode(fundBytecode, libObject);
       fs.writeFileSync("out/Fund.bin", fundBytecode, "utf8");
 
       // deploy version (can use identical libs object as above)
@@ -418,7 +409,6 @@ async function deploy(environment) {
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
       let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      versionBytecode = solc.linkBytecode(versionBytecode, libObject);
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;
@@ -436,11 +426,6 @@ async function deploy(environment) {
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
       bytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      libObject = {};
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
-      bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
       opts.gas = 6900000;
       fund = await api.newContract(abi).deploy(
@@ -455,7 +440,8 @@ async function deploy(environment) {
           participation, // participation
           riskMgmt, // riskMgmt
           datafeed, // pricefeed
-          simpleMarket // simple market
+          [simpleMarket], // simple market
+          [simpleAdapter]
         ],
         () => {},
         true,

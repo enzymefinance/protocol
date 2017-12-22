@@ -69,7 +69,8 @@ test.serial('can set up new fund', async t => {
       addresses.NoCompliance,
       addresses.RMMakeOrders,
       addresses.PriceFeed,
-      addresses.SimpleMarket,
+      [addresses.SimpleMarket],
+      [addresses.simpleAdapter],
       v,
       r,
       s
@@ -539,31 +540,4 @@ test.serial('investor has redeemed all shares, and they have been annihilated', 
 
   t.deepEqual(finalInvestorShares, 0);
   t.deepEqual(finalTotalShares, 0);
-});
-
-// other functions
-test.serial('manager can shut down a fund', async t => {
-  const pre = await getAllBalances(accounts, fund);
-  receipt = await version.instance.shutDownFund.postTransaction(
-    { from: manager, gasPrice: config.gasPrice },
-    [ fund.address ]
-  );
-  const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  const isShutDown = await fund.instance.isShutDown.call({}, []);
-  runningGasTotal = runningGasTotal.plus(gasUsed);
-  const post = await getAllBalances(accounts, fund);
-
-  t.true(isShutDown);
-  t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
-  t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
-  t.deepEqual(post.investor.ether, pre.investor.ether);
-  t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
-  t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
-  t.deepEqual(
-    post.manager.ether,
-    pre.manager.ether.minus(runningGasTotal.times(gasPrice))
-  );
-  t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken);
-  t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
-  t.deepEqual(post.fund.ether, pre.fund.ether);
 });

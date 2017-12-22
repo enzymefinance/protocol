@@ -17,13 +17,13 @@ let manager;
 let opts;
 
 const addresses = addressBook[environment];
-
+const fundName = "Super Fund";
 const keccakedFundName =
   "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
 test.before(async () => {
   accounts = await api.eth.accounts();
-  manager = accounts[1];
+  manager = accounts[4];
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 
@@ -35,15 +35,16 @@ test("Can setup a new fund", async t => {
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
   const v = parseFloat(sig.substr(128, 2)) + 27;
-  const txId = await instances.version.instance.setupFund.postTransaction(opts, [
-    "Super Fund",       // name
+  const txId = await version.instance.setupFund.postTransaction(opts, [
+    fundName, // name
     addresses.MlnToken, // reference asset
     config.protocol.fund.managementReward,
     config.protocol.fund.performanceReward,
     addresses.NoCompliance,
     addresses.RMMakeOrders,
     addresses.PriceFeed,
-    addresses.SimpleMarket,
+    [addresses.SimpleMarket],
+    [addresses.simpleAdapter],
     v,
     r,
     s,

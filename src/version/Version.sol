@@ -81,7 +81,8 @@ contract Version is DBC, Owned {
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
-    /// @param ofExchange Address of exchange on which this fund can trade
+    /// @param ofExchanges Addresses of exchange on which this fund can trade
+    /// @param ofExchangeAdapters Addresses of exchange adapters
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
@@ -93,13 +94,14 @@ contract Version is DBC, Owned {
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
-        address ofExchange,
+        address[] ofExchanges,
+        address[] ofExchangeAdapters,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
-        pre_cond(!isShutDown)
     {
+        require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
         require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
@@ -114,7 +116,8 @@ contract Version is DBC, Owned {
             ofCompliance,
             ofRiskMgmt,
             ofPriceFeed,
-            ofExchange
+            ofExchanges,
+            ofExchangeAdapters
         );
         listOfFunds.push(ofFund);
         fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
