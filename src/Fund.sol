@@ -92,7 +92,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // CONSTRUCTOR
 
     /// @dev Should only be called via Version.setupFund(..)
-    /// @param ofManager address of the Fund manager
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofReferenceAsset asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
@@ -103,6 +102,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
     /// @param ofExchangeAdapters Addresses of exchange adapters
+    /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
         string withName,
@@ -222,14 +222,14 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     /// @notice Executes active subscription and redemption requests, in a way that minimises information advantages of investor
     /// @dev Distributes melon and shares according to the request
-    /// @dev Active subscription or redemption request executed
     /// @param id Index of request to be executed
+    /// @dev Active subscription or redemption request executed
     function executeRequest(uint id)
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant] ) // request owner does not own enough shares
-        //pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
         pre_cond(module.pricefeed.hasRecentPrice(MELON_ASSET)) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
     {
@@ -280,41 +280,27 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Redeems by allocating an ownership percentage of each asset to the participant
     /// @dev Independent of running price feed!
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @return success Whether all assets sent to shareholder or not
-    function redeemAllOwnedAssets(uint shareQuantity)
+    /// @return Whether all assets sent to shareholder or not
+    function redeemOwnedAssets(uint shareQuantity)
         external
-        returns (bool success)
-    {
-        return emergencyRedeem(shareQuantity, ownedAssets);
-    }
-
-    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
-    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
-    /// @return success Whether all assets sent to shareholder or not
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
-        public
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool success)
     {
         // If there are recent price updates, update totalSupply, accounting for unpaid rewards
-        if (module.pricefeed.hasRecentPrices(requestedAssets)) {
+        if (module.pricefeed.hasRecentPrices(ownedAssets)) {
             allocateUnclaimedRewards(); // Updates state
         }
 
         // Check whether enough assets held by fund
         uint[] memory ownershipQuantities;
-        for (uint i = 0; i < requestedAssets.length; ++i) {
-            address ofAsset = requestedAssets[i];
+        for (uint i = 0; i < ownedAssets.length; ++i) {
+            address ofAsset = ownedAssets[i];
             uint assetHoldings = add(
                 uint(Asset(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
-            if (assetHoldings == 0) {
-                continue;
-            }
+            if (assetHoldings == 0) continue;
 
             // participant's ownership percentage of asset holdings
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
@@ -522,9 +508,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
+    /// @notice Calculates unclaimed rewards of the fund manager
+    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     /**
-    @notice Calculates unclaimed rewards of the fund manager
-    @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     @return {
       "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
       "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
@@ -536,8 +522,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         returns (
             uint managementReward,
             uint performanceReward,
-            uint unclaimedRewards
-        )
+            uint unclaimedRewards)
     {
         // Management reward calculation
         uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
@@ -582,8 +567,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         valuePerShare = toSmallestShareUnit(totalValue / numShares);
     }
 
+    /// @notice Calculates essential fund metrics
     /**
-    @notice Calculates essential fund metrics
     @return {
       "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
       "managementReward": "A time (seconds) based reward",
