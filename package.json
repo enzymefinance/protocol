@@ -85,6 +85,7 @@
     "files": [
       "tests/integration/fundShares.js",
       "tests/integration/fundTrading.js",
+      "tests/integration/centralizedExchange.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/compliance/noCompliance.js",
       "tests/unit/modules/moduleRegistrar.js",

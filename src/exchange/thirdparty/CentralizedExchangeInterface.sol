@@ -20,7 +20,8 @@ contract CentralizedExchangeInterface is Owned {
   // FIELDS
 
   // Methods fields
-  OrderInfo[] public orders; // All the orders this fund placed on exchanges
+  mapping (uint => OrderInfo) public orders;
+  uint public lastOrderId; // Last Order id
 
   // METHODS
 
@@ -35,7 +36,8 @@ contract CentralizedExchangeInterface is Owned {
       returns (uint orderId)
   {
       require(Asset(sellAsset).transferFrom(msg.sender, owner, sellQuantity));
-      orders.push(OrderInfo({
+      orderId = ++lastOrderId;
+      orders[orderId] = OrderInfo({
           sellAsset: sellAsset,
           buyAsset: buyAsset,
           sellQuantity: sellQuantity,
@@ -43,8 +45,7 @@ contract CentralizedExchangeInterface is Owned {
           creator: msg.sender,
           active: true,
           timestamp: uint64(now)
-      }));
-      orderId = getLastOrderId();
+      });
   }
 
   /// @notice Settles an order by transfering buyAsset to the order creator
@@ -86,5 +87,5 @@ contract CentralizedExchangeInterface is Owned {
             order.buyQuantity, order.buyAsset);
   }
 
-  function getLastOrderId() view returns (uint) { return orders.length - 1; }
+  function getLastOrderId() view returns (uint) { return lastOrderId; }
 }

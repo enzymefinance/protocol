@@ -33,6 +33,7 @@ async function deploy(environment) {
     let participation;
     let riskMgmt;
     let simpleAdapter;
+    let centralizedAdapter;
     let simpleMarket;
     let version;
     let ranking;
@@ -123,6 +124,15 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
+
+      // deploy CentralizedAdapter
+      abi = JSON.parse(
+        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
+      );
+      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
+      opts.data = `0x${bytecode}`;
+      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
+      console.log("Deployed CentralizedAdapter");
 
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
@@ -356,10 +366,6 @@ async function deploy(environment) {
           config.protocol.datafeed.validity,
         ]);
       datafeedContract = await api.newContract(abi, datafeed);
-      const qu = await datafeedContract.instance.getQuoteAsset.call({from: accounts[0]}, []);
-      const interval = await datafeedContract.instance.getInterval.call({from: accounts[0]}, []);
-      const validity = await datafeedContract.instance.getValidity.call({from: accounts[0]}, []);
-      console.log(`Deployed datafeed w quote asset ${qu} and interval ${interval} and validity ${validity}`);
       // deploy simplemarket
       abi = JSON.parse(
         fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
@@ -399,6 +405,15 @@ async function deploy(environment) {
       opts.data = `0x${bytecode}`;
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
+
+      // deploy CentralizedAdapter
+      abi = JSON.parse(
+        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
+      );
+      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
+      opts.data = `0x${bytecode}`;
+      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
+      console.log("Deployed CentralizedAdapter");
 
       // link libs to fund (needed to deploy version)
       let fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
@@ -496,6 +511,7 @@ async function deploy(environment) {
         RMMakeOrders: riskMgmt,
         Governance: governance,
         simpleAdapter,
+        centralizedAdapter,
         Version: version,
         MlnToken: mlnToken,
         EurToken: eurToken,
