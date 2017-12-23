@@ -213,6 +213,8 @@ exchangeIndexes.forEach((i) => {
   test.serial(
     "fund receives MLN from a subscription (request & execute)",
     async t => {
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       await mlnToken.instance.transfer.postTransaction(
@@ -240,7 +242,9 @@ exchangeIndexes.forEach((i) => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
+      console.log(`executerequest gas:  ${gasUsed}`);
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const post = await getAllBalances();
 
@@ -293,6 +297,8 @@ exchangeIndexes.forEach((i) => {
       );
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       console.log(`makeorder gas: ${gasUsed}`)
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = Number(
         await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),

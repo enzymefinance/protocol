@@ -336,7 +336,7 @@ async function deploy(environment) {
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
-      // deploy datafeed
+      // deploy pricefeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
       bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
       opts.data = `0x${bytecode}`;
