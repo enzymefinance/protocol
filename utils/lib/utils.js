@@ -73,6 +73,11 @@ export default async function updateDatafeed () {
     json: true
   }
   const queryResult = await rp(options);
+  if(queryResult.MLN !== 1) {
+    throw new Error('API call returned incorrect price for MLN');
+  } else if(queryResult.ETH === 0 || queryResult.EUR === 0) {
+    throw new Error('API call returned a zero price');
+  }
   const ethDecimals = tokenInfo.filter(token => token.symbol === 'ETH-T')[0].decimals
   const eurDecimals = tokenInfo.filter(token => token.symbol === 'EUR-T')[0].decimals
   const mlnDecimals = tokenInfo.filter(token => token.symbol === 'MLN-T')[0].decimals
