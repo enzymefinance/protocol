@@ -26,7 +26,7 @@ let opts;
 let version;
 let mlnToken;
 let pricefeed;
-let throwToken;
+let maliciousToken;
 
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -42,13 +42,13 @@ test.before(async () => {
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
   mlnToken = await deployedUtils.mlnToken;
-  let abi = JSON.parse(fs.readFileSync("out/testing/ThrowToken.abi"));
-  let bytecode = fs.readFileSync("out/testing/ThrowToken.bin");
-  const throwTokenDeployment = await api.newContract(abi).deploy(
+  let abi = JSON.parse(fs.readFileSync("out/testing/MaliciousToken.abi"));
+  let bytecode = fs.readFileSync("out/testing/MaliciousToken.bin");
+  const maliciousTokenDeployment = await api.newContract(abi).deploy(
     {from: deployer, data: `0x${bytecode}`},
     []
   );
-  throwToken = await api.newContract(abi, throwTokenDeployment);
+  maliciousToken = await api.newContract(abi, maliciousTokenDeployment);
 
   // investor needs some MLN to use
   await mlnToken.instance.transfer.postTransaction(
@@ -85,7 +85,7 @@ test.before(async () => {
   pricefeed = await api.newContract(abi, pricefeedDeployment);
   await pricefeed.instance.register.postTransaction(
     {from: deployer},
-    [ throwToken.address, '', '', 18, '', '', mockBytes, mockAddress, mockAddress ]
+    [ maliciousToken.address, '', '', 18, '', '', mockBytes, mockAddress, mockAddress ]
   );
 
   const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
@@ -131,12 +131,12 @@ test.serial("initial investment with MLN", async t => {
   // do pricefeed updates
   await pricefeed.instance.update.postTransaction(
     {from: deployer},
-    [[mlnToken.address, throwToken.address],
+    [[mlnToken.address, maliciousToken.address],
     [new BigNumber(10 ** 18), new BigNumber(10 ** 18)]]
   );
   await pricefeed.instance.update.postTransaction(
     {from: deployer},
-    [[mlnToken.address, throwToken.address],
+    [[mlnToken.address, maliciousToken.address],
     [new BigNumber(10 ** 18), new BigNumber(10 ** 18)]]
   );
   const requestId = await fund.instance.getLastRequestId.call({}, []);
@@ -159,13 +159,13 @@ test.serial("fund buys some ThrowToken", async t => {
     [
       0,
       mlnToken.address,
-      throwToken.address,
+      maliciousToken.address,
       sellQuantity,
       buyQuantity,
     ]
   );
   const orderId = await exchange.instance.last_offer_id.call({}, []);
-  await throwToken.instance.approve.postTransaction(
+  await maliciousToken.instance.approve.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [exchange.address, buyQuantity + 100],
   );
@@ -178,9 +178,9 @@ test.serial("fund buys some ThrowToken", async t => {
 });
 
 test.serial("ThrowToken becomes malicious", async t => {
-  await throwToken.instance.startThrowing.postTransaction({}, []);
+  await maliciousToken.instance.startThrowing.postTransaction({}, []);
 
-  const isThrowing = await throwToken.instance.isThrowing.call({}, []);
+  const isThrowing = await maliciousToken.instance.isThrowing.call({}, []);
   t.true(isThrowing);
 });
 

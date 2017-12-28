@@ -2,10 +2,10 @@ pragma solidity ^0.4.19;
 
 import "../assets/PreminedAsset.sol";
 
-/// @title Throwing Token
+/// @title Malicious Token
 /// @author Melonport AG <team@melonport.com>
 /// @notice Testing contract, whose functions can be made to throw on demand
-contract ThrowToken is PreminedAsset {
+contract MaliciousToken is PreminedAsset {
     bool isThrowing = false;
 
     function startThrowing() {
