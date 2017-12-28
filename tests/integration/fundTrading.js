@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
@@ -77,6 +78,7 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   deployer = accounts[0];
@@ -213,6 +215,8 @@ exchangeIndexes.forEach((i) => {
   test.serial(
     "fund receives MLN from a subscription (request & execute)",
     async t => {
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       let investorGasTotal = new BigNumber(0);
       let workerGasTotal = new BigNumber(0);
       await mlnToken.instance.transfer.postTransaction(
@@ -240,7 +244,9 @@ exchangeIndexes.forEach((i) => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      console.log(gasUsed);
+      console.log(`executerequest gas:  ${gasUsed}`);
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       workerGasTotal = workerGasTotal.plus(gasUsed);
       const post = await getAllBalances();
 
@@ -293,6 +299,8 @@ exchangeIndexes.forEach((i) => {
       );
       const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       console.log(`makeorder gas: ${gasUsed}`)
+      console.log(`share price:   ${await fund.instance.calcSharePrice.call({},[])}`)
+      console.log(`gav:   ${await fund.instance.calcGav.call({},[])}`)
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = Number(
         await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),

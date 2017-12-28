@@ -346,7 +346,7 @@ async function deploy(environment) {
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
-      // deploy datafeed
+      // deploy pricefeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
       bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
       opts.data = `0x${bytecode}`;
@@ -527,7 +527,10 @@ async function deploy(environment) {
       JSON.stringify(addressBook, null, "\t"),
       "utf8",
     );
-    process.exit();
+
+    if (require.main === module) {
+      process.exit();
+    }
   } catch (err) {
     console.log(err.stack);
   }
@@ -540,3 +543,5 @@ if (require.main === module) {
     deploy(process.argv[2]);
   }
 }
+
+export default deploy;

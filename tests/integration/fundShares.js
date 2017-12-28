@@ -2,6 +2,7 @@ import test from "ava";
 import Api from "@parity/api";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
@@ -32,6 +33,7 @@ let version;
 const addresses = addressBook[environment];
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   deployer = accounts[0];

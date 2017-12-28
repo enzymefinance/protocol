@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import { participation as compliance } from "../../../utils/lib/utils";
+import deploy from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 
@@ -14,6 +15,7 @@ let accounts;
 let investor;
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   investor = accounts[1];
 });
