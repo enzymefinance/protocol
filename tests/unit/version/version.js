@@ -2,6 +2,7 @@ import test from "ava";
 import Api from "@parity/api";
 import * as instances from "../../../utils/lib/instances";
 import { version } from "../../../utils/lib/utils";
+import deploy from "../../../utils/deploy/contracts";
 
 const addressBook = require("../../../addressBook.json");
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -22,6 +23,7 @@ const keccakedFundName =
   "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   manager = accounts[4];
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };

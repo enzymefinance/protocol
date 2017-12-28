@@ -511,7 +511,10 @@ async function deploy(environment) {
       JSON.stringify(addressBook, null, "\t"),
       "utf8",
     );
-    process.exit();
+
+    if (require.main === module) {
+      process.exit();
+    }
   } catch (err) {
     console.log(err.stack);
   }
@@ -524,3 +527,5 @@ if (require.main === module) {
     deploy(process.argv[2]);
   }
 }
+
+export default deploy;

@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import * as deployed from "../../../utils/lib/utils";
+import deploy from "../../../utils/deploy/contracts";
 
 const fs = require("fs");
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -59,6 +60,7 @@ function registerEth(pricefeed) {
 // hooks
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   opts = { from: accounts[0], gas: config.gas };
   ethToken = await deployed.ethToken;

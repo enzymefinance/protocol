@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import { riskMgmt } from "../../../utils/lib/utils";
+import deploy from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 
@@ -16,6 +17,7 @@ let riskLevel;
 let referencePrice;
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   mockAddress = accounts[1];
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);

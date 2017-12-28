@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
@@ -32,6 +33,7 @@ const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 const initialMln = 1000000;
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await deployedUtils.accounts;
   deployer = accounts[0];
   manager = accounts[1];

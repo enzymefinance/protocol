@@ -1,5 +1,6 @@
 import test from "ava";
 import Api from "@parity/api";
+import deploy from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 const fs = require("fs");
@@ -40,6 +41,7 @@ async function registerModule() {
 }
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   deployer = accounts[0];
   operator = accounts[1];

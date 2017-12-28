@@ -1,5 +1,6 @@
 import test from 'ava';
 import Api from "@parity/api";
+import deploy from "../../../utils/deploy/contracts";
 
 const addressBook = require("../../../addressBook.json");
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -18,6 +19,7 @@ let governance;
 let version;
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
   deployer = accounts[0];
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
