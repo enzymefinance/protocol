@@ -31,6 +31,9 @@ let maliciousToken;
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 const initialMln = 1000000;
+const incentive = 1000;
+const offeredMln = 500000;
+const wantedShares = 500000;
 
 test.before(async () => {
   await deploy(environment);
@@ -117,16 +120,13 @@ test.before(async () => {
 });
 
 test.serial("initial investment with MLN", async t => {
-  const incentive = 1000;
-  const offeredValue = 500000;
-  const wantedShares = 500000;
   await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-    [fund.address, incentive + offeredValue],
+    [fund.address, incentive + offeredMln],
   );
   await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredValue, wantedShares, incentive],
+    [offeredMln, wantedShares, incentive],
   );
   // do pricefeed updates
   await pricefeed.instance.update.postTransaction(
@@ -145,12 +145,12 @@ test.serial("initial investment with MLN", async t => {
     [requestId],
   );
 
-  const ownedShares = await fund.instance.balanceOf.call({}, [investor]);
+  const ownedShares = Number(await fund.instance.balanceOf.call({}, [investor]));
 
   t.deepEqual(ownedShares, wantedShares);
 });
 
-test.serial("fund buys some ThrowToken", async t => {
+test.serial("fund buys some MaliciousToken", async t => {
   const sellQuantity = 1000;
   const buyQuantity = 1000;
 
@@ -175,16 +175,20 @@ test.serial("fund buys some ThrowToken", async t => {
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [orderId, sellQuantity],
   );
+
+  const maliciousBalance = Number(await maliciousToken.instance.balanceOf.call({}, [fund.address]));
+
+  t.is(maliciousBalance, buyQuantity);
 });
 
-test.serial("ThrowToken becomes malicious", async t => {
+test.serial("MaliciousToken becomes malicious", async t => {
   await maliciousToken.instance.startThrowing.postTransaction({}, []);
 
   const isThrowing = await maliciousToken.instance.isThrowing.call({}, []);
   t.true(isThrowing);
 });
 
-test.serial("Other assets can be redeemed, when ThrowToken is throwing", async t => {
+test.serial("Other assets can be redeemed, when MaliciousToken is throwing", async t => {
   const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
   await fund.instance.redeemOwnedAssets.postTransaction(
@@ -195,4 +199,5 @@ test.serial("Other assets can be redeemed, when ThrowToken is throwing", async t
   const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
 
   t.is(postShareQuantity, 0)
+  t.is(postMlnQuantity, preMlnQuantity + offeredMln);
 });

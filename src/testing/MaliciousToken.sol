@@ -6,7 +6,7 @@ import "../assets/PreminedAsset.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Testing contract, whose functions can be made to throw on demand
 contract MaliciousToken is PreminedAsset {
-    bool isThrowing = false;
+    bool public isThrowing = false;
 
     function startThrowing() {
         isThrowing = true;
