@@ -6,6 +6,8 @@ import '../../assets/Asset.sol';
 
 contract CentralizedAdapter is ExchangeInterface {
 
+  address public owner;
+
   event OrderUpdated(uint id);
 
   // VIEW METHODS
@@ -108,6 +110,9 @@ contract CentralizedAdapter is ExchangeInterface {
   )
       external returns (bool success)
   {
+      var (sellAsset, , sellQuantity, ) = getOrder(onExchange, id);
+      require(Asset(sellAsset).transferFrom(owner, this, sellQuantity));
+      require(Asset(sellAsset).approve(onExchange, sellQuantity));
       success = CentralizedExchangeInterface(onExchange).cancelOrder(id);
       OrderUpdated(id);
   }

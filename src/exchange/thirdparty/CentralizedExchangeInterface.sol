@@ -65,7 +65,7 @@ contract CentralizedExchangeInterface is Owned {
   /// @param orderId Active order id
   function cancelOrder(uint orderId) returns (bool success) {
       OrderInfo order = orders[orderId];
-      assert(Asset(order.sellAsset).transferFrom(msg.sender, order.creator, order.sellQuantity));
+      require(Asset(order.sellAsset).transferFrom(msg.sender, order.creator, order.sellQuantity));
       order.sellQuantity = 0;
       order.active = false;
       success = true;
