@@ -1,14 +1,14 @@
 pragma solidity ^0.4.19;
 
-import './assets/Shares.sol';
-import './dependencies/DBC.sol';
-import './dependencies/Owned.sol';
-import './compliance/ComplianceInterface.sol';
-import './pricefeeds/PriceFeedInterface.sol';
-import './riskmgmt/RiskMgmtInterface.sol';
-import './exchange/ExchangeInterface.sol';
-import './FundInterface.sol';
-import 'ds-math/math.sol';
+import "./assets/Shares.sol";
+import "./dependencies/DBC.sol";
+import "./dependencies/Owned.sol";
+import "./compliance/ComplianceInterface.sol";
+import "./pricefeeds/PriceFeedInterface.sol";
+import "./riskmgmt/RiskMgmtInterface.sol";
+import "./exchange/ExchangeInterface.sol";
+import "./FundInterface.sol";
+import "ds-math/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
@@ -281,20 +281,32 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Independent of running price feed!
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /// @return Whether all assets sent to shareholder or not
-    function redeemOwnedAssets(uint shareQuantity)
+    function redeemAllOwnedAssets(uint shareQuantity)
         external
-        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool success)
     {
+        return emergencyRedeem(shareQuantity, ownedAssets);
+    }
+
+    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
+    /// @return Whether all assets sent to shareholder or not
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
+        public
+        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
+        returns (bool)
+    {
         // If there are recent price updates, update totalSupply, accounting for unpaid rewards
-        if (module.pricefeed.hasRecentPrices(ownedAssets)) {
-            allocateUnclaimedRewards(); // Updates state
-        }
+        // if (module.pricefeed.hasRecentPrices(requestedAssets)) {
+        //     allocateUnclaimedRewards(); // Updates state
+        // }
 
         // Check whether enough assets held by fund
         uint[] memory ownershipQuantities;
-        for (uint i = 0; i < ownedAssets.length; ++i) {
-            address ofAsset = ownedAssets[i];
+        for (uint i = 0; i < requestedAssets.length; ++i) {
+            address ofAsset = requestedAssets[i];
             uint assetHoldings = add(
                 uint(Asset(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
@@ -320,7 +332,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
             if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
-                revert();
+               revert();
             }
         }
         Redeemed(msg.sender, now, shareQuantity);
@@ -508,9 +520,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @notice Calculates unclaimed rewards of the fund manager
-    /// @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     /**
+    @notice Calculates unclaimed rewards of the fund manager
+    @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
     @return {
       "managementReward": "A time (seconds) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
       "performanceReward": "A performance (rise of sharePrice measured in REFERENCE_ASSET) based reward in REFERENCE_ASSET and multiplied by 10 ** shareDecimals",
@@ -567,8 +579,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         valuePerShare = toSmallestShareUnit(totalValue / numShares);
     }
 
-    /// @notice Calculates essential fund metrics
     /**
+    @notice Calculates essential fund metrics
     @return {
       "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
       "managementReward": "A time (seconds) based reward",
