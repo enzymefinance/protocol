@@ -7,6 +7,8 @@ This makes them more legible, thereby helping maintain a high level of security.
 
 This document can be seen as an "extension" of the [official Solidity style guide](http://solidity.readthedocs.io/en/develop/style-guide.html).
 
+This means that rules from the official guide are inherited, and may be overriden if necessary.
+
 #### General tips
 
 - if you use a piece of code more than once, consider making it into a function
@@ -14,6 +16,7 @@ This document can be seen as an "extension" of the [official Solidity style guid
   - note that this mainly applies to `internal` functions, not functions that users interact with
 - be careful when declaring `for-` loops with a dynamic upper-bound, since the call may run out of gas for some input
 - validate inputs using `pre_cond` (Design-by-Contract), or `require(...)` statements
+- prefer full words over abbreviations in general, when naming functions and variables
 
 #### Layout
 
@@ -36,6 +39,7 @@ This document can be seen as an "extension" of the [official Solidity style guid
 ```
 #### Syntax
 
+- indentation is done in multiples of **4 spaces**
 - `snake_case` for modifiers
 - `camelCase` for functions and variables
 - `PascalCase` for types and contracts names
@@ -46,6 +50,33 @@ This document can be seen as an "extension" of the [official Solidity style guid
 - use `require(...)` for input or condition validation, similar to pre-conditions
   - statements like `if(condition) { throw; }` can be replaced by `require(condition)`
 - use `assert(...)` to check for internal errors, such as invariant breaks, or other conditions that should never occur
+- place modifier statements and return statements on their own lines after the function name.
+  - ordering of statements is:
+    1. visibility modifier
+    2. state-promise modifier (`view`, `pure`)
+    3. `payable` modifier (if necessary)
+    4. custom modifiers (e.g. `pre_cond`)
+    5. `returns` statement
+
+One example:
+
+```
+function readPrice(
+    address exchange,
+    address ofAsset,
+    uint extraParam
+)
+    external
+    view
+    pre_cond(extraParam > 0)
+    returns(uint price)
+{
+    ...
+}
+```
+
+- consider placing function arguments on their own lines, when there are more than one (as in above example)
+- "one-liner" functions (i.e. can reasonably fit on a single line) are excepted from the above line-spacing rules
 
 #### Modularity
 
@@ -65,13 +96,13 @@ We use [Natspec](https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specific
 @notice Send tokens to another address, and get back the balances before/after balances
 @param toAddress The address to receive funds
 @return {
-  "oldBalance": "The balance before sending funds",
-  "newBalance": "The balance after sending funds"
+    "oldBalance": "The balance before sending funds",
+    "newBalance": "The balance after sending funds"
 }
 */
 function sendFunds(address toAddress)
-  returns (uint oldBalance, uint newBalance)
+    returns (uint oldBalance, uint newBalance)
 {
-  ...
+    ...
 }
 ```
