@@ -16,18 +16,23 @@ contract MaliciousToken is PreminedAsset {
         isThrowing = false;
     }
 
-    function tryTransfer(address _to, uint _value) returns (bool) {
+    function transfer(address _to, uint _value) returns (bool) {
         require(!isThrowing);
-        return transfer(_to, _value);
+        return super.transfer(_to, _value);
     }
 
-    function tryTransferFrom(address _from, address _to, uint _value) returns (bool) {
+    function transferFrom(address _from, address _to, uint _value) returns (bool) {
         require(!isThrowing);
-        return transferFrom(_from, _to, _value);
+        return super.transferFrom(_from, _to, _value);
     }
 
-    function tryApprove(address _spender, uint _value) returns (bool) {
+    function approve(address _spender, uint _value) returns (bool) {
         require(!isThrowing);
-        return approve(_spender, _value);
+        return super.approve(_spender, _value);
+    }
+
+    function balanceOf(address _owner) view returns (uint) {
+        require(!isThrowing);
+        return super.balanceOf(_owner);
     }
 }
