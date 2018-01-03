@@ -298,13 +298,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool)
     {
-        // If there are recent price updates, update totalSupply, accounting for unpaid rewards
-        // if (module.pricefeed.hasRecentPrices(requestedAssets)) {
-        //     allocateUnclaimedRewards(); // Updates state
-        // }
+        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
 
         // Check whether enough assets held by fund
-        uint[] memory ownershipQuantities;
         for (uint i = 0; i < requestedAssets.length; ++i) {
             address ofAsset = requestedAssets[i];
             uint assetHoldings = add(
