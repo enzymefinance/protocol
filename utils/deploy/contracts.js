@@ -138,7 +138,7 @@ async function deploy(environment) {
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
-      let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
+      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;
@@ -416,14 +416,14 @@ async function deploy(environment) {
       console.log("Deployed CentralizedAdapter");
 
       // link libs to fund (needed to deploy version)
-      let fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
+      const fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
       fs.writeFileSync("out/Fund.bin", fundBytecode, "utf8");
 
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
-      let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
+      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;

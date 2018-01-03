@@ -1,6 +1,6 @@
 import test from "ava";
 import Api from "@parity/api";
-import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import * as deployedUtils from "../../utils/lib/utils";
 import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
@@ -191,9 +191,9 @@ test.serial("MaliciousToken becomes malicious", async t => {
 test.serial("Other assets can be redeemed, when MaliciousToken is throwing", async t => {
   const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
-  const txid = await fund.instance.emergencyRedeem.postTransaction(
+  await fund.instance.emergencyRedeem.postTransaction(
     { from: investor, gas: 6000000 },
-    [preShareQuantity, [mlnToken.address]],
+    [preShareQuantity, [mlnToken.address]]
   );
   const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);

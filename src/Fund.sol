@@ -328,7 +328,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
             if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
-               revert();
+                revert();
             }
         }
         Redeemed(msg.sender, now, shareQuantity);
@@ -355,54 +355,56 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner())
         pre_cond(!isShutDown)
     {
-      require(buyAsset != address(this)); // Prevent buying of own fund token
-      require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
-      require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
-      var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
-      require(isRecent);  // Reference price is required to be recent
-      require(module.riskmgmt.isMakePermitted(
-              module.pricefeed.getOrderPrice(
-                  sellAsset,
-                  buyAsset,
-                  sellQuantity,
-                  buyQuantity
-              ),
-              referencePrice,
-              sellAsset,
-              buyAsset,
-              sellQuantity,
-              buyQuantity
-      )); // RiskMgmt module: Make order not permitted
-      require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-      require(Asset(sellAsset).approve(module.exchanges[exchangeNumber], sellQuantity)); // Approve exchange to spend assets
+        require(buyAsset != address(this)); // Prevent buying of own fund token
+        require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
+        require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
+        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
+        require(isRecent);  // Reference price is required to be recent
+        require(
+            module.riskmgmt.isMakePermitted(
+                module.pricefeed.getOrderPrice(
+                    sellAsset,
+                    buyAsset,
+                    sellQuantity,
+                    buyQuantity
+                ),
+                referencePrice,
+                sellAsset,
+                buyAsset,
+                sellQuantity,
+                buyQuantity
+            )
+        ); // RiskMgmt module: Make order not permitted
+        require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
+        require(Asset(sellAsset).approve(module.exchanges[exchangeNumber], sellQuantity)); // Approve exchange to spend assets
 
-      // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
-      require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(sha3("makeOrder(address,address,address,uint256,uint256)")), module.exchanges[exchangeNumber], sellAsset, buyAsset, sellQuantity, buyQuantity));
-      exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] = module.exchangeAdapters[exchangeNumber].getLastOrderId(module.exchanges[exchangeNumber]);
+        // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
+        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), module.exchanges[exchangeNumber], sellAsset, buyAsset, sellQuantity, buyQuantity));
+        exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] = module.exchangeAdapters[exchangeNumber].getLastOrderId(module.exchanges[exchangeNumber]);
 
-      // Success defined as non-zero order id
-      require(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] != 0);
+        // Success defined as non-zero order id
+        require(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] != 0);
 
-      // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
-      isInOpenMakeOrder[sellAsset] = true;
-      if (!isInAssetList[buyAsset]) {
-          ownedAssets.push(buyAsset);
-          isInAssetList[buyAsset] = true;
-      }
+        // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
+        isInOpenMakeOrder[sellAsset] = true;
+        if (!isInAssetList[buyAsset]) {
+            ownedAssets.push(buyAsset);
+            isInAssetList[buyAsset] = true;
+        }
 
-      orders.push(Order({
-          exchangeId: exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset],
-          status: OrderStatus.active,
-          orderType: OrderType.make,
-          sellAsset: sellAsset,
-          buyAsset: buyAsset,
-          sellQuantity: sellQuantity,
-          buyQuantity: buyQuantity,
-          timestamp: now,
-          fillQuantity: 0
-      }));
+        orders.push(Order({
+            exchangeId: exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset],
+            status: OrderStatus.active,
+            orderType: OrderType.make,
+            sellAsset: sellAsset,
+            buyAsset: buyAsset,
+            sellQuantity: sellQuantity,
+            buyQuantity: buyQuantity,
+            timestamp: now,
+            fillQuantity: 0
+        }));
 
-      OrderUpdated(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset]);
+        OrderUpdated(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset]);
     }
 
     /// @notice Takes an active order on the selected exchange
@@ -431,7 +433,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(receiveQuantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(receiveQuantity, order.buyQuantity) / order.sellQuantity;
         require(Asset(order.buyAsset).approve(module.exchanges[exchangeNumber], spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
-        require(module.riskmgmt.isTakePermitted(
+        require(
+            module.riskmgmt.isTakePermitted(
             module.pricefeed.getOrderPrice(
                 order.buyAsset,
                 order.sellAsset,
@@ -446,7 +449,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         )); // RiskMgmt module: Take order not permitted
 
         // Execute request
-        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(sha3("takeOrder(address,uint256,uint256)")), module.exchanges[exchangeNumber], id, receiveQuantity));
+        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("takeOrder(address,uint256,uint256)")), module.exchanges[exchangeNumber], id, receiveQuantity));
 
         // Update ownedAssets array and isInAssetList mapping
         if (!isInAssetList[order.sellAsset]) {
@@ -474,7 +477,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         Order memory order = orders[id];
 
         // Execute request
-        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(sha3("cancelOrder(address,uint256)")), module.exchanges[exchangeNumber], order.exchangeId));
+        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), module.exchanges[exchangeNumber], order.exchangeId));
 
         order.status = OrderStatus.cancelled;
         OrderUpdated(id);
