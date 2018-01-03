@@ -191,13 +191,13 @@ test.serial("MaliciousToken becomes malicious", async t => {
 test.serial("Other assets can be redeemed, when MaliciousToken is throwing", async t => {
   const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
-  await fund.instance.redeemOwnedAssets.postTransaction(
-    { from: investor },
-    [preShareQuantity],
+  const txid = await fund.instance.emergencyRedeem.postTransaction(
+    { from: investor, gas: 6000000 },
+    [preShareQuantity, [mlnToken.address]],
   );
   const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
 
-  t.is(postShareQuantity, 0)
-  t.is(postMlnQuantity, preMlnQuantity + offeredMln);
+  t.is(Number(postShareQuantity), 0)
+  t.is(Number(postMlnQuantity), Number(preMlnQuantity) + offeredMln - incentive);
 });
