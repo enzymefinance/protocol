@@ -635,6 +635,49 @@ test.serial(
   },
 );
 
+test.serial(
+  "manager makes an order and cancels it",
+  async t => {
+    await fund.instance.makeOrder.postTransaction(
+      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+      [
+        0,
+        mlnToken.address,
+        ethToken.address,
+        trade1.sellQuantity,
+        trade1.buyQuantity,
+      ],
+    );
+    const pre = await getAllBalances();
+    const exchangePreEthToken = Number(
+      await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
+    );
+    const orderId = await fund.instance.getLastOrderId.call({}, []);
+    receipt = await fund.instance.cancelOrder.postTransaction(
+      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+      [
+        0,
+        orderId
+      ],
+    );
+    const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+    runningGasTotal = runningGasTotal.plus(gasUsed);
+    const exchangePostEthToken = Number(
+      await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
+    );
+    const post = await getAllBalances();
+
+    t.deepEqual(exchangePostEthToken, exchangePreEthToken - trade1.sellQuantity);
+    t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken + trade1.sellQuantity);
+    t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
+    t.deepEqual(post.fund.ether, pre.fund.ether);
+    t.deepEqual(
+      post.manager.ether,
+      pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
+    );
+  },
+);
+
 // describe("Redeeming after trading", async () => {
 const redemptions = [
   { amount: new BigNumber(100000000), incentive: 500 },
