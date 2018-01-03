@@ -282,3 +282,52 @@ test.serial("Manager settles an order on the exchange interface",
     t.deepEqual(post.fund.ether, pre.fund.ether);
   },
 );
+
+test.serial("Manager cancels an order from the fund",
+  async t => {
+    await updateDatafeed();
+    await fund.instance.makeOrder.postTransaction(
+      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+      [
+        0,
+        mlnToken.address,
+        ethToken.address,
+        trade1.sellQuantity,
+        trade1.buyQuantity,
+      ],
+    );
+    const pre = await getAllBalances();
+    const orderId = await fund.instance.getLastOrderId.call({}, []);
+    await mlnToken.instance.transfer.postTransaction(
+      { from: exchangeOwner, gasPrice: config.gasPrice, gas: config.gas },
+      [manager, trade1.sellQuantity, ""],
+    );
+    await mlnToken.instance.approve.postTransaction(
+      { from: manager, gasPrice: config.gasPrice, gas: config.gas },
+      [fund.address, trade1.sellQuantity],
+    );
+    await mlnToken.instance.approve.postTransaction(
+      { from: manager, gasPrice: config.gasPrice, gas: config.gas },
+      [fund.address, trade1.sellQuantity],
+    );
+    await fund.instance.cancelOrder.postTransaction(
+      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+      [
+        0,
+        orderId
+      ],
+    );
+    const post = await getAllBalances();
+    const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
+
+    t.is(Number(heldinExchange), 0);
+    t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken + trade1.sellQuantity);
+    t.deepEqual(post.exchangeOwner.mlnToken, pre.exchangeOwner.mlnToken - trade1.sellQuantity);
+    t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
+    t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
+    t.deepEqual(post.investor.ether, pre.investor.ether);
+    t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
+    t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
+    t.deepEqual(post.fund.ether, pre.fund.ether);
+  },
+);
