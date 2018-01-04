@@ -1,6 +1,7 @@
 import test from "ava";
 import Api from "@parity/api";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
@@ -74,6 +75,7 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
+  await deploy(environment);
   accounts = await deployedUtils.accounts;
   deployer = accounts[0];
   manager = accounts[1];
@@ -318,9 +320,9 @@ test.serial("Manager cancels an order from the fund",
       ],
     );
     const post = await getAllBalances();
-    const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
+    const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
 
-    t.is(Number(heldinExchange), 0);
+    t.is(Number(heldInExchange), 0);
     t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken + trade1.sellQuantity);
     t.deepEqual(post.exchangeOwner.mlnToken, pre.exchangeOwner.mlnToken - trade1.sellQuantity);
     t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
