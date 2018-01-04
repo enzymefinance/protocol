@@ -32,12 +32,6 @@ contract Governance is DBC, Owned, DSGroup {
 
     event VersionUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isActive(uint id) internal returns (bool active) {
-        (, active, ) = getVersionById(id);
-    }
-
     // METHODS
 
     // CONSTRUCTOR
@@ -144,4 +138,10 @@ contract Governance is DBC, Owned, DSGroup {
         delete versions[id];
         VersionUpdated(id);
     }
+
+    function isActive(uint id) internal returns (bool active) {
+        (, active, ) = getVersionById(id);
+    }
+
+
 }

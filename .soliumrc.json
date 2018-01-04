@@ -4,6 +4,9 @@
     "security"
   ],
   "rules": {
+    "function-order": [
+      "error"
+    ],
     "quotes": [
       "error",
       "double"

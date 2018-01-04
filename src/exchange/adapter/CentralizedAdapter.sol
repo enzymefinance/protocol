@@ -8,51 +8,6 @@ contract CentralizedAdapter is ExchangeInterface {
 
     event OrderUpdated(uint id);
 
-    // VIEW METHODS
-
-    function getLastOrderId(address onExchange)
-    constant
-    returns (uint)
-    {
-        return CentralizedExchangeInterface(onExchange).getLastOrderId();
-    }
-    function isActive(address onExchange, uint id)
-    constant
-    returns (bool)
-    {
-        return CentralizedExchangeInterface(onExchange).isActive(id);
-    }
-    function getOwner(address onExchange, uint id)
-    constant
-    returns (address)
-    {
-        return CentralizedExchangeInterface(onExchange).getOwner(id);
-    }
-    function getOrder(address onExchange, uint id)
-    constant
-    returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = CentralizedExchangeInterface(onExchange).getOrder(id);
-        return (
-            sellAsset,
-            buyAsset,
-            sellQuantity,
-            buyQuantity
-        );
-    }
-    function getTimestamp(address onExchange, uint id)
-    constant
-    returns (uint)
-    {
-        var (, , , , , , timestamp) = CentralizedExchangeInterface(onExchange).orders(id);
-        return timestamp;
-    }
-
     // NON-CONSTANT METHODS
 
     /// @notice Makes an order on the given exchange
@@ -114,4 +69,51 @@ contract CentralizedAdapter is ExchangeInterface {
         success = CentralizedExchangeInterface(onExchange).cancelOrder(id);
         OrderUpdated(id);
     }
+
+    // VIEW METHODS
+
+    function getLastOrderId(address onExchange)
+    constant
+    returns (uint)
+    {
+        return CentralizedExchangeInterface(onExchange).getLastOrderId();
+    }
+    function isActive(address onExchange, uint id)
+    constant
+    returns (bool)
+    {
+        return CentralizedExchangeInterface(onExchange).isActive(id);
+    }
+    function getOwner(address onExchange, uint id)
+    constant
+    returns (address)
+    {
+        return CentralizedExchangeInterface(onExchange).getOwner(id);
+    }
+    function getOrder(address onExchange, uint id)
+    constant
+    returns (address, address, uint, uint)
+    {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = CentralizedExchangeInterface(onExchange).getOrder(id);
+        return (
+            sellAsset,
+            buyAsset,
+            sellQuantity,
+            buyQuantity
+        );
+    }
+    function getTimestamp(address onExchange, uint id)
+    constant
+    returns (uint)
+    {
+        var (, , , , , , timestamp) = CentralizedExchangeInterface(onExchange).orders(id);
+        return timestamp;
+    }
+
+
 }

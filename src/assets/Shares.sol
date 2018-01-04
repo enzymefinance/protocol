@@ -31,6 +31,16 @@ contract Shares is Asset, SharesInterface {
         creationTime = _creationTime;
     }
 
+    // PUBLIC METHODS
+    // PUBLIC VIEW METHODS
+
+    function getName() view returns (string) { return name; }
+    function getSymbol() view returns (string) { return symbol; }
+    function getDecimals() view returns (uint) { return decimal; }
+    function getCreationTime() view returns (uint) { return creationTime; }
+    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
+    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
+
     // INTERNAL METHODS
 
     /// @param recipient Address the new shares should be sent to
@@ -48,14 +58,4 @@ contract Shares is Asset, SharesInterface {
         balances[recipient] = sub(balances[recipient], shareQuantity);
         Annihilated(msg.sender, now, shareQuantity);
     }
-
-    // PUBLIC METHODS
-    // PUBLIC VIEW METHODS
-
-    function getName() view returns (string) { return name; }
-    function getSymbol() view returns (string) { return symbol; }
-    function getDecimals() view returns (uint) { return decimal; }
-    function getCreationTime() view returns (uint) { return creationTime; }
-    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
-    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
 }
