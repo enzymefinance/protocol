@@ -61,6 +61,21 @@ export const riskMgmt = api.newContract(
 export const accounts = api.eth.accounts();
 
 // convenience functions
+
+// retry the request if it fails (helps with bad connections)
+async function requestWithRetries(options, maxRetries) {
+  if(maxRetries === -1) {
+    throw new Error('Request failed. Max retry limit reached.');
+  } else {
+    try {
+      return await rp(options);
+    } catch (err) {
+      console.error(`Error during request:\n${err.message}`);
+      return requestWithRetries(options, maxRetries - 1);
+    }
+  }
+}
+
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -72,7 +87,7 @@ export default async function updateDatafeed () {
     uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
     json: true
   }
-  const queryResult = await rp(options);
+  const queryResult = await requestWithRetries(options, 3);
   if(queryResult.MLN !== 1) {
     throw new Error('API call returned incorrect price for MLN');
   } else if(queryResult.ETH === 0 || queryResult.EUR === 0) {
