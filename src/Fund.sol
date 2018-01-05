@@ -150,6 +150,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
     }
+    function () {}
 
     // EXTERNAL METHODS
 
@@ -286,53 +287,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         returns (bool success)
     {
         return emergencyRedeem(shareQuantity, ownedAssets);
-    }
-
-    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
-    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
-    /// @return Whether all assets sent to shareholder or not
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
-        public
-        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
-        returns (bool)
-    {
-        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
-
-        // Check whether enough assets held by fund
-        for (uint i = 0; i < requestedAssets.length; ++i) {
-            address ofAsset = requestedAssets[i];
-            uint assetHoldings = add(
-                uint(Asset(ofAsset).balanceOf(this)),
-                quantityHeldInCustodyOfExchange(ofAsset)
-            );
-
-            if (assetHoldings == 0) continue;
-
-            // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
-
-            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
-            if (assetHoldings < ownershipQuantities[i]) {
-                isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
-                return false;
-            }
-        }
-
-        // Annihilate shares before external calls to prevent reentrancy
-        annihilateShares(msg.sender, shareQuantity);
-
-        // Transfer ownershipQuantity of Assets
-        for (uint j = 0; j < ownershipQuantities.length; ++j) {
-            // Failed to send owed ownershipQuantity from fund to participant
-            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
-                revert();
-            }
-        }
-        Redeemed(msg.sender, now, shareQuantity);
-        return true;
     }
 
 
@@ -519,6 +473,129 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
+    /// @notice Converts unclaimed fees of the manager into fund shares
+    /// @dev Only Owner
+    function allocateUnclaimedRewards()
+        pre_cond(isOwner())
+    {
+        var (
+            gav,
+            managementReward,
+            performanceReward,
+            unclaimedRewards,
+            rewardsShareQuantity,
+            nav,
+            sharePrice
+        ) = performCalculations();
+
+        createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
+
+        // Update Calculations
+        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
+        atLastUnclaimedRewardAllocation = Calculations({
+            gav: gav,
+            managementReward: managementReward,
+            performanceReward: performanceReward,
+            unclaimedRewards: unclaimedRewards,
+            nav: nav,
+            highWaterMark: updatedHighWaterMark,
+            totalSupply: totalSupply,
+            timestamp: now
+        });
+
+        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
+        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+    }
+
+    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
+    /// @return Whether all assets sent to shareholder or not
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
+        public
+        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
+        returns (bool)
+    {
+        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
+
+        // Check whether enough assets held by fund
+        for (uint i = 0; i < requestedAssets.length; ++i) {
+            address ofAsset = requestedAssets[i];
+            uint assetHoldings = add(
+                uint(Asset(ofAsset).balanceOf(this)),
+                quantityHeldInCustodyOfExchange(ofAsset)
+            );
+
+            if (assetHoldings == 0) continue;
+
+            // participant's ownership percentage of asset holdings
+            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
+
+            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
+            if (assetHoldings < ownershipQuantities[i]) {
+                isShutDown = true;
+                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                return false;
+            }
+        }
+
+        // Annihilate shares before external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity);
+
+        // Transfer ownershipQuantity of Assets
+        for (uint j = 0; j < ownershipQuantities.length; ++j) {
+            // Failed to send owed ownershipQuantity from fund to participant
+            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+                revert();
+            }
+        }
+        Redeemed(msg.sender, now, shareQuantity);
+        return true;
+    }
+
+    /// @notice allows manager to recover tokens sent the Fund
+    /// @param ofAsset Address of the token
+    /// @param toAddress Address to send the tokens to
+    /// @param amount Amount of the token to send
+    function recoverToken(
+        address ofAsset,
+        address toAddress,
+        uint amount
+    )
+        pre_cond(isOwner())
+    {
+        require(Asset(ofAsset).transfer(toAddress, amount));
+    }
+
+
+    // PUBLIC : REWARDS
+
+    /// @dev Quantity of asset held in exchange according to associated order id
+    /// @param ofAsset Address of asset
+    /// @return Quantity of input asset held in exchange
+    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
+        uint totalSellQuantity;     // quantity in custody across exchanges
+        for (uint i; i < module.exchanges.length; i++) {
+            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
+                continue;
+            }
+            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
+            if (sellQuantity == 0) {
+                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
+            }
+            totalSellQuantity += sellQuantity;
+        }
+        if (totalSellQuantity == 0) {
+            isInOpenMakeOrder[sellAsset] = false;
+        }
+        return totalSellQuantity;
+    }
+
+    // PUBLIC VIEW METHODS
+
+    // PUBLIC VIEW : ACCOUNTING
+
     /**
     @notice Calculates unclaimed rewards of the fund manager
     @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
@@ -613,82 +690,14 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
-    /// @notice Converts unclaimed fees of the manager into fund shares
-    /// @dev Only Owner
-    function allocateUnclaimedRewards()
-        pre_cond(isOwner())
-    {
-        var (
-            gav,
-            managementReward,
-            performanceReward,
-            unclaimedRewards,
-            rewardsShareQuantity,
-            nav,
-            sharePrice
-        ) = performCalculations();
-
-        createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
-
-        // Update Calculations
-        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
-        atLastUnclaimedRewardAllocation = Calculations({
-            gav: gav,
-            managementReward: managementReward,
-            performanceReward: performanceReward,
-            unclaimedRewards: unclaimedRewards,
-            nav: nav,
-            highWaterMark: updatedHighWaterMark,
-            totalSupply: totalSupply,
-            timestamp: now
-        });
-
-        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
-        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
-    }
-
-    /// @notice allows manager to recover tokens sent the Fund
-    /// @param ofAsset Address of the token
-    /// @param toAddress Address to send the tokens to
-    /// @param amount Amount of the token to send
-    function recoverToken(address ofAsset, address toAddress, uint amount)
-        pre_cond(isOwner())
-    {
-        require(Asset(ofAsset).transfer(toAddress, amount));
-    }
-
-
-    // PUBLIC : REWARDS
-
-    /// @dev Quantity of asset held in exchange according to associated order id
-    /// @param ofAsset Address of asset
-    /// @return Quantity of input asset held in exchange
-    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
-        uint totalSellQuantity;     // quantity in custody across exchanges
-        for (uint i; i < module.exchanges.length; i++) {
-            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
-                continue;
-            }
-            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
-            if (sellQuantity == 0) {
-                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
-            }
-            totalSellQuantity += sellQuantity;
-        }
-        if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
-        }
-        return totalSellQuantity;
-    }
-
-    // PUBLIC VIEW METHODS
-
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function calcSharePrice() view returns (uint sharePrice) {
         (, , , , , sharePrice) = performCalculations();
         return sharePrice;
     }
+
+    // PUBLIC VIEW : OTHER
 
     function getModules() view returns (address, address[], address, address) {
         return (
