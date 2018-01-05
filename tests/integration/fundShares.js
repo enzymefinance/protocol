@@ -163,25 +163,26 @@ test.serial('allows request and execution on the first subscription', async t =>
   let investorGasTotal = new BigNumber(0);
   let workerGasTotal = new BigNumber(0);
   const pre = await getAllBalances(accounts, fund);
-  receipt = await fund.instance.requestSubscription.postTransaction(
-    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive]
-  );
-  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  investorGasTotal = investorGasTotal.plus(gasUsed);
-  const inputAllowance = firstTest.offeredValue + firstTest.incentive;
   const fundPreAllowance = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
+  const inputAllowance = firstTest.offeredValue + firstTest.incentive;
   receipt = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice },
     [fund.address, inputAllowance]
   );
-  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const fundPostAllowance = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
+  receipt = await fund.instance.requestSubscription.postTransaction(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
+    [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive]
+  );
+  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
+  investorGasTotal = investorGasTotal.plus(gasUsed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
     {},
@@ -198,6 +199,7 @@ test.serial('allows request and execution on the first subscription', async t =>
     [requestId]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
   workerGasTotal = workerGasTotal.plus(gasUsed);
   const investorPostShares = Number(
     await fund.instance.balanceOf.call({}, [investor])

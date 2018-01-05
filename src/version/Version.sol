@@ -17,6 +17,7 @@ contract Version is DBC, Owned {
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public MELON_ASSET; // Address of Melon asset contract
+    address public NATIVE_ASSET; // Address of wrapped Native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
@@ -38,11 +39,13 @@ contract Version is DBC, Owned {
     function Version(
         string versionNumber,
         address ofGovernance,
-        address ofMelonAsset
+        address ofMelonAsset,
+        address ofNativeAsset
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
         MELON_ASSET = ofMelonAsset;
+        NATIVE_ASSET = ofNativeAsset;
     }
 
     // EXTERNAL METHODS
@@ -90,6 +93,7 @@ contract Version is DBC, Owned {
             ofManagementRewardRate,
             ofPerformanceRewardRate,
             MELON_ASSET,
+            NATIVE_ASSET,
             ofCompliance,
             ofRiskMgmt,
             ofPriceFeed,

@@ -41,6 +41,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         address participant; // Participant in Melon fund requesting subscription or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
         RequestType requestType; // Enum: subscribe, redeem
+        Asset requestCurrency;
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
@@ -72,6 +73,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     address public VERSION; // Address of Version contract
     address public MELON; // Address of Melon asset contract
     Asset public MELON_ASSET; // Melon as ERC20 contract
+    Asset public NATIVE_ASSET; // Native Asset
     address public REFERENCE_ASSET; // Performance measured against value of this asset
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -110,6 +112,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofMelonAsset,
+        address ofNativeAsset,
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
@@ -138,6 +141,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
         // Require reference assets exists in pricefeed
         MELON_ASSET = Asset(MELON);
+        NATIVE_ASSET = Asset(ofNativeAsset);
         require(REFERENCE_ASSET == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastUnclaimedRewardAllocation = Calculations({
             gav: 0,
@@ -150,7 +154,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
     }
-    function () {}
 
     // EXTERNAL METHODS
 
@@ -180,10 +183,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isSubscribeAllowed)    // subscription using Melon has not been deactivated by the Manager
         pre_cond(module.compliance.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Subscription permitted
     {
+        Asset requestCurrency;
+        if (NATIVE_ASSET.allowance(msg.sender, this) >= giveQuantity + shareQuantity) {
+            requestCurrency = NATIVE_ASSET;
+        }
+        else if (MELON_ASSET.allowance(msg.sender, this) >= giveQuantity + shareQuantity) {
+            requestCurrency = MELON_ASSET;
+        }
+        else {
+          revert();
+        }
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.subscribe,
+            requestCurrency: requestCurrency,
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
@@ -201,17 +215,25 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
-        uint incentiveQuantity
+        uint incentiveQuantity,
+        bool isNativeCurrency
       )
         external
         pre_cond(!isShutDown)
         pre_cond(isRedeemAllowed) // Redemption using Melon has not been deactivated by Manager
         pre_cond(module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
     {
+        Asset requestCurrency;
+        if (isNativeCurrency) {
+            requestCurrency = NATIVE_ASSET;
+        } else {
+            requestCurrency = MELON_ASSET;
+        }
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.redeem,
+            requestCurrency: requestCurrency,
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
@@ -242,6 +264,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         Request request = requests[id];
 
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
+        if (request.requestCurrency == NATIVE_ASSET) {
+            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getPrice(NATIVE_ASSET);
+            if (!isPriceRecent) {
+                revert();
+            }
+            costQuantity = mul(costQuantity, nativeAssetPrice);
+        }
 
         if (
             request.requestType == RequestType.subscribe &&
@@ -252,16 +281,16 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 isInAssetList[MELON] = true;
             }
             request.status = RequestStatus.executed;
-            assert(MELON_ASSET.transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(request.requestCurrency.transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(request.requestCurrency.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(MELON_ASSET.transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(MELON_ASSET.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(request.requestCurrency.transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(request.requestCurrency.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
@@ -287,6 +316,53 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         returns (bool success)
     {
         return emergencyRedeem(shareQuantity, ownedAssets);
+    }
+
+    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
+    /// @return Whether all assets sent to shareholder or not
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
+        public
+        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
+        returns (bool)
+    {
+        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
+
+        // Check whether enough assets held by fund
+        for (uint i = 0; i < requestedAssets.length; ++i) {
+            address ofAsset = requestedAssets[i];
+            uint assetHoldings = add(
+                uint(Asset(ofAsset).balanceOf(this)),
+                quantityHeldInCustodyOfExchange(ofAsset)
+            );
+
+            if (assetHoldings == 0) continue;
+
+            // participant's ownership percentage of asset holdings
+            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
+
+            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
+            if (assetHoldings < ownershipQuantities[i]) {
+                isShutDown = true;
+                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                return false;
+            }
+        }
+
+        // Annihilate shares before external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity);
+
+        // Transfer ownershipQuantity of Assets
+        for (uint j = 0; j < ownershipQuantities.length; ++j) {
+            // Failed to send owed ownershipQuantity from fund to participant
+            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+                revert();
+            }
+        }
+        Redeemed(msg.sender, now, shareQuantity);
+        return true;
     }
 
 
@@ -473,129 +549,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @notice Converts unclaimed fees of the manager into fund shares
-    /// @dev Only Owner
-    function allocateUnclaimedRewards()
-        pre_cond(isOwner())
-    {
-        var (
-            gav,
-            managementReward,
-            performanceReward,
-            unclaimedRewards,
-            rewardsShareQuantity,
-            nav,
-            sharePrice
-        ) = performCalculations();
-
-        createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
-
-        // Update Calculations
-        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
-        atLastUnclaimedRewardAllocation = Calculations({
-            gav: gav,
-            managementReward: managementReward,
-            performanceReward: performanceReward,
-            unclaimedRewards: unclaimedRewards,
-            nav: nav,
-            highWaterMark: updatedHighWaterMark,
-            totalSupply: totalSupply,
-            timestamp: now
-        });
-
-        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
-        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
-    }
-
-    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
-    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
-    /// @return Whether all assets sent to shareholder or not
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
-        public
-        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
-        returns (bool)
-    {
-        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
-
-        // Check whether enough assets held by fund
-        for (uint i = 0; i < requestedAssets.length; ++i) {
-            address ofAsset = requestedAssets[i];
-            uint assetHoldings = add(
-                uint(Asset(ofAsset).balanceOf(this)),
-                quantityHeldInCustodyOfExchange(ofAsset)
-            );
-
-            if (assetHoldings == 0) continue;
-
-            // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
-
-            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
-            if (assetHoldings < ownershipQuantities[i]) {
-                isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
-                return false;
-            }
-        }
-
-        // Annihilate shares before external calls to prevent reentrancy
-        annihilateShares(msg.sender, shareQuantity);
-
-        // Transfer ownershipQuantity of Assets
-        for (uint j = 0; j < ownershipQuantities.length; ++j) {
-            // Failed to send owed ownershipQuantity from fund to participant
-            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
-                revert();
-            }
-        }
-        Redeemed(msg.sender, now, shareQuantity);
-        return true;
-    }
-
-    /// @notice allows manager to recover tokens sent the Fund
-    /// @param ofAsset Address of the token
-    /// @param toAddress Address to send the tokens to
-    /// @param amount Amount of the token to send
-    function recoverToken(
-        address ofAsset,
-        address toAddress,
-        uint amount
-    )
-        pre_cond(isOwner())
-    {
-        require(Asset(ofAsset).transfer(toAddress, amount));
-    }
-
-
-    // PUBLIC : REWARDS
-
-    /// @dev Quantity of asset held in exchange according to associated order id
-    /// @param ofAsset Address of asset
-    /// @return Quantity of input asset held in exchange
-    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
-        uint totalSellQuantity;     // quantity in custody across exchanges
-        for (uint i; i < module.exchanges.length; i++) {
-            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
-                continue;
-            }
-            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
-            if (sellQuantity == 0) {
-                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
-            }
-            totalSellQuantity += sellQuantity;
-        }
-        if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
-        }
-        return totalSellQuantity;
-    }
-
-    // PUBLIC VIEW METHODS
-
-    // PUBLIC VIEW : ACCOUNTING
-
     /**
     @notice Calculates unclaimed rewards of the fund manager
     @param gav Gross asset value in REFERENCE_ASSET and multiplied by 10 ** shareDecimals
@@ -690,14 +643,82 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
+    /// @notice Converts unclaimed fees of the manager into fund shares
+    /// @dev Only Owner
+    function allocateUnclaimedRewards()
+        pre_cond(isOwner())
+    {
+        var (
+            gav,
+            managementReward,
+            performanceReward,
+            unclaimedRewards,
+            rewardsShareQuantity,
+            nav,
+            sharePrice
+        ) = performCalculations();
+
+        createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
+
+        // Update Calculations
+        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
+        atLastUnclaimedRewardAllocation = Calculations({
+            gav: gav,
+            managementReward: managementReward,
+            performanceReward: performanceReward,
+            unclaimedRewards: unclaimedRewards,
+            nav: nav,
+            highWaterMark: updatedHighWaterMark,
+            totalSupply: totalSupply,
+            timestamp: now
+        });
+
+        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
+        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+    }
+
+    /// @notice allows manager to recover tokens sent the Fund
+    /// @param ofAsset Address of the token
+    /// @param toAddress Address to send the tokens to
+    /// @param amount Amount of the token to send
+    function recoverToken(address ofAsset, address toAddress, uint amount)
+        pre_cond(isOwner())
+    {
+        require(Asset(ofAsset).transfer(toAddress, amount));
+    }
+
+
+    // PUBLIC : REWARDS
+
+    /// @dev Quantity of asset held in exchange according to associated order id
+    /// @param ofAsset Address of asset
+    /// @return Quantity of input asset held in exchange
+    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
+        uint totalSellQuantity;     // quantity in custody across exchanges
+        for (uint i; i < module.exchanges.length; i++) {
+            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
+                continue;
+            }
+            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
+            if (sellQuantity == 0) {
+                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
+            }
+            totalSellQuantity += sellQuantity;
+        }
+        if (totalSellQuantity == 0) {
+            isInOpenMakeOrder[sellAsset] = false;
+        }
+        return totalSellQuantity;
+    }
+
+    // PUBLIC VIEW METHODS
+
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]
     function calcSharePrice() view returns (uint sharePrice) {
         (, , , , , sharePrice) = performCalculations();
         return sharePrice;
     }
-
-    // PUBLIC VIEW : OTHER
 
     function getModules() view returns (address, address[], address, address) {
         return (
