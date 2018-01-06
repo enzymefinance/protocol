@@ -210,7 +210,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint shareQuantity,
         uint receiveQuantity,
         uint incentiveQuantity,
-        bool isNativeCurrency
+        bool isNativeAsset
       )
         external
         pre_cond(!isShutDown)
@@ -218,7 +218,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
     {
         Asset requestAsset;
-        if (isNativeCurrency) {
+        if (isNativeAsset) {
             requestAsset = address(NATIVE_ASSET);
         } else {
             requestAsset = address(REFERENCE_ASSET);
