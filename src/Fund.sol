@@ -185,7 +185,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             requestAsset = address(REFERENCE_ASSET);
         }
         else {
-          revert();
+            revert();
         }
         requests.push(Request({
             participant: msg.sender,
@@ -245,7 +245,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant] ) // request owner does not own enough shares
+        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
         pre_cond(module.pricefeed.hasRecentPrice(address(REFERENCE_ASSET))) // PriceFeed Module: No recent updates for fund asset list
         pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
