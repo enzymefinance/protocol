@@ -16,8 +16,7 @@ contract Version is DBC, Owned {
     bytes32 public constant TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions as displayed on IPFS.
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
-    address public MELON_ASSET; // Address of Melon asset contract
-    address public NATIVE_ASSET; // Address of wrapped Native asset contract
+    address public NATIVE_ASSET; // Address of wrapped native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
@@ -35,16 +34,14 @@ contract Version is DBC, Owned {
 
     /// @param versionNumber SemVer of Melon protocol version
     /// @param ofGovernance Address of Melon governance contract
-    /// @param ofMelonAsset Address of Melon asset contract
+    /// @param ofNativeAsset Address of wrapped native asset contract
     function Version(
         string versionNumber,
         address ofGovernance,
-        address ofMelonAsset,
         address ofNativeAsset
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
-        MELON_ASSET = ofMelonAsset;
         NATIVE_ASSET = ofNativeAsset;
     }
 
@@ -92,7 +89,6 @@ contract Version is DBC, Owned {
             ofReferenceAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
-            MELON_ASSET,
             NATIVE_ASSET,
             ofCompliance,
             ofRiskMgmt,
@@ -143,7 +139,7 @@ contract Version is DBC, Owned {
 
 
 
-    function getMelonAsset() view returns (address) { return MELON_ASSET; }
+    function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
     function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }

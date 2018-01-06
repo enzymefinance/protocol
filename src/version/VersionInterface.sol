@@ -28,7 +28,7 @@ contract VersionInterface {
 
     // PUBLIC VIEW METHODS
 
-    function getMelonAsset() constant returns (address) {}
+    function getNativeAsset() constant returns (address) {}
     function getFundById(uint withId) constant returns (address) {}
     function getLastFundId() constant returns (uint) {}
     function getFundByManager(address ofManager) constant returns (address) {}
