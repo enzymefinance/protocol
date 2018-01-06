@@ -25,7 +25,7 @@ contract CentralizedAdapter is ExchangeInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-    external returns (uint id)
+        external returns (uint id)
     {
         id = CentralizedExchangeInterface(onExchange).makeOrder(
             Asset(sellAsset),
@@ -47,7 +47,7 @@ contract CentralizedAdapter is ExchangeInterface {
         uint id,
         uint quantity
     )
-    external returns (bool success)
+        external returns (bool success)
     {
         revert();
     }
@@ -61,7 +61,7 @@ contract CentralizedAdapter is ExchangeInterface {
         address onExchange,
         uint id
     )
-    external returns (bool success)
+        external returns (bool success)
     {
         var (sellAsset, , sellQuantity, ) = getOrder(onExchange, id);
         require(Asset(sellAsset).transferFrom(msg.sender, this, sellQuantity));
@@ -73,26 +73,26 @@ contract CentralizedAdapter is ExchangeInterface {
     // VIEW METHODS
 
     function getLastOrderId(address onExchange)
-    constant
-    returns (uint)
+        constant
+        returns (uint)
     {
         return CentralizedExchangeInterface(onExchange).getLastOrderId();
     }
     function isActive(address onExchange, uint id)
-    constant
-    returns (bool)
+        constant
+        returns (bool)
     {
         return CentralizedExchangeInterface(onExchange).isActive(id);
     }
     function getOwner(address onExchange, uint id)
-    constant
-    returns (address)
+        constant
+        returns (address)
     {
         return CentralizedExchangeInterface(onExchange).getOwner(id);
     }
     function getOrder(address onExchange, uint id)
-    constant
-    returns (address, address, uint, uint)
+        constant
+        returns (address, address, uint, uint)
     {
         var (
             sellQuantity,
@@ -108,8 +108,8 @@ contract CentralizedAdapter is ExchangeInterface {
         );
     }
     function getTimestamp(address onExchange, uint id)
-    constant
-    returns (uint)
+        constant
+        returns (uint)
     {
         var (, , , , , , timestamp) = CentralizedExchangeInterface(onExchange).orders(id);
         return timestamp;
