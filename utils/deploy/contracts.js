@@ -429,7 +429,7 @@ async function deploy(environment) {
       opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, mlnToken, ethToken], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, ethToken], () => {}, true);
       console.log("Deployed version");
 
       // add Version to Governance tracking
@@ -451,8 +451,7 @@ async function deploy(environment) {
           mlnToken, // reference asset
           0, // management reward
           0, // performance reward
-          mlnToken, // melon asset
-          ethToken,
+          ethToken, // Native Asset
           participation, // participation
           riskMgmt, // riskMgmt
           datafeed, // pricefeed

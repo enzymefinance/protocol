@@ -195,7 +195,7 @@ test.serial(
     );
     await fund.instance.requestSubscription.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [offeredValue, wantedShares, incentive],
+      [offeredValue, wantedShares, incentive, false],
     );
     await updateDatafeed();
     await updateDatafeed();

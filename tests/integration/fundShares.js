@@ -65,7 +65,7 @@ test.serial('can set up new fund', async t => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // name
-      addresses.MlnToken, // reference asset
+      mlnToken.address, // reference asset
       config.protocol.fund.managementReward,
       config.protocol.fund.performanceReward,
       addresses.NoCompliance,
@@ -178,10 +178,9 @@ test.serial('allows request and execution on the first subscription', async t =>
   );
   receipt = await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive]
+    [firstTest.offeredValue, firstTest.wantedShares, firstTest.incentive, false]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
@@ -193,13 +192,13 @@ test.serial('allows request and execution on the first subscription', async t =>
     await fund.instance.balanceOf.call({}, [investor])
   );
   await updateDatafeed();
+  await updateDatafeed();
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   receipt = await fund.instance.executeRequest.postTransaction(
     { from: worker, gas: config.gas, gasPrice: config.gasPrice },
     [requestId]
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
   workerGasTotal = workerGasTotal.plus(gasUsed);
   const investorPostShares = Number(
     await fund.instance.balanceOf.call({}, [investor])
@@ -276,7 +275,7 @@ subsequentTests.forEach((testInstance) => {
 
       receipt = await fund.instance.requestSubscription.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.offeredValue, testInstance.wantedShares, testInstance.incentive]
+        [testInstance.offeredValue, testInstance.wantedShares, testInstance.incentive, false]
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -417,7 +416,7 @@ testArray.forEach((testInstance) => {
       runningGasTotal = runningGasTotal.plus(gasUsed);
       receipt = await fund.instance.requestRedemption.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.wantedShares, testInstance.wantedValue, testInstance.incentive]
+        [testInstance.wantedShares, testInstance.wantedValue, testInstance.incentive, false]
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);

@@ -170,22 +170,22 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function requestSubscription(
         uint giveQuantity,
         uint shareQuantity,
-        uint incentiveQuantity
+        uint incentiveQuantity,
+        bool isNativeAsset
     )
         external
         pre_cond(!isShutDown)
         pre_cond(isSubscribeAllowed)    // subscription using Melon has not been deactivated by the Manager
         pre_cond(module.compliance.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Subscription permitted
     {
-        Asset requestAsset;
-        if (NATIVE_ASSET.allowance(msg.sender, this) >= giveQuantity + shareQuantity) {
+        address requestAsset;
+        if (isNativeAsset) {
+            require(NATIVE_ASSET.allowance(msg.sender, this) >= giveQuantity + incentiveQuantity);
             requestAsset = address(NATIVE_ASSET);
         }
-        else if (REFERENCE_ASSET.allowance(msg.sender, this) >= giveQuantity + shareQuantity) {
-            requestAsset = address(REFERENCE_ASSET);
-        }
         else {
-            revert();
+            require(REFERENCE_ASSET.allowance(msg.sender, this) >= giveQuantity + incentiveQuantity);
+            requestAsset = address(REFERENCE_ASSET);
         }
         requests.push(Request({
             participant: msg.sender,
@@ -217,7 +217,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isRedeemAllowed) // Redemption using Melon has not been deactivated by Manager
         pre_cond(module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
     {
-        Asset requestAsset;
+        address requestAsset;
         if (isNativeAsset) {
             requestAsset = address(NATIVE_ASSET);
         } else {
@@ -275,16 +275,16 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 isInAssetList[address(REFERENCE_ASSET)] = true;
             }
             request.status = RequestStatus.executed;
-            assert(request.requestAsset.transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(request.requestAsset.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(Asset(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(Asset(request.requestAsset).transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(request.requestAsset.transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(request.requestAsset.transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
+            assert(Asset(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(Asset(request.requestAsset).transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit

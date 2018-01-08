@@ -230,7 +230,7 @@ exchangeIndexes.forEach((i) => {
       investorGasTotal = investorGasTotal.plus(gasUsed);
       receipt = await fund.instance.requestSubscription.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [offeredValue, wantedShares, incentive],
+        [offeredValue, wantedShares, incentive, false],
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -698,7 +698,7 @@ redemptions.forEach((redemption, index) => {
     investorGasTotal = investorGasTotal.plus(gasUsed);
     receipt = await fund.instance.requestRedemption.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [redemption.amount, wantedValue, incentive],
+      [redemption.amount, wantedValue, incentive, false],
     );
     gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
     investorGasTotal = investorGasTotal.plus(gasUsed);

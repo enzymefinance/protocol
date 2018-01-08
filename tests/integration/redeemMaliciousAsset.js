@@ -126,7 +126,7 @@ test.serial("initial investment with MLN", async t => {
   );
   await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredMln, wantedShares, incentive],
+    [offeredMln, wantedShares, incentive, false],
   );
   // do pricefeed updates
   await pricefeed.instance.update.postTransaction(
