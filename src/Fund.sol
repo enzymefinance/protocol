@@ -178,20 +178,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isSubscribeAllowed)    // subscription using Melon has not been deactivated by the Manager
         pre_cond(module.compliance.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Subscription permitted
     {
-        address requestAsset;
-        if (isNativeAsset) {
-            require(NATIVE_ASSET.allowance(msg.sender, this) >= giveQuantity + incentiveQuantity);
-            requestAsset = address(NATIVE_ASSET);
-        }
-        else {
-            require(REFERENCE_ASSET.allowance(msg.sender, this) >= giveQuantity + incentiveQuantity);
-            requestAsset = address(REFERENCE_ASSET);
-        }
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.subscribe,
-            requestAsset: requestAsset,
+            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(REFERENCE_ASSET),
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
@@ -217,17 +208,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isRedeemAllowed) // Redemption using Melon has not been deactivated by Manager
         pre_cond(module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
     {
-        address requestAsset;
-        if (isNativeAsset) {
-            requestAsset = address(NATIVE_ASSET);
-        } else {
-            requestAsset = address(REFERENCE_ASSET);
-        }
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.redeem,
-            requestAsset: requestAsset,
+            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(REFERENCE_ASSET),
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
@@ -263,7 +248,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = mul(costQuantity, nativeAssetPrice);
+            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** uint256(nativeAssetDecimal));
         }
 
         if (
