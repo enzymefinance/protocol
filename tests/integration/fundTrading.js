@@ -210,7 +210,7 @@ test.serial("investor receives initial mlnToken for testing", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-const exchangeIndexes = Array.from(new Array(numberofExchanges),(val,index)=>index);
+const exchangeIndexes = Array.from(new Array(numberofExchanges), (val, index) => index);
 exchangeIndexes.forEach((i) => {
   test.serial(
     "fund receives MLN from a subscription (request & execute)",
@@ -669,13 +669,13 @@ test.serial(
   },
 );
 
-// describe("Redeeming after trading", async () => {
+// redeeming after trading
 const redemptions = [
   { amount: new BigNumber(100000000), incentive: 500 },
   { amount: new BigNumber(150000000), incentive: 500 },
 ];
 redemptions.forEach((redemption, index) => {
-  test.serial(`allows redemption ${index + 1}`, async t => {
+  test.serial(`Allows redemption ${index + 1} (standard redemption method)`, async t => {
     let investorGasTotal = new BigNumber(0);
     let workerGasTotal = new BigNumber(0);
     const investorPreShares = Number(
@@ -756,7 +756,87 @@ redemptions.forEach((redemption, index) => {
   });
 });
 
-// describe("Rewards", async () => {
+test.serial(`Allows redemption by tokenFallback method)`, async t => {
+  const redemptionAmount = new BigNumber(120000000);
+  const incentiveAmount = 0;
+  let investorGasTotal = new BigNumber(0);
+  let workerGasTotal = new BigNumber(0);
+  const investorPreShares = Number(
+    await fund.instance.balanceOf.call({}, [investor]),
+  );
+  const preTotalShares = Number(await fund.instance.totalSupply.call({}, []));
+  const sharePrice = await fund.instance.calcSharePrice.call({}, []);
+  const wantedValue = Number(
+    redemptionAmount
+      .times(sharePrice)
+      .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
+      .floor()
+  );
+  const pre = await getAllBalances();
+  receipt = await fund.instance.transfer.postTransaction(
+    { from: investor, gasPrice: config.gasPrice , gas: config.gas},
+    [fund.address, redemptionAmount, '']
+  );
+  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
+  investorGasTotal = investorGasTotal.plus(gasUsed);
+  await updateDatafeed();
+  await updateDatafeed();
+  const requestId = await fund.instance.getLastRequestId.call({}, []);
+  receipt = await fund.instance.executeRequest.postTransaction(
+    { from: worker, gas: config.gas, gasPrice: config.gasPrice },
+    [requestId],
+  );
+  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
+  workerGasTotal = workerGasTotal.plus(gasUsed);
+  // reduce remaining allowance to zero
+  receipt = await mlnToken.instance.approve.postTransaction(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
+    [fund.address, incentiveAmount],
+  );
+  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  console.log(gasUsed);
+  investorGasTotal = investorGasTotal.plus(gasUsed);
+  const remainingApprovedMln = Number(
+    await mlnToken.instance.allowance.call({}, [investor, fund.address]),
+  );
+  const investorPostShares = Number(
+    await fund.instance.balanceOf.call({}, [investor]),
+  );
+  const postTotalShares = Number(
+    await fund.instance.totalSupply.call({}, []),
+  );
+  const post = await getAllBalances();
+
+  t.deepEqual(remainingApprovedMln, 0);
+  t.deepEqual(postTotalShares, preTotalShares - redemptionAmount);
+  t.deepEqual(investorPostShares, investorPreShares - redemptionAmount);
+  t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken + incentiveAmount);
+  t.deepEqual(post.worker.ethToken, pre.worker.ethToken);
+  t.deepEqual(
+    post.worker.ether,
+    pre.worker.ether.minus(workerGasTotal.times(gasPrice)),
+  );
+  t.deepEqual(
+    post.investor.mlnToken,
+    pre.investor.mlnToken + wantedValue - incentiveAmount,
+  );
+  t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
+  t.deepEqual(
+    post.investor.ether,
+    pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
+  );
+  t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
+  t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
+  t.deepEqual(post.manager.ether, pre.manager.ether);
+  t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - wantedValue);
+  t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
+
+// Rewards
 test.serial("converts rewards and manager receives them", async t => {
   await updateDatafeed();
   const pre = await getAllBalances();
