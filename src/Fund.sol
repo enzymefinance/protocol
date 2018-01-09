@@ -238,11 +238,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
         if (request.requestAsset == address(NATIVE_ASSET)) {
-            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getPrice(address(NATIVE_ASSET));
+            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimals) = module.pricefeed.getPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** uint256(nativeAssetDecimal));
+            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** nativeAssetDecimals);
         }
 
         if (
@@ -260,11 +260,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
-            if (request.receiveQuantity == 0) {
-                request.receiveQuantity = costQuantity;
-            }
             request.status = RequestStatus.executed;
-            assert(Asset(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
+            assert(Asset(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
