@@ -765,6 +765,15 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
     await fund.instance.balanceOf.call({}, [investor]),
   );
   const preTotalShares = Number(await fund.instance.totalSupply.call({}, []));
+  const pre = await getAllBalances();
+  receipt = await fund.instance.transfer.postTransaction(
+    { from: investor, gasPrice: config.gasPrice , gas: config.gas},
+    [fund.address, redemptionAmount, '']
+  );
+  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  investorGasTotal = investorGasTotal.plus(gasUsed);
+  await updateDatafeed();
+  await updateDatafeed();
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const wantedValue = Number(
     redemptionAmount
@@ -772,23 +781,12 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
       .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
       .floor()
   );
-  const pre = await getAllBalances();
-  receipt = await fund.instance.transfer.postTransaction(
-    { from: investor, gasPrice: config.gasPrice , gas: config.gas},
-    [fund.address, redemptionAmount, '']
-  );
-  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
-  investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updateDatafeed();
-  await updateDatafeed();
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   receipt = await fund.instance.executeRequest.postTransaction(
     { from: worker, gas: config.gas, gasPrice: config.gasPrice },
     [requestId],
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
   workerGasTotal = workerGasTotal.plus(gasUsed);
   // reduce remaining allowance to zero
   receipt = await mlnToken.instance.approve.postTransaction(
@@ -796,7 +794,6 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
     [fund.address, incentiveAmount],
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-  console.log(gasUsed);
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const remainingApprovedMln = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address]),

@@ -36,7 +36,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { subscribe, redeem }
+    enum RequestType { subscribe, redeem, tokenFallbackRedeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting subscription or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
@@ -271,6 +271,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             assert(Asset(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
             assert(Asset(request.requestAsset).transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
+        } else if (
+            request.requestType == RequestType.tokenFallbackRedeem &&
+            request.receiveQuantity <= costQuantity
+        ) {
+            request.status = RequestStatus.executed;
+            assert(Asset(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
+            annihilateShares(this, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
         }
@@ -498,7 +505,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // PUBLIC METHODS : ERC223
 
     /// @dev Standard ERC223 function that handles incoming token transfers.
-    /// @dev Due to the way costQuantity is calculated, redemptions here are only executed in the case of an equal or increased share price at execution time
+    /// @dev This type of redemption can be seen as a "market order", where price is calculated at execution time
     /// @param ofSender  Token sender address.
     /// @param tokenAmount Amount of tokens sent.
     /// @param metadata  Transaction metadata.
@@ -511,17 +518,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             return; // when ERC223 asset is not Shares, just receive it and do nothing
         } else {    // otherwise, make a redemption request
             var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(REFERENCE_ASSET)); // By definition quoteDecimals == fundDecimals
-            // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(tokenAmount, calcSharePrice()));
-            uint costQuantity = mul(mul(mul(tokenAmount, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals), 95) / 100; // use 95% of costQuantity to increase likelihood of execution
 
             requests.push(Request({
                 participant: ofSender,
                 status: RequestStatus.active,
-                requestType: RequestType.redeem,
+                requestType: RequestType.tokenFallbackRedeem,
                 requestAsset: address(REFERENCE_ASSET), // redeem in REFERENCE_ASSET
                 shareQuantity: tokenAmount,
                 giveQuantity: tokenAmount,              // shares being sent
-                receiveQuantity: costQuantity,          // value of the shares at request time
+                receiveQuantity: 0,                     // calculate price at execution
                 incentiveQuantity: 0,                   // TODO: deprecate incentive in favour of service tx
                 timestamp: now
             }));
