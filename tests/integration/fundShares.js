@@ -446,7 +446,7 @@ testArray.forEach((testInstance) => {
         [fund.address, 0]
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
-      investorGasTotal = runningGasTotal.plus(gasUsed);
+      investorGasTotal = investorGasTotal.plus(gasUsed);
       const remainingApprovedMln = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address])
       );
