@@ -33,6 +33,8 @@ const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 const initialMln = 1000000;
 const offeredMln = 500000;
 const wantedShares = 500000;
+const sellQuantity = 1000;
+const buyQuantity = 1000;
 
 test.before(async () => {
   await deploy(environment);
@@ -150,9 +152,6 @@ test.serial("initial investment with MLN", async t => {
 });
 
 test.serial("fund buys some MaliciousToken", async t => {
-  const sellQuantity = 1000;
-  const buyQuantity = 1000;
-
   await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -197,6 +196,6 @@ test.serial("Other assets can be redeemed, when MaliciousToken is throwing", asy
   const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
   const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
 
-  t.is(Number(postShareQuantity), 0)
-  t.is(Number(postMlnQuantity), Number(preMlnQuantity) + offeredMln);
+  t.is(Number(postShareQuantity), 0);
+  t.is(Number(postMlnQuantity), Number(preMlnQuantity) + offeredMln - sellQuantity);
 });

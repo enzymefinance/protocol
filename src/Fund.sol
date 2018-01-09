@@ -3,6 +3,7 @@ pragma solidity ^0.4.19;
 import "./assets/Shares.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
+import "./assets/NativeAssetInterface.sol";
 import "./compliance/ComplianceInterface.sol";
 import "./pricefeeds/PriceFeedInterface.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
@@ -37,7 +38,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { subscribe, redeem }
+    enum RequestType { subscribe, redeem, tokenFallbackRedeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting subscription or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
@@ -72,7 +73,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
     Asset public REFERENCE_ASSET; // Reference asset as ERC20 contract
-    Asset public NATIVE_ASSET; // Native asset as ERC20 contract
+    NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Calculations public atLastUnclaimedRewardAllocation; // Calculation results at last allocateUnclaimedRewards() call
@@ -135,7 +136,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
         // Require reference assets exists in pricefeed
         REFERENCE_ASSET = Asset(ofReferenceAsset);
-        NATIVE_ASSET = Asset(ofNativeAsset);
+        NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
         require(address(REFERENCE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastUnclaimedRewardAllocation = Calculations({
             gav: 0,
@@ -224,13 +225,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
+        pre_cond((requests[id].requestType == RequestType.subscribe && isSubscribeAllowed) || (requests[id].requestType == RequestType.redeem && isRedeemAllowed))
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrice(address(REFERENCE_ASSET))) // PriceFeed Module: No recent updates for fund asset list
-        pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
+         // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+        require(module.pricefeed.hasRecentPrice(address(REFERENCE_ASSET)));
+        require(module.pricefeed.hasRecentPrices(ownedAssets));
         var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(REFERENCE_ASSET));
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
@@ -254,7 +257,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 isInAssetList[address(REFERENCE_ASSET)] = true;
             }
             request.status = RequestStatus.executed;
-            assert(Asset(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
@@ -305,7 +308,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         for (uint i = 0; i < requestedAssets.length; ++i) {
             address ofAsset = requestedAssets[i];
             uint assetHoldings = add(
-                uint(Asset(ofAsset).balanceOf(this)),
+                uint(AssetInterface(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -328,7 +331,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Transfer ownershipQuantity of Assets
         for (uint j = 0; j < ownershipQuantities.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
-            if (!Asset(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
         }
@@ -377,7 +380,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             )
         ); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        require(Asset(sellAsset).approve(module.exchanges[exchangeNumber], sellQuantity)); // Approve exchange to spend assets
+        require(AssetInterface(sellAsset).approve(module.exchanges[exchangeNumber], sellQuantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), module.exchanges[exchangeNumber], sellAsset, buyAsset, sellQuantity, buyQuantity));
@@ -433,7 +436,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(isRecent); // Reference price is required to be recent
         require(receiveQuantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(receiveQuantity, order.buyQuantity) / order.sellQuantity;
-        require(Asset(order.buyAsset).approve(module.exchanges[exchangeNumber], spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
+        require(AssetInterface(order.buyAsset).approve(module.exchanges[exchangeNumber], spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
         require(
             module.riskmgmt.isTakePermitted(
             module.pricefeed.getOrderPrice(
@@ -490,7 +493,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     // PUBLIC METHODS : ERC223
 
     /// @dev Standard ERC223 function that handles incoming token transfers.
-    /// @dev Due to the way costQuantity is calculated, redemptions here are only executed in the case of an equal or increased share price at execution time
+    /// @dev This type of redemption can be seen as a "market order", where price is calculated at execution time
     /// @param ofSender  Token sender address.
     /// @param tokenAmount Amount of tokens sent.
     /// @param metadata  Transaction metadata.
@@ -505,7 +508,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             requests.push(Request({
                 participant: ofSender,
                 status: RequestStatus.active,
-                requestType: RequestType.redeem,
+                requestType: RequestType.tokenFallbackRedeem,
                 requestAsset: address(REFERENCE_ASSET), // redeem in REFERENCE_ASSET
                 shareQuantity: tokenAmount,
                 giveQuantity: tokenAmount,              // shares being sent
@@ -531,7 +534,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(Asset(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -685,7 +688,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function recoverToken(address ofAsset, address toAddress, uint amount)
         pre_cond(isOwner())
     {
-        require(Asset(ofAsset).transfer(toAddress, amount));
+        require(AssetInterface(ofAsset).transfer(toAddress, amount));
     }
 
 
