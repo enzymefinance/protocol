@@ -31,7 +31,6 @@ let maliciousToken;
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 const initialMln = 1000000;
-const incentive = 1000;
 const offeredMln = 500000;
 const wantedShares = 500000;
 
@@ -122,11 +121,11 @@ test.before(async () => {
 test.serial("initial investment with MLN", async t => {
   await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-    [fund.address, incentive + offeredMln],
+    [fund.address, offeredMln],
   );
   await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredMln, wantedShares, incentive, false],
+    [offeredMln, wantedShares, false],
   );
   // do pricefeed updates
   await pricefeed.instance.update.postTransaction(
@@ -141,7 +140,7 @@ test.serial("initial investment with MLN", async t => {
   );
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   await fund.instance.executeRequest.postTransaction(
-    { from: worker, gas: config.gas, gasPrice: config.gasPrice },
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [requestId],
   );
 
@@ -199,5 +198,5 @@ test.serial("Other assets can be redeemed, when MaliciousToken is throwing", asy
   const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
 
   t.is(Number(postShareQuantity), 0)
-  t.is(Number(postMlnQuantity), Number(preMlnQuantity) + offeredMln - incentive);
+  t.is(Number(postMlnQuantity), Number(preMlnQuantity) + offeredMln);
 });
