@@ -264,7 +264,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         ) {
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
-            annihilateShares(request.participant, request.shareQuantity); // Accounting
+            annihilateShares(request.participant, costQuantity); // Accounting
         } else if (
             request.requestType == RequestType.tokenFallbackRedeem &&
             request.receiveQuantity <= costQuantity
