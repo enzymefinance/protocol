@@ -23,8 +23,8 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
 
     // EXTERNAL METHODS
     // Compliance by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external {}
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward, bool isNativeAsset) external {}
+    function requestSubscription(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external {}
     function executeRequest(uint requestId) external {}
     function cancelRequest(uint requestId) external {}
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool) {}

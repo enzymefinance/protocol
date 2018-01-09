@@ -8,6 +8,7 @@ import "./pricefeeds/PriceFeedInterface.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/ExchangeInterface.sol";
 import "./FundInterface.sol";
+import "ds-weth/weth9.sol";
 import "ds-math/math.sol";
 
 /// @title Melon Fund Contract
@@ -45,7 +46,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
-        uint incentiveQuantity; // Quantity in Melon asset to give to person executing request
         uint timestamp; // Time of request creation in seconds
     }
 
@@ -166,11 +166,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
-    /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
     function requestSubscription(
         uint giveQuantity,
         uint shareQuantity,
-        uint incentiveQuantity,
         bool isNativeAsset
     )
         external
@@ -186,7 +184,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
-            incentiveQuantity: incentiveQuantity,
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -196,11 +193,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
     /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
-    /// @param incentiveQuantity Quantity in Melon asset to give to the person executing the request
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
-        uint incentiveQuantity,
         bool isNativeAsset
       )
         external
@@ -216,7 +211,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
-            incentiveQuantity: incentiveQuantity,
             timestamp: now
         }));
         RequestUpdated(getLastRequestId());
@@ -261,18 +255,19 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             request.status = RequestStatus.executed;
             assert(Asset(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
-            assert(Asset(request.requestAsset).transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
+            if (request.receiveQuantity == 0) {
+                request.receiveQuantity = costQuantity;
+            }
             request.status = RequestStatus.executed;
             assert(Asset(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
-            assert(Asset(request.requestAsset).transferFrom(request.participant, msg.sender, request.incentiveQuantity)); // Reward Worker
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
-            revert(); // Invalid Request or invalid giveQuantity / receiveQuantit
+            revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
     }
 
@@ -510,10 +505,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         if (msg.sender != address(this)) {
             return; // when ERC223 asset is not Shares, just receive it and do nothing
         } else {    // otherwise, make a redemption request
-            var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(REFERENCE_ASSET)); // By definition quoteDecimals == fundDecimals
-            // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(tokenAmount, calcSharePrice()));
-            uint costQuantity = mul(mul(mul(tokenAmount, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals), 95) / 100; // use 95% of costQuantity to increase likelihood of execution
-
             requests.push(Request({
                 participant: ofSender,
                 status: RequestStatus.active,
@@ -521,8 +512,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 requestAsset: address(REFERENCE_ASSET), // redeem in REFERENCE_ASSET
                 shareQuantity: tokenAmount,
                 giveQuantity: tokenAmount,              // shares being sent
-                receiveQuantity: costQuantity,          // value of the shares at request time
-                incentiveQuantity: 0,                   // TODO: deprecate incentive in favour of service tx
+                receiveQuantity: 0,          // value of the shares at request time
                 timestamp: now
             }));
             RequestUpdated(getLastRequestId());

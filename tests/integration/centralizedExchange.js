@@ -30,7 +30,6 @@ let version;
 let worker;
 
 // mock data
-const incentive = 500;
 const offeredValue = 10 ** 10;
 const wantedShares = 10 ** 10;
 
@@ -191,26 +190,26 @@ test.serial(
     const pre = await getAllBalances();
     await mlnToken.instance.approve.postTransaction(
       { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-      [fund.address, incentive + offeredValue],
+      [fund.address, offeredValue],
     );
     await fund.instance.requestSubscription.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [offeredValue, wantedShares, incentive, false],
+      [offeredValue, wantedShares, false],
     );
     await updateDatafeed();
     await updateDatafeed();
     const requestId = await fund.instance.getLastRequestId.call({}, []);
     await fund.instance.executeRequest.postTransaction(
-      { from: worker, gas: config.gas, gasPrice: config.gasPrice },
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
       [requestId],
     );
     const post = await getAllBalances();
 
-    t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken + incentive);
+    t.deepEqual(post.worker.mlnToken, pre.worker.mlnToken);
     t.deepEqual(post.worker.ethToken, pre.worker.ethToken);
     t.deepEqual(
       post.investor.mlnToken,
-      pre.investor.mlnToken - offeredValue - incentive,
+      pre.investor.mlnToken - offeredValue,
     );
     t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
     t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
