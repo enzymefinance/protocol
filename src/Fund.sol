@@ -495,6 +495,41 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     // PUBLIC METHODS
 
+    // PUBLIC METHODS : ERC223
+
+    /// @dev Standard ERC223 function that handles incoming token transfers.
+    /// @dev Due to the way costQuantity is calculated, redemptions here are only executed in the case of an equal or increased share price at execution time
+    /// @param ofSender  Token sender address.
+    /// @param tokenAmount Amount of tokens sent.
+    /// @param metadata  Transaction metadata.
+    function tokenFallback(
+        address ofSender,
+        uint tokenAmount,
+        bytes metadata
+    ) {
+        if (msg.sender != address(this)) {
+            return; // when ERC223 asset is not Shares, just receive it and do nothing
+        } else {    // otherwise, make a redemption request
+            var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(REFERENCE_ASSET)); // By definition quoteDecimals == fundDecimals
+            // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(tokenAmount, calcSharePrice()));
+            uint costQuantity = mul(mul(mul(tokenAmount, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals), 95) / 100; // use 95% of costQuantity to increase likelihood of execution
+
+            requests.push(Request({
+                participant: ofSender,
+                status: RequestStatus.active,
+                requestType: RequestType.redeem,
+                requestAsset: address(REFERENCE_ASSET), // redeem in REFERENCE_ASSET
+                shareQuantity: tokenAmount,
+                giveQuantity: tokenAmount,              // shares being sent
+                receiveQuantity: costQuantity,          // value of the shares at request time
+                incentiveQuantity: 0,                   // TODO: deprecate incentive in favour of service tx
+                timestamp: now
+            }));
+            RequestUpdated(getLastRequestId());
+        }
+    }
+
+
     // PUBLIC METHODS : ACCOUNTING
 
     /// @notice Calculates gross asset value of the fund
