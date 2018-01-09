@@ -212,7 +212,7 @@ test.serial("investor receives initial mlnToken for testing", async t => {
 const exchangeIndexes = Array.from(new Array(numberofExchanges), (val, index) => index);
 exchangeIndexes.forEach((i) => {
   test.serial(
-    "fund receives MLN from a subscription (request & execute)",
+    `fund receives MLN from a subscription (request & execute) [round ${i}]`,
     async t => {
       let investorGasTotal = new BigNumber(0);
       await mlnToken.instance.transfer.postTransaction(
@@ -767,7 +767,7 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   // reduce remaining allowance to zero
   receipt = await mlnToken.instance.approve.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [fund.address, incentiveAmount],
+    [fund.address, 0],
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);

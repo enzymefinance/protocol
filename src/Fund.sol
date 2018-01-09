@@ -72,7 +72,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public MANAGEMENT_REWARD_RATE; // Reward rate in REFERENCE_ASSET per delta improvement
     uint public PERFORMANCE_REWARD_RATE; // Reward rate in REFERENCE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    AssetInterface public REFERENCE_ASSET; // Reference asset as ERC20 contract
+    Asset public REFERENCE_ASSET; // Reference asset as ERC20 contract
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -135,7 +135,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             module.exchangeAdapters.push(ExchangeInterface(ofExchangeAdapters[i]));
         }
         // Require reference assets exists in pricefeed
-        REFERENCE_ASSET = AssetInterface(ofReferenceAsset);
+        REFERENCE_ASSET = Asset(ofReferenceAsset);
         NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
         require(address(REFERENCE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastUnclaimedRewardAllocation = Calculations({
@@ -261,9 +261,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
-            if (request.receiveQuantity == 0) {
-                request.receiveQuantity = costQuantity;
-            }
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transfer(request.participant, request.receiveQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
@@ -272,7 +269,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(Asset(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
+            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
             annihilateShares(this, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
