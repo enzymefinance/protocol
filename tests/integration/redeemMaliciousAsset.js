@@ -21,7 +21,6 @@ let exchange;
 let fund;
 let manager;
 let investor;
-let worker;
 let opts;
 let version;
 let mlnToken;

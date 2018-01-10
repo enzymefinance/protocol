@@ -27,7 +27,6 @@ let mlnToken;
 let receipt;
 let runningGasTotal;
 let fund;
-let worker;
 let version;
 
 const addresses = addressBook[environment];
