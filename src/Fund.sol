@@ -227,11 +227,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
-        pre_cond(module.pricefeed.hasRecentPrice(address(REFERENCE_ASSET))) // PriceFeed Module: No recent updates for fund asset list
-        pre_cond(module.pricefeed.hasRecentPrices(ownedAssets)) // PriceFeed Module: No recent updates for fund asset list
+         // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
         // based in REFERENCE_ASSET and multiplied by 10 ** fundDecimals
+        require(module.pricefeed.hasRecentPrice(address(REFERENCE_ASSET)));
+        require(module.pricefeed.hasRecentPrices(ownedAssets));
         var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(REFERENCE_ASSET));
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
@@ -239,11 +240,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
         if (request.requestAsset == address(NATIVE_ASSET)) {
-            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getPrice(address(NATIVE_ASSET));
+            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimals) = module.pricefeed.getPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** uint256(nativeAssetDecimal));
+            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** nativeAssetDecimals);
         }
 
         if (
