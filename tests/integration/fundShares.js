@@ -38,7 +38,6 @@ test.before(async () => {
   deployer = accounts[0];
   manager = accounts[1];
   investor = accounts[2];
-  worker = accounts[3];
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
   mlnToken = await deployedUtils.mlnToken;
