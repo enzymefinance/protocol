@@ -225,7 +225,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond((requests[id].requestType == RequestType.subscribe && isSubscribeAllowed) || (requests[id].requestType == RequestType.redeem && isRedeemAllowed))
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
          // PriceFeed Module: No recent updates for fund asset list
@@ -249,6 +248,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
 
         if (
+            isSubscribeAllowed &&
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
@@ -260,12 +260,21 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
+            isRedeemAllowed &&
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(Asset(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
+            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
+        } else if (
+            isRedeemAllowed &&
+            request.requestType == RequestType.tokenFallbackRedeem &&
+            request.receiveQuantity <= costQuantity
+        ) {
+            request.status = RequestStatus.executed;
+            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
+            annihilateShares(this, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
