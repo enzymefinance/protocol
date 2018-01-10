@@ -244,7 +244,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = mul(costQuantity, nativeAssetPrice) / (10 ** nativeAssetDecimals);
+            costQuantity = costQuantity / nativeAssetPrice;
         }
 
         if (
