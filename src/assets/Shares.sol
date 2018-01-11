@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import '../assets/Asset.sol';
-import './SharesInterface.sol';
+import "../assets/Asset.sol";
+import "./SharesInterface.sol";
 
 /// @title Shares Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
@@ -16,14 +16,9 @@ contract Shares is Asset, SharesInterface {
     uint public decimal;
     uint public creationTime;
 
-    // VIEW METHODS
+    // METHODS
 
-    function getName() view returns (string) { return name; }
-    function getSymbol() view returns (string) { return symbol; }
-    function getDecimals() view returns (uint) { return decimal; }
-    function getCreationTime() view returns (uint) { return creationTime; }
-    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
-    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
+    // CONSTRUCTOR
 
     /// @param _name Name these shares
     /// @param _symbol Symbol of shares
@@ -36,18 +31,31 @@ contract Shares is Asset, SharesInterface {
         creationTime = _creationTime;
     }
 
+    // PUBLIC METHODS
+    // PUBLIC VIEW METHODS
+
+    function getName() view returns (string) { return name; }
+    function getSymbol() view returns (string) { return symbol; }
+    function getDecimals() view returns (uint) { return decimal; }
+    function getCreationTime() view returns (uint) { return creationTime; }
+    function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
+    function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
+
     // INTERNAL METHODS
 
+    /// @param recipient Address the new shares should be sent to
+    /// @param shareQuantity Number of shares to be created
     function createShares(address recipient, uint shareQuantity) internal {
         totalSupply = add(totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
         Created(msg.sender, now, shareQuantity);
     }
 
+    /// @param recipient Address the new shares should be taken from when destroyed
+    /// @param shareQuantity Number of shares to be annihilated
     function annihilateShares(address recipient, uint shareQuantity) internal {
         totalSupply = sub(totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);
         Annihilated(msg.sender, now, shareQuantity);
     }
-
 }

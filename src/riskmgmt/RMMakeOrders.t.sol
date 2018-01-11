@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import 'ds-test/test.sol';
-import 'ds-math/math.sol';
-import './RMMakeOrders.sol';
+import "ds-test/test.sol";
+import "ds-math/math.sol";
+import "./RMMakeOrders.sol";
 
 
 contract RMMakeOrdersTests is DSTest {

@@ -1,15 +1,15 @@
 pragma solidity ^0.4.19;
 
-import './ComplianceInterface.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
+import "./ComplianceInterface.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Compliance Module.
 contract NoCompliance is ComplianceInterface, DBC, Owned {
 
-    // VIEW METHODS
+    // PUBLIC VIEW METHODS
 
     /// @notice Checks whether subscription is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
@@ -21,6 +21,7 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
         uint256 giveQuantity,
         uint256 shareQuantity
     )
+        view
         returns (bool isEligible)
     {
         isEligible = true;
@@ -36,6 +37,7 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
         uint256 shareQuantity,
         uint256 receiveQuantity
     )
+        view
         returns (bool isEligible)
     {
         isEligible = true;

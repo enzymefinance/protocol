@@ -10,7 +10,11 @@ contract PriceFeedInterface {
 
     event PriceUpdated(uint timestamp);
 
-    // VIEW METHODS
+    // PUBLIC METHODS
+
+    function update(address[] ofAssets, uint[] newPrices) {}
+
+    // PUBLIC VIEW METHODS
 
     // Get asset specific information
     function getDescriptiveInformation(address ofAsset) view returns (string, string, string, bytes32) {}
@@ -36,8 +40,4 @@ contract PriceFeedInterface {
         uint buyQuantity
     ) view returns (uint orderPrice) {}
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) view returns (bool isExistent) {}
-
-    // NON-CONSTANT METHODS
-
-    function update(address[] ofAssets, uint[] newPrices) {}
 }

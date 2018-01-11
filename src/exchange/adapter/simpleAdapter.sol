@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import '../../assets/Asset.sol';
-import '../thirdparty/SimpleMarket.sol';
+import "../../assets/Asset.sol";
+import "../thirdparty/SimpleMarket.sol";
 
 
 /// @title SimpleAdapter Contract
@@ -9,7 +9,7 @@ import '../thirdparty/SimpleMarket.sol';
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-library simpleAdapter {
+contract simpleAdapter {
 
     // EVENTS
 
@@ -69,7 +69,7 @@ library simpleAdapter {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return Order id
+    /// @return id Order ID
     function makeOrder(
         address onExchange,
         address sellAsset,
@@ -93,7 +93,7 @@ library simpleAdapter {
     /// @param onExchange Address of the exchange
     /// @param id Order id
     /// @param quantity Quantity of order to be executed (For partial taking)
-    /// @return Whether the takeOrder is successfully executed
+    /// @return success Whether the takeOrder is successfully executed
     function takeOrder(
         address onExchange,
         uint id,
@@ -109,7 +109,7 @@ library simpleAdapter {
     /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
     /// @param onExchange Address of the exchange
     /// @param id Order id
-    /// @return Whether the order is successfully cancelled
+    /// @return success Whether the order is successfully cancelled
     function cancelOrder(
         address onExchange,
         uint id

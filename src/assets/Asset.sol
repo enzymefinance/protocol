@@ -1,24 +1,22 @@
 pragma solidity ^0.4.19;
 
-import 'ds-math/math.sol';
-import './AssetInterface.sol';
-import './ERC223ReceivingContract.sol';
+import "ds-math/math.sol";
+import "./AssetInterface.sol";
+import "./ERC223ReceivingContract.sol";
 
 /// @title Asset Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Implementation of ERC223 inspired by https://github.com/raiden-network/raiden-token/blob/master/contracts/token.sol
 contract Asset is DSMath, AssetInterface {
 
-    /*
-     * Data structures
-     */
+    // DATA STRUCTURES
+
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowed;
     uint256 public totalSupply;
 
-    /*
-     * Public functions
-     */
+    // PUBLIC METHODS
+
     /// @notice Send `_value` tokens to `_to` from `msg.sender`.
     /// @dev Transfers sender's tokens to a given address. Returns success.
     /// @param _to Address of token receiver.
@@ -26,7 +24,7 @@ contract Asset is DSMath, AssetInterface {
     /// @return Returns success of function call.
     function transfer(address _to, uint256 _value) public returns (bool) {
         require(_to != 0x0);
-        require(_to != address(this));
+        // require(_to != address(this));
         require(balances[msg.sender] >= _value);
         require(balances[_to] + _value >= balances[_to]);
 
@@ -115,9 +113,8 @@ contract Asset is DSMath, AssetInterface {
         return true;
     }
 
-    /*
-     * Read functions
-     */
+    // PUBLIC VIEW METHODS
+
     /// @dev Returns number of allowed tokens that a spender can transfer on
     /// behalf of a token owner.
     /// @param _owner Address of token owner.
