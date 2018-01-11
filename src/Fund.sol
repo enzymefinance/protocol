@@ -9,7 +9,7 @@ import './riskmgmt/RiskMgmtInterface.sol';
 import './exchange/ExchangeInterface.sol';
 import {simpleAdapter as exchangeAdapter} from './exchange/adapter/simpleAdapter.sol';
 import './FundInterface.sol';
-import 'ds-math/math.sol';
+import './temp/math.sol';
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
