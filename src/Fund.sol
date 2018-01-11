@@ -240,7 +240,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
         if (request.requestAsset == address(NATIVE_ASSET)) {
-            var (isPriceRecent, nativeAssetPrice, nativeAssetDecimals) = module.pricefeed.getPrice(address(NATIVE_ASSET));
+            var (isPriceRecent, nativeAssetPrice, ) = module.pricefeed.getPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
                 revert();
             }
@@ -300,54 +300,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     {
         return emergencyRedeem(shareQuantity, ownedAssets);
     }
-
-    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
-    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
-    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
-    /// @return Whether all assets sent to shareholder or not
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
-        public
-        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
-        returns (bool)
-    {
-        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
-
-        // Check whether enough assets held by fund
-        for (uint i = 0; i < requestedAssets.length; ++i) {
-            address ofAsset = requestedAssets[i];
-            uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)),
-                quantityHeldInCustodyOfExchange(ofAsset)
-            );
-
-            if (assetHoldings == 0) continue;
-
-            // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
-
-            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
-            if (assetHoldings < ownershipQuantities[i]) {
-                isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
-                return false;
-            }
-        }
-
-        // Annihilate shares before external calls to prevent reentrancy
-        annihilateShares(msg.sender, shareQuantity);
-
-        // Transfer ownershipQuantity of Assets
-        for (uint j = 0; j < ownershipQuantities.length; ++j) {
-            // Failed to send owed ownershipQuantity from fund to participant
-            if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
-                revert();
-            }
-        }
-        Redeemed(msg.sender, now, shareQuantity);
-        return true;
-    }
-
 
     // EXTERNAL : MANAGING
 
@@ -699,6 +651,57 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     {
         require(AssetInterface(ofAsset).transfer(toAddress, amount));
     }
+
+    // PUBLIC : REDEEMING
+
+    /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
+    /// @return Whether all assets sent to shareholder or not
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
+        public
+        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
+        returns (bool)
+    {
+        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
+
+        // Check whether enough assets held by fund
+        for (uint i = 0; i < requestedAssets.length; ++i) {
+            address ofAsset = requestedAssets[i];
+            uint assetHoldings = add(
+                uint(AssetInterface(ofAsset).balanceOf(this)),
+                quantityHeldInCustodyOfExchange(ofAsset)
+            );
+
+            if (assetHoldings == 0) continue;
+
+            // participant's ownership percentage of asset holdings
+            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
+
+            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
+            if (assetHoldings < ownershipQuantities[i]) {
+                isShutDown = true;
+                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                return false;
+            }
+        }
+
+        // Annihilate shares before external calls to prevent reentrancy
+        annihilateShares(msg.sender, shareQuantity);
+
+        // Transfer ownershipQuantity of Assets
+        for (uint j = 0; j < ownershipQuantities.length; ++j) {
+            // Failed to send owed ownershipQuantity from fund to participant
+            if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+                revert();
+            }
+        }
+        Redeemed(msg.sender, now, shareQuantity);
+        return true;
+    }
+
+
 
 
     // PUBLIC : REWARDS
