@@ -2,7 +2,7 @@ pragma solidity ^0.4.19;
 
 import './AssetRegistrar.sol';
 import './PriceFeedInterface.sol';
-import '../temp/math.sol';
+import 'ds-math/math.sol';
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
