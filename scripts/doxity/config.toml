@@ -1,13 +1,13 @@
 linkPrefix = "/protocol"
 name = "@melonproject/protocol"
 license = "GPL-3.0"
-version = "0.4.0-live.2"
+version = "0.6.0"
 description = "Technology Regulated Investment Funds"
 homepage = "https://github.com/melonproject/protocol#readme"
 author = "“Melonport AG <“team@melonport.com”>"
-buildTime = 2017-11-17T15:27:52.165Z
+buildTime = 2018-01-11T14:44:16.809Z
 target = "scripts/doxity"
-src = "$(find ./src -type f -name '*.sol' -not -name '*.t.sol' -not -name 'Governance.sol')"
+src = "--overwrite $(echo $(dapp remappings)) $(find ./src -type f -name '*.sol' -not -name '*.t.sol') ="
 dir = "pages/docs"
 source = "https://github.com/DigixGlobal/doxity-gatsby-starter-project/archive/a4886b7a7a04c018ac04fed3125d7d4785e74bed.tar.gz"
 out = "docs"
