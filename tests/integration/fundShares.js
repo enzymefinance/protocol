@@ -64,7 +64,7 @@ test.serial('can set up new fund', async t => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // name
-      mlnToken.address, // reference asset
+      mlnToken.address, // base asset
       config.protocol.fund.managementReward,
       config.protocol.fund.performanceReward,
       addresses.NoCompliance,

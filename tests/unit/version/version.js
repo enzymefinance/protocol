@@ -39,7 +39,7 @@ test("Can setup a new fund", async t => {
   const v = parseFloat(sig.substr(128, 2)) + 27;
   const txId = await version.instance.setupFund.postTransaction(opts, [
     fundName, // name
-    addresses.MlnToken, // reference asset
+    addresses.MlnToken, // base asset
     config.protocol.fund.managementReward,
     config.protocol.fund.performanceReward,
     addresses.NoCompliance,

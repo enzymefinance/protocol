@@ -52,9 +52,9 @@ contract Version is DBC, Owned {
     // PUBLIC METHODS
 
     /// @param ofFundName human-readable descriptive name (not necessarily unique)
-    /// @param ofReferenceAsset Asset against which performance reward is measured against
+    /// @param ofBaseAsset Asset against which performance reward is measured against
     /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofBaseAsset, given in a number which is divided by 10 ** 15
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
@@ -65,7 +65,7 @@ contract Version is DBC, Owned {
     /// @param s ellipitc curve parameter s
     function setupFund(
         string ofFundName,
-        address ofReferenceAsset,
+        address ofBaseAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofCompliance,
@@ -86,7 +86,7 @@ contract Version is DBC, Owned {
         address ofFund = new Fund(
             msg.sender,
             ofFundName,
-            ofReferenceAsset,
+            ofBaseAsset,
             ofManagementRewardRate,
             ofPerformanceRewardRate,
             NATIVE_ASSET,

@@ -448,7 +448,7 @@ async function deploy(environment) {
         [
           accounts[0],
           "Melon Portfolio", // name
-          mlnToken, // reference asset
+          mlnToken, // base asset
           0, // management reward
           0, // performance reward
           ethToken, // Native Asset
