@@ -1,3 +1,4 @@
+// @flow
 import Api from "@parity/api";
 
 const fs = require("fs");
@@ -66,8 +67,8 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       // deploy datafeed
-      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
+      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi", "utf8"));
+      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin", "utf8");
       opts.data = `0x${bytecode}`;
       datafeed = await api
         .newContract(abi)
@@ -84,8 +85,30 @@ async function deploy(environment) {
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
-      datafeedContract = await api.newContract(abi, datafeed);
       console.log("Deployed datafeed");
+
+      // register assets
+      await Promise.all(
+        config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+          console.log(`Registering ${assetSymbol}`);
+          const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
+          console.dir(tokenEntry)
+          const txid = await datafeedContract.instance.register
+            .postTransaction(opts, [
+              `0x${tokenEntry.address}`,
+              tokenEntry.name,
+              tokenEntry.symbol,
+              tokenEntry.decimals,
+              tokenEntry.url,
+              mockBytes,
+              mockBytes,
+              mockAddress,
+              mockAddress,
+            ]);
+          console.log(txid)
+          console.log(`Registered ${assetSymbol}`);
+        })
+      );
 
       // deploy simplemarket
       abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
@@ -160,23 +183,27 @@ async function deploy(environment) {
       console.log("Deployed ranking contract");
 
       // register assets
-      config.protocol.registrar.assetsToRegister.forEach(async (assetSymbol) => {
-        console.log(`Registering ${assetSymbol}`);
-        const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
-        await datafeedContract.instance.register
-          .postTransaction(opts, [
-            `0x${tokenEntry.address}`,
-            tokenEntry.name,
-            tokenEntry.symbol,
-            tokenEntry.decimals,
-            tokenEntry.url,
-            mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
-          ])
-          .then(() => console.log(`Registered ${assetSymbol}`));
-      });
+      await Promise.all(
+        config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+          console.log(`Registering ${assetSymbol}`);
+          const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
+          console.log(datafeedContract.address)
+          const txid = await datafeedContract.instance.register
+            .postTransaction(opts, [
+              `0x${tokenEntry.address}`,
+              tokenEntry.name,
+              tokenEntry.symbol,
+              tokenEntry.decimals,
+              tokenEntry.url,
+              mockBytes,
+              mockBytes,
+              mockAddress,
+              mockAddress,
+            ]);
+          console.log(txid)
+          console.log(`Registered ${assetSymbol}`);
+        })
+      );
 
       // update address book
       if (fs.existsSync(addressBookFile)) {
@@ -219,23 +246,25 @@ async function deploy(environment) {
           ]);
         console.log("Deployed datafeed");
 
-        config.protocol.registrar.assetsToRegister.forEach(async (assetSymbol) => {
-          console.log(`Registering ${assetSymbol}`);
-          const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
-          await datafeed.instance.register
-            .postTransaction(opts, [
-              `0x${tokenEntry.address}`,
-              tokenEntry.name,
-              tokenEntry.symbol,
-              tokenEntry.decimals,
-              tokenEntry.url,
-              mockBytes,
-              mockBytes,
-              mockAddress,
-              mockAddress,
-            ])
-            .then(() => console.log(`Registered ${assetSymbol}`));
-        });
+        await Promise.all(
+          config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+            console.log(`Registering ${assetSymbol}`);
+            const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
+            await datafeed.instance.register
+              .postTransaction(opts, [
+                `0x${tokenEntry.address}`,
+                tokenEntry.name,
+                tokenEntry.symbol,
+                tokenEntry.decimals,
+                tokenEntry.url,
+                mockBytes,
+                mockBytes,
+                mockAddress,
+                mockAddress,
+              ])
+              .then(() => console.log(`Registered ${assetSymbol}`));
+          })
+        );
         // update address book
         if (fs.existsSync(addressBookFile)) {
           addressBook = JSON.parse(fs.readFileSync(addressBookFile));
