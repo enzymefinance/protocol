@@ -86,29 +86,7 @@ async function deploy(environment) {
           config.protocol.datafeed.validity,
         ]);
       console.log("Deployed datafeed");
-
-      // register assets
-      await Promise.all(
-        config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
-          console.log(`Registering ${assetSymbol}`);
-          const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
-          console.dir(tokenEntry)
-          const txid = await datafeedContract.instance.register
-            .postTransaction(opts, [
-              `0x${tokenEntry.address}`,
-              tokenEntry.name,
-              tokenEntry.symbol,
-              tokenEntry.decimals,
-              tokenEntry.url,
-              mockBytes,
-              mockBytes,
-              mockAddress,
-              mockAddress,
-            ]);
-          console.log(txid)
-          console.log(`Registered ${assetSymbol}`);
-        })
-      );
+      datafeedContract = await api.newContract(abi, datafeed);
 
       // deploy simplemarket
       abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
@@ -189,7 +167,7 @@ async function deploy(environment) {
           const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
           console.log(datafeedContract.address)
           const txid = await datafeedContract.instance.register
-            .postTransaction(opts, [
+            .postTransaction({from: accounts[0], gas: 6000000}, [
               `0x${tokenEntry.address}`,
               tokenEntry.name,
               tokenEntry.symbol,
@@ -200,7 +178,6 @@ async function deploy(environment) {
               mockAddress,
               mockAddress,
             ]);
-          console.log(txid)
           console.log(`Registered ${assetSymbol}`);
         })
       );
@@ -251,7 +228,7 @@ async function deploy(environment) {
             console.log(`Registering ${assetSymbol}`);
             const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
             await datafeed.instance.register
-              .postTransaction(opts, [
+              .postTransaction({from: accounts[0], gas: 6000000}, [
                 `0x${tokenEntry.address}`,
                 tokenEntry.name,
                 tokenEntry.symbol,
