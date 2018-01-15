@@ -4,6 +4,9 @@ npm-debug.log
 *.orig
 *.swp
 
+# manual backup files
+*.bak
+
 # doxity
 scripts/
 

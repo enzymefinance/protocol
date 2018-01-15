@@ -43,9 +43,7 @@ async function registerModule() {
 test.before(async () => {
   await deploy(environment);
   accounts = await api.eth.accounts();
-  deployer = accounts[0];
-  operator = accounts[1];
-  voter = accounts[2];
+  [deployer, operator, voter] = accounts;
 });
 
 test.beforeEach(async () => {

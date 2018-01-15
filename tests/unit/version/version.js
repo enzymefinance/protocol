@@ -25,7 +25,7 @@ const keccakedFundName =
 test.before(async () => {
   await deploy(environment);
   accounts = await api.eth.accounts();
-  manager = accounts[4];
+  [ , , , , manager] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 

@@ -38,9 +38,7 @@ const buyQuantity = 1000;
 test.before(async () => {
   await deploy(environment);
   accounts = await deployedUtils.accounts;
-  deployer = accounts[0];
-  manager = accounts[1];
-  investor = accounts[2];
+  [deployer, manager, investor] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
   mlnToken = await deployedUtils.mlnToken;

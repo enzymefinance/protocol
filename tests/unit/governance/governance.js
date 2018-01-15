@@ -21,7 +21,7 @@ let version;
 test.before(async () => {
   await deploy(environment);
   accounts = await api.eth.accounts();
-  deployer = accounts[0];
+  [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 

@@ -22,6 +22,18 @@
     ],
     "ava/no-ignored-test-files": [
       "warn"
-    ]
+    ],
+    "prefer-destructuring": ["error", {
+      "VariableDeclarator": {
+        "array": true,
+        "object": false
+      },
+      "AssignmentExpression": {
+        "array": true,
+        "object": false
+      }
+    }, {
+      "enforceForRenamedProperties": false
+    }]
   }
 }

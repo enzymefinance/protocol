@@ -76,11 +76,7 @@ async function getAllBalances() {
 test.before(async () => {
   await deploy(environment);
   accounts = await deployedUtils.accounts;
-  deployer = accounts[0];
-  manager = accounts[1];
-  investor = accounts[2];
-  worker = accounts[3];
-  exchangeOwner = accounts[4];
+  [deployer, manager, investor, worker, exchangeOwner] = accounts;
   version = await deployedUtils.version;
   pricefeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;

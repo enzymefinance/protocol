@@ -93,9 +93,9 @@ test.beforeEach(async t => {
 test("registers twice without error", async t => {
   await registerEur(t.context.pricefeed);
   await registerEth(t.context.pricefeed);
-  const eurRegistered = (await t.context.pricefeed.instance.information.call({}, [eurToken.address]))[4];
-  const ethRegistered = (await t.context.pricefeed.instance.information.call({}, [ethToken.address]))[4];
-  const mlnRegistered = (await t.context.pricefeed.instance.information.call({}, [mlnToken.address]))[4];
+  const [ , , , , eurRegistered] = (await t.context.pricefeed.instance.information.call({}, [eurToken.address]));
+  const [ , , , , ethRegistered] = (await t.context.pricefeed.instance.information.call({}, [ethToken.address]));
+  const [ , , , , mlnRegistered] = (await t.context.pricefeed.instance.information.call({}, [mlnToken.address]));
 
   t.true(eurRegistered);
   t.true(ethRegistered);
@@ -131,7 +131,7 @@ test("registers pricefeed update", async t => {
   ]);
   const [eurIsRecent, eurPrice, returnedEurDecimals] = Object.values(await t.context.pricefeed.instance.getPrice.call({}, [eurToken.address]));
   const [ethIsRecent, ethPrice, returnedEthDecimals] = Object.values(await t.context.pricefeed.instance.getPrice.call({}, [ethToken.address]));
- 
+
   t.is(inputPriceEur, Number(eurPrice));
   t.true(eurIsRecent);
   t.is(eurDecimals, Number(returnedEurDecimals));

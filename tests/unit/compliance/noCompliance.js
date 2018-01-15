@@ -17,7 +17,7 @@ let investor;
 test.before(async () => {
   await deploy(environment);
   accounts = await api.eth.accounts();
-  investor = accounts[1];
+  [investor] = accounts;
 });
 
 test("Anyone can perform subscription", async t => {
