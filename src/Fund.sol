@@ -238,7 +238,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // By definition quoteDecimals == fundDecimals
         Request request = requests[id];
 
-        uint costQuantity = mul(mul(request.shareQuantity, toWholeShareUnit(calcSharePrice())), invertedPrice / 10 ** quoteDecimals);
+        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         if (request.requestAsset == address(NATIVE_ASSET)) {
             var (isPriceRecent, nativeAssetPrice, ) = module.pricefeed.getPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
@@ -499,18 +499,19 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-            var (isRecent, assetPrice, assetDecimal) = module.pricefeed.getPrice(ofAsset);
+            var (isRecent, assetPrice, assetDecimals) = module.pricefeed.getPrice(ofAsset);
             if (!isRecent) {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimal))); // Sum up product of asset holdings of this vault and asset prices
+            uint shareDecimals = getDecimals();
+            gav = add(gav, mul(mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)), 10 ** uint256(shareDecimals)) / (10 ** uint256(assetDecimals)));   // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == address(BASE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(BASE_ASSET) or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
-            PortfolioContent(assetHoldings, assetPrice, assetDecimal);
+            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
     }
 
