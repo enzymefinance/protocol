@@ -164,9 +164,9 @@ async function deploy(environment) {
       await Promise.all(
         config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
           console.log(`Registering ${assetSymbol}`);
-          const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
+          const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
           console.log(datafeedContract.address)
-          const txid = await datafeedContract.instance.register
+          await datafeedContract.instance.register
             .postTransaction({from: accounts[0], gas: 6000000}, [
               `0x${tokenEntry.address}`,
               tokenEntry.name,
@@ -226,7 +226,7 @@ async function deploy(environment) {
         await Promise.all(
           config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
             console.log(`Registering ${assetSymbol}`);
-            const tokenEntry = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol)[0];
+            const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
             await datafeed.instance.register
               .postTransaction({from: accounts[0], gas: 6000000}, [
                 `0x${tokenEntry.address}`,

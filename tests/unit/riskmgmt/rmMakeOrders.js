@@ -19,7 +19,7 @@ let referencePrice;
 test.before(async () => {
   await deploy(environment);
   accounts = await api.eth.accounts();
-  mockAddress = accounts[1];
+  [mockAddress] = accounts;
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);
   referencePrice = 100;
 });

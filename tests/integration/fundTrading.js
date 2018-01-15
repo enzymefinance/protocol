@@ -80,10 +80,7 @@ test.before(async () => {
   await deploy(environment);
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
-  deployer = accounts[0];
-  manager = accounts[1];
-  investor = accounts[2];
-  worker = accounts[3];
+  [deployer, manager, investor, worker] = accounts;
   version = await deployedUtils.version;
   pricefeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;

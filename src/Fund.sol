@@ -233,7 +233,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // based in BASE_ASSET and multiplied by 10 ** fundDecimals
         require(module.pricefeed.hasRecentPrice(address(BASE_ASSET)));
         require(module.pricefeed.hasRecentPrices(ownedAssets));
-        var (isRecent, invertedPrice, quoteDecimals) = module.pricefeed.getInvertedPrice(address(BASE_ASSET));
+        var (isRecent, , ) = module.pricefeed.getInvertedPrice(address(BASE_ASSET));
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
         Request request = requests[id];

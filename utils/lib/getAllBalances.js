@@ -12,10 +12,7 @@ const api = new Api(provider);
 
 async function getAllBalances(accounts, fund) {
 
-  const deployer = accounts[0];
-  const manager = accounts[1];
-  const investor = accounts[2];
-  const worker = accounts[3];
+  const [deployer, manager, investor, worker] = accounts;
 
   return {
     investor: {
