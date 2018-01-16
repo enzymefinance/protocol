@@ -14,6 +14,7 @@ async function deploy(environment) {
     let addressBook;
     let bytecode;
     let mlnAddr;
+    let ethTokenAddress;
     let mlnToken;
     let eurToken;
     let ethToken;
@@ -54,6 +55,7 @@ async function deploy(environment) {
 
     if (environment === "kovan") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
+      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       // deploy datafeed
@@ -135,7 +137,7 @@ async function deploy(environment) {
       opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
       console.log("Deployed version");
 
       // add Version to Governance tracking
@@ -189,6 +191,7 @@ async function deploy(environment) {
       };
     } else if (environment === "live") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
+      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       if (datafeedOnly) {
@@ -292,7 +295,7 @@ async function deploy(environment) {
         opts.gas = 6700000;
         version = await api
           .newContract(versionAbi)
-          .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
+          .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
         console.log(`Deployed Version at ${version}`);
 
         // add Version to Governance tracking
@@ -401,7 +404,6 @@ async function deploy(environment) {
       centralizedAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed CentralizedAdapter");
 
-      // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
