@@ -21,7 +21,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If makeOrder is permitted
+    /// @return If makeOrder is permitted
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -31,7 +31,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
         uint buyQuantity
     )
         view
-        returns (bool isPermitted)
+        returns (bool)
     {
         // Makes sure difference between orderPrice and referencePrice is less than or equal to maximum allowed deviation
         if (orderPrice < sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
@@ -47,7 +47,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If takeOrder is permitted
+    /// @return If takeOrder is permitted
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -57,7 +57,7 @@ contract RMMakeOrders is DSMath, RiskMgmtInterface {
         uint buyQuantity
     )
         view
-        returns (bool isPermitted)
+        returns (bool)
     {
         // Makes sure difference between orderPrice and referencePrice is less than or equal to maximum allowed deviation
         if (orderPrice < sub(referencePrice, wmul(RISK_LEVEL, referencePrice))) {
