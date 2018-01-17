@@ -742,16 +742,17 @@ test.serial(`Allows subscription in native asset`, async t => {
     await fund.instance.balanceOf.call({}, [investor])
   );
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-  const [, nativeAssetPrice, ] = await pricefeed.instance.getPrice.call(
+  const [, invertedNativeAssetPrice, nativeAssetDecimal] = await pricefeed.instance.getInvertedPrice.call(
     {},
     [ethToken.address],
   );
-  const wantedShareQuantity = 10 * 10;
+  const wantedShareQuantity = 10 ** 10;
   const giveQuantity = Number(
     new BigNumber(wantedShareQuantity)
       .times(sharePrice)
       .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
-      .dividedBy(nativeAssetPrice)
+      .times(invertedNativeAssetPrice)
+      .dividedBy(new BigNumber(10 ** nativeAssetDecimal))
       .times(new BigNumber(1.2)) // For price fluctuations
       .floor()
   );
@@ -810,7 +811,7 @@ test.serial(`Allows redemption in native asset`, async t => {
   );
   await updateDatafeed();
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-  const [, nativeAssetPrice, ] = await pricefeed.instance.getPrice.call(
+  const [, invertedNativeAssetPrice, nativeAssetDecimal] = await pricefeed.instance.getInvertedPrice.call(
     {},
     [ethToken.address],
   );
@@ -819,7 +820,8 @@ test.serial(`Allows redemption in native asset`, async t => {
     new BigNumber(shareQuantity)
       .times(sharePrice)
       .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
-      .dividedBy(nativeAssetPrice)
+      .times(invertedNativeAssetPrice)
+      .dividedBy(new BigNumber(10 ** nativeAssetDecimal))
       .times(new BigNumber(0.9)) // For price fluctuations
       .floor()
   );

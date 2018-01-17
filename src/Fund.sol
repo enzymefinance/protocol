@@ -240,11 +240,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         if (request.requestAsset == address(NATIVE_ASSET)) {
-            var (isPriceRecent, nativeAssetPrice, ) = module.pricefeed.getPrice(address(NATIVE_ASSET));
+            var (isPriceRecent, invertedNativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getInvertedPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = costQuantity / nativeAssetPrice;
+            costQuantity = mul(costQuantity, invertedNativeAssetPrice) / 10 ** nativeAssetDecimal;
         }
 
         if (
