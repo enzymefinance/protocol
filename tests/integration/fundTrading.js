@@ -801,10 +801,6 @@ test.serial(`Allows subscription in native asset`, async t => {
 
 test.serial(`Allows redemption in native asset`, async t => {
   let investorGasTotal = new BigNumber(0);
-  await ethToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [investor, 10 ** 14, ""],
-  );
   const pre = await getAllBalances();
   const investorPreShares = Number(
     await fund.instance.balanceOf.call({}, [investor])
@@ -849,7 +845,7 @@ test.serial(`Allows redemption in native asset`, async t => {
 
   t.is(Number(investorPostShares), investorPreShares - shareQuantity);
   t.deepEqual(post.worker.ethToken, pre.worker.ethToken);
-  t.true(post.investor.ethToken >= pre.investor.ethToken - offeredValue);
+  t.true(post.investor.ethToken >= pre.investor.ethToken - receiveQuantity);
   t.deepEqual(
     post.investor.ether,
     pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
@@ -857,8 +853,8 @@ test.serial(`Allows redemption in native asset`, async t => {
   t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
   t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
-  t.true(post.fund.mlnToken <= pre.fund.mlnToken + offeredValue);
-  t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
+  t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken);
+  t.deepEqual(post.fund.ethToken, pre.fund.ethToken + (post.investor.ethToken - pre.investor.ethToken));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
