@@ -31,7 +31,7 @@ module.exports = {
         ],
       },
       datafeed: {
-        interval: 120,
+        interval: 60,
         validity: 60,
       },
     },
