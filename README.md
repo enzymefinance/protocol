@@ -6,10 +6,9 @@
 [![Build Status](https://img.shields.io/travis/melonproject/protocol/master.svg?style=flat-square)](https://travis-ci.org/melonproject/protocol)
 [![Solidity version](https://img.shields.io/badge/solidity-0.4.19-brightgreen.svg?style=flat-square&colorB=C99D66)](https://github.com/ethereum/solidity/releases/tag/v0.4.19)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
-
-![NSP Status](https://nodesecurity.io/orgs/melonproject/projects/cb1dd04e-1069-4ffd-8210-70ec757ed3de)
 ![Dependencies](https://img.shields.io/david/melonproject/melon.js.svg?style=flat-square)
 ![Development Dependencies](https://img.shields.io/david/dev/melonproject/melon.js.svg?style=flat-square)
+![NSP Status](https://nodesecurity.io/orgs/melonproject/projects/cb1dd04e-1069-4ffd-8210-70ec757ed3de)
 
 Melon ([méllō], μέλλω; Greek for "destined to be") is blockchain software that seeks to enable participants to set up, manage and invest in technology regulated investment funds in a way that reduces barriers to entry, while minimizing the requirements for trust.
 
@@ -68,7 +67,13 @@ parity \
 # Open a second terminal and deploy the contracts:
 npm run deploy:kovan
 ```
+## Troubleshooting
 
+#### Spec json is invalid when running Parity Devchain
+Update your Parity installation to the latest version or try changing `"instantSeal": null` to `"instantSeal": { "params": {} }` in chainGenesis.json
+
+#### Stuck at deploy step
+Deploying contracts may stuck indefinitely in case your parity node is not unlocked for some reason. Locked node requires you to enter password for each transaciton manually.
 
 ## Contributing
 

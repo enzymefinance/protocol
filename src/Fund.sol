@@ -20,8 +20,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     struct Modules { // Describes all modular parts, standardised through an interface
         PriceFeedInterface pricefeed; // Provides all external data
-        address[] exchanges; // Wraps exchange adapter into exchange interface
-        ExchangeInterface[] exchangeAdapters;
+        address[] exchanges; // Array containing multiple exchange addresses
+        ExchangeInterface[] exchangeAdapters; // Array containing exchange adapter contracts respective to the exchanges
         ComplianceInterface compliance; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
@@ -84,7 +84,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     Order[] public orders; // All the orders this fund placed on exchanges
     mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
-    address[] public tempOwnedAssets;
+    address[] public tempOwnedAssets; // Intended as a local variable for calcGav method, but declaring as global to overcome Solidity limtation
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
