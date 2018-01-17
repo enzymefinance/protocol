@@ -226,7 +226,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
-        pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, module.pricefeed.getInterval())) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
          // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in BASE_ASSET and multiplied by 10 ** fundDecimals
