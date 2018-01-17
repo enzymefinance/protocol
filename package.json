@@ -22,7 +22,7 @@
     "deploy:live": "babel-node utils/deploy/contracts.js live",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
-    "prepublish": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json"
+    "prepublishOnly": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json"
   },
   "files": [
     "out",
