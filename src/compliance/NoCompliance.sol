@@ -15,16 +15,16 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
     /// @param ofParticipant Address requesting to invest in a Melon fund
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
-    /// @return isEligible Whether identity is eligible to invest in a Melon fund.
+    /// @return Whether identity is eligible to invest in a Melon fund.
     function isSubscriptionPermitted(
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity
     )
         view
-        returns (bool isEligible)
+        returns (bool)
     {
-        isEligible = true;
+        return true;
     }
 
     /// @notice Checks whether redemption is permitted for a participant
@@ -38,8 +38,8 @@ contract NoCompliance is ComplianceInterface, DBC, Owned {
         uint256 receiveQuantity
     )
         view
-        returns (bool isEligible)
+        returns (bool)
     {
-        isEligible = true;
+        return true;
     }
 }

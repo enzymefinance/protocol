@@ -47,7 +47,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
-        uint timestamp; // Time of request creation in seconds
+        uint timestamp;     // Time of request creation in seconds
+        uint atUpdateId;    // Pricefeed updateId when this request was created
     }
 
     enum OrderStatus { active, partiallyFilled, fullyFilled, cancelled }
@@ -185,7 +186,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
-            timestamp: now
+            timestamp: now,
+            atUpdateId: module.pricefeed.getLastUpdateId()
         }));
         RequestUpdated(getLastRequestId());
     }
@@ -212,7 +214,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
-            timestamp: now
+            timestamp: now,
+            atUpdateId: module.pricefeed.getLastUpdateId()
         }));
         RequestUpdated(getLastRequestId());
     }
@@ -226,7 +229,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
-        pre_cond(totalSupply == 0 || now >= add(requests[id].timestamp, mul(uint(2), module.pricefeed.getInterval()))) // PriceFeed Module: Wait at least one interval before continuing unless its the first supscription
+        pre_cond(
+            totalSupply == 0 ||
+            (
+                now >= add(requests[id].timestamp, module.pricefeed.getInterval()) &&
+                module.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
+            )
+        )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first subscription)
          // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in BASE_ASSET and multiplied by 10 ** fundDecimals
@@ -474,7 +483,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 shareQuantity: tokenAmount,
                 giveQuantity: tokenAmount,              // shares being sent
                 receiveQuantity: 0,          // value of the shares at request time
-                timestamp: now
+                timestamp: now,
+                atUpdateId: module.pricefeed.getLastUpdateId()
             }));
             RequestUpdated(getLastRequestId());
         }

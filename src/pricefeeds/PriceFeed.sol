@@ -18,6 +18,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// Note: Interval is purely self imposed and for information purposes only
     uint public INTERVAL; // Frequency of updates in seconds
     uint public VALIDITY; // Time in seconds for which data is considered recent
+    uint updateId;        // Update counter for this pricefeed; used as a check during investment
 
     // METHODS
 
@@ -80,6 +81,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         pre_cond(isOwner())
         pre_cond(ofAssets.length == newPrices.length)
     {
+        updateId += 1;
         for (uint i = 0; i < ofAssets.length; ++i) {
             require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
             require(information[ofAssets[i]].exists);
@@ -95,6 +97,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
     function getInterval() view returns (uint) { return INTERVAL; }
     function getValidity() view returns (uint) { return VALIDITY; }
+    function getLastUpdateId() view returns (uint) { return updateId; }
 
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
     /// @param ofAsset Existend asset in AssetRegistrar
@@ -122,10 +125,10 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         return true;
     }
 
-    /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
-    /// @dev Asset has been registered
-    /// @param ofAsset Asset for which price should be returned
     /**
+    @notice Gets price of an asset multiplied by ten to the power of assetDecimals
+    @dev Asset has been registered
+    @param ofAsset Asset for which price should be returned
     @return {
       "isRecent": "Whether the returned price is valid (as defined by VALIDITY)",
       "price": "Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers",

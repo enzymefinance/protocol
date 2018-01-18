@@ -26,6 +26,7 @@ contract PriceFeedInterface {
     function getQuoteAsset() view returns (address) {}
     function getInterval() view returns (uint) {}
     function getValidity() view returns (uint) {}
+    function getLastUpdateId() view returns (uint) {}
     // Get asset specific information as updated in price feed
     function hasRecentPrice(address ofAsset) view returns (bool isRecent) {}
     function hasRecentPrices(address[] ofAssets) view returns (bool areRecent) {}
