@@ -637,6 +637,7 @@ test.serial(
         orderId
       ],
     );
+    const [, orderStatus] = Number(await fund.instance.orders.call({}, [orderId]));
     const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
     const exchangePostEthToken = Number(
@@ -650,8 +651,9 @@ test.serial(
     t.deepEqual(post.fund.ether, pre.fund.ether);
     t.deepEqual(
       post.manager.ether,
-      pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
+      pre.manager.ether.minus(runningGasTotal.times(gasPrice))
     );
+    t.is(orderStatus, 3);
   },
 );
 
