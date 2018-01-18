@@ -146,8 +146,8 @@ async function deploy(environment) {
       await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
 
       // deploy ranking contract
-      abi = JSON.parse(fs.readFileSync("out/Ranking.abi"));
-      bytecode = fs.readFileSync("out/Ranking.bin");
+      abi = JSON.parse(fs.readFileSync("out/FundRanking.abi"));
+      bytecode = fs.readFileSync("out/FundRanking.bin");
       opts.data = `0x${bytecode}`;
       ranking = await api.newContract(abi).deploy(opts, [version]);
       console.log("Deployed ranking contract");
