@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.6.2-deploy.8",
+  "version": "0.6.2-deploy.9",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
