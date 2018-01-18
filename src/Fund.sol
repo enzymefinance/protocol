@@ -581,7 +581,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(numShares > 0)
         returns (uint valuePerShare)
     {
-        valuePerShare = toSmallestShareUnit(totalValue / numShares);
+        valuePerShare = toSmallestShareUnit(totalValue) / numShares;
     }
 
     /**
