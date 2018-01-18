@@ -1,12 +1,9 @@
 pragma solidity ^0.4.19;
 
-import "./assets/SharesInterface.sol";
-import "./assets/ERC223ReceivingContract.sol";
-
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Fund Contract
-contract FundInterface is SharesInterface, ERC223ReceivingContract {
+interface FundInterface {
 
     // EVENTS
 
@@ -23,35 +20,35 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
 
     // EXTERNAL METHODS
     // Compliance by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external {}
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external {}
-    function executeRequest(uint requestId) external {}
-    function cancelRequest(uint requestId) external {}
-    function redeemAllOwnedAssets(uint shareQuantity) external returns (bool) {}
+    function requestSubscription(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external;
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external;
+    function executeRequest(uint requestId) external;
+    function cancelRequest(uint requestId) external;
+    function redeemAllOwnedAssets(uint shareQuantity) external returns (bool);
     // Administration by Manager
-    function enableSubscription() external {}
-    function disableSubscription() external {}
-    function enableRedemption() external {}
-    function disableRedemption() external {}
-    function shutDown() external {}
+    function enableSubscription() external;
+    function disableSubscription() external;
+    function enableRedemption() external;
+    function disableRedemption() external;
+    function shutDown() external;
     // Managing by Manager
-    function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
-    function takeOrder(uint exchangeId, uint id, uint quantity) external {}
-    function cancelOrder(uint exchangeId, uint id) external {}
+    function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external;
+    function takeOrder(uint exchangeId, uint id, uint quantity) external;
+    function cancelOrder(uint exchangeId, uint id) external;
 
     // PUBLIC METHODS
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success) {}
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
     // Rewards by Manager
-    function allocateUnclaimedRewards() {}
+    function allocateUnclaimedRewards();
 
     // PUBLIC VIEW METHODS
     // Get general information
-    function getModules() constant returns (address, address[], address, address) {}
-    function getLastOrderId() constant returns (uint) {}
-    function getLastRequestId() constant returns (uint) {}
-    function getNameHash() constant returns (bytes32) {}
+    function getModules() constant returns (address, address[], address, address);
+    function getLastOrderId() constant returns (uint);
+    function getLastRequestId() constant returns (uint);
+    function getNameHash() constant returns (bytes32);
 
     // Get accounting information
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
-    function calcSharePrice() constant returns (uint) {}
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint);
+    function calcSharePrice() constant returns (uint);
 }

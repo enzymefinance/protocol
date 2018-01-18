@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "./assets/Shares.sol";
+import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./assets/NativeAssetInterface.sol";
@@ -15,7 +16,7 @@ import "ds-math/math.sol";
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContract {
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
