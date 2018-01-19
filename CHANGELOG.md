@@ -5,6 +5,37 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.2]
+
+### Added
+
+- return inception date in ranking contract
+- keep track of updateId in pricefeed
+- check for two updates when executing a request
+
+### Removed
+
+- Fund.getStake()
+- un-implemented interface functions
+- duplicate ranking contract
+
+### Changed
+
+- use the same exchange on Kovan for each deployment, to maintain liquidity
+- simplify return syntax in boolean functions
+
+### Fixed
+
+- Bug preventing state storage in Fund.cancelOrder
+- Bug in GAV calculation for assets without 18 decimal places
+- Bug in sharePrice calculation after taking orders
+
+### Updated
+
+- README.md
+- CONTRIBUTING.md style and contribution guide
+
+
 ## [0.6.0]
 
 ### Added
