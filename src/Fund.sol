@@ -757,7 +757,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         );
     }
 
-    function getStake() view returns (uint) { return balanceOf(this); }
     function getLastOrderId() view returns (uint) { return orders.length - 1; }
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
     function getNameHash() view returns (bytes32) { return bytes32(keccak256(name)); }
