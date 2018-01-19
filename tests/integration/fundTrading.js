@@ -637,8 +637,9 @@ test.serial(
         orderId
       ],
     );
-    const [, orderStatus] = Number(await fund.instance.orders.call({}, [orderId]));
+    const [, orderStatus] = await fund.instance.orders.call({}, [orderId]);
     const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+    console.log(`gas used for cancel: ${gasUsed}`);
     runningGasTotal = runningGasTotal.plus(gasUsed);
     const exchangePostEthToken = Number(
       await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
@@ -653,7 +654,7 @@ test.serial(
       post.manager.ether,
       pre.manager.ether.minus(runningGasTotal.times(gasPrice))
     );
-    t.is(orderStatus, 3);
+    t.is(Number(orderStatus), 3);
   },
 );
 
