@@ -11,7 +11,7 @@ pragma solidity ^0.4.19;
  *  3) Best execution: Ensure the best execution possible for Melon fund
  *    investors' orders.
  */
-interface RiskMgmtInterface {
+contract RiskMgmtInterface {
 
     // METHODS
     // PUBLIC VIEW METHODS
@@ -31,7 +31,7 @@ interface RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) view returns (bool);
+    ) view returns (bool) {}
 
     /// @notice Checks if the takeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
@@ -48,5 +48,5 @@ interface RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) view returns (bool);
+    ) view returns (bool) {}
 }

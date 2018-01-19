@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 /// @title Compliance Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Compliance Contract
-interface ComplianceInterface {
+contract ComplianceInterface {
 
     // PUBLIC VIEW METHODS
 
@@ -16,7 +16,7 @@ interface ComplianceInterface {
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity
-    ) view returns (bool);
+    ) view returns (bool) {}
 
     /// @notice Checks whether redemption is permitted for a participant
     /// @param ofParticipant Address requesting to redeem from a Melon fund
@@ -27,5 +27,5 @@ interface ComplianceInterface {
         address ofParticipant,
         uint256 shareQuantity,
         uint256 receiveQuantity
-    ) view returns (bool);
+    ) view returns (bool) {}
 }

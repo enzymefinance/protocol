@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "../Fund.sol";
+import "../FundInterface.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "./VersionInterface.sol";
@@ -8,7 +9,7 @@ import "./VersionInterface.sol";
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is DBC, Owned, VersionInterface {
+contract Version is DBC, Owned {
     // FIELDS
 
     // Constant fields
@@ -106,7 +107,7 @@ contract Version is DBC, Owned, VersionInterface {
     function shutDownFund(address ofFund)
         pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)
     {
-        Fund fund = Fund(ofFund);
+        FundInterface fund = FundInterface(ofFund);
         delete managerToFunds[msg.sender];
         delete fundNamesToOwners[fund.getNameHash()];
         fund.shutDown();
@@ -141,6 +142,5 @@ contract Version is DBC, Owned, VersionInterface {
     function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
-    function getFundByManager(address ofManager) view returns (address) { return managerToFunds[ofManager]; }
     function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 }
