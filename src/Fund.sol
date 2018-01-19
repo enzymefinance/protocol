@@ -448,7 +448,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner() || isShutDown)
     {
         // Get information of fund order by order id
-        Order memory order = orders[id];
+        Order order = orders[id];
 
         // Execute request
         require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), module.exchanges[exchangeNumber], order.exchangeId));
