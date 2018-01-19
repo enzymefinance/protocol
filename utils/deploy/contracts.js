@@ -84,8 +84,10 @@ async function deploy(environment) {
       abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
       bytecode = fs.readFileSync("out/exchange/thirdparty/SimpleMarket.bin");
       opts.data = `0x${bytecode}`;
-      simpleMarket = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed simplemarket");
+      // simpleMarket = await api.newContract(abi).deploy(opts, []);
+      // console.log("Deployed simplemarket");
+      simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
+      console.log(`Using already-deployed SimpleMarket at ${simpleMarket}`);
 
       // deploy participation
       abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
@@ -506,6 +508,7 @@ async function deploy(environment) {
 
     // write out addressBook
     console.log(`Writing addresses to ${addressBookFile}`);
+    console.dir(addressBook)
     fs.writeFileSync(
       addressBookFile,
       JSON.stringify(addressBook, null, "\t"),
