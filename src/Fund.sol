@@ -515,7 +515,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             uint shareDecimals = getDecimals();
-            gav = add(gav, mul(mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)), 10 ** uint256(shareDecimals)) / (10 ** uint256(assetDecimals)));   // Sum up product of asset holdings of this vault and asset prices
+            gav = add(gav, mul(mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)), 10 ** uint256(shareDecimals)) / (10 ** uint256(shareDecimals)));   // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == address(BASE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(BASE_ASSET) or in open make order
                 ownedAssets.push(ofAsset);
             } else {
