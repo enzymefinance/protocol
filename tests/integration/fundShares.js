@@ -74,6 +74,8 @@ test.serial('can set up new fund', async t => {
       s
     ]
   );
+  await version._pollTransactionReceipt(receipt);
+
   // Since postTransaction returns transaction hash instead of object as in Web3
   const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
