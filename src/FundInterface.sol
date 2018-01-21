@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import './assets/SharesInterface.sol';
-import './assets/ERC223ReceivingContract.sol';
+import "./assets/SharesInterface.sol";
+import "./assets/ERC223ReceivingContract.sol";
 
 /// @title Fund Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -21,30 +21,13 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
-    // VIEW METHODS
-
-    // Get general information
-    function getCreationTime() constant returns (uint) {}
-    function getBaseUnits() constant returns (uint) {}
-    function getModules() constant returns (address ,address, address, address) {}
-    function getStake() constant returns (uint) {}
-    function getLastOrderId() constant returns (uint) {}
-    function getLastRequestId() constant returns (uint) {}
-    function getNameHash() constant returns (bytes32) {}
-
-    // Get accounting information
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
-    function calcSharePrice() constant returns (uint) {}
-
-    // NON-CONSTANT METHODS
-
+    // EXTERNAL METHODS
     // Compliance by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, uint workerReward) external {}
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, uint workerReward) external {}
+    function requestSubscription(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external {}
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external {}
     function executeRequest(uint requestId) external {}
     function cancelRequest(uint requestId) external {}
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool) {}
-    function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success) {}
     // Administration by Manager
     function enableSubscription() external {}
     function disableSubscription() external {}
@@ -52,9 +35,23 @@ contract FundInterface is SharesInterface, ERC223ReceivingContract {
     function disableRedemption() external {}
     function shutDown() external {}
     // Managing by Manager
-    function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
-    function takeOrder(uint id, uint quantity) external {}
-    function cancelOrder(uint id) external {}
+    function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external {}
+    function takeOrder(uint exchangeId, uint id, uint quantity) external {}
+    function cancelOrder(uint exchangeId, uint id) external {}
+
+    // PUBLIC METHODS
+    function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success) {}
     // Rewards by Manager
     function allocateUnclaimedRewards() {}
+
+    // PUBLIC VIEW METHODS
+    // Get general information
+    function getModules() constant returns (address, address[], address, address) {}
+    function getLastOrderId() constant returns (uint) {}
+    function getLastRequestId() constant returns (uint) {}
+    function getNameHash() constant returns (bytes32) {}
+
+    // Get accounting information
+    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint) {}
+    function calcSharePrice() constant returns (uint) {}
 }

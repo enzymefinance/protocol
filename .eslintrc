@@ -1,15 +1,42 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb", "prettier", "plugin:ava/recommended"],
-  "plugins": ["flowtype", "ava"],
+  "extends": [
+    "airbnb",
+    "plugin:ava/recommended",
+    "prettier"
+  ],
+  "plugins": [
+    "flowtype",
+    "ava"
+  ],
   "env": {
-    "node": true,
-    "mocha": true,
-    "jasmine": true
+    "node": true
   },
-  "globals": { // Can be remove if once only Dapp suite used
-    "web3": true,
-    "contract": true,
-    "artifacts": true
+  "rules": {
+    "no-param-reassign": [
+      "error",
+      {
+        "props": true,
+        "ignorePropertyModificationsFor": [ "t" ]
+      }
+    ],
+    "ava/no-ignored-test-files": [
+      "warn"
+    ],
+    "prefer-destructuring": ["error", {
+      "VariableDeclarator": {
+        "array": true,
+        "object": false
+      },
+      "AssignmentExpression": {
+        "array": true,
+        "object": false
+      }
+    }, {
+      "enforceForRenamedProperties": false
+    }],
+    "no-underscore-dangle": [
+      "warn"
+    ]
   }
 }

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.8;
 
-import './SimpleCertifier.sol';
-import '../dependencies/DBC.sol';
+import "./SimpleCertifier.sol";
+import "../dependencies/DBC.sol";
 
 contract ModuleRegistrar is DBC {
 
@@ -12,7 +12,7 @@ contract ModuleRegistrar is DBC {
         uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
         address creator; // Address of Module creator, also address of inflation distribution amount
         string url; // URL for additional information of Module
-        bytes32 ipfsHash; // Same as url but for ipfs
+        string ipfsHash; // Same as url but for ipfs
         string accountSlashRepo; // Github account/repo url
         bytes20 commitHash; // Github commit hash this module is referencing
         uint sumOfRating; // Sum of comunity based rating of Module
@@ -31,19 +31,13 @@ contract ModuleRegistrar is DBC {
     mapping (address => mapping (address => bool)) public hasVoted; // Whether this address has already voted
     address[] public registeredModules; // List registered module addresses
 
-    // VIEW METHODS
-
-    // Get registration specific information
-    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
-    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
-
     // NON-CONSTANT METHODS
 
     function ModuleRegistrar(address ofSimpleCertifier) {
         PICOPS = SimpleCertifier(ofSimpleCertifier);
     }
 
-    // USER INTERFACE
+    // PUBLIC METHODS
 
     /// @notice Registers a Module
     /// @dev Only non-registered modules
@@ -59,7 +53,7 @@ contract ModuleRegistrar is DBC {
         string name,
         uint moduleClass,
         string url,
-        bytes32 ipfsHash,
+        string ipfsHash,
         string accountSlashRepo,
         bytes20 commitHash
     )
@@ -96,7 +90,7 @@ contract ModuleRegistrar is DBC {
         address ofModule,
         string name,
         string url,
-        bytes32 ipfsHash,
+        string ipfsHash,
         string accountSlashRepo,
         bytes20 commitHash
     )
@@ -132,7 +126,10 @@ contract ModuleRegistrar is DBC {
     /// @dev Only KYC registered users can vote on registered modules w rating betw 0 and 10
     /// @param ofModule address for which specific information is requested
     /// @param rating uint between 0 and 10; 0 being worst, 10 being best
-    function vote(address ofModule, uint rating) public
+    function vote(
+        address ofModule,
+        uint rating
+    )
         pre_cond(information[ofModule].exists)
         pre_cond(PICOPS.certified(msg.sender))
         pre_cond(!hasVoted[ofModule][msg.sender])
@@ -142,4 +139,11 @@ contract ModuleRegistrar is DBC {
         information[ofModule].sumOfRating += rating;
         information[ofModule].numberOfVoters += 1;
     }
+
+    // PUBLIC VIEW METHODS
+
+    // Get registration specific information
+    function numRegisteredModules() constant returns (uint) { return registeredModules.length; }
+    function getRegisteredModuleAt(uint id) constant returns (address) { return registeredModules[id]; }
+
 }

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.19;
 
-import 'ds-group/group.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
-import '../version/VersionInterface.sol';
+import "ds-group/group.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
+import "../version/VersionInterface.sol";
 
 /// @title Governance Contract
 /// @author Melonport AG <team@melonport.com>
@@ -32,55 +32,9 @@ contract Governance is DBC, Owned, DSGroup {
 
     event VersionUpdated(uint id);
 
-    // PRE, POST, INVARIANT CONDITIONS
+    // METHODS
 
-    function isActive(uint id) internal returns (bool active) {
-        (, active, ) = getVersionById(id);
-    }
-
-    // MODIFIERS
-
-    // VIEW METHODS
-
-    function getVersionById(uint id) constant returns (address, bool, uint) {
-        return (
-            versions[id].version,
-            versions[id].active,
-            versions[id].timestamp
-        );
-    }
-
-    // INTERNAL METHODS
-
-    /// @notice Add an approved version of Melon
-    /// @param ofVersion Address of the version to add
-    function addVersion(
-        address ofVersion
-    )
-        // In later version
-        //  require Authorities consensus
-        internal returns (uint id)
-    {
-        Version memory info;
-        info.version = ofVersion;
-        info.active = true;
-        info.timestamp = now;
-        versions.push(info);
-        VersionUpdated(versions.length - 1);
-    }
-
-    /// @notice Remove and shut down version of Melon
-    /// @param id Id of the version to shutdown
-    function shutDownVersion(uint id)
-        pre_cond(isActive(id)) internal
-    {
-        VersionInterface Version = VersionInterface(versions[id].version);
-        Version.shutDown();
-        delete versions[id];
-        VersionUpdated(id);
-    }
-
-    // NON-CONSTANT METHODS
+    // CONSTRUCTOR
 
     /// @param ofAuthorities Addresses of authorities
     /// @param ofQuorum Minimum number of signatures required for proposal to pass by
@@ -92,6 +46,12 @@ contract Governance is DBC, Owned, DSGroup {
     )
         DSGroup(ofAuthorities, ofQuorum, ofWindow)
     {}
+
+    // FALLBACK
+
+    function() payable { }
+
+    // PUBLIC METHODS
 
     /// @notice Propose new versions of Melon
     /// @param ofVersion Address of version contract to be proposed
@@ -131,5 +91,57 @@ contract Governance is DBC, Owned, DSGroup {
         shutDownVersion(ofVersionId);
     }
 
-    function() payable { }
+    // PUBLIC VIEW METHODS
+
+    /**
+    @return {
+        "ofVersion": "Address of the Version",
+        "active": "Whether the Version in question is active",
+        "timestamp": "When the Version in question was added to the list"
+    }
+    */
+    function getVersionById(uint id) view returns (address ofVersion, bool active, uint timestamp) {
+        return (
+            versions[id].version,
+            versions[id].active,
+            versions[id].timestamp
+        );
+    }
+
+    // INTERNAL METHODS
+
+    /// @notice Add an approved version of Melon
+    /// @param ofVersion Address of the version to add
+    /// @return id integer ID of the version (list index)
+    function addVersion(
+        address ofVersion
+    )
+        // In later version
+        //  require Authorities consensus
+        internal returns (uint id)
+    {
+        Version memory info;
+        info.version = ofVersion;
+        info.active = true;
+        info.timestamp = now;
+        versions.push(info);
+        VersionUpdated(versions.length - 1);
+    }
+
+    /// @notice Remove and shut down version of Melon
+    /// @param id Id of the version to shutdown
+    function shutDownVersion(uint id)
+        pre_cond(isActive(id)) internal
+    {
+        VersionInterface Version = VersionInterface(versions[id].version);
+        Version.shutDown();
+        delete versions[id];
+        VersionUpdated(id);
+    }
+
+    function isActive(uint id) internal returns (bool active) {
+        (, active, ) = getVersionById(id);
+    }
+
+
 }

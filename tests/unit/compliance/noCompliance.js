@@ -1,11 +1,9 @@
 import test from "ava";
 import Api from "@parity/api";
-import { participation as compliance } from "../../../utils/lib/utils.js";
+import { participation as compliance } from "../../../utils/lib/utils";
+import deploy from "../../../utils/deploy/contracts";
 
-const addressBook = require("../../../addressBook.json");
-const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const config = environmentConfig[environment];
@@ -14,17 +12,12 @@ const api = new Api(provider);
 
 // hoisted variables
 let accounts;
-let deployer;
 let investor;
-let opts;
 
-const addresses = addressBook[environment];
-
-test.before(async t => {
+test.before(async () => {
+  await deploy(environment);
   accounts = await api.eth.accounts();
-  deployer = accounts[0];
-  investor = accounts[1];
-  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
+  [investor] = accounts;
 });
 
 test("Anyone can perform subscription", async t => {
