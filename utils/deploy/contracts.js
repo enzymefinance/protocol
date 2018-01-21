@@ -1,20 +1,10 @@
+// @flow
 import Api from "@parity/api";
 
 const fs = require("fs");
-const path = require("path");
-const solc = require("solc");
 const pkgInfo = require("../../package.json");
 const environmentConfig = require("../config/environment.js");
 const tokenInfo = require("../info/tokenInfo.js");
-const datafeedInfo = require("../info/priceFeedInfo.js");
-const exchangeInfo = require("../info/exchangeInfo.js");
-
-function getPlaceholderFromPath (libPath) {
-  const libContractName = path.basename(libPath);
-  let modifiedPath = libPath.replace("out", "src");
-  modifiedPath = `${modifiedPath}.sol:${libContractName}`;
-  return modifiedPath.slice(0, 36);
-}
 
 // TODO: clean up repeated functions in deployment script
 // TODO: make clearer the separation between deployments in different environments
@@ -24,10 +14,10 @@ async function deploy(environment) {
     let addressBook;
     let bytecode;
     let mlnAddr;
+    let ethTokenAddress;
     let mlnToken;
     let eurToken;
     let ethToken;
-    let libObject = {};
     let datafeed;
     let datafeedContract;
     let fund;
@@ -35,10 +25,10 @@ async function deploy(environment) {
     let participation;
     let riskMgmt;
     let simpleAdapter;
+    let centralizedAdapter;
     let simpleMarket;
     let version;
     let ranking;
-    let rankingContract;
     const datafeedOnly = false;
     const addressBookFile = "./addressBook.json";
     const config = environmentConfig[environment];
@@ -65,11 +55,12 @@ async function deploy(environment) {
 
     if (environment === "kovan") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
+      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       // deploy datafeed
-      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
+      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi", "utf8"));
+      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin", "utf8");
       opts.data = `0x${bytecode}`;
       datafeed = await api
         .newContract(abi)
@@ -86,15 +77,17 @@ async function deploy(environment) {
           config.protocol.datafeed.interval,
           config.protocol.datafeed.validity,
         ]);
-      datafeedContract = await api.newContract(abi, datafeed);
       console.log("Deployed datafeed");
+      datafeedContract = await api.newContract(abi, datafeed);
 
       // deploy simplemarket
       abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
       bytecode = fs.readFileSync("out/exchange/thirdparty/SimpleMarket.bin");
       opts.data = `0x${bytecode}`;
-      simpleMarket = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed simplemarket");
+      // simpleMarket = await api.newContract(abi).deploy(opts, []);
+      // console.log("Deployed simplemarket");
+      simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
+      console.log(`Using already-deployed SimpleMarket at ${simpleMarket}`);
 
       // deploy participation
       abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
@@ -127,21 +120,26 @@ async function deploy(environment) {
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
 
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
+      // deploy CentralizedAdapter
+      abi = JSON.parse(
+        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
+      );
+      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
+      opts.data = `0x${bytecode}`;
+      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
+      console.log("Deployed CentralizedAdapter");
+
       // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
-      let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
       console.log("Deployed version");
 
       // add Version to Governance tracking
@@ -150,30 +148,33 @@ async function deploy(environment) {
       await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
 
       // deploy ranking contract
-      abi = JSON.parse(fs.readFileSync("out/Ranking.abi"));
-      bytecode = fs.readFileSync("out/Ranking.bin");
+      abi = JSON.parse(fs.readFileSync("out/FundRanking.abi"));
+      bytecode = fs.readFileSync("out/FundRanking.bin");
       opts.data = `0x${bytecode}`;
       ranking = await api.newContract(abi).deploy(opts, [version]);
       console.log("Deployed ranking contract");
 
       // register assets
-      for (const assetSymbol of config.protocol.registrar.assetsToRegister) {
-        console.log(`Registering ${assetSymbol}`);
-        const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-        await datafeedContract.instance.register
-          .postTransaction(opts, [
-            `0x${token.address}`,
-            token.name,
-            token.symbol,
-            token.decimals,
-            token.url,
-            mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
-          ])
-          .then(() => console.log(`Registered ${assetSymbol}`));
-      }
+      await Promise.all(
+        config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+          console.log(`Registering ${assetSymbol}`);
+          const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
+          console.log(datafeedContract.address)
+          await datafeedContract.instance.register
+            .postTransaction({from: accounts[0], gas: 6000000}, [
+              `0x${tokenEntry.address}`,
+              tokenEntry.name,
+              tokenEntry.symbol,
+              tokenEntry.decimals,
+              tokenEntry.url,
+              mockBytes,
+              mockBytes,
+              mockAddress,
+              mockAddress,
+            ]);
+          console.log(`Registered ${assetSymbol}`);
+        })
+      );
 
       // update address book
       if (fs.existsSync(addressBookFile)) {
@@ -192,6 +193,7 @@ async function deploy(environment) {
       };
     } else if (environment === "live") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
+      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       if (datafeedOnly) {
@@ -216,23 +218,25 @@ async function deploy(environment) {
           ]);
         console.log("Deployed datafeed");
 
-        for (const assetSymbol of config.protocol.registrar.assetsToRegister) {
-          console.log(`Registering ${assetSymbol}`);
-          const token = tokenInfo[environment].filter(token => token.symbol === assetSymbol)[0];
-          await datafeed.instance.register
-            .postTransaction(opts, [
-              `0x${token.address}`,
-              token.name,
-              token.symbol,
-              token.decimals,
-              token.url,
-              mockBytes,
-              mockBytes,
-              mockAddress,
-              mockAddress,
-            ])
-            .then(() => console.log(`Registered ${assetSymbol}`));
-        }
+        await Promise.all(
+          config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+            console.log(`Registering ${assetSymbol}`);
+            const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
+            await datafeed.instance.register
+              .postTransaction({from: accounts[0], gas: 6000000}, [
+                `0x${tokenEntry.address}`,
+                tokenEntry.name,
+                tokenEntry.symbol,
+                tokenEntry.decimals,
+                tokenEntry.url,
+                mockBytes,
+                mockBytes,
+                mockAddress,
+                mockAddress,
+              ])
+              .then(() => console.log(`Registered ${assetSymbol}`));
+          })
+        );
         // update address book
         if (fs.existsSync(addressBookFile)) {
           addressBook = JSON.parse(fs.readFileSync(addressBookFile));
@@ -242,13 +246,6 @@ async function deploy(environment) {
           PriceFeed: datafeed,
         };
       } else if (!datafeedOnly) {
-        const thomsonReutersAddress = datafeedInfo[environment].find(
-          feed => feed.name === "Thomson Reuters",
-        ).address;
-        const oasisDexAddress = exchangeInfo[environment].find(
-          exchange => exchange.name === "OasisDex",
-        ).address;
-
         // deploy participation
         abi = JSON.parse(
           fs.readFileSync("out/compliance/NoCompliance.abi"),
@@ -288,29 +285,19 @@ async function deploy(environment) {
         console.log(`Deployed governance at ${governance}`);
         const governanceContract = await api.newContract(abi, governance);
 
-        // link libs to fund (needed to deploy version)
         abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
         bytecode = fs.readFileSync("out/Fund.bin", "utf8");
-        libObject = {};
-        libObject[
-          getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-        ] = simpleAdapter;
-        bytecode = solc.linkBytecode(bytecode, libObject);
         opts.data = `0x${bytecode}`;
         opts.gas = 6700000;
 
         // deploy version (can use identical libs object as above)
-        const versionAbi = JSON.parse(
-          fs.readFileSync("out/version/Version.abi", "utf8"),
-        );
-        let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-        versionBytecode = solc.linkBytecode(versionBytecode, libObject);
-        fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
+        const versionAbi = JSON.parse(fs.readFileSync("out/version/Version.abi", "utf8"));
+        const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
         opts.data = `0x${versionBytecode}`;
         opts.gas = 6700000;
         version = await api
           .newContract(versionAbi)
-          .deploy(opts, [pkgInfo.version, governance, mlnAddr], () => {}, true);
+          .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
         console.log(`Deployed Version at ${version}`);
 
         // add Version to Governance tracking
@@ -330,12 +317,9 @@ async function deploy(environment) {
         };
       }
     } else if (environment === "development") {
-      const preminedAmount = 10 ** 20;
-
       abi = JSON.parse(fs.readFileSync("./out/assets/PreminedAsset.abi"));
       bytecode = fs.readFileSync("./out/assets/PreminedAsset.bin");
       opts.data = `0x${bytecode}`;
-      console.log(opts)
       ethToken = await api
         .newContract(abi)
         .deploy(opts, []);
@@ -353,7 +337,7 @@ async function deploy(environment) {
 
       abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
-      // deploy datafeed
+      // deploy pricefeed
       abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
       bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
       opts.data = `0x${bytecode}`;
@@ -373,10 +357,6 @@ async function deploy(environment) {
           config.protocol.datafeed.validity,
         ]);
       datafeedContract = await api.newContract(abi, datafeed);
-      const qu = await datafeedContract.instance.getQuoteAsset.call({from: accounts[0]}, []);
-      const interval = await datafeedContract.instance.getInterval.call({from: accounts[0]}, []);
-      const validity = await datafeedContract.instance.getValidity.call({from: accounts[0]}, []);
-      console.log(`Deployed datafeed w quote asset ${qu} and interval ${interval} and validity ${validity}`);
       // deploy simplemarket
       abi = JSON.parse(
         fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
@@ -417,26 +397,25 @@ async function deploy(environment) {
       simpleAdapter = await api.newContract(abi).deploy(opts, []);
       console.log("Deployed simpleadapter");
 
-      // link libs to fund (needed to deploy version)
-      let fundBytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
-      fundBytecode = solc.linkBytecode(fundBytecode, libObject);
-      fs.writeFileSync("out/Fund.bin", fundBytecode, "utf8");
+      // deploy CentralizedAdapter
+      abi = JSON.parse(
+        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
+      );
+      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
+      opts.data = `0x${bytecode}`;
+      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
+      console.log("Deployed CentralizedAdapter");
 
-      // deploy version (can use identical libs object as above)
       const versionAbi = JSON.parse(
         fs.readFileSync("out/version/Version.abi", "utf8"),
       );
-      let versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      versionBytecode = solc.linkBytecode(versionBytecode, libObject);
+      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
       fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
       opts.data = `0x${versionBytecode}`;
       opts.gas = 6900000;
       version = await api
         .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, mlnToken], () => {}, true);
+        .deploy(opts, [pkgInfo.version, governance, ethToken], () => {}, true);
       console.log("Deployed version");
 
       // add Version to Governance tracking
@@ -448,11 +427,6 @@ async function deploy(environment) {
       // deploy fund to test with
       abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
       bytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      libObject = {};
-      libObject[
-        getPlaceholderFromPath("out/exchange/adapter/simpleAdapter")
-      ] = simpleAdapter;
-      bytecode = solc.linkBytecode(bytecode, libObject);
       opts.data = `0x${bytecode}`;
       opts.gas = 6900000;
       fund = await api.newContract(abi).deploy(
@@ -460,14 +434,15 @@ async function deploy(environment) {
         [
           accounts[0],
           "Melon Portfolio", // name
-          mlnToken, // reference asset
+          mlnToken, // base asset
           0, // management reward
           0, // performance reward
-          mlnToken, // melon asset
+          ethToken, // Native Asset
           participation, // participation
           riskMgmt, // riskMgmt
           datafeed, // pricefeed
-          simpleMarket // simple market
+          [simpleMarket], // simple market
+          [simpleAdapter]
         ],
         () => {},
         true,
@@ -522,6 +497,7 @@ async function deploy(environment) {
         RMMakeOrders: riskMgmt,
         Governance: governance,
         simpleAdapter,
+        centralizedAdapter,
         Version: version,
         MlnToken: mlnToken,
         EurToken: eurToken,
@@ -537,7 +513,10 @@ async function deploy(environment) {
       JSON.stringify(addressBook, null, "\t"),
       "utf8",
     );
-    process.exit();
+
+    if (require.main === module) {
+      process.exit();
+    }
   } catch (err) {
     console.log(err.stack);
   }
@@ -550,3 +529,5 @@ if (require.main === module) {
     deploy(process.argv[2]);
   }
 }
+
+export default deploy;

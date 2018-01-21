@@ -4,11 +4,144 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+
+## [0.6.2]
+
+### Added
+
+- return inception date in ranking contract
+- keep track of updateId in pricefeed
+- check for two updates when executing a request
+
+### Removed
+
+- Fund.getStake()
+- un-implemented interface functions
+- duplicate ranking contract
 
 ### Changed
 
-- use ds-math instead of safeMath.sol
+- use the same exchange on Kovan for each deployment, to maintain liquidity
+- simplify return syntax in boolean functions
+
+### Fixed
+
+- Bug preventing state storage in Fund.cancelOrder
+- Bug in GAV calculation for assets without 18 decimal places
+- Bug in sharePrice calculation after taking orders
+
+### Updated
+
+- README.md
+- CONTRIBUTING.md style and contribution guide
+
+
+## [0.6.0]
+
+### Added
+
+- enforce eslint rules at build time
+- enforce solium rules at build time
+- test for module registrar
+- compatibility with multiple exchange adapters
+- account for funds held on multiple exchanges
+- retries for network requests when updating pricefeed
+- centralized exchange adapter
+- test to redeem with malicious asset in fund
+- sanity checks for cryptocompare prices
+- native currency and reference asset as two ways to invest/redeem (plus tests)
+- tokenFallback method to redeem (plus tests)
+- NativeAssetInterface contract
+
+### Changed
+
+- enable some ava testfiles that were ignored
+- restructure a bit to use the more modular files in `utils/`
+- update solium linter rules to comply with our style
+- make devchain script its own file, and run things more syncronously
+- factor out some functions in tests
+- change governance tests to unit tests
+- run tests in parallel where possible
+- deploy contracts for each testfiles to make them independent
+- default to reference asset rather than Melon asset in Fund
+- use AssetInterface and NativeAssetInterface in Fund
+- allow manager to shut down execution of subscription and redemption
+
+### Fixed
+
+- linter errors in all js files
+- linter errors in all solidity files
+- add test for potential bug in calculations (#274)
+- fix sometimes-failing build when db does not exist
+- fix some missing or incorrect docstrings
+- rename .abi files before publishing (#293)
+
+### Updated
+
+- update .eslintrc rules
+- update .soliumrc.json rules
+- travis-CI build script to make things more synchronous
+
+
+## [0.5.4]
+
+### Added
+
+- Ava linter rules
+- Ava test script
+- cap to number of managed assets
+- raise error if request type is invalid (Fund.sol)
+- limitation on ownership of Fund namespace
+- tests/integration for integration/walk though tests
+- tests/mocks (for mocks during testing)
+- tests/fixtures (e.g. data from cryptocompare)
+- limitation of one fund per ethereum address, for simpler `migration` process of shutting down and creating fund
+- Shares.sol (Asset.sol with information and helper functions for shares, as well as ability to create and annihilate shares)
+- ds-tests for RMMakeOrders and moduleRegistrar
+- Shares as erc223 asset
+- zero-config premined asset
+
+### Removed
+
+- toggle type functions
+- dead (unused) code in cancelOrder
+- allow ownership changing (Owned.sol)
+- unnecessary functions used as pre-conditions
+- check asset is registered in pricefeed before allowing updates
+- Sphere.sol
+- EtherToken.sol
+- safeMath.sol, rewards.sol libraries
+- rewards deployment and linking
+
+### Changed
+
+- Use Ava as test runner instead of Jasmine
+- move list of managed assets to Fund rather than DataFeed
+- Separated utils from tests
+- Governance tests to Ava
+- integration tests moved to their own directory
+- use ds-math instead of safeMath
+- replace EtherToken with ds-weth
+- allocate sufficient storage for IPFS hash
+- use ds-math (safe math) contract in rewards
+- pay incentive *after* redeeming shares
+- rename DataFeed.sol to PriceFeed.sol
+- move deployment configuration, information and script to utils/
+- rewritten parts of `PriceFeed.sol`; adapted `(bool isRecent, uint price, uint decimal)` return format
+- function visibility from `constant` to `view`
+- Shares and fund precision is always 18
+- Move reward calculation into fund
+- Rewrite calcUnclaimedRewards()
+
+### Fixed
+
+- bug caused by not zeroing openMakeOrderId
+- stop constant methods from trying to modify storage
+- update nameExists mapping when name changed (ModuleRegistrar.sol)
+- bug leading to accounting error
+- bug allowing unlimited votes in ModuleRegistrar
+- error using dynamic key in ModuleRegistrar mapping
+
 
 ## [0.5.2]
 
@@ -151,7 +284,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Allow first supscription w/o waiting time;
 - Prevent redeem w not sufficient shares
 - Way how errors are logged
-- redeemUsingSlice -> redeemOwnedAssets
+- redeemUsingSlice -> redeemAllOwnedAssets
 - Refactor: Governance contract
 - Refactor: Version contract
 - Update README
@@ -193,7 +326,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Cleaned up Version and Version Interface
 - Cleaned up Governance
 - Input ReferenceAsset in Fund, Version setup
-- redeemOwnedAssets in (err,,msg) format
+- redeemAllOwnedAssets in (err,,msg) format
 - natspecs comments
 - Add (err,errMsg) format to PoE and manualSettlemnt
 - quantityHeldInCustodyOfExchange() function to fix accounting issue

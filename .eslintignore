@@ -1,1 +1,10 @@
 **/*.sol.js
+
+# ignore solidity and build directory
+src/*
+out/*
+
+# ignore generated code
+scripts/*
+docs/*
+coverage/*

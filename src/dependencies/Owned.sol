@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import './DBC.sol';
+import "./DBC.sol";
 
 contract Owned is DBC {
 
@@ -8,14 +8,14 @@ contract Owned is DBC {
 
     address public owner;
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isOwner() internal returns (bool) { return msg.sender == owner; }
-
     // NON-CONSTANT METHODS
 
     function Owned() { owner = msg.sender; }
 
     function changeOwner(address ofNewOwner) pre_cond(isOwner()) { owner = ofNewOwner; }
+
+    // PRE, POST, INVARIANT CONDITIONS
+
+    function isOwner() internal returns (bool) { return msg.sender == owner; }
 
 }

@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
-import 'ds-test/test.sol';
-import 'ds-math/math.sol';
-import './RMMakeOrders.sol';
+import "ds-test/test.sol";
+import "ds-math/math.sol";
+import "./RMMakeOrders.sol";
 
 
 contract RMMakeOrdersTests is DSTest {
@@ -49,9 +49,9 @@ contract RMMakeOrdersTests is DSTest {
 
     function test_largeDeviationNotPermitted() {
         bool allowed;
-        // 10% deviation
+        // 10.01% deviation
         allowed = riskMgmt.isMakePermitted(
-            9000,
+            8999,
             10000,
             sellAsset,
             buyAsset,

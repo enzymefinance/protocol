@@ -1,10 +1,10 @@
 pragma solidity ^0.4.19;
 
-import '../Fund.sol';
-import '../FundInterface.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
-import './VersionInterface.sol';
+import "../Fund.sol";
+import "../FundInterface.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
+import "./VersionInterface.sol";
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
@@ -16,21 +16,107 @@ contract Version is DBC, Owned {
     bytes32 public constant TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions as displayed on IPFS.
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
-    address public MELON_ASSET; // Address of Melon asset contract
+    address public NATIVE_ASSET; // Address of wrapped native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
-    mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
+    mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
     mapping (bytes32 => address) public fundNamesToOwners; // Links fund names to address based on ownership
 
     // EVENTS
 
-    event FundUpdated(uint id);
+    event FundUpdated(address ofFund);
 
-    // PRE, POST, INVARIANT CONDITIONS
+    // METHODS
 
-    /// @dev Proofs that terms and conditions have been read and understood
+    // CONSTRUCTOR
+
+    /// @param versionNumber SemVer of Melon protocol version
+    /// @param ofGovernance Address of Melon governance contract
+    /// @param ofNativeAsset Address of wrapped native asset contract
+    function Version(
+        string versionNumber,
+        address ofGovernance,
+        address ofNativeAsset
+    ) {
+        VERSION_NUMBER = versionNumber;
+        GOVERNANCE = ofGovernance;
+        NATIVE_ASSET = ofNativeAsset;
+    }
+
+    // EXTERNAL METHODS
+
+    function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
+
+    // PUBLIC METHODS
+
+    /// @param ofFundName human-readable descriptive name (not necessarily unique)
+    /// @param ofBaseAsset Asset against which performance reward is measured against
+    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofBaseAsset, given in a number which is divided by 10 ** 15
+    /// @param ofCompliance Address of participation module
+    /// @param ofRiskMgmt Address of risk management module
+    /// @param ofPriceFeed Address of price feed module
+    /// @param ofExchanges Addresses of exchange on which this fund can trade
+    /// @param ofExchangeAdapters Addresses of exchange adapters
+    /// @param v ellipitc curve parameter v
+    /// @param r ellipitc curve parameter r
+    /// @param s ellipitc curve parameter s
+    function setupFund(
+        string ofFundName,
+        address ofBaseAsset,
+        uint ofManagementRewardRate,
+        uint ofPerformanceRewardRate,
+        address ofCompliance,
+        address ofRiskMgmt,
+        address ofPriceFeed,
+        address[] ofExchanges,
+        address[] ofExchangeAdapters,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+    {
+        require(!isShutDown);
+        require(termsAndConditionsAreSigned(v, r, s));
+        // Either novel fund name or previous owner of fund name
+        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
+        require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
+        address ofFund = new Fund(
+            msg.sender,
+            ofFundName,
+            ofBaseAsset,
+            ofManagementRewardRate,
+            ofPerformanceRewardRate,
+            NATIVE_ASSET,
+            ofCompliance,
+            ofRiskMgmt,
+            ofPriceFeed,
+            ofExchanges,
+            ofExchangeAdapters
+        );
+        listOfFunds.push(ofFund);
+        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
+        managerToFunds[msg.sender] = ofFund;
+        FundUpdated(ofFund);
+    }
+
+    /// @dev Dereference Fund and trigger selfdestruct
+    /// @param ofFund Address of the fund to be shut down
+    function shutDownFund(address ofFund)
+        pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)
+    {
+        FundInterface fund = FundInterface(ofFund);
+        delete managerToFunds[msg.sender];
+        delete fundNamesToOwners[fund.getNameHash()];
+        fund.shutDown();
+        FundUpdated(ofFund);
+    }
+
+    // PUBLIC VIEW METHODS
+
+    /// @dev Proof that terms and conditions have been read and understood
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
@@ -51,86 +137,10 @@ contract Version is DBC, Owned {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    // VIEW METHODS
 
-    function getMelonAsset() view returns (address) { return MELON_ASSET; }
-    function notShutDown() internal returns (bool) { return !isShutDown; }
+
+    function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
-    function getLastFundId() view returns (uint) { return listOfFunds.length -1; }
+    function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
     function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
-
-    // NON-CONSTANT METHODS
-
-    /// @param versionNumber SemVer of Melon protocol version
-    /// @param ofGovernance Address of Melon governance contract
-    /// @param ofMelonAsset Address of Melon asset contract
-    function Version(
-        string versionNumber,
-        address ofGovernance,
-        address ofMelonAsset
-    ) {
-        VERSION_NUMBER = versionNumber;
-        GOVERNANCE = ofGovernance;
-        MELON_ASSET = ofMelonAsset;
-    }
-
-    function shutDown() external pre_cond(msg.sender == GOVERNANCE) { isShutDown = true; }
-
-    /// @param ofFundName human-readable descriptive name (not necessarily unique)
-    /// @param ofReferenceAsset Asset against which performance reward is measured against
-    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofReferenceAsset, given in a number which is divided by 10 ** 15
-    /// @param ofCompliance Address of participation module
-    /// @param ofRiskMgmt Address of risk management module
-    /// @param ofPriceFeed Address of price feed module
-    /// @param ofExchange Address of exchange on which this fund can trade
-    /// @param v ellipitc curve parameter v
-    /// @param r ellipitc curve parameter r
-    /// @param s ellipitc curve parameter s
-    /// @return Deployed Fund with manager set as msg.sender
-    function setupFund(
-        string ofFundName,
-        address ofReferenceAsset,
-        uint ofManagementRewardRate,
-        uint ofPerformanceRewardRate,
-        address ofCompliance,
-        address ofRiskMgmt,
-        address ofPriceFeed,
-        address ofExchange,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        pre_cond(notShutDown())
-    {
-        require(termsAndConditionsAreSigned(v, r, s));
-        // Either novel fund name or previous owner of fund name
-        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
-        require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
-        address fund = new Fund(
-            msg.sender,
-            ofFundName,
-            ofReferenceAsset,
-            ofManagementRewardRate,
-            ofPerformanceRewardRate,
-            MELON_ASSET,
-            ofCompliance,
-            ofRiskMgmt,
-            ofPriceFeed,
-            ofExchange
-        );
-        listOfFunds.push(fund);
-        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
-        managerToFunds[msg.sender] = fund;
-        FundUpdated(getLastFundId());
-    }
-
-    /// @dev Dereference Fund and trigger selfdestruct
-    function shutDownFund(uint id)
-        pre_cond(isShutDown)
-    {
-        FundInterface Fund = FundInterface(getFundById(id));
-        Fund.shutDown();
-        FundUpdated(id);
-    }
 }

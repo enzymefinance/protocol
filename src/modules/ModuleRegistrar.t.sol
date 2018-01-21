@@ -1,22 +1,25 @@
 pragma solidity ^0.4.19;
 
-import 'ds-test/test.sol';
-import './ModuleRegistrar.sol';
-import './SimpleCertifier.sol';
+import "ds-test/test.sol";
+import "./ModuleRegistrar.sol";
+import "./SimpleCertifier.sol";
 
 
 contract ModuleRegistrarTest is DSTest {
-    
+
     SimpleCertifier certifier;
     ModuleRegistrar registrar;
     Caller caller;
 
     // hoisted variables
     address inputAddress = 0xE01c10Fd900939D1EaB56eE373Ea5E2BD4E2cfB3;
-    string inputName = 'My module';
+    string inputName = "My module";
     uint inputClass = 11;
-    string inputUrl = 'modul.ar';
-    bytes32 inputIpfs = bytes32(keccak256('ipfs'));
+    string inputUrl = "modul.ar";
+    string inputIpfs = "ipfs";
+    string accountSlashRepo = "https://github.com/melonproject/protocol"; // Github account/repo url
+    bytes20 commitHash = bytes20(keccak256("ba69d16bf314cdd5eabd380163a13775d9b1a829"));
+
 
     function setUp() {
         certifier = new SimpleCertifier();
@@ -28,7 +31,13 @@ contract ModuleRegistrarTest is DSTest {
         assert(!certifier.certified(caller));
 
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
 
         assertEq(registrar.creatorOperatesModules(caller), inputAddress);
@@ -38,15 +47,23 @@ contract ModuleRegistrarTest is DSTest {
 
     function test_registrationInformationAccurate() {
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
 
         var (
-            moduleName,
+            , // moduleName
             moduleClass,
             moduleCreator,
-            moduleUrl,
-            moduleIpfs,
+            , // moduleUrl
+            , // moduleIpfs
+            , // moduleAccountSlashRepo,
+            , // moduleCommitHash,
             moduleRating,
             moduleReviewers,
             moduleExists
@@ -56,7 +73,7 @@ contract ModuleRegistrarTest is DSTest {
         // below lines give compiler error
         // assertEq(bytes32(keccak256(moduleName)), bytes32(keccak256(inputName)));
         // assertEq(bytes32(keccak256(moduleUrl)), bytes32(keccak256(inputUrl)));
-        assertEq(moduleIpfs, inputIpfs);
+        // assertEq(moduleIpfs, inputIpfs);
         assertEq(moduleRating, 0);
         assertEq(moduleReviewers, 0);
         assert(moduleExists);
@@ -64,7 +81,13 @@ contract ModuleRegistrarTest is DSTest {
 
     function test_removeFromRegistry() {
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
         caller.remove(inputAddress);
         var( , , , , , , , exists) = registrar.information(inputAddress);
@@ -76,11 +99,17 @@ contract ModuleRegistrarTest is DSTest {
 
     function test_votingWhenCertified() {
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
         certifier.certify(caller);
         caller.vote(inputAddress, 5);
-        var( , , , , , sumRatings, numVoters, ) = registrar.information(inputAddress);
+        var( , , , , , , , sumRatings, numVoters, ) = registrar.information(inputAddress);
 
         assertEq(sumRatings, 5);
         assertEq(numVoters, 1);
@@ -88,7 +117,7 @@ contract ModuleRegistrarTest is DSTest {
         Caller friend = new Caller(registrar);
         certifier.certify(friend);
         friend.vote(inputAddress, 10);
-        var( , , , , , newSumRatings, newNumVoters, ) = registrar.information(inputAddress);
+        var( , , , , , , , newSumRatings, newNumVoters, ) = registrar.information(inputAddress);
 
         assertEq(newSumRatings, 15);
         assertEq(newNumVoters, 2);
@@ -96,14 +125,26 @@ contract ModuleRegistrarTest is DSTest {
 
     function testFail_voterNotCertified() {
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
         caller.vote(inputAddress, 10);
     }
 
     function testFail_doubleVoting() {
         caller.register(
-            inputAddress, inputName, inputClass, inputUrl, inputIpfs
+            inputAddress,
+            inputName,
+            inputClass,
+            inputUrl,
+            inputIpfs,
+            accountSlashRepo,
+            commitHash
         );
         certifier.certify(caller);
         caller.vote(inputAddress, 5);
@@ -118,8 +159,8 @@ contract Caller {
         registrar = _registrar;
     }
 
-    function register(address ofModule, string name, uint moduleClass, string url, bytes32 ipfsHash) {
-        registrar.register(ofModule, name, moduleClass, url, ipfsHash);
+    function register(address ofModule, string name, uint moduleClass, string url, string ipfsHash, string accountSlashRepo, bytes20 commitHash) {
+        registrar.register(ofModule, name, moduleClass, url, ipfsHash, accountSlashRepo, commitHash);
     }
 
     function remove(address ofModule) {

@@ -13,6 +13,9 @@ pragma solidity ^0.4.19;
  */
 contract RiskMgmtInterface {
 
+    // METHODS
+    // PUBLIC VIEW METHODS
+
     /// @notice Checks if the makeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
     /// @param referencePrice Reference price obtained through PriceFeed contract
@@ -20,7 +23,7 @@ contract RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If makeOrder is permitted
+    /// @return If makeOrder is permitted
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -28,7 +31,7 @@ contract RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) returns (bool isPermitted) {}
+    ) view returns (bool) {}
 
     /// @notice Checks if the takeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
@@ -37,7 +40,7 @@ contract RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If takeOrder is permitted
+    /// @return If takeOrder is permitted
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -45,5 +48,5 @@ contract RiskMgmtInterface {
         address buyAsset,
         uint sellQuantity,
         uint buyQuantity
-    ) returns (bool isPermitted) {}
+    ) view returns (bool) {}
 }

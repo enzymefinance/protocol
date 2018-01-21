@@ -3,6 +3,7 @@ import Api from "@parity/api";
 const fs = require("fs");
 const addressBook = require("../../addressBook.json");
 const environmentConfig = require("../config/environment.js");
+
 const environment = "development";
 const config = environmentConfig[environment];
 

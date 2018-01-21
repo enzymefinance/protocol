@@ -9,6 +9,7 @@ import "./Governance.sol";
 contract GovernanceTest is DSTest {
     Governance governance;
     PreminedAsset melonToken;
+    PreminedAsset nativeToken;
     Version version;
     Caller hal;
     Caller pal;
@@ -19,6 +20,7 @@ contract GovernanceTest is DSTest {
 
     function setUp() {
         melonToken = new PreminedAsset();
+        nativeToken = new PreminedAsset();
         hal = new Caller();
         pal = new Caller();
         address[] memory members = new address[](2);
@@ -28,7 +30,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_addAndGetVersion() {
-        version = new Version(VERSION_NUMBER, governance, melonToken);
+        version = new Version(VERSION_NUMBER, governance, nativeToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
         hal.approveVersion(governance, version);
@@ -39,7 +41,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_shutDownVersion() {
-        version = new Version(VERSION_NUMBER, governance, melonToken);
+        version = new Version(VERSION_NUMBER, governance, nativeToken);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
         hal.approveVersion(governance, version);

@@ -1,21 +1,14 @@
-import Api from "@parity/api";
+import * as instances from "./instances";
 
-const fs = require("fs");
 const rp = require("request-promise");
 const BigNumber = require("bignumber.js");
-const addressBook = require("../../addressBook.json");
 const environmentConfig = require("../config/environment.js");
-import * as instances from "./instances.js";
 
 const environment = "development";
 const config = environmentConfig[environment];
 
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 const apiPath = "https://min-api.cryptocompare.com/data/price";
-const addresses = addressBook[environment];
 
-// TODO: should we have a separate token config for development network? much of the information is identical
 const tokenInfo = require("../../utils/info/tokenInfo.js").kovan;
 
 // convenience functions
@@ -43,7 +36,7 @@ export default async function registerAsset () {
   await timeout(3000);
   await instances.datafeed.instance.update.postTransaction(
     { from: (await instances.accounts)[0], gas: config.gas, gasPrice: config.gasPrice },
-    [[ethToken.address, eurToken.address, mlnToken.address],
+    [[instances.ethToken.address, instances.eurToken.address, instances.mlnToken.address],
     [convertedEth, convertedEur, convertedMln]]
   );
 }

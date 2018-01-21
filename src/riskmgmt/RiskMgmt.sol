@@ -1,13 +1,13 @@
 pragma solidity ^0.4.19;
 
-import './RiskMgmtInterface.sol';
+import "./RiskMgmtInterface.sol";
 
 /// @title Risk Management Contract
 /// @dev isMakePermitted and isTakePermitted can be extended to define custom risk management logic using order and reference prices
 /// @author Melonport AG <team@melonport.com>
 contract RiskMgmt is RiskMgmtInterface {
 
-    // NON-CONSTANT METHODS
+    // PUBLIC VIEW METHODS
 
     /// @notice Checks if the makeOrder price is reasonable and not manipulative
     /// @param orderPrice Price of Order
@@ -16,7 +16,7 @@ contract RiskMgmt is RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If makeOrder is permitted
+    /// @return If makeOrder is permitted
     function isMakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -25,7 +25,8 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-        returns (bool isPermitted)
+        view
+        returns (bool)
     {
         return true; // For testing purposes
     }
@@ -37,7 +38,7 @@ contract RiskMgmt is RiskMgmtInterface {
     /// @param buyAsset Asset (as registered in Asset registrar) to be bought
     /// @param sellQuantity Quantity of sellAsset to be sold
     /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return isPermitted If takeOrder is permitted
+    /// @return If takeOrder is permitted
     function isTakePermitted(
         uint orderPrice,
         uint referencePrice,
@@ -46,7 +47,8 @@ contract RiskMgmt is RiskMgmtInterface {
         uint sellQuantity,
         uint buyQuantity
     )
-        returns (bool isPermitted)
+        view
+        returns (bool)
     {
         return true; // For testing purposes
     }
