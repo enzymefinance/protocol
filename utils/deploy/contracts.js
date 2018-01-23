@@ -1,5 +1,5 @@
-// @flow
 import Api from "@parity/api";
+import {deployContract} from "../lib/contracts";
 
 const fs = require("fs");
 const pkgInfo = require("../../package.json");
@@ -10,16 +10,13 @@ const tokenInfo = require("../info/tokenInfo.js");
 // TODO: make clearer the separation between deployments in different environments
 async function deploy(environment) {
   try {
-    let abi;
     let addressBook;
-    let bytecode;
     let mlnAddr;
     let ethTokenAddress;
     let mlnToken;
     let eurToken;
     let ethToken;
     let datafeed;
-    let datafeedContract;
     let fund;
     let governance;
     let participation;
@@ -56,112 +53,70 @@ async function deploy(environment) {
     if (environment === "kovan") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
       ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
-      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       // deploy datafeed
-      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi", "utf8"));
-      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin", "utf8");
-      opts.data = `0x${bytecode}`;
-      datafeed = await api
-        .newContract(abi)
-        .deploy(opts, [
-          mlnAddr,
-          'Melon Token',
-          'MLN-T',
-          18,
-          'melonport.com',
-          mockBytes,
-          mockBytes,
-          mockAddress,
-          mockAddress,
-          config.protocol.datafeed.interval,
-          config.protocol.datafeed.validity,
-        ]);
-      console.log("Deployed datafeed");
-      datafeedContract = await api.newContract(abi, datafeed);
+      datafeed = await deployContract("pricefeeds/PriceFeed",
+        opts, [
+        mlnAddr,
+        'Melon Token',
+        'MLN-T',
+        18,
+        'melonport.com',
+        mockBytes,
+        mockBytes,
+        mockAddress,
+        mockAddress,
+        config.protocol.datafeed.interval,
+        config.protocol.datafeed.validity,
+      ]);
+      console.log(`new:    ${datafeed.address}\n`)
 
       // deploy simplemarket
-      abi = JSON.parse(fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"));
-      bytecode = fs.readFileSync("out/exchange/thirdparty/SimpleMarket.bin");
-      opts.data = `0x${bytecode}`;
-      // simpleMarket = await api.newContract(abi).deploy(opts, []);
-      // console.log("Deployed simplemarket");
+      // simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+      // console.log(`sm:    ${simpleMarket.address}\n`)
       simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
-      console.log(`Using already-deployed SimpleMarket at ${simpleMarket}`);
+      console.log(`Using already-deployed SimpleMarket at ${simpleMarket}\n`);
 
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
-      bytecode = fs.readFileSync("out/compliance/NoCompliance.bin");
-      opts.data = `0x${bytecode}`;
-      participation = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed participation");
+      participation = await deployContract("compliance/NoCompliance", opts);
+      console.log(`new:    ${participation.address}\n`)
 
       // deploy riskmgmt
-      abi = JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi"));
-      bytecode = fs.readFileSync("out/riskmgmt/RMMakeOrders.bin");
-      opts.data = `0x${bytecode}`;
-      riskMgmt = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed riskmgmt");
+      riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
+      console.log(`new:    ${riskMgmt.address}\n`)
 
       // deploy governance
-      abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
-      bytecode = fs.readFileSync("out/system/Governance.bin");
-      opts.data = `0x${bytecode}`;
-      governance = await api.newContract(abi).deploy(opts, [[accounts[0]], 1, yearInSeconds]);
-      console.log("Deployed governance");
-      const governanceContract = await api.newContract(abi, governance);
+      governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
+      console.log(`new:    ${riskMgmt.address}\n`)
 
       // deploy simpleAdapter
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
-      );
-      bytecode = fs.readFileSync("out/exchange/adapter/simpleAdapter.bin");
-      opts.data = `0x${bytecode}`;
-      simpleAdapter = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed simpleadapter");
+      simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+      console.log(`new:    ${simpleAdapter.address}\n`)
 
       // deploy CentralizedAdapter
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
-      );
-      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
-      opts.data = `0x${bytecode}`;
-      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed CentralizedAdapter");
+      centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+      console.log(`new:    ${centralizedAdapter.address}\n`)
 
-      // deploy version (can use identical libs object as above)
-      const versionAbi = JSON.parse(
-        fs.readFileSync("out/version/Version.abi", "utf8"),
-      );
-      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
-      opts.data = `0x${versionBytecode}`;
-      opts.gas = 6900000;
-      version = await api
-        .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
-      console.log("Deployed version");
+      // deploy Version
+      version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
+      console.log(`new:    ${version.address}\n`)
 
       // add Version to Governance tracking
-      await governanceContract.instance.proposeVersion.postTransaction({from: accounts[0]}, [version]);
-      await governanceContract.instance.approveVersion.postTransaction({from: accounts[0]}, [version]);
-      await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
+      await governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [version.address]);
+      await governance.instance.approveVersion.postTransaction({from: accounts[0]}, [version.address]);
+      await governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [version.address]);
 
       // deploy ranking contract
-      abi = JSON.parse(fs.readFileSync("out/FundRanking.abi"));
-      bytecode = fs.readFileSync("out/FundRanking.bin");
-      opts.data = `0x${bytecode}`;
-      ranking = await api.newContract(abi).deploy(opts, [version]);
-      console.log("Deployed ranking contract");
+      ranking = await deployContract("FundRanking", opts, [version.address]);
+      console.log(`new:    ${ranking.address}\n`)
 
       // register assets
       await Promise.all(
         config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
           console.log(`Registering ${assetSymbol}`);
           const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-          console.log(datafeedContract.address)
-          await datafeedContract.instance.register
-            .postTransaction({from: accounts[0], gas: 6000000}, [
+          await datafeed.instance.register
+            .postTransaction(opts, [
               `0x${tokenEntry.address}`,
               tokenEntry.name,
               tokenEntry.symbol,
@@ -182,28 +137,21 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        PriceFeed: datafeed,
-        SimpleMarket: simpleMarket,
-        NoCompliance: participation,
-        RMMakeOrders: riskMgmt,
-        Governance: governance,
-        simpleAdapter,
-        Version: version,
-        Ranking: ranking,
+        PriceFeed: datafeed.address,
+        SimpleMarket: simpleMarket.address,
+        NoCompliance: participation.address,
+        RMMakeOrders: riskMgmt.address,
+        Governance: governance.address,
+        simpleAdapter: simpleAdapter.address,
+        Version: version.address,
+        Ranking: ranking.address
       };
     } else if (environment === "live") {
       mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
       ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
-      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
 
       if (datafeedOnly) {
-        // deploy datafeed
-        abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-        bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
-        opts.data = `0x${bytecode}`;
-        datafeed = await api
-          .newContract(abi)
-          .deploy(opts, [
+        datafeed = await deployContract("pricefeeds/PriceFeed", opts, [
             mlnAddr,
             'Melon Token',
             'MLN',
@@ -216,7 +164,6 @@ async function deploy(environment) {
             config.protocol.datafeed.interval,
             config.protocol.datafeed.validity,
           ]);
-        console.log("Deployed datafeed");
 
         await Promise.all(
           config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
@@ -243,215 +190,123 @@ async function deploy(environment) {
         } else addressBook = {};
 
         addressBook[environment] = {
-          PriceFeed: datafeed,
+          PriceFeed: datafeed.address,
         };
       } else if (!datafeedOnly) {
-        // deploy participation
-        abi = JSON.parse(
-          fs.readFileSync("out/compliance/NoCompliance.abi"),
-        );
-        bytecode = fs.readFileSync("out/compliance/NoCompliance.bin");
-        opts.data = `0x${bytecode}`;
-        participation = await api.newContract(abi).deploy(opts, []);
-        console.log(`Deployed participation at ${participation}`);
+        participation = await deployContract("compliance/NoCompliance", opts);
 
-        // deploy riskmgmt
-        abi = JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi"));
-        bytecode = fs.readFileSync("out/riskmgmt/RMMakeOrders.bin");
-        opts.data = `0x${bytecode}`;
-        riskMgmt = await api.newContract(abi).deploy(opts, []);
-        console.log(`Deployed riskmgmt at ${riskMgmt}`);
+        riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
 
-        // deploy simpleAdapter
-        abi = JSON.parse(
-          fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
-        );
-        bytecode = fs.readFileSync("out/exchange/adapter/simpleAdapter.bin");
-        opts.data = `0x${bytecode}`;
-        simpleAdapter = await api.newContract(abi).deploy(opts, []);
-        console.log(`Deployed simpleadapter at ${simpleAdapter}`);
+        simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
 
         // deploy governance
+        // TODO: remove comments
         // TODO: move this to config
         const authorityAddress = '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B';
-        abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
-        bytecode = fs.readFileSync("out/system/Governance.bin");
-        opts.data = `0x${bytecode}`;
-        governance = await api.newContract(abi).deploy(opts, [
+        governance = await deployContract("system/Governance", opts, [
           [authorityAddress],
           1,
           yearInSeconds
         ]);
-        console.log(`Deployed governance at ${governance}`);
-        const governanceContract = await api.newContract(abi, governance);
-
-        abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-        bytecode = fs.readFileSync("out/Fund.bin", "utf8");
-        opts.data = `0x${bytecode}`;
-        opts.gas = 6700000;
 
         // deploy version (can use identical libs object as above)
-        const versionAbi = JSON.parse(fs.readFileSync("out/version/Version.abi", "utf8"));
-        const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-        opts.data = `0x${versionBytecode}`;
-        opts.gas = 6700000;
-        version = await api
-          .newContract(versionAbi)
-          .deploy(opts, [pkgInfo.version, governance, ethTokenAddress], () => {}, true);
-        console.log(`Deployed Version at ${version}`);
+        version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
 
         // add Version to Governance tracking
-        await governanceContract.instance.proposeVersion.postTransaction({from: authorityAddress}, [version]);
-        await governanceContract.instance.approveVersion.postTransaction({from: authorityAddress}, [version]);
-        await governanceContract.instance.triggerVersion.postTransaction({from: authorityAddress}, [version]);
+        await governance.instance.proposeVersion.postTransaction({from: authorityAddress}, [version.address]);
+        await governance.instance.approveVersion.postTransaction({from: authorityAddress}, [version.address]);
+        await governance.instance.triggerVersion.postTransaction({from: authorityAddress}, [version.address]);
 
+        // TODO: cleaner way to write to address book
         // update address book
         if (fs.existsSync(addressBookFile)) {
           addressBook = JSON.parse(fs.readFileSync(addressBookFile));
         } else addressBook = {};
 
         addressBook[environment] = {
-          NoCompliance: participation,
-          RMMakeOrders: riskMgmt,
-          simpleAdapter,
+          NoCompliance: participation.address,
+          RMMakeOrders: riskMgmt.address,
+          simpleAdapter: simpleAdapter.address,
+          governance: governance.address,
+          version: version.address,
         };
       }
     } else if (environment === "development") {
-      abi = JSON.parse(fs.readFileSync("./out/assets/PreminedAsset.abi"));
-      bytecode = fs.readFileSync("./out/assets/PreminedAsset.bin");
-      opts.data = `0x${bytecode}`;
-      ethToken = await api
-        .newContract(abi)
-        .deploy(opts, []);
+      ethToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed ether token");
-
-      mlnToken = await api
-        .newContract(abi)
-        .deploy(opts, []);
+      mlnToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed melon token");
-
-      eurToken = await api
-        .newContract(abi)
-        .deploy(opts, []);
+      eurToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed euro token");
 
-      abi = JSON.parse(fs.readFileSync("out/assets/Asset.abi"));
-
       // deploy pricefeed
-      abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-      bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
-      opts.data = `0x${bytecode}`;
-      datafeed = await api
-        .newContract(abi)
-        .deploy(opts, [
-          mlnToken,
-          'Melon Token',
-          'MLN-T',
-          18,
-          'melonport.com',
-          mockBytes,
-          mockBytes,
-          mockAddress,
-          mockAddress,
-          config.protocol.datafeed.interval,
-          config.protocol.datafeed.validity,
-        ]);
-      datafeedContract = await api.newContract(abi, datafeed);
-      // deploy simplemarket
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
-      );
-      bytecode = fs.readFileSync("out/exchange/thirdparty/SimpleMarket.bin");
-      opts.data = `0x${bytecode}`;
-      simpleMarket = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed simplemarket");
+      // TODO: rename all datafeed to pricefeed
+      datafeed = await deployContract("pricefeeds/PriceFeed", opts, [
+        mlnToken.address,
+        'Melon Token',
+        'MLN-T',
+        18,
+        'melonport.com',
+        mockBytes,
+        mockBytes,
+        mockAddress,
+        mockAddress,
+        config.protocol.datafeed.interval,
+        config.protocol.datafeed.validity,
+      ]);
 
+      // deploy simplemarket
+      simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+
+      // TODO: rename participation to compliance everywhere
       // deploy participation
-      abi = JSON.parse(fs.readFileSync("out/compliance/NoCompliance.abi"));
-      bytecode = fs.readFileSync("out/compliance/NoCompliance.bin");
-      opts.data = `0x${bytecode}`;
-      participation = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed participation");
+      participation = await deployContract("compliance/NoCompliance", opts);
 
       // deploy riskmgmt
-      abi = JSON.parse(fs.readFileSync("out/riskmgmt/RMMakeOrders.abi"));
-      bytecode = fs.readFileSync("out/riskmgmt/RMMakeOrders.bin");
-      opts.data = `0x${bytecode}`;
-      riskMgmt = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed riskmgmt");
+      riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
 
       // deploy governance
-      abi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
-      bytecode = fs.readFileSync("out/system/Governance.bin");
-      opts.data = `0x${bytecode}`;
-      governance = await api.newContract(abi).deploy(opts, [[accounts[0]], 1, 100000]);
-      console.log("Deployed governance");
-      const governanceContract = await api.newContract(abi, governance);
+      governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
 
       // deploy simpleAdapter
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/adapter/simpleAdapter.abi"),
-      );
-      bytecode = fs.readFileSync("out/exchange/adapter/simpleAdapter.bin");
-      opts.data = `0x${bytecode}`;
-      simpleAdapter = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed simpleadapter");
+      simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
 
       // deploy CentralizedAdapter
-      abi = JSON.parse(
-        fs.readFileSync("out/exchange/adapter/CentralizedAdapter.abi"),
-      );
-      bytecode = fs.readFileSync("out/exchange/adapter/CentralizedAdapter.bin");
-      opts.data = `0x${bytecode}`;
-      centralizedAdapter = await api.newContract(abi).deploy(opts, []);
-      console.log("Deployed CentralizedAdapter");
+      centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
 
-      const versionAbi = JSON.parse(
-        fs.readFileSync("out/version/Version.abi", "utf8"),
-      );
-      const versionBytecode = fs.readFileSync("out/version/Version.bin", "utf8");
-      fs.writeFileSync("out/version/Version.bin", versionBytecode, "utf8");
-      opts.data = `0x${versionBytecode}`;
-      opts.gas = 6900000;
-      version = await api
-        .newContract(versionAbi)
-        .deploy(opts, [pkgInfo.version, governance, ethToken], () => {}, true);
-      console.log("Deployed version");
+      // deploy version
+      version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethToken.address], () => {}, true);
 
       // add Version to Governance tracking
-      await governanceContract.instance.proposeVersion.postTransaction({from: accounts[0]}, [version]);
-      await governanceContract.instance.approveVersion.postTransaction({from: accounts[0]}, [version]);
-      await governanceContract.instance.triggerVersion.postTransaction({from: accounts[0]}, [version]);
+      await governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [version.address]);
+      await governance.instance.approveVersion.postTransaction({from: accounts[0]}, [version.address]);
+      await governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [version.address]);
       console.log('Version added to Governance');
 
+      // TODO: is fund deployed this way actually used?
       // deploy fund to test with
-      abi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-      bytecode = fs.readFileSync("out/Fund.bin", "utf8");
-      opts.data = `0x${bytecode}`;
-      opts.gas = 6900000;
-      fund = await api.newContract(abi).deploy(
-        opts,
+      fund = await deployContract("Fund", Object.assign(opts, {gas: 6900000}),
         [
           accounts[0],
           "Melon Portfolio", // name
-          mlnToken, // base asset
+          mlnToken.address, // base asset
           0, // management reward
           0, // performance reward
-          ethToken, // Native Asset
-          participation, // participation
-          riskMgmt, // riskMgmt
-          datafeed, // pricefeed
-          [simpleMarket], // simple market
-          [simpleAdapter]
+          ethToken.address, // Native Asset
+          participation.address, // participation
+          riskMgmt.address, // riskMgmt
+          datafeed.address, // pricefeed
+          [simpleMarket.address], // simple market
+          [simpleAdapter.address]
         ],
         () => {},
-        true,
+        true
       );
       console.log("Deployed fund");
 
       // register assets
-      await datafeedContract.instance.register.postTransaction({}, [
-        ethToken,
+      await datafeed.instance.register.postTransaction({}, [
+        ethToken.address,
         "Ether token",
         "ETH-T",
         18,
@@ -461,8 +316,8 @@ async function deploy(environment) {
         mockAddress,
         mockAddress,
       ]);
-      await datafeedContract.instance.register.postTransaction({}, [
-        eurToken,
+      await datafeed.instance.register.postTransaction({}, [
+        eurToken.address,
         "Euro token",
         "EUR-T",
         18,
@@ -472,8 +327,8 @@ async function deploy(environment) {
         mockAddress,
         mockAddress,
       ]);
-      await datafeedContract.instance.register.postTransaction({}, [
-        mlnToken,
+      await datafeed.instance.register.postTransaction({}, [
+        mlnToken.address,
         "Melon token",
         "MLN-T",
         18,
@@ -491,18 +346,18 @@ async function deploy(environment) {
       } else addressBook = {};
 
       addressBook[environment] = {
-        PriceFeed: datafeed,
-        SimpleMarket: simpleMarket,
-        NoCompliance: participation,
-        RMMakeOrders: riskMgmt,
-        Governance: governance,
-        simpleAdapter,
-        centralizedAdapter,
-        Version: version,
-        MlnToken: mlnToken,
-        EurToken: eurToken,
-        EthToken: ethToken,
-        Fund: fund,
+        PriceFeed: datafeed.address,
+        SimpleMarket: simpleMarket.address,
+        NoCompliance: participation.address,
+        RMMakeOrders: riskMgmt.address,
+        Governance: governance.address,
+        simpleAdapter: simpleAdapter.address,
+        centralizedAdapter: centralizedAdapter.address,
+        Version: version.address,
+        MlnToken: mlnToken.address,
+        EurToken: eurToken.address,
+        EthToken: ethToken.address,
+        Fund: fund.address,
       };
     }
 

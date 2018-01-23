@@ -17,9 +17,9 @@
     "test:unit": "ava --files tests/unit/**",
     "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_VERBOSE=1 && dapp test",
     "compile": "export SOLC_FLAGS='--optimize' && make all",
-    "deploy": "babel-node utils/deploy/contracts.js development",
-    "deploy:kovan": "babel-node utils/deploy/contracts.js kovan",
-    "deploy:live": "babel-node utils/deploy/contracts.js live",
+    "deploy": "NODE_ENV=DEVELOPMENT babel-node utils/deploy/contracts.js development",
+    "deploy:kovan": "NODE_ENV=KOVAN babel-node utils/deploy/contracts.js kovan",
+    "deploy:live": "NODE_ENV=LIVE babel-node utils/deploy/contracts.js live",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
     "prepublishOnly": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json"
