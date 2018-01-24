@@ -15,6 +15,9 @@ module.exports = {
         interval: 60 * 60, // one hour
         validity: 60 * 60,
       },
+      governance: {
+        authority: '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B'
+      }
     },
   },
   kovan: {

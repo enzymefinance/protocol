@@ -5,16 +5,16 @@ import * as tokenInfo from "../info/tokenInfo";
 import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 
+const addressBookFile = "./addressBook.json";
+const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
+const yearInSeconds = 60 * 60 * 24 * 365;
+
 // TODO: make clearer the separation between deployments in different environments
 async function deployEnvironment(environment) {
   try {
-    let addressBook;
     const pricefeedOnly = false;
-    const addressBookFile = "./addressBook.json";
     const config = masterConfig[environment];
-    const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
-    const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
-    const yearInSeconds = 60 * 60 * 24 * 365;
     if (
       Number(config.networkId) !== Number(await api.net.version()) &&
       config.networkId !== "*"
@@ -27,6 +27,10 @@ async function deployEnvironment(environment) {
       gas: config.gas,
       gasPrice: config.gasPrice,
     };
+    let addressBook;
+    if (fs.existsSync(addressBookFile)) {
+      addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+    } else addressBook = {};
 
     if (environment === "kovan") {
       const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
@@ -87,10 +91,6 @@ async function deployEnvironment(environment) {
       );
 
       // update address book
-      if (fs.existsSync(addressBookFile)) {
-        addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-      } else addressBook = {};
-
       addressBook[environment] = {
         PriceFeed: pricefeed.address,
         SimpleMarket: simpleMarket.address,
@@ -143,10 +143,6 @@ async function deployEnvironment(environment) {
         );
 
         // update address book
-        if (fs.existsSync(addressBookFile)) {
-          addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-        } else addressBook = {};
-
         addressBook[environment] = {
           PriceFeed: pricefeed.address,
         };
@@ -155,10 +151,8 @@ async function deployEnvironment(environment) {
         const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
         const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
 
-        // TODO: move this to config
-        const authorityAddress = '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B';
         const governance = await deployContract("system/Governance", opts, [
-          [authorityAddress],
+          [config.protocol.governance.authority],
           1,
           yearInSeconds
         ]);
@@ -166,22 +160,18 @@ async function deployEnvironment(environment) {
         const version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
 
         // add Version to Governance tracking
-        await governance.instance.proposeVersion.postTransaction({from: authorityAddress}, [version.address]);
-        await governance.instance.approveVersion.postTransaction({from: authorityAddress}, [version.address]);
-        await governance.instance.triggerVersion.postTransaction({from: authorityAddress}, [version.address]);
+        await governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
+        await governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
+        await governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
 
         // TODO: cleaner way to write to address book
-        // update address book
-        if (fs.existsSync(addressBookFile)) {
-          addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-        } else addressBook = {};
-
+        // TODO: make backup of previous addressbook
         addressBook[environment] = {
           NoCompliance: compliance.address,
           RMMakeOrders: riskMgmt.address,
           simpleAdapter: simpleAdapter.address,
-          governance: governance.address,
-          version: version.address,
+          Governance: governance.address,
+          Version: version.address,
         };
       }
     } else if (environment === "development") {
@@ -277,10 +267,6 @@ async function deployEnvironment(environment) {
       console.log("Done registration");
 
       // update address book
-      if (fs.existsSync(addressBookFile)) {
-        addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-      } else addressBook = {};
-
       addressBook[environment] = {
         PriceFeed: pricefeed.address,
         SimpleMarket: simpleMarket.address,
