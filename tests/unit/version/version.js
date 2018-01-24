@@ -1,16 +1,14 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
 import * as instances from "../../../utils/lib/instances";
-import { version } from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
+import {version} from "../../../utils/lib/utils";
 
 const addressBook = require("../../../addressBook.json");
 const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -23,7 +21,7 @@ const keccakedFundName =
   "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [ , , , , manager] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
@@ -46,7 +44,7 @@ test("Can setup a new fund", async t => {
     addresses.RMMakeOrders,
     addresses.PriceFeed,
     [addresses.SimpleMarket],
-    [addresses.simpleAdapter],
+    [addresses.SimpleAdapter],
     v,
     r,
     s,

@@ -1,18 +1,16 @@
 import test from "ava";
-import Api from "@parity/api";
 import * as deployedUtils from "../../utils/lib/utils";
-import deploy from "../../utils/deploy/contracts";
+import api from "../../utils/lib/api";
+import deployEnvironment from "../../utils/deploy/contracts";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const addresses = addressBook[environment];
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -36,53 +34,37 @@ const sellQuantity = 1000;
 const buyQuantity = 1000;
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await deployedUtils.accounts;
   [deployer, manager, investor] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployedUtils.version;
   mlnToken = await deployedUtils.mlnToken;
-  let abi = JSON.parse(fs.readFileSync("out/testing/MaliciousToken.abi"));
-  let bytecode = fs.readFileSync("out/testing/MaliciousToken.bin");
-  const maliciousTokenDeployment = await api.newContract(abi).deploy(
-    {from: deployer, data: `0x${bytecode}`},
-    []
-  );
-  maliciousToken = await api.newContract(abi, maliciousTokenDeployment);
+  maliciousToken = await deployContract("testing/MaliciousToken", {from: deployer});
 
-  // investor needs some MLN to use
+  // give investor some MLN to use
   await mlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [investor, initialMln, ""],
   );
 
   // get market
-  abi = JSON.parse(
-    fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
-  );
-  exchange = await api.newContract(abi, addresses.SimpleMarket);
+  exchange = await retrieveContract("exchange/thirdparty/SimpleMarket", addresses.SimpleMarket);
 
   // deploy pricefeed
-  abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-  bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
-  opts.data = `0x${bytecode}`;
-
-  const pricefeedDeployment = await api
-    .newContract(abi)
-    .deploy(opts, [
-      mlnToken.address,
-      'Melon Token',
-      'MLN-T',
-      18,
-      'melonport.com',
-      mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
-    ]);
-  pricefeed = await api.newContract(abi, pricefeedDeployment);
+  pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
+    mlnToken.address,
+    'Melon Token',
+    'MLN-T',
+    18,
+    'melonport.com',
+    mockBytes,
+    mockBytes,
+    mockAddress,
+    mockAddress,
+    config.protocol.pricefeed.interval,
+    config.protocol.pricefeed.validity,
+  ]);
   await pricefeed.instance.register.postTransaction(
     {from: deployer},
     [ maliciousToken.address, '', '', 18, '', '', mockBytes, mockAddress, mockAddress ]
@@ -105,15 +87,14 @@ test.before(async () => {
       addresses.RMMakeOrders,
       pricefeed.address,
       [addresses.SimpleMarket],
-      [addresses.simpleAdapter],
+      [addresses.SimpleAdapter],
       v,
       r,
       s,
     ],
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
-  const fundAbi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-  fund = await api.newContract(fundAbi, fundAddress);
+  fund = await retrieveContract("Fund", fundAddress);
 });
 
 test.serial("initial investment with MLN", async t => {

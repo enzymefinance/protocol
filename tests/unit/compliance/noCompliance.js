@@ -1,21 +1,17 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
 import { participation as compliance } from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
-
-const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
-const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
 let investor;
 
 test.before(async () => {
-  await deploy(environment);
+  // TODO: do we need to re-deploy everything here? maybe just the compliance module
+  await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [investor] = accounts;
 });

@@ -1,15 +1,13 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../../utils/lib/api";
+import {deployContract} from "../../../utils/lib/contracts";
+import deployEnvironment from "../../../utils/deploy/contracts";
 import * as deployed from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
 
-const fs = require("fs");
 const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let eurToken;
@@ -60,7 +58,7 @@ function registerEth(pricefeed) {
 // hooks
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   opts = { from: accounts[0], gas: config.gas };
   ethToken = await deployed.ethToken;
@@ -69,10 +67,9 @@ test.before(async () => {
 });
 
 test.beforeEach(async t => {
-  const abi = JSON.parse(fs.readFileSync("out/pricefeeds/PriceFeed.abi"));
-  const bytecode = fs.readFileSync("out/pricefeeds/PriceFeed.bin");
-  const pricefeedDeployment = await api.newContract(abi)
-    .deploy({from: accounts[0], data: `0x${bytecode}`}, [
+  t.context.pricefeed = await deployContract("pricefeeds/PriceFeed",
+    {from: accounts[0]},
+    [
       mlnToken.address,
       'Melon Token',
       'MLN-T',
@@ -84,8 +81,7 @@ test.beforeEach(async t => {
       mockBreakOut,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
-    ]);
-  t.context.pricefeed = (await api.newContract(abi, pricefeedDeployment));
+  ]);
 });
 
 // tests (concurrent)

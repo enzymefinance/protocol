@@ -1,18 +1,16 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../utils/lib/api";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import deployEnvironment from "../../utils/deploy/contracts";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
-import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const addresses = addressBook[environment];
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -74,29 +72,16 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await deployedUtils.accounts;
   [deployer, manager, investor, worker, exchangeOwner] = accounts;
   version = await deployedUtils.version;
   pricefeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;
   ethToken = await deployedUtils.ethToken;
-  const abi = JSON.parse(
-    fs.readFileSync("out/exchange/thirdparty/CentralizedExchangeInterface.abi"),
+  centralizedExchange = await deployContract("exchange/thirdparty/CentralizedExchangeInterface",
+    {from: deployer, gas: config.gas, gasPrice: config.gasPrice}
   );
-  const bytecode = `0x${fs.readFileSync(
-    "out/exchange/thirdparty/CentralizedExchangeInterface.bin",
-  )}`;
-  centralizedExchange = await api.newContract(abi).deploy(
-    {
-      from: deployer,
-      data: bytecode,
-      gas: config.gas,
-      gasPrice: config.gasPrice,
-    },
-    [],
-  );
-  centralizedExchange = api.newContract(abi, centralizedExchange);
   const hash =
     "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(manager, hash);
@@ -122,8 +107,7 @@ test.before(async () => {
     ],
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
-  const fundAbi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-  fund = await api.newContract(fundAbi, fundAddress);
+  fund = await retrieveContract("Fund", fundAddress);
 });
 
 test.beforeEach(async () => {

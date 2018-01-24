@@ -1,18 +1,16 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../utils/lib/api";
+import {retrieveContract} from "../../utils/lib/contracts";
+import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
-import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // TODO: factor out redundant assertions
 // TODO: factor out tests into multiple files
@@ -32,7 +30,7 @@ let version;
 const addresses = addressBook[environment];
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   [deployer, manager, investor] = accounts;
@@ -68,7 +66,7 @@ test.serial('can set up new fund', async t => {
       addresses.RMMakeOrders,
       addresses.PriceFeed,
       [addresses.SimpleMarket],
-      [addresses.simpleAdapter],
+      [addresses.SimpleAdapter],
       v,
       r,
       s
@@ -81,10 +79,7 @@ test.serial('can set up new fund', async t => {
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const fundId = await version.instance.getLastFundId.call({}, []);
   const fundAddress = await version.instance.getFundById.call({}, [fundId]);
-  fund = await api.newContract(
-    JSON.parse(fs.readFileSync("out/Fund.abi")),
-    fundAddress
-  );
+  fund = await retrieveContract("Fund", fundAddress);
   const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
 
   t.deepEqual(postManagerEth, preManagerEth.minus(runningGasTotal.times(gasPrice)));

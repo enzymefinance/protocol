@@ -1,18 +1,16 @@
 import test from "ava";
-import Api from "@parity/api";
+import api from "../../utils/lib/api";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import deployEnvironment from "../../utils/deploy/contracts";
 import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
-import deploy from "../../utils/deploy/contracts";
 
 const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const addresses = addressBook[environment];
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -26,8 +24,8 @@ let mlnToken;
 let pricefeed;
 let receipt;
 let runningGasTotal;
-let simpleMarket1;
-let simpleMarket2;
+let SimpleMarket1;
+let SimpleMarket2;
 let exchanges;
 let trade1;
 let trade2;
@@ -77,7 +75,7 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await deployedUtils.accounts;
   gasPrice = Number(await api.eth.gasPrice());
   [deployer, manager, investor, worker] = accounts;
@@ -85,24 +83,11 @@ test.before(async () => {
   pricefeed = await deployedUtils.datafeed;
   mlnToken = await deployedUtils.mlnToken;
   ethToken = await deployedUtils.ethToken;
-  simpleMarket1 = await deployedUtils.simpleMarket;
-  const abi = JSON.parse(
-    fs.readFileSync("out/exchange/thirdparty/SimpleMarket.abi"),
+  SimpleMarket1 = await deployedUtils.simpleMarket;
+  SimpleMarket2 = await deployContract("exchange/thirdparty/SimpleMarket",
+    {from: manager, gas: config.gas, gasPrice: config.gasPrice}
   );
-  const bytecode = `0x${fs.readFileSync(
-    "out/exchange/thirdparty/SimpleMarket.bin",
-  )}`;
-  simpleMarket2 = await api.newContract(abi).deploy(
-    {
-      from: manager,
-      data: bytecode,
-      gas: config.gas,
-      gasPrice: config.gasPrice,
-    },
-    [],
-  );
-  simpleMarket2 = api.newContract(abi, simpleMarket2);
-  exchanges = [simpleMarket1, simpleMarket2];
+  exchanges = [SimpleMarket1, SimpleMarket2];
   const hash =
     "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(manager, hash);
@@ -120,16 +105,15 @@ test.before(async () => {
       addresses.NoCompliance,
       addresses.RMMakeOrders,
       addresses.PriceFeed,
-      [addresses.SimpleMarket, simpleMarket2.address],
-      [addresses.simpleAdapter, addresses.simpleAdapter],
+      [addresses.SimpleMarket, SimpleMarket2.address],
+      [addresses.SimpleAdapter, addresses.SimpleAdapter],
       v,
       r,
       s,
     ],
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
-  const fundAbi = JSON.parse(fs.readFileSync("out/Fund.abi"));
-  fund = await api.newContract(fundAbi, fundAddress);
+  fund = await retrieveContract("Fund", fundAddress);
 });
 
 test.beforeEach(async () => {

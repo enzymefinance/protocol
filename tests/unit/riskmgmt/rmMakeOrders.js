@@ -1,14 +1,9 @@
 import test from "ava";
-import Api from "@parity/api";
-import { riskMgmt } from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
-
-const environmentConfig = require("../../../utils/config/environment.js");
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
+import {riskMgmt} from "../../../utils/lib/utils";
 
 const environment = "development";
-const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -17,7 +12,7 @@ let riskLevel;
 let referencePrice;
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [mockAddress] = accounts;
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);

@@ -202,26 +202,6 @@ async function deployEnvironment(environment) {
     await governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [version.address]);
     console.log('Version added to Governance');
 
-    // TODO: is fund deployed this way actually used?
-    // deploy fund to test with
-    const fund = await deployContract("Fund", Object.assign(opts, {gas: 6900000}),
-      [
-        accounts[0],
-        "Melon Portfolio",
-        mlnToken.address, // base asset
-        0, // management reward
-        0, // performance reward
-        ethToken.address, // Native Asset
-        compliance.address,
-        riskMgmt.address,
-        pricefeed.address,
-        [SimpleMarket.address],
-        [SimpleAdapter.address]
-      ],
-      () => {},
-      true
-    );
-
     // register assets
     await pricefeed.instance.register.postTransaction({}, [
       ethToken.address,
@@ -270,7 +250,6 @@ async function deployEnvironment(environment) {
       MlnToken: mlnToken.address,
       EurToken: eurToken.address,
       EthToken: ethToken.address,
-      Fund: fund.address,
     };
   }
 
