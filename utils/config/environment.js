@@ -11,7 +11,7 @@ module.exports = {
           'OW-ETH', 'SAI', 'MKR', 'DGD', 'GNT', 'REP', 'ICN'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 60 * 60, // one hour
         validity: 60 * 60,
       },
@@ -30,7 +30,7 @@ module.exports = {
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 60,
         validity: 60,
       },
@@ -49,7 +49,7 @@ module.exports = {
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 0,
         validity: 60,
       },

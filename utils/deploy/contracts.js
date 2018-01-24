@@ -1,45 +1,24 @@
-import Api from "@parity/api";
+import * as fs from "fs";
+import * as pkgInfo from "../../package.json";
+import * as masterConfig from "../config/environment";
+import * as tokenInfo from "../info/tokenInfo";
 import {deployContract} from "../lib/contracts";
-
-const fs = require("fs");
-const pkgInfo = require("../../package.json");
-const environmentConfig = require("../config/environment.js");
-const tokenInfo = require("../info/tokenInfo.js");
+import api from "../lib/api";
 
 // TODO: make clearer the separation between deployments in different environments
-async function deploy(environment) {
+async function deployEnvironment(environment) {
   try {
     let addressBook;
-    let mlnAddr;
-    let ethTokenAddress;
-    let mlnToken;
-    let eurToken;
-    let ethToken;
-    let pricefeed;
-    let fund;
-    let governance;
-    let compliance;
-    let riskMgmt;
-    let simpleAdapter;
-    let centralizedAdapter;
-    let simpleMarket;
-    let version;
-    let ranking;
     const pricefeedOnly = false;
     const addressBookFile = "./addressBook.json";
-    const config = environmentConfig[environment];
-    const provider = new Api.Provider.Http(
-      `http://${config.host}:${config.port}`,
-    );
-    const api = new Api(provider);
-
+    const config = masterConfig[environment];
     const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
     const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
     const yearInSeconds = 60 * 60 * 24 * 365;
     if (
       Number(config.networkId) !== Number(await api.net.version()) &&
       config.networkId !== "*"
-    ) {
+    ) { // TODO: fix this error message
       throw new Error(`Deployment for environment ${environment} not defined`);
     }
     const accounts = await api.eth.accounts();
@@ -50,10 +29,10 @@ async function deploy(environment) {
     };
 
     if (environment === "kovan") {
-      mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
-      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
+      const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
+      const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
 
-      pricefeed = await deployContract("pricefeeds/PriceFeed",
+      const pricefeed = await deployContract("pricefeeds/PriceFeed",
         opts, [
         mlnAddr,
         'Melon Token',
@@ -69,16 +48,16 @@ async function deploy(environment) {
       ]);
 
       // simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-      simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
+      const simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
       console.log(`Using already-deployed SimpleMarket at ${simpleMarket}\n`);
 
-      compliance = await deployContract("compliance/NoCompliance", opts);
-      riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
-      governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-      simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
-      centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-      version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
-      ranking = await deployContract("FundRanking", opts, [version.address]);
+      const compliance = await deployContract("compliance/NoCompliance", opts);
+      const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
+      const governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
+      const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+      const centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+      const version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
+      const ranking = await deployContract("FundRanking", opts, [version.address]);
 
       // add Version to Governance tracking
       await governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [version.address]);
@@ -119,15 +98,17 @@ async function deploy(environment) {
         RMMakeOrders: riskMgmt.address,
         Governance: governance.address,
         simpleAdapter: simpleAdapter.address,
+        centralizedAdapter: centralizedAdapter.address,
         Version: version.address,
         Ranking: ranking.address
       };
     } else if (environment === "live") {
-      mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
-      ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
+      const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
+      const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
 
+      // TODO: get rid of this construct
       if (pricefeedOnly) {
-        pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
+        const pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
             mlnAddr,
             'Melon Token',
             'MLN',
@@ -170,19 +151,19 @@ async function deploy(environment) {
           PriceFeed: pricefeed.address,
         };
       } else if (!pricefeedOnly) {
-        compliance = await deployContract("compliance/NoCompliance", opts);
-        riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
-        simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+        const compliance = await deployContract("compliance/NoCompliance", opts);
+        const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
+        const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
 
         // TODO: move this to config
         const authorityAddress = '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B';
-        governance = await deployContract("system/Governance", opts, [
+        const governance = await deployContract("system/Governance", opts, [
           [authorityAddress],
           1,
           yearInSeconds
         ]);
 
-        version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
+        const version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
 
         // add Version to Governance tracking
         await governance.instance.proposeVersion.postTransaction({from: authorityAddress}, [version.address]);
@@ -204,14 +185,14 @@ async function deploy(environment) {
         };
       }
     } else if (environment === "development") {
-      ethToken = await deployContract("assets/PreminedAsset", opts);
+      const ethToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed ether token");
-      mlnToken = await deployContract("assets/PreminedAsset", opts);
+      const mlnToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed melon token");
-      eurToken = await deployContract("assets/PreminedAsset", opts);
+      const eurToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed euro token");
 
-      pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
+      const pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
         mlnToken.address,
         'Melon Token',
         'MLN-T',
@@ -225,13 +206,13 @@ async function deploy(environment) {
         config.protocol.pricefeed.validity,
       ]);
 
-      simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-      compliance = await deployContract("compliance/NoCompliance", opts);
-      riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
-      governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-      simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
-      centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-      version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethToken.address], () => {}, true);
+      const simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+      const compliance = await deployContract("compliance/NoCompliance", opts);
+      const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
+      const governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
+      const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+      const centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+      const version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethToken.address], () => {}, true);
 
       // add Version to Governance tracking
       await governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [version.address]);
@@ -241,7 +222,7 @@ async function deploy(environment) {
 
       // TODO: is fund deployed this way actually used?
       // deploy fund to test with
-      fund = await deployContract("Fund", Object.assign(opts, {gas: 6900000}),
+      const fund = await deployContract("Fund", Object.assign(opts, {gas: 6900000}),
         [
           accounts[0],
           "Melon Portfolio",
@@ -333,11 +314,12 @@ async function deploy(environment) {
 }
 
 if (require.main === module) {
-  if (process.argv.length < 2) {
+  const environment = process.env.CHAIN_ENV;
+  if (environment === undefined) {
     throw new Error(`Please specify a deployment environment`);
   } else {
-    deploy(process.argv[2]);
+    deployEnvironment(environment);
   }
 }
 
-export default deploy;
+export default deployEnvironment;

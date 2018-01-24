@@ -79,8 +79,8 @@ test.before(async () => {
       mockBytes,
       mockAddress,
       mockAddress,
-      config.protocol.datafeed.interval,
-      config.protocol.datafeed.validity,
+      config.protocol.pricefeed.interval,
+      config.protocol.pricefeed.validity,
     ]);
   pricefeed = await api.newContract(abi, pricefeedDeployment);
   await pricefeed.instance.register.postTransaction(

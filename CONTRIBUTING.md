@@ -5,8 +5,8 @@ The steps to make a new release are as follows:
 ```sh
 npm run compile    # update artifacts in out/
 npm test           # passes on development network
-npm run deploy     # run for each network you need
 npm version 0.6.4  # or whatever version number
+npm run deploy     # run for each network you need
 npm publish        # updates the NPM package
 git push --follow-tags
 ```

@@ -82,8 +82,8 @@ test.beforeEach(async t => {
       mockBytes,
       mockBreakIn,
       mockBreakOut,
-      config.protocol.datafeed.interval,
-      config.protocol.datafeed.validity,
+      config.protocol.pricefeed.interval,
+      config.protocol.pricefeed.validity,
     ]);
   t.context.pricefeed = (await api.newContract(abi, pricefeedDeployment));
 });
