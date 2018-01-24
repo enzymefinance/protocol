@@ -13,7 +13,6 @@ const yearInSeconds = 60 * 60 * 24 * 365;
 // TODO: make clearer the separation between deployments in different environments
 async function deployEnvironment(environment) {
   try {
-    const pricefeedOnly = false;
     const config = masterConfig[environment];
     if (
       Number(config.networkId) !== Number(await api.net.version()) &&
@@ -68,7 +67,6 @@ async function deployEnvironment(environment) {
       await governance.instance.approveVersion.postTransaction({from: accounts[0]}, [version.address]);
       await governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [version.address]);
 
-
       // register assets
       await Promise.all(
         config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
@@ -85,12 +83,11 @@ async function deployEnvironment(environment) {
               mockBytes,
               mockAddress,
               mockAddress,
-            ]);
+          ]);
           console.log(`Registered ${assetSymbol}`);
         })
       );
 
-      // update address book
       addressBook[environment] = {
         PriceFeed: pricefeed.address,
         SimpleMarket: simpleMarket.address,
@@ -106,74 +103,68 @@ async function deployEnvironment(environment) {
       const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
       const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
 
-      // TODO: get rid of this construct
-      if (pricefeedOnly) {
-        const pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
-            mlnAddr,
-            'Melon Token',
-            'MLN',
-            18,
-            'melonport.com',
-            mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
-            config.protocol.pricefeed.interval,
-            config.protocol.pricefeed.validity,
+      const pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
+          mlnAddr,
+          'Melon Token',
+          'MLN',
+          18,
+          'melonport.com',
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
+          config.protocol.pricefeed.interval,
+          config.protocol.pricefeed.validity,
+      ]);
+
+      // register assets
+      await Promise.all(
+        config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+          console.log(`Registering ${assetSymbol}`);
+          const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
+          await pricefeed.instance.register
+            .postTransaction({from: accounts[0], gas: 6000000}, [
+              `0x${tokenEntry.address}`,
+              tokenEntry.name,
+              tokenEntry.symbol,
+              tokenEntry.decimals,
+              tokenEntry.url,
+              mockBytes,
+              mockBytes,
+              mockAddress,
+              mockAddress,
           ]);
+          console.log(`Registered ${assetSymbol}`);
+        })
+      );
 
-        await Promise.all(
-          config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
-            console.log(`Registering ${assetSymbol}`);
-            const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-            await pricefeed.instance.register
-              .postTransaction({from: accounts[0], gas: 6000000}, [
-                `0x${tokenEntry.address}`,
-                tokenEntry.name,
-                tokenEntry.symbol,
-                tokenEntry.decimals,
-                tokenEntry.url,
-                mockBytes,
-                mockBytes,
-                mockAddress,
-                mockAddress,
-              ])
-              .then(() => console.log(`Registered ${assetSymbol}`));
-          })
-        );
+      const compliance = await deployContract("compliance/NoCompliance", opts);
+      const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
+      const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
 
-        // update address book
-        addressBook[environment] = {
-          PriceFeed: pricefeed.address,
-        };
-      } else if (!pricefeedOnly) {
-        const compliance = await deployContract("compliance/NoCompliance", opts);
-        const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
-        const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+      const governance = await deployContract("system/Governance", opts, [
+        [config.protocol.governance.authority],
+        1,
+        yearInSeconds
+      ]);
 
-        const governance = await deployContract("system/Governance", opts, [
-          [config.protocol.governance.authority],
-          1,
-          yearInSeconds
-        ]);
+      const version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
 
-        const version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
+      // add Version to Governance tracking
+      await governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
+      await governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
+      await governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
 
-        // add Version to Governance tracking
-        await governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
-        await governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
-        await governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [version.address]);
-
-        // TODO: cleaner way to write to address book
-        // TODO: make backup of previous addressbook
-        addressBook[environment] = {
-          NoCompliance: compliance.address,
-          RMMakeOrders: riskMgmt.address,
-          simpleAdapter: simpleAdapter.address,
-          Governance: governance.address,
-          Version: version.address,
-        };
-      }
+      // TODO: cleaner way to write to address book
+      // TODO: make backup of previous addressbook
+      addressBook[environment] = {
+        PriceFeed: pricefeed.address,
+        NoCompliance: compliance.address,
+        RMMakeOrders: riskMgmt.address,
+        simpleAdapter: simpleAdapter.address,
+        Governance: governance.address,
+        Version: version.address,
+      };
     } else if (environment === "development") {
       const ethToken = await deployContract("assets/PreminedAsset", opts);
       console.log("Deployed ether token");
@@ -266,7 +257,6 @@ async function deployEnvironment(environment) {
       ]);
       console.log("Done registration");
 
-      // update address book
       addressBook[environment] = {
         PriceFeed: pricefeed.address,
         SimpleMarket: simpleMarket.address,
@@ -290,10 +280,6 @@ async function deployEnvironment(environment) {
       JSON.stringify(addressBook, null, "\t"),
       "utf8",
     );
-
-    if (require.main === module) {
-      process.exit();
-    }
   } catch (err) {
     console.log(err.stack);
   }
@@ -304,7 +290,8 @@ if (require.main === module) {
   if (environment === undefined) {
     throw new Error(`Please specify a deployment environment`);
   } else {
-    deployEnvironment(environment);
+    deployEnvironment(environment)
+    .then(() => process.exit());
   }
 }
 
