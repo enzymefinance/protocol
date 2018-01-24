@@ -2,15 +2,18 @@ import * as path from 'path';
 import * as fs from 'fs';
 import api from './api';
 
-// module-level variables
 const outpath = path.join(__dirname, '..', '..', 'out');
 
-// inputOptions : Deployment options for the contract
-// constructorArgs : Arguments to be passed to the contract constructor
-// ...rest : catch extra parameters to the parity.js deploy function
-// returns: instance of the deployed contract
-async function deployContract(contractPath, inputOptions = {}, constructorArgs = [], ...rest) {
-  const options = inputOptions;
+/**
+ * Deploy a contract, and get back an instance.
+ * @param {string} contractPath - Relative path to the contract, without its extension
+ * @param {Object} optsIn - Deployment options for the contract
+ * @param {[*]} constructorArgs - Arguments to be passed to the contract constructor
+ * @param {...*} rest - Catch extra parameters to the parity.js deploy function
+ * @returns {Object} - Instance of the deployed contract
+ */
+async function deployContract(contractPath, optsIn = {}, constructorArgs = [], ...rest) {
+  const options = optsIn;
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
   const bytecode = `0x${fs.readFileSync(`${filepath}.bin`, 'utf8')}`;
@@ -20,6 +23,12 @@ async function deployContract(contractPath, inputOptions = {}, constructorArgs =
   return api.newContract(abi, deployedAddress);  // return instance
 }
 
+/**
+ * Get a contract instance with its name and address.
+ * @param {string} contractPath - Relative path to the contract, without its extension
+ * @param {string} address - Address of the deployed contract
+ * @returns {Object} - Instance of the deployed contract
+ */
 async function retrieveContract(contractPath, address) {
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
