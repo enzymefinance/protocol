@@ -9,7 +9,7 @@ import "../thirdparty/SimpleMarket.sol";
 /// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-contract simpleAdapter {
+contract SimpleAdapter {
 
     // EVENTS
 

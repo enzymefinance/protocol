@@ -51,14 +51,14 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.validity,
     ]);
 
-    // simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-    const simpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
-    console.log(`Using already-deployed SimpleMarket at ${simpleMarket}\n`);
+    // SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    const SimpleMarket = '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02';
+    console.log(`Using already-deployed SimpleMarket at ${SimpleMarket}\n`);
 
     const compliance = await deployContract("compliance/NoCompliance", opts);
     const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
     const governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-    const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+    const SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     const centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     const version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethTokenAddress], () => {}, true);
     const ranking = await deployContract("FundRanking", opts, [version.address]);
@@ -91,11 +91,11 @@ async function deployEnvironment(environment) {
 
     addressBook[environment] = {
       PriceFeed: pricefeed.address,
-      SimpleMarket: simpleMarket.address,
+      SimpleMarket: SimpleMarket.address,
       NoCompliance: compliance.address,
       RMMakeOrders: riskMgmt.address,
       Governance: governance.address,
-      simpleAdapter: simpleAdapter.address,
+      SimpleAdapter: SimpleAdapter.address,
       centralizedAdapter: centralizedAdapter.address,
       Version: version.address,
       Ranking: ranking.address
@@ -141,7 +141,7 @@ async function deployEnvironment(environment) {
 
     const compliance = await deployContract("compliance/NoCompliance", opts);
     const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
-    const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+    const SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
 
     const governance = await deployContract("system/Governance", opts, [
       [config.protocol.governance.authority],
@@ -162,7 +162,7 @@ async function deployEnvironment(environment) {
       PriceFeed: pricefeed.address,
       NoCompliance: compliance.address,
       RMMakeOrders: riskMgmt.address,
-      simpleAdapter: simpleAdapter.address,
+      SimpleAdapter: SimpleAdapter.address,
       Governance: governance.address,
       Version: version.address,
     };
@@ -188,11 +188,11 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.validity,
     ]);
 
-    const simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    const SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     const compliance = await deployContract("compliance/NoCompliance", opts);
     const riskMgmt = await deployContract("riskmgmt/RMMakeOrders", opts);
     const governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-    const simpleAdapter = await deployContract("exchange/adapter/simpleAdapter", opts);
+    const SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     const centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     const version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethToken.address], () => {}, true);
 
@@ -215,8 +215,8 @@ async function deployEnvironment(environment) {
         compliance.address,
         riskMgmt.address,
         pricefeed.address,
-        [simpleMarket.address],
-        [simpleAdapter.address]
+        [SimpleMarket.address],
+        [SimpleAdapter.address]
       ],
       () => {},
       true
@@ -260,11 +260,11 @@ async function deployEnvironment(environment) {
 
     addressBook[environment] = {
       PriceFeed: pricefeed.address,
-      SimpleMarket: simpleMarket.address,
+      SimpleMarket: SimpleMarket.address,
       NoCompliance: compliance.address,
       RMMakeOrders: riskMgmt.address,
       Governance: governance.address,
-      simpleAdapter: simpleAdapter.address,
+      SimpleAdapter: SimpleAdapter.address,
       centralizedAdapter: centralizedAdapter.address,
       Version: version.address,
       MlnToken: mlnToken.address,
@@ -289,7 +289,7 @@ if (require.main === module) {
     throw new Error(`Please specify a deployment environment`);
   } else {
     deployEnvironment(environment)
-    .catch(err => console.log(err.stack))
+    .catch(err => console.error(err.stack))
     .finally(() => process.exit())
   }
 }
