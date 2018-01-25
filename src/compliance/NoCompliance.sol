@@ -1,13 +1,11 @@
 pragma solidity ^0.4.19;
 
 import "./ComplianceInterface.sol";
-import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Compliance Module.
-contract NoCompliance is ComplianceInterface, DBC, Owned {
+contract NoCompliance is ComplianceInterface {
 
     // PUBLIC VIEW METHODS
 
