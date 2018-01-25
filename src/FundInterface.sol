@@ -43,13 +43,13 @@ interface FundInterface {
 
     // PUBLIC VIEW METHODS
     // Get general information
-    function getModules() constant returns (address, address[], address, address);
-    function getLastOrderId() constant returns (uint);
-    function getLastRequestId() constant returns (uint);
-    function getNameHash() constant returns (bytes32);
+    function getModules() view returns (address, address[], address, address);
+    function getLastOrderId() view returns (uint);
+    function getLastRequestId() view returns (uint);
+    function getNameHash() view returns (bytes32);
     function getManager() view returns (address);
 
     // Get accounting information
-    function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint);
-    function calcSharePrice() constant returns (uint);
+    function performCalculations() view returns (uint, uint, uint, uint, uint, uint, uint);
+    function calcSharePrice() view returns (uint);
 }

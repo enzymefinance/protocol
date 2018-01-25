@@ -30,6 +30,9 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
  * @returns {Object} - Instance of the deployed contract
  */
 async function retrieveContract(contractPath, address) {
+  if(address === undefined || parseInt(address, 16) === 0) {
+    throw new Error('Address is undefined or 0x0');
+  }
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
   return api.newContract(abi, address);
