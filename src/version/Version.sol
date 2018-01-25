@@ -75,8 +75,7 @@ contract Version is DBC, Owned, VersionInterface {
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-    {
+    ) {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name

@@ -712,9 +712,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         return true;
     }
 
-
-
-
     // PUBLIC : REWARDS
 
     /// @dev Quantity of asset held in exchange according to associated order id
@@ -759,4 +756,5 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     function getLastOrderId() view returns (uint) { return orders.length - 1; }
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
     function getNameHash() view returns (bytes32) { return bytes32(keccak256(name)); }
+    function getManager() view returns (address) { return owner; }
 }

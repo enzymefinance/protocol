@@ -47,6 +47,7 @@ interface FundInterface {
     function getLastOrderId() constant returns (uint);
     function getLastRequestId() constant returns (uint);
     function getNameHash() constant returns (bytes32);
+    function getManager() view returns (address);
 
     // Get accounting information
     function performCalculations() constant returns (uint, uint, uint, uint, uint, uint, uint);
