@@ -1,31 +1,30 @@
 import test from 'ava';
 import api from "../../../utils/lib/api";
-import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
+import {deployContract} from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
-const addressBook = require("../../../addressBook.json");
 const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const addresses = addressBook[environment];
 
 let accounts;
 let deployer;
 let opts;
 let governance;
 let version;
+let deployed;
 
 test.before(async () => {
-  await deployEnvironment(environment);
+  deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
+  version = deployed.Version;
 });
 
 test.beforeEach(async () => {
   governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-  version = await retrieveContract("version/Version", addresses.Version);
 });
 
 test('Triggering a Version activates it within Governance', async t => {

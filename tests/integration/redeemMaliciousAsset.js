@@ -1,15 +1,12 @@
 import test from "ava";
-import * as deployedUtils from "../../utils/lib/utils";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 
-const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
-const addresses = addressBook[environment];
 const config = environmentConfig[environment];
 
 // hoisted variables
@@ -24,6 +21,7 @@ let version;
 let mlnToken;
 let pricefeed;
 let maliciousToken;
+let deployed;
 
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -34,12 +32,12 @@ const sellQuantity = 1000;
 const buyQuantity = 1000;
 
 test.before(async () => {
-  await deployEnvironment(environment);
-  accounts = await deployedUtils.accounts;
+  deployed = await deployEnvironment(environment);
+  accounts = await api.eth.accounts();
   [deployer, manager, investor] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
-  version = await deployedUtils.version;
-  mlnToken = await deployedUtils.mlnToken;
+  version = await deployed.Version;
+  mlnToken = await deployed.MlnToken;
   maliciousToken = await deployContract("testing/MaliciousToken", {from: deployer});
 
   // give investor some MLN to use
@@ -49,7 +47,7 @@ test.before(async () => {
   );
 
   // get market
-  exchange = await retrieveContract("exchange/thirdparty/SimpleMarket", addresses.SimpleMarket);
+  exchange = await retrieveContract("exchange/thirdparty/SimpleMarket", deployed.SimpleMarket.address);
 
   // deploy pricefeed
   pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
@@ -80,14 +78,14 @@ test.before(async () => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       "Fund with malicious token",  // name
-      addresses.MlnToken,           // base asset
+      deployed.MlnToken.address,           // base asset
       config.protocol.fund.managementReward,
       config.protocol.fund.performanceReward,
-      addresses.NoCompliance,
-      addresses.RMMakeOrders,
+      deployed.NoCompliance.address,
+      deployed.RMMakeOrders.address,
       pricefeed.address,
-      [addresses.SimpleMarket],
-      [addresses.SimpleAdapter],
+      [deployed.SimpleMarket.address],
+      [deployed.SimpleAdapter.address],
       v,
       r,
       s,

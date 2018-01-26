@@ -1,17 +1,18 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import { participation as compliance } from "../../../utils/lib/utils";
 
 const environment = "development";
 
 // hoisted variables
 let accounts;
 let investor;
+let compliance;
 
 test.before(async () => {
   // TODO: do we need to re-deploy everything here? maybe just the compliance module
-  await deployEnvironment(environment);
+  const deployed = await deployEnvironment(environment);
+  compliance = deployed.NoCompliance;
   accounts = await api.eth.accounts();
   [investor] = accounts;
 });

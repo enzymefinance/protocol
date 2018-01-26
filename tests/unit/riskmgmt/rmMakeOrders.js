@@ -1,7 +1,6 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import {riskMgmt} from "../../../utils/lib/utils";
 
 const environment = "development";
 
@@ -10,11 +9,13 @@ let accounts;
 let mockAddress;
 let riskLevel;
 let referencePrice;
+let riskMgmt;
 
 test.before(async () => {
-  await deployEnvironment(environment);
+  const deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [mockAddress] = accounts;
+  riskMgmt = deployed.RMMakeOrders;
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);
   referencePrice = 100;
 });

@@ -2,7 +2,6 @@ import test from "ava";
 import api from "../../../utils/lib/api";
 import {deployContract} from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import * as deployed from "../../../utils/lib/utils";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 
@@ -15,6 +14,7 @@ let ethToken;
 let mlnToken;
 let accounts;
 let opts;
+let deployed;
 
 // mock data
 const mockIpfs = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
@@ -58,12 +58,12 @@ function registerEth(pricefeed) {
 // hooks
 
 test.before(async () => {
-  await deployEnvironment(environment);
+  deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   opts = { from: accounts[0], gas: config.gas };
-  ethToken = await deployed.ethToken;
-  eurToken = await deployed.eurToken;
-  mlnToken = await deployed.mlnToken;
+  ethToken = await deployed.EthToken;
+  eurToken = await deployed.EurToken;
+  mlnToken = await deployed.MlnToken;
 });
 
 test.beforeEach(async t => {

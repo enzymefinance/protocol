@@ -2,14 +2,12 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
-import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import updatePriceFeed from "../../utils/lib/utils";
 
-const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
-const addresses = addressBook[environment];
 const config = environmentConfig[environment];
 
 // hoisted variables
@@ -33,6 +31,7 @@ let trade3;
 let trade4;
 let version;
 let worker;
+let deployed;
 
 // mock data
 const offeredValue = 10 ** 10;
@@ -40,6 +39,7 @@ const wantedShares = 10 ** 10;
 const numberofExchanges = 2;
 
 // helper functions
+// TODO: use the util function in another module for getting balances
 async function getAllBalances() {
   return {
     investor: {
@@ -75,21 +75,20 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
-  await deployEnvironment(environment);
-  accounts = await deployedUtils.accounts;
+  deployed = await deployEnvironment(environment);
+  accounts = await api.eth.accounts();
   gasPrice = Number(await api.eth.gasPrice());
   [deployer, manager, investor, worker] = accounts;
-  version = await deployedUtils.version;
-  pricefeed = await deployedUtils.datafeed;
-  mlnToken = await deployedUtils.mlnToken;
-  ethToken = await deployedUtils.ethToken;
-  SimpleMarket1 = await deployedUtils.simpleMarket;
+  version = await deployed.Version;
+  pricefeed = await deployed.PriceFeed;
+  mlnToken = await deployed.MlnToken;
+  ethToken = await deployed.EthToken;
+  SimpleMarket1 = await deployed.SimpleMarket;
   SimpleMarket2 = await deployContract("exchange/thirdparty/SimpleMarket",
-    {from: manager, gas: config.gas, gasPrice: config.gasPrice}
+    {from: manager, gas: config.gas, gasPrice: config.gasPrice} // TODO: remove unnecessary params
   );
   exchanges = [SimpleMarket1, SimpleMarket2];
-  const hash =
-    "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
+  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(manager, hash);
   sig = sig.substr(2, sig.length);
   const r = `0x${sig.substr(0, 64)}`;
@@ -99,14 +98,14 @@ test.before(async () => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       "Test fund", // name
-      addresses.MlnToken, // reference asset
+      deployed.MlnToken.address, // reference asset
       config.protocol.fund.managementReward,
       config.protocol.fund.performanceReward,
-      addresses.NoCompliance,
-      addresses.RMMakeOrders,
-      addresses.PriceFeed,
-      [addresses.SimpleMarket, SimpleMarket2.address],
-      [addresses.SimpleAdapter, addresses.SimpleAdapter],
+      deployed.NoCompliance.address,
+      deployed.RMMakeOrders.address,
+      deployed.PriceFeed.address,
+      [deployed.SimpleMarket.address, SimpleMarket2.address],
+      [deployed.SimpleAdapter.address, deployed.SimpleAdapter.address],
       v,
       r,
       s,
@@ -119,7 +118,7 @@ test.before(async () => {
 test.beforeEach(async () => {
   runningGasTotal = new BigNumber(0);
 
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
 
   const [, referencePrice] = await pricefeed.instance.getReferencePrice.call(
     {},
@@ -213,8 +212,8 @@ exchangeIndexes.forEach((i) => {
       );
       gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
-      await updateDatafeed();
-      await updateDatafeed();
+      await updatePriceFeed(deployed);
+      await updatePriceFeed(deployed);
       const sharePrice = await fund.instance.calcSharePrice.call({}, []);
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       receipt = await fund.instance.executeRequest.postTransaction(
@@ -257,7 +256,7 @@ exchangeIndexes.forEach((i) => {
       const exchangePreEthToken = Number(
         await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
       );
-      await updateDatafeed();
+      await updatePriceFeed(deployed);
       receipt = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
@@ -674,8 +673,8 @@ redemptions.forEach((redemption, index) => {
     );
     let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
     investorGasTotal = investorGasTotal.plus(gasUsed);
-    await updateDatafeed();
-    await updateDatafeed();
+    await updatePriceFeed(deployed);
+    await updatePriceFeed(deployed);
     const requestId = await fund.instance.getLastRequestId.call({}, []);
     receipt = await fund.instance.executeRequest.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -755,15 +754,15 @@ test.serial(`Allows subscription in native asset`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
   receipt = await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [giveQuantity, wantedShareQuantity, true],
   );
   gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updateDatafeed();
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
+  await updatePriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   receipt = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -796,7 +795,7 @@ test.serial(`Allows redemption in native asset`, async t => {
   const investorPreShares = Number(
     await fund.instance.balanceOf.call({}, [investor])
   );
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const [, invertedNativeAssetPrice, nativeAssetDecimal] = await pricefeed.instance.getInvertedPrice.call(
     {},
@@ -818,8 +817,8 @@ test.serial(`Allows redemption in native asset`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updateDatafeed();
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
+  await updatePriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   receipt = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -861,8 +860,8 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updateDatafeed();
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
+  await updatePriceFeed(deployed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const wantedValue = Number(
     redemptionAmount
@@ -919,7 +918,7 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
 
 // Rewards
 test.serial("converts rewards and manager receives them", async t => {
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
   const pre = await getAllBalances();
   const preManagerShares = Number(
     await fund.instance.balanceOf.call({}, [manager]),

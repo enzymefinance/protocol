@@ -1,4 +1,4 @@
-import Api from "@parity/api";
+import api from "./api";
 
 const fs = require("fs");
 const rp = require("request-promise");
@@ -9,8 +9,6 @@ const environmentConfig = require("../config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 const apiPath = "https://min-api.cryptocompare.com/data/price";
 const addresses = addressBook[environment];
 
@@ -76,11 +74,7 @@ async function requestWithRetries(options, maxRetries) {
   }
 }
 
-function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export default async function updateDatafeed () {
+export default async function updatePriceFeed (instances) {
   const fromSymbol = 'MLN';
   const toSymbols = ['ETH', 'EUR', 'MLN'];
   const options = {
@@ -102,10 +96,9 @@ export default async function updateDatafeed () {
   const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - mlnDecimals)).times(10 ** ethDecimals);
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
-  await timeout(3000);
-  await datafeed.instance.update.postTransaction(
+  await instances.PriceFeed.instance.update.postTransaction(
     { from: (await accounts)[0], gas: config.gas, gasPrice: config.gasPrice },
-    [[ethToken.address, eurToken.address, mlnToken.address],
+    [[instances.EthToken.address, instances.EurToken.address, instances.MlnToken.address],
     [convertedEth, convertedEur, convertedMln]]
   );
 }

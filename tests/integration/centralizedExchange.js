@@ -2,14 +2,12 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
-import updateDatafeed, * as deployedUtils from "../../utils/lib/utils";
+import updatePriceFeed from "../../utils/lib/utils";
 
-const addressBook = require("../../addressBook.json");
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
-const addresses = addressBook[environment];
 const config = environmentConfig[environment];
 
 // hoisted variables
@@ -26,12 +24,14 @@ let exchangeOwner;
 let trade1;
 let version;
 let worker;
+let deployed;
 
 // mock data
 const offeredValue = 10 ** 10;
 const wantedShares = 10 ** 10;
 
 // helper functions
+// TODO: use imported function to get balances
 async function getAllBalances() {
   return {
     investor: {
@@ -72,18 +72,17 @@ async function getAllBalances() {
 }
 
 test.before(async () => {
-  await deployEnvironment(environment);
-  accounts = await deployedUtils.accounts;
+  deployed = await deployEnvironment(environment);
+  accounts = await api.eth.accounts();
   [deployer, manager, investor, worker, exchangeOwner] = accounts;
-  version = await deployedUtils.version;
-  pricefeed = await deployedUtils.datafeed;
-  mlnToken = await deployedUtils.mlnToken;
-  ethToken = await deployedUtils.ethToken;
+  version = await deployed.Version;
+  pricefeed = await deployed.PriceFeed;
+  mlnToken = await deployed.MlnToken;
+  ethToken = await deployed.EthToken;
   centralizedExchange = await deployContract("exchange/thirdparty/CentralizedExchangeInterface",
-    {from: deployer, gas: config.gas, gasPrice: config.gasPrice}
+    {from: deployer, gas: config.gas, gasPrice: config.gasPrice} // TODO: are all these params necessary?
   );
-  const hash =
-    "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
+  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(manager, hash);
   sig = sig.substr(2, sig.length);
   const r = `0x${sig.substr(0, 64)}`;
@@ -92,15 +91,15 @@ test.before(async () => {
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
-      "Suisse Fund", // name
-      addresses.MlnToken, // base asset
+      "Suisse Fund",
+      deployed.MlnToken.address, // base asset
       config.protocol.fund.managementReward,
       config.protocol.fund.performanceReward,
-      addresses.NoCompliance,
-      addresses.RMMakeOrders,
-      addresses.PriceFeed,
+      deployed.NoCompliance.address,
+      deployed.RMMakeOrders.address,
+      deployed.PriceFeed.address,
       [centralizedExchange.address],
-      [addresses.centralizedAdapter],
+      [deployed.CentralizedAdapter.address],
       v,
       r,
       s,
@@ -112,7 +111,7 @@ test.before(async () => {
 
 test.beforeEach(async () => {
 
-  await updateDatafeed();
+  await updatePriceFeed(deployed);
 
   const [, referencePrice] = await pricefeed.instance.getReferencePrice.call(
     {},
@@ -176,8 +175,8 @@ test.serial(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
       [offeredValue, wantedShares, false],
     );
-    await updateDatafeed();
-    await updateDatafeed();
+    await updatePriceFeed(deployed);
+    await updatePriceFeed(deployed);
     const requestId = await fund.instance.getLastRequestId.call({}, []);
     await fund.instance.executeRequest.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -204,7 +203,7 @@ test.serial(
 test.serial("Manager makes an order through centralized exchange adapter",
   async t => {
     const pre = await getAllBalances();
-    await updateDatafeed();
+    await updatePriceFeed(deployed);
     await fund.instance.makeOrder.postTransaction(
       { from: manager, gas: config.gas, gasPrice: config.gasPrice },
       [
@@ -266,7 +265,7 @@ test.serial("Manager settles an order on the exchange interface",
 
 test.serial("Manager cancels an order from the fund",
   async t => {
-    await updateDatafeed();
+    await updatePriceFeed(deployed);
     await fund.instance.makeOrder.postTransaction(
       { from: manager, gas: config.gas, gasPrice: config.gasPrice },
       [
