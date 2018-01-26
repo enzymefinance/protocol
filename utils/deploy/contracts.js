@@ -98,7 +98,7 @@ async function deployEnvironment(environment) {
       SimpleAdapter: SimpleAdapter.address,
       centralizedAdapter: centralizedAdapter.address,
       Version: version.address,
-      Ranking: ranking.address
+      FundRanking: ranking.address
     };
   } else if (environment === "live") {
     const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
@@ -195,6 +195,7 @@ async function deployEnvironment(environment) {
     const SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     const centralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     const version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, governance.address, ethToken.address], () => {}, true);
+    const ranking = await deployContract("FundRanking", opts, [version.address]);
 
     // add Version to Governance tracking
     await governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [version.address]);
@@ -250,6 +251,7 @@ async function deployEnvironment(environment) {
       MlnToken: mlnToken.address,
       EurToken: eurToken.address,
       EthToken: ethToken.address,
+      FundRanking: ranking.address
     };
   }
 

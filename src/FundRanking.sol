@@ -9,6 +9,9 @@ import "./version/Version.sol";
 contract FundRanking {
 
     Version public version;
+    address[] fundAddrs;
+    uint[] sharePrices;
+    uint[] creationTimes;
 
     /// @dev Instantiate according to a specific Melon protocol version
     /// @param ofVersion Address of Melon protocol version contract
@@ -26,22 +29,21 @@ contract FundRanking {
     }
     */
     function getAddressAndSharePriceOfFunds()
-        constant
-        returns(
-            address[] fundAddrs,
-            uint[] sharePrices,
-            uint[] creationTimes
-        )
-    {
+        view
+        returns(address[], uint[], uint[]){
+        // remove old
+        delete fundAddrs;
+        delete sharePrices;
+        delete creationTimes;
         uint lastId = version.getLastFundId();
         for (uint i = 0; i <= lastId; i++) {
             address fundAddress = version.getFundById(i);
             Fund fund = Fund(fundAddress);
             uint sharePrice = fund.calcSharePrice();
             uint creationTime = fund.getCreationTime();
-            fundAddrs[i] = fundAddress;
-            sharePrices[i] = sharePrice;
-            creationTimes[i] = creationTime;
+            fundAddrs.push(fundAddress);
+            sharePrices.push(sharePrice);
+            creationTimes.push(creationTime);
         }
         return (fundAddrs, sharePrices, creationTimes);
     }
