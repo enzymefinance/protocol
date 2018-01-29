@@ -653,16 +653,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
-    /// @notice allows manager to recover tokens sent to the Fund
-    /// @param ofAsset Address of the token
-    /// @param toAddress Address to send the tokens to
-    /// @param amount Amount of the token to send
-    function recoverToken(address ofAsset, address toAddress, uint amount)
-        pre_cond(isOwner())
-    {
-        require(AssetInterface(ofAsset).transfer(toAddress, amount));
-    }
-
     // PUBLIC : REDEEMING
 
     /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
