@@ -15,21 +15,21 @@ interface AssetInterface {
      */
 
     // Events
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    event Transfer(address indexed _from, address indexed _to, uint _value);
+    event Approval(address indexed _owner, address indexed _spender, uint _value);
 
     // There is no ERC223 compatible Transfer event, with `_data` included.
 
     //ERC 223
     // PUBLIC METHODS
-    function transfer(address _to, uint256 _value, bytes _data) public returns (bool success);
+    function transfer(address _to, uint _value, bytes _data) public returns (bool success);
 
     // ERC 20
     // PUBLIC METHODS
-    function transfer(address _to, uint256 _value) public returns (bool success);
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
-    function approve(address _spender, uint256 _value) public returns (bool success);
+    function transfer(address _to, uint _value) public returns (bool success);
+    function transferFrom(address _from, address _to, uint _value) public returns (bool success);
+    function approve(address _spender, uint _value) public returns (bool success);
     // PUBLIC VIEW METHODS
-    function balanceOf(address _owner) view public returns (uint256 balance);
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining);
+    function balanceOf(address _owner) view public returns (uint balance);
+    function allowance(address _owner, address _spender) public view returns (uint remaining);
 }

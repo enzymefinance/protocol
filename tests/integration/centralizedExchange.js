@@ -200,36 +200,35 @@ test.serial(
   },
 );
 
-test.serial("Manager makes an order through centralized exchange adapter",
-  async t => {
-    const pre = await getAllBalances();
-    await updatePriceFeed(deployed);
-    await fund.instance.makeOrder.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-      [
-        0,
-        mlnToken.address,
-        ethToken.address,
-        trade1.sellQuantity,
-        trade1.buyQuantity,
-      ],
-    );
-    const post = await getAllBalances();
-    const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
+test.serial("Manager makes an order through centralized exchange adapter", async t => {
+  const pre = await getAllBalances();
+  await updatePriceFeed(deployed);
+  await fund.instance.makeOrder.postTransaction(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    [
+      0,
+      mlnToken.address,
+      ethToken.address,
+      trade1.sellQuantity,
+      trade1.buyQuantity,
+    ],
+  );
+  
+  const post = await getAllBalances();
+  const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
 
-    t.is(Number(heldinExchange), trade1.sellQuantity);
-    t.deepEqual(post.exchangeOwner.mlnToken, pre.exchangeOwner.mlnToken  + trade1.sellQuantity);
-    t.deepEqual(post.exchangeOwner.ethToken, pre.exchangeOwner.ethToken);
-    t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
-    t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
-    t.deepEqual(post.investor.ether, pre.investor.ether);
-    t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
-    t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
-    t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - trade1.sellQuantity);
-    t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
-    t.deepEqual(post.fund.ether, pre.fund.ether);
-  },
-);
+  t.is(Number(heldinExchange), trade1.sellQuantity);
+  t.deepEqual(post.exchangeOwner.mlnToken, pre.exchangeOwner.mlnToken  + trade1.sellQuantity);
+  t.deepEqual(post.exchangeOwner.ethToken, pre.exchangeOwner.ethToken);
+  t.deepEqual(post.investor.mlnToken, pre.investor.mlnToken);
+  t.deepEqual(post.investor.ethToken, pre.investor.ethToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.ethToken, pre.manager.ethToken);
+  t.deepEqual(post.manager.mlnToken, pre.manager.mlnToken);
+  t.deepEqual(post.fund.mlnToken, pre.fund.mlnToken - trade1.sellQuantity);
+  t.deepEqual(post.fund.ethToken, pre.fund.ethToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
 
 test.serial("Manager settles an order on the exchange interface",
   async t => {

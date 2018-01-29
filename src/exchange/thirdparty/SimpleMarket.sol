@@ -159,7 +159,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-        assert( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
+        assert( offer.buy_gem.transferFrom(msg.sender, this, spend) );
+        assert( offer.buy_gem.transfer(offer.owner, spend) );
         assert( offer.pay_gem.transfer(msg.sender, quantity) );
 
         LogItemUpdate(id);
@@ -269,5 +270,9 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     function _next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
+    }
+
+    function tokenFallback(address ofSender, uint tokenAmount, bytes metadata) {
+        return;
     }
 }

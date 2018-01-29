@@ -653,7 +653,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
     }
 
-    /// @notice allows manager to recover tokens sent the Fund
+    /// @notice allows manager to recover tokens sent to the Fund
     /// @param ofAsset Address of the token
     /// @param toAddress Address to send the tokens to
     /// @param amount Amount of the token to send
