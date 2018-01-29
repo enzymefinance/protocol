@@ -22,6 +22,8 @@ This document can be seen as an "extension" of the [official Solidity style guid
 
 This means that rules from the official guide are inherited, and may be overriden if necessary.
 
+Should there no explicitly mentioned rule please follow the _[GOLDEN RULE](https://github.com/ethereum/cpp-ethereum/blob/b6218fc1da39994043f1c43185bb24e364382d84/CodingStandards.txt#L3): Follow the style of the existing code when you make changes._
+
 #### General tips
 
 - if you use a piece of code more than once, consider making it into a function
