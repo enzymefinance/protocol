@@ -53,9 +53,9 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.validity,
     ]);
 
-    // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-    deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
-    console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
+    deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    // deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
+    // console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
 
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
