@@ -474,7 +474,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         bytes metadata
     ) {
         if (msg.sender != address(this)) {
-            return; // when ERC223 asset is not Shares, just receive it and do nothing
+            // when ofSender is a recognized exchange, receive tokens, otherwise revert
+            for (uint i; i < module.exchanges.length; i++) {
+                if (module.exchanges[i] == ofSender) return; // receive tokens and do nothing
+            }
+            revert();
         } else {    // otherwise, make a redemption request
             requests.push(Request({
                 participant: ofSender,
