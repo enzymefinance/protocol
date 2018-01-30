@@ -1,7 +1,7 @@
 module.exports = {
   kovan: [
     {
-      address: 'D99aED09A65ee8377A2fFad8ED5407785c530869',
+      address: 'ac1D6F9cA9be3938a18980e867624C4E02a42815',
       name: 'Aragon Network Token',
       symbol: 'ANT-T',
       decimals: 18,
@@ -9,7 +9,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '20A0E0dECE9FB6C690CdB439db2B385d271BdA3f',
+      address: 'f9e0954A2fCf32bF8dFDAC8eE9e2975D16287b1F',
       name: 'AventCoin',
       symbol: 'AVT-T',
       decimals: 18,
@@ -17,7 +17,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '764ae227ad6a6e143546772169265d76aA9337c6',
+      address: '70f09E5041b0BA02B6C5f264C5D94856492ff3a2',
       name: 'Bancor Network Token',
       symbol: 'BNT-T',
       decimals: 18,
@@ -25,7 +25,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'FEE1D0Dc0b5b6F2F20D8e9f7E95e9E367E4a61A7',
+      address: 'A159BAA1Dda6b1692aEeE0723916969f414e346E',
       name: 'Basic Attention Token',
       symbol: 'BAT-T',
       decimals: 18,
@@ -33,7 +33,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'F53E3B6c12f8c66324A64F31277260C06D869732',
+      address: '895A397a4525B63Ac78F4Fff372E54B94c7d0C45',
       name: 'Bitcoin Token',
       symbol: 'BTC-T',
       decimals: 8,
@@ -41,7 +41,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '3b7c7C457D3aAe04a4631E4888AeEEDd08B24e41',
+      address: '3E0fc586fe688018B12813afd70530787E36789A',
       name: 'Digix Dao Token',
       symbol: 'DGD-T',
       decimals: 9,
@@ -49,7 +49,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '804b7F797eEe4D51Fef29b3Ef7E525A3848A0c0F',
+      address: 'F471529367AbEDfab4D6460b5631B6fB3c477623',
       name: 'Digix Gold Token',
       symbol: 'DGX-T',
       decimals: 9,
@@ -57,7 +57,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'C37cdFb70BD68f6FCF2aB0a97E1D6a12eaA9215f',
+      address: 'Fa010b395cEB70411102111f423d098df429d00c',
       name: 'Dogecoin Token',
       symbol: 'DOGE-T',
       decimals: 8,
@@ -65,7 +65,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '334559E91238f466C95Bb8241555f6AD27f5978B',
+      address: '64A31bf2495fb6cD678428A4F08D46837a000984',
       name: 'Ether Classic Token',
       symbol: 'ETC-T',
       decimals: 18,
@@ -73,7 +73,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '1a825E9bF3BdC8ef8B975F97c78b5208a947d0EC',
+      address: 'e532dc18c08C1139bE86eF27440B6433636054b7',
       name: 'Ether Token',
       symbol: 'ETH-T',
       decimals: 18,
@@ -81,7 +81,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'CAAC95AB4D30EE8D6162e55EB3430134FEc5aF50',
+      address: '9bd23cdf60e8B2CB61593E60Be1C185C8924B374',
       name: 'Euro Token',
       symbol: 'EUR-T',
       decimals: 8,
@@ -89,7 +89,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'C73D78870bA5a3eAddC2BE371Af09B2c429CB2CA',
+      address: '5fa0fc27F6Babb6209856d56C72Efa9b470FFbc9',
       name: 'Gnosis Token',
       symbol: 'GNO-T',
       decimals: 18,
@@ -97,7 +97,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '08C24283F0b6C07ff9793a1B8534A49B32C07e73',
+      address: '4Ca83C47Bc3888e9338f16d791Dde0C667611a0C',
       name: 'Golem Network Token',
       symbol: 'GNT-T',
       decimals: 18,
@@ -105,7 +105,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'c87BAD39aaDB70257E2417Bd8f4983361599394D',
+      address: 'B9Ec128BB1fa8fE01e4D5Fbd3D4147171a5f37E2',
       name: 'Iconomi Token',
       symbol: 'ICN-T',
       decimals: 18,
@@ -113,7 +113,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'F051264ab9046fd73cBd00df5E732d2cA78ee704',
+      address: '6C7fC824B2d35FDB338C7f8E393b16e414D38d89',
       name: 'Litecoin Token',
       symbol: 'LTC-T',
       decimals: 8,
@@ -121,7 +121,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '2a20ff70596e431ab26C2365acab1b988DA8eCCF',
+      address: '20Fb8bb39E62b4De5a6e3f44FF361c83AaAF709D',
       name: 'Melon Token',
       symbol: 'MLN-T',
       decimals: 18,
@@ -129,7 +129,7 @@ module.exports = {
       ipfsHash: 'http://melon.fund/',
     },
     {
-      address: 'e1b25BCaE898ab228A13EAC49EBBA8D3df9add70',
+      address: 'eaA93D56b3C8CA6F00AefdeD67A162d168AB063E',
       name: 'MakerDAO Token',
       symbol: 'MKR-T',
       decimals: 18,
@@ -137,7 +137,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '64aF87A36a407732320c4dc1852dEBC60cd81c5E',
+      address: 'd96Fb228635DFe820A0A893E3fb9Ae1C5509cb14',
       name: 'Rep Token',
       symbol: 'REP-T',
       decimals: 18,
@@ -145,7 +145,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '3b43249De8Eee169Eea7226a48699FcBA8DF3686',
+      address: 'A96dF1c41B712800a2EdB8D3B3a30323212f3896',
       name: 'Ripple Token',
       symbol: 'XRP-T',
       decimals: 6,
@@ -153,7 +153,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '4C4e2b285e446fb1974dcC3a665CAba7C189A96f',
+      address: '8Baf3752856D703EB772bB8d765f64724c160c9B',
       name: 'SingularDTV Token',
       symbol: 'SNGLS-T',
       decimals: 0,
@@ -161,7 +161,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '64C4406C58C512f326d83065a72F12884105520b',
+      address: 'B68584a15d711374665d4317e0AA440Ca12943e3',
       name: 'Status Network Token',
       symbol: 'SNT-T',
       decimals: 18,
@@ -169,7 +169,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'bb0449e9b66e2E1438522645caE6Cf9CD8595793',
+      address: '574F1CF53fE52787CCC4245feC40a5dB7C353787',
       name: ' Protocol Token',
       symbol: 'ZRX-T',
       decimals: 18,

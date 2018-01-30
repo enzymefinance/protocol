@@ -62,8 +62,8 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.governance.address, ethTokenAddress], () => {}, true);
-    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.version.address]);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
 
     // add Version to Governance tracking
     await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
@@ -76,7 +76,7 @@ async function deployEnvironment(environment) {
         console.log(`Registering ${assetSymbol}`);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
-          .postTransaction(opts, [
+          .postTransaction({from: accounts[0]}, [
             `0x${tokenEntry.address}`,
             tokenEntry.name,
             tokenEntry.symbol,
