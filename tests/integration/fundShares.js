@@ -138,6 +138,19 @@ test.serial('investor receives initial mlnToken for testing', async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
+// TODO: this one may be more suitable to a unit test
+test.serial('direct transfer of a token to the Fund is rejected', async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  await mlnToken.instance.transfer.postTransaction(
+    { from: investor, gasPrice: config.gasPrice },
+    [fund.address, 1000, ""]
+  );
+  const post = await getAllBalances(deployed, accounts, fund);
+
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
+});
+
 // subscription
 // TODO: reduce code duplication between this and subsequent tests
 // split first and subsequent tests due to differing behaviour
