@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
-import {deployContract, retrieveContract} from "../lib/contracts";
+import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 
 const addressBookFile = "./addressBook.json";

@@ -2,7 +2,7 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
-import updatePriceFeed from "../../utils/lib/utils";
+import updatePriceFeed from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");

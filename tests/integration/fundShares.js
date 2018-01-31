@@ -3,7 +3,8 @@ import api from "../../utils/lib/api";
 import {retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import updatePriceFeed, {getSignatureParameters} from "../../utils/lib/utils";
+import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import updatePriceFeed from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
