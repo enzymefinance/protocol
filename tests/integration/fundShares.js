@@ -3,7 +3,7 @@ import api from "../../utils/lib/api";
 import {retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import updatePriceFeed from "../../utils/lib/utils";
+import updatePriceFeed, {getSignatureParameters} from "../../utils/lib/utils";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -43,16 +43,10 @@ test.beforeEach(() => {
 
 // Setup
 // For unique fundName on each test run
-const fundName = `Melon Portfolio ${Math.floor(Math.random() * 1000000) + 1}`;
+const fundName = 'MelonPortfolio';
 test.serial('can set up new fund', async t => {
   const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
-  const hash =
-    "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-  let sig = await api.eth.sign(manager, hash);
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
+  const [r, s, v] = await getSignatureParameters(manager);
   receipt = await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -149,6 +143,37 @@ test.serial('direct transfer of a token to the Fund is rejected', async t => {
 
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
+});
+
+// TODO: this one may be more suitable to a unit test
+test.serial('a new fund with a name used before cannot be created', async t => {
+  const [r, s, v] = await getSignatureParameters(deployer);
+  const preFundId = await version.instance.getLastFundId.call({}, []);
+  receipt = await version.instance.setupFund.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [
+      fundName, // same name as before
+      mlnToken.address, // base asset
+      config.protocol.fund.managementReward,
+      config.protocol.fund.performanceReward,
+      deployed.NoCompliance.address,
+      deployed.RMMakeOrders.address,
+      deployed.PriceFeed.address,
+      [deployed.SimpleMarket.address],
+      [deployed.SimpleAdapter.address],
+      v,
+      r,
+      s
+    ]
+  );
+  await version._pollTransactionReceipt(receipt);
+  const fundNameTaken = await version.instance.fundNameTaken.call({}, [fundName]);
+  const newFundAddress = await version.instance.getFundByManager.call({}, [deployer]);
+  const postFundId = await version.instance.getLastFundId.call({}, []);
+
+  t.true(fundNameTaken);
+  t.is(Number(preFundId), Number(postFundId));
+  t.is(newFundAddress, '0x0000000000000000000000000000000000000000');
 });
 
 // subscription
