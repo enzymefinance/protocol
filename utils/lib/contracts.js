@@ -13,7 +13,7 @@ const outpath = path.join(__dirname, '..', '..', 'out');
  * @returns {Object} - Instance of the deployed contract
  */
 async function deployContract(contractPath, optsIn = {}, constructorArgs = [], ...rest) {
-  const options = optsIn;
+  const options = Object.assign({}, optsIn); // clone object value instead of reference
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
   const bytecode = `0x${fs.readFileSync(`${filepath}.bin`, 'utf8')}`;
