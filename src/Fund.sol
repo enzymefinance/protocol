@@ -29,9 +29,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     struct Calculations { // List of internal calculations
         uint gav; // Gross asset value
-        uint managementReward; // Time based reward
-        uint performanceReward; // Performance based reward measured against QUOTE_ASSET
-        uint unclaimedRewards; // Rewards not yet allocated to the fund manager
+        uint managementFee; // Time based fee
+        uint performanceFee; // Performance based fee measured against QUOTE_ASSET
+        uint unclaimedFees; // Fees not yet allocated to the fund manager
         uint nav; // Net asset value
         uint highWaterMark; // A record of best all-time fund performance
         uint totalSupply; // Total supply of shares
@@ -71,15 +71,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     // Constant fields
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
-    uint public MANAGEMENT_REWARD_RATE; // Reward rate in QUOTE_ASSET per delta improvement
-    uint public PERFORMANCE_REWARD_RATE; // Reward rate in QUOTE_ASSET per managed seconds
+    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement
+    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
-    Calculations public atLastUnclaimedRewardAllocation; // Calculation results at last allocateUnclaimedRewards() call
-    bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedRewards gets blocked
+    Calculations public atLastUnclaimedFeeAllocation; // Calculation results at last allocateUnclaimedFees() call
+    bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
     bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
@@ -96,9 +96,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
-    /// @param ofQuoteAsset Asset against which mgmt and performance reward is measured against and which can be used to invest/redeem using this single asset
-    /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
+    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest/redeem using this single asset
+    /// @param ofManagementFee A time based fee expressed, given in a number which is divided by 1 WAD
+    /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
@@ -109,8 +109,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         address ofManager,
         string withName,
         address ofQuoteAsset,
-        uint ofManagementRewardRate,
-        uint ofPerformanceRewardRate,
+        uint ofManagementFee,
+        uint ofPerformanceFee,
         address ofNativeAsset,
         address ofCompliance,
         address ofRiskMgmt,
@@ -123,10 +123,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         isSubscribeAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
-        require(ofManagementRewardRate < 10 ** 18); // Require management reward to be less than 100 percent
-        MANAGEMENT_REWARD_RATE = ofManagementRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
-        require(ofPerformanceRewardRate < 10 ** 18); // Require performance reward to be less than 100 percent
-        PERFORMANCE_REWARD_RATE = ofPerformanceRewardRate; // 1 percent is expressed as 0.01 * 10 ** 18
+        require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
+        MANAGEMENT_FEE_RATE = ofManagementFee; // 1 percent is expressed as 0.01 * 10 ** 18
+        require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
+        PERFORMANCE_FEE_RATE = ofPerformanceFee; // 1 percent is expressed as 0.01 * 10 ** 18
         VERSION = msg.sender;
         module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
@@ -140,11 +140,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         QUOTE_ASSET = Asset(ofQuoteAsset);
         NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
         require(address(QUOTE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
-        atLastUnclaimedRewardAllocation = Calculations({
+        atLastUnclaimedFeeAllocation = Calculations({
             gav: 0,
-            managementReward: 0,
-            performanceReward: 0,
-            unclaimedRewards: 0,
+            managementFee: 0,
+            performanceFee: 0,
+            unclaimedFees: 0,
             nav: 0,
             highWaterMark: 10 ** getDecimals(),
             totalSupply: totalSupply,
@@ -530,48 +530,48 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     }
 
     /**
-    @notice Calculates unclaimed rewards of the fund manager
+    @notice Calculates unclaimed fees of the fund manager
     @param gav Gross asset value in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     @return {
-      "managementReward": "A time (seconds) based reward in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
-      "performanceReward": "A performance (rise of sharePrice measured in QUOTE_ASSET) based reward in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward in QUOTE_ASSET and multiplied by 10 ** shareDecimals"
+      "managementFees": "A time (seconds) based fee in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
+      "performanceFees": "A performance (rise of sharePrice measured in QUOTE_ASSET) based fee in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
+      "unclaimedfees": "The sum of both managementfee and performancefee in QUOTE_ASSET and multiplied by 10 ** shareDecimals"
     }
     */
-    function calcUnclaimedRewards(uint gav)
+    function calcUnclaimedFees(uint gav)
         view
         returns (
-            uint managementReward,
-            uint performanceReward,
-            uint unclaimedRewards)
+            uint managementFee,
+            uint performanceFee,
+            uint unclaimedFees)
     {
-        // Management reward calculation
-        uint timePassed = sub(now, atLastUnclaimedRewardAllocation.timestamp);
+        // Management fee calculation
+        uint timePassed = sub(now, atLastUnclaimedFeeAllocation.timestamp);
         uint gavPercentage = mul(timePassed, gav) / (1 years);
-        managementReward = wmul(gavPercentage, MANAGEMENT_REWARD_RATE);
+        managementFee = wmul(gavPercentage, MANAGEMENT_FEE_RATE);
 
-        // Performance reward calculation
+        // Performance fee calculation
         // Handle potential division through zero by defining a default value
-        uint valuePerShareExclPerfRewards = totalSupply > 0 ? calcValuePerShare(sub(gav, managementReward), totalSupply) : toSmallestShareUnit(1);
-        if (valuePerShareExclPerfRewards > atLastUnclaimedRewardAllocation.highWaterMark) {
-            uint gainInSharePrice = sub(valuePerShareExclPerfRewards, atLastUnclaimedRewardAllocation.highWaterMark);
+        uint valuePerShareExclPerfFees = totalSupply > 0 ? calcValuePerShare(sub(gav, managementFee), totalSupply) : toSmallestShareUnit(1);
+        if (valuePerShareExclPerfFees > atLastUnclaimedFeeAllocation.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclPerfFees, atLastUnclaimedFeeAllocation.highWaterMark);
             uint investmentProfits = wmul(gainInSharePrice, totalSupply);
-            performanceReward = wmul(investmentProfits, PERFORMANCE_REWARD_RATE);
+            performanceFee = wmul(investmentProfits, PERFORMANCE_FEE_RATE);
         }
 
-        // Sum of all rewards
-        unclaimedRewards = add(managementReward, performanceReward);
+        // Sum of all FEE
+        unclaimedFees = add(managementFee, performanceFee);
     }
 
     /// @notice Calculates the Net asset value of this fund
     /// @param gav Gross asset value of this fund in QUOTE_ASSET and multiplied by 10 ** shareDecimals
-    /// @param unclaimedRewards The sum of both managementReward and performanceReward in QUOTE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param unclaimedFees The sum of both managementFee and performanceFee in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     /// @return nav Net asset value in QUOTE_ASSET and multiplied by 10 ** shareDecimals
-    function calcNav(uint gav, uint unclaimedRewards)
+    function calcNav(uint gav, uint unclaimedFees)
         view
         returns (uint nav)
     {
-        nav = sub(gav, unclaimedRewards);
+        nav = sub(gav, unclaimedFees);
     }
 
     /// @notice Calculates the share price of the fund
@@ -592,10 +592,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     @notice Calculates essential fund metrics
     @return {
       "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
-      "managementReward": "A time (seconds) based reward",
-      "performanceReward": "A performance (rise of sharePrice measured in QUOTE_ASSET) based reward",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]",
-      "rewardsShareQuantity": "The number of shares to be given as rewards to the manager",
+      "managementFee": "A time (seconds) based fee",
+      "performanceFee": "A performance (rise of sharePrice measured in QUOTE_ASSET) based fee",
+      "unclaimedFees": "The sum of both managementFee and performanceFee denominated in [base unit of melonAsset]",
+      "feesShareQuantity": "The number of shares to be given as fees to the manager",
       "nav": "Net asset value denominated in [base unit of melonAsset]",
       "sharePrice": "Share price denominated in [base unit of melonAsset]"
     }
@@ -604,57 +604,57 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         view
         returns (
             uint gav,
-            uint managementReward,
-            uint performanceReward,
-            uint unclaimedRewards,
-            uint rewardsShareQuantity,
+            uint managementFee,
+            uint performanceFee,
+            uint unclaimedFees,
+            uint feesShareQuantity,
             uint nav,
             uint sharePrice
         )
     {
         gav = calcGav(); // Reflects value independent of fees
-        (managementReward, performanceReward, unclaimedRewards) = calcUnclaimedRewards(gav);
-        nav = calcNav(gav, unclaimedRewards);
+        (managementFee, performanceFee, unclaimedFees) = calcUnclaimedFees(gav);
+        nav = calcNav(gav, unclaimedFees);
 
-        // The value of unclaimedRewards measured in shares of this fund at current value
-        rewardsShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedRewards) / gav;
-        // The total share supply including the value of unclaimedRewards, measured in shares of this fund
-        uint totalSupplyAccountingForRewards = add(totalSupply, rewardsShareQuantity);
-        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForRewards) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+        // The value of unclaimedFees measured in shares of this fund at current value
+        feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
+        // The total share supply including the value of unclaimedFees, measured in shares of this fund
+        uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
+        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
     /// @dev Only Owner
-    function allocateUnclaimedRewards()
+    function allocateUnclaimedFees()
         pre_cond(isOwner())
     {
         var (
             gav,
-            managementReward,
-            performanceReward,
-            unclaimedRewards,
-            rewardsShareQuantity,
+            managementFee,
+            performanceFee,
+            unclaimedFees,
+            feesShareQuantity,
             nav,
             sharePrice
         ) = performCalculations();
 
-        createShares(owner, rewardsShareQuantity); // Updates totalSupply by creating shares allocated to manager
+        createShares(owner, feesShareQuantity); // Updates totalSupply by creating shares allocated to manager
 
         // Update Calculations
-        uint updatedHighWaterMark = atLastUnclaimedRewardAllocation.highWaterMark >= sharePrice ? atLastUnclaimedRewardAllocation.highWaterMark : sharePrice;
-        atLastUnclaimedRewardAllocation = Calculations({
+        uint updatedHighWaterMark = atLastUnclaimedFeeAllocation.highWaterMark >= sharePrice ? atLastUnclaimedFeeAllocation.highWaterMark : sharePrice;
+        atLastUnclaimedFeeAllocation = Calculations({
             gav: gav,
-            managementReward: managementReward,
-            performanceReward: performanceReward,
-            unclaimedRewards: unclaimedRewards,
+            managementFee: managementFee,
+            performanceFee: performanceFee,
+            unclaimedFees: unclaimedFees,
             nav: nav,
             highWaterMark: updatedHighWaterMark,
             totalSupply: totalSupply,
             timestamp: now
         });
 
-        RewardsConverted(now, rewardsShareQuantity, unclaimedRewards);
-        CalculationUpdate(now, managementReward, performanceReward, nav, sharePrice, totalSupply);
+        FeesConverted(now, feesShareQuantity, unclaimedFees);
+        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply);
     }
 
     // PUBLIC : REDEEMING
@@ -706,7 +706,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         return true;
     }
 
-    // PUBLIC : REWARDS
+    // PUBLIC : FEES
 
     /// @dev Quantity of asset held in exchange according to associated order id
     /// @param ofAsset Address of asset

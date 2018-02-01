@@ -35,8 +35,8 @@ test("Can setup a new fund", async t => {
   const txId = await version.instance.setupFund.postTransaction(opts, [
     fundName,
     deployed.MlnToken.address, // base asset
-    config.protocol.fund.managementReward,
-    config.protocol.fund.performanceReward,
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
     deployed.NoCompliance.address,
     deployed.RMMakeOrders.address,
     deployed.PriceFeed.address,

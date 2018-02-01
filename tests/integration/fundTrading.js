@@ -99,8 +99,8 @@ test.before(async () => {
     [
       "Test fund", // name
       deployed.MlnToken.address, // reference asset
-      config.protocol.fund.managementReward,
-      config.protocol.fund.performanceReward,
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       deployed.PriceFeed.address,
@@ -916,19 +916,19 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-// Rewards
-test.serial("converts rewards and manager receives them", async t => {
+// Fees
+test.serial("converts fees and manager receives them", async t => {
   await updatePriceFeed(deployed);
   const pre = await getAllBalances();
   const preManagerShares = Number(
     await fund.instance.balanceOf.call({}, [manager]),
   );
   const totalSupply = Number(await fund.instance.totalSupply.call({}, []));
-  const [gav, , , unclaimedRewards, ,] = Object.values(
+  const [gav, , , unclaimedFees, ,] = Object.values(
     await fund.instance.performCalculations.call({}, []),
   );
-  const shareQuantity = Math.floor(totalSupply * unclaimedRewards / gav);
-  receipt = await fund.instance.allocateUnclaimedRewards.postTransaction(
+  const shareQuantity = Math.floor(totalSupply * unclaimedFees / gav);
+  receipt = await fund.instance.allocateUnclaimedFees.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [],
   );

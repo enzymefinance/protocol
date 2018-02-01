@@ -93,8 +93,8 @@ test.before(async () => {
     [
       "Suisse Fund",
       deployed.MlnToken.address, // base asset
-      config.protocol.fund.managementReward,
-      config.protocol.fund.performanceReward,
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       deployed.PriceFeed.address,
@@ -213,7 +213,7 @@ test.serial("Manager makes an order through centralized exchange adapter", async
       trade1.buyQuantity,
     ],
   );
-  
+
   const post = await getAllBalances();
   const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
 

@@ -53,8 +53,8 @@ test.serial('can set up new fund', async t => {
     [
       fundName, // name
       mlnToken.address, // base asset
-      config.protocol.fund.managementReward,
-      config.protocol.fund.performanceReward,
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       deployed.PriceFeed.address,
@@ -85,19 +85,19 @@ test.serial('initial calculations', async t => {
   await updatePriceFeed(deployed);
   const [
     gav,
-    managementReward,
-    performanceReward,
-    unclaimedRewards,
-    rewardsShareQuantity,
+    managementFee,
+    performanceFee,
+    unclaimedFees,
+    feesShareQuantity,
     nav,
     sharePrice
   ] = Object.values(await fund.instance.performCalculations.call(opts, []));
 
   t.deepEqual(Number(gav), 0);
-  t.deepEqual(Number(managementReward), 0);
-  t.deepEqual(Number(performanceReward), 0);
-  t.deepEqual(Number(unclaimedRewards), 0);
-  t.deepEqual(Number(rewardsShareQuantity), 0);
+  t.deepEqual(Number(managementFee), 0);
+  t.deepEqual(Number(performanceFee), 0);
+  t.deepEqual(Number(unclaimedFees), 0);
+  t.deepEqual(Number(feesShareQuantity), 0);
   t.deepEqual(Number(nav), 0);
   t.deepEqual(Number(sharePrice), 10 ** 18);
 });
@@ -155,8 +155,8 @@ test.serial('a new fund with a name used before cannot be created', async t => {
     [
       fundName, // same name as before
       mlnToken.address, // base asset
-      config.protocol.fund.managementReward,
-      config.protocol.fund.performanceReward,
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       deployed.PriceFeed.address,
@@ -384,28 +384,28 @@ subsequentTests.forEach((testInstance) => {
     test.serial('performs calculation correctly', async t => {
       const [
         preGav,
-        preManagementReward,
-        prePerformanceReward,
-        preUnclaimedRewards,
-        preRewardsShareQuantity,
+        preManagementFee,
+        prePerformanceFee,
+        preUnclaimedFees,
+        preFeesShareQuantity,
         preNav,
         preSharePrice
       ] = fundPreCalculations.map(element => Number(element));
       const [
         postGav,
-        postManagementReward,
-        postPerformanceReward,
-        postUnclaimedRewards,
-        postRewardsShareQuantity,
+        postManagementFee,
+        postPerformanceFee,
+        postUnclaimedFees,
+        postFeesShareQuantity,
         postNav,
         postSharePrice
       ] = Object.values(await fund.instance.performCalculations.call({}, []));
 
       t.deepEqual(Number(postGav), preGav + testInstance.offeredValue - offerRemainder);
-      t.deepEqual(Number(postManagementReward), preManagementReward);
-      t.deepEqual(Number(postPerformanceReward), prePerformanceReward);
-      t.deepEqual(Number(postUnclaimedRewards), preUnclaimedRewards);
-      t.deepEqual(Number(preRewardsShareQuantity), Number(postRewardsShareQuantity));
+      t.deepEqual(Number(postManagementFee), preManagementFee);
+      t.deepEqual(Number(postPerformanceFee), prePerformanceFee);
+      t.deepEqual(Number(postUnclaimedFees), preUnclaimedFees);
+      t.deepEqual(Number(preFeesShareQuantity), Number(postFeesShareQuantity));
       t.deepEqual(Number(postNav), preNav + testInstance.offeredValue - offerRemainder);
       t.deepEqual(Number(postSharePrice), preSharePrice);
       fundPreCalculations = [];
@@ -513,28 +513,28 @@ testArray.forEach((testInstance) => {
     test.serial('calculations are performed correctly', async t => {
       const [
         preGav,
-        preManagementReward,
-        prePerformanceReward,
-        preUnclaimedRewards,
-        preRewardsShareQuantity,
+        preManagementFee,
+        prePerformanceFee,
+        preUnclaimedFees,
+        preFeesShareQuantity,
         preNav,
         preSharePrice
       ] = fundPreCalculations.map(element => Number(element));
       const [
         postGav,
-        postManagementReward,
-        postPerformanceReward,
-        postUnclaimedRewards,
-        postRewardsShareQuantity,
+        postManagementFee,
+        postPerformanceFee,
+        postUnclaimedFees,
+        postFeesShareQuantity,
         postNav,
         postSharePrice
       ] = Object.values(await fund.instance.performCalculations.call({}, []));
 
       t.deepEqual(Number(postGav), preGav - testInstance.wantedValue);
-      t.deepEqual(Number(postManagementReward), preManagementReward);
-      t.deepEqual(Number(postPerformanceReward), prePerformanceReward);
-      t.deepEqual(Number(postUnclaimedRewards), preUnclaimedRewards);
-      t.deepEqual(Number(preRewardsShareQuantity), Number(postRewardsShareQuantity));
+      t.deepEqual(Number(postManagementFee), preManagementFee);
+      t.deepEqual(Number(postPerformanceFee), prePerformanceFee);
+      t.deepEqual(Number(postUnclaimedFees), preUnclaimedFees);
+      t.deepEqual(Number(preFeesShareQuantity), Number(postFeesShareQuantity));
       t.deepEqual(Number(postNav), preNav - testInstance.wantedValue);
       t.deepEqual(Number(postSharePrice), preSharePrice);
       fundPreCalculations = [];

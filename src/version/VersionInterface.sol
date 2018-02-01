@@ -16,8 +16,8 @@ interface VersionInterface {
     function setupFund(
         string ofFundName,
         address ofQuoteAsset,
-        uint ofManagementRewardRate,
-        uint ofPerformanceRewardRate,
+        uint ofManagementFee,
+        uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,

@@ -12,8 +12,8 @@ interface FundInterface {
     event Subscribed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
-    event RewardsConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
-    event CalculationUpdate(uint atTimestamp, uint managementReward, uint performanceReward, uint nav, uint sharePrice, uint totalSupply);
+    event FeesConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
+    event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
     event OrderUpdated(uint id);
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
@@ -38,8 +38,8 @@ interface FundInterface {
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
-    // Rewards by Manager
-    function allocateUnclaimedRewards();
+    // Fees by Manager
+    function allocateUnclaimedFees();
 
     // PUBLIC VIEW METHODS
     // Get general information
