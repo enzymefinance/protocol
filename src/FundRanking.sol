@@ -17,7 +17,7 @@ contract FundRanking {
     }
 
     /**
-    @notice Returns an array of fund addresses and an associated arrays of share prices and creation times
+    @notice Returns an array of fund addresses and associated arrays of share prices and creation times
     @dev Return value only w.r.t. specified version contract
     @return {
       "fundAddrs": "Array of addresses of Melon Funds",
