@@ -30,7 +30,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     struct Calculations { // List of internal calculations
         uint gav; // Gross asset value
         uint managementReward; // Time based reward
-        uint performanceReward; // Performance based reward measured against BASE_ASSET
+        uint performanceReward; // Performance based reward measured against QUOTE_ASSET
         uint unclaimedRewards; // Rewards not yet allocated to the fund manager
         uint nav; // Net asset value
         uint highWaterMark; // A record of best all-time fund performance
@@ -71,10 +71,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     // Constant fields
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
-    uint public MANAGEMENT_REWARD_RATE; // Reward rate in BASE_ASSET per delta improvement
-    uint public PERFORMANCE_REWARD_RATE; // Reward rate in BASE_ASSET per managed seconds
+    uint public MANAGEMENT_REWARD_RATE; // Reward rate in QUOTE_ASSET per delta improvement
+    uint public PERFORMANCE_REWARD_RATE; // Reward rate in QUOTE_ASSET per managed seconds
     address public VERSION; // Address of Version contract
-    Asset public BASE_ASSET; // Base asset as ERC20 contract
+    Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
@@ -96,9 +96,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
-    /// @param ofBaseAsset Asset against which mgmt and performance reward is measured against and which can be used to invest/redeem using this single asset
+    /// @param ofQuoteAsset Asset against which mgmt and performance reward is measured against and which can be used to invest/redeem using this single asset
     /// @param ofManagementRewardRate A time based reward expressed, given in a number which is divided by 1 WAD
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofBaseAsset, given in a number which is divided by 1 WAD
+    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
@@ -108,7 +108,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     function Fund(
         address ofManager,
         string withName,
-        address ofBaseAsset,
+        address ofQuoteAsset,
         uint ofManagementRewardRate,
         uint ofPerformanceRewardRate,
         address ofNativeAsset,
@@ -136,10 +136,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             module.exchanges.push(ofExchanges[i]);
             module.exchangeAdapters.push(ExchangeInterface(ofExchangeAdapters[i]));
         }
-        // Require base assets exists in pricefeed
-        BASE_ASSET = Asset(ofBaseAsset);
+        // Require Quote assets exists in pricefeed
+        QUOTE_ASSET = Asset(ofQuoteAsset);
         NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
-        require(address(BASE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
+        require(address(QUOTE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastUnclaimedRewardAllocation = Calculations({
             gav: 0,
             managementReward: 0,
@@ -183,7 +183,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.subscribe,
-            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(BASE_ASSET),
+            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(QUOTE_ASSET),
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
@@ -211,7 +211,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.redeem,
-            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(BASE_ASSET),
+            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(QUOTE_ASSET),
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
@@ -239,11 +239,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first subscription)
          // PriceFeed Module: No recent updates for fund asset list
     {
-        // sharePrice quoted in BASE_ASSET and multiplied by 10 ** fundDecimals
-        // based in BASE_ASSET and multiplied by 10 ** fundDecimals
-        require(module.pricefeed.hasRecentPrice(address(BASE_ASSET)));
+        // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
+        // based in QUOTE_ASSET and multiplied by 10 ** fundDecimals
+        require(module.pricefeed.hasRecentPrice(address(QUOTE_ASSET)));
         require(module.pricefeed.hasRecentPrices(ownedAssets));
-        var (isRecent, , ) = module.pricefeed.getInvertedPrice(address(BASE_ASSET));
+        var (isRecent, , ) = module.pricefeed.getInvertedPrice(address(QUOTE_ASSET));
         // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
         // By definition quoteDecimals == fundDecimals
         Request request = requests[id];
@@ -262,9 +262,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             request.requestType == RequestType.subscribe &&
             costQuantity <= request.giveQuantity
         ) {
-            if (!isInAssetList[address(BASE_ASSET)]) {
-                ownedAssets.push(address(BASE_ASSET));
-                isInAssetList[address(BASE_ASSET)] = true;
+            if (!isInAssetList[address(QUOTE_ASSET)]) {
+                ownedAssets.push(address(QUOTE_ASSET));
+                isInAssetList[address(QUOTE_ASSET)] = true;
             }
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
@@ -484,7 +484,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
                 participant: ofSender,
                 status: RequestStatus.active,
                 requestType: RequestType.tokenFallbackRedeem,
-                requestAsset: address(BASE_ASSET), // redeem in BASE_ASSET
+                requestAsset: address(QUOTE_ASSET), // redeem in QUOTE_ASSET
                 shareQuantity: tokenAmount,
                 giveQuantity: tokenAmount,              // shares being sent
                 receiveQuantity: 0,          // value of the shares at request time
@@ -501,9 +501,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPrice(..) returns recent prices
-    /// @return gav Gross asset value quoted in BASE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return gav Gross asset value quoted in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
-        // prices quoted in BASE_ASSET and multiplied by 10 ** assetDecimal
+        // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
         tempOwnedAssets = ownedAssets;
         delete ownedAssets;
         for (uint i = 0; i < tempOwnedAssets.length; ++i) {
@@ -520,7 +520,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)));   // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == address(BASE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(BASE_ASSET) or in open make order
+            if (assetHoldings != 0 || ofAsset == address(QUOTE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(QUOTE_ASSET) or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
@@ -531,11 +531,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     /**
     @notice Calculates unclaimed rewards of the fund manager
-    @param gav Gross asset value in BASE_ASSET and multiplied by 10 ** shareDecimals
+    @param gav Gross asset value in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     @return {
-      "managementReward": "A time (seconds) based reward in BASE_ASSET and multiplied by 10 ** shareDecimals",
-      "performanceReward": "A performance (rise of sharePrice measured in BASE_ASSET) based reward in BASE_ASSET and multiplied by 10 ** shareDecimals",
-      "unclaimedRewards": "The sum of both managementReward and performanceReward in BASE_ASSET and multiplied by 10 ** shareDecimals"
+      "managementReward": "A time (seconds) based reward in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
+      "performanceReward": "A performance (rise of sharePrice measured in QUOTE_ASSET) based reward in QUOTE_ASSET and multiplied by 10 ** shareDecimals",
+      "unclaimedRewards": "The sum of both managementReward and performanceReward in QUOTE_ASSET and multiplied by 10 ** shareDecimals"
     }
     */
     function calcUnclaimedRewards(uint gav)
@@ -564,9 +564,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     }
 
     /// @notice Calculates the Net asset value of this fund
-    /// @param gav Gross asset value of this fund in BASE_ASSET and multiplied by 10 ** shareDecimals
-    /// @param unclaimedRewards The sum of both managementReward and performanceReward in BASE_ASSET and multiplied by 10 ** shareDecimals
-    /// @return nav Net asset value in BASE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param gav Gross asset value of this fund in QUOTE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param unclaimedRewards The sum of both managementReward and performanceReward in QUOTE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return nav Net asset value in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcNav(uint gav, uint unclaimedRewards)
         view
         returns (uint nav)
@@ -577,9 +577,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @notice Calculates the share price of the fund
     /// @dev Convention for valuePerShare (== sharePrice) formatting: mul(totalValue / numShares, 10 ** decimal), to avoid floating numbers
     /// @dev Non-zero share supply; value denominated in [base unit of melonAsset]
-    /// @param totalValue the total value in BASE_ASSET and multiplied by 10 ** shareDecimals
+    /// @param totalValue the total value in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     /// @param numShares the number of shares multiplied by 10 ** shareDecimals
-    /// @return valuePerShare Share price denominated in BASE_ASSET and multiplied by 10 ** shareDecimals
+    /// @return valuePerShare Share price denominated in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcValuePerShare(uint totalValue, uint numShares)
         view
         pre_cond(numShares > 0)
@@ -593,7 +593,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     @return {
       "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
       "managementReward": "A time (seconds) based reward",
-      "performanceReward": "A performance (rise of sharePrice measured in BASE_ASSET) based reward",
+      "performanceReward": "A performance (rise of sharePrice measured in QUOTE_ASSET) based reward",
       "unclaimedRewards": "The sum of both managementReward and performanceReward denominated in [base unit of melonAsset]",
       "rewardsShareQuantity": "The number of shares to be given as rewards to the manager",
       "nav": "Net asset value denominated in [base unit of melonAsset]",
