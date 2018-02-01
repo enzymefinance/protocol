@@ -22,7 +22,7 @@ let manager;
 let investor;
 let opts;
 let mlnToken;
-let receipt;
+let txId;
 let runningGasTotal;
 let fund;
 let version;
@@ -48,7 +48,7 @@ const fundName = 'MelonPortfolio';
 test.serial('can set up new fund', async t => {
   const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
   const [r, s, v] = await getSignatureParameters(manager);
-  receipt = await version.instance.setupFund.postTransaction(
+  txId = await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // name
@@ -65,10 +65,10 @@ test.serial('can set up new fund', async t => {
       s
     ]
   );
-  await version._pollTransactionReceipt(receipt);
+  await version._pollTransactionReceipt(txId);
 
   // Since postTransaction returns transaction hash instead of object as in Web3
-  const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const fundId = await version.instance.getLastFundId.call({}, []);
   const fundAddress = await version.instance.getFundById.call({}, [fundId]);
@@ -105,11 +105,11 @@ const initialTokenAmount = new BigNumber(10 ** 15);
 test.serial('investor receives initial mlnToken for testing', async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer)); // TODO: this is now in getAllBalances
-  receipt = await mlnToken.instance.transfer.postTransaction(
+  txId = await mlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [investor, initialTokenAmount, ""]
   );
-  const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
   const post = await getAllBalances(deployed, accounts, fund);
@@ -150,7 +150,7 @@ test.serial('direct transfer of a token to the Fund is rejected', async t => {
 test.serial('a new fund with a name used before cannot be created', async t => {
   const [r, s, v] = await getSignatureParameters(deployer);
   const preFundId = await version.instance.getLastFundId.call({}, []);
-  receipt = await version.instance.setupFund.postTransaction(
+  txId = await version.instance.setupFund.postTransaction(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // same name as before
@@ -167,7 +167,7 @@ test.serial('a new fund with a name used before cannot be created', async t => {
       s
     ]
   );
-  await version._pollTransactionReceipt(receipt);
+  await version._pollTransactionReceipt(txId);
   const fundNameTaken = await version.instance.fundNameTaken.call({}, [fundName]);
   const newFundAddress = await version.instance.getFundByManager.call({}, [deployer]);
   const postFundId = await version.instance.getLastFundId.call({}, []);
@@ -195,20 +195,20 @@ test.serial('allows request and execution on the first subscription', async t =>
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
   const inputAllowance = firstTest.offeredValue;
-  receipt = await mlnToken.instance.approve.postTransaction(
+  txId = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice },
     [fund.address, inputAllowance]
   );
-  let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const fundPostAllowance = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
-  receipt = await fund.instance.requestSubscription.postTransaction(
+  txId = await fund.instance.requestSubscription.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [firstTest.offeredValue, firstTest.wantedShares, false]
   );
-  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
@@ -222,21 +222,21 @@ test.serial('allows request and execution on the first subscription', async t =>
   await updatePriceFeed(deployed);
   await updatePriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
-  receipt = await fund.instance.executeRequest.postTransaction(
+  txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [requestId]
   );
-  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const investorPostShares = Number(
     await fund.instance.balanceOf.call({}, [investor])
   );
   // reduce leftover allowance of investor to zero
-  receipt = await mlnToken.instance.approve.postTransaction(
+  txId = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice },
     [fund.address, 0]
   );
-  gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+  gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   const remainingApprovedMln = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
@@ -284,11 +284,11 @@ subsequentTests.forEach((testInstance) => {
       const fundPreAllowance = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address])
       );
-      receipt = await mlnToken.instance.approve.postTransaction(
+      txId = await mlnToken.instance.approve.postTransaction(
         { from: investor, gasPrice: config.gasPrice },
         [fund.address, inputAllowance]
       );
-      let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const fundPostAllowance = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address])
@@ -296,11 +296,11 @@ subsequentTests.forEach((testInstance) => {
 
       t.deepEqual(fundPostAllowance, fundPreAllowance + inputAllowance);
 
-      receipt = await fund.instance.requestSubscription.postTransaction(
+      txId = await fund.instance.requestSubscription.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [testInstance.offeredValue, testInstance.wantedShares, false]
       );
-      gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const post = await getAllBalances(deployed, accounts, fund);
 
@@ -333,21 +333,21 @@ subsequentTests.forEach((testInstance) => {
         await fund.instance.balanceOf.call({}, [investor])
       );
       const requestId = await fund.instance.getLastRequestId.call({}, []);
-      receipt = await fund.instance.executeRequest.postTransaction(
+      txId = await fund.instance.executeRequest.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [requestId]
       );
-      let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const investorPostShares = Number(
         await fund.instance.balanceOf.call({}, [investor])
       );
       // reduce leftover allowance of investor to zero
-      receipt = await mlnToken.instance.approve.postTransaction(
+      txId = await mlnToken.instance.approve.postTransaction(
         { from: investor, gasPrice: config.gasPrice },
         [fund.address, 0]
       );
-      gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const remainingApprovedMln = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address])
@@ -425,11 +425,11 @@ testArray.forEach((testInstance) => {
         await fund.instance.performCalculations.call(opts, [])
       );
       const pre = await getAllBalances(deployed, accounts, fund);
-      receipt = await fund.instance.requestRedemption.postTransaction(
+      txId = await fund.instance.requestRedemption.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [testInstance.wantedShares, testInstance.wantedValue, false]
       );
-      const gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const post = await getAllBalances(deployed, accounts, fund);
 
@@ -464,18 +464,18 @@ testArray.forEach((testInstance) => {
         await fund.instance.totalSupply.call({}, [])
       );
       const requestId = await fund.instance.getLastRequestId.call({}, []);
-      receipt = await fund.instance.executeRequest.postTransaction(
+      txId = await fund.instance.executeRequest.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [requestId]
       );
-      let gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = runningGasTotal.plus(gasUsed);
       // reduce remaining allowance to zero
-      receipt = await mlnToken.instance.approve.postTransaction(
+      txId = await mlnToken.instance.approve.postTransaction(
         { from: investor, gasPrice: config.gasPrice },
         [fund.address, 0]
       );
-      gasUsed = (await api.eth.getTransactionReceipt(receipt)).gasUsed;
+      gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const remainingApprovedMln = Number(
         await mlnToken.instance.allowance.call({}, [investor, fund.address])
