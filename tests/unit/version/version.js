@@ -1,6 +1,7 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
+import getSignatureParameters from "../../../utils/lib/getSignatureParameters";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 
@@ -26,12 +27,7 @@ test.before(async () => {
 });
 
 test("Can setup a new fund", async t => {
-  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-  let sig = await api.eth.sign(manager, hash);
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
+  const [r, s, v] = await getSignatureParameters(manager);
   const txId = await version.instance.setupFund.postTransaction(opts, [
     fundName,
     deployed.MlnToken.address, // base asset

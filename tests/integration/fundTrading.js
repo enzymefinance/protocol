@@ -4,6 +4,7 @@ import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -34,8 +35,8 @@ let version;
 let deployed;
 
 // mock data
-const offeredValue = 10 ** 10;
-const wantedShares = 10 ** 10;
+const offeredValue = new BigNumber(10 ** 10);
+const wantedShares = new BigNumber(10 ** 10);
 const numberofExchanges = 2;
 
 test.before(async () => {
@@ -52,12 +53,7 @@ test.before(async () => {
     {from: manager, gas: config.gas, gasPrice: config.gasPrice} // TODO: remove unnecessary params
   );
   exchanges = [SimpleMarket1, SimpleMarket2];
-  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-  let sig = await api.eth.sign(manager, hash);
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
+  const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -156,8 +152,9 @@ test.serial("investor receives initial mlnToken for testing", async t => {
 const exchangeIndexes = Array.from(new Array(numberofExchanges), (val, index) => index);
 exchangeIndexes.forEach((i) => {
   test.serial(
-    `fund receives MLN from a subscription (request & execute) [round ${i}]`,
+    `fund receives MLN from a subscription (request & execute) [round ${i+1}]`,
     async t => {
+      const boostedOffer = offeredValue.times(1.01); // account for increasing share price after trades occur
       let investorGasTotal = new BigNumber(0);
       await mlnToken.instance.transfer.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
@@ -166,13 +163,13 @@ exchangeIndexes.forEach((i) => {
       const pre = await getAllBalances(deployed, accounts, fund);
       txId = await mlnToken.instance.approve.postTransaction(
         { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-        [fund.address, offeredValue],
+        [fund.address, boostedOffer]
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
       txId = await fund.instance.requestSubscription.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [offeredValue, wantedShares, false],
+        [boostedOffer, wantedShares, false]
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -182,16 +179,18 @@ exchangeIndexes.forEach((i) => {
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       txId = await fund.instance.executeRequest.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [requestId],
+        [requestId]
       );
-      gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      investorGasTotal = investorGasTotal.plus(gasUsed);
+      investorGasTotal = investorGasTotal.plus((await api.eth.getTransactionReceipt(txId)).gasUsed);
       const estimatedMlnToSpend = Number(
-        new BigNumber(offeredValue)
+        new BigNumber(wantedShares)
           .times(sharePrice)
           .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
-          .floor(),
+          .floor()
       );
+      // set approved token back to zero
+      txId = await mlnToken.instance.approve.postTransaction({from: investor}, [fund.address, 0]);
+      investorGasTotal = investorGasTotal.plus((await api.eth.getTransactionReceipt(txId)).gasUsed);
       const post = await getAllBalances(deployed, accounts, fund);
 
       t.deepEqual(post.worker.EthToken, pre.worker.EthToken);

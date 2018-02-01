@@ -1,3 +1,13 @@
+## Pull requests and reviews
+
+The main branch that development work occurs on is the `develop` branch. It is usually encouraged to branch from there, and make pull requests back to `develop` when the change is made.
+
+When making a pull request for a new feature please follow the styleguides outlined in this document.
+Also, where applicable, add tests that cover the introduced code.
+Ideally, code coverage should not decrease when we merge pull requests.
+
+When a pull request is created, one of the maintainers will review the code, and incorporate it into the relevant branch.
+
 ## Making a release
 
 The steps to make a new release are as follows:
@@ -6,7 +16,7 @@ The steps to make a new release are as follows:
 npm run compile    # update artifacts in out/
 npm test           # passes on development network
 npm version 0.6.4  # or whatever version number
-npm run deploy     # run for each network you need
+npm run deploy:net # run for each network you need
 npm publish        # updates the NPM package
 git push --follow-tags
 ```
