@@ -21,13 +21,10 @@ test.before(async () => {
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = deployed.Version;
-});
-
-test.beforeEach(async () => {
   governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
 });
 
-test('Triggering a Version activates it within Governance', async t => {
+test.serial('Triggering a Version activates it within Governance', async t => {
   const [ , activeBeforeTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
   await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
   await governance.instance.approveVersion.postTransaction(opts, [version.address]);
@@ -38,7 +35,7 @@ test('Triggering a Version activates it within Governance', async t => {
   t.true(activeAfterTriggering);
 });
 
-test('Governance can shut down Version', async t => {
+test.serial('Governance can shut down Version', async t => {
   await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
   await governance.instance.approveVersion.postTransaction(opts, [version.address]);
   await governance.instance.triggerVersion.postTransaction(opts, [version.address]);

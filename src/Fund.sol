@@ -86,7 +86,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     Order[] public orders; // All the orders this fund placed on exchanges
     mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
-    address[] public tempOwnedAssets; // Intended as a local variable for calcGav method, but declaring as global to overcome Solidity limtation
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
 
@@ -504,6 +503,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @return gav Gross asset value quoted in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
+        address[] memory tempOwnedAssets; // To store ownedAssets
         tempOwnedAssets = ownedAssets;
         delete ownedAssets;
         for (uint i = 0; i < tempOwnedAssets.length; ++i) {
