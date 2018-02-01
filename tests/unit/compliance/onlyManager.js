@@ -1,6 +1,7 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
+import getSignatureParameters from "../../../utils/lib/getSignatureParameters";
 import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
 
 const environment = "development";
@@ -17,17 +18,9 @@ test.before(async () => {
   deployed = await deployEnvironment(environment);
   const accounts = await api.eth.accounts();
   [manager, investor] = accounts;
-
-  // acquire params for setupFund (TODO: outsource this to convenience function)
-  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-  let sig = await api.eth.sign(manager, hash);
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
-
   compliance = await deployContract("compliance/OnlyManager");
   version = deployed.Version;
+  const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction({from: manager, gas: 6000000}, [
     'Some Fund',
     deployed.MlnToken.address,

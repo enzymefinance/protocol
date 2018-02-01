@@ -4,6 +4,7 @@ import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -52,12 +53,7 @@ test.before(async () => {
     {from: manager, gas: config.gas, gasPrice: config.gasPrice} // TODO: remove unnecessary params
   );
   exchanges = [SimpleMarket1, SimpleMarket2];
-  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
-  let sig = await api.eth.sign(manager, hash);
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
+  const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
