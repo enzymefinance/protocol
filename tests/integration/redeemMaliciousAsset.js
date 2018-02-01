@@ -79,8 +79,8 @@ test.before(async () => {
     [
       "Fund with malicious token",  // name
       deployed.MlnToken.address,           // base asset
-      config.protocol.fund.managementReward,
-      config.protocol.fund.performanceReward,
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       pricefeed.address,

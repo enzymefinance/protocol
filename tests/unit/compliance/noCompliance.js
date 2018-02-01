@@ -22,7 +22,7 @@ test("Anyone can perform subscription", async t => {
     {},
     [investor, 100, 100],
   );
-  t.truthy(isSubscriptionPermitted);
+  t.true(isSubscriptionPermitted);
 });
 
 test("Anyone can perform redemption", async t => {
@@ -30,5 +30,5 @@ test("Anyone can perform redemption", async t => {
     {},
     [investor, 100, 100],
   );
-  t.truthy(isRedemptionPermitted);
+  t.true(isRedemptionPermitted);
 });

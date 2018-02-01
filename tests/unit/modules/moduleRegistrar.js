@@ -83,7 +83,7 @@ test("Operator can register a module", async t => {
   t.is(api.util.bytesToHex(commitHash), mockCommitHash);
   t.is(Number(sumOfRating), 0);
   t.is(Number(numberOfVoters), 0);
-  t.truthy(exists);
+  t.true(exists);
 });
 
 test("Voting updates rating and no of voters correctly", async t => {
@@ -115,5 +115,5 @@ test.serial("Operator removes a module", async t => {
   const [ , , , , , , , , , exists] = Object.values(result);
 
   t.is(moduleOperated, "0x0000000000000000000000000000000000000000");
-  t.falsy(exists);
+  t.false(exists);
 });

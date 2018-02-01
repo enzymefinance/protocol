@@ -39,8 +39,8 @@ test("Make order should be permitted for a high orderPrice w.r.t referencePrice"
     100,
   ]);
 
-  t.truthy(isMakePermitted);
-  t.truthy(isTakePermitted);
+  t.true(isMakePermitted);
+  t.true(isTakePermitted);
 });
 
 test("Make order should be permitted for the cutoff orderPrice w.r.t referencePrice", async t => {
@@ -63,8 +63,8 @@ test("Make order should be permitted for the cutoff orderPrice w.r.t referencePr
     100,
   ]);
 
-  t.truthy(isMakePermitted);
-  t.truthy(isTakePermitted);
+  t.true(isMakePermitted);
+  t.true(isTakePermitted);
 });
 
 test("Make and take orders should not be permitted for a low orderPrice w.r.t referencePrice", async t => {
@@ -88,6 +88,6 @@ test("Make and take orders should not be permitted for a low orderPrice w.r.t re
     100,
   ]);
 
-  t.falsy(isMakePermitted);
-  t.falsy(isTakePermitted);
+  t.false(isMakePermitted);
+  t.false(isTakePermitted);
 });
