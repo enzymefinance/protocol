@@ -1,7 +1,7 @@
 {
 	"name": "Development Chain",
 	"engine": {
-		"instantSeal": { "params": {} }
+		"instantSeal": null
 	},
 	"params": {
 		"gasLimitBoundDivisor": "0x0400",
