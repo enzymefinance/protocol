@@ -20,11 +20,14 @@ test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
-  version = deployed.Version;
-  governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
 });
 
-test.serial('Triggering a Version activates it within Governance', async t => {
+test.beforeEach(async () => {
+  governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
+  version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [1, governance.address, deployed.EthToken.address], () => {}, true);
+});
+
+test('Triggering a Version activates it within Governance', async t => {
   const [ , activeBeforeTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
   await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
   await governance.instance.approveVersion.postTransaction(opts, [version.address]);
@@ -35,7 +38,7 @@ test.serial('Triggering a Version activates it within Governance', async t => {
   t.true(activeAfterTriggering);
 });
 
-test.serial('Governance can shut down Version', async t => {
+test('Governance can shut down Version', async t => {
   await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
   await governance.instance.approveVersion.postTransaction(opts, [version.address]);
   await governance.instance.triggerVersion.postTransaction(opts, [version.address]);
