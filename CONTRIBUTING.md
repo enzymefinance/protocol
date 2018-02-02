@@ -23,6 +23,16 @@ git push --follow-tags
 
 ## Styleguides
 
+### Tools
+
+Some of our style choices are enforceable by a linter.
+We us [solium](https://github.com/duaraghav8/Solium) for solidity, and [eslint](https://eslint.org/) for javascript.
+We strongly encourage you to use these linters as well, when contributing code.
+Our current linter settings can be found in the `.eslintrc` and `.soliumrc.json` files.
+
+Using a linter is not a substitute for understanding the style guide, however, since some of our style choices do not have rules that can be enforced by these linters yet.
+
+
 ### Solidity
 
 The purpose of this style guide is to increase consistency within and between our contracts.
@@ -99,6 +109,7 @@ function readPrice(
 ```
 
 - consider placing function arguments on their own lines, when there are more than one (as in above example)
+  - similarly, consider placing several return types on their own lines
 - "one-liner" functions (i.e. can reasonably fit on a single line) are excepted from the above line-spacing rules
 
 #### Modularity
