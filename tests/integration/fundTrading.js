@@ -891,7 +891,7 @@ test.serial("converts fees and manager receives them", async t => {
     await fund.instance.performCalculations.call({}, []),
   );
   const shareQuantity = Math.floor(totalSupply * unclaimedFees / gav);
-  txId = await fund.instance.allocateUnclaimedRewards.postTransaction(
+  txId = await fund.instance.allocateUnclaimedFees.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [],
   );
