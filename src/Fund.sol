@@ -685,7 +685,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
 
             // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
-            if (assetHoldings < ownershipQuantities[i]) {
+            if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
                 isShutDown = true;
                 ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;
