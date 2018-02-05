@@ -27,7 +27,11 @@ contract FundRanking {
     */
     function getAddressAndSharePriceOfFunds()
         view
-        returns(address[], uint[], uint[])
+        returns(
+            address[],
+            uint[],
+            uint[]
+        )
     {
         uint nofFunds = version.getLastFundId() + 1;
         address[] memory fundAddrs = new address[](nofFunds);
