@@ -24,7 +24,7 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-  version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [1, governance.address, deployed.EthToken.address], () => {}, true);
+  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, governance.address, deployed.EthToken.address], () => {}, true);
 });
 
 test('Triggering a Version activates it within Governance', async t => {
