@@ -6,6 +6,10 @@ import "../../assets/Asset.sol";
 
 contract CentralizedAdapter is ExchangeInterface {
 
+    // CONSTANT FIELDS
+
+    bool public constant approveOnly = false; // If the exchange implementation requires asset approve instead of transfer on make orders
+
     event OrderUpdated(uint id);
 
     // NON-CONSTANT METHODS
@@ -72,24 +76,34 @@ contract CentralizedAdapter is ExchangeInterface {
 
     // VIEW METHODS
 
+    function isApproveOnly()
+        constant
+        returns (bool)
+    {
+        return approveOnly;
+    }
+
     function getLastOrderId(address onExchange)
         constant
         returns (uint)
     {
         return CentralizedExchangeInterface(onExchange).getLastOrderId();
     }
+
     function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
         return CentralizedExchangeInterface(onExchange).isActive(id);
     }
+
     function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
         return CentralizedExchangeInterface(onExchange).getOwner(id);
     }
+
     function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
@@ -107,6 +121,7 @@ contract CentralizedAdapter is ExchangeInterface {
             buyQuantity
         );
     }
+
     function getTimestamp(address onExchange, uint id)
         constant
         returns (uint)
@@ -114,6 +129,5 @@ contract CentralizedAdapter is ExchangeInterface {
         var (, , , , , , timestamp) = CentralizedExchangeInterface(onExchange).orders(id);
         return timestamp;
     }
-
 
 }

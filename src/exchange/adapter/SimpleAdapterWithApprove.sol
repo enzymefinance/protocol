@@ -6,10 +6,14 @@ import "../thirdparty/SimpleMarket.sol";
 
 /// @title SimpleAdapter Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice An adapter between the Melon protocol and DappHubs SimpleMarket
+/// @notice An exchange adapter for modified SimpleMarket contract that uses approve instead of transfer on make orders
 /// @notice The concept of this can be extended to for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Can be implemented as a library
-contract simpleAdapter {
+contract SimpleAdapterWithApprove {
+
+    // CONSTANT FIELDS
+
+    bool public constant approveOnly = true; // If the exchange implementation requires asset approve instead of transfer on make orders
 
     // EVENTS
 
@@ -17,24 +21,34 @@ contract simpleAdapter {
 
     // VIEW METHODS
 
+    function isApproveOnly()
+        constant
+        returns (bool)
+    {
+        return approveOnly;
+    }
+
     function getLastOrderId(address onExchange)
         constant
         returns (uint)
     {
         return SimpleMarket(onExchange).last_offer_id();
     }
+
     function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
         return SimpleMarket(onExchange).isActive(id);
     }
+
     function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
         return SimpleMarket(onExchange).getOwner(id);
     }
+
     function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
@@ -52,6 +66,7 @@ contract simpleAdapter {
             buyQuantity
         );
     }
+
     function getTimestamp(address onExchange, uint id)
         constant
         returns (uint)

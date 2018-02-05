@@ -9,7 +9,7 @@ contract ModuleRegistrar is DBC {
 
     struct Module { // Information about the module
         string name; // Human-readable name of the Module
-        uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
+        uint moduleClass; // Acts enum-like: assetRegistrar, datafeed, fees, participation, exchangeAdapter, riskmgmt
         address creator; // Address of Module creator, also address of inflation distribution amount
         string url; // URL for additional information of Module
         string ipfsHash; // Same as url but for ipfs
@@ -43,7 +43,7 @@ contract ModuleRegistrar is DBC {
     /// @dev Only non-registered modules
     /// @param ofModule Address of module to be registered
     /// @param name Human-readable name of the Module
-    /// @param moduleClass Enum: assetRegistrar, datafeed, rewards, participation, exchangeAdapter, riskmgmt
+    /// @param moduleClass Enum: assetRegistrar, datafeed, fees, participation, exchangeAdapter, riskmgmt
     /// @param url URL for additional information of Module
     /// @param ipfsHash Same as url but for ipfs
     /// @param accountSlashRepo Github account/repo url

@@ -1,14 +1,12 @@
 import test from "ava";
-import Api from "@parity/api";
-import deploy from "../../../utils/deploy/contracts";
+import api from "../../../utils/lib/api";
+import {deployContract} from "../../../utils/lib/contracts";
+import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
@@ -41,28 +39,16 @@ async function registerModule() {
 }
 
 test.before(async () => {
-  await deploy(environment);
+  await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [deployer, operator, voter] = accounts;
 });
 
 test.beforeEach(async () => {
   const opts = { from: deployer, gas: config.gas };
-  // Deploy Simple Certifier
-  let abi = JSON.parse(fs.readFileSync("./out/modules/SimpleCertifier.abi"));
-  let bytecode = fs.readFileSync("./out/modules/SimpleCertifier.bin");
-  opts.data = `0x${bytecode}`;
-  simpleCertifier = await api.newContract(abi).deploy(opts, []);
-  simpleCertifier = await api.newContract(abi, simpleCertifier);
+  simpleCertifier = await deployContract("modules/SimpleCertifier", opts);
 
-  // Deploy Module Registrar
-  abi = JSON.parse(fs.readFileSync("./out/modules/ModuleRegistrar.abi"));
-  bytecode = fs.readFileSync("./out/modules/ModuleRegistrar.bin");
-  opts.data = `0x${bytecode}`;
-  moduleRegistrar = await api
-    .newContract(abi)
-    .deploy(opts, [simpleCertifier.address]);
-  moduleRegistrar = await api.newContract(abi, moduleRegistrar);
+  moduleRegistrar = await deployContract("modules/ModuleRegistrar", opts, [simpleCertifier.address]);
   await registerModule();
 });
 
@@ -94,10 +80,10 @@ test("Operator can register a module", async t => {
   t.is(url, mockUrl);
   t.is(ipfsHash, mockIpfsHash);
   t.is(accountRepo, mockAccountRepo);
-  t.is(Api.util.bytesToHex(commitHash), mockCommitHash);
+  t.is(api.util.bytesToHex(commitHash), mockCommitHash);
   t.is(Number(sumOfRating), 0);
   t.is(Number(numberOfVoters), 0);
-  t.truthy(exists);
+  t.true(exists);
 });
 
 test("Voting updates rating and no of voters correctly", async t => {
@@ -129,5 +115,5 @@ test.serial("Operator removes a module", async t => {
   const [ , , , , , , , , , exists] = Object.values(result);
 
   t.is(moduleOperated, "0x0000000000000000000000000000000000000000");
-  t.falsy(exists);
+  t.false(exists);
 });

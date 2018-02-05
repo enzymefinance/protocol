@@ -1,11 +1,12 @@
 pragma solidity ^0.4.19;
 
 import "./ComplianceInterface.sol";
+import "../FundInterface.sol";
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Simple and static Compliance Module.
-contract NoCompliance is ComplianceInterface {
+/// @notice Only allow manager to invest in the Fund.
+contract OnlyManager is ComplianceInterface {
 
     // PUBLIC VIEW METHODS
 
@@ -22,7 +23,7 @@ contract NoCompliance is ComplianceInterface {
         view
         returns (bool)
     {
-        return true;
+        return FundInterface(msg.sender).getManager() == ofParticipant;
     }
 
     /// @notice Checks whether redemption is permitted for a participant
@@ -38,6 +39,6 @@ contract NoCompliance is ComplianceInterface {
         view
         returns (bool)
     {
-        return true;
+        return true;    // No need for KYC/AML in case of redeeming shares
     }
 }

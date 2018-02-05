@@ -1,3 +1,13 @@
+## Pull requests and reviews
+
+The main branch that development work occurs on is the `develop` branch. It is usually encouraged to branch from there, and make pull requests back to `develop` when the change is made.
+
+When making a pull request for a new feature please follow the styleguides outlined in this document.
+Also, where applicable, add tests that cover the introduced code.
+Ideally, code coverage should not decrease when we merge pull requests.
+
+When a pull request is created, one of the maintainers will review the code, and incorporate it into the relevant branch.
+
 ## Making a release
 
 The steps to make a new release are as follows:
@@ -5,13 +15,23 @@ The steps to make a new release are as follows:
 ```sh
 npm run compile    # update artifacts in out/
 npm test           # passes on development network
-npm run deploy     # run for each network you need
 npm version 0.6.4  # or whatever version number
+npm run deploy:net # run for each network you need
 npm publish        # updates the NPM package
 git push --follow-tags
 ```
 
 ## Styleguides
+
+### Tools
+
+Some of our style choices are enforceable by a linter.
+We us [solium](https://github.com/duaraghav8/Solium) for solidity, and [eslint](https://eslint.org/) for javascript.
+We strongly encourage you to use these linters as well, when contributing code.
+Our current linter settings can be found in the `.eslintrc` and `.soliumrc.json` files.
+
+Using a linter is not a substitute for understanding the style guide, however, since some of our style choices do not have rules that can be enforced by these linters yet.
+
 
 ### Solidity
 
@@ -89,6 +109,7 @@ function readPrice(
 ```
 
 - consider placing function arguments on their own lines, when there are more than one (as in above example)
+  - similarly, consider placing several return types on their own lines
 - "one-liner" functions (i.e. can reasonably fit on a single line) are excepted from the above line-spacing rules
 
 #### Modularity

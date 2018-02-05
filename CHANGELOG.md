@@ -5,6 +5,32 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.4]
+
+### Added
+
+- utility modules for functions/cases used throughout tests and deployment
+- several new tokens to pricefeed
+- creation time tracking to FundRanking contract
+- compliance module only permitting manager to invest
+
+### Changed
+
+- use updateId again to prevent subscribe/redeem arbitrage
+- implement Asset as ERC223
+- use new addresses for re-deployed ERC223 token contracts
+- interface contracts are now actually solidity interface-type contracts
+- slightly modify SimpleMarket to implement ERC223ReceivingContract
+
+### Fixed
+
+- prevent fund receiving tokens from non-exchange address (prevent inflation attack)
+
+### Removed
+
+- over-permissive recoverToken function
+- factored out boilerplate code from tests and deployment
+
 ## [0.6.2]
 
 ### Added

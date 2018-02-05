@@ -1,7 +1,6 @@
 pragma solidity ^0.4.19;
 
 import "../Fund.sol";
-import "../FundInterface.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "./VersionInterface.sol";
@@ -9,7 +8,7 @@ import "./VersionInterface.sol";
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is DBC, Owned {
+contract Version is DBC, Owned, VersionInterface {
     // FIELDS
 
     // Constant fields
@@ -52,9 +51,9 @@ contract Version is DBC, Owned {
     // PUBLIC METHODS
 
     /// @param ofFundName human-readable descriptive name (not necessarily unique)
-    /// @param ofBaseAsset Asset against which performance reward is measured against
-    /// @param ofManagementRewardRate A time based reward, given in a number which is divided by 10 ** 15
-    /// @param ofPerformanceRewardRate A time performance based reward, performance relative to ofBaseAsset, given in a number which is divided by 10 ** 15
+    /// @param ofQuoteAsset Asset against which performance fee is measured against
+    /// @param ofManagementFee A time based fee, given in a number which is divided by 10 ** 15
+    /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 10 ** 15
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
@@ -65,9 +64,9 @@ contract Version is DBC, Owned {
     /// @param s ellipitc curve parameter s
     function setupFund(
         string ofFundName,
-        address ofBaseAsset,
-        uint ofManagementRewardRate,
-        uint ofPerformanceRewardRate,
+        address ofQuoteAsset,
+        uint ofManagementFee,
+        uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
@@ -76,8 +75,7 @@ contract Version is DBC, Owned {
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-    {
+    ) {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
@@ -86,9 +84,9 @@ contract Version is DBC, Owned {
         address ofFund = new Fund(
             msg.sender,
             ofFundName,
-            ofBaseAsset,
-            ofManagementRewardRate,
-            ofPerformanceRewardRate,
+            ofQuoteAsset,
+            ofManagementFee,
+            ofPerformanceFee,
             NATIVE_ASSET,
             ofCompliance,
             ofRiskMgmt,
@@ -107,7 +105,7 @@ contract Version is DBC, Owned {
     function shutDownFund(address ofFund)
         pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)
     {
-        FundInterface fund = FundInterface(ofFund);
+        Fund fund = Fund(ofFund);
         delete managerToFunds[msg.sender];
         delete fundNamesToOwners[fund.getNameHash()];
         fund.shutDown();
@@ -142,5 +140,6 @@ contract Version is DBC, Owned {
     function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
+    function getFundByManager(address ofManager) view returns (address) { return managerToFunds[ofManager]; }
     function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 }
