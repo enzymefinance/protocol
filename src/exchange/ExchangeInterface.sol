@@ -30,6 +30,7 @@ interface ExchangeInterface {
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
 
+    function isApproveOnly() view returns (bool);
     function getLastOrderId(address onExchange) view returns (uint);
     function isActive(address onExchange, uint id) view returns (bool);
     function getOwner(address onExchange, uint id) view returns (address);

@@ -21,8 +21,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     struct Modules { // Describes all modular parts, standardised through an interface
         PriceFeedInterface pricefeed; // Provides all external data
-        address[] exchanges; // Array containing multiple exchange addresses
-        ExchangeInterface[] exchangeAdapters; // Array containing exchange adapter contracts respective to the exchanges
         ComplianceInterface compliance; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
@@ -66,6 +64,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         uint fillQuantity; // Buy quantity filled; Always less than buy_quantity
     }
 
+    struct Exchange {
+        address exchange; // Address of the exchange
+        ExchangeInterface exchangeAdapter; //Exchange adapter contracts respective to the exchange
+        bool isApproveOnly; // True in case of exchange implementation which requires  are approved when an order is made instead of transfer
+    }
+
     // FIELDS
 
     // Constant fields
@@ -78,6 +82,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
+    Exchange[] public exchanges; // Array containing exchanges this fund supports
     Calculations public atLastUnclaimedFeeAllocation; // Calculation results at last allocateUnclaimedFees() call
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
@@ -132,8 +137,13 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         module.pricefeed = PriceFeedInterface(ofPriceFeed);
         // Bridged to Melon exchange interface by exchangeAdapter library
         for (uint i = 0; i < ofExchanges.length; ++i) {
-            module.exchanges.push(ofExchanges[i]);
-            module.exchangeAdapters.push(ExchangeInterface(ofExchangeAdapters[i]));
+            ExchangeInterface adapter = ExchangeInterface(ofExchangeAdapters[i]);
+            bool isApproveOnly = adapter.isApproveOnly();
+            exchanges.push(Exchange({
+                exchange: ofExchanges[i],
+                exchangeAdapter: adapter,
+                isApproveOnly: isApproveOnly
+            }));
         }
         // Require Quote assets exists in pricefeed
         QUOTE_ASSET = Asset(ofQuoteAsset);
@@ -350,11 +360,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             )
         ); // RiskMgmt module: Make order not permitted
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        require(AssetInterface(sellAsset).approve(module.exchanges[exchangeNumber], sellQuantity)); // Approve exchange to spend assets
+        require(AssetInterface(sellAsset).approve(exchanges[exchangeNumber].exchange, sellQuantity)); // Approve exchange to spend assets
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
-        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), module.exchanges[exchangeNumber], sellAsset, buyAsset, sellQuantity, buyQuantity));
-        exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] = module.exchangeAdapters[exchangeNumber].getLastOrderId(module.exchanges[exchangeNumber]);
+        require(address(exchanges[exchangeNumber].exchangeAdapter).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), exchanges[exchangeNumber].exchange, sellAsset, buyAsset, sellQuantity, buyQuantity));
+        exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] = exchanges[exchangeNumber].exchangeAdapter.getLastOrderId(exchanges[exchangeNumber].exchange);
 
         // Success defined as non-zero order id
         require(exchangeIdsToOpenMakeOrderIds[exchangeNumber][sellAsset] != 0);
@@ -397,7 +407,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             order.buyAsset,
             order.sellQuantity,
             order.buyQuantity
-        ) = module.exchangeAdapters[exchangeNumber].getOrder(module.exchanges[exchangeNumber], id);
+        ) = exchanges[exchangeNumber].exchangeAdapter.getOrder(exchanges[exchangeNumber].exchange, id);
         // Check pre conditions
         require(order.sellAsset != address(this)); // Prevent buying of own fund token
         require(module.pricefeed.existsPriceOnAssetPair(order.buyAsset, order.sellAsset)); // PriceFeed module: Requested asset pair not valid
@@ -406,7 +416,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         require(isRecent); // Reference price is required to be recent
         require(receiveQuantity <= order.sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(receiveQuantity, order.buyQuantity) / order.sellQuantity;
-        require(AssetInterface(order.buyAsset).approve(module.exchanges[exchangeNumber], spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
+        require(AssetInterface(order.buyAsset).approve(exchanges[exchangeNumber].exchange, spendQuantity)); // Could not approve spending of spendQuantity of order.buyAsset
         require(
             module.riskmgmt.isTakePermitted(
             module.pricefeed.getOrderPrice(
@@ -423,7 +433,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         )); // RiskMgmt module: Take order not permitted
 
         // Execute request
-        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("takeOrder(address,uint256,uint256)")), module.exchanges[exchangeNumber], id, receiveQuantity));
+        require(address(exchanges[exchangeNumber].exchangeAdapter).delegatecall(bytes4(keccak256("takeOrder(address,uint256,uint256)")), exchanges[exchangeNumber].exchange, id, receiveQuantity));
 
         // Update ownedAssets array and isInAssetList mapping
         if (!isInAssetList[order.sellAsset]) {
@@ -451,7 +461,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         Order order = orders[id];
 
         // Execute request
-        require(address(module.exchangeAdapters[exchangeNumber]).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), module.exchanges[exchangeNumber], order.exchangeId));
+        require(address(exchanges[exchangeNumber].exchangeAdapter).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), exchanges[exchangeNumber].exchange, order.exchangeId));
 
         order.status = OrderStatus.cancelled;
         OrderUpdated(id);
@@ -474,8 +484,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     ) {
         if (msg.sender != address(this)) {
             // when ofSender is a recognized exchange, receive tokens, otherwise revert
-            for (uint i; i < module.exchanges.length; i++) {
-                if (module.exchanges[i] == ofSender) return; // receive tokens and do nothing
+            for (uint i; i < exchanges.length; i++) {
+                if (exchanges[i].exchange == ofSender) return; // receive tokens and do nothing
             }
             revert();
         } else {    // otherwise, make a redemption request
@@ -684,7 +694,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             // participant's ownership percentage of asset holdings
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
 
-            // CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(module.exchange) address
+            // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
             if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
                 isShutDown = true;
                 ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
@@ -713,15 +723,17 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @return Quantity of input asset held in exchange
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
         uint totalSellQuantity;     // quantity in custody across exchanges
-        for (uint i; i < module.exchanges.length; i++) {
+        for (uint i; i < exchanges.length; i++) {
             if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = module.exchangeAdapters[i].getOrder(module.exchanges[i], exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
+            var (sellAsset, , sellQuantity, ) = exchanges[i].exchangeAdapter.getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
             if (sellQuantity == 0) {
                 exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
             }
-            totalSellQuantity += sellQuantity;
+            if (!exchanges[i].isApproveOnly) {
+                totalSellQuantity += sellQuantity;
+            }
         }
         if (totalSellQuantity == 0) {
             isInOpenMakeOrder[sellAsset] = false;
@@ -738,10 +750,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         return sharePrice;
     }
 
-    function getModules() view returns (address, address[], address, address) {
+    function getModules() view returns (address, address, address) {
         return (
             address(module.pricefeed),
-            module.exchanges,
             address(module.compliance),
             address(module.riskmgmt)
         );

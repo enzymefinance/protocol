@@ -43,7 +43,7 @@ interface FundInterface {
 
     // PUBLIC VIEW METHODS
     // Get general information
-    function getModules() view returns (address, address[], address, address);
+    function getModules() view returns (address, address, address);
     function getLastOrderId() view returns (uint);
     function getLastRequestId() view returns (uint);
     function getNameHash() view returns (bytes32);

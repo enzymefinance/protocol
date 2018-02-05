@@ -11,11 +11,22 @@ import "../thirdparty/SimpleMarket.sol";
 /// @notice Can be implemented as a library
 contract SimpleAdapter {
 
+    // CONSTANT FIELDS
+
+    bool public constant approveOnly = false; // If the exchange implementation requires asset approve instead of transfer on make orders
+
     // EVENTS
 
     event OrderUpdated(uint id);
 
     // VIEW METHODS
+
+    function isApproveOnly()
+        constant
+        returns (bool)
+    {
+        return approveOnly;
+    }
 
     function getLastOrderId(address onExchange)
         constant
@@ -23,18 +34,21 @@ contract SimpleAdapter {
     {
         return SimpleMarket(onExchange).last_offer_id();
     }
+
     function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
         return SimpleMarket(onExchange).isActive(id);
     }
+
     function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
         return SimpleMarket(onExchange).getOwner(id);
     }
+
     function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
@@ -52,6 +66,7 @@ contract SimpleAdapter {
             buyQuantity
         );
     }
+
     function getTimestamp(address onExchange, uint id)
         constant
         returns (uint)
