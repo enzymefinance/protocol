@@ -8,7 +8,7 @@ module.exports = {
     protocol: {
       registrar: {
         assetsToRegister: [
-          'OW-ETH', 'SAI', 'MKR', 'DGD', 'GNT', 'REP', 'ICN'
+          'W-ETH', 'MLN', 'MKR', 'DAI'
         ],
       },
       pricefeed: {
