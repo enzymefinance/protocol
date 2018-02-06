@@ -68,7 +68,7 @@ test.before(async () => {
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
 
-  // Subscription by investor
+  // investment
   const initialTokenAmount = new BigNumber(10 ** 15);
   await mlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
@@ -78,7 +78,7 @@ test.before(async () => {
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, offeredValue],
   );
-  await fund.instance.requestSubscription.postTransaction(
+  await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [offeredValue, wantedShares, false],
   );

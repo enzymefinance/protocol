@@ -96,7 +96,7 @@ test.serial("initial investment with MLN", async t => {
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, offeredMln],
   );
-  await fund.instance.requestSubscription.postTransaction(
+  await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [offeredMln, wantedShares, false],
   );

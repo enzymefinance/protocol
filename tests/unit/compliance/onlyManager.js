@@ -39,8 +39,8 @@ test.before(async () => {
   fund = await retrieveContract("Fund", fundAddress);
 });
 
-test("Manager can request subscription", async t => {
-  const txid = await fund.instance.requestSubscription.postTransaction({from: manager, gas: 6000000}, [100, 100, false]);
+test("Manager can request investment", async t => {
+  const txid = await fund.instance.requestInvestment.postTransaction({from: manager, gas: 6000000}, [100, 100, false]);
   const requestId = parseInt((await api.eth.getTransactionReceipt(txid)).logs[0].data, 16);   // get request ID from log
   const request = await fund.instance.requests.call({}, [Number(requestId)]);
 
@@ -48,8 +48,8 @@ test("Manager can request subscription", async t => {
   t.not(Number(request[7]), 0);
 });
 
-test("Someone who is not manager can not request subscription", async t => {
-  const txid = await fund.instance.requestSubscription.postTransaction({from: investor, gas: 6000000}, [100, 100, false]);
+test("Someone who is not manager can not request investment", async t => {
+  const txid = await fund.instance.requestInvestment.postTransaction({from: investor, gas: 6000000}, [100, 100, false]);
   const logsArrayLength = (await api.eth.getTransactionReceipt(txid)).logs.length; // get length of logs (0 if tx failed)
   // TODO: check for actual throw in tx receipt (waiting for parity.js to support this: https://github.com/paritytech/js-api/issues/16)
 

@@ -152,7 +152,7 @@ test.serial("investor receives initial mlnToken for testing", async t => {
 const exchangeIndexes = Array.from(new Array(numberofExchanges), (val, index) => index);
 exchangeIndexes.forEach((i) => {
   test.serial(
-    `fund receives MLN from a subscription (request & execute) [round ${i+1}]`,
+    `fund receives MLN from a investment (request & execute) [round ${i+1}]`,
     async t => {
       const boostedOffer = offeredValue.times(1.01); // account for increasing share price after trades occur
       let investorGasTotal = new BigNumber(0);
@@ -167,7 +167,7 @@ exchangeIndexes.forEach((i) => {
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
-      txId = await fund.instance.requestSubscription.postTransaction(
+      txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [boostedOffer, wantedShares, false]
       );
@@ -686,7 +686,7 @@ redemptions.forEach((redemption, index) => {
   });
 });
 
-test.serial(`Allows subscription in native asset`, async t => {
+test.serial(`Allows investment in native asset`, async t => {
   let investorGasTotal = new BigNumber(0);
   await ethToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
@@ -718,7 +718,7 @@ test.serial(`Allows subscription in native asset`, async t => {
   let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
   await updatePriceFeed(deployed);
-  txId = await fund.instance.requestSubscription.postTransaction(
+  txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [giveQuantity, wantedShareQuantity, true],
   );

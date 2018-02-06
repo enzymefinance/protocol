@@ -177,7 +177,7 @@ test.serial('a new fund with a name used before cannot be created', async t => {
   t.is(newFundAddress, '0x0000000000000000000000000000000000000000');
 });
 
-// subscription
+// investment
 // TODO: reduce code duplication between this and subsequent tests
 // split first and subsequent tests due to differing behaviour
 const firstTest = {
@@ -188,7 +188,7 @@ const subsequentTests = [
   { wantedShares: 20143783, offeredValue: 30000000 },
   { wantedShares: 500, offeredValue: 2000 }
 ];
-test.serial('allows request and execution on the first subscription', async t => {
+test.serial('allows request and execution on the first investment', async t => {
   let investorGasTotal = new BigNumber(0);
   const pre = await getAllBalances(deployed, accounts, fund);
   const fundPreAllowance = Number(
@@ -204,7 +204,7 @@ test.serial('allows request and execution on the first subscription', async t =>
   const fundPostAllowance = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address])
   );
-  txId = await fund.instance.requestSubscription.postTransaction(
+  txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [firstTest.offeredValue, firstTest.wantedShares, false]
   );
@@ -275,7 +275,7 @@ subsequentTests.forEach((testInstance) => {
     let fundPreCalculations;
     let offerRemainder;
 
-    test.serial('funds approved, and subscribe request issued, but tokens do not change ownership', async t => {
+    test.serial('funds approved, and invest request issued, but tokens do not change ownership', async t => {
       fundPreCalculations = Object.values(
         await fund.instance.performCalculations.call(opts, [])
       );
@@ -296,7 +296,7 @@ subsequentTests.forEach((testInstance) => {
 
       t.deepEqual(fundPostAllowance, fundPreAllowance + inputAllowance);
 
-      txId = await fund.instance.requestSubscription.postTransaction(
+      txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [testInstance.offeredValue, testInstance.wantedShares, false]
       );
@@ -318,7 +318,7 @@ subsequentTests.forEach((testInstance) => {
       t.deepEqual(post.fund.ether, pre.fund.ether);
     });
 
-    test.serial('executing subscribe request transfers shares to investor, and remainder of subscription offer to investor', async t => {
+    test.serial('executing invest request transfers shares to investor, and remainder of investment offer to investor', async t => {
       let investorGasTotal = new BigNumber(0);
       await updatePriceFeed(deployed);
       await updatePriceFeed(deployed);

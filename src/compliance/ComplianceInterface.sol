@@ -7,12 +7,12 @@ interface ComplianceInterface {
 
     // PUBLIC VIEW METHODS
 
-    /// @notice Checks whether subscription is permitted for a participant
+    /// @notice Checks whether investment is permitted for a participant
     /// @param ofParticipant Address requesting to invest in a Melon fund
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
     /// @return Whether identity is eligible to invest in a Melon fund.
-    function isSubscriptionPermitted(
+    function isInvestmentPermitted(
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity

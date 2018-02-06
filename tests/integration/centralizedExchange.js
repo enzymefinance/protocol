@@ -116,7 +116,7 @@ test.serial("investor receives initial mlnToken for testing", async t => {
 });
 
 test.serial(
-  "fund receives MLN from a subscription (request & execute)",
+  "fund receives MLN from a investment (request & execute)",
   async t => {
     await mlnToken.instance.transfer.postTransaction(
       { from: deployer, gasPrice: config.gasPrice },
@@ -127,7 +127,7 @@ test.serial(
       { from: investor, gasPrice: config.gasPrice, gas: config.gas },
       [fund.address, offeredValue],
     );
-    await fund.instance.requestSubscription.postTransaction(
+    await fund.instance.requestInvestment.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
       [offeredValue, wantedShares, false],
     );
