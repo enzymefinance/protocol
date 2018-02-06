@@ -3,6 +3,7 @@ pragma solidity ^0.4.19;
 import "./Fund.sol";
 import "./version/Version.sol";
 
+
 /// @title FundRanking Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Reading contract to enable fund ranking
@@ -12,7 +13,7 @@ contract FundRanking {
 
     /// @dev Instantiate according to a specific Melon protocol version
     /// @param ofVersion Address of Melon protocol version contract
-    function FundRanking(address ofVersion) {
+    function FundRanking(address ofVersion)  public {
         version = Version(ofVersion);
     }
 
@@ -27,7 +28,7 @@ contract FundRanking {
     }
     */
     function getFundDetails()
-        view
+        public view
         returns(
             address[],
             uint[],

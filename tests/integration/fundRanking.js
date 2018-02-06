@@ -1,12 +1,9 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import {deployContract, retrieveContract} from "../../utils/lib/contracts";
-import getAllBalances from "../../utils/lib/getAllBalances";
+import {deployContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 
-const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
@@ -16,24 +13,18 @@ let accounts
 let fundRanking;
 let deployed;
 let version;
-let mlnToken;
-let gasPrice;
-let pricefeed;
-let SimpleMarket;
-let opts;
 let manager;
 let deployer;
-let investor;
 
 const fundNames = ["Fund Name 1", "Fund Name 2"];
 
 // To convert bytes to string
 function binToString(array){
-	var result = "";
+	let result = "";
   const bytes = array._value;
-	for(var i = 0; i < bytes.length; ++i){
+	for(let i = 0; i < bytes.length; i += 1){
     const convertedChar = (String.fromCharCode(bytes[i]));
-    if (convertedChar == "\u0000") {
+    if (convertedChar === "\u0000") {
       break;
     }
 		result+= convertedChar;
@@ -43,14 +34,14 @@ function binToString(array){
 
 // To return values from the array
 function processArray(array) {
-  let newArray = [];
-  for (let i = 0; i < array.length; ++i) {
-    let newInnerArray = [];
+  const newArray = [];
+  for (let i = 0; i < array.length; i += 1) {
+    const newInnerArray = [];
     const innerArray = array[i];
-    for (let j = 0; j < innerArray.length; j++) {
-         if (i == 3) {
+    for (let j = 0; j < innerArray.length; j += 1) {
+         if (i === 3) {
            newInnerArray[j] = binToString(innerArray[j]);
-           continue;
+           // continue;
          }
         newInnerArray[j] = innerArray[j]._value;
     }
@@ -62,11 +53,9 @@ function processArray(array) {
  test.before(async () => {
    deployed = await deployEnvironment(environment);
    accounts = await api.eth.accounts();
-   [deployer, manager, investor] = accounts;
+   [deployer, manager] = accounts;
    version = deployed.Version;
-   mlnToken = deployed.MlnToken;
-   gasPrice = Number(await api.eth.gasPrice());
-   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
+
  });
 
  test.beforeEach(async () => {
@@ -76,11 +65,6 @@ function processArray(array) {
      [version.address]
    );
    version = await deployed.Version;
-   pricefeed = await deployed.PriceFeed;
-   mlnToken = await deployed.MlnToken;
-   SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket",
-     {from: manager, gas: config.gas, gasPrice: config.gasPrice}
-   );
 
    // Fund Setup 1
    let [r, s, v] = await getSignatureParameters(manager);
@@ -125,10 +109,10 @@ function processArray(array) {
 
  // test to check getFundDetails() method
  test('get address, shareprice, time and name of all funds in a version', async (t) => {
-   const accounts = await api.eth.accounts();
+   accounts = await api.eth.accounts();
    const fundDetails = await fundRanking.instance.getFundDetails.call();
    const finalArray = processArray(fundDetails);
-   let addrs = [];
+   const addrs = [];
    addrs[0] = await version.instance.getFundById.call({}, [0]);
    addrs[1] = await version.instance.getFundById.call({}, [1]);
    fundNames.forEach((name, i) => {
