@@ -723,6 +723,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @return Quantity of input asset held in exchange
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
         uint totalSellQuantity;     // quantity in custody across exchanges
+        uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
             if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
                 continue;
@@ -731,14 +732,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             if (sellQuantity == 0) {
                 exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
             }
-            if (!exchanges[i].isApproveOnly) {
-                totalSellQuantity += sellQuantity;
+            totalSellQuantity += sellQuantity;
+            if (exchanges[i].isApproveOnly) {
+                totalSellQuantityInApprove += sellQuantity;
             }
         }
         if (totalSellQuantity == 0) {
             isInOpenMakeOrder[sellAsset] = false;
         }
-        return totalSellQuantity;
+        return totalSellQuantity - totalSellQuantityInApprove; // Since quantity in approve is not actually in custody
     }
 
     // PUBLIC VIEW METHODS
