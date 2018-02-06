@@ -155,3 +155,15 @@ test.serial("Investor cannot transfer his shares directly to an exchange", async
   );
   t.deepEqual(preShares, postShares);
 });
+
+test.serial("Investor cannot give allowance to his shares", async t => {
+  await fund.instance.approve.postTransaction(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
+    [simpleMarketWithApprove.address, 10 ** 5],
+  );
+  const allowance = await fund.instance.allowance.call(
+    {},
+    [simpleAdapterWithApprove.address, investor],
+  );
+  t.deepEqual(allownce, 0);
+});
