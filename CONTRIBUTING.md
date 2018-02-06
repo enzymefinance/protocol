@@ -11,7 +11,7 @@ npm publish        # updates the NPM package
 git push --follow-tags
 ```
 
-## Contributing code
+## Git Branching Model
 
 Please always merge PR into `develop` branch. We follow this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/).
 
