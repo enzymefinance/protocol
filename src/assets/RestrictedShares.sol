@@ -18,11 +18,7 @@ contract RestrictedShares is Shares {
         string _symbol,
         uint _decimal,
         uint _creationTime
-    )
-        Shares(_name, _symbol, _decimal, _creationTime)
-    {
-
-    }
+    ) Shares(_name, _symbol, _decimal, _creationTime) {}
 
     // PUBLIC METHODS
 

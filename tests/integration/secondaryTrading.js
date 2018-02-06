@@ -165,5 +165,5 @@ test.serial("Investor cannot give allowance to his shares", async t => {
     {},
     [simpleAdapterWithApprove.address, investor],
   );
-  t.deepEqual(allownce, 0);
+  t.is(allowance.toNumber(), 0);
 });
