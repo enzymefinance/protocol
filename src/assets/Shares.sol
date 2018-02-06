@@ -35,6 +35,8 @@ contract Shares is Asset, SharesInterface {
     // PUBLIC VIEW METHODS
 
     function getName() view returns (string) { return name; }
+
+    // Function to convert from string to bytes32
     function getNameinBytes32() view returns (bytes32 result) {
       bytes memory localName = bytes(name);
       assembly {
