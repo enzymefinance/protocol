@@ -150,7 +150,7 @@ test.serial(
   },
 );
 
-test.serial("Manager makes an order through centralized exchange adapter", async t => {
+test.serial("Manager makes an order through simple exchange adapter (with approve)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await updatePriceFeed(deployed);
   await fund.instance.makeOrder.postTransaction(
