@@ -59,7 +59,6 @@ function processArray(array) {
   return newArray;
 }
 
- // To be run once before executing tests
  test.before(async () => {
    deployed = await deployEnvironment(environment);
    accounts = await api.eth.accounts();
@@ -70,7 +69,6 @@ function processArray(array) {
    opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
  });
 
-// To be run before every test
  test.beforeEach(async () => {
    fundRanking = await deployContract(
      "FundRanking",
@@ -126,7 +124,7 @@ function processArray(array) {
  });
 
  // test to check getFundDetails() method
- test('get address, shareprice, time and name', async (t) => {
+ test('get address, shareprice, time and name of all funds in a version', async (t) => {
    const accounts = await api.eth.accounts();
    const fundDetails = await fundRanking.instance.getFundDetails.call();
    const finalArray = processArray(fundDetails);
