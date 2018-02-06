@@ -34,7 +34,7 @@ contract RestrictedShares is Shares {
         public
         returns (bool success)
     {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this) || _to == address(this));
         uint codeLength;
         bytes memory empty;
 
@@ -68,7 +68,7 @@ contract RestrictedShares is Shares {
         public
         returns (bool success)
     {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this) || _to == address(this));
         uint codeLength;
 
         assembly {
