@@ -732,7 +732,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             if (sellQuantity == 0) {
                 exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
             }
-            totalSellQuantity += sellQuantity;
+            totalSellQuantity = add(totalSellQuantity, sellQuantity);
             if (exchanges[i].isApproveOnly) {
                 totalSellQuantityInApprove += sellQuantity;
             }
@@ -740,7 +740,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         if (totalSellQuantity == 0) {
             isInOpenMakeOrder[sellAsset] = false;
         }
-        return totalSellQuantity - totalSellQuantityInApprove; // Since quantity in approve is not actually in custody
+        return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
     // PUBLIC VIEW METHODS
