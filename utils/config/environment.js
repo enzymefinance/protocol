@@ -29,8 +29,7 @@ module.exports = {
     protocol: {
       registrar: {
         assetsToRegister: [
-          'ANT-T', 'BNT-T', 'BAT-T', 'BTC-T', 'DGD-T', 'DOGE-T', 'ETC-T', 'ETH-T', 'EUR-T',
-          'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
+          'ETH-T-M', 'MLN-T-M', 'MKR-T-M', 'DAI-T-M'
         ],
       },
       pricefeed: {

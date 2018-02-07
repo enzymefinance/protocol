@@ -1,7 +1,7 @@
 module.exports = {
   kovan: [
     {
-      address: '0x375d52588c3f39ee7710290237a95C691d8432E7',
+      address: '0x8cf1Cab422A0b6b554077A361f8419cDf122a9F9',
       name: 'OasisDex',
       data: '',
       url: 'https://oasisdex.com',
