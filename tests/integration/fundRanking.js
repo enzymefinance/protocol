@@ -39,11 +39,10 @@ function processArray(array) {
     const newInnerArray = [];
     const innerArray = array[i];
     for (let j = 0; j < innerArray.length; j += 1) {
-         if (i === 3) {
-           newInnerArray[j] = binToString(innerArray[j]);
-           // continue;
-         }
         newInnerArray[j] = innerArray[j]._value;
+				if (i === 3) {
+					newInnerArray[j] = binToString(innerArray[j]);
+				}
     }
     newArray[i] = newInnerArray;
   }
@@ -112,6 +111,7 @@ function processArray(array) {
    accounts = await api.eth.accounts();
    const fundDetails = await fundRanking.instance.getFundDetails.call();
    const finalArray = processArray(fundDetails);
+	 console.log(finalArray);
    const addrs = [];
    addrs[0] = await version.instance.getFundById.call({}, [0]);
    addrs[1] = await version.instance.getFundById.call({}, [1]);
