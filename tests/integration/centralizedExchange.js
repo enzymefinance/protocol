@@ -40,7 +40,7 @@ test.before(async () => {
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   centralizedExchange = await deployContract(
-    "exchange/thirdparty/CentralizedExchangeInterface",
+    "exchange/thirdparty/CentralizedExchangeBridge",
     {from: deployer}
   );
   const [r, s, v] = await getSignatureParameters(manager);
@@ -168,7 +168,7 @@ test.serial("Manager makes an order through centralized exchange adapter", async
       trade1.sellQuantity,
       trade1.buyQuantity,
     ],
-  );  
+  );
   const post = await getAllBalances(deployed, accounts, fund);
   const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [mlnToken.address]);
 
