@@ -17,12 +17,12 @@ test.before(async () => {
   [investor] = accounts;
 });
 
-test("Anyone can perform subscription", async t => {
-  const isSubscriptionPermitted = await compliance.instance.isSubscriptionPermitted.call(
+test("Anyone can perform investment", async t => {
+  const isInvestmentPermitted = await compliance.instance.isInvestmentPermitted.call(
     {},
     [investor, 100, 100],
   );
-  t.true(isSubscriptionPermitted);
+  t.true(isInvestmentPermitted);
 });
 
 test("Anyone can perform redemption", async t => {

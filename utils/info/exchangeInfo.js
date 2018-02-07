@@ -17,7 +17,7 @@ module.exports = {
   ],
   live: [
     {
-      address: '0x3Aa927a97594c3ab7d7bf0d47C71c3877D1DE4A1',
+      address: '0x14FBCA95be7e99C15Cc2996c6C9d841e54B79425',
       name: 'OasisDex',
       data: '',
       url: 'https://oasisdex.com',

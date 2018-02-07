@@ -37,11 +37,11 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { subscribe, redeem, tokenFallbackRedeem }
+    enum RequestType { invest, redeem, tokenFallbackRedeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
-        address participant; // Participant in Melon fund requesting subscription or redemption
+        address participant; // Participant in Melon fund requesting investment or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
-        RequestType requestType; // Enum: subscribe, redeem
+        RequestType requestType; // Enum: invest, redeem, tokenFallbackRedeem
         address requestAsset; // Address of the asset being requested
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
@@ -86,7 +86,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     Calculations public atLastUnclaimedFeeAllocation; // Calculation results at last allocateUnclaimedFees() call
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
-    bool public isSubscribeAllowed; // User option, if false fund rejects Melon investments
+    bool public isInvestAllowed; // User option, if false fund rejects Melon investments
     bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
     Order[] public orders; // All the orders this fund placed on exchanges
     mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
@@ -124,7 +124,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     )
         RestrictedShares(withName, "MLNF", 18, now)
     {
-        isSubscribeAllowed = true;
+        isInvestAllowed = true;
         isRedeemAllowed = true;
         owner = ofManager;
         require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
@@ -165,8 +165,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     // EXTERNAL : ADMINISTRATION
 
-    function enableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = true; }
-    function disableSubscription() external pre_cond(isOwner()) { isSubscribeAllowed = false; }
+    function enableInvestment() external pre_cond(isOwner()) { isInvestAllowed = true; }
+    function disableInvestment() external pre_cond(isOwner()) { isInvestAllowed = false; }
     function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
     function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
     function shutDown() external pre_cond(msg.sender == VERSION) { isShutDown = true; }
@@ -178,20 +178,20 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
-    function requestSubscription(
+    function requestInvestment(
         uint giveQuantity,
         uint shareQuantity,
         bool isNativeAsset
     )
         external
         pre_cond(!isShutDown)
-        pre_cond(isSubscribeAllowed)    // subscription using Melon has not been deactivated by the Manager
-        pre_cond(module.compliance.isSubscriptionPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Subscription permitted
+        pre_cond(isInvestAllowed) // investment using Melon has not been deactivated by the Manager
+        pre_cond(module.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
-            requestType: RequestType.subscribe,
+            requestType: RequestType.invest,
             requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(QUOTE_ASSET),
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
@@ -230,10 +230,10 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         RequestUpdated(getLastRequestId());
     }
 
-    /// @notice Executes active subscription and redemption requests, in a way that minimises information advantages of investor
+    /// @notice Executes active investment and redemption requests, in a way that minimises information advantages of investor
     /// @dev Distributes melon and shares according to the request
     /// @param id Index of request to be executed
-    /// @dev Active subscription or redemption request executed
+    /// @dev Active investment or redemption request executed
     function executeRequest(uint id)
         external
         pre_cond(!isShutDown)
@@ -245,7 +245,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
                 now >= add(requests[id].timestamp, module.pricefeed.getInterval()) &&
                 module.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
             )
-        )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first subscription)
+        )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first investment)
          // PriceFeed Module: No recent updates for fund asset list
     {
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
@@ -267,8 +267,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         }
 
         if (
-            isSubscribeAllowed &&
-            request.requestType == RequestType.subscribe &&
+            isInvestAllowed &&
+            request.requestType == RequestType.invest &&
             costQuantity <= request.giveQuantity
         ) {
             if (!isInAssetList[address(QUOTE_ASSET)]) {
@@ -299,7 +299,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         }
     }
 
-    /// @notice Cancels active subscription and redemption requests
+    /// @notice Cancels active investment and redemption requests
     /// @param id Index of request to be executed
     function cancelRequest(uint id)
         external
@@ -732,7 +732,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             if (sellQuantity == 0) {
                 exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
             }
-            totalSellQuantity += sellQuantity;
+            totalSellQuantity = add(totalSellQuantity, sellQuantity);
             if (exchanges[i].isApproveOnly) {
                 totalSellQuantityInApprove += sellQuantity;
             }
@@ -740,7 +740,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         if (totalSellQuantity == 0) {
             isInOpenMakeOrder[sellAsset] = false;
         }
-        return totalSellQuantity - totalSellQuantityInApprove; // Since quantity in approve is not actually in custody
+        return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
     // PUBLIC VIEW METHODS

@@ -235,29 +235,25 @@ module.exports = {
   ],
   live: [
     {
-      address: 'ecf8f87f810ecf450940c9f60066b4a7a501d6a7',
-      name: 'Updated W-ETH contract',
-      symbol: 'OW-ETH',
+      address: 'c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      name: 'Wrapped ETH contract - Ether in ERC20 format',
+      symbol: 'W-ETH',
       decimals: 18,
       url: 'https://makerdao.com/',
       ipfsHash: '',
+      zeroBeforeApproval: false,
+      isERC223: false
     },
-    // {
-    //   address: 'ecf8f87f810ecf450940c9f60066b4a7a501d6a7',
-    //   name: 'Wrapped ETH contract - Ether in ERC20 format',
-    //   symbol: 'W-ETH',
-    //   decimals: 18,
-    //   url: 'https://makerdao.com/',
-    //   ipfsHash: '',
-    // },
-    // {
-    //    address: 'ecf8f87f810ecf450940c9f60066b4a7a501d6a7',
-    //    name: '',
-    //    symbol: 'DAI',
-    //    decimals: 18,
-    //    url: 'https://makerdao.com/',
-    //    ipfsHash: '',
-    // },
+    {
+      address: '89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
+      name: 'Dai',
+      symbol: 'DAI',
+      decimals: 18,
+      url: 'https://makerdao.com/',
+      ipfsHash: '',
+      zeroBeforeApproval: false,
+      isERC223: false
+    },
     {
       address: '59adcf176ed2f6788a41b8ea4c4904518e62b6a4',
       name: '',
@@ -267,12 +263,14 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: 'c66ea802717bfb9833400264dd12c2bceaa34a6d',
+      address: '9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
       name: 'Maker Dao',
       symbol: 'MKR',
       decimals: 18,
       url: 'https://makerdao.com/',
       ipfsHash: '',
+      zeroBeforeApproval: false,
+      isERC223: false
     },
     {
       address: 'e0b7927c4af23765cb51314a0e0521a9645f0e2a',
@@ -298,7 +296,6 @@ module.exports = {
     //   url: 'https://golem.network/',
     //   ipfsHash: '',
     // },
-
     {
       address: 'e94327d07fc17907b4db788e5adf2ed424addff6',
       name: 'Reputation',
@@ -333,6 +330,8 @@ module.exports = {
       decimals: 18,
       url: 'http://melon.fund/',
       ipfsHash: '',
+      zeroBeforeApproval: false,
+      isERC223: false
     },
     // "RHOC": "168296bb09e24a88805cb9c33356536b980d3fc5",
     // "TIME": "6531f133e6deebe7f2dce5a0441aa7ef330b4e53",
