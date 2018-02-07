@@ -43,10 +43,10 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
 
         balances[msg.sender] = sub(balances[msg.sender], _value);
         balances[_to] = add(balances[_to], _value);
-        if (codeLength > 0) {
-            ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
-            receiver.tokenFallback(msg.sender, _value, empty);
-        }
+        // if (codeLength > 0) {
+        //     ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
+        //     receiver.tokenFallback(msg.sender, _value, empty);
+        // }
         Transfer(msg.sender, _to, _value, empty);
         return true;
     }
@@ -75,10 +75,10 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
 
         balances[msg.sender] = sub(balances[msg.sender], _value);
         balances[_to] = add(balances[_to], _value);
-        if (codeLength > 0) {
-            ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
-            receiver.tokenFallback(msg.sender, _value, _data);
-        }
+        // if (codeLength > 0) {
+        //     ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
+        //     receiver.tokenFallback(msg.sender, _value, _data);
+        // }
         Transfer(msg.sender, _to, _value);
         return true;
     }
@@ -123,7 +123,7 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
         // allowance to zero by calling `approve(_spender, 0)` if it is not
         // already 0 to mitigate the race condition described here:
         // https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-        require(_value == 0 || allowed[msg.sender][_spender] == 0);
+        // require(_value == 0 || allowed[msg.sender][_spender] == 0);
 
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
