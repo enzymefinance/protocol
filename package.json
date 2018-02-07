@@ -26,9 +26,10 @@
   },
   "files": [
     "out",
-    "deployment/tokenInfo.js",
-    "addressBook.json",
-    "build"
+    "utils/info/tokenInfo.js",
+    "utils/info/exchangeInfo.js",
+    "utils/info/pricefeedInfo.js",
+    "addressBook.json"
   ],
   "publishConfig": {
     "access": "public"
