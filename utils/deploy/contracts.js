@@ -2,7 +2,8 @@ import * as fs from "fs";
 import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
-import {deployContract} from "../lib/contracts";
+import * as exchangeInfo from "../info/exchangeInfo";
+import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 
 const addressBookFile = "./addressBook.json";
@@ -35,14 +36,15 @@ async function deployEnvironment(environment) {
   } else addressBook = {};
 
   if (environment === "kovan") {
-    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
+    // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
+    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address}`;
+    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address}`;
 
     deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed",
       opts, [
       mlnAddr,
       'Melon Token',
-      'MLN-T',
+      'MLN-T-M',
       18,
       'melonport.com',
       mockBytes,
@@ -53,11 +55,28 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.validity,
     ]);
 
-    deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     // deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
     // console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
 
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
+
+    const pairsToWhitelist = [
+      ['MLN-T-M', 'ETH-T-M'],
+      ['MLN-T-M', 'MKR-T-M'],
+      ['MLN-T-M', 'DAI-T-M'],
+    ];
+    await Promise.all(
+      pairsToWhitelist.map(async (pair) => {
+        console.log(`Whitelisting ${pair}`);
+        const tokenA = `0x${tokenInfo[environment].find(t => t.symbol === pair[0]).address}`;
+        const tokenB = `0x${tokenInfo[environment].find(t => t.symbol === pair[1]).address}`;
+        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+      })
+    );
+
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
+    deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
@@ -93,7 +112,8 @@ async function deployEnvironment(environment) {
 
     addressBook[environment] = {
       PriceFeed: deployed.PriceFeed.address,
-      SimpleMarket: deployed.SimpleMarket.address,
+      // SimpleMarket: deployed.SimpleMarket.address,
+      MatchingMarket: deployed.MatchingMarket.address,
       NoCompliance: deployed.NoCompliance.address,
       RMMakeOrders: deployed.RMMakeOrders.address,
       Governance: deployed.Governance.address,
@@ -103,10 +123,12 @@ async function deployEnvironment(environment) {
       FundRanking: deployed.FundRanking.address
     };
   } else if (environment === "live") {
+    const deployer = '0xc11149e320c31179195fe2c25105b98a9d4e045e';
+    const pricefeedDeployer = '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54';
     const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
+    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "W-ETH").address}`;
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", opts, [
+    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedDeployer}, [
         mlnAddr,
         'Melon Token',
         'MLN',
@@ -126,7 +148,7 @@ async function deployEnvironment(environment) {
         console.log(`Registering ${assetSymbol}`);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
-          .postTransaction({from: accounts[0], gas: 6000000}, [
+          .postTransaction({from: pricefeedDeployer, gas: 6000000}, [
             `0x${tokenEntry.address}`,
             tokenEntry.name,
             tokenEntry.symbol,
@@ -141,17 +163,17 @@ async function deployEnvironment(environment) {
       })
     );
 
-    deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
-    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
-
-    deployed.Governance = await deployContract("system/Governance", opts, [
+    deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
+    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer}
+    );
+    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
+    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
       [config.protocol.governance.authority],
       1,
       yearInSeconds
     ]);
 
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
 
     // add Version to Governance tracking
     await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
@@ -162,7 +184,7 @@ async function deployEnvironment(environment) {
     // TODO: make backup of previous addressbook
     addressBook[environment] = {
       PriceFeed: deployed.PriceFeed.address,
-      NoCompliance: deployed.NoCompliance.address,
+      OnlyManager: deployed.OnlyManager.address,
       RMMakeOrders: deployed.RMMakeOrders.address,
       SimpleAdapter: deployed.SimpleAdapter.address,
       Governance: deployed.Governance.address,
