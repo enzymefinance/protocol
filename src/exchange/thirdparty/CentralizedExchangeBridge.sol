@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 import "../../assets/Asset.sol";
 import "../../dependencies/Owned.sol";
 
-contract CentralizedExchangeInterface is Owned {
+contract CentralizedExchangeBridge is Owned {
 
     // TYPES
 
