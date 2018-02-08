@@ -25,10 +25,10 @@ test('Checks if investment is permitted', async (t) => {
   accounts = await api.eth.accounts();
   const beforeInvestmentPermitted = await picopsCompliance.instance
     .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
+  t.is(beforeInvestmentPermitted, false);
   await simpleCertifier.instance.certify.postTransaction({from: accounts[0]}, [accounts[1]]);
   const investmentPermitted = await picopsCompliance.instance
     .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  t.is(beforeInvestmentPermitted, false);
   t.is(investmentPermitted, true);
 });
 
@@ -36,9 +36,9 @@ test('Checks if redemption permitted', async (t) => {
   accounts = await api.eth.accounts();
   const beforeRedemptionPermitted = await picopsCompliance.instance
     .isRedemptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
+  t.is(beforeRedemptionPermitted, false);
   await simpleCertifier.instance.certify.postTransaction({ from: accounts[0] }, [accounts[1]]);
   const redemptionPermitted = await picopsCompliance.instance
     .isRedemptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  t.is(beforeRedemptionPermitted, false);
   t.is(redemptionPermitted, true);
 });
