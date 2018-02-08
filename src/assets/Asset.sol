@@ -101,7 +101,7 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
         require(balances[_from] >= _value);
         require(allowed[_from][msg.sender] >= _value);
         require(balances[_to] + _value >= balances[_to]);
-        // require(_to == msg.sender); // can only use transferFrom to send to self
+        require(_to == msg.sender); // can only use transferFrom to send to self
 
         balances[_to] += _value;
         balances[_from] -= _value;
