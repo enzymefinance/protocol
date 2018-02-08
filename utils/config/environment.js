@@ -11,10 +11,13 @@ module.exports = {
           'OW-ETH', 'SAI', 'MKR', 'DGD', 'GNT', 'REP', 'ICN'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 60 * 60, // one hour
         validity: 60 * 60,
       },
+      governance: {
+        authority: '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B'
+      }
     },
   },
   kovan: {
@@ -30,7 +33,7 @@ module.exports = {
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 60,
         validity: 60,
       },
@@ -49,13 +52,13 @@ module.exports = {
           'GNO-T', 'GNT-T', 'ICN-T', 'LTC-T', 'REP-T', 'XRP-T', 'SNGLS-T', 'SNT-T'
         ],
       },
-      datafeed: {
+      pricefeed: {
         interval: 0,
         validity: 60,
       },
       fund: {
-        managementReward: 10,
-        performanceReward: 0
+        managementFee: 10,
+        performanceFee: 0
       }
     },
   },
