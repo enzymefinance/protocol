@@ -21,15 +21,15 @@ test.beforeEach(async () => {
   );
 });
 
-test('Checks if subscription is permitted', async (t) => {
+test('Checks if investment is permitted', async (t) => {
   accounts = await api.eth.accounts();
-  const beforeSubscriptionPermitted = await picopsCompliance.instance
-    .isSubscriptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
+  const beforeInvestmentPermitted = await picopsCompliance.instance
+    .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
   await simpleCertifier.instance.certify.postTransaction({from: accounts[0]}, [accounts[1]]);
-  const subscriptionPermitted = await picopsCompliance.instance
-    .isSubscriptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  t.is(beforeSubscriptionPermitted, false);
-  t.is(subscriptionPermitted, true);
+  const investmentPermitted = await picopsCompliance.instance
+    .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
+  t.is(beforeInvestmentPermitted, false);
+  t.is(investmentPermitted, true);
 });
 
 test('Checks if redemption permitted', async (t) => {
