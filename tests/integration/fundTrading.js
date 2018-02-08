@@ -24,8 +24,8 @@ let mlnToken;
 let pricefeed;
 let txId;
 let runningGasTotal;
-let SimpleMarket1;
-let SimpleMarket2;
+let SimpleMarket;
+let MatchingMarket;
 let exchanges;
 let trade1;
 let trade2;
@@ -48,11 +48,12 @@ test.before(async () => {
   pricefeed = await deployed.PriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  SimpleMarket1 = await deployed.SimpleMarket;
-  SimpleMarket2 = await deployContract("exchange/thirdparty/SimpleMarket",
-    {from: manager, gas: config.gas, gasPrice: config.gasPrice} // TODO: remove unnecessary params
+  SimpleMarket = await deployed.SimpleMarket;
+  MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket",
+    {from: deployer, gas: config.gas, gasPrice: config.gasPrice}, // TODO: remove unnecessary params
+    [1546304461]
   );
-  exchanges = [SimpleMarket1, SimpleMarket2];
+  exchanges = [SimpleMarket, MatchingMarket];
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -64,7 +65,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       deployed.PriceFeed.address,
-      [deployed.SimpleMarket.address, SimpleMarket2.address],
+      [deployed.SimpleMarket.address, MatchingMarket.address],
       [deployed.SimpleAdapter.address, deployed.SimpleAdapter.address],
       v,
       r,
@@ -73,6 +74,10 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  await MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
+    { from: deployer, gasPrice: config.gasPrice },
+    [mlnToken.address, ethToken.address],
+  );
 });
 
 test.beforeEach(async () => {
