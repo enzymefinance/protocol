@@ -233,7 +233,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '39A0d812A4CCE588ba1856C20eCA81AAB8E4Aa70',
+      address: 'a27Af8713623fCc239d49108B1A7b187c133e88B',
       name: 'Ether Token (no fallback)',
       symbol: 'ETH-T-M',
       decimals: 18,
@@ -241,7 +241,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '974Ad0c2a0555464b81738034f64BB58FB78bB21',
+      address: 'DC5fC5DaB642f688Bc5BB58bEF6E0d452D7ae123',
       name: 'Melon Token (no fallback)',
       symbol: 'MLN-T-M',
       decimals: 18,
@@ -249,7 +249,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '1d43D6fD82B8E8c82EbB14Fc8a635BDd0e6b7e85',
+      address: '71BE1386EC4d6d780b208529ABc349Ee69c241Cd',
       name: 'MakerDao (no fallback)',
       symbol: 'MKR-T-M',
       decimals: 18,
@@ -257,7 +257,7 @@ module.exports = {
       ipfsHash: '',
     },
     {
-      address: '356EE7f730fBc9543E063F732e5C74868f77e153',
+      address: '82789d9a0951974E58EbB91DF13b84424e51Acc4',
       name: 'Dai (no fallback)',
       symbol: 'DAI-T-M',
       decimals: 18,
