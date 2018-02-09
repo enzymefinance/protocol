@@ -115,6 +115,7 @@ async function deployEnvironment(environment) {
       // SimpleMarket: deployed.SimpleMarket.address,
       MatchingMarket: deployed.MatchingMarket.address,
       NoCompliance: deployed.NoCompliance.address,
+      OnlyManager: deployed.OnlyManager.address,
       RMMakeOrders: deployed.RMMakeOrders.address,
       Governance: deployed.Governance.address,
       SimpleAdapter: deployed.SimpleAdapter.address,
