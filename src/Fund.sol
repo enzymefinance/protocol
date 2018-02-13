@@ -651,14 +651,14 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         createShares(owner, feesShareQuantity); // Updates totalSupply by creating shares allocated to manager
 
         // Update Calculations
-        uint updatedHighWaterMark = atLastUnclaimedFeeAllocation.highWaterMark >= sharePrice ? atLastUnclaimedFeeAllocation.highWaterMark : sharePrice;
+        uint highWaterMark = atLastUnclaimedFeeAllocation.highWaterMark >= sharePrice ? atLastUnclaimedFeeAllocation.highWaterMark : sharePrice;
         atLastUnclaimedFeeAllocation = Calculations({
             gav: gav,
             managementFee: managementFee,
             performanceFee: performanceFee,
             unclaimedFees: unclaimedFees,
             nav: nav,
-            highWaterMark: updatedHighWaterMark,
+            highWaterMark: highWaterMark,
             totalSupply: totalSupply,
             timestamp: now
         });
