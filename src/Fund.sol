@@ -562,9 +562,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         // Performance fee calculation
         // Handle potential division through zero by defining a default value
-        uint valuePerShareExclPerfFees = totalSupply > 0 ? calcValuePerShare(sub(gav, managementFee), totalSupply) : toSmallestShareUnit(1);
-        if (valuePerShareExclPerfFees > atLastUnclaimedFeeAllocation.highWaterMark) {
-            uint gainInSharePrice = sub(valuePerShareExclPerfFees, atLastUnclaimedFeeAllocation.highWaterMark);
+        uint valuePerShareExclMgmtFees = totalSupply > 0 ? calcValuePerShare(sub(gav, managementFee), totalSupply) : toSmallestShareUnit(1);
+        if (valuePerShareExclMgmtFees > atLastUnclaimedFeeAllocation.highWaterMark) {
+            uint gainInSharePrice = sub(valuePerShareExclMgmtFees, atLastUnclaimedFeeAllocation.highWaterMark);
             uint investmentProfits = wmul(gainInSharePrice, totalSupply);
             performanceFee = wmul(investmentProfits, PERFORMANCE_FEE_RATE);
         }
