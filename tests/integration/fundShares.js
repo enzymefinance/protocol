@@ -139,7 +139,7 @@ test.serial('investor receives initial mlnToken for testing', async t => {
 
 /*
 // TODO: this one may be more suitable to a unit test
-test.serial('direct transfer of a token to the Fund is rejected', async t => {
+test.serial.skip('direct transfer of a token to the Fund is rejected', async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await mlnToken.instance.transfer.postTransaction(
     { from: investor, gasPrice: config.gasPrice },
