@@ -75,8 +75,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     // Constant fields
     uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
-    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement
-    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds
+    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
+    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
@@ -569,7 +569,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             performanceFee = wmul(investmentProfits, PERFORMANCE_FEE_RATE);
         }
 
-        // Sum of all FEE
+        // Sum of all FEES
         unclaimedFees = add(managementFee, performanceFee);
     }
 
