@@ -14,7 +14,7 @@ scripts/
 out/
 
 # ignore transpiled code
-lib/
+utils/build
 
 # ignore development addressBook
 addressBook.json

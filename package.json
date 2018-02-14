@@ -22,15 +22,15 @@
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
-    "babel-build": "babel utils/lib/ --out-dir lib",
+    "babel-build": "babel utils/lib/ --out-dir utils/build",
     "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
     "prepublishOnly": "npm run babel-build && npm run append-json"
   },
   "files": [
     "out",
-    "lib",
     "utils/info",
     "utils/config",
+    "utils/build",
     "addressBook.json"
   ],
   "publishConfig": {
