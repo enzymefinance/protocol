@@ -26,9 +26,8 @@
   },
   "files": [
     "out",
-    "utils/info/tokenInfo.js",
-    "utils/info/exchangeInfo.js",
-    "utils/info/pricefeedInfo.js",
+    "utils/info",
+    "utils/lib",
     "addressBook.json"
   ],
   "publishConfig": {
