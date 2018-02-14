@@ -56,8 +56,8 @@ module.exports = {
         validity: 60,
       },
       fund: {
-        managementFee: 10,
-        performanceFee: 0
+        managementFee: 10 ** 16,
+        performanceFee: 10
       }
     },
   },
