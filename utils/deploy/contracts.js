@@ -2,8 +2,8 @@ import * as fs from "fs";
 import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
-import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract, retrieveContract} from "../lib/contracts";
+// import * as exchangeInfo from "../info/exchangeInfo";
+import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 
 const addressBookFile = "./addressBook.json";
@@ -29,16 +29,13 @@ async function deployEnvironment(environment) {
     gas: config.gas,
     gasPrice: config.gasPrice,
   };
-  let addressBook;
+
   const deployed = {};
-  if (fs.existsSync(addressBookFile)) {
-    addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-  } else addressBook = {};
 
   if (environment === "kovan") {
     // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
-    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address}`;
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address;
+    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address;
 
     deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed",
       opts, [
@@ -69,8 +66,8 @@ async function deployEnvironment(environment) {
     await Promise.all(
       pairsToWhitelist.map(async (pair) => {
         console.log(`Whitelisting ${pair}`);
-        const tokenA = `0x${tokenInfo[environment].find(t => t.symbol === pair[0]).address}`;
-        const tokenB = `0x${tokenInfo[environment].find(t => t.symbol === pair[1]).address}`;
+        const tokenA = tokenInfo[environment].find(t => t.symbol === pair[0]).address;
+        const tokenB = tokenInfo[environment].find(t => t.symbol === pair[1]).address;
         await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
       })
     );
@@ -96,7 +93,7 @@ async function deployEnvironment(environment) {
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
           .postTransaction({from: accounts[0]}, [
-            `0x${tokenEntry.address}`,
+            tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
             tokenEntry.decimals,
@@ -109,24 +106,11 @@ async function deployEnvironment(environment) {
         console.log(`Registered ${assetSymbol}`);
       })
     );
-
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      // SimpleMarket: deployed.SimpleMarket.address,
-      MatchingMarket: deployed.MatchingMarket.address,
-      NoCompliance: deployed.NoCompliance.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      Governance: deployed.Governance.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      CentralizedAdapter: deployed.CentralizedAdapter.address,
-      Version: deployed.Version.address,
-      FundRanking: deployed.FundRanking.address
-    };
   } else if (environment === "live") {
     const deployer = '0xc11149e320c31179195fe2c25105b98a9d4e045e';
     const pricefeedDeployer = '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54';
-    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "W-ETH").address}`;
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
+    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
 
     deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedDeployer}, [
         mlnAddr,
@@ -149,7 +133,7 @@ async function deployEnvironment(environment) {
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
           .postTransaction({from: pricefeedDeployer, gas: 6000000}, [
-            `0x${tokenEntry.address}`,
+            tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
             tokenEntry.decimals,
@@ -179,17 +163,6 @@ async function deployEnvironment(environment) {
     await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
     await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
     await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-
-    // TODO: cleaner way to write to address book (maybe can do it dynamically)
-    // TODO: make backup of previous addressbook
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      OnlyManager: deployed.OnlyManager.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      Governance: deployed.Governance.address,
-      Version: deployed.Version.address,
-    };
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     console.log("Deployed ether token");
@@ -262,40 +235,38 @@ async function deployEnvironment(environment) {
       mockAddress,
     ]);
     console.log("Done registration");
-
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      SimpleMarket: deployed.SimpleMarket.address,
-      NoCompliance: deployed.NoCompliance.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      Governance: deployed.Governance.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      CentralizedAdapter: deployed.CentralizedAdapter.address,
-      Version: deployed.Version.address,
-      MlnToken: deployed.MlnToken.address,
-      EurToken: deployed.EurToken.address,
-      EthToken: deployed.EthToken.address,
-      FundRanking: deployed.FundRanking.address
-    };
   }
+  return deployed;  // return instances of contracts we just deployed
+}
 
-  // write out addressBook
-  console.log(`Writing addresses to ${addressBookFile}`);
+// takes `deployed` object as defined above, and environment to write to
+async function writeToAddressBook(deployedContracts, environment) {
+  let addressBook;
+  if (fs.existsSync(addressBookFile)) {
+    addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+  } else addressBook = {};
+
+  const namesToAddresses = {};
+  Object.keys(deployedContracts)
+    .forEach(key => {
+      namesToAddresses[key] = deployedContracts[key].address
+    });
+  addressBook[environment] = namesToAddresses;
+
   fs.writeFileSync(
     addressBookFile,
-    JSON.stringify(addressBook, null, "\t"),
-    "utf8",
+    JSON.stringify(addressBook, null, '  '),
+    'utf8'
   );
-
-  return deployed;  // return instances of contracts we just deployed
 }
 
 if (require.main === module) {
   const environment = process.env.CHAIN_ENV;
   if (environment === undefined) {
-    throw new Error(`Please specify a deployment environment`);
+    throw new Error(`Please specify an environment using the environment variable CHAIN_ENV`);
   } else {
     deployEnvironment(environment)
+    .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
     .catch(err => console.error(err.stack))
     .finally(() => process.exit())
   }

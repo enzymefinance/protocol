@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.6.6-alpha.1",
+  "version": "0.6.6-alpha.7",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
@@ -16,7 +16,7 @@
     "test:ava": "CHAIN_ENV=development ava --serial",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
     "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_VERBOSE=1 && dapp test",
-    "compile": "export SOLC_FLAGS='--optimize' && make all",
+    "compile": "export SOLC_FLAGS='--optimize --optimize-runs=0' && make all",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",

@@ -21,7 +21,6 @@ contract Version is DBC, Owned, VersionInterface {
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     address[] public listOfFunds; // A complete list of fund addresses created using this version
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
-    mapping (bytes32 => address) public fundNamesToOwners; // Links fund names to address based on ownership
 
     // EVENTS
 
@@ -79,7 +78,6 @@ contract Version is DBC, Owned, VersionInterface {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
-        require(fundNamesToOwners[keccak256(ofFundName)] == 0 || fundNamesToOwners[keccak256(ofFundName)] == msg.sender);
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address ofFund = new Fund(
             msg.sender,
@@ -95,7 +93,6 @@ contract Version is DBC, Owned, VersionInterface {
             ofExchangeAdapters
         );
         listOfFunds.push(ofFund);
-        fundNamesToOwners[keccak256(ofFundName)] = msg.sender;
         managerToFunds[msg.sender] = ofFund;
         FundUpdated(ofFund);
     }
@@ -107,7 +104,6 @@ contract Version is DBC, Owned, VersionInterface {
     {
         Fund fund = Fund(ofFund);
         delete managerToFunds[msg.sender];
-        delete fundNamesToOwners[fund.getNameHash()];
         fund.shutDown();
         FundUpdated(ofFund);
     }
@@ -135,11 +131,8 @@ contract Version is DBC, Owned, VersionInterface {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-
-
     function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
     function getFundByManager(address ofManager) view returns (address) { return managerToFunds[ofManager]; }
-    function fundNameTaken(string ofFundName) view returns (bool) { return fundNamesToOwners[keccak256(ofFundName)] != 0; }
 }
