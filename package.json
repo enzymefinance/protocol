@@ -30,6 +30,7 @@
     "out",
     "lib",
     "utils/info",
+    "utils/config",
     "addressBook.json"
   ],
   "publishConfig": {
