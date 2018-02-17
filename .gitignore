@@ -13,6 +13,9 @@ scripts/
 # ignore built contracts
 out/
 
+# ignore transpiled code
+utils/build
+
 # ignore development addressBook
 addressBook.json
 

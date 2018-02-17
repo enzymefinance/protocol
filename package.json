@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.6.6-alpha.7",
+  "version": "0.6.6-alpha.11",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
@@ -22,13 +22,15 @@
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
-    "prepublishOnly": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json"
+    "babel-build": "babel utils/lib/ --out-dir utils/build",
+    "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
+    "prepublishOnly": "npm run babel-build && npm run append-json"
   },
   "files": [
     "out",
-    "utils/info/tokenInfo.js",
-    "utils/info/exchangeInfo.js",
-    "utils/info/pricefeedInfo.js",
+    "utils/info",
+    "utils/config",
+    "utils/build",
     "addressBook.json"
   ],
   "publishConfig": {
