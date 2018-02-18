@@ -576,13 +576,13 @@ testArray.forEach((testInstance, i) => {
       postNav,
       postSharePrice,
     ] = Object.values(await fund.instance.performCalculations.call({}, []));
-
     const totalShares = await fund.instance.totalSupply.call({}, []);
     const feeDifference = postUnclaimedFees.minus(preUnclaimedFees);
     const expectedFeeShareDifference = Math.floor(
       totalShares * postUnclaimedFees / postGav -
       (totalShares + testInstance.wantedShares) * preUnclaimedFees / preGav
     );
+
     t.deepEqual(postGav, preGav.minus(testInstance.wantedValue).minus(additionalValue));
     t.deepEqual(postManagementFee, preManagementFee.add(feeDifference));
     t.deepEqual(postUnclaimedFees, preUnclaimedFees.add(feeDifference));
