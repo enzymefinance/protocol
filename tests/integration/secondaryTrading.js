@@ -85,7 +85,6 @@ test.beforeEach(async () => {
   await updatePriceFeed(deployed);
 });
 
-
 test.serial(
   "Investor cannot transfer his shares directly to an exchange",
   async t => {
