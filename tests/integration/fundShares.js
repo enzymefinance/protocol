@@ -2,6 +2,7 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import { retrieveContract } from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
+import allocateUnclaimedFees from "../../utils/lib/allocateUnclaimedFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 import updatePriceFeed from "../../utils/lib/updatePriceFeed";
@@ -30,17 +31,6 @@ let fund;
 let version;
 let deployed;
 let atLastUnclaimedFeeAllocation;
-
-async function allocateUnclaimedFees() {
-  const tx = await fund.instance.allocateUnclaimedFees.postTransaction(
-    { from: manager, gasPrice: config.gasPrice },
-    [],
-  );
-  const block = await api.eth.getTransactionReceipt(tx);
-  const timestamp = (await api.eth.getBlockByNumber(block.blockNumber))
-    .timestamp
-  return timestamp;
-}
 
 BigNumber.config({ ERRORS: false });
 
@@ -439,7 +429,7 @@ subsequentTests.forEach(testInstance => {
   });
 
   test.serial("management fee calculated correctly", async t => {
-    const timestamp = await allocateUnclaimedFees();
+    const timestamp = await allocateUnclaimedFees(fund, manager, config);
     const currentTime = new Date(timestamp).valueOf();
     const calculationsAtLastAllocation = await fund.instance.atLastUnclaimedFeeAllocation.call({}, []);
     const gav = await fund.instance.calcGav.call({}, []);

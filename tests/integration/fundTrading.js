@@ -12,6 +12,8 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 
+BigNumber.config({ ERRORS: false });
+
 // hoisted variables
 let accounts;
 let deployer;
@@ -35,8 +37,8 @@ let version;
 let deployed;
 
 // mock data
-const offeredValue = new BigNumber(10 ** 10);
-const wantedShares = new BigNumber(10 ** 10);
+const offeredValue = new BigNumber(10 ** 22);
+const wantedShares = new BigNumber(10 ** 22);
 const numberofExchanges = 2;
 
 test.before(async () => {
@@ -97,28 +99,28 @@ test.beforeEach(async () => {
     ethToken.address,
     mlnToken.address,
   ]);
-  const sellQuantity1 = new BigNumber(1000);
+  const sellQuantity1 = new BigNumber(10 ** 21);
   trade1 = {
     sellQuantity: sellQuantity1,
     buyQuantity: new BigNumber(
       Math.round(referencePrice / 10 ** 18 * sellQuantity1),
     ),
   };
-  const sellQuantity2 = new BigNumber(50);
+  const sellQuantity2 = new BigNumber(50 * 10 ** 18);
   trade2 = {
     sellQuantity: sellQuantity2,
     buyQuantity: new BigNumber(
       Math.round(referencePrice / 10 ** 18 * sellQuantity2),
     ),
   };
-  const sellQuantity3 = new BigNumber(5);
+  const sellQuantity3 = new BigNumber(5 * 10 ** 18);
   trade3 = {
     sellQuantity: sellQuantity3,
     buyQuantity: new BigNumber(
       Math.round(invertedReferencePrice / 10 ** 18 * sellQuantity3 / 10),
     ),
   };
-  const sellQuantity4 = new BigNumber(5);
+  const sellQuantity4 = new BigNumber(5 * 10 ** 18);
   trade4 = {
     sellQuantity: sellQuantity4,
     buyQuantity: new BigNumber(
@@ -127,7 +129,7 @@ test.beforeEach(async () => {
   };
 });
 
-const initialTokenAmount = new BigNumber(10 ** 15);
+const initialTokenAmount = new BigNumber(10 ** 23);
 test.serial("investor receives initial mlnToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
@@ -369,6 +371,7 @@ exchangeIndexes.forEach(i => {
         ],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [
         exchanges[i].address,
@@ -380,10 +383,10 @@ exchangeIndexes.forEach(i => {
 
       t.deepEqual(exchangePostMln, exchangePreMln.add(trade2.sellQuantity));
       t.deepEqual(exchangePostEthToken, exchangePreEthToken);
-      t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
+      t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken);
       t.deepEqual(
-        post.deployer.EthToken,
-        pre.deployer.EthToken.minus(trade2.sellQuantity),
+        post.deployer.MlnToken,
+        pre.deployer.MlnToken.minus(trade2.sellQuantity),
       );
       t.deepEqual(
         post.deployer.ether,
@@ -772,7 +775,7 @@ test.serial(`Allows investment in native asset`, async t => {
   );
 
   t.is(Number(investorPostShares), investorPreShares + wantedShareQuantity);
-  t.true(post.investor.EthToken >= pre.investor.EthToken - giveQuantity);
+  t.true(post.investor.EthToken >= pre.investor.EthToken.minus(giveQuantity));
   t.deepEqual(
     post.investor.ether,
     pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
@@ -781,7 +784,7 @@ test.serial(`Allows investment in native asset`, async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
-  t.true(post.fund.EthToken <= pre.fund.EthToken + giveQuantity);
+  t.true(post.fund.EthToken <= pre.fund.EthToken.plus(giveQuantity));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
