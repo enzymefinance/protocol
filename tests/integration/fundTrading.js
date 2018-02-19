@@ -96,29 +96,29 @@ test.beforeEach(async () => {
     ethToken.address,
     mlnToken.address,
   ]);
-  const sellQuantity1 = 1000;
+  const sellQuantity1 = new BigNumber(1000);
   trade1 = {
     sellQuantity: sellQuantity1,
-    buyQuantity: Math.round(referencePrice / 10 ** 18 * sellQuantity1),
+    buyQuantity: new BigNumber(Math.round(referencePrice / 10 ** 18 * sellQuantity1)),
   };
-  const sellQuantity2 = 50;
+  const sellQuantity2 = new BigNumber(50);
   trade2 = {
     sellQuantity: sellQuantity2,
-    buyQuantity: Math.round(referencePrice / 10 ** 18 * sellQuantity2),
+    buyQuantity: new BigNumber(Math.round(referencePrice / 10 ** 18 * sellQuantity2)),
   };
-  const sellQuantity3 = 5;
+  const sellQuantity3 = new BigNumber(5);
   trade3 = {
     sellQuantity: sellQuantity3,
-    buyQuantity: Math.round(
+    buyQuantity: new BigNumber(Math.round(
       invertedReferencePrice / 10 ** 18 * sellQuantity3 / 10,
-    ),
+    )),
   };
-  const sellQuantity4 = 5;
+  const sellQuantity4 = new BigNumber(5);
   trade4 = {
     sellQuantity: sellQuantity4,
-    buyQuantity: Math.round(
+    buyQuantity: new BigNumber(Math.round(
       invertedReferencePrice / 10 ** 18 * sellQuantity4 * 1000,
-    ),
+    )),
   };
 });
 
@@ -136,12 +136,12 @@ test.serial("investor receives initial mlnToken for testing", async t => {
   const post = await getAllBalances(deployed, accounts, fund);
 
   t.deepEqual(
-    postDeployerEth.toString(),
-    preDeployerEth.minus(runningGasTotal.times(gasPrice)).toString(),
+    postDeployerEth,
+    preDeployerEth.minus(runningGasTotal.times(gasPrice)),
   );
   t.deepEqual(
     post.investor.MlnToken,
-    new BigNumber(pre.investor.MlnToken).add(initialTokenAmount).toNumber(),
+    pre.investor.MlnToken.add(initialTokenAmount),
   );
 
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -163,7 +163,7 @@ exchangeIndexes.forEach((i) => {
       let investorGasTotal = new BigNumber(0);
       await mlnToken.instance.transfer.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
-        [investor, 10 ** 14, ""],
+        [investor, new BigNumber(10 ** 14), ""],
       );
       const pre = await getAllBalances(deployed, accounts, fund);
       txId = await mlnToken.instance.approve.postTransaction(
@@ -186,13 +186,13 @@ exchangeIndexes.forEach((i) => {
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [requestId]
       );
-      investorGasTotal = investorGasTotal.plus((await api.eth.getTransactionReceipt(txId)).gasUsed);
-      const estimatedMlnToSpend = Number(
-        new BigNumber(wantedShares)
+      gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+      investorGasTotal = investorGasTotal.plus(gasUsed);
+      console.log(gasUsed);
+      const estimatedMlnToSpend =
+          wantedShares
           .times(sharePrice)
-          .dividedBy(new BigNumber(10 ** 18)) // toSmallestShareUnit
-          .floor()
-      );
+          .dividedBy(new BigNumber(10 ** 18));
       // set approved token back to zero
       txId = await mlnToken.instance.approve.postTransaction({from: investor}, [fund.address, 0]);
       investorGasTotal = investorGasTotal.plus((await api.eth.getTransactionReceipt(txId)).gasUsed);
@@ -207,7 +207,7 @@ exchangeIndexes.forEach((i) => {
       t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
       t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
       t.deepEqual(post.manager.ether, pre.manager.ether);
-      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken + estimatedMlnToSpend);
+      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnToSpend));
       t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
@@ -218,12 +218,8 @@ exchangeIndexes.forEach((i) => {
       1}: manager makes order, and sellToken (MLN-T) is transferred to exchange`,
     async t => {
       const pre = await getAllBalances(deployed, accounts, fund);
-      const exchangePreMln = Number(
-        await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
-      const exchangePreEthToken = Number(
-        await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
+      const exchangePreMln = await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]);
+      const exchangePreEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[i].address]);
       await updatePriceFeed(deployed);
       txId = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -237,15 +233,11 @@ exchangeIndexes.forEach((i) => {
       );
       const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
-      const exchangePostMln = Number(
-        await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
-      const exchangePostEthToken = Number(
-        await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
+      const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]);
+      const exchangePostEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[i].address]);
       const post = await getAllBalances(deployed, accounts, fund);
 
-      t.deepEqual(exchangePostMln, exchangePreMln + trade1.sellQuantity);
+      t.deepEqual(exchangePostMln, exchangePreMln.add(trade1.sellQuantity));
       t.deepEqual(exchangePostEthToken, exchangePreEthToken);
       t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
       t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -256,7 +248,7 @@ exchangeIndexes.forEach((i) => {
         post.manager.ether,
         pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
       );
-      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken - trade1.sellQuantity);
+      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
       t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
@@ -276,7 +268,7 @@ exchangeIndexes.forEach((i) => {
       );
       txId = await ethToken.instance.approve.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
-        [exchanges[i].address, trade1.buyQuantity + 100],
+        [exchanges[i].address, trade1.buyQuantity.add(100)],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -302,11 +294,11 @@ exchangeIndexes.forEach((i) => {
       );
       t.deepEqual(
         post.deployer.MlnToken,
-        pre.deployer.MlnToken + trade1.sellQuantity,
+        pre.deployer.MlnToken.add(trade1.sellQuantity),
       );
       t.deepEqual(
         post.deployer.EthToken,
-        pre.deployer.EthToken - trade1.buyQuantity,
+        pre.deployer.EthToken.minus(trade1.buyQuantity),
       );
       t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
       t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -315,7 +307,7 @@ exchangeIndexes.forEach((i) => {
       t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
       t.deepEqual(post.manager.ether, pre.manager.ether);
       t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
-      t.deepEqual(post.fund.EthToken, pre.fund.EthToken + trade1.buyQuantity);
+      t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(trade1.buyQuantity));
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
   );
@@ -325,17 +317,14 @@ exchangeIndexes.forEach((i) => {
       1}: third party makes order (sell MLN-T for ETH-T), and MLN-T is transferred to exchange`,
     async t => {
       const pre = await getAllBalances(deployed, accounts, fund);
-      const exchangePreMln = Number(
-        await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
-      const exchangePreEthToken = Number(
-        await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
+      const exchangePreMln = await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]);
+      const exchangePreEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[i].address]);
       txId = await mlnToken.instance.approve.postTransaction(
         { from: deployer, gasPrice: config.gasPrice },
         [exchanges[i].address, trade2.sellQuantity],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       txId = await exchanges[i].instance.offer.postTransaction(
         { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
@@ -348,20 +337,16 @@ exchangeIndexes.forEach((i) => {
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
-      const exchangePostMln = Number(
-        await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
-      const exchangePostEthToken = Number(
-        await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
-      );
+      const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]);
+      const exchangePostEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[i].address]);
       const post = await getAllBalances(deployed, accounts, fund);
 
-      t.deepEqual(exchangePostMln, exchangePreMln + trade2.sellQuantity);
+      t.deepEqual(exchangePostMln, exchangePreMln.add(trade2.sellQuantity));
       t.deepEqual(exchangePostEthToken, exchangePreEthToken);
       t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
       t.deepEqual(
         post.deployer.EthToken,
-        pre.deployer.EthToken - trade2.sellQuantity,
+        pre.deployer.EthToken.minus(trade2.sellQuantity),
       );
       t.deepEqual(
         post.deployer.ether,
@@ -409,7 +394,7 @@ exchangeIndexes.forEach((i) => {
       t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
       t.deepEqual(
         post.deployer.EthToken,
-        pre.deployer.EthToken + trade2.buyQuantity,
+        pre.deployer.EthToken.add(trade2.buyQuantity),
       );
       t.deepEqual(post.deployer.ether, pre.deployer.ether);
       t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
@@ -421,8 +406,8 @@ exchangeIndexes.forEach((i) => {
         post.manager.ether,
         pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
       );
-      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken + trade2.sellQuantity);
-      t.deepEqual(post.fund.EthToken, pre.fund.EthToken - trade2.buyQuantity);
+      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade2.sellQuantity));
+      t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(trade2.buyQuantity));
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
   );
@@ -432,9 +417,7 @@ test.serial(
   "manager tries to make a bad order (sell ETH-T for MLN-T), RMMakeOrders should prevent this",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    const exchangePreEthToken = Number(
-      await ethToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
+    const exchangePreEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[0].address]);
     const preOrderId = await exchanges[0].instance.last_offer_id.call({}, []);
     txId = await fund.instance.makeOrder.postTransaction(
       { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -448,9 +431,7 @@ test.serial(
     );
     const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
-    const exchangePostEthToken = Number(
-      await ethToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
+    const exchangePostEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[0].address]);
     const post = await getAllBalances(deployed, accounts, fund);
     const postOrderId = await exchanges[0].instance.last_offer_id.call({}, []);
 
@@ -468,12 +449,8 @@ test.serial(
   "third party makes order (sell ETH-T for MLN-T) for a bad price, and MLN-T is transferred to exchange",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    const exchangePreMln = Number(
-      await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
-    const exchangePreEthToken = Number(
-      await ethToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
+    const exchangePreMln = await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]);
+    const exchangePreEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[0].address]);
     txId = await ethToken.instance.approve.postTransaction(
       { from: deployer, gasPrice: config.gasPrice },
       [exchanges[0].address, trade4.sellQuantity],
@@ -491,23 +468,19 @@ test.serial(
     );
     gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
-    const exchangePostMln = Number(
-      await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
-    const exchangePostEthToken = Number(
-      await ethToken.instance.balanceOf.call({}, [exchanges[0].address]),
-    );
+    const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]);
+    const exchangePostEthToken = await ethToken.instance.balanceOf.call({}, [exchanges[0].address]);
     const post = await getAllBalances(deployed, accounts, fund);
 
     t.deepEqual(exchangePostMln, exchangePreMln);
     t.deepEqual(
       exchangePostEthToken,
-      exchangePreEthToken + trade4.sellQuantity,
+      exchangePreEthToken.add(trade4.sellQuantity),
     );
     t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
     t.deepEqual(
       post.deployer.EthToken,
-      pre.deployer.EthToken - trade4.sellQuantity,
+      pre.deployer.EthToken.minus(trade4.sellQuantity),
     );
     t.deepEqual(
       post.deployer.ether,
@@ -526,7 +499,7 @@ test.serial(
 );
 
 test.serial(
-  "manager tried to take a bad order (buys ETH-T for MLN-T), RMMakeOrders should prevent it",
+  "manager tries to take a bad order (buys ETH-T for MLN-T), RMMakeOrders should prevent it",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const exchangePreMln = Number(
@@ -604,7 +577,7 @@ test.serial(
     const post = await getAllBalances(deployed, accounts, fund);
 
     t.deepEqual(exchangePostEthToken, exchangePreEthToken - trade1.sellQuantity);
-    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken + trade1.sellQuantity);
+    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
     t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
     t.deepEqual(
@@ -617,16 +590,14 @@ test.serial(
 
 // redeeming after trading
 const redemptions = [
-  { amount: new BigNumber(100000000) },
-  { amount: new BigNumber(150000000) },
+  { amount: new BigNumber(10 ** 7) },
+  { amount: new BigNumber(2 * 10 ** 7) },
 ];
 redemptions.forEach((redemption, index) => {
   test.serial(`Allows redemption ${index + 1} (standard redemption method)`, async t => {
     let investorGasTotal = new BigNumber(0);
-    const investorPreShares = Number(
-      await fund.instance.balanceOf.call({}, [investor]),
-    );
-    const preTotalShares = Number(await fund.instance.totalSupply.call({}, []));
+    const investorPreShares = await fund.instance.balanceOf.call({}, [investor]);
+    const preTotalShares = await fund.instance.totalSupply.call({}, []);
     const sharePrice = await fund.instance.calcSharePrice.call({}, []);
     const wantedValue = Number(
       redemption.amount
@@ -649,6 +620,7 @@ redemptions.forEach((redemption, index) => {
       [requestId],
     );
     gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+    console.log(gasUsed);
     investorGasTotal = investorGasTotal.plus(gasUsed);
     // reduce remaining allowance to zero
     txId = await mlnToken.instance.approve.postTransaction(
@@ -660,22 +632,18 @@ redemptions.forEach((redemption, index) => {
     const remainingApprovedMln = Number(
       await mlnToken.instance.allowance.call({}, [investor, fund.address]),
     );
-    const investorPostShares = Number(
-      await fund.instance.balanceOf.call({}, [investor]),
-    );
-    const postTotalShares = Number(
-      await fund.instance.totalSupply.call({}, []),
-    );
+    const investorPostShares = await fund.instance.balanceOf.call({}, [investor]);
+    const postTotalShares = await fund.instance.totalSupply.call({}, []);
     const post = await getAllBalances(deployed, accounts, fund);
 
     t.deepEqual(remainingApprovedMln, 0);
-    t.deepEqual(postTotalShares, preTotalShares - redemption.amount);
-    t.deepEqual(investorPostShares, investorPreShares - redemption.amount);
+    t.deepEqual(postTotalShares, preTotalShares.minus(redemption.amount));
+    t.deepEqual(investorPostShares, investorPreShares.minus(redemption.amount));
     t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
     t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
     t.deepEqual(
       post.investor.MlnToken,
-      pre.investor.MlnToken + wantedValue,
+      pre.investor.MlnToken.add(wantedValue),
     );
     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
     t.deepEqual(
@@ -685,7 +653,7 @@ redemptions.forEach((redemption, index) => {
     t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
     t.deepEqual(post.manager.ether, pre.manager.ether);
-    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken - wantedValue);
+    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(wantedValue));
     t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
   });
@@ -801,7 +769,7 @@ test.serial(`Allows redemption in native asset`, async t => {
 
   t.is(Number(investorPostShares), investorPreShares - shareQuantity);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
-  t.true(post.investor.EthToken >= pre.investor.EthToken - receiveQuantity);
+  t.true(post.investor.EthToken >= pre.investor.EthToken.minus(receiveQuantity));
   t.deepEqual(
     post.investor.ether,
     pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
@@ -810,7 +778,7 @@ test.serial(`Allows redemption in native asset`, async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken - (post.investor.EthToken - pre.investor.EthToken));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(post.investor.EthToken).plus(pre.investor.EthToken));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
@@ -869,7 +837,7 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
   t.deepEqual(
     post.investor.MlnToken,
-    pre.investor.MlnToken + wantedValue,
+    pre.investor.MlnToken.add(wantedValue),
   );
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(
@@ -879,7 +847,7 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken - wantedValue);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(wantedValue));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
@@ -888,26 +856,22 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
 test.serial("converts fees and manager receives them", async t => {
   await updatePriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
-  const preManagerShares = Number(
-    await fund.instance.balanceOf.call({}, [manager]),
-  );
-  const totalSupply = Number(await fund.instance.totalSupply.call({}, []));
-  const [gav, , , unclaimedFees, ,] = Object.values(
-    await fund.instance.performCalculations.call({}, []),
-  );
-  const shareQuantity = Math.floor(totalSupply * unclaimedFees / gav);
+  const preManagerShares = await fund.instance.balanceOf.call({}, [manager]);
+  const totalSupply = await fund.instance.totalSupply.call({}, []);
   txId = await fund.instance.allocateUnclaimedFees.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [],
   );
+  const [gav, , , unclaimedFees, ,] = Object.values(
+    await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
+  );
+  const shareQuantity = Math.floor(Number(totalSupply.mul(unclaimedFees).div(gav)));
   const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
-  const postManagerShares = Number(
-    await fund.instance.balanceOf.call({}, [manager]),
-  );
+  const postManagerShares = await fund.instance.balanceOf.call({}, [manager]);
   const post = await getAllBalances(deployed, accounts, fund);
 
-  t.deepEqual(postManagerShares, preManagerShares + shareQuantity);
+  t.deepEqual(postManagerShares, preManagerShares.add(shareQuantity));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);

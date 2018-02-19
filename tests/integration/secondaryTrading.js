@@ -24,8 +24,8 @@ let version;
 let deployed;
 
 // mock data
-const offeredValue = 10 ** 10;
-const wantedShares = 10 ** 10;
+const offeredValue = new BigNumber(10 ** 10);
+const wantedShares = new BigNumber(10 ** 10);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -92,7 +92,7 @@ test.serial(
     const preShares = await fund.instance.balanceOf.call({}, [investor]);
     await fund.instance.transfer.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [simpleMarket.address, 10 ** 5, ""],
+      [simpleMarket.address, new BigNumber(10 ** 5), ""],
     );
     const postShares = await fund.instance.balanceOf.call({}, [investor]);
     t.deepEqual(preShares, postShares);
@@ -102,7 +102,7 @@ test.serial(
 test.serial("Investor cannot give allowance to his shares", async t => {
   await fund.instance.approve.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [simpleMarket.address, 10 ** 5],
+    [simpleMarket.address, new BigNumber(10 ** 5)],
   );
   const allowance = await fund.instance.allowance.call({}, [
     simpleMarket.address,
