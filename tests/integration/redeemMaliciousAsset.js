@@ -40,9 +40,7 @@ test.before(async () => {
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
-  maliciousToken = await deployContract("testing/MaliciousToken", {
-    from: deployer,
-  });
+  maliciousToken = await deployContract("testing/MaliciousToken", {from: deployer});
 
   // give investor some MLN to use
   await mlnToken.instance.transfer.postTransaction(
@@ -81,6 +79,17 @@ test.before(async () => {
     mockAddress,
     mockAddress,
   ]);
+  await pricefeed.instance.register.postTransaction({ from: deployer }, [
+    deployed.EthToken.address,
+    "",
+    "",
+    18,
+    "",
+    "",
+    mockBytes,
+    mockAddress,
+    mockAddress,
+  ]);
 
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
@@ -105,6 +114,10 @@ test.before(async () => {
 });
 
 test.serial("initial investment with MLN", async t => {
+  await pricefeed.instance.update.postTransaction({ from: deployer }, [
+    [mlnToken.address, maliciousToken.address, deployed.EthToken.address],
+    [new BigNumber(10 ** 18), new BigNumber(10 ** 18), new BigNumber(10 ** 18)],
+  ]);
   await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, offeredMln],
@@ -113,24 +126,12 @@ test.serial("initial investment with MLN", async t => {
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [offeredMln, wantedShares, false],
   );
-  // do pricefeed updates
-  await pricefeed.instance.update.postTransaction({ from: deployer }, [
-    [mlnToken.address, maliciousToken.address],
-    [new BigNumber(10 ** 18), new BigNumber(10 ** 18)],
-  ]);
-  await pricefeed.instance.update.postTransaction({ from: deployer }, [
-    [mlnToken.address, maliciousToken.address],
-    [new BigNumber(10 ** 18), new BigNumber(10 ** 18)],
-  ]);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [requestId],
   );
-
-  const ownedShares = Number(
-    await fund.instance.balanceOf.call({}, [investor]),
-  );
+  const ownedShares = Number(await fund.instance.balanceOf.call({}, [investor]));
 
   t.deepEqual(ownedShares, wantedShares);
 });
