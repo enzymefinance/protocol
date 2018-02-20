@@ -834,7 +834,7 @@ test.serial(`Allows redemption in native asset`, async t => {
   t.is(Number(investorPostShares), investorPreShares - shareQuantity);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
   t.true(
-    post.investor.EthToken >= pre.investor.EthToken.minus(receiveQuantity),
+    post.investor.EthToken >= pre.investor.EthToken.plus(receiveQuantity),
   );
   t.deepEqual(
     post.investor.ether,
