@@ -10,6 +10,6 @@ export default async function getSignatureParameters(managerAddress) {
   sig = sig.substr(2, sig.length);
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
-  const v = parseFloat(sig.substr(128, 2)) + 27;
+  const v = parseInt(sig.substr(128, 2), 16);
   return [r, s, v];
 }
