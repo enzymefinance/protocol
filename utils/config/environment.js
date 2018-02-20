@@ -2,7 +2,7 @@ module.exports = {
   live: {
     networkId: '1',
     host: 'localhost',
-    port: 8545,
+    port: 8549,
     gas: 6700000,
     gasPrice: 100000000000,
     protocol: {
@@ -23,7 +23,7 @@ module.exports = {
   kovan: {
     networkId: '42',
     host: 'localhost',
-    port: 8545,
+    port: 8547,
     gas: 6690000,
     gasPrice: 100000000000,
     protocol: {
