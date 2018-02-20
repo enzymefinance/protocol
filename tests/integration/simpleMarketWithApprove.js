@@ -12,6 +12,8 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 
+BigNumber.config({ ERRORS: false });
+
 // hoisted variables
 let accounts;
 let deployer;
@@ -28,8 +30,8 @@ let version;
 let deployed;
 
 // mock data
-const offeredValue = 10 ** 10;
-const wantedShares = 10 ** 10;
+const offeredValue = new BigNumber(10 ** 21);
+const wantedShares = new BigNumber(10 ** 21);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -69,7 +71,7 @@ test.before(async () => {
   fund = await retrieveContract("Fund", fundAddress);
 
   // investment
-  const initialTokenAmount = new BigNumber(10 ** 15);
+  const initialTokenAmount = new BigNumber(10 ** 22);
   await mlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [investor, initialTokenAmount, ""],
@@ -98,7 +100,7 @@ test.beforeEach(async () => {
     {},
     [mlnToken.address, ethToken.address],
   );
-  const sellQuantity1 = 1000;
+  const sellQuantity1 = new BigNumber(10 ** 19);
   trade1 = {
     sellQuantity: sellQuantity1,
     buyQuantity: Math.round(referencePrice / 10 ** 18 * sellQuantity1),
@@ -130,7 +132,7 @@ test.serial(
       [mlnToken.address],
     );
     t.is(Number(heldinExchange), 0);
-    t.is(Number(fundsApproved), trade1.sellQuantity);
+    t.deepEqual(fundsApproved, trade1.sellQuantity);
     t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
     t.deepEqual(post.investor.ether, pre.investor.ether);
@@ -178,14 +180,14 @@ test.serial("Third party takes the order", async t => {
   t.deepEqual(exchangePostEthToken, exchangePreEthToken);
   t.deepEqual(
     post.deployer.MlnToken,
-    pre.deployer.MlnToken + trade1.sellQuantity,
+    pre.deployer.MlnToken.add(trade1.sellQuantity),
   );
   t.deepEqual(
     post.deployer.EthToken,
-    pre.deployer.EthToken - trade1.buyQuantity,
+    pre.deployer.EthToken.minus(trade1.buyQuantity),
   );
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken - trade1.sellQuantity);
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken + trade1.buyQuantity);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(trade1.buyQuantity));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
