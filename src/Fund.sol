@@ -258,7 +258,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         require(module.pricefeed.hasRecentPrice(address(request.requestAsset)));
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
-        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice())); // By definition quoteDecimals == fundDecimals
+        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
         if (request.requestAsset == address(NATIVE_ASSET)) {
             var (isPriceRecent, invertedNativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getInvertedPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
@@ -631,9 +631,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
-    /// @dev Only Owner
-    function allocateUnclaimedFees()
-        pre_cond(isOwner())
+    /// @return sharePrice Share price denominated in [base unit of melonAsset]
+    function calcSharePriceAndAllocateFees() public returns (uint)
     {
         var (
             gav,
@@ -662,6 +661,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         FeesConverted(now, feesShareQuantity, unclaimedFees);
         CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply);
+
+        return sharePrice;
     }
 
     // PUBLIC : REDEEMING
