@@ -251,18 +251,14 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
                 module.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
             )
         )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first investment)
-         // PriceFeed Module: No recent updates for fund asset list
-    {
-        // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
-        // based in QUOTE_ASSET and multiplied by 10 ** fundDecimals
-        require(module.pricefeed.hasRecentPrice(address(QUOTE_ASSET)));
-        require(module.pricefeed.hasRecentPrices(ownedAssets));
-        var (isRecent, , ) = module.pricefeed.getInvertedPrice(address(QUOTE_ASSET));
-        // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
-        // By definition quoteDecimals == fundDecimals
-        Request request = requests[id];
 
-        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
+    {
+        Request request = requests[id];
+        // PriceFeed Module: No recent updates for fund asset list
+        require(module.pricefeed.hasRecentPrice(address(request.requestAsset)));
+
+        // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
+        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
         if (request.requestAsset == address(NATIVE_ASSET)) {
             var (isPriceRecent, invertedNativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getInvertedPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
@@ -635,9 +631,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
-    /// @dev Only Owner
-    function allocateUnclaimedFees()
-        pre_cond(isOwner())
+    /// @return sharePrice Share price denominated in [base unit of melonAsset]
+    function calcSharePriceAndAllocateFees() public returns (uint)
     {
         var (
             gav,
@@ -666,6 +661,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         FeesConverted(now, feesShareQuantity, unclaimedFees);
         CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply);
+
+        return sharePrice;
     }
 
     // PUBLIC : REDEEMING
