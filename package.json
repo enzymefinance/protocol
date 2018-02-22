@@ -24,7 +24,8 @@
     "docs:build": "doxity build",
     "babel-build": "babel utils/lib/ --out-dir utils/build",
     "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
-    "prepublishOnly": "npm run babel-build && npm run append-json"
+    "prepublishOnly": "npm run babel-build && npm run append-json",
+    "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh"
   },
   "files": [
     "out",
