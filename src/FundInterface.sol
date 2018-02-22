@@ -38,8 +38,8 @@ interface FundInterface {
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
-    // Fees by Manager
-    function allocateUnclaimedFees();
+    function calcSharePriceAndAllocateFees() public returns (uint);
+
 
     // PUBLIC VIEW METHODS
     // Get general information
