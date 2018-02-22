@@ -258,11 +258,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         require(module.pricefeed.hasRecentPrice(address(QUOTE_ASSET)));
         require(module.pricefeed.hasRecentPrices(ownedAssets));
         var (isRecent, , ) = module.pricefeed.getInvertedPrice(address(QUOTE_ASSET));
-        // TODO: check precision of below otherwise use; uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
-        // By definition quoteDecimals == fundDecimals
-        Request request = requests[id];
 
-        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice()));
+        Request request = requests[id];
+        uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePrice())); // By definition quoteDecimals == fundDecimals
         if (request.requestAsset == address(NATIVE_ASSET)) {
             var (isPriceRecent, invertedNativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getInvertedPrice(address(NATIVE_ASSET));
             if (!isPriceRecent) {
