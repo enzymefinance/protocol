@@ -596,7 +596,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     /**
-    @notice Calculates essential fund metrics
+    @notice Calculates essential fund metrics and converts unclaimed fees of the manager into fund shares
     @return {
       "gav": "Gross asset value of this fund denominated in [base unit of melonAsset]",
       "managementFee": "A time (seconds) based fee",
@@ -628,22 +628,6 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
         uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
         sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
-    }
-
-    /// @notice Converts unclaimed fees of the manager into fund shares
-    /// @dev Only Owner
-    function allocateUnclaimedFees()
-        pre_cond(isOwner())
-    {
-        var (
-            gav,
-            managementFee,
-            performanceFee,
-            unclaimedFees,
-            feesShareQuantity,
-            nav,
-            sharePrice
-        ) = performCalculations();
 
         createShares(owner, feesShareQuantity); // Updates totalSupply by creating shares allocated to manager
 
