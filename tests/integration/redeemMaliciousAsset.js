@@ -40,7 +40,9 @@ test.before(async () => {
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
-  maliciousToken = await deployContract("testing/MaliciousToken", {from: deployer});
+  maliciousToken = await deployContract("testing/MaliciousToken", {
+    from: deployer,
+  });
 
   // give investor some MLN to use
   await mlnToken.instance.transfer.postTransaction(
@@ -131,7 +133,9 @@ test.serial("initial investment with MLN", async t => {
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [requestId],
   );
-  const ownedShares = Number(await fund.instance.balanceOf.call({}, [investor]));
+  const ownedShares = Number(
+    await fund.instance.balanceOf.call({}, [investor]),
+  );
 
   t.deepEqual(ownedShares, wantedShares);
 });

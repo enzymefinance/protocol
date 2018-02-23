@@ -210,9 +210,20 @@ exchangeIndexes.forEach(i => {
       const [gav, , , unclaimedFees, ,] = Object.values(
         await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
       );
-      const feesShareQuantity = parseInt(unclaimedFees.mul(totalSupply).div(gav).toNumber(), 0);
-      let sharePrice = await fund.instance.calcValuePerShare.call({}, [gav, totalSupply.add(feesShareQuantity)]);
-      if (sharePrice.toNumber() === 0) {sharePrice = new BigNumber(10 ** 18);}
+      const feesShareQuantity = parseInt(
+        unclaimedFees
+          .mul(totalSupply)
+          .div(gav)
+          .toNumber(),
+        0,
+      );
+      let sharePrice = await fund.instance.calcValuePerShare.call({}, [
+        gav,
+        totalSupply.add(feesShareQuantity),
+      ]);
+      if (sharePrice.toNumber() === 0) {
+        sharePrice = new BigNumber(10 ** 18);
+      }
       const estimatedMlnSpent = wantedShares
         .times(sharePrice)
         .dividedBy(new BigNumber(10 ** 18));
@@ -226,10 +237,7 @@ exchangeIndexes.forEach(i => {
       t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
       t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
       t.deepEqual(post.manager.ether, pre.manager.ether);
-      t.deepEqual(
-        post.fund.MlnToken,
-        pre.fund.MlnToken.add(estimatedMlnSpent),
-      );
+      t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnSpent));
       t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
@@ -364,7 +372,6 @@ exchangeIndexes.forEach(i => {
         [exchanges[i].address, trade2.sellQuantity],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       txId = await exchanges[i].instance.offer.postTransaction(
         { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
@@ -376,7 +383,6 @@ exchangeIndexes.forEach(i => {
         ],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      console.log(gasUsed);
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [
         exchanges[i].address,
@@ -681,7 +687,6 @@ redemptions.forEach((redemption, index) => {
         [requestId],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      console.log(gasUsed);
       investorGasTotal = investorGasTotal.plus(gasUsed);
       // reduce remaining allowance to zero
       txId = await mlnToken.instance.approve.postTransaction(
@@ -701,11 +706,19 @@ redemptions.forEach((redemption, index) => {
       const [gav, , , unclaimedFees, ,] = Object.values(
         await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
       );
-      const expectedFeesShares = parseInt(unclaimedFees.mul(preTotalShares).div(gav).toNumber(), 0);
-
+      const expectedFeesShares = parseInt(
+        unclaimedFees
+          .mul(preTotalShares)
+          .div(gav)
+          .toNumber(),
+        0,
+      );
 
       t.deepEqual(remainingApprovedMln, 0);
-      t.deepEqual(postTotalShares, preTotalShares.minus(redemption.amount).plus(expectedFeesShares));
+      t.deepEqual(
+        postTotalShares,
+        preTotalShares.minus(redemption.amount).plus(expectedFeesShares),
+      );
       t.deepEqual(
         investorPostShares,
         investorPreShares.minus(redemption.amount),
@@ -843,9 +856,7 @@ test.serial(`Allows redemption in native asset`, async t => {
 
   t.is(Number(investorPostShares), investorPreShares - shareQuantity);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
-  t.true(
-    post.investor.EthToken >= pre.investor.EthToken.plus(receiveQuantity),
-  );
+  t.true(post.investor.EthToken >= pre.investor.EthToken.plus(receiveQuantity));
   t.deepEqual(
     post.investor.ether,
     pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
@@ -905,10 +916,19 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   const [gav, , , unclaimedFees, ,] = Object.values(
     await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
   );
-  const expectedFeesShares = parseInt(unclaimedFees.mul(preTotalShares).div(gav).toNumber(), 0);
+  const expectedFeesShares = parseInt(
+    unclaimedFees
+      .mul(preTotalShares)
+      .div(gav)
+      .toNumber(),
+    0,
+  );
 
   t.deepEqual(remainingApprovedMln, 0);
-  t.deepEqual(postTotalShares, preTotalShares.minus(redemptionAmount).plus(expectedFeesShares));
+  t.deepEqual(
+    postTotalShares,
+    preTotalShares.minus(redemptionAmount).plus(expectedFeesShares),
+  );
   t.deepEqual(investorPostShares, investorPreShares.minus(redemptionAmount));
   t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
