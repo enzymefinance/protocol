@@ -186,11 +186,15 @@ test.serial(
       ],
     );
     await version._pollTransactionReceipt(txId);
+    const fundNameTaken = await version.instance.fundNameTaken.call({}, [
+      fundName,
+    ]);
     const newFundAddress = await version.instance.getFundByManager.call({}, [
       deployer,
     ]);
     const postFundId = await version.instance.getLastFundId.call({}, []);
 
+    t.true(fundNameTaken);
     t.is(Number(preFundId), Number(postFundId));
     t.is(newFundAddress, "0x0000000000000000000000000000000000000000");
   },
