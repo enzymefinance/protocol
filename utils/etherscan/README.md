@@ -8,6 +8,9 @@ Modify the list of contracts to be joined in `concatenateContracts.sh`.
 
 Output is in `./concatenated`.
 
+With the current version of etherscan's verifier, you may need to use the "beta" version.
+In this version, you can enter the "runs" parameter, which is `0` for our compilations.
+
 ### Previous versions
 
 Version Name     | Address                                     | Active     |
