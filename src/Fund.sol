@@ -73,7 +73,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     // FIELDS
 
     // Constant fields
-    uint public constant MAX_FUND_ASSETS = 90; // Max ownable assets by the fund supported by gas limits
+    uint public constant MAX_FUND_ASSETS = 4; // Max ownable assets by the fund supported by gas limits
     // Constructor fields
     uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
