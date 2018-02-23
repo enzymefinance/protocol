@@ -205,7 +205,6 @@ test.serial(
       { from: investor, gas: 6000000 },
       [preShareQuantity, [mlnToken.address, deployed.EthToken.address]],
     );
-    console.log(await api.eth.getTransactionReceipt(txid))
     const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
     const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
     const postEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);

@@ -677,11 +677,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool)
     {
+        address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
 
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
-            address ofAsset = requestedAssets[i];
+            ofAsset = requestedAssets[i];
             uint assetHoldings = add(
                 uint(AssetInterface(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)
@@ -704,8 +705,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         annihilateShares(msg.sender, shareQuantity);
 
         // Transfer ownershipQuantity of Assets
-        for (uint j = 0; j < ownershipQuantities.length; ++j) {
+        for (uint j = 0; j < requestedAssets.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
+            ofAsset = requestedAssets[j];
             if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
