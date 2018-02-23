@@ -190,7 +190,7 @@ exchangeIndexes.forEach(i => {
       investorGasTotal = investorGasTotal.plus(gasUsed);
       await updatePriceFeed(deployed);
       await updatePriceFeed(deployed);
-      const sharePrice = await fund.instance.calcSharePrice.call({}, []);
+      const totalSupply = await fund.instance.totalSupply.call({}, []);
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       txId = await fund.instance.executeRequest.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -198,10 +198,6 @@ exchangeIndexes.forEach(i => {
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
-      console.log(gasUsed);
-      const estimatedMlnToSpend = wantedShares
-        .times(sharePrice)
-        .dividedBy(new BigNumber(10 ** 18));
       // set approved token back to zero
       txId = await mlnToken.instance.approve.postTransaction(
         { from: investor },
@@ -211,6 +207,15 @@ exchangeIndexes.forEach(i => {
         (await api.eth.getTransactionReceipt(txId)).gasUsed,
       );
       const post = await getAllBalances(deployed, accounts, fund);
+      const [gav, , , unclaimedFees, ,] = Object.values(
+        await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
+      );
+      const feesShareQuantity = parseInt(unclaimedFees.mul(totalSupply).div(gav).toNumber(), 0);
+      let sharePrice = await fund.instance.calcValuePerShare.call({}, [gav, totalSupply.add(feesShareQuantity)]);
+      if (sharePrice.toNumber() === 0) {sharePrice = new BigNumber(10 ** 18);}
+      const estimatedMlnSpent = wantedShares
+        .times(sharePrice)
+        .dividedBy(new BigNumber(10 ** 18));
 
       t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
       t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -223,7 +228,7 @@ exchangeIndexes.forEach(i => {
       t.deepEqual(post.manager.ether, pre.manager.ether);
       t.deepEqual(
         post.fund.MlnToken,
-        pre.fund.MlnToken.add(estimatedMlnToSpend),
+        pre.fund.MlnToken.add(estimatedMlnSpent),
       );
       t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
       t.deepEqual(post.fund.ether, pre.fund.ether);
