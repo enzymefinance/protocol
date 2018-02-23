@@ -3,8 +3,9 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract} from "../lib/contracts";
+import {retrieveContract, deployContract} from "../lib/contracts";
 import api from "../lib/api";
+import unlock from "../lib/unlockAccount";
 
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
@@ -31,6 +32,7 @@ async function deployEnvironment(environment) {
   };
 
   const deployed = {};
+  let txid;
 
   if (environment === "kovan") {
     // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
@@ -88,7 +90,7 @@ async function deployEnvironment(environment) {
 
     // register assets
     await Promise.all(
-      config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
@@ -107,12 +109,17 @@ async function deployEnvironment(environment) {
       })
     );
   } else if (environment === "live") {
-    const deployer = '0xc11149e320c31179195fe2c25105b98a9d4e045e';
-    const pricefeedDeployer = '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54';
+    const deployer = config.protocol.deployer;
+    // const deployerPassword = '/path/to/password/file';
+    const pricefeedOperator = config.protocol.pricefeed.operator;
+    const pricefeedOperatorPassword = '/path/to/password/file';
+    const authority = config.protocol.governance.authority;
+    const authorityPassword = '/path/to/password/file';
     const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
     const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedDeployer}, [
+    await unlock(pricefeedOperator, pricefeedOperatorPassword);
+    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedOperator}, [
         mlnAddr,
         'Melon Token',
         'MLN',
@@ -128,11 +135,12 @@ async function deployEnvironment(environment) {
 
     // register assets
     await Promise.all(
-      config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
+        await unlock(pricefeedOperator, pricefeedOperatorPassword);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
-          .postTransaction({from: pricefeedDeployer, gas: 6000000}, [
+          .postTransaction({from: pricefeedOperator, gas: 6000000}, [
             tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
@@ -160,9 +168,15 @@ async function deployEnvironment(environment) {
     deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await unlock(authority, authorityPassword);
+    txid = await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransaction(txid);
+    await unlock(authority, authorityPassword);
+    txid = await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransaction(txid);
+    await unlock(authority, authorityPassword);
+    txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransaction(txid);
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     console.log("Deployed ether token");

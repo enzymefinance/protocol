@@ -6,14 +6,14 @@ module.exports = {
     gas: 6700000,
     gasPrice: 100000000000,
     protocol: {
-      registrar: {
-        assetsToRegister: [
-          'W-ETH', 'MLN', 'MKR', 'DAI'
-        ],
-      },
+      deployer: '0xc11149e320c31179195fe2c25105b98a9d4e045e',
       pricefeed: {
         interval: 60 * 60, // one hour
         validity: 60 * 60,
+        operator: '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54',
+        assetsToRegister: [
+          'W-ETH', 'MLN', 'MKR', 'DAI'
+        ],
       },
       governance: {
         authority: '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B'
@@ -27,14 +27,12 @@ module.exports = {
     gas: 6690000,
     gasPrice: 100000000000,
     protocol: {
-      registrar: {
-        assetsToRegister: [
-          'ETH-T-M', 'MLN-T-M', 'MKR-T-M', 'DAI-T-M'
-        ],
-      },
       pricefeed: {
         interval: 60,
         validity: 60,
+        assetsToRegister: [
+          'ETH-T-M', 'MLN-T-M', 'MKR-T-M', 'DAI-T-M'
+        ],
       },
     },
   },
