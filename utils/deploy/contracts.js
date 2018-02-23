@@ -156,8 +156,7 @@ async function deployEnvironment(environment) {
     );
 
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
-    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer}
-    );
+    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
     deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
       [config.protocol.governance.authority],
@@ -177,6 +176,8 @@ async function deployEnvironment(environment) {
     await unlock(authority, authorityPassword);
     txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
     await deployed.Governance._pollTransaction(txid);
+
+    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     console.log("Deployed ether token");
