@@ -163,7 +163,7 @@ test.serial.skip('direct transfer of a token to the Fund is rejected', async t =
 
 // TODO: this one may be more suitable to a unit test
 // TODO: remove skip when we re-introduce fund name tracking
-test.serial(
+test.serial.skip(
   "a new fund with a name used before cannot be created",
   async t => {
     const [r, s, v] = await getSignatureParameters(deployer);
