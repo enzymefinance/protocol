@@ -627,7 +627,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
         uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
-        sharePrice = nav > 0 ? calcValuePerShare(nav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+        sharePrice = nav > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares

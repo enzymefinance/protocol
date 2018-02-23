@@ -693,9 +693,14 @@ redemptions.forEach((redemption, index) => {
       ]);
       const postTotalShares = await fund.instance.totalSupply.call({}, []);
       const post = await getAllBalances(deployed, accounts, fund);
+      const [gav, , , unclaimedFees, ,] = Object.values(
+        await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
+      );
+      const expectedFeesShares = parseInt(unclaimedFees.mul(preTotalShares).div(gav).toNumber(), 0);
+
 
       t.deepEqual(remainingApprovedMln, 0);
-      t.deepEqual(postTotalShares, preTotalShares.minus(redemption.amount));
+      t.deepEqual(postTotalShares, preTotalShares.minus(redemption.amount).plus(expectedFeesShares));
       t.deepEqual(
         investorPostShares,
         investorPreShares.minus(redemption.amount),
@@ -854,10 +859,8 @@ test.serial(`Allows redemption in native asset`, async t => {
 test.serial(`Allows redemption by tokenFallback method)`, async t => {
   const redemptionAmount = new BigNumber(120000000);
   let investorGasTotal = new BigNumber(0);
-  const investorPreShares = Number(
-    await fund.instance.balanceOf.call({}, [investor]),
-  );
-  const preTotalShares = Number(await fund.instance.totalSupply.call({}, []));
+  const investorPreShares = await fund.instance.balanceOf.call({}, [investor]);
+  const preTotalShares = await fund.instance.totalSupply.call({}, []);
   const pre = await getAllBalances(deployed, accounts, fund);
   txId = await fund.instance.transfer.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
@@ -891,15 +894,17 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   const remainingApprovedMln = Number(
     await mlnToken.instance.allowance.call({}, [investor, fund.address]),
   );
-  const investorPostShares = Number(
-    await fund.instance.balanceOf.call({}, [investor]),
-  );
-  const postTotalShares = Number(await fund.instance.totalSupply.call({}, []));
+  const investorPostShares = await fund.instance.balanceOf.call({}, [investor]);
+  const postTotalShares = await fund.instance.totalSupply.call({}, []);
   const post = await getAllBalances(deployed, accounts, fund);
+  const [gav, , , unclaimedFees, ,] = Object.values(
+    await fund.instance.atLastUnclaimedFeeAllocation.call({}, []),
+  );
+  const expectedFeesShares = parseInt(unclaimedFees.mul(preTotalShares).div(gav).toNumber(), 0);
 
   t.deepEqual(remainingApprovedMln, 0);
-  t.deepEqual(postTotalShares, preTotalShares - redemptionAmount);
-  t.deepEqual(investorPostShares, investorPreShares - redemptionAmount);
+  t.deepEqual(postTotalShares, preTotalShares.minus(redemptionAmount).plus(expectedFeesShares));
+  t.deepEqual(investorPostShares, investorPreShares.minus(redemptionAmount));
   t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken.add(wantedValue));
@@ -922,7 +927,7 @@ test.serial("converts fees and manager receives them", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const preManagerShares = await fund.instance.balanceOf.call({}, [manager]);
   const totalSupply = await fund.instance.totalSupply.call({}, []);
-  txId = await fund.instance.allocateUnclaimedFees.postTransaction(
+  txId = await fund.instance.calcSharePriceAndAllocateFees.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [],
   );

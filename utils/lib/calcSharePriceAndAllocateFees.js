@@ -1,7 +1,7 @@
 import api from "./api";
 
-async function allocateUnclaimedFees(fund, manager, config) {
-  const tx = await fund.instance.allocateUnclaimedFees.postTransaction(
+async function calcSharePriceAndAllocateFees(fund, manager, config) {
+  const tx = await fund.instance.calcSharePriceAndAllocateFees.postTransaction(
     { from: manager, gasPrice: config.gasPrice },
     [],
   );
@@ -11,4 +11,4 @@ async function allocateUnclaimedFees(fund, manager, config) {
   return timestamp;
 }
 
-export default allocateUnclaimedFees;
+export default calcSharePriceAndAllocateFees;
