@@ -6,7 +6,7 @@ outputpath="./utils/etherscan/concatenated"
 contracts=(
   "Fund.sol" "version/Version.sol" "riskmgmt/RMMakeOrders.sol"
   "compliance/NoCompliance.sol" "compliance/OnlyManager.sol"
-  "pricefeeds/PriceFeed.sol" "system/Governance.sol"
+  "pricefeeds/PriceFeed.sol" "system/Governance.sol" "FundRanking.sol"
 )
 
 mkdir -p outputpath
