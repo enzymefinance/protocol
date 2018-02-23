@@ -708,7 +708,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         for (uint j = 0; j < requestedAssets.length; ++j) {
             // Failed to send owed ownershipQuantity from fund to participant
             ofAsset = requestedAssets[j];
-            if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            if (ownershipQuantities[j] == 0) {
+                continue;
+            } else if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
                 revert();
             }
         }
