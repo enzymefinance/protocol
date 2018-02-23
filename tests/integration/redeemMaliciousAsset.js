@@ -201,7 +201,7 @@ test.serial(
     const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
     const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
     const preEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);
-    const txid = await fund.instance.emergencyRedeem.postTransaction(
+    await fund.instance.emergencyRedeem.postTransaction(
       { from: investor, gas: 6000000 },
       [preShareQuantity, [mlnToken.address, deployed.EthToken.address]],
     );

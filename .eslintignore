@@ -8,3 +8,4 @@ out/*
 scripts/*
 docs/*
 coverage/*
+utils/build/*
