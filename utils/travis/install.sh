@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ex
 
 # install parity
 bash <(curl https://get.parity.io -kL)
