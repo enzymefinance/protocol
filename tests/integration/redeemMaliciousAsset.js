@@ -140,6 +140,30 @@ test.serial("initial investment with MLN", async t => {
   t.deepEqual(ownedShares, wantedShares);
 });
 
+test.serial("fund buys some EthToken", async t => {
+  await fund.instance.makeOrder.postTransaction(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    [0, mlnToken.address, deployed.EthToken.address, sellQuantity, buyQuantity],
+  );
+  const orderId = await exchange.instance.last_offer_id.call({}, []);
+  await deployed.EthToken.instance.approve.postTransaction(
+    { from: deployer, gasPrice: config.gasPrice },
+    [exchange.address, buyQuantity + 100],
+  );
+
+  // third party takes order
+  await exchange.instance.buy.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [orderId, sellQuantity],
+  );
+
+  const ethTokenBalance = Number(
+    await deployed.EthToken.instance.balanceOf.call({}, [fund.address]),
+  );
+
+  t.is(ethTokenBalance, buyQuantity);
+});
+
 test.serial("fund buys some MaliciousToken", async t => {
   await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -175,24 +199,22 @@ test.serial(
   "Other assets can be redeemed, when MaliciousToken is throwing",
   async t => {
     const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
-    const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [
-      investor,
-    ]);
-    await fund.instance.emergencyRedeem.postTransaction(
+    const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
+    const preEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);
+    const txid = await fund.instance.emergencyRedeem.postTransaction(
       { from: investor, gas: 6000000 },
-      [preShareQuantity, [mlnToken.address]],
+      [preShareQuantity, [mlnToken.address, deployed.EthToken.address]],
     );
-    const postShareQuantity = await fund.instance.balanceOf.call({}, [
-      investor,
-    ]);
-    const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [
-      investor,
-    ]);
+    console.log(await api.eth.getTransactionReceipt(txid))
+    const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
+    const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
+    const postEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);
 
     t.is(Number(postShareQuantity), 0);
     t.is(
       Number(postMlnQuantity),
-      Number(preMlnQuantity) + offeredMln - sellQuantity,
+      Number(preMlnQuantity) + (offeredMln - sellQuantity - sellQuantity)
     );
-  },
+    t.is(Number(postEthTokenQuantity), Number(preEthTokenQuantity) + buyQuantity);
+  }
 );
