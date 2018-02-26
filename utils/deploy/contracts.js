@@ -80,7 +80,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
 
     // add Version to Governance tracking
@@ -114,7 +114,8 @@ async function deployEnvironment(environment) {
     const pricefeedOperator = config.protocol.pricefeed.operator;
     const pricefeedOperatorPassword = '/path/to/password/file';
     const authority = config.protocol.governance.authority;
-    const authorityPassword = '/path/to/password/file';
+    const authorityPassword = '/home/travis/prg/keys/mainnet/authority_password';
+    // const authorityPassword = '/path/to/password/file';
     const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
     const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
 
@@ -164,20 +165,26 @@ async function deployEnvironment(environment) {
       yearInSeconds
     ]);
 
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
+
+    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
 
     // add Version to Governance tracking
     await unlock(authority, authorityPassword);
+    console.log('Proposing version');
     txid = await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransaction(txid);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
     await unlock(authority, authorityPassword);
+    console.log('Approving version');
     txid = await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransaction(txid);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
     await unlock(authority, authorityPassword);
+    console.log('Triggering version');
     txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransaction(txid);
-
-    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     console.log("Deployed ether token");
@@ -206,7 +213,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
 
     // add Version to Governance tracking
