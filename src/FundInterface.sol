@@ -20,7 +20,7 @@ interface FundInterface {
 
     // EXTERNAL METHODS
     // Compliance by Investor
-    function requestInvestment(uint giveQuantity, uint shareQuantity, bool isNativeAsset, uint8 v, bytes32 r, bytes32 s) external;
+    function requestInvestment(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external;
     function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external;
     function executeRequest(uint requestId) external;
     function cancelRequest(uint requestId) external;
