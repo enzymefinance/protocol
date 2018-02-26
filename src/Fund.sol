@@ -80,6 +80,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
+    bytes32 public INVESTMENT_TERMS_AND_CONDITIONS; // Hashed terms and conditions for fund investment as displayed on IPFS
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
@@ -119,6 +120,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
+        bytes32 ofInvestmentTerms,
         address[] ofExchanges,
         address[] ofExchangeAdapters
     )
@@ -148,6 +150,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         // Require Quote assets exists in pricefeed
         QUOTE_ASSET = Asset(ofQuoteAsset);
         NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
+        INVESTMENT_TERMS_AND_CONDITIONS = ofInvestmentTerms;
         // Quote Asset and Native asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;
@@ -183,14 +186,21 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
+    /// @param v ellipitc curve parameter v
+    /// @param r ellipitc curve parameter r
+    /// @param s ellipitc curve parameter s
     function requestInvestment(
         uint giveQuantity,
         uint shareQuantity,
-        bool isNativeAsset
+        bool isNativeAsset,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     )
         external
         pre_cond(!isShutDown)
         pre_cond(isInvestAllowed) // investment using Melon has not been deactivated by the Manager
+        pre_cond(investmentTermsAndConditionsAreSigned(v, r, s))
         pre_cond(module.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         requests.push(Request({
@@ -746,6 +756,27 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     // PUBLIC VIEW METHODS
+
+    /// @dev Proof that terms and conditions have been read and understood
+    /// @param v ellipitc curve parameter v
+    /// @param r ellipitc curve parameter r
+    /// @param s ellipitc curve parameter s
+    /// @return signed Whether or not terms and conditions have been read and understood
+    function investmentTermsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {
+        return ecrecover(
+            // Parity does prepend \x19Ethereum Signed Message:\n{len(message)} before signing.
+            //  Signature order has also been changed in 1.6.7 and upcoming 1.7.x,
+            //  it will return rsv (same as geth; where v is [27, 28]).
+            // Note that if you are using ecrecover, v will be either "00" or "01".
+            //  As a result, in order to use this value, you will have to parse it to an
+            //  integer and then add 27. This will result in either a 27 or a 28.
+            //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
+            keccak256("\x19Ethereum Signed Message:\n32", INVESTMENT_TERMS_AND_CONDITIONS),
+            v,
+            r,
+            s
+        ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
+    }
 
     /// @notice Calculates sharePrice denominated in [base unit of melonAsset]
     /// @return sharePrice Share price denominated in [base unit of melonAsset]

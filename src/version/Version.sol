@@ -13,6 +13,7 @@ contract Version is DBC, Owned, VersionInterface {
 
     // Constant fields
     bytes32 public constant TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions as displayed on IPFS.
+    bytes32 public constant INVESTMENT_TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions for fund investment as displayed on IPFS.
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public NATIVE_ASSET; // Address of wrapped native asset contract
@@ -89,6 +90,7 @@ contract Version is DBC, Owned, VersionInterface {
             ofCompliance,
             ofRiskMgmt,
             ofPriceFeed,
+            INVESTMENT_TERMS_AND_CONDITIONS,
             ofExchanges,
             ofExchangeAdapters
         );
