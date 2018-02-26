@@ -12,11 +12,15 @@ contract Version is DBC, Owned, VersionInterface {
     // FIELDS
 
     // Constant fields
-    bytes32 public constant TERMS_AND_CONDITIONS = 0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad; // Hashed terms and conditions as displayed on IPFS.
+    bytes32 public constant TERMS_AND_CONDITIONS = 0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
+    address public COMPLIANCE = 0xFb5978C7ca78074B2044034CbdbC3f2E03Dfe2bA; // restrict to OnlyManager compliance module for this version
+
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public NATIVE_ASSET; // Address of wrapped native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
+    bool public IS_MAINNET;  // whether this contract is on the mainnet (to use hardcoded module)
+
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     address[] public listOfFunds; // A complete list of fund addresses created using this version
@@ -36,11 +40,13 @@ contract Version is DBC, Owned, VersionInterface {
     function Version(
         string versionNumber,
         address ofGovernance,
-        address ofNativeAsset
+        address ofNativeAsset,
+        bool isMainnet
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
         NATIVE_ASSET = ofNativeAsset;
+        IS_MAINNET = isMainnet;
     }
 
     // EXTERNAL METHODS
@@ -79,6 +85,9 @@ contract Version is DBC, Owned, VersionInterface {
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
+        if (IS_MAINNET) {
+            ofCompliance = COMPLIANCE;  // only for this version, with restricted compliance module on mainnet
+        }
         address ofFund = new Fund(
             msg.sender,
             ofFundName,
