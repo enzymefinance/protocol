@@ -1,31 +1,28 @@
 import test from "ava";
-import Api from "@parity/api";
-import { participation as compliance } from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
-
-const environmentConfig = require("../../../utils/config/environment.js");
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environment = "development";
-const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
 let investor;
+let compliance;
 
 test.before(async () => {
-  await deploy(environment);
+  // TODO: do we need to re-deploy everything here? maybe just the compliance module
+  const deployed = await deployEnvironment(environment);
+  compliance = deployed.NoCompliance;
   accounts = await api.eth.accounts();
   [investor] = accounts;
 });
 
-test("Anyone can perform subscription", async t => {
-  const isSubscriptionPermitted = await compliance.instance.isSubscriptionPermitted.call(
+test("Anyone can perform investment", async t => {
+  const isInvestmentPermitted = await compliance.instance.isInvestmentPermitted.call(
     {},
     [investor, 100, 100],
   );
-  t.truthy(isSubscriptionPermitted);
+  t.true(isInvestmentPermitted);
 });
 
 test("Anyone can perform redemption", async t => {
@@ -33,5 +30,5 @@ test("Anyone can perform redemption", async t => {
     {},
     [investor, 100, 100],
   );
-  t.truthy(isRedemptionPermitted);
+  t.true(isRedemptionPermitted);
 });

@@ -1,38 +1,30 @@
 import test from 'ava';
-import Api from "@parity/api";
-import deploy from "../../../utils/deploy/contracts";
+import api from "../../../utils/lib/api";
+import {deployContract} from "../../../utils/lib/contracts";
+import deployEnvironment from "../../../utils/deploy/contracts";
 
-const addressBook = require("../../../addressBook.json");
 const environmentConfig = require("../../../utils/config/environment.js");
-const fs = require("fs");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
-const addresses = addressBook[environment];
 
 let accounts;
 let deployer;
 let opts;
 let governance;
 let version;
+let deployed;
 
 test.before(async () => {
-  await deploy(environment);
+  deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async () => {
-  const governanceAbi = JSON.parse(fs.readFileSync("out/system/Governance.abi"));
-  const governanceBytecode = fs.readFileSync("out/system/Governance.bin");
-  opts.data = `0x${governanceBytecode}`;
-  const governanceAddress = await api.newContract(governanceAbi).deploy(opts, [[accounts[0]], 1, 100000]);
-  governance = await api.newContract(governanceAbi, governanceAddress);
-  const versionAbi = JSON.parse(fs.readFileSync("out/version/Version.abi"));
-  version = await api.newContract(versionAbi, addresses.Version);
+  governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
+  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, governance.address, deployed.EthToken.address], () => {}, true);
 });
 
 test('Triggering a Version activates it within Governance', async t => {

@@ -14,7 +14,7 @@ Melon ([méllō], μέλλω; Greek for "destined to be") is blockchain software
 
 It does so by leveraging the fact that digital assets on distributed quasi-Turing Complete machines can be held solely by smart-contract code, and spent only according to preprogrammed rules within this code.
 The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund.
-These rules are meant to protect the investor and fund manager from malevolent behaviour of each other, even when both parites remain private.
+These rules are meant to protect the investor and fund manager from malevolent behaviour of each other, even when both parties remain private.
 
 Melon is to investment funds as Bitcoin is to accounting: a set of rules, enforced by blockchain technology, legitimized by the consent of its participants.
 
@@ -82,7 +82,8 @@ Please see [our contributing instructions](CONTRIBUTING.md) for information on t
 
 ### Security Issues
 
-If you find a vulnerability that may affect live or testnet deployments please send your report privately to admin@melonport.com. Please **DO NOT** file a public issue.
+If you find a vulnerability that may affect live or testnet deployments please send your report privately to [security@melonport.com](http://keyserver2.pgp.com/vkd/SubmitSearch.event?SearchCriteria=security%40melonport.com). Please **DO NOT** file a public issue.
+Fingerprint
 
 ### Protocol Design
 

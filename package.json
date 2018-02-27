@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.6.2-deploy.14",
+  "version": "0.7.0",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
@@ -13,22 +13,26 @@
     "oyente": "oyente -s src/Fund.sol",
     "devchain": "bash utils/chain/devchain.sh",
     "test": "npm run test:ds-test && npm run test:ava",
-    "test:ava": "ava --serial",
-    "test:unit": "ava --files tests/unit/**",
+    "test:ava": "CHAIN_ENV=development ava --serial",
+    "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
     "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_VERBOSE=1 && dapp test",
-    "compile": "export SOLC_FLAGS='--optimize' && make all",
-    "deploy": "babel-node utils/deploy/contracts.js development",
-    "deploy:kovan": "babel-node utils/deploy/contracts.js kovan",
-    "deploy:live": "babel-node utils/deploy/contracts.js live",
+    "compile": "export SOLC_FLAGS='--optimize --optimize-runs=0' && make all",
+    "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
+    "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
+    "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
-    "prepublishOnly": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json"
+    "babel-build": "babel utils/lib/ --out-dir utils/build",
+    "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
+    "prepublishOnly": "npm run babel-build && npm run append-json",
+    "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh"
   },
   "files": [
     "out",
-    "deployment/tokenInfo.js",
-    "addressBook.json",
-    "build"
+    "utils/info",
+    "utils/config",
+    "utils/build",
+    "addressBook.json"
   ],
   "publishConfig": {
     "access": "public"
@@ -82,9 +86,13 @@
       "tests/integration/fundShares.js",
       "tests/integration/fundTrading.js",
       "tests/integration/centralizedExchange.js",
+      "tests/integration/secondaryTrading.js",
+      "tests/integration/simpleMarketWithApprove.js",
       "tests/integration/redeemMaliciousAsset.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/compliance/noCompliance.js",
+      "tests/unit/compliance/onlyManager.js",
+      "tests/unit/governance/governance.js",
       "tests/unit/modules/moduleRegistrar.js",
       "tests/unit/riskmgmt/rmMakeOrders.js",
       "tests/unit/version/version.js"

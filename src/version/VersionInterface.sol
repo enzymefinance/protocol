@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Version Contract
-contract VersionInterface {
+interface VersionInterface {
 
     // EVENTS
 
@@ -11,27 +11,30 @@ contract VersionInterface {
 
     // PUBLIC METHODS
 
-    function shutDown() external {}
+    function shutDown() external;
 
     function setupFund(
-        string withName,
-        string withSymbol,
-        uint withDecimals,
-        uint ofManagementRewardRate,
-        uint ofPerformanceRewardRate,
+        string ofFundName,
+        address ofQuoteAsset,
+        uint ofManagementFee,
+        uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
+        address ofPriceFeed,
         address[] ofExchanges,
-        address[] ofExchangeAdapters
-    ) {}
-    function shutDownFund(uint id) {}
+        address[] ofExchangeAdapters,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    );
+    function shutDownFund(address ofFund);
 
     // PUBLIC VIEW METHODS
 
-    function getNativeAsset() constant returns (address) {}
-    function getFundById(uint withId) constant returns (address) {}
-    function getLastFundId() constant returns (uint) {}
-    function getFundByManager(address ofManager) constant returns (address) {}
-    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed) {}
+    function getNativeAsset() view returns (address);
+    function getFundById(uint withId) view returns (address);
+    function getLastFundId() view returns (uint);
+    function getFundByManager(address ofManager) view returns (address);
+    function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed);
 
 }

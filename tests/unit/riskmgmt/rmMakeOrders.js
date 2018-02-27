@@ -1,25 +1,21 @@
 import test from "ava";
-import Api from "@parity/api";
-import { riskMgmt } from "../../../utils/lib/utils";
-import deploy from "../../../utils/deploy/contracts";
-
-const environmentConfig = require("../../../utils/config/environment.js");
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environment = "development";
-const config = environmentConfig[environment];
-const provider = new Api.Provider.Http(`http://${config.host}:${config.port}`);
-const api = new Api(provider);
 
 // hoisted variables
 let accounts;
 let mockAddress;
 let riskLevel;
 let referencePrice;
+let riskMgmt;
 
 test.before(async () => {
-  await deploy(environment);
+  const deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [mockAddress] = accounts;
+  riskMgmt = deployed.RMMakeOrders;
   riskLevel = await riskMgmt.instance.RISK_LEVEL.call({}, []);
   referencePrice = 100;
 });
@@ -43,8 +39,8 @@ test("Make order should be permitted for a high orderPrice w.r.t referencePrice"
     100,
   ]);
 
-  t.truthy(isMakePermitted);
-  t.truthy(isTakePermitted);
+  t.true(isMakePermitted);
+  t.true(isTakePermitted);
 });
 
 test("Make order should be permitted for the cutoff orderPrice w.r.t referencePrice", async t => {
@@ -67,8 +63,8 @@ test("Make order should be permitted for the cutoff orderPrice w.r.t referencePr
     100,
   ]);
 
-  t.truthy(isMakePermitted);
-  t.truthy(isTakePermitted);
+  t.true(isMakePermitted);
+  t.true(isTakePermitted);
 });
 
 test("Make and take orders should not be permitted for a low orderPrice w.r.t referencePrice", async t => {
@@ -92,6 +88,6 @@ test("Make and take orders should not be permitted for a low orderPrice w.r.t re
     100,
   ]);
 
-  t.falsy(isMakePermitted);
-  t.falsy(isTakePermitted);
+  t.false(isMakePermitted);
+  t.false(isTakePermitted);
 });

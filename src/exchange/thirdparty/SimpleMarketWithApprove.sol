@@ -65,7 +65,7 @@ contract EventfulMarket {
     );
 }
 
-contract SimpleMarket is EventfulMarket, DSMath {
+contract SimpleMarketWithApprove is EventfulMarket, DSMath {
 
     uint public last_offer_id;
 
@@ -157,8 +157,14 @@ contract SimpleMarket is EventfulMarket, DSMath {
             return false;
         }
 
+        if (offer.pay_gem.allowance(offer.owner, this) < offer.pay_amt) {
+            delete offers[id];
+            return false;
+        }
+
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
+        assert( offer.pay_gem.transferFrom(offer.owner, this, quantity) );
         assert( offer.buy_gem.transferFrom(msg.sender, this, spend) );
         assert( offer.buy_gem.transfer(offer.owner, spend) );
         assert( offer.pay_gem.transfer(msg.sender, quantity) );
@@ -193,8 +199,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
         delete offers[id];
-
-        assert( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
         LogItemUpdate(id);
         LogKill(
@@ -249,7 +253,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
+        assert( pay_gem.allowance(msg.sender, this) >= pay_amt );
 
         LogItemUpdate(id);
         LogMake(

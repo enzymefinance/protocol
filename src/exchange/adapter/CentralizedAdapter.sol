@@ -1,10 +1,14 @@
 pragma solidity ^0.4.19;
 
 import "../ExchangeInterface.sol";
-import "../thirdparty/CentralizedExchangeInterface.sol";
+import "../thirdparty/CentralizedExchangeBridge.sol";
 import "../../assets/Asset.sol";
 
 contract CentralizedAdapter is ExchangeInterface {
+
+    // CONSTANT FIELDS
+
+    bool public constant approveOnly = false; // If the exchange implementation requires asset approve instead of transfer on make orders
 
     event OrderUpdated(uint id);
 
@@ -27,7 +31,7 @@ contract CentralizedAdapter is ExchangeInterface {
     )
         external returns (uint id)
     {
-        id = CentralizedExchangeInterface(onExchange).makeOrder(
+        id = CentralizedExchangeBridge(onExchange).makeOrder(
             Asset(sellAsset),
             Asset(buyAsset),
             sellQuantity,
@@ -66,30 +70,40 @@ contract CentralizedAdapter is ExchangeInterface {
         var (sellAsset, , sellQuantity, ) = getOrder(onExchange, id);
         require(Asset(sellAsset).transferFrom(msg.sender, this, sellQuantity));
         require(Asset(sellAsset).approve(onExchange, sellQuantity));
-        success = CentralizedExchangeInterface(onExchange).cancelOrder(id);
+        success = CentralizedExchangeBridge(onExchange).cancelOrder(id);
         OrderUpdated(id);
     }
 
     // VIEW METHODS
 
+    function isApproveOnly()
+        constant
+        returns (bool)
+    {
+        return approveOnly;
+    }
+
     function getLastOrderId(address onExchange)
         constant
         returns (uint)
     {
-        return CentralizedExchangeInterface(onExchange).getLastOrderId();
+        return CentralizedExchangeBridge(onExchange).getLastOrderId();
     }
+
     function isActive(address onExchange, uint id)
         constant
         returns (bool)
     {
-        return CentralizedExchangeInterface(onExchange).isActive(id);
+        return CentralizedExchangeBridge(onExchange).isActive(id);
     }
+
     function getOwner(address onExchange, uint id)
         constant
         returns (address)
     {
-        return CentralizedExchangeInterface(onExchange).getOwner(id);
+        return CentralizedExchangeBridge(onExchange).getOwner(id);
     }
+
     function getOrder(address onExchange, uint id)
         constant
         returns (address, address, uint, uint)
@@ -99,7 +113,7 @@ contract CentralizedAdapter is ExchangeInterface {
             sellAsset,
             buyQuantity,
             buyAsset
-        ) = CentralizedExchangeInterface(onExchange).getOrder(id);
+        ) = CentralizedExchangeBridge(onExchange).getOrder(id);
         return (
             sellAsset,
             buyAsset,
@@ -107,13 +121,13 @@ contract CentralizedAdapter is ExchangeInterface {
             buyQuantity
         );
     }
+
     function getTimestamp(address onExchange, uint id)
         constant
         returns (uint)
     {
-        var (, , , , , , timestamp) = CentralizedExchangeInterface(onExchange).orders(id);
+        var (, , , , , , timestamp) = CentralizedExchangeBridge(onExchange).orders(id);
         return timestamp;
     }
-
 
 }

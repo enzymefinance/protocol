@@ -17,7 +17,7 @@ contract FundRanking {
     }
 
     /**
-    @notice Returns an array of fund addresses and an associated array of share prices
+    @notice Returns an array of fund addresses and associated arrays of share prices and creation times
     @dev Return value only w.r.t. specified version contract
     @return {
       "fundAddrs": "Array of addresses of Melon Funds",
@@ -26,15 +26,19 @@ contract FundRanking {
     }
     */
     function getAddressAndSharePriceOfFunds()
-        constant
+        view
         returns(
-            address[] fundAddrs,
-            uint[] sharePrices,
-            uint[] creationTimes
+            address[],
+            uint[],
+            uint[]
         )
     {
-        uint lastId = version.getLastFundId();
-        for (uint i = 0; i <= lastId; i++) {
+        uint nofFunds = version.getLastFundId() + 1;
+        address[] memory fundAddrs = new address[](nofFunds);
+        uint[] memory sharePrices = new uint[](nofFunds);
+        uint[] memory creationTimes = new uint[](nofFunds);
+
+        for (uint i = 0; i < nofFunds; i++) {
             address fundAddress = version.getFundById(i);
             Fund fund = Fund(fundAddress);
             uint sharePrice = fund.calcSharePrice();

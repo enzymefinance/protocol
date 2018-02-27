@@ -30,7 +30,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_addAndGetVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, false);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
         hal.approveVersion(governance, version);
@@ -41,7 +41,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_shutDownVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, false);
         pal.proposeVersion(governance, version);
         pal.approveVersion(governance, version);
         hal.approveVersion(governance, version);
