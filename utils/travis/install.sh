@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 set -ex
 
+PARITY_VERSION=1.8.10
+
 # install parity dependencies
 sudo apt-get install openssl libssl-dev libudev-dev
 
 # install parity
-bash <(curl https://get.parity.io -Lk) -r stable
+PARITY_DOWNLOAD=https://parity-downloads-mirror.parity.io/v${PARITY_VERSION}/x86_64-unknown-linux-gnu/parity
+
+# Fetch parity
+curl -L $PARITY_DOWNLOAD > parity
+
+# Install parity
+chmod +x parity
+mv parity /usr/bin
 
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
