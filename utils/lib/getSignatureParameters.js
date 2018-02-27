@@ -4,7 +4,7 @@ import api from "./api";
 
 // input manager's address
 export default async function getSignatureParameters(managerAddress) {
-  const hash = "0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159";
+  const hash = "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad";
   let sig = await api.eth.sign(managerAddress, hash);
   sig = sig.substr(2, sig.length);
   const r = `0x${sig.substr(0, 64)}`;

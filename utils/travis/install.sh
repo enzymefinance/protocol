@@ -2,7 +2,7 @@
 set -ex
 
 # install parity
-bash <(curl https://get.parity.io -kL)
+bash <(curl https://get.parity.io -Lk) -r stable
 
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
