@@ -82,7 +82,8 @@ Please see [our contributing instructions](CONTRIBUTING.md) for information on t
 
 ### Security Issues
 
-If you find a vulnerability that may affect live or testnet deployments please send your report privately to admin@melonport.com. Please **DO NOT** file a public issue.
+If you find a vulnerability that may affect live or testnet deployments please send your report privately to [security@melonport.com](https://pgp.mit.edu/pks/lookup?search=security%40melonport.com&op=index). Please **DO NOT** file a public issue.
+Fingerprint
 
 ### Protocol Design
 
