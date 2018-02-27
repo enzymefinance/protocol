@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.0]
+
+### Added
+
+- special case calculating holdings for "approve only" style exchanges
+- special case for mainnet deploymetn (hardcoded compliance module)
+- RestrictedShares.sol
+- SimpleAdapterWithApprove.sol
+- SimpleMarketWithApprove.sol
+- MatchingMarket.sol (from OasisDex; mirroring live deployment)
+- export some js modules for use in other projects
+- concatenation script for etherscan verification
+- secondaryTrading.js tests
+- simpleMarketWithApprove.js tests
+
+### Changed
+
+- rename "base asset" to "quote asset"
+- quote asset now always in Fund ownedAssets
+- fund inherits RestrictedShares instead of Shares
+- rename rewards to fees
+- rename subscribe to invest
+- change max allowed assets to 4
+- removed ERC223 component from kovan and development network test assets we use
+- made tests more modular (using utils libraries)
+- introduce code size limit to our development network as well
+- use different ports for different networks
+
+### Fixed
+
+- bug preventing emergencyRedeem for multiple assets
+- bug in FundRanking preventing array from growing
+
+### Updated
+
+- terms and conditions hash
+- test files, to be compatible with changes to contracts
+- information files (tokenInfo.js and exchangeInfo.js)
+
+### Removed
+
+- fund name logic in Version.sol
 
 ## [0.6.4]
 
