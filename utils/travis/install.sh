@@ -14,7 +14,7 @@ curl -L $PARITY_DOWNLOAD > parity
 
 # Install parity
 chmod +x parity
-mv parity /usr/bin
+sudo mv parity /usr/bin
 
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
