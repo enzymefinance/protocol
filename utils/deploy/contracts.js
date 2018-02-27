@@ -6,6 +6,7 @@ import * as tokenInfo from "../info/tokenInfo";
 import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
+import verifyDeployment from "./verify";
 
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
@@ -258,6 +259,7 @@ async function deployEnvironment(environment) {
     ]);
     console.log("Done registration");
   }
+  await verifyDeployment(deployed);
   return deployed;  // return instances of contracts we just deployed
 }
 

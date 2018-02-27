@@ -143,5 +143,8 @@ contract Governance is DBC, Owned, DSGroup {
         (, active, ) = getVersionById(id);
     }
 
+    function getVersionsLength() public view returns (uint) {
+        return versions.length;
+    }
 
 }
