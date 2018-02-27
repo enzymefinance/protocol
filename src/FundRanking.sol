@@ -7,15 +7,6 @@ import "./version/Version.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Reading contract to enable fund ranking
 contract FundRanking {
-
-    Version public version;
-
-    /// @dev Instantiate according to a specific Melon protocol version
-    /// @param ofVersion Address of Melon protocol version contract
-    function FundRanking(address ofVersion) {
-        version = Version(ofVersion);
-    }
-
     /**
     @notice Returns an array of fund addresses and associated arrays of share prices and creation times
     @dev Return value only w.r.t. specified version contract
@@ -25,7 +16,7 @@ contract FundRanking {
       "creationTimes": "Array of uints representing the unix timestamp for creation of each Fund"
     }
     */
-    function getAddressAndSharePriceOfFunds()
+    function getAddressAndSharePriceOfFunds(address ofVersion)
         view
         returns(
             address[],
@@ -33,6 +24,7 @@ contract FundRanking {
             uint[]
         )
     {
+        Version version = Version(ofVersion);
         uint nofFunds = version.getLastFundId() + 1;
         address[] memory fundAddrs = new address[](nofFunds);
         uint[] memory sharePrices = new uint[](nofFunds);

@@ -81,7 +81,7 @@ async function deployEnvironment(environment) {
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
-    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
+    deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
     await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
@@ -167,7 +167,7 @@ async function deployEnvironment(environment) {
 
     deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
 
-    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
+    deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
     // add Version to Governance tracking
     await unlock(authority, authorityPassword);
@@ -214,7 +214,8 @@ async function deployEnvironment(environment) {
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
-    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
+    
+    deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
     await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
