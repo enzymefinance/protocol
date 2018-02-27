@@ -2,8 +2,10 @@ import * as fs from "fs";
 import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
+// import * as exchangeInfo from "../info/exchangeInfo";
 import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
+import unlock from "../lib/unlockAccount";
 
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
@@ -28,21 +30,20 @@ async function deployEnvironment(environment) {
     gas: config.gas,
     gasPrice: config.gasPrice,
   };
-  let addressBook;
+
   const deployed = {};
-  if (fs.existsSync(addressBookFile)) {
-    addressBook = JSON.parse(fs.readFileSync(addressBookFile));
-  } else addressBook = {};
+  let txid;
 
   if (environment === "kovan") {
-    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN-T").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "ETH-T").address}`;
+    // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address;
+    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address;
 
     deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed",
       opts, [
       mlnAddr,
       'Melon Token',
-      'MLN-T',
+      'MLN-T-M',
       18,
       'melonport.com',
       mockBytes,
@@ -53,16 +54,33 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.validity,
     ]);
 
-    deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     // deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
     // console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
 
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
+
+    const pairsToWhitelist = [
+      ['MLN-T-M', 'ETH-T-M'],
+      ['MLN-T-M', 'MKR-T-M'],
+      ['MLN-T-M', 'DAI-T-M'],
+    ];
+    await Promise.all(
+      pairsToWhitelist.map(async (pair) => {
+        console.log(`Whitelisting ${pair}`);
+        const tokenA = tokenInfo[environment].find(t => t.symbol === pair[0]).address;
+        const tokenB = tokenInfo[environment].find(t => t.symbol === pair[1]).address;
+        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+      })
+    );
+
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
+    deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
 
     // add Version to Governance tracking
@@ -72,12 +90,12 @@ async function deployEnvironment(environment) {
 
     // register assets
     await Promise.all(
-      config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
           .postTransaction({from: accounts[0]}, [
-            `0x${tokenEntry.address}`,
+            tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
             tokenEntry.decimals,
@@ -90,23 +108,19 @@ async function deployEnvironment(environment) {
         console.log(`Registered ${assetSymbol}`);
       })
     );
-
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      SimpleMarket: deployed.SimpleMarket.address,
-      NoCompliance: deployed.NoCompliance.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      Governance: deployed.Governance.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      CentralizedAdapter: deployed.CentralizedAdapter.address,
-      Version: deployed.Version.address,
-      FundRanking: deployed.FundRanking.address
-    };
   } else if (environment === "live") {
-    const mlnAddr = `0x${tokenInfo[environment].find(t => t.symbol === "MLN").address}`;
-    const ethTokenAddress = `0x${tokenInfo[environment].find(t => t.symbol === "OW-ETH").address}`;
+    const deployer = config.protocol.deployer;
+    // const deployerPassword = '/path/to/password/file';
+    const pricefeedOperator = config.protocol.pricefeed.operator;
+    const pricefeedOperatorPassword = '/path/to/password/file';
+    const authority = config.protocol.governance.authority;
+    const authorityPassword = '/home/travis/prg/keys/mainnet/authority_password';
+    // const authorityPassword = '/path/to/password/file';
+    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
+    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", opts, [
+    await unlock(pricefeedOperator, pricefeedOperatorPassword);
+    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedOperator}, [
         mlnAddr,
         'Melon Token',
         'MLN',
@@ -122,12 +136,13 @@ async function deployEnvironment(environment) {
 
     // register assets
     await Promise.all(
-      config.protocol.registrar.assetsToRegister.map(async (assetSymbol) => {
+      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
+        await unlock(pricefeedOperator, pricefeedOperatorPassword);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
         await deployed.PriceFeed.instance.register
-          .postTransaction({from: accounts[0], gas: 6000000}, [
-            `0x${tokenEntry.address}`,
+          .postTransaction({from: pricefeedOperator, gas: 6000000}, [
+            tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
             tokenEntry.decimals,
@@ -141,33 +156,35 @@ async function deployEnvironment(environment) {
       })
     );
 
-    deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
-    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
-
-    deployed.Governance = await deployContract("system/Governance", opts, [
+    deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
+    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
+    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
+    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
       [config.protocol.governance.authority],
       1,
       yearInSeconds
     ]);
 
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6700000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
+
+    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-
-    // TODO: cleaner way to write to address book (maybe can do it dynamically)
-    // TODO: make backup of previous addressbook
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      NoCompliance: deployed.NoCompliance.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      Governance: deployed.Governance.address,
-      Version: deployed.Version.address,
-    };
+    await unlock(authority, authorityPassword);
+    console.log('Proposing version');
+    txid = await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
+    await unlock(authority, authorityPassword);
+    console.log('Approving version');
+    txid = await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
+    await unlock(authority, authorityPassword);
+    console.log('Triggering version');
+    txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
+    await deployed.Governance._pollTransactionReceipt(txid);
+    console.log(txid);
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     console.log("Deployed ether token");
@@ -196,7 +213,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
 
     // add Version to Governance tracking
@@ -240,40 +257,38 @@ async function deployEnvironment(environment) {
       mockAddress,
     ]);
     console.log("Done registration");
-
-    addressBook[environment] = {
-      PriceFeed: deployed.PriceFeed.address,
-      SimpleMarket: deployed.SimpleMarket.address,
-      NoCompliance: deployed.NoCompliance.address,
-      RMMakeOrders: deployed.RMMakeOrders.address,
-      Governance: deployed.Governance.address,
-      SimpleAdapter: deployed.SimpleAdapter.address,
-      CentralizedAdapter: deployed.CentralizedAdapter.address,
-      Version: deployed.Version.address,
-      MlnToken: deployed.MlnToken.address,
-      EurToken: deployed.EurToken.address,
-      EthToken: deployed.EthToken.address,
-      FundRanking: deployed.FundRanking.address
-    };
   }
+  return deployed;  // return instances of contracts we just deployed
+}
 
-  // write out addressBook
-  console.log(`Writing addresses to ${addressBookFile}`);
+// takes `deployed` object as defined above, and environment to write to
+async function writeToAddressBook(deployedContracts, environment) {
+  let addressBook;
+  if (fs.existsSync(addressBookFile)) {
+    addressBook = JSON.parse(fs.readFileSync(addressBookFile));
+  } else addressBook = {};
+
+  const namesToAddresses = {};
+  Object.keys(deployedContracts)
+    .forEach(key => {
+      namesToAddresses[key] = deployedContracts[key].address
+    });
+  addressBook[environment] = namesToAddresses;
+
   fs.writeFileSync(
     addressBookFile,
-    JSON.stringify(addressBook, null, "\t"),
-    "utf8",
+    JSON.stringify(addressBook, null, '  '),
+    'utf8'
   );
-
-  return deployed;  // return instances of contracts we just deployed
 }
 
 if (require.main === module) {
   const environment = process.env.CHAIN_ENV;
   if (environment === undefined) {
-    throw new Error(`Please specify a deployment environment`);
+    throw new Error(`Please specify an environment using the environment variable CHAIN_ENV`);
   } else {
     deployEnvironment(environment)
+    .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
     .catch(err => console.error(err.stack))
     .finally(() => process.exit())
   }

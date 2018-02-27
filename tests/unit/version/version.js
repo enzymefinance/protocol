@@ -16,7 +16,6 @@ let deployed;
 let version;
 
 const fundName = "Super Fund";
-const keccakedFundName = "0xf00030b282fd20568935f96740d5f79e0c72840d3c09a34d1c4c29210e6dddbe";
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -45,20 +44,14 @@ test("Can setup a new fund", async t => {
   const receipt = await api.eth.getTransactionReceipt(txId);
   const fundAddress = api.util.toChecksumAddress(`0x${receipt.logs[0].data.slice(-40)}`);
   const fundOwned = await version.instance.managerToFunds.call({}, [manager]);
-  const ownerOfFundName = await version.instance.fundNamesToOwners.call({}, [keccakedFundName]);
 
   t.is(fundOwned, fundAddress);
-  t.is(ownerOfFundName, manager);
 });
 
 test.serial("Can shutdown a fund", async t => {
   const lastFundId = await version.instance.getLastFundId.call({}, []);
   const lastFund = await version.instance.listOfFunds.call({}, [lastFundId]);
   await version.instance.shutDownFund.postTransaction(opts, [lastFund]);
-  const ownerOfFundName = await version.instance.fundNamesToOwners.call({}, [
-    keccakedFundName,
-  ]);
   const fundOwned = await version.instance.managerToFunds.call({}, [manager]);
   t.is(fundOwned, "0x0000000000000000000000000000000000000000");
-  t.is(ownerOfFundName, "0x0000000000000000000000000000000000000000");
 });

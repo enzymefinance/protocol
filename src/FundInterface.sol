@@ -9,7 +9,7 @@ interface FundInterface {
 
     event PortfolioContent(uint holdings, uint price, uint decimals);
     event RequestUpdated(uint id);
-    event Subscribed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
+    event Invested(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
     event FeesConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
@@ -20,14 +20,14 @@ interface FundInterface {
 
     // EXTERNAL METHODS
     // Compliance by Investor
-    function requestSubscription(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external;
+    function requestInvestment(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external;
     function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external;
     function executeRequest(uint requestId) external;
     function cancelRequest(uint requestId) external;
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool);
     // Administration by Manager
-    function enableSubscription() external;
-    function disableSubscription() external;
+    function enableInvestment() external;
+    function disableInvestment() external;
     function enableRedemption() external;
     function disableRedemption() external;
     function shutDown() external;
@@ -38,8 +38,8 @@ interface FundInterface {
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
-    // Fees by Manager
-    function allocateUnclaimedFees();
+    function calcSharePriceAndAllocateFees() public returns (uint);
+
 
     // PUBLIC VIEW METHODS
     // Get general information

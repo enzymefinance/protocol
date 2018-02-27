@@ -16,24 +16,24 @@ contract ComplianceTest is DSTest {
         participation = new Compliance();
     }
 
-    // subscribe not permitted by default, but redeem permitted by default
+    // invest not permitted by default, but redeem permitted by default
     function test_defaultPermissions() {
-        bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
+        bool investPermitted = participation.isInvestmentPermitted(mockAddress, numberOfShares, offeredValue);
         bool redeemPermitted = participation.isRedemptionPermitted(mockAddress, numberOfShares, offeredValue);
 
-        assert(!subscribePermitted);
+        assert(!investPermitted);
         assert(redeemPermitted);
     }
 
     function test_addAndRemovePermissions() {
         participation.attestForIdentity(mockAddress);
-        bool subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
+        bool investPermitted = participation.isInvestmentPermitted(mockAddress, numberOfShares, offeredValue);
 
-        assert(subscribePermitted);
+        assert(investPermitted);
 
         participation.removeAttestation(mockAddress);
-        subscribePermitted = participation.isSubscriptionPermitted(mockAddress, numberOfShares, offeredValue);
+        investPermitted = participation.isInvestmentPermitted(mockAddress, numberOfShares, offeredValue);
 
-        assert(!subscribePermitted);
+        assert(!investPermitted);
     }
 }

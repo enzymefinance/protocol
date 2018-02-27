@@ -1,7 +1,7 @@
 module.exports = {
   kovan: [
     {
-      address: '0x375d52588c3f39ee7710290237a95C691d8432E7',
+      address: '0x8cf1Cab422A0b6b554077A361f8419cDf122a9F9',
       name: 'OasisDex',
       data: '',
       url: 'https://oasisdex.com',
@@ -17,7 +17,7 @@ module.exports = {
   ],
   live: [
     {
-      address: '0x3Aa927a97594c3ab7d7bf0d47C71c3877D1DE4A1',
+      address: '0x14FBCA95be7e99C15Cc2996c6C9d841e54B79425',
       name: 'OasisDex',
       data: '',
       url: 'https://oasisdex.com',

@@ -13,15 +13,18 @@
     "node": true
   },
   "rules": {
+    "ava/no-ignored-test-files": [
+      "warn"
+    ],
+    "ava/no-skip-test": [
+      "warn"
+    ],
     "no-param-reassign": [
       "error",
       {
         "props": true,
         "ignorePropertyModificationsFor": [ "t" ]
       }
-    ],
-    "ava/no-ignored-test-files": [
-      "warn"
     ],
     "prefer-destructuring": ["error", {
       "VariableDeclarator": {
@@ -37,6 +40,6 @@
     }],
     "no-underscore-dangle": [
       "warn"
-    ]
+    ],
   }
 }

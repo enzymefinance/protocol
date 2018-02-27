@@ -13,33 +13,33 @@ async function getAllBalances(instances, accounts, fund) {
 
   return {
     investor: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [investor])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [investor])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [investor])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [investor])),
       ether: new BigNumber(await api.eth.getBalance(investor))
     },
     manager: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [manager])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [manager])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [manager])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [manager])),
       ether: new BigNumber(await api.eth.getBalance(manager))
     },
     fund: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [fund.address])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [fund.address])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [fund.address])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [fund.address])),
       ether: new BigNumber(await api.eth.getBalance(fund.address))
     },
     worker: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [worker])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [worker])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [worker])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [worker])),
       ether: new BigNumber(await api.eth.getBalance(worker))
     },
     deployer: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [deployer])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [deployer])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [deployer])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [deployer])),
       ether: new BigNumber(await api.eth.getBalance(deployer)),
     },
     exchangeOwner: {
-      MlnToken: Number(await instances.MlnToken.instance.balanceOf.call({}, [exchangeOwner])),
-      EthToken: Number(await instances.EthToken.instance.balanceOf.call({}, [exchangeOwner])),
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [exchangeOwner])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [exchangeOwner])),
       ether: new BigNumber(await api.eth.getBalance(deployer)),
     }
   };
