@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - special case calculating holdings for "approve only" style exchanges
-- special case for mainnet deploymetn (hardcoded compliance module)
+- special case for mainnet deployment (hardcoded compliance module)
 - RestrictedShares.sol
 - SimpleAdapterWithApprove.sol
 - SimpleMarketWithApprove.sol
