@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -ex
 
+# install parity dependencies
+sudo apt-get install openssl libssl-dev libudev-dev
+
 # install parity
 bash <(curl https://get.parity.io -Lk) -r stable
 
