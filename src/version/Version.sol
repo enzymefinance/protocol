@@ -85,8 +85,11 @@ contract Version is DBC, Owned, VersionInterface {
         require(termsAndConditionsAreSigned(v, r, s));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
+        address complianceModule;
         if (IS_MAINNET) {
-            ofCompliance = COMPLIANCE;  // only for this version, with restricted compliance module on mainnet
+            complianceModule = COMPLIANCE;  // only for this version, with restricted compliance module on mainnet
+        } else {
+            complianceModule = ofCompliance;
         }
         address ofFund = new Fund(
             msg.sender,
