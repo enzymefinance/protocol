@@ -14,7 +14,7 @@ interface FundInterface {
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
     event FeesConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
-    event OrderUpdated(uint id);
+    event OrderUpdated(uint exchangeId, uint orderId);
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
@@ -34,7 +34,7 @@ interface FundInterface {
     // Managing by Manager
     function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external;
     function takeOrder(uint exchangeId, uint id, uint quantity) external;
-    function cancelOrder(uint exchangeId, uint id) external;
+    function cancelOrder(uint exchangeId, address ofAsset) external;
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
@@ -44,7 +44,6 @@ interface FundInterface {
     // PUBLIC VIEW METHODS
     // Get general information
     function getModules() view returns (address, address, address);
-    function getLastOrderId() view returns (uint);
     function getLastRequestId() view returns (uint);
     function getNameHash() view returns (bytes32);
     function getManager() view returns (address);

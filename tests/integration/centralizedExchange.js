@@ -244,7 +244,6 @@ test.serial("Manager cancels an order from the fund", async t => {
     ],
   );
   const pre = await getAllBalances(deployed, accounts, fund);
-  const orderId = await fund.instance.getLastOrderId.call({}, []);
   await mlnToken.instance.transfer.postTransaction(
     { from: exchangeOwner, gasPrice: config.gasPrice, gas: config.gas },
     [manager, trade1.sellQuantity, ""],
@@ -253,14 +252,13 @@ test.serial("Manager cancels an order from the fund", async t => {
     { from: manager, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, trade1.sellQuantity],
   );
-  await mlnToken.instance.approve.postTransaction(
-    { from: manager, gasPrice: config.gasPrice, gas: config.gas },
-    [fund.address, trade1.sellQuantity],
-  );
   await fund.instance.cancelOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [0, orderId],
+    [0, mlnToken.address],
   );
+  // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
+  // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);
+  // const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
     {},
@@ -268,6 +266,7 @@ test.serial("Manager cancels an order from the fund", async t => {
   );
 
   t.is(Number(heldInExchange), 0);
+  // t.false(orderOpen);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
   t.deepEqual(
     post.exchangeOwner.MlnToken,

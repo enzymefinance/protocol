@@ -627,12 +627,13 @@ test.serial("manager makes an order and cancels it", async t => {
   const exchangePreEthToken = Number(
     await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
   );
-  const orderId = await fund.instance.getLastOrderId.call({}, []);
   txId = await fund.instance.cancelOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [0, orderId],
+    [0, mlnToken.address],
   );
-  const [, orderStatus] = await fund.instance.orders.call({}, [orderId]);
+  // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
+  // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);
+  // const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
   const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const exchangePostEthToken = Number(
@@ -640,6 +641,7 @@ test.serial("manager makes an order and cancels it", async t => {
   );
   const post = await getAllBalances(deployed, accounts, fund);
 
+  // t.false(orderOpen);
   t.deepEqual(exchangePostEthToken, exchangePreEthToken - trade1.sellQuantity);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
@@ -648,7 +650,6 @@ test.serial("manager makes an order and cancels it", async t => {
     post.manager.ether,
     pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
   );
-  t.is(Number(orderStatus), 3);
 });
 
 // redeeming after trading
