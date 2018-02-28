@@ -8,7 +8,9 @@ sudo apt-get install openssl libssl-dev libudev-dev
 curl https://sh.rustup.rs > rs.sh && bash rs.sh -y
 
 # Install parity
-sudo snap install parity
+git clone https://github.com/paritytech/parity
+cd parity
+cargo build --release
 
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
