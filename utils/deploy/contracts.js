@@ -188,11 +188,8 @@ async function deployEnvironment(environment) {
     console.log(txid);
   } else if (environment === "development") {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed ether token");
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed melon token");
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed euro token");
 
     deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", opts, [
       deployed.MlnToken.address,
@@ -222,7 +219,6 @@ async function deployEnvironment(environment) {
     await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
     await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
     await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    console.log('Version added to Governance');
 
     // register assets
     await deployed.PriceFeed.instance.register.postTransaction({}, [
@@ -258,9 +254,8 @@ async function deployEnvironment(environment) {
       mockAddress,
       mockAddress,
     ]);
-    console.log("Done registration");
   }
-  await verifyDeployment(deployed);
+  // await verifyDeployment(deployed);
   return deployed;  // return instances of contracts we just deployed
 }
 
