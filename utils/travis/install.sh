@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-PARITY_VERSION=1.8.10
+PARITY_VERSION=1.9.10
 
 # install parity dependencies
 sudo apt-get install openssl libssl-dev libudev-dev
