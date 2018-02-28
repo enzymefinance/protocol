@@ -83,7 +83,6 @@ Please see [our contributing instructions](CONTRIBUTING.md) for information on t
 ### Security Issues
 
 If you find a vulnerability that may affect live or testnet deployments please send your report privately to [security@melonport.com](http://keyserver2.pgp.com/vkd/SubmitSearch.event?SearchCriteria=security%40melonport.com). Please **DO NOT** file a public issue.
-Fingerprint
 
 ### Protocol Design
 
