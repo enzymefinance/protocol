@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 set -ex
 
-PARITY_VERSION=1.9.10
-
 # install parity dependencies
 sudo apt-get install openssl libssl-dev libudev-dev
 
 # Install Rust
-curl https://sh.rustup.rs -sSf | sh
+curl https://sh.rustup.rs -sSf | sh -y
 
 # Install parity
 sudo snap install parity
