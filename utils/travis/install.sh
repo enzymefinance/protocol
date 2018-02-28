@@ -24,6 +24,7 @@ tar -xvf ethrun-v0.2.4-linux.tar.gz
 sudo cp ethrun /usr/local/bin/
 
 curl https://nixos.org/nix/install | sh
+source $HOME/.nix-profile/etc/profile.d/nix.sh
 nix-channel --add https://nix.dapphub.com/pkgs/dapphub
 nix-channel --update
 nix-env -iA dapphub.{dapp,hevm,seth}
