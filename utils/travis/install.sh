@@ -27,7 +27,7 @@ curl https://nixos.org/nix/install | sh
 source $HOME/.nix-profile/etc/profile.d/nix.sh
 nix-channel --add https://nix.dapphub.com/pkgs/dapphub
 nix-channel --update
-nix-env -iA dapphub.{dapp,hevm,seth}
+nix-env -iA dapphub.{dapp,hevm,seth} --option extra-binary-caches https://d121dybo9yhl5h.cloudfront.net
 
 # install oyente
 sudo pip2 install z3
