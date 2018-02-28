@@ -18,8 +18,8 @@ addons:
 cache:
   timeout: 10000
   directories:
-    - "node_modules"
-    - "/nix"
+    - node_modules
+    - /nix/store
 install:
 - ./utils/travis/install.sh
 - npm install
