@@ -6,15 +6,11 @@ PARITY_VERSION=1.9.10
 # install parity dependencies
 sudo apt-get install openssl libssl-dev libudev-dev
 
-# install parity
-PARITY_DOWNLOAD=https://parity-downloads-mirror.parity.io/v${PARITY_VERSION}/x86_64-unknown-linux-gnu/parity
-
-# Fetch parity
-curl -L $PARITY_DOWNLOAD > parity
+# Install Rust
+curl https://sh.rustup.rs -sSf | sh
 
 # Install parity
-chmod +x parity
-sudo mv parity /usr/bin
+sudo snap install parity
 
 # install dapp
 wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
