@@ -5,7 +5,7 @@ set -ex
 sudo apt-get install openssl libssl-dev libudev-dev
 
 # Install Rust
-curl https://sh.rustup.rs -sSf | sh -y
+curl https://sh.rustup.rs > rs.sh && bash rs.sh -y
 
 # Install parity
 sudo snap install parity
