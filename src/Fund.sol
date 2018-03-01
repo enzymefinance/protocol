@@ -301,6 +301,10 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
+            if(!isInAssetList[request.requestAsset]) {
+                ownedAssets.push(request.requestAsset);
+                isInAssetList[request.requestAsset] = true;
+            }
         } else if (
             isRedeemAllowed[request.requestAsset] &&
             request.requestType == RequestType.redeem &&
