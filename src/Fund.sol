@@ -55,10 +55,16 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         bool isApproveOnly; // True in case of exchange implementation which requires  are approved when an order is made instead of transfer
     }
 
+    struct Order {
+        uint id; // Order Id
+        uint expiresAt; // Timestamp when the order expires
+    }
+
     // FIELDS
 
     // Constant fields
     uint public constant MAX_FUND_ASSETS = 4; // Max ownable assets by the fund supported by gas limits
+    uint public constant ORDER_EXPIRATION_TIME = 86400; // Expiration time for make orders
     // Constructor fields
     uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
@@ -72,7 +78,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     Request[] public requests; // All the requests this fund received from participants
     mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
     mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
-    mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
+    mapping (uint => mapping(address => Order)) public exchangeIdsToOpenMakeOrders; // exchangeIndex to: asset to open make orders
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
@@ -381,10 +387,11 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         require(address(exchanges[exchangeId].exchangeAdapter).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), exchanges[exchangeId].exchange, sellAsset, buyAsset, sellQuantity, buyQuantity));
-        exchangeIdsToOpenMakeOrderIds[exchangeId][sellAsset] = exchanges[exchangeId].exchangeAdapter.getLastOrderId(exchanges[exchangeId].exchange);
+        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id = exchanges[exchangeId].exchangeAdapter.getLastOrderId(exchanges[exchangeId].exchange);
+        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
 
         // Success defined as non-zero order id
-        require(exchangeIdsToOpenMakeOrderIds[exchangeId][sellAsset] != 0);
+        require(exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id != 0);
 
         // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
         isInOpenMakeOrder[buyAsset] = true;
@@ -393,7 +400,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             isInAssetList[buyAsset] = true;
         }
 
-        OrderUpdated(exchangeId, exchangeIdsToOpenMakeOrderIds[exchangeId][sellAsset]);
+        OrderUpdated(exchangeId, exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id);
     }
 
     /// @notice Takes an active order on the selected exchange
@@ -454,13 +461,13 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @param ofAsset Asset for which we want to cancel an order
     function cancelOrder(uint exchangeId, address ofAsset)
         external
-        pre_cond(isOwner() || isShutDown)
+        pre_cond(isOwner() || isShutDown || block.timestamp >= exchangeIdsToOpenMakeOrders[exchangeId][ofAsset].expiresAt)
     {
-        uint orderId = exchangeIdsToOpenMakeOrderIds[exchangeId][ofAsset];
+        uint orderId = exchangeIdsToOpenMakeOrders[exchangeId][ofAsset].id;
         require(orderId != 0); // ensure this order exists
         // Execute request
         require(address(exchanges[exchangeId].exchangeAdapter).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), exchanges[exchangeId].exchange, orderId));
-        delete exchangeIdsToOpenMakeOrderIds[exchangeId][ofAsset];
+        delete exchangeIdsToOpenMakeOrders[exchangeId][ofAsset];
 
         OrderUpdated(exchangeId, orderId);
     }
@@ -728,12 +735,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         uint totalSellQuantity;     // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
-            if (exchangeIdsToOpenMakeOrderIds[i][ofAsset] == 0) {
+            if (exchangeIdsToOpenMakeOrders[i][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = exchanges[i].exchangeAdapter.getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
+            var (sellAsset, , sellQuantity, ) = exchanges[i].exchangeAdapter.getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrders[i][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
-                delete exchangeIdsToOpenMakeOrderIds[i][ofAsset];
+                delete exchangeIdsToOpenMakeOrders[i][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
             if (exchanges[i].isApproveOnly) {
