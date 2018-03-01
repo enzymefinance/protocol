@@ -4,7 +4,6 @@ import "./assets/RestrictedShares.sol";
 import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
-import "./assets/NativeAssetInterface.sol";
 import "./compliance/ComplianceInterface.sol";
 import "./pricefeeds/PriceFeedInterface.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
@@ -65,15 +64,14 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
-    NativeAssetInterface public NATIVE_ASSET; // Native asset as ERC20 contract
     // Methods fields
     Modules public module; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
     Calculations public atLastUnclaimedFeeAllocation; // Calculation results at last allocateUnclaimedFees() call
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
-    bool public isInvestAllowed; // User option, if false fund rejects Melon investments
-    bool public isRedeemAllowed; // User option, if false fund rejects Melon redemptions; Redemptions using slices always possible
+    mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
+    mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
     mapping (uint => mapping(address => uint)) public exchangeIdsToOpenMakeOrderIds; // exchangeIndex to: asset to open make order ID ; if no open make orders, orderID is zero
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
@@ -100,7 +98,6 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
-        address ofNativeAsset,
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
@@ -109,8 +106,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     )
         RestrictedShares(withName, "MLNF", 18, now)
     {
-        isInvestAllowed = true;
-        isRedeemAllowed = true;
+        isInvestAllowed[ofQuoteAsset] = true;
+        isRedeemAllowed[ofQuoteAsset] = true;
         owner = ofManager;
         require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
         MANAGEMENT_FEE_RATE = ofManagementFee; // 1 percent is expressed as 0.01 * 10 ** 18
@@ -132,12 +129,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         }
         // Require Quote assets exists in pricefeed
         QUOTE_ASSET = Asset(ofQuoteAsset);
-        NATIVE_ASSET = NativeAssetInterface(ofNativeAsset);
-        // Quote Asset and Native asset always in owned assets list
+        // Quote Asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;
-        ownedAssets.push(ofNativeAsset);
-        isInAssetList[ofNativeAsset] = true;
         require(address(QUOTE_ASSET) == module.pricefeed.getQuoteAsset()); // Sanity check
         atLastUnclaimedFeeAllocation = Calculations({
             gav: 0,
@@ -155,12 +149,51 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     // EXTERNAL : ADMINISTRATION
 
-    function enableInvestment() external pre_cond(isOwner()) { isInvestAllowed = true; }
-    function disableInvestment() external pre_cond(isOwner()) { isInvestAllowed = false; }
-    function enableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = true; }
-    function disableRedemption() external pre_cond(isOwner()) { isRedeemAllowed = false; }
-    function shutDown() external pre_cond(msg.sender == VERSION) { isShutDown = true; }
+    /// @notice Enable investment in specified assets
+    /// @param ofAssets Array of assets to enable investment in
+    function enableInvestment(address[] ofAssets)
+        external
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            isInvestAllowed[ofAssets[i]] = true;
+        }
+    }
 
+    /// @notice Disable investment in specified assets
+    /// @param ofAssets Array of assets to disable investment in
+    function disableInvestment(address[] ofAssets)
+        external
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            isInvestAllowed[ofAssets[i]] = false;
+        }
+    }
+
+    /// @notice Enable redemption in specified assets
+    /// @param ofAssets Array of assets to enable redemption in
+    function enableRedemption(address[] ofAssets)
+        external
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            isRedeemAllowed[ofAssets[i]] = true;
+        }
+    }
+
+    /// @notice Disable redemption in specified assets
+    /// @param ofAssets Array of assets to disable redemption in
+    function disableRedemption(address[] ofAssets)
+        external
+        pre_cond(isOwner())
+    {
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            isRedeemAllowed[ofAssets[i]] = false;
+        }
+    }
+
+    function shutDown() external pre_cond(msg.sender == VERSION) { isShutDown = true; }
 
     // EXTERNAL : PARTICIPATION
 
@@ -168,21 +201,22 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param giveQuantity Quantity of Melon token times 10 ** 18 offered to receive shareQuantity
     /// @param shareQuantity Quantity of shares times 10 ** 18 requested to be received
+    /// @param investmentAsset Address of asset to invest in
     function requestInvestment(
         uint giveQuantity,
         uint shareQuantity,
-        bool isNativeAsset
+        address investmentAsset
     )
         external
         pre_cond(!isShutDown)
-        pre_cond(isInvestAllowed) // investment using Melon has not been deactivated by the Manager
+        pre_cond(isInvestAllowed[investmentAsset]) // investment using investmentAsset has not been deactivated by the Manager
         pre_cond(module.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.invest,
-            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(QUOTE_ASSET),
+            requestAsset: investmentAsset,
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
@@ -196,21 +230,22 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
     /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
     /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
+    /// @param redemptionAsset Address of asset to redeem in
     function requestRedemption(
         uint shareQuantity,
         uint receiveQuantity,
-        bool isNativeAsset
+        address redemptionAsset
       )
         external
         pre_cond(!isShutDown)
-        pre_cond(isRedeemAllowed) // Redemption using Melon has not been deactivated by Manager
+        pre_cond(isRedeemAllowed[redemptionAsset]) // Redemption using the redemptionAsset has not been deactivated by Manager
         pre_cond(module.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
     {
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
             requestType: RequestType.redeem,
-            requestAsset: isNativeAsset ? address(NATIVE_ASSET) : address(QUOTE_ASSET),
+            requestAsset: redemptionAsset,
             shareQuantity: shareQuantity,
             giveQuantity: shareQuantity,
             receiveQuantity: receiveQuantity,
@@ -244,16 +279,16 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
-        if (request.requestAsset == address(NATIVE_ASSET)) {
-            var (isPriceRecent, invertedNativeAssetPrice, nativeAssetDecimal) = module.pricefeed.getInvertedPrice(address(NATIVE_ASSET));
+        if (request.requestAsset != address(QUOTE_ASSET)) {
+            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = module.pricefeed.getInvertedPrice(request.requestAsset);
             if (!isPriceRecent) {
                 revert();
             }
-            costQuantity = mul(costQuantity, invertedNativeAssetPrice) / 10 ** nativeAssetDecimal;
+            costQuantity = mul(costQuantity, invertedRequestAssetPrice) / 10 ** requestAssetDecimal;
         }
 
         if (
-            isInvestAllowed &&
+            isInvestAllowed[request.requestAsset] &&
             request.requestType == RequestType.invest &&
             costQuantity <= request.giveQuantity
         ) {
@@ -261,7 +296,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
         } else if (
-            isRedeemAllowed &&
+            isRedeemAllowed[request.requestAsset] &&
             request.requestType == RequestType.redeem &&
             request.receiveQuantity <= costQuantity
         ) {
@@ -269,7 +304,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else if (
-            isRedeemAllowed &&
+            isRedeemAllowed[request.requestAsset] &&
             request.requestType == RequestType.tokenFallbackRedeem &&
             request.receiveQuantity <= costQuantity
         ) {
@@ -493,7 +528,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)));   // Sum up product of asset holdings of this vault and asset prices
-            if (assetHoldings != 0 || ofAsset == address(QUOTE_ASSET) || ofAsset == address(NATIVE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(QUOTE_ASSET) or in open make order
+            if (assetHoldings != 0 || ofAsset == address(QUOTE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(QUOTE_ASSET) or in open make order
                 ownedAssets.push(ofAsset);
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
@@ -698,7 +733,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             }
             var (sellAsset, , sellQuantity, ) = exchanges[i].exchangeAdapter.getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrderIds[i][ofAsset]);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
-                exchangeIdsToOpenMakeOrderIds[i][ofAsset] = 0;
+                delete exchangeIdsToOpenMakeOrderIds[i][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
             if (exchanges[i].isApproveOnly) {
