@@ -72,7 +72,7 @@ test.before(async () => {
   );
   await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredValue, wantedShares, false],
+    [offeredValue, wantedShares, mlnToken.address],
   );
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   await fund.instance.executeRequest.postTransaction(
