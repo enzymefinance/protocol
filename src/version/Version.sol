@@ -97,7 +97,6 @@ contract Version is DBC, Owned, VersionInterface {
             ofQuoteAsset,
             ofManagementFee,
             ofPerformanceFee,
-            NATIVE_ASSET,
             ofCompliance,
             ofRiskMgmt,
             ofPriceFeed,

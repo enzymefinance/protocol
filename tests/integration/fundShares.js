@@ -237,7 +237,7 @@ test.serial("allows request and execution on the first investment", async t => {
   ]);
   txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [firstTest.offeredValue, firstTest.wantedShares, false],
+    [firstTest.offeredValue, firstTest.wantedShares, mlnToken.address],
   );
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -330,7 +330,7 @@ subsequentTests.forEach(testInstance => {
 
       txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.offeredValue, testInstance.wantedShares, false],
+        [testInstance.offeredValue, testInstance.wantedShares, mlnToken.address],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -517,7 +517,7 @@ testArray.forEach(testInstance => {
     const pre = await getAllBalances(deployed, accounts, fund);
     txId = await fund.instance.requestRedemption.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [testInstance.wantedShares, testInstance.wantedValue, false],
+      [testInstance.wantedShares, testInstance.wantedValue, mlnToken.address],
     );
     const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);

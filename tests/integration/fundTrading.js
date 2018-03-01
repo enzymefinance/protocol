@@ -184,7 +184,7 @@ exchangeIndexes.forEach(i => {
       investorGasTotal = investorGasTotal.plus(gasUsed);
       txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [boostedOffer, wantedShares, false],
+        [boostedOffer, wantedShares, mlnToken.address],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -676,7 +676,7 @@ redemptions.forEach((redemption, index) => {
       const pre = await getAllBalances(deployed, accounts, fund);
       txId = await fund.instance.requestRedemption.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [redemption.amount, wantedValue, false],
+        [redemption.amount, wantedValue, mlnToken.address],
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -746,6 +746,14 @@ redemptions.forEach((redemption, index) => {
 });
 
 test.serial(`Allows investment in native asset`, async t => {
+  await fund.instance.enableInvestment.postTransaction(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    [[ethToken.address]],
+  );
+  await fund.instance.enableRedemption.postTransaction(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    [[ethToken.address]],
+  );
   let investorGasTotal = new BigNumber(0);
   await ethToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
@@ -780,7 +788,7 @@ test.serial(`Allows investment in native asset`, async t => {
   await updatePriceFeed(deployed);
   txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [giveQuantity, wantedShareQuantity, true],
+    [giveQuantity, wantedShareQuantity, ethToken.address],
   );
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -837,7 +845,7 @@ test.serial(`Allows redemption in native asset`, async t => {
   );
   txId = await fund.instance.requestRedemption.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [shareQuantity, receiveQuantity, true],
+    [shareQuantity, receiveQuantity, ethToken.address],
   );
   let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
