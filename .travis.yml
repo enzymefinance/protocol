@@ -16,10 +16,8 @@ addons:
     - g++-4.8
     - clang
 cache:
-  timeout: 10000
   directories:
     - node_modules
-    - /nix/store
 install:
 - ./utils/travis/install.sh
 - npm install
