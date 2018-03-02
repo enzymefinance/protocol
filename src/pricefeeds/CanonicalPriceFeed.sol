@@ -126,8 +126,26 @@ contract CanonicalPriceFeed is PriceFeedInterface, CanonicalAssetRegistrar, Medi
         PriceUpdated(now);
     }
 
-    function medianize() {
-        revert();
+    /// @dev from MakerDao medianizer contract
+    // TODO: prune zeroes
+    // TODO: get return values
+    function medianize(uint[] unsorted) public view returns (uint) {
+        uint[] memory out = new uint[](unsorted.length);
+        for (uint i = 0; i < unsorted.length; i++) {
+            uint item = unsorted[i];
+            if (i == 0 || item >= out[i - 1]) {
+                out[i] = item;  // item is larger than last in array (sorted)
+            } else {
+                uint j = 0;
+                while (item >= out[j]) {
+                    j++;  // get to where element belongs (between smaller and larger items)
+                }
+                for (uint k = i; k > j; k--) {
+                    out[k] = out[k - 1];    // bump larger elements rightward to leave slot
+                }
+                out[j] = item;
+            }
+        }
     }
 
     // PUBLIC VIEW METHODS
