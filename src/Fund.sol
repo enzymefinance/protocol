@@ -5,7 +5,7 @@ import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./compliance/ComplianceInterface.sol";
-import "./pricefeeds/PriceFeedInterface.sol";
+import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/ExchangeInterface.sol";
 import "./FundInterface.sol";
@@ -19,7 +19,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
-        PriceFeedInterface pricefeed; // Provides all external data
+        CanonicalPriceFeed pricefeed; // Provides all external data
         ComplianceInterface compliance; // Boolean functions regarding invest/redeem
         RiskMgmtInterface riskmgmt; // Boolean functions regarding make/take orders
     }
@@ -116,7 +116,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         VERSION = msg.sender;
         module.compliance = ComplianceInterface(ofCompliance);
         module.riskmgmt = RiskMgmtInterface(ofRiskMgmt);
-        module.pricefeed = PriceFeedInterface(ofPriceFeed);
+        module.pricefeed = CanonicalPriceFeed(ofPriceFeed);
         // Bridged to Melon exchange interface by exchangeAdapter library
         for (uint i = 0; i < ofExchanges.length; ++i) {
             ExchangeInterface adapter = ExchangeInterface(ofExchangeAdapters[i]);
@@ -280,7 +280,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
         if (request.requestAsset != address(QUOTE_ASSET)) {
-            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = module.pricefeed.getInvertedPrice(request.requestAsset);
+            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = module.pricefeed.getInvertedPriceInfo(request.requestAsset);
             if (!isPriceRecent) {
                 revert();
             }
@@ -359,11 +359,11 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         require(buyAsset != address(this)); // Prevent buying of own fund token
         require(quantityHeldInCustodyOfExchange(sellAsset) == 0); // Curr only one make order per sellAsset allowed. Please wait or cancel existing make order.
         require(module.pricefeed.existsPriceOnAssetPair(sellAsset, buyAsset)); // PriceFeed module: Requested asset pair not valid
-        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(sellAsset, buyAsset);
+        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePriceInfo(sellAsset, buyAsset);
         require(isRecent);  // Reference price is required to be recent
         require(
             module.riskmgmt.isMakePermitted(
-                module.pricefeed.getOrderPrice(
+                module.pricefeed.getOrderPriceInfo(
                     sellAsset,
                     buyAsset,
                     sellQuantity,
@@ -416,14 +416,14 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         require(sellAsset != address(this)); // Prevent buying of own fund token
         require(module.pricefeed.existsPriceOnAssetPair(buyAsset, sellAsset)); // PriceFeed module: Requested asset pair not valid
         require(isInAssetList[sellAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePrice(buyAsset, sellAsset);
+        var (isRecent, referencePrice, ) = module.pricefeed.getReferencePriceInfo(buyAsset, sellAsset);
         require(isRecent); // Reference price is required to be recent
         require(receiveQuantity <= sellQuantity); // Not enough quantity of order for what is trying to be bought
         uint spendQuantity = mul(receiveQuantity, buyQuantity) / sellQuantity;
         require(AssetInterface(buyAsset).approve(exchanges[exchangeId].exchange, spendQuantity)); // Could not approve spending of spendQuantity of buyAsset
         require(
             module.riskmgmt.isTakePermitted(
-            module.pricefeed.getOrderPrice(
+            module.pricefeed.getOrderPriceInfo(
                 buyAsset,
                 sellAsset,
                 buyQuantity, // spendQuantity
@@ -507,7 +507,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
-    /// @dev Assumes that module.pricefeed.getPrice(..) returns recent prices
+    /// @dev Assumes that module.pricefeed.getPriceInfo(..) returns recent prices
     /// @return gav Gross asset value quoted in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
@@ -522,7 +522,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-            var (isRecent, assetPrice, assetDecimals) = module.pricefeed.getPrice(ofAsset);
+            var (isRecent, assetPrice, assetDecimals) = module.pricefeed.getPriceInfo(ofAsset);
             if (!isRecent) {
                 revert();
             }

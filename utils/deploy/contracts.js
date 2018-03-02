@@ -85,9 +85,20 @@ async function deployEnvironment(environment) {
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    const calldata = await api.util.abiEncode(
+      'addVersion(address)', ['address'], [deployed.Version.address]
+    );
+    await deployed.Governance.instance.propose.postTransaction(
+      {from: accounts[0]},
+      [deployed.Governance.address, calldata, 0]
+    );
+    const proposalId = await deployed.Governance.instance.actionCount.call();
+    await deployed.Governance.instance.confirm.postTransaction({from: accounts[0]}, [proposalId]);
+    await deployed.Governance.instance.trigger.postTransaction({from: accounts[0]}, [proposalId]);
+
+    // await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    // await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    // await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
 
     // register assets
     await Promise.all(
@@ -216,9 +227,20 @@ async function deployEnvironment(environment) {
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+
+    const calldata = await api.util.abiEncode(
+      'addVersion(address)', ['address'], [deployed.Version.address]
+    );
+    await deployed.Governance.instance.propose.postTransaction(
+      {from: accounts[0]},
+      [deployed.Governance.address, calldata, 0]
+    );
+    const proposalId = await deployed.Governance.instance.actionCount.call();
+    await deployed.Governance.instance.confirm.postTransaction({from: accounts[0]}, [proposalId]);
+    await deployed.Governance.instance.trigger.postTransaction({from: accounts[0]}, [proposalId]);
+     // await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    // await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    // await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
 
     // register assets
     await deployed.PriceFeed.instance.register.postTransaction({}, [
