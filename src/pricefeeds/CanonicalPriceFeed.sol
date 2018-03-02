@@ -127,14 +127,15 @@ contract CanonicalPriceFeed is PriceFeedInterface, CanonicalAssetRegistrar, Medi
     }
 
     /// @dev from MakerDao medianizer contract
-    // TODO: prune zeroes
-    // TODO: get return values
     function medianize(uint[] unsorted) public view returns (uint) {
+        uint count;
         uint[] memory out = new uint[](unsorted.length);
         for (uint i = 0; i < unsorted.length; i++) {
             uint item = unsorted[i];
-            if (i == 0 || item >= out[i - 1]) {
-                out[i] = item;  // item is larger than last in array (sorted)
+            if (item == 0) {
+                continue;   // skip zero-entries (invalid)
+            } else if (i == 0 || item >= out[i - 1]) {
+                out[i] = item;  // item is larger than last in array (we are home)
             } else {
                 uint j = 0;
                 while (item >= out[j]) {
@@ -145,7 +146,22 @@ contract CanonicalPriceFeed is PriceFeedInterface, CanonicalAssetRegistrar, Medi
                 }
                 out[j] = item;
             }
+            count++;
         }
+
+        if (count < minimum) {
+            revert(); // TODO: maybe return false as validity or something
+        }
+
+        uint value;
+        if (count % 2 == 0) {
+            uint value1 = uint(out[(count / 2) - 1]);
+            uint value2 = uint(out[(count / 2)]);
+            value = add(value1, value2) / 2;
+        } else {
+            value = out[(count - 1) / 2];
+        }
+        return value;
     }
 
     // PUBLIC VIEW METHODS
