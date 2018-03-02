@@ -1,29 +1,30 @@
 pragma solidity ^0.4.19;
 
 import "./CanonicalRegistrar.sol";
-import "./PriceFeedInterface.sol";
-import "ds-value/value.sol";
+import "./SimplePriceFeedInterface.sol";
+import "../dependencies/DBC.sol";
+import "ds-thing/thing.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Updates and exposes price information for consuming contracts
-contract SubFeed is PriceFeedInterface, DSValue {
+contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
 
-    // FIELDS
-
+    // TYPES
     struct Data {
         uint price;
         uint timestamp;
     }
 
-    mapping(address => Data) public assetData;
+    // FIELDS
+    mapping(address => Data) public assetsToPrices;
 
     // Constructor fields
     address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
-    /// Note: Interval is purely self imposed and for information purposes only
-    uint public INTERVAL; // Frequency of updates in seconds
-    uint public VALIDITY; // Time in seconds for which data is considered recent
+
+    // Contract-level variables
     uint updateId;        // Update counter for this pricefeed; used as a check during investment
+    CanonicalRegistrar registrar;
 
     // METHODS
 
@@ -31,18 +32,12 @@ contract SubFeed is PriceFeedInterface, DSValue {
 
     /// @param ofQuoteAsset Address of quote asset
     /// @param ofRegistrar Address of canonical registrar
-    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
-    /// @param validity Number of seconds that datafeed update information is valid for
-    function SubFeed(
+    function SimplePriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        address ofRegistrar,
-        uint interval,
-        uint validity
+        address ofRegistrar
     ) {
-        require(CanonicalRegistrar(ofRegistrar).isRegistered(ofQuoteAsset));
+        registrar = CanonicalRegistrar(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
-        INTERVAL = interval;
-        VALIDITY = validity;
     }
 
     // PUBLIC METHODS
@@ -61,12 +56,12 @@ contract SubFeed is PriceFeedInterface, DSValue {
         auth
         pre_cond(ofAssets.length == newPrices.length)
     {
-        updateId += 1;
+        updateId++;
         for (uint i = 0; i < ofAssets.length; ++i) {
-            require(registrar.isRegistered([ofAssets[i]]));
-            require(assetData[ofAssets[i]].timestamp != now); // prevent two updates in one block
-            assetData[ofAssets[i]].timestamp = now;
-            assetData[ofAssets[i]].price = newPrices[i];
+            require(registrar.isRegistered(ofAssets[i]));
+            require(assetsToPrices[ofAssets[i]].timestamp != now); // prevent two updates in one block
+            assetsToPrices[ofAssets[i]].timestamp = now;
+            assetsToPrices[ofAssets[i]].price = newPrices[i];
         }
         PriceUpdated(now);
     }
@@ -75,35 +70,7 @@ contract SubFeed is PriceFeedInterface, DSValue {
 
     // Get pricefeed specific information
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
-    function getInterval() view returns (uint) { return INTERVAL; }
-    function getValidity() view returns (uint) { return VALIDITY; }
     function getLastUpdateId() view returns (uint) { return updateId; }
-
-    /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
-    /// @param ofAsset Existend asset in AssetRegistrar
-    /// @return isRecent Price information ofAsset is recent
-    function hasRecentPrice(address ofAsset)
-        view
-        pre_cond(registrar.isRegistered(ofAsset))
-        returns (bool isRecent)
-    {
-        return sub(now, assetData[ofAsset].timestamp) <= VALIDITY;
-    }
-
-    /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
-    /// @param ofAssets All asstes existend in AssetRegistrar
-    /// @return areRecent Price information for all queried assets is valid
-    function hasRecentPrices(address[] ofAssets)
-        view
-        returns (bool areRecent)
-    {
-        for (uint i; i < ofAssets.length; i++) {
-            if (!hasRecentPrice(ofAssets[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     /**
     @notice Gets price of an asset multiplied by ten to the power of assetDecimals
@@ -118,7 +85,8 @@ contract SubFeed is PriceFeedInterface, DSValue {
         view
         returns (uint price, uint timestamp)
     {
-        return assetData(ofAsset);
+        Data data = assetsToPrices[ofAsset];
+        return (data.price, data.timestamp);
     }
 
     /**

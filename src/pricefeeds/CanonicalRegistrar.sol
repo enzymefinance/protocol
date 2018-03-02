@@ -1,12 +1,12 @@
 pragma solidity ^0.4.19;
 
 import "../dependencies/DBC.sol";
-import "ds-auth/auth.sol";
+import "ds-thing/thing.sol";
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract CanonicalRegistrar is DBC, DSAuth {
+contract CanonicalRegistrar is DSThing, DBC {
 
     // TYPES
 
