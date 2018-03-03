@@ -77,10 +77,8 @@ function registerBtc(pricefeed) {
 }
 
 async function createAndWhitelistPriceFeed(context) {
-  context.pricefeed.push(await deployContract(
-    "pricefeeds/PriceFeed",
-    { from: accounts[0] },
-    [
+  context.pricefeed.push(
+    await deployContract("pricefeeds/PriceFeed", { from: accounts[0] }, [
       mlnToken.address,
       "Melon Token",
       "MLN-T",
@@ -92,18 +90,20 @@ async function createAndWhitelistPriceFeed(context) {
       mockBreakOut,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
-    ],
-  ));
-  context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [context.pricefeed[context.pricefeed.length - 1].address]);
+    ]),
+  );
+  context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
+    context.pricefeed[context.pricefeed.length - 1].address,
+  ]);
 }
 function medianize(pricesArray) {
   const prices = pricesArray.sort();
   const len = prices.length;
   if (len % 2 === 0) {
-    return (prices[len / 2].add(prices[(len / 2) - 1])).div(2);
+    return prices[len / 2].add(prices[len / 2 - 1]).div(2);
   }
   return prices[(len - 1) / 2];
-};
+}
 
 // hooks
 
@@ -178,9 +178,10 @@ test("registers more than one asset without error", async t => {
 });
 
 test("Pricefeed gets added to whitelist correctly", async t => {
-  const result = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call({}, [
-    t.context.pricefeed[0].address,
-  ]);
+  const result = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
+    {},
+    [t.context.pricefeed[0].address],
+  );
 
   t.is(Number(result), 0);
 });
@@ -221,32 +222,30 @@ test("Update price for even number of pricefeeds", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await t.context.pricefeed[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address],
-      [prices[0]],
-    ],
+    [[eurToken.address], [prices[0]]],
   );
   await t.context.pricefeed[1].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address],
-      [prices[1]],
-    ],
+    [[eurToken.address], [prices[1]]],
   );
   await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address]
-    ],
+    [[eurToken.address]],
   );
-  const [, price, ] = Object.values(
-    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [eurToken.address]),
+  const [, price] = Object.values(
+    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
+      eurToken.address,
+    ]),
   );
   t.deepEqual(price, medianize(prices));
 });
 
 test("Update price for odd number of pricefeeds", async t => {
-  const prices = [new BigNumber(1000), new BigNumber(2000), new BigNumber(4000)];
+  const prices = [
+    new BigNumber(1000),
+    new BigNumber(2000),
+    new BigNumber(4000),
+  ];
   await createAndWhitelistPriceFeed(t.context);
   await registerEur(t.context.pricefeed[0]);
   await registerEur(t.context.pricefeed[1]);
@@ -254,33 +253,24 @@ test("Update price for odd number of pricefeeds", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await t.context.pricefeed[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address],
-      [prices[0]],
-    ],
+    [[eurToken.address], [prices[0]]],
   );
   await t.context.pricefeed[1].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address],
-      [prices[1]],
-    ],
+    [[eurToken.address], [prices[1]]],
   );
   await t.context.pricefeed[2].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address],
-      [prices[2]],
-    ],
+    [[eurToken.address], [prices[2]]],
   );
   await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
-    [
-      [eurToken.address]
-    ],
+    [[eurToken.address]],
   );
-  const [, price, ] = Object.values(
-    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [eurToken.address]),
+  const [, price] = Object.values(
+    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
+      eurToken.address,
+    ]),
   );
   t.deepEqual(price, medianize(prices));
 });
