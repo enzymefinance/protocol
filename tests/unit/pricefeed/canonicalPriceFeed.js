@@ -78,21 +78,12 @@ function registerBtc(pricefeed) {
 
 async function createAndWhitelistPriceFeed(context) {
   context.pricefeed.push(
-    await deployContract("pricefeeds/PriceFeed", { from: accounts[0] }, [
+    await deployContract("pricefeeds/SimplePriceFeed", { from: accounts[0] }, [
       mlnToken.address,
-      "Melon Token",
-      "MLN-T",
-      mlnDecimals,
-      "melonport.com",
-      mockBytes,
-      mockBytes,
-      mockBreakIn,
-      mockBreakOut,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
+      context.canonicalPriceFeed.address
     ]),
   );
-  context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
+  await context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
     context.pricefeed[context.pricefeed.length - 1].address,
   ]);
 }
@@ -142,15 +133,15 @@ test.beforeEach(async t => {
 // tests (concurrent)
 
 test("registers more than one asset without error", async t => {
-  await registerEur(t.context.pricefeed[0]);
-  await registerEth(t.context.pricefeed[0]);
+  await registerEur(t.context.canonicalPriceFeed);
+  await registerEth(t.context.canonicalPriceFeed);
   const [
     ,
     ,
     ,
     ,
     eurRegistered,
-  ] = await t.context.pricefeed[0].instance.information.call({}, [
+  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
     eurToken.address,
   ]);
   const [
@@ -159,7 +150,7 @@ test("registers more than one asset without error", async t => {
     ,
     ,
     ethRegistered,
-  ] = await t.context.pricefeed[0].instance.information.call({}, [
+  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
     ethToken.address,
   ]);
   const [
@@ -168,7 +159,7 @@ test("registers more than one asset without error", async t => {
     ,
     ,
     mlnRegistered,
-  ] = await t.context.pricefeed[0].instance.information.call({}, [
+  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
     mlnToken.address,
   ]);
 
@@ -178,18 +169,22 @@ test("registers more than one asset without error", async t => {
 });
 
 test("Pricefeed gets added to whitelist correctly", async t => {
-  const result = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
+  const index1 = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
     {},
     [t.context.pricefeed[0].address],
   );
-
-  t.is(Number(result), 0);
+  const index2 = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
+    {},
+    [t.context.pricefeed[1].address],
+  );
+  t.is(Number(index1), 0);
+  t.is(Number(index2), 1);
 });
 
 test("Pricefeed gets removed from whitelist", async t => {
-  await registerEur(t.context.pricefeed[0]);
-  await registerEth(t.context.pricefeed[0]);
-  await registerBtc(t.context.pricefeed[0]);
+  await registerEur(t.context.canonicalPriceFeed);
+  await registerEth(t.context.canonicalPriceFeed);
+  await registerBtc(t.context.canonicalPriceFeed);
   const inputPriceEur = 150000000;
   const inputPriceEth = 2905;
   const inputPriceBtc = 12000000000;
@@ -200,25 +195,19 @@ test("Pricefeed gets removed from whitelist", async t => {
       [inputPriceEur, inputPriceEth, inputPriceBtc],
     ],
   );
-  const [eurIsRecent, eurPrice, returnedEurDecimals] = Object.values(
+  const [eurPrice, ] = Object.values(
     await t.context.pricefeed[0].instance.getPrice.call({}, [eurToken.address]),
   );
-  const [ethIsRecent, ethPrice, returnedEthDecimals] = Object.values(
+  const [ethPrice, ] = Object.values(
     await t.context.pricefeed[0].instance.getPrice.call({}, [ethToken.address]),
   );
 
   t.is(inputPriceEur, Number(eurPrice));
-  t.true(eurIsRecent);
-  t.is(eurDecimals, Number(returnedEurDecimals));
   t.is(inputPriceEth, Number(ethPrice));
-  t.true(ethIsRecent);
-  t.is(18, Number(returnedEthDecimals));
 });
 
 test("Update price for even number of pricefeeds", async t => {
   const prices = [new BigNumber(1000), new BigNumber(2000)];
-  await registerEur(t.context.pricefeed[0]);
-  await registerEur(t.context.pricefeed[1]);
   await registerEur(t.context.canonicalPriceFeed);
   await t.context.pricefeed[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
@@ -228,10 +217,12 @@ test("Update price for even number of pricefeeds", async t => {
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address], [prices[1]]],
   );
-  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
+  const txId = await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
   );
+  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+  console.log(gasUsed);
   const [, price] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
       eurToken.address,
@@ -247,9 +238,6 @@ test("Update price for odd number of pricefeeds", async t => {
     new BigNumber(4000),
   ];
   await createAndWhitelistPriceFeed(t.context);
-  await registerEur(t.context.pricefeed[0]);
-  await registerEur(t.context.pricefeed[1]);
-  await registerEur(t.context.pricefeed[2]);
   await registerEur(t.context.canonicalPriceFeed);
   await t.context.pricefeed[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
