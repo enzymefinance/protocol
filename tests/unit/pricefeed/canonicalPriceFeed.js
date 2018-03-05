@@ -79,8 +79,8 @@ function registerBtc(pricefeed) {
 async function createAndWhitelistPriceFeed(context) {
   context.pricefeeds.push(
     await deployContract("pricefeeds/SimplePriceFeed", { from: accounts[0] }, [
-      mlnToken.address,
-      context.canonicalPriceFeed.address
+      context.canonicalPriceFeed.address,
+      mlnToken.address
     ]),
   );
   await context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
@@ -150,7 +150,7 @@ test("Pricefeed gets added to whitelist correctly", async t => {
     {},
     [t.context.pricefeeds[0].address],
   );
-  const isWhitelisted1 = await t.context.canonicalPriceFeed.instance.isWhiteListed.call(
+  const isWhitelisted1 = await t.context.canonicalPriceFeed.instance.isWhitelisted.call(
     {},
     [t.context.pricefeeds[0].address],
   );
@@ -158,7 +158,7 @@ test("Pricefeed gets added to whitelist correctly", async t => {
     {},
     [t.context.pricefeeds[1].address],
   );
-  const isWhitelisted2 = await t.context.canonicalPriceFeed.instance.isWhiteListed.call(
+  const isWhitelisted2 = await t.context.canonicalPriceFeed.instance.isWhitelisted.call(
     {},
     [t.context.pricefeeds[1].address],
   );
@@ -214,17 +214,16 @@ test("Update price for even number of pricefeeds", async t => {
       [[eurToken.address], [prices[i]]],
     );
   }
-  const txId = await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
+  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
   );
-  const [, price] = Object.values(
-    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
-      eurToken.address,
+  const [price, ] = Object.values(
+    await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
+      eurToken.address
     ]),
   );
-  console.log(Number(price))
-  t.deepEqual(price, medianize(prices));
+  t.is(Number(price), Number(medianize(prices)));
 });
 
 test("Update price for odd number of pricefeeds", async t => {
