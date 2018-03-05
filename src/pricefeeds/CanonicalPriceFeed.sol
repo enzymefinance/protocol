@@ -78,6 +78,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @param feedIndex Array index of the feed (get this using getFeedWhitelistIndex(ofFeed))
     function removeFeedFromWhitelist(address ofFeed, uint feedIndex) auth {
         require(isWhitelisted[ofFeed]);
+        require(whitelist[feedIndex] == ofFeed);
         delete isWhitelisted[ofFeed];
         delete whitelist[feedIndex];
         for (uint i = feedIndex; i < whitelist.length-1; i++) { // remove gap in the array
@@ -170,6 +171,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     function getLastUpdateId() view returns (uint) { return updateId; }
 
     function getFeedWhitelistIndex(address ofFeed) view returns (uint) {
+        require(isWhitelisted[ofFeed]);
         for (uint i; i < whitelist.length; i++) {
             if (whitelist[i] == ofFeed) { return i; }
         }

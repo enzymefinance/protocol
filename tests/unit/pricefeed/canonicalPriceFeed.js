@@ -77,16 +77,17 @@ function registerBtc(pricefeed) {
 }
 
 async function createAndWhitelistPriceFeed(context) {
-  context.pricefeed.push(
+  context.pricefeeds.push(
     await deployContract("pricefeeds/SimplePriceFeed", { from: accounts[0] }, [
       mlnToken.address,
       context.canonicalPriceFeed.address
     ]),
   );
   await context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
-    context.pricefeed[context.pricefeed.length - 1].address,
+    context.pricefeeds[context.pricefeeds.length - 1].address,
   ]);
 }
+
 function medianize(pricesArray) {
   const prices = pricesArray.sort();
   const len = prices.length;
@@ -125,7 +126,7 @@ test.beforeEach(async t => {
       config.protocol.pricefeed.validity,
     ],
   );
-  t.context.pricefeed = [];
+  t.context.pricefeeds = [];
   await createAndWhitelistPriceFeed(t.context);
   await createAndWhitelistPriceFeed(t.context);
 });
@@ -135,33 +136,9 @@ test.beforeEach(async t => {
 test("registers more than one asset without error", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await registerEth(t.context.canonicalPriceFeed);
-  const [
-    ,
-    ,
-    ,
-    ,
-    eurRegistered,
-  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
-    eurToken.address,
-  ]);
-  const [
-    ,
-    ,
-    ,
-    ,
-    ethRegistered,
-  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
-    ethToken.address,
-  ]);
-  const [
-    ,
-    ,
-    ,
-    ,
-    mlnRegistered,
-  ] = await t.context.canonicalPriceFeed.instance.information.call({}, [
-    mlnToken.address,
-  ]);
+  const eurRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [eurToken.address]);
+  const ethRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [ethToken.address]);
+  const mlnRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [mlnToken.address]);
 
   t.true(eurRegistered);
   t.true(ethRegistered);
@@ -171,25 +148,35 @@ test("registers more than one asset without error", async t => {
 test("Pricefeed gets added to whitelist correctly", async t => {
   const index1 = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
     {},
-    [t.context.pricefeed[0].address],
+    [t.context.pricefeeds[0].address],
+  );
+  const isWhitelisted1 = await t.context.canonicalPriceFeed.instance.isWhiteListed.call(
+    {},
+    [t.context.pricefeeds[0].address],
   );
   const index2 = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
     {},
-    [t.context.pricefeed[1].address],
+    [t.context.pricefeeds[1].address],
+  );
+  const isWhitelisted2 = await t.context.canonicalPriceFeed.instance.isWhiteListed.call(
+    {},
+    [t.context.pricefeeds[1].address],
   );
   t.is(Number(index1), 0);
+  t.true(isWhitelisted1);
   t.is(Number(index2), 1);
+  t.true(isWhitelisted2);
 });
 
 test("Pricefeed gets removed from whitelist correctly", async t => {
   await t.context.canonicalPriceFeed.instance.removeFeedFromWhitelist.postTransaction(opts, [
-    t.context.pricefeed[1].address, 1
+    t.context.pricefeeds[1].address, 1
   ]);
-  const index = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
+  const feedIsWhitelisted = await t.context.canonicalPriceFeed.instance.isWhitelisted.call(
     {},
-    [t.context.pricefeed[1].address],
+    [t.context.pricefeeds[1].address],
   );
-  t.is(Number(index), 0);
+  t.false(feedIsWhitelisted);
 });
 
 test("Subfeeds return price correctly", async t => {
@@ -199,7 +186,7 @@ test("Subfeeds return price correctly", async t => {
   const inputPriceEur = 150000000;
   const inputPriceEth = 2905;
   const inputPriceBtc = 12000000000;
-  await t.context.pricefeed[0].instance.update.postTransaction(
+  await t.context.pricefeeds[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
     [
       [eurToken.address, ethToken.address, mockBtcAddress],
@@ -207,10 +194,10 @@ test("Subfeeds return price correctly", async t => {
     ],
   );
   const [eurPrice, ] = Object.values(
-    await t.context.pricefeed[0].instance.getPrice.call({}, [eurToken.address]),
+    await t.context.pricefeeds[0].instance.getPrice.call({}, [eurToken.address]),
   );
   const [ethPrice, ] = Object.values(
-    await t.context.pricefeed[0].instance.getPrice.call({}, [ethToken.address]),
+    await t.context.pricefeeds[0].instance.getPrice.call({}, [ethToken.address]),
   );
 
   t.is(inputPriceEur, Number(eurPrice));
@@ -221,8 +208,8 @@ test("Subfeeds return price correctly", async t => {
 test("Update price for even number of pricefeeds", async t => {
   const prices = [new BigNumber(10 ** 20), new BigNumber(2 * 10 ** 20)];
   await registerEur(t.context.canonicalPriceFeed);
-  for (let i = 0; i < t.context.pricefeed.length; i += 1) {
-    await t.context.pricefeed[i].instance.update.postTransaction(
+  for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
+    await t.context.pricefeeds[i].instance.update.postTransaction(
       { from: accounts[0], gas: 6000000 },
       [[eurToken.address], [prices[i]]],
     );
@@ -231,13 +218,12 @@ test("Update price for even number of pricefeeds", async t => {
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
   );
-  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-  console.log(gasUsed);
   const [, price] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
       eurToken.address,
     ]),
   );
+  console.log(Number(price))
   t.deepEqual(price, medianize(prices));
 });
 
@@ -249,8 +235,8 @@ test("Update price for odd number of pricefeeds", async t => {
   ];
   await createAndWhitelistPriceFeed(t.context);
   await registerEur(t.context.canonicalPriceFeed);
-  for (let i = 0; i < t.context.pricefeed.length; i += 1) {
-    await t.context.pricefeed[i].instance.update.postTransaction(
+  for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
+    await t.context.pricefeeds[i].instance.update.postTransaction(
       { from: accounts[0], gas: 6000000 },
       [[eurToken.address], [prices[i]]],
     );
