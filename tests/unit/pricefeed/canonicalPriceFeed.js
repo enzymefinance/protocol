@@ -181,7 +181,18 @@ test("Pricefeed gets added to whitelist correctly", async t => {
   t.is(Number(index2), 1);
 });
 
-test("Pricefeed gets removed from whitelist", async t => {
+test("Pricefeed gets removed from whitelist correctly", async t => {
+  await t.context.canonicalPriceFeed.instance.removeFeedFromWhitelist.postTransaction(opts, [
+    t.context.pricefeed[1].address, 1
+  ]);
+  const index = await t.context.canonicalPriceFeed.instance.getFeedWhitelistIndex.call(
+    {},
+    [t.context.pricefeed[1].address],
+  );
+  t.is(Number(index), 0);
+});
+
+test("Subfeeds return price correctly", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await registerEth(t.context.canonicalPriceFeed);
   await registerBtc(t.context.canonicalPriceFeed);
@@ -207,7 +218,7 @@ test("Pricefeed gets removed from whitelist", async t => {
 });
 
 test("Update price for even number of pricefeeds", async t => {
-  const prices = [new BigNumber(1000), new BigNumber(2000)];
+  const prices = [new BigNumber(10 ** 20), new BigNumber(2 * 10 ** 20)];
   await registerEur(t.context.canonicalPriceFeed);
   await t.context.pricefeed[0].instance.update.postTransaction(
     { from: accounts[0], gas: 6000000 },
@@ -233,9 +244,9 @@ test("Update price for even number of pricefeeds", async t => {
 
 test("Update price for odd number of pricefeeds", async t => {
   const prices = [
-    new BigNumber(1000),
-    new BigNumber(2000),
-    new BigNumber(4000),
+    new BigNumber(10 ** 20),
+    new BigNumber(2 * 10 ** 20),
+    new BigNumber(4 * 10 ** 20),
   ];
   await createAndWhitelistPriceFeed(t.context);
   await registerEur(t.context.canonicalPriceFeed);
