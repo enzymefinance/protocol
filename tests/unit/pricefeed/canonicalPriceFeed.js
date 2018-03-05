@@ -217,17 +217,16 @@ test("Subfeeds return price correctly", async t => {
   t.is(inputPriceEth, Number(ethPrice));
 });
 
+/* eslint-disable no-await-in-loop */
 test("Update price for even number of pricefeeds", async t => {
   const prices = [new BigNumber(10 ** 20), new BigNumber(2 * 10 ** 20)];
   await registerEur(t.context.canonicalPriceFeed);
-  await t.context.pricefeed[0].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [prices[0]]],
-  );
-  await t.context.pricefeed[1].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [prices[1]]],
-  );
+  for (let i = 0; i < t.context.pricefeed.length; i += 1) {
+    await t.context.pricefeed[i].instance.update.postTransaction(
+      { from: accounts[0], gas: 6000000 },
+      [[eurToken.address], [prices[i]]],
+    );
+  }
   const txId = await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
@@ -250,18 +249,12 @@ test("Update price for odd number of pricefeeds", async t => {
   ];
   await createAndWhitelistPriceFeed(t.context);
   await registerEur(t.context.canonicalPriceFeed);
-  await t.context.pricefeed[0].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [prices[0]]],
-  );
-  await t.context.pricefeed[1].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [prices[1]]],
-  );
-  await t.context.pricefeed[2].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [prices[2]]],
-  );
+  for (let i = 0; i < t.context.pricefeed.length; i += 1) {
+    await t.context.pricefeed[i].instance.update.postTransaction(
+      { from: accounts[0], gas: 6000000 },
+      [[eurToken.address], [prices[i]]],
+    );
+  }
   await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
