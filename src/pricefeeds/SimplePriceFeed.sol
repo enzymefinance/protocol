@@ -33,8 +33,8 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     /// @param ofQuoteAsset Address of quote asset
     /// @param ofRegistrar Address of canonical registrar
     function SimplePriceFeed(
-        address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        address ofRegistrar
+        address ofRegistrar,
+        address ofQuoteAsset // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
     ) {
         registrar = CanonicalRegistrar(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
