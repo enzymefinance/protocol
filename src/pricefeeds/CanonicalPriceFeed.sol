@@ -17,7 +17,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     address[] whitelist;
     uint VALIDITY;
     uint INTERVAL;
-    uint minimumPriceCount = 5;
+    uint minimumPriceCount = 1;
 
     // METHODS
 
@@ -67,7 +67,10 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // WHITELISTING
 
-    function addFeedToWhitelist(address ofFeed) auth {
+    function addFeedToWhitelist(address ofFeed)
+        external
+        auth
+    {
         require(!isWhitelisted[ofFeed]);
         isWhitelisted[ofFeed] = true;
         whitelist.push(ofFeed);
@@ -76,7 +79,10 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     // TODO: check gas usage (what is the max size of whitelist?); maybe can just run update() with array of feeds as argument instead?
     /// @param ofFeed Address of the SimplePriceFeed to be removed
     /// @param feedIndex Array index of the feed (get this using getFeedWhitelistIndex(ofFeed))
-    function removeFeedFromWhitelist(address ofFeed, uint feedIndex) auth {
+    function removeFeedFromWhitelist(address ofFeed, uint feedIndex)
+        external
+        auth
+    {
         require(isWhitelisted[ofFeed]);
         require(whitelist[feedIndex] == ofFeed);
         delete isWhitelisted[ofFeed];
@@ -87,6 +93,9 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         whitelist.length--;
     }
     
+    /// @dev override inherited update function to prevent manual update from authority
+    function update() external { revert(); }
+
     // AGGREGATION
 
     /// @dev Only Owner; Same sized input arrays
@@ -99,6 +108,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
      */
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets)
+        external
         auth
     {
         uint[] memory newPrices = new uint[](ofAssets.length);
@@ -110,21 +120,19 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
                 }
-                assetPrices[i] = price;
+                assetPrices[j] = price;
             }
-            assetsToPrices[ofAssets[i]] = Data(medianize(assetPrices), now);
+            newPrices[i] = medianize(assetPrices);
         }
-        PriceUpdated(now);
-    }
-
-    /// @dev Override so that function can only be invoked by this contract (TODO: make sure SimplePriceFeed.update is not available to user)
-    function update(address[] ofAssets, uint[] newPrices) {
-        require(msg.sender == address(this));
-        SimplePriceFeed.update(ofAssets, newPrices);
+        _updatePrices(ofAssets, newPrices);
     }
 
     /// @dev from MakerDao medianizer contract
-    function medianize(uint[] unsorted) public view returns (uint) {
+    function medianize(uint[] unsorted)
+        public
+        view
+        returns (uint)
+    {
         uint count;
         uint[] memory out = new uint[](unsorted.length);
         for (uint i = 0; i < unsorted.length; i++) {
@@ -160,6 +168,8 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         }
         return value;
     }
+
+    function setMinimumPriceCount(uint newCount) auth { minimumPriceCount = newCount; }
 
     // PUBLIC VIEW METHODS
 

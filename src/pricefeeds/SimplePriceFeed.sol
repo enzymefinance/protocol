@@ -23,8 +23,8 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
 
     // Contract-level variables
-    uint updateId;        // Update counter for this pricefeed; used as a check during investment
-    CanonicalRegistrar registrar;
+    uint public updateId;        // Update counter for this pricefeed; used as a check during investment
+    CanonicalRegistrar public registrar;
 
     // METHODS
 
@@ -40,7 +40,7 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
         QUOTE_ASSET = ofQuoteAsset;
     }
 
-    // PUBLIC METHODS
+    // EXTERNAL METHODS
 
     /// @dev Only Owner; Same sized input arrays
     /// @dev Updates price of asset relative to QUOTE_ASSET
@@ -53,17 +53,10 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     /// @param ofAssets list of asset addresses
     /// @param newPrices list of prices for each of the assets
     function update(address[] ofAssets, uint[] newPrices)
+        external
         auth
-        pre_cond(ofAssets.length == newPrices.length)
     {
-        updateId++;
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            require(registrar.isRegistered(ofAssets[i]));
-            require(assetsToPrices[ofAssets[i]].timestamp != now); // prevent two updates in one block
-            assetsToPrices[ofAssets[i]].timestamp = now;
-            assetsToPrices[ofAssets[i]].price = newPrices[i];
-        }
-        PriceUpdated(now);
+        _updatePrices(ofAssets, newPrices);
     }
 
     // PUBLIC VIEW METHODS
@@ -107,5 +100,22 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
             prices[i] = price;
             timestamps[i] = timestamp;
         }
+    }
+
+    // INTERNAL METHODS
+
+    /// @dev Internal so that feeds inheriting this one are not obligated to have an exposed update(...) method, but can still perform updates
+    function _updatePrices(address[] ofAssets, uint[] newPrices)
+        internal
+        pre_cond(ofAssets.length == newPrices.length)
+    {
+        updateId++;
+        for (uint i = 0; i < ofAssets.length; ++i) {
+            require(registrar.isRegistered(ofAssets[i]));
+            require(assetsToPrices[ofAssets[i]].timestamp != now); // prevent two updates in one block
+            assetsToPrices[ofAssets[i]].timestamp = now;
+            assetsToPrices[ofAssets[i]].price = newPrices[i];
+        }
+        PriceUpdated(now);
     }
 }

@@ -12,7 +12,7 @@ interface SimplePriceFeedInterface {
 
     // PUBLIC METHODS
 
-    function update(address[] ofAssets, uint[] newPrices);
+    function update(address[] ofAssets, uint[] newPrices) external;
 
     // PUBLIC VIEW METHODS
 
