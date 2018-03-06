@@ -46,7 +46,8 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         address quoteAssetBreakIn,
         address quoteAssetBreakOut,
         uint interval,
-        uint validity
+        uint validity,
+        address ofGovernance
     ) SimplePriceFeed(this, ofQuoteAsset) {
         register(
             QUOTE_ASSET,
@@ -61,6 +62,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         );
         INTERVAL = interval;
         VALIDITY = validity;
+        setOwner(ofGovernance);
     }
 
     // PUBLIC METHODS
