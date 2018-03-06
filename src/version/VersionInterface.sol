@@ -20,7 +20,6 @@ interface VersionInterface {
         uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofPriceFeed,
         address[] ofExchanges,
         address[] ofExchangeAdapters,
         uint8 v,
