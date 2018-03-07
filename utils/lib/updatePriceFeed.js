@@ -1,4 +1,5 @@
 import api from "./api";
+import governanceAction from "./governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../config/environment.js");
@@ -26,9 +27,8 @@ async function requestWithRetries(options, maxRetries) {
   }
 }
 
-// TODO: make this more dynamic (different tokens) and general, so it can be imported by other projects like our updater
-export default async function updatePriceFeed (instances) {
-  const accounts = await api.eth.accounts();
+// TODO: make this more dynamic (different tokens) and flexible, so it can be imported by other projects like our updater
+async function getConvertedPrices(deployed) {
   const fromSymbol = 'MLN';
   const toSymbols = ['ETH', 'EUR', 'MLN'];
   const options = {
@@ -50,10 +50,56 @@ export default async function updatePriceFeed (instances) {
   const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - mlnDecimals)).times(10 ** ethDecimals);
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
-  await instances.PriceFeed.instance.update.postTransaction(
+  return {
+    [deployed.EthToken.address]: convertedEth,
+    [deployed.EurToken.address]: convertedEur,
+    [deployed.MlnToken.address]: convertedMln
+  };
+}
+
+/**
+ * Deploy a contract, and get back an instance.
+ * NB: Deprecating this functrion when we get rid of regular (non-canonical) pricefeed
+ * @param {Object} deployed - Object of deployed contracts from deployment script
+ * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
+ */
+async function updatePriceFeed(deployed, inputPrices = {}) {
+  let prices;
+  const accounts = await api.eth.accounts();
+  if(Object.keys(inputPrices).length === 0) {
+    prices = await getConvertedPrices(deployed);
+  } else {
+    prices = inputPrices;
+  }
+  await deployed.PriceFeed.instance.update.postTransaction(
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
-    [[instances.EthToken.address, instances.EurToken.address, instances.MlnToken.address],
-    [convertedEth, convertedEur, convertedMln]]
+    [Object.keys(prices), Object.values(prices)]
   );
 }
 
+/**
+ * Deploy a contract, and get back an instance.
+ * NB: Deprecating this functrion when we get rid of regular (non-canonical) pricefeed
+ * @param {Object} deployed - Object of deployed contracts from deployment script
+ * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
+ */
+async function updateCanonicalPriceFeed(deployed, inputPrices = {}) {
+  let prices;
+  const accounts = await api.eth.accounts();
+  if(Object.keys(inputPrices).length === 0) {
+    prices = await getConvertedPrices(deployed);
+  } else {
+    prices = inputPrices;
+  }
+  let txid = await deployed.SimplePriceFeed.instance.update.postTransaction(
+    { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
+    [Object.keys(prices), Object.values(prices)]
+  );
+  await governanceAction(
+    {from: accounts[0]},
+    deployed.Governance, deployed.CanonicalPriceFeed, 'collectAndUpdate',
+    [Object.keys(prices)]
+  );
+}
+
+export { updatePriceFeed, updateCanonicalPriceFeed };

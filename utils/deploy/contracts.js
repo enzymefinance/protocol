@@ -6,6 +6,7 @@ import * as tokenInfo from "../info/tokenInfo";
 import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
+import governanceAction from "../lib/governanceAction";
 import verifyDeployment from "./verify";
 
 const addressBookFile = "./addressBook.json";
@@ -40,7 +41,7 @@ async function deployEnvironment(environment) {
     const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address;
     const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address;
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed",
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed",
       opts, [
       mlnAddr,
       'Melon Token',
@@ -53,6 +54,7 @@ async function deployEnvironment(environment) {
       mockAddress,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
+      deployed.Governance.address
     ]);
 
     // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
@@ -81,41 +83,27 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
-    const calldata = await api.util.abiEncode(
-      'addVersion(address)', ['address'], [deployed.Version.address]
-    );
-    await deployed.Governance.instance.propose.postTransaction(
-      {from: accounts[0]},
-      [deployed.Governance.address, calldata, 0]
-    );
-    const proposalId = await deployed.Governance.instance.actionCount.call();
-    await deployed.Governance.instance.confirm.postTransaction({from: accounts[0]}, [proposalId]);
-    await deployed.Governance.instance.trigger.postTransaction({from: accounts[0]}, [proposalId]);
-
-    // await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-        await deployed.PriceFeed.instance.register
-          .postTransaction({from: accounts[0]}, [
-            tokenEntry.address,
-            tokenEntry.name,
-            tokenEntry.symbol,
-            tokenEntry.decimals,
-            tokenEntry.url,
-            mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
+        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+          tokenEntry.address,
+          tokenEntry.name,
+          tokenEntry.symbol,
+          tokenEntry.decimals,
+          tokenEntry.url,
+          mockBytes,
+          mockBytes,
+          mockAddress,
+          mockAddress,
         ]);
         console.log(`Registered ${assetSymbol}`);
       })
@@ -126,13 +114,18 @@ async function deployEnvironment(environment) {
     const pricefeedOperator = config.protocol.pricefeed.operator;
     const pricefeedOperatorPassword = '/path/to/password/file';
     const authority = config.protocol.governance.authority;
-    const authorityPassword = '/home/travis/prg/keys/mainnet/authority_password';
-    // const authorityPassword = '/path/to/password/file';
+    const authorityPassword = '/path/to/password/file';
     const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
     const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
 
-    await unlock(pricefeedOperator, pricefeedOperatorPassword);
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedOperator}, [
+    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
+      [config.protocol.governance.authority],
+      1,
+      yearInSeconds
+    ]);
+
+    await unlock(authority, authorityPassword);
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", {from: config.protocol.governance.authority}, [
         mlnAddr,
         'Melon Token',
         'MLN',
@@ -146,14 +139,24 @@ async function deployEnvironment(environment) {
         config.protocol.pricefeed.validity,
     ]);
 
+    await unlock(pricefeedOperator, pricefeedOperatorPassword);
+    deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", {from: pricefeedOperator}, [deployed.CanonicalPriceFeed.address, mlnAddr]);
+
+    // NB: setting whitelist below will only work if quorum=1
+    await unlock(authority, authorityPassword);
+    await deployed.CanonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(
+      {from: config.protocol.governance.authority}, [deployed.SimplePriceFeed.address]
+    );
+
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         await unlock(pricefeedOperator, pricefeedOperatorPassword);
         const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-        await deployed.PriceFeed.instance.register
-          .postTransaction({from: pricefeedOperator, gas: 6000000}, [
+        await governanceAction(
+          {from: pricefeedOperator, gas: 6000000},
+          deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
             tokenEntry.address,
             tokenEntry.name,
             tokenEntry.symbol,
@@ -163,7 +166,8 @@ async function deployEnvironment(environment) {
             mockBytes,
             mockAddress,
             mockAddress,
-        ]);
+          ]
+        );
         console.log(`Registered ${assetSymbol}`);
       })
     );
@@ -171,38 +175,21 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
-    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
-      [config.protocol.governance.authority],
-      1,
-      yearInSeconds
-    ]);
-
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, true], () => {}, true);
 
     deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
     // add Version to Governance tracking
-    await unlock(authority, authorityPassword);
-    console.log('Proposing version');
-    txid = await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
-    await unlock(authority, authorityPassword);
-    console.log('Approving version');
-    txid = await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
-    await unlock(authority, authorityPassword);
-    console.log('Triggering version');
-    txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
+    // NB: be sure that relevant authority account is unlocked
+    console.log('Adding version to Governance tracking');
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
   } else if (environment === "development") {
+    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", opts, [
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
       'Melon Token',
       'MLN-T',
@@ -214,36 +201,39 @@ async function deployEnvironment(environment) {
       mockAddress,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
+      deployed.Governance.address
+    ]);
+
+    deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", opts, [
+      deployed.CanonicalPriceFeed.address,
+      deployed.MlnToken.address
     ]);
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
+    deployed.Version = await deployContract(
+      "version/Version",
+      Object.assign(opts, {gas: 6900000}),
+      [
+        pkgInfo.version, deployed.Governance.address, deployed.EthToken.address,
+        deployed.CanonicalPriceFeed.address, false
+      ],
+      () => {}, true
+    );
     
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
-    const calldata = await api.util.abiEncode(
-      'addVersion(address)', ['address'], [deployed.Version.address]
-    );
-    await deployed.Governance.instance.propose.postTransaction(
-      {from: accounts[0]},
-      [deployed.Governance.address, calldata, 0]
-    );
-    const proposalId = await deployed.Governance.instance.actionCount.call();
-    await deployed.Governance.instance.confirm.postTransaction({from: accounts[0]}, [proposalId]);
-    await deployed.Governance.instance.trigger.postTransaction({from: accounts[0]}, [proposalId]);
-     // await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    // whitelist simple feed
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'addFeedToWhitelist', [deployed.SimplePriceFeed.address]);
 
     // register assets
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
       deployed.EthToken.address,
       "Ether token",
       "ETH-T",
@@ -254,23 +244,12 @@ async function deployEnvironment(environment) {
       mockAddress,
       mockAddress,
     ]);
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
       deployed.EurToken.address,
       "Euro token",
       "EUR-T",
       18,
       "europa.eu",
-      mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-    ]);
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
-      deployed.MlnToken.address,
-      "Melon token",
-      "MLN-T",
-      18,
-      "melonport.com",
       mockBytes,
       mockBytes,
       mockAddress,
