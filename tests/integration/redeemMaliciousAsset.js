@@ -2,9 +2,10 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import governanceAction from "../../utils/lib/governanceAction";
 
-const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
@@ -20,7 +21,6 @@ let investor;
 let opts;
 let version;
 let mlnToken;
-let pricefeed;
 let maliciousToken;
 let deployed;
 
@@ -43,6 +43,9 @@ test.before(async () => {
   maliciousToken = await deployContract("testing/MaliciousToken", {
     from: deployer,
   });
+  await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+    maliciousToken.address, 'MaliciousToken', '', 18, '', '', mockBytes, mockAddress, mockAddress
+  ]);
 
   // give investor some MLN to use
   await mlnToken.instance.transfer.postTransaction(
@@ -50,48 +53,7 @@ test.before(async () => {
     [investor, initialMln, ""],
   );
 
-  // get market
-  exchange = await retrieveContract(
-    "exchange/thirdparty/SimpleMarket",
-    deployed.SimpleMarket.address,
-  );
-
-  // deploy pricefeed
-  pricefeed = await deployContract("pricefeeds/PriceFeed", opts, [
-    mlnToken.address,
-    "Melon Token",
-    "MLN-T",
-    18,
-    "melonport.com",
-    mockBytes,
-    mockBytes,
-    mockAddress,
-    mockAddress,
-    config.protocol.pricefeed.interval,
-    config.protocol.pricefeed.validity,
-  ]);
-  await pricefeed.instance.register.postTransaction({ from: deployer }, [
-    maliciousToken.address,
-    "",
-    "",
-    18,
-    "",
-    "",
-    mockBytes,
-    mockAddress,
-    mockAddress,
-  ]);
-  await pricefeed.instance.register.postTransaction({ from: deployer }, [
-    deployed.EthToken.address,
-    "",
-    "",
-    18,
-    "",
-    "",
-    mockBytes,
-    mockAddress,
-    mockAddress,
-  ]);
+  exchange = await retrieveContract("exchange/thirdparty/SimpleMarket", deployed.SimpleMarket.address);
 
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
@@ -103,7 +65,6 @@ test.before(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      pricefeed.address,
       [deployed.SimpleMarket.address],
       [deployed.SimpleAdapter.address],
       v,
@@ -116,11 +77,14 @@ test.before(async () => {
 });
 
 test.serial("initial investment with MLN", async t => {
-  await pricefeed.instance.update.postTransaction({ from: deployer }, [
-    [mlnToken.address, maliciousToken.address, deployed.EthToken.address],
-    [new BigNumber(10 ** 18), new BigNumber(10 ** 18), new BigNumber(10 ** 18)],
-  ]);
-  await mlnToken.instance.approve.postTransaction(
+  await updateCanonicalPriceFeed(deployed, 
+    {
+      [deployed.MlnToken.address]: 10 ** 18,
+      [maliciousToken.address]: 10 ** 18,
+      [deployed.EthToken.address]: 10 ** 18
+    }
+  );
+  let txid = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, offeredMln],
   );
@@ -129,7 +93,7 @@ test.serial("initial investment with MLN", async t => {
     [offeredMln, wantedShares, mlnToken.address],
   );
   const requestId = await fund.instance.getLastRequestId.call({}, []);
-  await fund.instance.executeRequest.postTransaction(
+  txid = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [requestId],
   );
@@ -165,21 +129,26 @@ test.serial("fund buys some EthToken", async t => {
 });
 
 test.serial("fund buys some MaliciousToken", async t => {
-  await fund.instance.makeOrder.postTransaction(
+  let txid;
+  console.log((await mlnToken.instance.balanceOf.call({}, [fund.address])))
+  txid = await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [0, mlnToken.address, maliciousToken.address, sellQuantity, buyQuantity],
   );
+  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
   const orderId = await exchange.instance.last_offer_id.call({}, []);
-  await maliciousToken.instance.approve.postTransaction(
+  txid = await maliciousToken.instance.approve.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [exchange.address, buyQuantity + 100],
   );
+  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
 
   // third party takes order
-  await exchange.instance.buy.postTransaction(
+  txid = await exchange.instance.buy.postTransaction(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [orderId, sellQuantity],
   );
+  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
 
   const maliciousBalance = Number(
     await maliciousToken.instance.balanceOf.call({}, [fund.address]),
