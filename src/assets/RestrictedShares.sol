@@ -14,8 +14,8 @@ contract RestrictedShares is Shares {
     /// @param _decimal Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
     /// @param _creationTime Timestamp of share creation
     function RestrictedShares(
-        string _name,
-        string _symbol,
+        bytes32 _name,
+        bytes8 _symbol,
         uint _decimal,
         uint _creationTime
     ) Shares(_name, _symbol, _decimal, _creationTime) {}

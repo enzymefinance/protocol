@@ -14,7 +14,7 @@ interface VersionInterface {
     function shutDown() external;
 
     function setupFund(
-        string ofFundName,
+        bytes32 ofFundName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,

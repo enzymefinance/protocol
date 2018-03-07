@@ -47,10 +47,6 @@ contract Governance is DBC, Owned, DSGroup {
         DSGroup(ofAuthorities, ofQuorum, ofWindow)
     {}
 
-    // FALLBACK
-
-    function() payable { }
-
     // PUBLIC VIEW METHODS
 
     /**
@@ -80,6 +76,7 @@ contract Governance is DBC, Owned, DSGroup {
         pre_cond(msg.sender == address(this))
         returns (uint id)
     {
+        require(msg.sender == address(this));
         Version memory info;
         info.version = ofVersion;
         info.active = true;
@@ -94,6 +91,7 @@ contract Governance is DBC, Owned, DSGroup {
         pre_cond(msg.sender == address(this))
         pre_cond(isActive(id))
     {
+        require(msg.sender == address(this));
         VersionInterface Version = VersionInterface(versions[id].version);
         Version.shutDown();
         delete versions[id];

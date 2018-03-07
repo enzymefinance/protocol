@@ -15,6 +15,15 @@ let governance;
 let version;
 let deployed;
 
+async function activateVersion() {
+  const calldata = await api.util.abiEncode(
+    'addVersion(address)', ['address'], [version.address]
+  );
+  await governance.instance.propose.postTransaction(opts, [governance.address, calldata, 0]);
+  const proposalId = await governance.instance.actionCount.call();
+  await governance.instance.confirm.postTransaction(opts, [proposalId]);
+  await governance.instance.trigger.postTransaction(opts, [proposalId]);
+}
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
@@ -23,15 +32,14 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, governance.address, deployed.EthToken.address], () => {}, true);
+  governance = await deployContract("system/Governance", opts, [[deployer], 1, 100000]);
+  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, governance.address, deployed.EthToken.address, deployed.PriceFeed.address], () => {}, true);
 });
 
 test('Triggering a Version activates it within Governance', async t => {
+
   const [ , activeBeforeTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
-  await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
-  await governance.instance.approveVersion.postTransaction(opts, [version.address]);
-  await governance.instance.triggerVersion.postTransaction(opts, [version.address]);
+  await activateVersion();
   const [ , activeAfterTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
 
   t.false(activeBeforeTriggering);
@@ -39,15 +47,16 @@ test('Triggering a Version activates it within Governance', async t => {
 });
 
 test('Governance can shut down Version', async t => {
-  await governance.instance.proposeVersion.postTransaction(opts, [version.address]);
-  await governance.instance.approveVersion.postTransaction(opts, [version.address]);
-  await governance.instance.triggerVersion.postTransaction(opts, [version.address]);
-
+  await activateVersion();
   const [ , activeBeforeShutdown, ] = await governance.instance.getVersionById.call({}, [0]);
 
-  await governance.instance.proposeShutdown.postTransaction(opts, [0]);
-  await governance.instance.approveShutdown.postTransaction(opts, [0]);
-  await governance.instance.triggerShutdown.postTransaction(opts, [0]);
+  const calldata = await api.util.abiEncode(
+    'shutDownVersion(uint)', ['uint'], [0]
+  );
+  await governance.instance.propose.postTransaction(opts, [governance.address, calldata, 0]);
+  const proposalId = await governance.instance.actionCount.call();
+  await governance.instance.confirm.postTransaction(opts, [proposalId]);
+  await governance.instance.trigger.postTransaction(opts, [proposalId]);
 
   const versionShutDown = await version.instance.isShutDown.call({}, []);
   const [ , activeAfterShutdown, ] = await governance.instance.getVersionById.call({}, [0]);

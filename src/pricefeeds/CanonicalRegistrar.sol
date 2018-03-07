@@ -17,9 +17,9 @@ contract CanonicalRegistrar is DSThing, DBC {
         uint decimal; // Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
         bool exists; // Is this asset registered
         string ipfsHash; // Same as url but for ipfs
-        string name; // Human-readable name of the Asset as in ERC223 token standard
+        bytes32 name; // Human-readable name of the Asset as in ERC223 token standard
         uint price; // Price of asset quoted against `QUOTE_ASSET` * 10 ** decimals
-        string symbol; // Human-readable symbol of the Asset as in ERC223 token standard
+        bytes8 symbol; // Human-readable symbol of the Asset as in ERC223 token standard
         uint timestamp; // Timestamp of last price update of this asset
         string url; // URL for additional information of Asset
     }
@@ -47,8 +47,8 @@ contract CanonicalRegistrar is DSThing, DBC {
     /// @param breakOut Address of break out contract on this chain
     function register(
         address ofAsset,
-        string name,
-        string symbol,
+        bytes32 name,
+        bytes8 symbol,
         uint decimal,
         string url,
         string ipfsHash,
@@ -81,8 +81,8 @@ contract CanonicalRegistrar is DSThing, DBC {
     /// @param ipfsHash Same as url but for ipfs
     function updateDescriptiveInformation(
         address ofAsset,
-        string name,
-        string symbol,
+        bytes32 name,
+        bytes8 symbol,
         string url,
         string ipfsHash
     )
@@ -112,9 +112,8 @@ contract CanonicalRegistrar is DSThing, DBC {
     // PUBLIC VIEW METHODS
 
     // Get asset specific information
-    function getName(address ofAsset) view returns (string) { return information[ofAsset].name; }
-    function getSymbol(address ofAsset) view returns (string) { return information[ofAsset].symbol; }
+    function getName(address ofAsset) view returns (bytes32) { return information[ofAsset].name; }
+    function getSymbol(address ofAsset) view returns (bytes8) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
     function isRegistered(address ofAsset) view returns (bool) { return information[ofAsset].exists; }
 }
-

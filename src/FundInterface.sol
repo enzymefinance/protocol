@@ -45,7 +45,6 @@ interface FundInterface {
     // Get general information
     function getModules() view returns (address, address, address);
     function getLastRequestId() view returns (uint);
-    function getNameHash() view returns (bytes32);
     function getManager() view returns (address);
 
     // Get accounting information
