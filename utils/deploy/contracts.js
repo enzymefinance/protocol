@@ -81,7 +81,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.PriceFeed, false], () => {}, true);
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
@@ -177,7 +177,7 @@ async function deployEnvironment(environment) {
       yearInSeconds
     ]);
 
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.PriceFeed.address, true], () => {}, true);
 
     deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -222,7 +222,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
+    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, deployed.PriceFeed.address, false], () => {}, true);
 
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
@@ -238,9 +238,6 @@ async function deployEnvironment(environment) {
     const proposalId = await deployed.Governance.instance.actionCount.call();
     await deployed.Governance.instance.confirm.postTransaction({from: accounts[0]}, [proposalId]);
     await deployed.Governance.instance.trigger.postTransaction({from: accounts[0]}, [proposalId]);
-     // await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    // await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
 
     // register assets
     await deployed.PriceFeed.instance.register.postTransaction({}, [

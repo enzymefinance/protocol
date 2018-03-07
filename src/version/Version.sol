@@ -18,14 +18,13 @@ contract Version is DBC, Owned, VersionInterface {
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public NATIVE_ASSET; // Address of wrapped native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
+    address public CANONICAL_PRICEFEED; // Address of the canonical pricefeed
     bool public IS_MAINNET;  // whether this contract is on the mainnet (to use hardcoded module)
 
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     address[] public listOfFunds; // A complete list of fund addresses created using this version
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
-    address public canonicalPriceFeed;
-
     // EVENTS
 
     event FundUpdated(address ofFund);
@@ -41,11 +40,13 @@ contract Version is DBC, Owned, VersionInterface {
         string versionNumber,
         address ofGovernance,
         address ofNativeAsset,
+        address ofCanonicalPriceFeed,
         bool isMainnet
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
         NATIVE_ASSET = ofNativeAsset;
+        CANONICAL_PRICEFEED = ofCanonicalPriceFeed;
         IS_MAINNET = isMainnet;
     }
 
@@ -97,7 +98,7 @@ contract Version is DBC, Owned, VersionInterface {
             ofPerformanceFee,
             ofCompliance,
             ofRiskMgmt,
-            canonicalPriceFeed,
+            CANONICAL_PRICEFEED,
             ofExchanges,
             ofExchangeAdapters
         );
@@ -115,12 +116,6 @@ contract Version is DBC, Owned, VersionInterface {
         delete managerToFunds[msg.sender];
         fund.shutDown();
         FundUpdated(ofFund);
-    }
-
-    function setCanonicalPriceFeed(address ofNewFeed)
-        pre_cond(msg.sender == GOVERNANCE)
-    {
-        canonicalPriceFeed = ofNewFeed;
     }
 
     // PUBLIC VIEW METHODS

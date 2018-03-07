@@ -59,7 +59,6 @@ test.before(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [simpleMarketWithApprove.address],
       [simpleAdapterWithApprove.address],
       v,
