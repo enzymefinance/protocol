@@ -65,12 +65,16 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         setOwner(ofGovernance);
     }
 
+    // EXTERNAL METHODS
+
+    /// @dev override inherited update function to prevent manual update from authority
+    function update() external { revert(); }
+
     // PUBLIC METHODS
 
     // WHITELISTING
 
     function addFeedToWhitelist(address ofFeed)
-        external
         auth
     {
         require(!isWhitelisted[ofFeed]);
@@ -80,12 +84,11 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // TODO: check gas usage (what is the max size of whitelist?); maybe can just run update() with array of feeds as argument instead?
     /// @param ofFeed Address of the SimplePriceFeed to be removed
-    /// @param feedIndex Array index of the feed (get this using getFeedWhitelistIndex(ofFeed))
-    function removeFeedFromWhitelist(address ofFeed, uint feedIndex)
-        external
+    function removeFeedFromWhitelist(address ofFeed)
         auth
+        pre_cond(isWhitelisted[ofFeed])
     {
-        require(isWhitelisted[ofFeed]);
+        uint feedIndex = getFeedWhitelistIndex(ofFeed);
         require(whitelist[feedIndex] == ofFeed);
         delete isWhitelisted[ofFeed];
         delete whitelist[feedIndex];
@@ -94,9 +97,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         }
         whitelist.length--;
     }
-
-    /// @dev override inherited update function to prevent manual update from authority
-    function update() external { revert(); }
 
     // AGGREGATION
 
@@ -110,7 +110,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
      */
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets)
-        external
         auth
     {
         uint[] memory newPrices = new uint[](ofAssets.length);
@@ -131,7 +130,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     /// @dev from MakerDao medianizer contract
     function medianize(uint[] unsorted)
-        public
         view
         returns (uint)
     {
@@ -315,4 +313,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
+
+    function getWhitelist() view returns(address[]) { return whitelist; }
 }

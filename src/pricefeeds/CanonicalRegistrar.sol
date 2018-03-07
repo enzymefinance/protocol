@@ -28,6 +28,7 @@ contract CanonicalRegistrar is DSThing, DBC {
 
     // Methods fields
     mapping (address => Asset) public information;
+    address[] public registeredAssets;
 
     // METHODS
 
@@ -105,15 +106,34 @@ contract CanonicalRegistrar is DSThing, DBC {
         auth
         pre_cond(information[ofAsset].exists)
     {
+        uint assetIndex = getRegisteredAssetIndex(ofAsset);
+        require(registeredAssets[assetIndex] == ofAsset);
         delete information[ofAsset]; // Sets exists boolean to false
+        delete registeredAssets[assetIndex];
+        for (uint i = assetIndex; i < registeredAssets.length-1; i++) {
+            registeredAssets[i] = registeredAssets[i+1];
+        }
+        registeredAssets.length--;
         assert(!information[ofAsset].exists);
     }
 
     // PUBLIC VIEW METHODS
+
+    function getRegisteredAssetIndex(address ofAsset)
+        view
+        pre_cond(isRegistered(ofAsset))
+        returns (uint)
+    {
+        for (uint i; i < registeredAssets.length; i++) {
+            if (registeredAssets[i] == ofAsset) { return i; }
+        }
+        revert(); // not found
+    }
 
     // Get asset specific information
     function getName(address ofAsset) view returns (bytes32) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) view returns (bytes8) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
     function isRegistered(address ofAsset) view returns (bool) { return information[ofAsset].exists; }
+    function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
 }
