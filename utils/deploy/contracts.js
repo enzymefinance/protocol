@@ -6,7 +6,7 @@ import * as tokenInfo from "../info/tokenInfo";
 import {deployContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
-import verifyDeployment from "./verify";
+// import verifyDeployment from "./verify";
 
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
@@ -223,7 +223,7 @@ async function deployEnvironment(environment) {
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
-    
+
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
