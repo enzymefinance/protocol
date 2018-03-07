@@ -38,8 +38,8 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @param validity Number of seconds that datafeed update information is valid for
     function PriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        string quoteAssetName,
-        string quoteAssetSymbol,
+        bytes32 quoteAssetName,
+        bytes8 quoteAssetSymbol,
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,

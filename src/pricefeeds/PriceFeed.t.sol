@@ -14,8 +14,8 @@ contract PriceFeedTest is DSTest {
     // constants
     uint INTERVAL = 0;
     uint VALIDITY = 60;
-    string MELON_NAME = "Melon Token";
-    string MELON_SYMBOL = "MLN-T";
+    bytes32 MELON_NAME = "Melon Token";
+    bytes8 MELON_SYMBOL = "MLN-T";
     uint MELON_DECIMALS = 18;
     string MELON_URL = "https://www.melonport.com";
     string MOCK_IPFS_HASH = "QmWHyrPWQnsz1wxHR219ooJDYTvxJPyZuDUPSDpdsAov1S";

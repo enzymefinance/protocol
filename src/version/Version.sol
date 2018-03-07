@@ -68,7 +68,7 @@ contract Version is DBC, Owned, VersionInterface {
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     function setupFund(
-        string ofFundName,
+        bytes32 ofFundName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,

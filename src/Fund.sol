@@ -100,7 +100,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
-        string withName,
+        bytes32 withName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
@@ -775,6 +775,5 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
-    function getNameHash() view returns (bytes32) { return bytes32(keccak256(name)); }
     function getManager() view returns (address) { return owner; }
 }

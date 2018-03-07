@@ -11,8 +11,8 @@ contract Shares is Asset, SharesInterface {
     // FIELDS
 
     // Constructor fields
-    string public name;
-    string public symbol;
+    bytes32 public name;
+    bytes8 public symbol;
     uint public decimal;
     uint public creationTime;
 
@@ -24,7 +24,7 @@ contract Shares is Asset, SharesInterface {
     /// @param _symbol Symbol of shares
     /// @param _decimal Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
     /// @param _creationTime Timestamp of share creation
-    function Shares(string _name, string _symbol, uint _decimal, uint _creationTime) {
+    function Shares(bytes32 _name, bytes8 _symbol, uint _decimal, uint _creationTime) {
         name = _name;
         symbol = _symbol;
         decimal = _decimal;
@@ -34,8 +34,8 @@ contract Shares is Asset, SharesInterface {
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
 
-    function getName() view returns (string) { return name; }
-    function getSymbol() view returns (string) { return symbol; }
+    function getName() view returns (bytes32) { return name; }
+    function getSymbol() view returns (bytes8) { return symbol; }
     function getDecimals() view returns (uint) { return decimal; }
     function getCreationTime() view returns (uint) { return creationTime; }
     function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }

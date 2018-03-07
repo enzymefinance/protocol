@@ -17,8 +17,8 @@ interface PriceFeedInterface {
     // PUBLIC VIEW METHODS
 
     // Get asset specific information
-    function getName(address ofAsset) view returns (string);
-    function getSymbol(address ofAsset) view returns (string);
+    function getName(address ofAsset) view returns (bytes32);
+    function getSymbol(address ofAsset) view returns (bytes8);
     function getDecimals(address ofAsset) view returns (uint);
     // Get price feed operation specific information
     function getQuoteAsset() view returns (address);

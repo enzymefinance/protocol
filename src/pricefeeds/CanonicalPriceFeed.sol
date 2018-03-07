@@ -37,8 +37,8 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @param validity Number of seconds that datafeed update information is valid for
     function CanonicalPriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
-        string quoteAssetName,
-        string quoteAssetSymbol,
+        bytes32 quoteAssetName,
+        bytes8 quoteAssetSymbol,
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
@@ -94,7 +94,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         }
         whitelist.length--;
     }
-    
+
     /// @dev override inherited update function to prevent manual update from authority
     function update() external { revert(); }
 
