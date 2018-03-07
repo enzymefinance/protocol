@@ -85,7 +85,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, _data);
         }
-        Transfer(msg.sender, _to, _value);
+        Transfer(msg.sender, _to, _value, empty);
         return true;
     }
 
