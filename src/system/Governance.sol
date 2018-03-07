@@ -73,6 +73,7 @@ contract Governance is DBC, Owned, DSGroup {
     function addVersion(
         address ofVersion
     )
+        pre_cond(msg.sender == address(this))
         returns (uint id)
     {
         require(msg.sender == address(this));
@@ -87,6 +88,7 @@ contract Governance is DBC, Owned, DSGroup {
     /// @notice Remove and shut down version of Melon
     /// @param id Id of the version to shutdown
     function shutDownVersion(uint id)
+        pre_cond(msg.sender == address(this))
         pre_cond(isActive(id))
     {
         require(msg.sender == address(this));
