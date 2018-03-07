@@ -14,10 +14,10 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     // FIELDS
 
     mapping(address => bool) public isWhitelisted;
-    address[] whitelist;
-    uint VALIDITY;
-    uint INTERVAL;
-    uint minimumPriceCount = 1;
+    address[] public whitelist;
+    uint public VALIDITY;
+    uint public INTERVAL;
+    uint public minimumPriceCount = 1;
 
     // METHODS
 
@@ -197,10 +197,11 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        pre_cond(information[ofAsset].exists)
+        pre_cond(isRegistered(ofAsset))
         returns (bool isRecent)
     {
-        return sub(now, information[ofAsset].timestamp) <= VALIDITY;
+        var ( , timestamp) = getPrice(ofAsset);
+        return (sub(now, timestamp) <= VALIDITY);
     }
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago

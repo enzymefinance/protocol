@@ -280,7 +280,6 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     {
         Request request = requests[id];
-        // PriceFeed Module: No recent updates for fund asset list
         require(module.pricefeed.hasRecentPrice(address(request.requestAsset)));
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
@@ -301,7 +300,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
-            if(!isInAssetList[request.requestAsset]) {
+            if (!isInAssetList[request.requestAsset]) {
                 ownedAssets.push(request.requestAsset);
                 isInAssetList[request.requestAsset] = true;
             }

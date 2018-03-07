@@ -93,13 +93,16 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     */
     function getPrices(address[] ofAssets)
         view
-        returns (uint[] prices, uint[] timestamps)
+        returns (uint[], uint[])
     {
+        uint[] memory prices = new uint[](ofAssets.length);
+        uint[] memory timestamps = new uint[](ofAssets.length);
         for (uint i; i < ofAssets.length; i++) {
             var (price, timestamp) = getPrice(ofAssets[i]);
             prices[i] = price;
             timestamps[i] = timestamp;
         }
+        return (prices, timestamps);
     }
 
     // INTERNAL METHODS
