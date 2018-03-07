@@ -3,8 +3,8 @@ import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -36,7 +36,7 @@ test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer, manager, investor, , exchangeOwner] = accounts;
   version = await deployed.Version;
-  pricefeed = await deployed.PriceFeed;
+  pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   centralizedExchange = await deployContract(
@@ -65,9 +65,9 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
 
-  const [, referencePrice] = await pricefeed.instance.getReferencePrice.call(
+  const [, referencePrice] = await pricefeed.instance.getReferencePriceInfo.call(
     {},
     [mlnToken.address, ethToken.address],
   );
@@ -128,8 +128,8 @@ test.serial(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
       [offeredValue, wantedShares, mlnToken.address],
     );
-    await updatePriceFeed(deployed);
-    await updatePriceFeed(deployed);
+    await updateCanonicalPriceFeed(deployed);
+    await updateCanonicalPriceFeed(deployed);
     const requestId = await fund.instance.getLastRequestId.call({}, []);
     await fund.instance.executeRequest.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -157,7 +157,7 @@ test.serial(
   "Manager makes an order through centralized exchange adapter",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await updatePriceFeed(deployed);
+    await updateCanonicalPriceFeed(deployed);
     await fund.instance.makeOrder.postTransaction(
       { from: manager, gas: config.gas, gasPrice: config.gasPrice },
       [
@@ -231,7 +231,7 @@ test.serial("Manager settles an order on the exchange interface", async t => {
 });
 
 test.serial("Manager cancels an order from the fund", async t => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [

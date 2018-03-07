@@ -169,7 +169,7 @@ test("gets registered information", async t => {
   t.deepEqual(chainId, Array.from(Array(32), () => 0));
   t.true(exists);
   t.is(ipfsHash, mockIpfs);
-  t.is(String.fromCharCode.apply(null, name), eurName);
+  t.is(name, eurName);
   t.is(Number(price), 0); // no price update yet
   t.is(symbol, eurSymbol);
   t.is(Number(timestamp), 0); // no price update yet

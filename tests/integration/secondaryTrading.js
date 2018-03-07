@@ -2,8 +2,8 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -81,7 +81,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
 });
 
 test.serial(

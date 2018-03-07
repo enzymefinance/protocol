@@ -1,9 +1,9 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 
 const BigNumber = require("bignumber.js");
@@ -47,7 +47,7 @@ test.before(async () => {
   gasPrice = Number(await api.eth.gasPrice());
   [deployer, manager, investor] = accounts;
   version = await deployed.Version;
-  pricefeed = await deployed.PriceFeed;
+  pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   SimpleMarket = await deployed.SimpleMarket;
@@ -85,16 +85,16 @@ test.before(async () => {
 test.beforeEach(async () => {
   runningGasTotal = new BigNumber(0);
 
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
 
-  const [, referencePrice] = await pricefeed.instance.getReferencePrice.call(
+  const [, referencePrice] = await pricefeed.instance.getReferencePriceInfo.call(
     {},
     [mlnToken.address, ethToken.address],
   );
   const [
     ,
     invertedReferencePrice,
-  ] = await pricefeed.instance.getReferencePrice.call({}, [
+  ] = await pricefeed.instance.getReferencePriceInfo.call({}, [
     ethToken.address,
     mlnToken.address,
   ]);
@@ -187,8 +187,8 @@ exchangeIndexes.forEach(i => {
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const totalSupply = await fund.instance.totalSupply.call({}, []);
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       txId = await fund.instance.executeRequest.postTransaction(
@@ -253,7 +253,7 @@ exchangeIndexes.forEach(i => {
       const exchangePreEthToken = await ethToken.instance.balanceOf.call({}, [
         exchanges[i].address,
       ]);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       txId = await fund.instance.makeOrder.postTransaction(
         { from: manager, gas: config.gas, gasPrice: config.gasPrice },
         [
@@ -679,8 +679,8 @@ redemptions.forEach((redemption, index) => {
       );
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const requestId = await fund.instance.getLastRequestId.call({}, []);
       txId = await fund.instance.executeRequest.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -767,7 +767,7 @@ test.serial(`Allows investment in native asset`, async t => {
     ,
     invertedNativeAssetPrice,
     nativeAssetDecimal,
-  ] = await pricefeed.instance.getInvertedPrice.call({}, [ethToken.address]);
+  ] = await pricefeed.instance.getInvertedPriceInfo.call({}, [ethToken.address]);
   const wantedShareQuantity = 10 ** 10;
   const giveQuantity = Number(
     new BigNumber(wantedShareQuantity)
@@ -784,15 +784,15 @@ test.serial(`Allows investment in native asset`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
     [giveQuantity, wantedShareQuantity, ethToken.address],
   );
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -825,13 +825,13 @@ test.serial(`Allows redemption in native asset`, async t => {
   const investorPreShares = Number(
     await fund.instance.balanceOf.call({}, [investor]),
   );
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const [
     ,
     invertedNativeAssetPrice,
     nativeAssetDecimal,
-  ] = await pricefeed.instance.getInvertedPrice.call({}, [ethToken.address]);
+  ] = await pricefeed.instance.getInvertedPriceInfo.call({}, [ethToken.address]);
   const shareQuantity = 10 ** 3;
   const receiveQuantity = Number(
     new BigNumber(shareQuantity)
@@ -848,8 +848,8 @@ test.serial(`Allows redemption in native asset`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -892,8 +892,8 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   );
   let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const sharePrice = await fund.instance.calcSharePrice.call({}, []);
   const wantedValue = Number(
     redemptionAmount
@@ -956,7 +956,7 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
 
 // Fees
 test.serial("converts fees and manager receives them", async t => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const preManagerShares = await fund.instance.balanceOf.call({}, [manager]);
   const totalSupply = await fund.instance.totalSupply.call({}, []);

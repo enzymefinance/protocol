@@ -1,11 +1,11 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import { retrieveContract } from "../../utils/lib/contracts";
+import {retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -94,7 +94,7 @@ test.serial("can set up new fund", async t => {
 });
 
 test.serial("initial calculations", async t => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const [
     gav,
     managementFee,
@@ -246,8 +246,8 @@ test.serial("allows request and execution on the first investment", async t => {
   );
   const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
   const investorPreShares = await fund.instance.balanceOf.call({}, [investor]);
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -353,8 +353,8 @@ subsequentTests.forEach(testInstance => {
     "executing invest request transfers shares to investor, and remainder of investment offer to investor",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = await fund.instance.balanceOf.call({}, [
         investor,
@@ -544,8 +544,8 @@ testArray.forEach(testInstance => {
     "executing request moves token from fund to investor, shares annihilated",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = await fund.instance.balanceOf.call({}, [
         investor,
