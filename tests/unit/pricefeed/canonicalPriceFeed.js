@@ -124,6 +124,7 @@ test.beforeEach(async t => {
       mockBreakOut,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
+      accounts[0]
     ],
   );
   t.context.pricefeeds = [];
