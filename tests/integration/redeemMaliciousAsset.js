@@ -129,26 +129,21 @@ test.serial("fund buys some EthToken", async t => {
 });
 
 test.serial("fund buys some MaliciousToken", async t => {
-  let txid;
-  console.log((await mlnToken.instance.balanceOf.call({}, [fund.address])))
-  txid = await fund.instance.makeOrder.postTransaction(
+  await fund.instance.makeOrder.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [0, mlnToken.address, maliciousToken.address, sellQuantity, buyQuantity],
   );
-  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
   const orderId = await exchange.instance.last_offer_id.call({}, []);
-  txid = await maliciousToken.instance.approve.postTransaction(
+  await maliciousToken.instance.approve.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [exchange.address, buyQuantity + 100],
   );
-  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
 
   // third party takes order
-  txid = await exchange.instance.buy.postTransaction(
+  await exchange.instance.buy.postTransaction(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [orderId, sellQuantity],
   );
-  console.log((await api.eth.getTransactionReceipt(txid)).gasUsed)
 
   const maliciousBalance = Number(
     await maliciousToken.instance.balanceOf.call({}, [fund.address]),
