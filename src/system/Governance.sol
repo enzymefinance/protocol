@@ -75,6 +75,7 @@ contract Governance is DBC, Owned, DSGroup {
     )
         returns (uint id)
     {
+        require(msg.sender == address(this));
         Version memory info;
         info.version = ofVersion;
         info.active = true;
@@ -86,9 +87,9 @@ contract Governance is DBC, Owned, DSGroup {
     /// @notice Remove and shut down version of Melon
     /// @param id Id of the version to shutdown
     function shutDownVersion(uint id)
-        
         pre_cond(isActive(id))
     {
+        require(msg.sender == address(this));
         VersionInterface Version = VersionInterface(versions[id].version);
         Version.shutDown();
         delete versions[id];
