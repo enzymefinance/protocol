@@ -140,10 +140,17 @@ test("registers more than one asset without error", async t => {
   const eurRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [eurToken.address]);
   const ethRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [ethToken.address]);
   const mlnRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [mlnToken.address]);
+  let registeredAssets = await t.context.canonicalPriceFeed.instance.getRegisteredAssets.call();
+  registeredAssets = registeredAssets.map(e => e._value);
+  const allInRegistry =
+    registeredAssets.includes(eurToken.address) &&
+    registeredAssets.includes(ethToken.address) &&
+    registeredAssets.includes(mlnToken.address)
 
   t.true(eurRegistered);
   t.true(ethRegistered);
   t.true(mlnRegistered); // MLN registered by default
+  t.true(allInRegistry);
 });
 
 test("Pricefeed gets added to whitelist correctly", async t => {

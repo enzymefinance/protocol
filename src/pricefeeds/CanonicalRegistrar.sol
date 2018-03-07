@@ -69,6 +69,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         asset.breakIn = breakIn;
         asset.breakOut = breakOut;
         asset.exists = true;
+        registeredAssets.push(ofAsset);
         assert(information[ofAsset].exists);
     }
 
