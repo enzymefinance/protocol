@@ -34,12 +34,11 @@ async function deployEnvironment(environment) {
   };
 
   const deployed = {};
-  let txid;
 
   if (environment === "kovan") {
     // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
-    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address;
-    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address;
+    const mlnAddr = tokenInfo[environment]["MLN-T-M"].address;
+    const ethTokenAddress = tokenInfo[environment]["ETH-T-M"].address;
 
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed",
       opts, [
@@ -57,10 +56,6 @@ async function deployEnvironment(environment) {
       deployed.Governance.address
     ]);
 
-    // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-    // deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
-    // console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
-
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
 
     const pairsToWhitelist = [
@@ -71,8 +66,8 @@ async function deployEnvironment(environment) {
     await Promise.all(
       pairsToWhitelist.map(async (pair) => {
         console.log(`Whitelisting ${pair}`);
-        const tokenA = tokenInfo[environment].find(t => t.symbol === pair[0]).address;
-        const tokenB = tokenInfo[environment].find(t => t.symbol === pair[1]).address;
+        const tokenA = tokenInfo[environment][pair[0]].address;
+        const tokenB = tokenInfo[environment][pair[1]].address;
         await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
       })
     );
@@ -93,11 +88,11 @@ async function deployEnvironment(environment) {
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
-        const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
+        const tokenEntry = tokenInfo[environment][assetSymbol];
         await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
           tokenEntry.address,
           tokenEntry.name,
-          tokenEntry.symbol,
+          assetSymbol,
           tokenEntry.decimals,
           tokenEntry.url,
           mockBytes,
@@ -115,8 +110,8 @@ async function deployEnvironment(environment) {
     const pricefeedOperatorPassword = '/path/to/password/file';
     const authority = config.protocol.governance.authority;
     const authorityPassword = '/path/to/password/file';
-    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
-    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
+    const mlnAddr = tokenInfo[environment].MLN.address;
+    const ethTokenAddress = tokenInfo[environment]["W-ETH"].address;
 
     deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
       [config.protocol.governance.authority],
@@ -153,13 +148,13 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         await unlock(pricefeedOperator, pricefeedOperatorPassword);
-        const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
+        const tokenEntry = tokenInfo[environment][assetSymbol];
         await governanceAction(
           {from: pricefeedOperator, gas: 6000000},
           deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
             tokenEntry.address,
             tokenEntry.name,
-            tokenEntry.symbol,
+            assetSymbol,
             tokenEntry.decimals,
             tokenEntry.url,
             mockBytes,

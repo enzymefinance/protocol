@@ -10,8 +10,7 @@ const config = environmentConfig[environment];
 
 const apiPath = "https://min-api.cryptocompare.com/data/price";
 
-// TODO: should we have a separate token config for development network? much of the information is identical
-const tokenInfo = require("../../utils/info/tokenInfo.js").kovan;
+const tokenInfo = require("../../utils/info/tokenInfo.js").kovan; // get decimal info from kovan config
 
 // retry the request if it fails (helps with bad connections)
 async function requestWithRetries(options, maxRetries) {
@@ -41,9 +40,9 @@ async function getConvertedPrices(deployed) {
   } else if(queryResult.ETH === 0 || queryResult.EUR === 0) {
     throw new Error('API call returned a zero price');
   }
-  const ethDecimals = tokenInfo.filter(token => token.symbol === 'ETH-T')[0].decimals
-  const eurDecimals = tokenInfo.filter(token => token.symbol === 'EUR-T')[0].decimals
-  const mlnDecimals = tokenInfo.filter(token => token.symbol === 'MLN-T')[0].decimals
+  const ethDecimals = tokenInfo['ETH-T'].decimals
+  const eurDecimals = tokenInfo['EUR-T'].decimals
+  const mlnDecimals = tokenInfo['MLN-T'].decimals
   const inverseEth = new BigNumber(1).div(new BigNumber(queryResult.ETH)).toNumber().toFixed(15);
   const inverseEur = new BigNumber(1).div(new BigNumber(queryResult.EUR)).toNumber().toFixed(15);
   const inverseMln = new BigNumber(1).div(new BigNumber(queryResult.MLN)).toNumber().toFixed(15);
@@ -91,7 +90,7 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}) {
   } else {
     prices = inputPrices;
   }
-  let txid = await deployed.SimplePriceFeed.instance.update.postTransaction(
+  await deployed.SimplePriceFeed.instance.update.postTransaction(
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
     [Object.keys(prices), Object.values(prices)]
   );
