@@ -27,13 +27,12 @@ contract FundRanking {
         )
     {
         Version version = Version(ofVersion);
-        uint nofFunds = version.getLastFundId() + 1;
-        address[] memory fundAddrs = new address[](nofFunds);
-        uint[] memory sharePrices = new uint[](nofFunds);
-        uint[] memory creationTimes = new uint[](nofFunds);
-        bytes32[] memory names = new bytes32[](nofFunds);
+        address[] memory fundAddrs = new address[](numberOfFunds(version));
+        uint[] memory sharePrices = new uint[](numberOfFunds(version));
+        uint[] memory creationTimes = new uint[](numberOfFunds(version));
+        bytes32[] memory names = new bytes32[](numberOfFunds(version));
 
-        for (uint i = 0; i < nofFunds; i++) {
+        for (uint i = 0; i < numberOfFunds(version); i++) {
             address fundAddress = version.getFundById(i);
             Fund fund = Fund(fundAddress);
             uint sharePrice = fund.calcSharePrice();
@@ -46,4 +45,7 @@ contract FundRanking {
         }
         return (fundAddrs, sharePrices, creationTimes, names);
     }
+
+    // PUBLIC VIEW METHODS
+    function numberOfFunds(Version version) view returns (uint);
 }
