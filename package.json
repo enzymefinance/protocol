@@ -93,6 +93,7 @@
       "tests/unit/pricefeed/canonicalPriceFeed.js",
       "tests/unit/compliance/noCompliance.js",
       "tests/unit/compliance/onlyManager.js",
+      "tests/unit/compliance/picopsCompliance.js",
       "tests/unit/governance/governance.js",
       "tests/unit/modules/moduleRegistrar.js",
       "tests/unit/riskmgmt/rmMakeOrders.js",

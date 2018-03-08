@@ -10,7 +10,7 @@ contract PicopsCompliance is SimpleCertifier {
     SimpleCertifier public picopsCertifier;
 
     function PicopsCompliance(address picopsAddress) public {
-        simpleCertifier = SimpleCertifier(picopsAddress);
+        picopsCertifier = SimpleCertifier(picopsAddress);
     }
 
     // PUBLIC VIEW METHODS

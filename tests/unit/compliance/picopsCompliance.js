@@ -1,44 +1,58 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
-import {deployContract} from "../../../utils/lib/contracts";
+import { deployContract } from "../../../utils/lib/contracts";
 
 let accounts;
-let simpleCertifier;
+let picopsCertifier;
 let picopsCompliance;
 let deployer;
 
 test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer] = accounts;
-  simpleCertifier = await deployContract("modules/SimpleCertifier");
+  picopsCertifier = await deployContract("modules/picopsCertifier");
 });
 
 test.beforeEach(async () => {
   picopsCompliance = await deployContract(
     "compliance/PicopsCompliance",
-    {from: deployer},
-    [simpleCertifier.address]
+    { from: deployer },
+    [picopsCertifier.address],
   );
 });
 
-test('Checks if investment is permitted', async (t) => {
+test("Checks if investment is permitted", async t => {
   accounts = await api.eth.accounts();
-  const beforeInvestmentPermitted = await picopsCompliance.instance
-    .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  await simpleCertifier.instance.certify.postTransaction({from: accounts[0]}, [accounts[1]]);
-  const investmentPermitted = await picopsCompliance.instance
-    .isInvestmentPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  t.is(beforeInvestmentPermitted, false);
-  t.is(investmentPermitted, true);
+  const investmentPermittedBeforeCertify = await picopsCompliance.instance.isInvestmentPermitted.call(
+    {},
+    [accounts[1], 1000000000000000000, 1000000000000000000],
+  );
+  await picopsCertifier.instance.certify.postTransaction(
+    { from: accounts[0] },
+    [accounts[1]],
+  );
+  const investmentPermittedAfterCertify = await picopsCompliance.instance.isInvestmentPermitted.call(
+    {},
+    [accounts[1], 1000000000000000000, 1000000000000000000],
+  );
+  t.is(investmentPermittedBeforeCertify, false);
+  t.is(investmentPermittedAfterCertify, true);
 });
 
-test('Checks if redemption permitted', async (t) => {
+test("Checks if redemption permitted", async t => {
   accounts = await api.eth.accounts();
-  const beforeRedemptionPermitted = await picopsCompliance.instance
-    .isRedemptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  await simpleCertifier.instance.certify.postTransaction({ from: accounts[0] }, [accounts[1]]);
-  const redemptionPermitted = await picopsCompliance.instance
-    .isRedemptionPermitted.call({}, [accounts[1], 1000000000000000000, 1000000000000000000]);
-  t.is(beforeRedemptionPermitted, false);
-  t.is(redemptionPermitted, true);
+  const redemptionPermittedBeforeCertify = await picopsCompliance.instance.isRedemptionPermitted.call(
+    {},
+    [accounts[1], 1000000000000000000, 1000000000000000000],
+  );
+  await picopsCertifier.instance.certify.postTransaction(
+    { from: accounts[0] },
+    [accounts[1]],
+  );
+  const redemptionPermittedAfterCertify = await picopsCompliance.instance.isRedemptionPermitted.call(
+    {},
+    [accounts[1], 1000000000000000000, 1000000000000000000],
+  );
+  t.is(redemptionPermittedBeforeCertify, false);
+  t.is(redemptionPermittedAfterCertify, true);
 });
