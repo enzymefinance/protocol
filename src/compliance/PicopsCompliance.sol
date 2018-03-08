@@ -7,7 +7,7 @@ import "../modules/SimpleCertifier.sol";
 /// @notice This is to be considered as an interface on how to access the underlying contract.
 contract PicopsCompliance is SimpleCertifier {
 
-    SimpleCertifier public simpleCertifier;
+    SimpleCertifier public picopsCertifier;
 
     function PicopsCompliance(address picopsAddress) public {
         simpleCertifier = SimpleCertifier(picopsAddress);
@@ -24,8 +24,11 @@ contract PicopsCompliance is SimpleCertifier {
         address ofParticipant,
         uint256 giveQuantity,
         uint256 shareQuantity
-    ) view returns (bool isEligible) {
-        isEligible = simpleCertifier.certified(ofParticipant);
+    )
+        view
+        returns (bool)
+    {
+        return picopsCertifier.certified(ofParticipant);
     }
 
     /// @notice Checks whether redemption is permitted for a participant
@@ -37,7 +40,10 @@ contract PicopsCompliance is SimpleCertifier {
         address ofParticipant,
         uint256 shareQuantity,
         uint256 receiveQuantity
-    ) view returns (bool isEligible) {
-        isEligible = simpleCertifier.certified(ofParticipant);
+    )
+        view
+        returns (bool)
+    {
+        return picopsCertifier.certified(ofParticipant);
     }
 }
