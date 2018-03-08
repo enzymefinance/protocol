@@ -37,7 +37,7 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
             // Retrieve the size of the code on target address, this needs assembly.
             codeLength := extcodesize(_to)
         }
- 
+
         require(balances[msg.sender] >= _value); // sanity checks
         require(balances[_to] + _value >= balances[_to]);
 
@@ -63,6 +63,7 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
         public
         returns (bool success)
     {
+        bytes memory empty;
         uint codeLength;
 
         assembly {
@@ -95,6 +96,8 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
         public
         returns (bool)
     {
+        bytes memory empty;
+        
         require(_from != 0x0);
         require(_to != 0x0);
         require(_to != address(this));

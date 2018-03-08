@@ -14,14 +14,16 @@ contract FundRanking {
       "fundAddrs": "Array of addresses of Melon Funds",
       "sharePrices": "Array of uints containing share prices of above Melon Fund addresses"
       "creationTimes": "Array of uints representing the unix timestamp for creation of each Fund"
+      "names": "Array of bytes32 representing the names of the addresses of Melon Funds"
     }
     */
-    function getAddressAndSharePriceOfFunds(address ofVersion)
+    function getFundDetails(address ofVersion)
         view
         returns(
             address[],
             uint[],
-            uint[]
+            uint[],
+            bytes32[]
         )
     {
         Version version = Version(ofVersion);
@@ -29,16 +31,19 @@ contract FundRanking {
         address[] memory fundAddrs = new address[](nofFunds);
         uint[] memory sharePrices = new uint[](nofFunds);
         uint[] memory creationTimes = new uint[](nofFunds);
+        bytes32[] memory names = new bytes32[](nofFunds);
 
         for (uint i = 0; i < nofFunds; i++) {
             address fundAddress = version.getFundById(i);
             Fund fund = Fund(fundAddress);
             uint sharePrice = fund.calcSharePrice();
             uint creationTime = fund.getCreationTime();
+            bytes32 name = fund.getName();
             fundAddrs[i] = fundAddress;
             sharePrices[i] = sharePrice;
             creationTimes[i] = creationTime;
+            names[i] = name;
         }
-        return (fundAddrs, sharePrices, creationTimes);
+        return (fundAddrs, sharePrices, creationTimes, names);
     }
 }
