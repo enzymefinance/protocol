@@ -201,7 +201,8 @@ async function deployEnvironment(environment) {
 
     deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
-      deployed.MlnToken.address
+      deployed.MlnToken.address,
+      deployed.CanonicalPriceFeed.address
     ]);
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);

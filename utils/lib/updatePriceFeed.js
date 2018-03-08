@@ -94,11 +94,6 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}) {
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
     [Object.keys(prices), Object.values(prices)]
   );
-  await governanceAction(
-    {from: accounts[0]},
-    deployed.Governance, deployed.CanonicalPriceFeed, 'collectAndUpdate',
-    [Object.keys(prices)]
-  );
 }
 
 export { updatePriceFeed, updateCanonicalPriceFeed };

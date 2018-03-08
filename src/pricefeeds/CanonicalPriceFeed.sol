@@ -48,7 +48,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         uint interval,
         uint validity,
         address ofGovernance
-    ) SimplePriceFeed(this, ofQuoteAsset) {
+    ) SimplePriceFeed(this, ofQuoteAsset, 0x0) {
         register(
             QUOTE_ASSET,
             quoteAssetName,
@@ -110,7 +110,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
      */
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets)
-        auth
+        public
     {
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {

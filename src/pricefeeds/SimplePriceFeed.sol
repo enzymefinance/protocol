@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 
 import "./CanonicalRegistrar.sol";
+import "./CanonicalPriceFeed.sol";
 import "./SimplePriceFeedInterface.sol";
 import "../dependencies/DBC.sol";
 import "ds-thing/thing.sol";
@@ -25,6 +26,7 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     // Contract-level variables
     uint public updateId;        // Update counter for this pricefeed; used as a check during investment
     CanonicalRegistrar public registrar;
+    CanonicalPriceFeed public superFeed;
 
     // METHODS
 
@@ -32,12 +34,15 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
 
     /// @param ofQuoteAsset Address of quote asset
     /// @param ofRegistrar Address of canonical registrar
+    /// @param ofSuperFeed Address of superfeed
     function SimplePriceFeed(
         address ofRegistrar,
-        address ofQuoteAsset // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
+        address ofQuoteAsset,
+        address ofSuperFeed
     ) {
         registrar = CanonicalRegistrar(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
+        superFeed = CanonicalPriceFeed(ofSuperFeed);
     }
 
     // EXTERNAL METHODS
@@ -57,6 +62,9 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
         auth
     {
         _updatePrices(ofAssets, newPrices);
+        if (address(superFeed) != 0x0) {
+            superFeed.collectAndUpdate(ofAssets);
+        }
     }
 
     // PUBLIC VIEW METHODS

@@ -80,7 +80,8 @@ async function createAndWhitelistPriceFeed(context) {
   context.pricefeeds.push(
     await deployContract("pricefeeds/SimplePriceFeed", { from: accounts[0] }, [
       context.canonicalPriceFeed.address,
-      mlnToken.address
+      mlnToken.address,
+      context.canonicalPriceFeed.address,
     ]),
   );
   await context.canonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(opts, [
