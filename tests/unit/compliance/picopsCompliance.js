@@ -10,7 +10,7 @@ let deployer;
 test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer] = accounts;
-  picopsCertifier = await deployContract("modules/picopsCertifier");
+  picopsCertifier = await deployContract("modules/SimpleCertifier");
 });
 
 test.beforeEach(async () => {
