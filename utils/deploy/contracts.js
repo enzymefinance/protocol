@@ -223,7 +223,6 @@ async function deployEnvironment(environment) {
       ],
       () => {}, true
     );
-    
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking

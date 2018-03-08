@@ -96,7 +96,8 @@
       "tests/unit/governance/governance.js",
       "tests/unit/modules/moduleRegistrar.js",
       "tests/unit/riskmgmt/rmMakeOrders.js",
-      "tests/unit/version/version.js"
+      "tests/unit/version/version.js",
+      "tests/unit/fundRanking.js"
     ],
     "tap": true,
     "babel": "inherit",

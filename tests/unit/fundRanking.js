@@ -1,8 +1,8 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import {deployContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../utils/config/environment.js");
 
@@ -36,16 +36,10 @@ test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer, manager] = accounts;
   version = deployed.Version;
+  fundRanking = deployed.FundRanking;
 });
 
 test.beforeEach(async () => {
-  fundRanking = await deployContract(
-    "FundRanking",
-    {from: deployer},
-    [version.address]
-  );
-  version = await deployed.Version;
-
   // Fund Setup 1
   let [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
@@ -57,7 +51,6 @@ test.beforeEach(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [deployed.SimpleMarket.address],
       [deployed.SimpleAdapter.address],
       v,
@@ -77,7 +70,6 @@ test.beforeEach(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [deployed.SimpleMarket.address],
       [deployed.SimpleAdapter.address],
       v,
@@ -85,16 +77,16 @@ test.beforeEach(async () => {
       s,
     ],
   );
+  await updateCanonicalPriceFeed(deployed);
 });
 
 // test to check getFundDetails() method
 test('get address, shareprice, time and name of all funds in a version', async (t) => {
   accounts = await api.eth.accounts();
-  const fundDetails = await fundRanking.instance.getFundDetails.call();
+  const fundDetails = await fundRanking.instance.getFundDetails.call({}, [version.address]);
   const fundAddresses = [];
   fundAddresses[0] = await version.instance.getFundById.call({}, [0]);
   fundAddresses[1] = await version.instance.getFundById.call({}, [1]);
-
   fundNames.forEach((name, i) => {
     t.is(fundDetails[0][i]._value, fundAddresses[i]);
     t.not(Number(fundDetails[1][i]._value), 0);
