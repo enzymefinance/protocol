@@ -102,7 +102,7 @@ test.beforeEach(async () => {
   trade1 = {
     sellQuantity: sellQuantity1,
     buyQuantity: new BigNumber(
-      Math.round(referencePrice / 10 ** 18 * sellQuantity1),
+      Math.round(referencePrice.div(10 ** 18).times(sellQuantity1)),
     ),
   };
   const sellQuantity2 = new BigNumber(50 * 10 ** 18);
