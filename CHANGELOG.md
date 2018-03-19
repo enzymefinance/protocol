@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- concept of Canonical PriceFeed
+- concept of individually-updatable Simple PriceFeed(s)
+- ability for manager to shut down invest/redeem for individual assets
+- expiration date for orders
+- account for approved assets when calculating custody of exchange
+- get fund names in ranking contract
+- PicopsCompliance module and tests
+- MatchingMarket (from OasisDex)
+- hardcoded compliance module for mainnet
+- etherscan verification helper script
+- README.md tracking deployed Versions
+- tests to fit new protocol developments
+- utils to use governance contract more easily
+
+### Changed
+
+- rename subscribe to invest
+- simplify order struct inside the Fund
+- reduce max fund assets
+- use bytes32 for name instead of dynamic type
+- push to ownedAssets when asset added
+- allocate fees and calculate share price at same time
+- use different ports for different deployment environments
+- use object format for token addresses
+
+### Updated
+
+- deployment contract (use config file more)
+
+### Removed
+
+- superfluous Fund functions (getLastOrderId, getNameHash)
+- unnecessary governance functions (everything can be triggered with calldata)
+- fund name tracking in Version
+
 ## [0.7.0]
 
 ### Added
