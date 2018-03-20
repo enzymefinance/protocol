@@ -133,8 +133,6 @@ test.beforeEach(async t => {
   await createAndWhitelistPriceFeed(t.context);
 });
 
-// tests (concurrent)
-
 test("registers more than one asset without error", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await registerEth(t.context.canonicalPriceFeed);
@@ -258,5 +256,18 @@ test("Update price for odd number of pricefeeds", async t => {
       eurToken.address,
     ]),
   );
+
   t.deepEqual(price, medianize(prices));
+});
+
+test("governance cannot manually force a price update", async t => {
+  await registerEur(t.context.canonicalPriceFeed);
+  const preUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
+  await t.context.canonicalPriceFeed.instance.update.postTransaction(
+    { from: accounts[0], gas: 6000000 },
+    [[eurToken.address], [50000]]
+  );
+  const postUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
+
+  t.is(preUpdateId, postUpdateId)
 });
