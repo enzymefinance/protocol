@@ -159,6 +159,23 @@ test.serial("MaliciousToken becomes malicious", async t => {
   t.true(isThrowing);
 });
 
+test.serial("Cannot pass asset multiple times in emergencyRedeem", async t => {
+  const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
+  const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
+  const preEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);
+  await fund.instance.emergencyRedeem.postTransaction(
+    { from: investor, gas: 6000000 },
+    [preShareQuantity, [mlnToken.address, mlnToken.address, deployed.EthToken.address]],
+  );
+  const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
+  const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
+  const postEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call({}, [investor]);
+
+  t.is(Number(preShareQuantity), Number(postShareQuantity));
+  t.is(Number(preMlnQuantity), Number(postMlnQuantity));
+  t.is(Number(preEthTokenQuantity), Number(postEthTokenQuantity));
+});
+
 test.serial(
   "Other assets can be redeemed, when MaliciousToken is throwing",
   async t => {

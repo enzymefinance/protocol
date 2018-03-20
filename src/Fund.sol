@@ -679,6 +679,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     // PUBLIC : REDEEMING
 
     /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
+    /// @dev This works, but with loops, so only up to a certain number of assets (right now the max is 4)
     /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
     /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
     /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
@@ -690,10 +691,17 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     {
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
+        uint[] memory redeemedAssets = new uint[](requestedAssets.length);
 
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            for (uint j = 0; j < redeemedAssets.length; j++) {
+                if (ofAsset == redeemedAssets[j]) {
+                    revert();
+                }
+            }
+            redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
                 uint(AssetInterface(ofAsset).balanceOf(this)),
                 quantityHeldInCustodyOfExchange(ofAsset)

@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - use different ports for different deployment environments
 - use object format for token addresses
 
+### Fixed
+
+- bug allowing emergencyRedeem to drain funds
+
 ### Updated
 
 - deployment contract (use config file more)
