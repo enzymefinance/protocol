@@ -1,11 +1,11 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import { retrieveContract } from "../../utils/lib/contracts";
+import {retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -57,13 +57,12 @@ test.serial("can set up new fund", async t => {
   txId = await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
-      fundName, // name
+      "fundName", // name
       mlnToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [deployed.SimpleMarket.address],
       [deployed.SimpleAdapter.address],
       v,
@@ -95,7 +94,7 @@ test.serial("can set up new fund", async t => {
 });
 
 test.serial("initial calculations", async t => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const [
     gav,
     managementFee,
@@ -177,7 +176,6 @@ test.serial.skip(
         config.protocol.fund.performanceFee,
         deployed.NoCompliance.address,
         deployed.RMMakeOrders.address,
-        deployed.PriceFeed.address,
         [deployed.SimpleMarket.address],
         [deployed.SimpleAdapter.address],
         v,
@@ -237,7 +235,7 @@ test.serial("allows request and execution on the first investment", async t => {
   ]);
   txId = await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [firstTest.offeredValue, firstTest.wantedShares, false],
+    [firstTest.offeredValue, firstTest.wantedShares, mlnToken.address],
   );
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
@@ -248,8 +246,8 @@ test.serial("allows request and execution on the first investment", async t => {
   );
   const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
   const investorPreShares = await fund.instance.balanceOf.call({}, [investor]);
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -330,7 +328,7 @@ subsequentTests.forEach(testInstance => {
 
       txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.offeredValue, testInstance.wantedShares, false],
+        [testInstance.offeredValue, testInstance.wantedShares, mlnToken.address],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -355,8 +353,8 @@ subsequentTests.forEach(testInstance => {
     "executing invest request transfers shares to investor, and remainder of investment offer to investor",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = await fund.instance.balanceOf.call({}, [
         investor,
@@ -517,7 +515,7 @@ testArray.forEach(testInstance => {
     const pre = await getAllBalances(deployed, accounts, fund);
     txId = await fund.instance.requestRedemption.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [testInstance.wantedShares, testInstance.wantedValue, false],
+      [testInstance.wantedShares, testInstance.wantedValue, mlnToken.address],
     );
     const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -546,8 +544,8 @@ testArray.forEach(testInstance => {
     "executing request moves token from fund to investor, shares annihilated",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updatePriceFeed(deployed);
-      await updatePriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
+      await updateCanonicalPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = await fund.instance.balanceOf.call({}, [
         investor,

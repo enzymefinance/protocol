@@ -2,8 +2,8 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -49,7 +49,6 @@ test.before(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [simpleMarket.address],
       [simpleAdapter.address],
       v,
@@ -72,7 +71,7 @@ test.before(async () => {
   );
   await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredValue, wantedShares, false],
+    [offeredValue, wantedShares, mlnToken.address],
   );
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   await fund.instance.executeRequest.postTransaction(
@@ -82,7 +81,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
 });
 
 test.serial(

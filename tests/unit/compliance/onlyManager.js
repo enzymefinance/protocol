@@ -28,7 +28,6 @@ test.before(async () => {
     0,
     compliance.address,
     deployed.RMMakeOrders.address,
-    deployed.PriceFeed.address,
     [deployed.SimpleMarket.address],
     [deployed.SimpleAdapter.address],
     v,
@@ -40,7 +39,7 @@ test.before(async () => {
 });
 
 test("Manager can request investment", async t => {
-  const txid = await fund.instance.requestInvestment.postTransaction({from: manager, gas: 6000000}, [100, 100, false]);
+  const txid = await fund.instance.requestInvestment.postTransaction({from: manager, gas: 6000000}, [100, 100, deployed.MlnToken.address]);
   const requestId = parseInt((await api.eth.getTransactionReceipt(txid)).logs[0].data, 16);   // get request ID from log
   const request = await fund.instance.requests.call({}, [Number(requestId)]);
 
@@ -49,7 +48,7 @@ test("Manager can request investment", async t => {
 });
 
 test("Someone who is not manager can not request investment", async t => {
-  const txid = await fund.instance.requestInvestment.postTransaction({from: investor, gas: 6000000}, [100, 100, false]);
+  const txid = await fund.instance.requestInvestment.postTransaction({from: investor, gas: 6000000}, [100, 100, deployed.MlnToken.address]);
   const logsArrayLength = (await api.eth.getTransactionReceipt(txid)).logs.length; // get length of logs (0 if tx failed)
   // TODO: check for actual throw in tx receipt (waiting for parity.js to support this: https://github.com/paritytech/js-api/issues/16)
 
@@ -67,4 +66,3 @@ test("Anyone can perform redemption", async t => {
   t.true(isManagerRedemptionPermitted);
   t.true(isInvestorRedemptionPermitted);
 });
-

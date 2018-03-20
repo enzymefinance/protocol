@@ -11,7 +11,6 @@ import "./VersionInterface.sol";
 contract Version is DBC, Owned, VersionInterface {
     // FIELDS
 
-    // Constant fields
     bytes32 public constant TERMS_AND_CONDITIONS = 0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
     address public COMPLIANCE = 0xFb5978C7ca78074B2044034CbdbC3f2E03Dfe2bA; // restrict to OnlyManager compliance module for this version
 
@@ -19,13 +18,13 @@ contract Version is DBC, Owned, VersionInterface {
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public NATIVE_ASSET; // Address of wrapped native asset contract
     address public GOVERNANCE; // Address of Melon protocol governance contract
+    address public CANONICAL_PRICEFEED; // Address of the canonical pricefeed
     bool public IS_MAINNET;  // whether this contract is on the mainnet (to use hardcoded module)
 
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
     address[] public listOfFunds; // A complete list of fund addresses created using this version
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
-
     // EVENTS
 
     event FundUpdated(address ofFund);
@@ -41,11 +40,13 @@ contract Version is DBC, Owned, VersionInterface {
         string versionNumber,
         address ofGovernance,
         address ofNativeAsset,
+        address ofCanonicalPriceFeed,
         bool isMainnet
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
         NATIVE_ASSET = ofNativeAsset;
+        CANONICAL_PRICEFEED = ofCanonicalPriceFeed;
         IS_MAINNET = isMainnet;
     }
 
@@ -61,20 +62,18 @@ contract Version is DBC, Owned, VersionInterface {
     /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 10 ** 15
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
-    /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
     /// @param ofExchangeAdapters Addresses of exchange adapters
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
     function setupFund(
-        string ofFundName,
+        bytes32 ofFundName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofPriceFeed,
         address[] ofExchanges,
         address[] ofExchangeAdapters,
         uint8 v,
@@ -97,10 +96,9 @@ contract Version is DBC, Owned, VersionInterface {
             ofQuoteAsset,
             ofManagementFee,
             ofPerformanceFee,
-            NATIVE_ASSET,
             ofCompliance,
             ofRiskMgmt,
-            ofPriceFeed,
+            CANONICAL_PRICEFEED,
             ofExchanges,
             ofExchangeAdapters
         );

@@ -1,12 +1,12 @@
 pragma solidity ^0.4.19;
 
 import "../dependencies/DBC.sol";
-import "../dependencies/Owned.sol";
+import "ds-thing/thing.sol";
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract AssetRegistrar is DBC, Owned {
+contract CanonicalRegistrar is DSThing, DBC {
 
     // TYPES
 
@@ -28,6 +28,7 @@ contract AssetRegistrar is DBC, Owned {
 
     // Methods fields
     mapping (address => Asset) public information;
+    address[] public registeredAssets;
 
     // METHODS
 
@@ -56,7 +57,7 @@ contract AssetRegistrar is DBC, Owned {
         address breakIn,
         address breakOut
     )
-        pre_cond(isOwner())
+        auth
         pre_cond(!information[ofAsset].exists)
     {
         Asset asset = information[ofAsset];
@@ -68,6 +69,7 @@ contract AssetRegistrar is DBC, Owned {
         asset.breakIn = breakIn;
         asset.breakOut = breakOut;
         asset.exists = true;
+        registeredAssets.push(ofAsset);
         assert(information[ofAsset].exists);
     }
 
@@ -86,7 +88,7 @@ contract AssetRegistrar is DBC, Owned {
         string url,
         string ipfsHash
     )
-        pre_cond(isOwner())
+        auth
         pre_cond(information[ofAsset].exists)
     {
         Asset asset = information[ofAsset];
@@ -102,18 +104,37 @@ contract AssetRegistrar is DBC, Owned {
     function remove(
         address ofAsset
     )
-        pre_cond(isOwner())
+        auth
         pre_cond(information[ofAsset].exists)
     {
+        uint assetIndex = getRegisteredAssetIndex(ofAsset);
+        require(registeredAssets[assetIndex] == ofAsset);
         delete information[ofAsset]; // Sets exists boolean to false
+        delete registeredAssets[assetIndex];
+        for (uint i = assetIndex; i < registeredAssets.length-1; i++) {
+            registeredAssets[i] = registeredAssets[i+1];
+        }
+        registeredAssets.length--;
         assert(!information[ofAsset].exists);
     }
 
     // PUBLIC VIEW METHODS
 
+    function getRegisteredAssetIndex(address ofAsset)
+        view
+        pre_cond(isRegistered(ofAsset))
+        returns (uint)
+    {
+        for (uint i; i < registeredAssets.length; i++) {
+            if (registeredAssets[i] == ofAsset) { return i; }
+        }
+        revert(); // not found
+    }
+
     // Get asset specific information
     function getName(address ofAsset) view returns (bytes32) { return information[ofAsset].name; }
     function getSymbol(address ofAsset) view returns (bytes8) { return information[ofAsset].symbol; }
     function getDecimals(address ofAsset) view returns (uint) { return information[ofAsset].decimal; }
-
+    function isRegistered(address ofAsset) view returns (bool) { return information[ofAsset].exists; }
+    function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
 }

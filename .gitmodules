@@ -10,3 +10,15 @@
 [submodule "lib/ds-weth"]
 	path = lib/ds-weth
 	url = https://github.com/dapphub/ds-weth
+[submodule "lib/medianizer"]
+	path = lib/medianizer
+	url = https://github.com/makerdao/medianizer
+[submodule "lib/ds-thing"]
+	path = lib/ds-thing
+	url = https://github.com/dapphub/ds-thing
+[submodule "lib/ds-auth"]
+	path = lib/ds-auth
+	url = https://github.com/dapphub/ds-auth
+[submodule "lib/ds-value"]
+	path = lib/ds-value
+	url = https://github.com/dapphub/ds-value

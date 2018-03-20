@@ -4,6 +4,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- concept of Canonical PriceFeed
+- concept of individually-updatable Simple PriceFeed(s)
+- ability for manager to shut down invest/redeem for individual assets
+- expiration date for orders
+- account for approved assets when calculating custody of exchange
+- get fund names in ranking contract
+- PicopsCompliance module and tests
+- MatchingMarket (from OasisDex)
+- hardcoded compliance module for mainnet
+- etherscan verification helper script
+- README.md tracking deployed Versions
+- tests to fit new protocol developments
+- utils to use governance contract more easily
+
+### Changed
+
+- rename subscribe to invest
+- simplify order struct inside the Fund
+- reduce max fund assets
+- use bytes32 for name instead of dynamic type
+- push to ownedAssets when asset added
+- allocate fees and calculate share price at same time
+- use different ports for different deployment environments
+- use object format for token addresses
+
+### Updated
+
+- deployment contract (use config file more)
+
+### Removed
+
+- superfluous Fund functions (getLastOrderId, getNameHash)
+- unnecessary governance functions (everything can be triggered with calldata)
+- fund name tracking in Version
+
+## [0.7.0]
+
+### Added
+
+- special case calculating holdings for "approve only" style exchanges
+- special case for mainnet deployment (hardcoded compliance module)
+- RestrictedShares.sol
+- SimpleAdapterWithApprove.sol
+- SimpleMarketWithApprove.sol
+- MatchingMarket.sol (from OasisDex; mirroring live deployment)
+- export some js modules for use in other projects
+- concatenation script for etherscan verification
+- secondaryTrading.js tests
+- simpleMarketWithApprove.js tests
+
+### Changed
+
+- rename "base asset" to "quote asset"
+- quote asset now always in Fund ownedAssets
+- fund inherits RestrictedShares instead of Shares
+- rename rewards to fees
+- rename subscribe to invest
+- change max allowed assets to 4
+- removed ERC223 component from kovan and development network test assets we use
+- made tests more modular (using utils libraries)
+- introduce code size limit to our development network as well
+- use different ports for different networks
+
+### Fixed
+
+- bug preventing emergencyRedeem for multiple assets
+- bug in FundRanking preventing array from growing
+
+### Updated
+
+- terms and conditions hash
+- test files, to be compatible with changes to contracts
+- information files (tokenInfo.js and exchangeInfo.js)
+
+### Removed
+
+- fund name logic in Version.sol
 
 ## [0.6.4]
 

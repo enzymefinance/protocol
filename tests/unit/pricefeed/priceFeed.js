@@ -75,6 +75,14 @@ function registerBtc(pricefeed) {
     mockBreakOut,
   ]);
 }
+
+function bytesToString(bytes) {
+  while(bytes[bytes.length-1] === 0) {
+    bytes.pop();    // remove trailing zero bytes
+  }
+  return String.fromCharCode.apply(null, bytes);
+}
+
 // hooks
 
 test.before(async () => {
@@ -156,9 +164,9 @@ test("gets registered information", async t => {
     decimal,
     exists,
     ipfsHash,
-    name,
+    nameBytes,
     price,
-    symbol,
+    symbolBytes,
     timestamp,
     url,
   ] = Object.values(result);
@@ -169,9 +177,9 @@ test("gets registered information", async t => {
   t.deepEqual(chainId, Array.from(Array(32), () => 0));
   t.true(exists);
   t.is(ipfsHash, mockIpfs);
-  t.is(name, eurName);
+  t.is(bytesToString(nameBytes), eurName);
   t.is(Number(price), 0); // no price update yet
-  t.is(symbol, eurSymbol);
+  t.is(bytesToString(symbolBytes), eurSymbol);
   t.is(Number(timestamp), 0); // no price update yet
   t.is(url, eurUrl);
 });

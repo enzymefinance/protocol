@@ -1,24 +1,23 @@
 pragma solidity ^0.4.19;
 
-import "./AssetRegistrar.sol";
+import "./CanonicalRegistrar.sol";
 import "./PriceFeedInterface.sol";
-import "ds-math/math.sol";
+import "./SimplePriceFeed.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
+contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
 
-    // Constructor fields
-    address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
-    /// Note: Interval is purely self imposed and for information purposes only
-    uint public INTERVAL; // Frequency of updates in seconds
-    uint public VALIDITY; // Time in seconds for which data is considered recent
-    uint updateId;        // Update counter for this pricefeed; used as a check during investment
+    mapping(address => bool) public isWhitelisted;
+    address[] public whitelist;
+    uint public VALIDITY;
+    uint public INTERVAL;
+    uint public minimumPriceCount = 1;
 
     // METHODS
 
@@ -36,7 +35,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @param quoteAssetBreakOut Break-out address for the quote asset
     /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     /// @param validity Number of seconds that datafeed update information is valid for
-    function PriceFeed(
+    function CanonicalPriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
@@ -47,9 +46,9 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         address quoteAssetBreakIn,
         address quoteAssetBreakOut,
         uint interval,
-        uint validity
-    ) {
-        QUOTE_ASSET = ofQuoteAsset;
+        uint validity,
+        address ofGovernance
+    ) SimplePriceFeed(this, ofQuoteAsset, 0x0) {
         register(
             QUOTE_ASSET,
             quoteAssetName,
@@ -63,9 +62,43 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         );
         INTERVAL = interval;
         VALIDITY = validity;
+        setOwner(ofGovernance);
     }
 
+    // EXTERNAL METHODS
+
+    /// @dev override inherited update function to prevent manual update from authority
+    function update() external { revert(); }
+
     // PUBLIC METHODS
+
+    // WHITELISTING
+
+    function addFeedToWhitelist(address ofFeed)
+        auth
+    {
+        require(!isWhitelisted[ofFeed]);
+        isWhitelisted[ofFeed] = true;
+        whitelist.push(ofFeed);
+    }
+
+    // TODO: check gas usage (what is the max size of whitelist?); maybe can just run update() with array of feeds as argument instead?
+    /// @param ofFeed Address of the SimplePriceFeed to be removed
+    function removeFeedFromWhitelist(address ofFeed)
+        auth
+        pre_cond(isWhitelisted[ofFeed])
+    {
+        uint feedIndex = getFeedWhitelistIndex(ofFeed);
+        require(whitelist[feedIndex] == ofFeed);
+        delete isWhitelisted[ofFeed];
+        delete whitelist[feedIndex];
+        for (uint i = feedIndex; i < whitelist.length-1; i++) { // remove gap in the array
+            whitelist[i] = whitelist[i+1];
+        }
+        whitelist.length--;
+    }
+
+    // AGGREGATION
 
     /// @dev Only Owner; Same sized input arrays
     /// @dev Updates price of asset relative to QUOTE_ASSET
@@ -76,38 +109,97 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     /// @param ofAssets list of asset addresses
-    /// @param newPrices list of prices for each of the assets
-    function update(address[] ofAssets, uint[] newPrices)
-        pre_cond(isOwner())
-        pre_cond(ofAssets.length == newPrices.length)
+    function collectAndUpdate(address[] ofAssets)
+        public
     {
-        updateId += 1;
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            require(information[ofAssets[i]].timestamp != now); // prevent two updates in one block
-            require(information[ofAssets[i]].exists);
-            information[ofAssets[i]].timestamp = now;
-            information[ofAssets[i]].price = newPrices[i];
+        uint[] memory newPrices = new uint[](ofAssets.length);
+        for (uint i = 0; i < ofAssets.length; i++) {
+            uint[] memory assetPrices = new uint[](whitelist.length);
+            for (uint j = 0; j < whitelist.length; j++) {
+                SimplePriceFeed feed = SimplePriceFeed(whitelist[j]);
+                var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
+                if (now > add(timestamp, VALIDITY)) {
+                    continue; // leaves a zero in the array (dealt with later)
+                }
+                assetPrices[j] = price;
+            }
+            newPrices[i] = medianize(assetPrices);
         }
-        PriceUpdated(now);
+        _updatePrices(ofAssets, newPrices);
     }
+
+    /// @dev from MakerDao medianizer contract
+    function medianize(uint[] unsorted)
+        view
+        returns (uint)
+    {
+        uint count;
+        uint[] memory out = new uint[](unsorted.length);
+        for (uint i = 0; i < unsorted.length; i++) {
+            uint item = unsorted[i];
+            if (item == 0) {
+                continue;   // skip zero-entries (invalid)
+            } else if (i == 0 || item >= out[i - 1]) {
+                out[i] = item;  // item is larger than last in array (we are home)
+            } else {
+                uint j = 0;
+                while (item >= out[j]) {
+                    j++;  // get to where element belongs (between smaller and larger items)
+                }
+                for (uint k = i; k > j; k--) {
+                    out[k] = out[k - 1];    // bump larger elements rightward to leave slot
+                }
+                out[j] = item;
+            }
+            count++;
+        }
+
+        if (count < minimumPriceCount) {
+            revert(); // TODO: maybe return false as validity or something
+        }
+
+        uint value;
+        if (count % 2 == 0) {
+            uint value1 = uint(out[(count / 2) - 1]);
+            uint value2 = uint(out[(count / 2)]);
+            value = add(value1, value2) / 2;
+        } else {
+            value = out[(count - 1) / 2];
+        }
+        return value;
+    }
+
+    function setMinimumPriceCount(uint newCount) auth { minimumPriceCount = newCount; }
 
     // PUBLIC VIEW METHODS
 
-    // Get pricefeed specific information
+    // FEED INFORMATION
+
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
     function getInterval() view returns (uint) { return INTERVAL; }
     function getValidity() view returns (uint) { return VALIDITY; }
     function getLastUpdateId() view returns (uint) { return updateId; }
+
+    function getFeedWhitelistIndex(address ofFeed) view returns (uint) {
+        require(isWhitelisted[ofFeed]);
+        for (uint i; i < whitelist.length; i++) {
+            if (whitelist[i] == ofFeed) { return i; }
+        }
+        revert(); // not found
+    }
+
+    // PRICES
 
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
     /// @param ofAsset Existend asset in AssetRegistrar
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        pre_cond(information[ofAsset].exists)
+        pre_cond(isRegistered(ofAsset))
         returns (bool isRecent)
     {
-        return sub(now, information[ofAsset].timestamp) <= VALIDITY;
+        var ( , timestamp) = getPrice(ofAsset);
+        return (sub(now, timestamp) <= VALIDITY);
     }
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
@@ -125,50 +217,13 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         return true;
     }
 
-    /**
-    @notice Gets price of an asset multiplied by ten to the power of assetDecimals
-    @dev Asset has been registered
-    @param ofAsset Asset for which price should be returned
-    @return {
-      "isRecent": "Whether the returned price is valid (as defined by VALIDITY)",
-      "price": "Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers",
-      "decimal": "Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard",
-    }
-    */
-    function getPrice(address ofAsset)
+    function getPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint price, uint decimal)
+        returns (bool isRecent, uint price, uint assetDecimals)
     {
-        return (
-            hasRecentPrice(ofAsset),
-            information[ofAsset].price,
-            information[ofAsset].decimal
-        );
-    }
-
-    /**
-    @notice Price of a registered asset in format (bool areRecent, uint[] prices, uint[] decimals)
-    @dev Convention for price formatting: mul(price, 10 ** decimal), to avoid floating numbers
-    @param ofAssets Assets for which prices should be returned
-    @return {
-        "areRecent":    "Whether all of the prices are fresh, given VALIDITY interval",
-        "prices":       "Array of prices",
-        "decimals":     "Array of decimal places for returned assets"
-    }
-    */
-    function getPrices(address[] ofAssets)
-        view
-        returns (bool areRecent, uint[] prices, uint[] decimals)
-    {
-        areRecent = true;
-        for (uint i; i < ofAssets.length; i++) {
-            var (isRecent, price, decimal) = getPrice(ofAssets[i]);
-            if (!isRecent) {
-                areRecent = false;
-            }
-            prices[i] = price;
-            decimals[i] = decimal;
-        }
+        isRecent = hasRecentPrice(ofAsset);
+        (price, ) = getPrice(ofAsset);
+        assetDecimals = getDecimals(ofAsset);
     }
 
     /**
@@ -179,23 +234,24 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     @return {
         "isRecent": "Whether the price is fresh, given VALIDITY interval",
         "invertedPrice": "Price based (instead of quoted) against QUOTE_ASSET",
-        "decimal": "Decimal places for this asset"
+        "assetDecimals": "Decimal places for this asset"
     }
     */
-    function getInvertedPrice(address ofAsset)
+    function getInvertedPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint invertedPrice, uint decimal)
+        returns (bool isRecent, uint invertedPrice, uint assetDecimals)
     {
+        uint inputPrice;
         // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        var (isInvertedRecent, inputPrice, assetDecimal) = getPrice(ofAsset);
+        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
-        uint quoteDecimal = getDecimals(QUOTE_ASSET);
+        uint quoteDecimals = getDecimals(QUOTE_ASSET);
 
         return (
-            isInvertedRecent,
-            mul(10 ** uint(quoteDecimal), 10 ** uint(assetDecimal)) / inputPrice,
-            quoteDecimal
+            isRecent,
+            mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
+            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
         );
     }
 
@@ -211,14 +267,14 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
         "decimal": "Decimal places for this asset"
     }
     */
-    function getReferencePrice(address ofBase, address ofQuote)
+    function getReferencePriceInfo(address ofBase, address ofQuote)
         view
         returns (bool isRecent, uint referencePrice, uint decimal)
     {
         if (getQuoteAsset() == ofQuote) {
-            (isRecent, referencePrice, decimal) = getPrice(ofBase);
+            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
         } else if (getQuoteAsset() == ofBase) {
-            (isRecent, referencePrice, decimal) = getInvertedPrice(ofQuote);
+            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
             revert(); // no suitable reference price available
         }
@@ -230,7 +286,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
     /// @param sellQuantity Quantity in base units being sold of sellAsset
     /// @param buyQuantity Quantity in base units being bought of buyAsset
     /// @return orderPrice Price as determined by an order
-    function getOrderPrice(
+    function getOrderPriceInfo(
         address sellAsset,
         address buyAsset,
         uint sellQuantity,
@@ -257,4 +313,6 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
+
+    function getWhitelist() view returns(address[]) { return whitelist; }
 }

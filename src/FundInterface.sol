@@ -14,27 +14,27 @@ interface FundInterface {
     event SpendingApproved(address onConsigned, address ofAsset, uint amount);
     event FeesConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
-    event OrderUpdated(uint id);
+    event OrderUpdated(uint exchangeId, uint orderId);
     event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
     // EXTERNAL METHODS
     // Compliance by Investor
-    function requestInvestment(uint giveQuantity, uint shareQuantity, bool isNativeAsset) external;
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, bool isNativeAsset) external;
+    function requestInvestment(uint giveQuantity, uint shareQuantity, address investmentAsset) external;
+    function requestRedemption(uint shareQuantity, uint receiveQuantity, address redemptionAsset) external;
     function executeRequest(uint requestId) external;
     function cancelRequest(uint requestId) external;
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool);
     // Administration by Manager
-    function enableInvestment() external;
-    function disableInvestment() external;
-    function enableRedemption() external;
-    function disableRedemption() external;
+    function enableInvestment(address[] ofAssets) external;
+    function disableInvestment(address[] ofAssets) external;
+    function enableRedemption(address[] ofAssets) external;
+    function disableRedemption(address[] ofAssets) external;
     function shutDown() external;
     // Managing by Manager
     function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external;
     function takeOrder(uint exchangeId, uint id, uint quantity) external;
-    function cancelOrder(uint exchangeId, uint id) external;
+    function cancelOrder(uint exchangeId, address ofAsset) external;
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);
@@ -44,9 +44,7 @@ interface FundInterface {
     // PUBLIC VIEW METHODS
     // Get general information
     function getModules() view returns (address, address, address);
-    function getLastOrderId() view returns (uint);
     function getLastRequestId() view returns (uint);
-    function getNameHash() view returns (bytes32);
     function getManager() view returns (address);
 
     // Get accounting information

@@ -14,13 +14,12 @@ interface VersionInterface {
     function shutDown() external;
 
     function setupFund(
-        string ofFundName,
+        bytes32 ofFundName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofPriceFeed,
         address[] ofExchanges,
         address[] ofExchangeAdapters,
         uint8 v,
