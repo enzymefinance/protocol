@@ -521,7 +521,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @return gav Gross asset value quoted in QUOTE_ASSET and multiplied by 10 ** shareDecimals
     function calcGav() returns (uint gav) {
         // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        address[] memory tempOwnedAssets; // To store ownedAssets
+        uint[] memory allAssetHoldings = new uint[](ownedAssets.length);
+        uint[] memory allAssetPrices = new uint[](ownedAssets.length);
+        address[] memory tempOwnedAssets;
         tempOwnedAssets = ownedAssets;
         delete ownedAssets;
         for (uint i = 0; i < tempOwnedAssets.length; ++i) {
@@ -536,6 +538,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             if (!isRecent) {
                 revert();
             }
+            allAssetHoldings[i] = assetHoldings;
+            allAssetPrices[i] = assetPrice;
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint256(assetDecimals)));   // Sum up product of asset holdings of this vault and asset prices
             if (assetHoldings != 0 || ofAsset == address(QUOTE_ASSET) || isInOpenMakeOrder[ofAsset]) { // Check if asset holdings is not zero or is address(QUOTE_ASSET) or in open make order
@@ -543,8 +547,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             } else {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
-            PortfolioContent(assetHoldings, assetPrice, assetDecimals);
         }
+        PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
     }
 
     /**
@@ -691,7 +695,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     {
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
-        uint[] memory redeemedAssets = new uint[](requestedAssets.length);
+        address[] memory redeemedAssets = new address[](requestedAssets.length);
 
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
@@ -724,12 +728,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         annihilateShares(msg.sender, shareQuantity);
 
         // Transfer ownershipQuantity of Assets
-        for (uint j = 0; j < requestedAssets.length; ++j) {
+        for (uint k = 0; k < requestedAssets.length; ++k) {
             // Failed to send owed ownershipQuantity from fund to participant
-            ofAsset = requestedAssets[j];
-            if (ownershipQuantities[j] == 0) {
+            ofAsset = requestedAssets[k];
+            if (ownershipQuantities[k] == 0) {
                 continue;
-            } else if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[j])) {
+            } else if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[k])) {
                 revert();
             }
         }

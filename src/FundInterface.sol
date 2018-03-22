@@ -7,7 +7,7 @@ interface FundInterface {
 
     // EVENTS
 
-    event PortfolioContent(uint holdings, uint price, uint decimals);
+    event PortfolioContent(address[] assets, uint[] holdings, uint[] prices);
     event RequestUpdated(uint id);
     event Invested(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
