@@ -89,16 +89,17 @@ async function deployEnvironment(environment) {
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         const tokenEntry = tokenInfo[environment][assetSymbol];
-        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
           tokenEntry.address,
           tokenEntry.name,
           assetSymbol,
           tokenEntry.decimals,
           tokenEntry.url,
           mockBytes,
-          mockBytes,
           mockAddress,
           mockAddress,
+          [],
+          []
         ]);
         console.log(`Registered ${assetSymbol}`);
       })
@@ -151,16 +152,17 @@ async function deployEnvironment(environment) {
         const tokenEntry = tokenInfo[environment][assetSymbol];
         await governanceAction(
           {from: pricefeedOperator, gas: 6000000},
-          deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+          deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
             tokenEntry.address,
             tokenEntry.name,
             assetSymbol,
             tokenEntry.decimals,
             tokenEntry.url,
             mockBytes,
-            mockBytes,
             mockAddress,
             mockAddress,
+            [],
+            []
           ]
         );
         console.log(`Registered ${assetSymbol}`);
@@ -191,9 +193,10 @@ async function deployEnvironment(environment) {
       18,
       'melonport.com',
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
+      [],
+      [],
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
       deployed.Governance.address
@@ -228,27 +231,29 @@ async function deployEnvironment(environment) {
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'addFeedToWhitelist', [deployed.SimplePriceFeed.address]);
 
     // register assets
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.EthToken.address,
       "Ether token",
       "ETH-T",
       18,
       "ethereum.org",
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
+      [],
+      []
     ]);
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.EurToken.address,
       "Euro token",
       "EUR-T",
       18,
       "europa.eu",
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
+      [],
+      []
     ]);
   }
   // await verifyDeployment(deployed);

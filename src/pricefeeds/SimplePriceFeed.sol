@@ -122,7 +122,7 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     {
         updateId++;
         for (uint i = 0; i < ofAssets.length; ++i) {
-            require(registrar.isRegistered(ofAssets[i]));
+            require(registrar.assetIsRegistered(ofAssets[i]));
             require(assetsToPrices[ofAssets[i]].timestamp != now); // prevent two updates in one block
             assetsToPrices[ofAssets[i]].timestamp = now;
             assetsToPrices[ofAssets[i]].price = newPrices[i];

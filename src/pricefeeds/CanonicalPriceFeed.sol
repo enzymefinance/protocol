@@ -30,9 +30,10 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
-    /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
     /// @param quoteAssetBreakIn Break-in address for the quote asset
     /// @param quoteAssetBreakOut Break-out address for the quote asset
+    /// @param quoteAssetStandards EIP standards quote asset adheres to
+    /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
     /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     /// @param validity Number of seconds that datafeed update information is valid for
     function CanonicalPriceFeed(
@@ -42,23 +43,25 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
-        bytes32 quoteAssetChainId,
         address quoteAssetBreakIn,
         address quoteAssetBreakOut,
+        uint[] quoteAssetStandards,
+        bytes4[] quoteAssetFunctionSignatures,
         uint interval,
         uint validity,
         address ofGovernance
     ) SimplePriceFeed(this, ofQuoteAsset, 0x0) {
-        register(
+        registerAsset(
             QUOTE_ASSET,
             quoteAssetName,
             quoteAssetSymbol,
             quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
-            quoteAssetChainId,
             quoteAssetBreakIn,
-            quoteAssetBreakOut
+            quoteAssetBreakOut,
+            quoteAssetStandards,
+            quoteAssetFunctionSignatures
         );
         INTERVAL = interval;
         VALIDITY = validity;
@@ -195,7 +198,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        pre_cond(isRegistered(ofAsset))
+        pre_cond(assetIsRegistered(ofAsset))
         returns (bool isRecent)
     {
         var ( , timestamp) = getPrice(ofAsset);

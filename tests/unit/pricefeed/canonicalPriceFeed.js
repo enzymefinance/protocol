@@ -35,44 +35,47 @@ const btcDecimals = 8;
 
 // helper functions
 function registerEur(pricefeed) {
-  return pricefeed.instance.register.postTransaction(opts, [
+  return pricefeed.instance.registerAsset.postTransaction(opts, [
     eurToken.address,
     eurName,
     eurSymbol,
     eurDecimals,
     eurUrl,
     mockIpfs,
-    mockBytes,
     mockBreakIn,
     mockBreakOut,
+    [],
+    []
   ]);
 }
 
 function registerEth(pricefeed) {
-  return pricefeed.instance.register.postTransaction(opts, [
+  return pricefeed.instance.registerAsset.postTransaction(opts, [
     ethToken.address,
     "Ethereum",
     "ETH",
     ethDecimals,
     "ethereum.org",
     mockIpfs,
-    mockBytes,
     mockBreakIn,
     mockBreakOut,
+    [],
+    []
   ]);
 }
 
 function registerBtc(pricefeed) {
-  return pricefeed.instance.register.postTransaction(opts, [
+  return pricefeed.instance.registerAsset.postTransaction(opts, [
     mockBtcAddress,
     "Bitcoin",
     "BTC",
     btcDecimals,
     "bitcoin.org",
     mockIpfs,
-    mockBytes,
     mockBreakIn,
     mockBreakOut,
+    [],
+    []
   ]);
 }
 
@@ -120,9 +123,10 @@ test.beforeEach(async t => {
       mlnDecimals,
       "melonport.com",
       mockBytes,
-      mockBytes,
       mockBreakIn,
       mockBreakOut,
+      [],
+      [],
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
       accounts[0]
@@ -136,9 +140,9 @@ test.beforeEach(async t => {
 test("registers more than one asset without error", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await registerEth(t.context.canonicalPriceFeed);
-  const eurRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [eurToken.address]);
-  const ethRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [ethToken.address]);
-  const mlnRegistered = await t.context.canonicalPriceFeed.instance.isRegistered.call({}, [mlnToken.address]);
+  const eurRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [eurToken.address]);
+  const ethRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [ethToken.address]);
+  const mlnRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [mlnToken.address]);
   let registeredAssets = await t.context.canonicalPriceFeed.instance.getRegisteredAssets.call();
   registeredAssets = registeredAssets.map(e => e._value);
   const allInRegistry =

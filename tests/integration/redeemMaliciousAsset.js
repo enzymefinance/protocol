@@ -43,8 +43,8 @@ test.before(async () => {
   maliciousToken = await deployContract("testing/MaliciousToken", {
     from: deployer,
   });
-  await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
-    maliciousToken.address, 'MaliciousToken', '', 18, '', '', mockBytes, mockAddress, mockAddress
+  await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+    maliciousToken.address, 'MaliciousToken', 'MAL', 18, '', mockBytes, mockAddress, mockAddress, [], []
   ]);
 
   // give investor some MLN to use
