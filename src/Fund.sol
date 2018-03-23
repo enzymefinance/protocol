@@ -50,9 +50,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     struct Exchange {
-        address exchange; // Address of the exchange
-        ExchangeInterface exchangeAdapter; //Exchange adapter contracts respective to the exchange
-        bool isApproveOnly; // True in case of exchange implementation which requires  are approved when an order is made instead of transfer
+        address exchange;
+        address exchangeAdapter;
+        bool takesCustody;  // exchange takes custody before making order
     }
 
     struct Order {
@@ -96,7 +96,6 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
-    /// @param ofExchangeAdapters Addresses of exchange adapters
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
@@ -107,17 +106,16 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
-        address[] ofExchanges,
-        address[] ofExchangeAdapters
+        address[] ofExchanges
     )
         RestrictedShares(withName, "MLNF", 18, now)
     {
+        require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
+        require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
         isInvestAllowed[ofQuoteAsset] = true;
         isRedeemAllowed[ofQuoteAsset] = true;
         owner = ofManager;
-        require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
         MANAGEMENT_FEE_RATE = ofManagementFee; // 1 percent is expressed as 0.01 * 10 ** 18
-        require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
         PERFORMANCE_FEE_RATE = ofPerformanceFee; // 1 percent is expressed as 0.01 * 10 ** 18
         VERSION = msg.sender;
         module.compliance = ComplianceInterface(ofCompliance);
@@ -125,12 +123,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         module.pricefeed = CanonicalPriceFeed(ofPriceFeed);
         // Bridged to Melon exchange interface by exchangeAdapter library
         for (uint i = 0; i < ofExchanges.length; ++i) {
-            ExchangeInterface adapter = ExchangeInterface(ofExchangeAdapters[i]);
-            bool isApproveOnly = adapter.isApproveOnly();
+            require(module.pricefeed.exchangeIsRegistered(ofExchanges[i]));
+            var (ofExchangeAdapter, takesCustody, ) = module.pricefeed.getExchangeInformation(ofExchanges[i]);
             exchanges.push(Exchange({
                 exchange: ofExchanges[i],
-                exchangeAdapter: adapter,
-                isApproveOnly: isApproveOnly
+                exchangeAdapter: ofExchangeAdapter,
+                takesCustody: takesCustody
             }));
         }
         // Require Quote assets exists in pricefeed
@@ -390,7 +388,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         require(address(exchanges[exchangeId].exchangeAdapter).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), exchanges[exchangeId].exchange, sellAsset, buyAsset, sellQuantity, buyQuantity));
-        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id = exchanges[exchangeId].exchangeAdapter.getLastOrderId(exchanges[exchangeId].exchange);
+        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id = ExchangeInterface(exchanges[exchangeId].exchangeAdapter).getLastOrderId(exchanges[exchangeId].exchange);
         exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
 
         // Success defined as non-zero order id
@@ -421,7 +419,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             buyAsset,
             sellQuantity,
             buyQuantity
-        ) = exchanges[exchangeId].exchangeAdapter.getOrder(exchanges[exchangeId].exchange, id);
+        ) = ExchangeInterface(exchanges[exchangeId].exchangeAdapter).getOrder(exchanges[exchangeId].exchange, id);
         // Check pre conditions
         require(sellAsset != address(this)); // Prevent buying of own fund token
         require(module.pricefeed.existsPriceOnAssetPair(buyAsset, sellAsset)); // PriceFeed module: Requested asset pair not valid
@@ -753,12 +751,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             if (exchangeIdsToOpenMakeOrders[i][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = exchanges[i].exchangeAdapter.getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrders[i][ofAsset].id);
+            var (sellAsset, , sellQuantity, ) = ExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrders[i][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangeIdsToOpenMakeOrders[i][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
-            if (exchanges[i].isApproveOnly) {
+            if (exchanges[i].takesCustody) {
                 totalSellQuantityInApprove += sellQuantity;
             }
         }

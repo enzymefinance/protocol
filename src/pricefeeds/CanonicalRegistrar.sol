@@ -225,4 +225,14 @@ contract CanonicalRegistrar is DSThing, DBC {
     // get exchange-specific information
     function exchangeIsRegistered(address ofExchange) view returns (bool) { return exchangeInformation[ofExchange].exists; }
     function getRegisteredExchanges() view returns (address[]) { return registeredExchanges; }
-}
+    function getExchangeInformation(address ofExchange)
+        view
+        returns (address, bool)
+    {
+        Exchange exchange = exchangeInformation[ofExchange];
+        return (
+            exchange.adapter,
+            exchange.takesCustody
+        );
+    }
+ }

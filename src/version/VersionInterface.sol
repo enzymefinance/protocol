@@ -21,7 +21,6 @@ interface VersionInterface {
         address ofCompliance,
         address ofRiskMgmt,
         address[] ofExchanges,
-        address[] ofExchangeAdapters,
         uint8 v,
         bytes32 r,
         bytes32 s
