@@ -21,6 +21,10 @@ npm publish        # updates the NPM package
 git push --follow-tags
 ```
 
+## Git Branching Model
+
+Please always merge PR into `develop` branch. We follow this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/).
+
 ## Styleguides
 
 ### Tools
@@ -41,6 +45,8 @@ This makes them more legible, thereby helping maintain a high level of security.
 This document can be seen as an "extension" of the [official Solidity style guide](http://solidity.readthedocs.io/en/develop/style-guide.html).
 
 This means that rules from the official guide are inherited, and may be overriden if necessary.
+
+Should there no explicitly mentioned rule please follow the _[GOLDEN RULE](https://github.com/ethereum/cpp-ethereum/blob/b6218fc1da39994043f1c43185bb24e364382d84/CodingStandards.txt#L3): Follow the style of the existing code when you make changes._
 
 #### General tips
 
