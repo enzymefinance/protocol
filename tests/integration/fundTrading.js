@@ -3,8 +3,9 @@ import api from "../../utils/lib/api";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import governanceAction from "../../utils/lib/governanceAction";
+import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -26,8 +27,6 @@ let mlnToken;
 let pricefeed;
 let txId;
 let runningGasTotal;
-let SimpleMarket;
-let MatchingMarket;
 let exchanges;
 let trade1;
 let trade2;
@@ -50,13 +49,33 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  SimpleMarket = await deployed.SimpleMarket;
-  MatchingMarket = await deployContract(
+  deployed.MatchingMarket = await deployContract(
     "exchange/thirdparty/MatchingMarket",
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }, // TODO: remove unnecessary params
     [1546304461],
   );
-  exchanges = [SimpleMarket, MatchingMarket];
+  exchanges = [deployed.SimpleMarket, deployed.MatchingMarket];
+  await governanceAction(
+    {from: deployer},
+    deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    [
+      deployed.SimpleMarket.address,
+      deployed.SimpleAdapter.address,
+      true,
+      []
+    ]
+  );
+  await governanceAction(
+    {from: deployer},
+    deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    [
+      deployed.MatchingMarket.address,
+      deployed.SimpleAdapter.address,
+      true,
+      []
+    ]
+  );
+
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -67,8 +86,7 @@ test.before(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      [deployed.SimpleMarket.address, MatchingMarket.address],
-      [deployed.SimpleAdapter.address, deployed.SimpleAdapter.address],
+      [deployed.SimpleMarket.address, deployed.MatchingMarket.address],
       v,
       r,
       s,
@@ -76,7 +94,7 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
-  await MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
+  await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [mlnToken.address, ethToken.address],
   );

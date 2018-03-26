@@ -5,6 +5,7 @@ import getAllBalances from "../../utils/lib/getAllBalances";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -43,6 +44,16 @@ test.before(async () => {
     "exchange/thirdparty/CentralizedExchangeBridge",
     { from: deployer },
   );
+  await governanceAction(
+    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    [
+      centralizedExchange.address,
+      deployed.CentralizedAdapter.address,
+      false,
+      []
+    ]
+  );
+
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -54,7 +65,6 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [centralizedExchange.address],
-      [deployed.CentralizedAdapter.address],
       v,
       r,
       s,
@@ -169,12 +179,12 @@ test.serial(
       ],
     );
     const post = await getAllBalances(deployed, accounts, fund);
-    const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
+    const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
       {},
       [mlnToken.address],
     );
 
-    t.deepEqual(heldinExchange, trade1.sellQuantity);
+    t.deepEqual(heldInExchange, trade1.sellQuantity);
     t.deepEqual(
       post.exchangeOwner.MlnToken,
       pre.exchangeOwner.MlnToken.add(trade1.sellQuantity),
@@ -209,12 +219,12 @@ test.serial("Manager settles an order on the exchange interface", async t => {
     [orderId, trade1.buyQuantity],
   );
   const post = await getAllBalances(deployed, accounts, fund);
-  const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
+  const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
     {},
     [mlnToken.address],
   );
 
-  t.is(Number(heldinExchange), 0);
+  t.is(Number(heldInExchange), 0);
   t.deepEqual(
     post.deployer.EthToken,
     pre.deployer.EthToken.minus(trade1.buyQuantity),

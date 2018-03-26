@@ -4,6 +4,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import getSignatureParameters from "../../utils/lib/getSignatureParameters";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -39,6 +40,17 @@ test.before(async () => {
   simpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {
     from: deployer,
   });
+  await governanceAction(
+    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    [
+      simpleMarket.address,
+      simpleAdapter.address,
+      true,
+      []
+    ]
+  );
+
+
   const [r, s, v] = await getSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -50,7 +62,6 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [simpleMarket.address],
-      [simpleAdapter.address],
       v,
       r,
       s,

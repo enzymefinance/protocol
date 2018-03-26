@@ -84,6 +84,17 @@ async function deployEnvironment(environment) {
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
+    // whitelist exchange
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.SimpleAdapter.address,
+        true,
+        []
+      ]
+    );
+
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
@@ -142,6 +153,18 @@ async function deployEnvironment(environment) {
     await unlock(authority, authorityPassword);
     await deployed.CanonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(
       {from: config.protocol.governance.authority}, [deployed.SimplePriceFeed.address]
+    );
+
+    // whitelist exchange
+    // TODO: make sure that authority account is unlocked for this section
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.SimpleMarket.address,
+        deployed.SimpleAdapter.address,
+        true,
+        []
+      ]
     );
 
     // register assets
@@ -229,6 +252,17 @@ async function deployEnvironment(environment) {
 
     // whitelist simple feed
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'addFeedToWhitelist', [deployed.SimplePriceFeed.address]);
+
+    // whitelist exchange
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.SimpleMarket.address,
+        deployed.SimpleAdapter.address,
+        true,
+        []
+      ]
+    );
 
     // register assets
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [

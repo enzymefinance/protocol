@@ -29,7 +29,6 @@ test.before(async () => {
     compliance.address,
     deployed.RMMakeOrders.address,
     [deployed.SimpleMarket.address],
-    [deployed.SimpleAdapter.address],
     v,
     r,
     s
