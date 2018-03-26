@@ -221,6 +221,19 @@ contract CanonicalRegistrar is DSThing, DBC {
     function getDecimals(address ofAsset) view returns (uint) { return assetInformation[ofAsset].decimals; }
     function assetIsRegistered(address ofAsset) view returns (bool) { return assetInformation[ofAsset].exists; }
     function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
+    function assetMethodIsAllowed(
+        address ofAsset, bytes4 querySignature
+    )
+        returns (bool)
+    {
+        bytes4[] memory signatures = assetInformation[ofAsset].functionSignatures;
+        for (uint i = 0; i < signatures.length; i++) {
+            if(signatures[i] == querySignature) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     // get exchange-specific information
     function exchangeIsRegistered(address ofExchange) view returns (bool) { return exchangeInformation[ofExchange].exists; }
@@ -235,4 +248,17 @@ contract CanonicalRegistrar is DSThing, DBC {
             exchange.takesCustody
         );
     }
- }
+    function exchangeMethodIsAllowed(
+        address ofExchange, bytes4 querySignature
+    )
+        returns (bool)
+    {
+        bytes4[] memory signatures = exchangeInformation[ofExchange].functionSignatures;
+        for (uint i = 0; i < signatures.length; i++) {
+            if(signatures[i] == querySignature) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
