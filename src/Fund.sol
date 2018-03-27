@@ -363,7 +363,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         require(modules.pricefeed.exchangeMethodIsAllowed(
             exchanges[exchangeIndex].exchange, method
         ));
-        require((exchanges[exchangeIndex].exchangeAdapter).call(
+        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(
             method, orderAddresses, orderValues, identifier, v, r, s
         ));
     }
@@ -404,7 +404,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
                 sellQuantity,
                 buyQuantity
             )
-        ); // RiskMgmt module: Make order not permitted
+        );
         require(isInAssetList[buyAsset] || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
         require(AssetInterface(sellAsset).approve(exchanges[exchangeId].exchange, sellQuantity)); // Approve exchange to spend assets
 
@@ -569,6 +569,18 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             }
         }
         PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
+    }
+
+    /// @notice Add an asset to the list that this fund owns
+    function addAssetToOwnedAssets (address ofAsset)
+        public
+        pre_cond(isOwner())
+    {
+        isInOpenMakeOrder[ofAsset] = true;
+        if (!isInAssetList[ofAsset]) {
+            ownedAssets.push(ofAsset);
+            isInAssetList[ofAsset] = true;
+        }
     }
 
     /**
@@ -807,4 +819,5 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
     function getManager() view returns (address) { return owner; }
+    function getOwnedAssetsLength() view returns (uint) { return ownedAssets.length; }
 }
