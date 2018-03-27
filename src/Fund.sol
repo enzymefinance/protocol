@@ -349,13 +349,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function callOnExchange(
         uint exchangeIndex,
         bytes4 method,
+        address[5] orderAddresses, // maker, taker, giveAsset, getAsset, feeRecipient
+        uint[6] orderValues, // giveQuantity, getQuantity, makerFee, takerFee, timestamp, and salt
         bytes32 identifier,
-        address maker, // equivalent to `user` (dexy)
-        address taker, // To specify a specific taker, for example a Relayer or in case of  p2p trading
-        address giveAsset,
-        address getAsset,
-        uint giveQuantity,
-        uint getQuantity,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -364,13 +360,11 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         pre_cond(isOwner())
         pre_cond(!isShutDown)
     {
-        // require(modules.pricefeed.exchangeMethodIsAllowed(
-        //     exchanges[exchangeIndex].exchange, method
-        // ));
-        require((exchanges[exchangeIndex].exchangeAdapter).call(method,
-            identifier, maker, taker, giveAsset,
-            getAsset, giveQuantity, getQuantity,
-            v, r, s
+        require(modules.pricefeed.exchangeMethodIsAllowed(
+            exchanges[exchangeIndex].exchange, method
+        ));
+        require((exchanges[exchangeIndex].exchangeAdapter).call(
+            method, orderAddresses, orderValues, identifier, v, r, s
         ));
     }
 
