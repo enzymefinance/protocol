@@ -364,7 +364,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             exchanges[exchangeIndex].exchange, method
         ));
         require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(
-            method, orderAddresses, orderValues, identifier, v, r, s
+            method, exchanges[exchangeIndex].exchange,
+            orderAddresses, orderValues, identifier, v, r, s
         ));
     }
 
@@ -574,7 +575,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @notice Add an asset to the list that this fund owns
     function addAssetToOwnedAssets (address ofAsset)
         public
-        pre_cond(isOwner())
+        pre_cond(isOwner() || msg.sender == address(this))
     {
         isInOpenMakeOrder[ofAsset] = true;
         if (!isInAssetList[ofAsset]) {

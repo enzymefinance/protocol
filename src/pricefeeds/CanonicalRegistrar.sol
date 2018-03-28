@@ -248,6 +248,12 @@ contract CanonicalRegistrar is DSThing, DBC {
             exchange.takesCustody
         );
     }
+    function getExchangeFunctionSignatures(address ofExchange)
+        view
+        returns (bytes4[])
+    {
+        return exchangeInformation[ofExchange].functionSignatures;
+    }
     function exchangeMethodIsAllowed(
         address ofExchange, bytes4 querySignature
     )
