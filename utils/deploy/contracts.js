@@ -42,21 +42,21 @@ async function deployEnvironment(environment) {
 
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed",
       opts, [
-      mlnAddr,
-      'Melon Token',
-      'MLN-T-M',
-      18,
-      'melonport.com',
-      mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
-      deployed.Governance.address
-    ]);
+        mlnAddr,
+        'Melon Token',
+        'MLN-T-M',
+        18,
+        'melonport.com',
+        mockBytes,
+        mockBytes,
+        mockAddress,
+        mockAddress,
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity,
+        deployed.Governance.address
+      ]);
 
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
 
     const pairsToWhitelist = [
       ['MLN-T-M', 'ETH-T-M'],
@@ -91,7 +91,17 @@ async function deployEnvironment(environment) {
         deployed.MatchingMarket.address,
         deployed.SimpleAdapter.address,
         true,
-        []
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10)
+        ]
       ]
     );
 
@@ -133,17 +143,17 @@ async function deployEnvironment(environment) {
 
     await unlock(authority, authorityPassword);
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", {from: config.protocol.governance.authority}, [
-        mlnAddr,
-        'Melon Token',
-        'MLN',
-        18,
-        'melonport.com',
-        mockBytes,
-        mockBytes,
-        mockAddress,
-        mockAddress,
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity,
+      mlnAddr,
+      'Melon Token',
+      'MLN',
+      18,
+      'melonport.com',
+      mockBytes,
+      mockBytes,
+      mockAddress,
+      mockAddress,
+      config.protocol.pricefeed.interval,
+      config.protocol.pricefeed.validity,
     ]);
 
     await unlock(pricefeedOperator, pricefeedOperatorPassword);
@@ -163,7 +173,17 @@ async function deployEnvironment(environment) {
         deployed.SimpleMarket.address,
         deployed.SimpleAdapter.address,
         true,
-        []
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10), 
+        ]
       ]
     );
 
@@ -232,9 +252,11 @@ async function deployEnvironment(environment) {
     ]);
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]);
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.Version = await deployContract(
       "version/Version",
@@ -247,6 +269,18 @@ async function deployEnvironment(environment) {
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
+    // whitelist trading pairs
+    const pairsToWhitelist = [
+      [deployed.MlnToken.address, deployed.EthToken.address],
+      [deployed.EurToken.address, deployed.EthToken.address],
+      [deployed.MlnToken.address, deployed.EurToken.address],
+    ];
+    await Promise.all(
+      pairsToWhitelist.map(async (pair) => {
+        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [pair[0], pair[1]]);
+      })
+    );
+
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
@@ -257,10 +291,40 @@ async function deployEnvironment(environment) {
     await governanceAction(
       opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
       [
-        deployed.SimpleMarket.address,
-        deployed.SimpleAdapter.address,
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
         true,
-        []
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+        ]
+      ]
+    );
+
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          api.util.abiSignature('makeOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+        ]
       ]
     );
 
@@ -321,9 +385,9 @@ if (require.main === module) {
     throw new Error(`Please specify an environment using the environment variable CHAIN_ENV`);
   } else {
     deployEnvironment(environment)
-    .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
-    .catch(err => console.error(err.stack))
-    .finally(() => process.exit())
+      .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
+      .catch(err => console.error(err.stack))
+      .finally(() => process.exit())
   }
 }
 
