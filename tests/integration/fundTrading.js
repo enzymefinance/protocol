@@ -40,6 +40,18 @@ const offeredValue = new BigNumber(10 ** 22);
 const wantedShares = new BigNumber(10 ** 22);
 const numberofExchanges = 2;
 
+// define order signatures
+const makeOrderSignature = api.util.abiSignature('makeOrder', [
+  'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+]).slice(0,10);
+const takeOrderSignature = api.util.abiSignature('takeOrder', [
+  'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+]).slice(0,10);
+const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
+  'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+]).slice(0,10);
+
+
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
@@ -64,17 +76,7 @@ test.before(async () => {
       deployed.SimpleMarket.address,
       deployed.MatchingMarketAdapter.address,
       true,
-      [
-        api.util.abiSignature('makeOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-        api.util.abiSignature('takeOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-        api.util.abiSignature('cancelOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-      ]
+      [ makeOrderSignature, takeOrderSignature, cancelOrderSignature ]
     ]
   );
   await governanceAction(
@@ -84,17 +86,7 @@ test.before(async () => {
       deployed.MatchingMarket.address,
       deployed.MatchingMarketAdapter.address,
       true,
-      [
-        api.util.abiSignature('makeOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-        api.util.abiSignature('takeOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-        api.util.abiSignature('cancelOrder', [
-          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-        ]).slice(0,10),
-      ] 
+      [ makeOrderSignature, takeOrderSignature, cancelOrderSignature ]
     ]
   );
 
@@ -297,7 +289,7 @@ exchangeIndexes.forEach(i => {
       txId = await fund.instance.callOnExchange.postTransaction(
         {from: manager, gas: config.gas},
         [
-          i, '0x9cb4d904',
+          i, makeOrderSignature,
           ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
           [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
           '0x0', 0, '0x0', '0x0'
@@ -467,7 +459,7 @@ exchangeIndexes.forEach(i => {
       txId = await fund.instance.callOnExchange.postTransaction(
         {from: manager, gas: config.gas},
         [
-          i, '0xbeb7f126',
+          i, takeOrderSignature,
           ['0x0', '0x0', '0x0', '0x0', '0x0'],
           [0, trade2.sellQuantity, 0, 0, 0, 0],
           `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
@@ -521,15 +513,14 @@ test.serial(
       exchanges[0].address,
     ]);
     const preOrderId = await exchanges[0].instance.last_offer_id.call({}, []);
-    txId = await fund.instance.makeOrder.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    txId = await fund.instance.callOnExchange.postTransaction(
+      {from: manager, gas: config.gas},
       [
-        0,
-        ethToken.address,
-        mlnToken.address,
-        trade3.sellQuantity,
-        trade3.buyQuantity,
-      ],
+        0, makeOrderSignature,
+        ['0x0', '0x0', ethToken.address, mlnToken.address, '0x0'],
+        [trade3.sellQuantity, trade3.buyQuantity, 0, 0, 0, 0],
+        '0x0', 0, '0x0', '0x0'
+      ]
     );
     const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -621,9 +612,15 @@ test.serial(
       await ethToken.instance.balanceOf.call({}, [exchanges[0].address]),
     );
     const orderId = await exchanges[0].instance.last_offer_id.call({}, []);
-    txId = await fund.instance.takeOrder.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-      [0, orderId, trade4.sellQuantity],
+
+    txId = await fund.instance.callOnExchange.postTransaction(
+      {from: manager, gas: config.gas},
+      [
+        0, takeOrderSignature,
+        ['0x0', '0x0', '0x0', '0x0', '0x0'],
+        [0, trade4.sellQuantity, 0, 0, 0, 0],
+        `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
+      ]
     );
     const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -659,7 +656,7 @@ test.serial("manager makes an order and cancels it", async t => {
   txId = await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
     [
-      0, '0x9cb4d904',
+      0, makeOrderSignature,
       ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
       '0x0', 0, '0x0', '0x0'
@@ -676,7 +673,7 @@ test.serial("manager makes an order and cancels it", async t => {
   txId = await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
     [
-      0, '0xf58ad4c4',
+      0, cancelOrderSignature,
       ['0x0', '0x0', '0x0', '0x0', '0x0'],
       [0, 0, 0, 0, 0, 0],
       `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'

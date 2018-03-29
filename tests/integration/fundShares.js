@@ -57,13 +57,13 @@ test.serial("can set up new fund", async t => {
   txId = await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
-      "fundName", // name
+      fundName, // name
       mlnToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      [deployed.SimpleMarket.address],
+      [deployed.MatchingMarket.address],
       v,
       r,
       s,
@@ -175,11 +175,10 @@ test.serial.skip(
         config.protocol.fund.performanceFee,
         deployed.NoCompliance.address,
         deployed.RMMakeOrders.address,
-        [deployed.SimpleMarket.address],
-        [deployed.SimpleAdapter.address],
+        [deployed.MatchingMarket.address],
         v,
         r,
-        s,
+        s
       ],
     );
     await version._pollTransactionReceipt(txId);
