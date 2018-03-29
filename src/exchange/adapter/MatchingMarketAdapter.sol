@@ -39,6 +39,7 @@ contract MatchingMarketAdapter is DSMath, DBC {
         require(makeOrderPermitted(giveQuantity, giveAsset, getQuantity, getAsset));
         require(giveAsset.approve(targetExchange, giveQuantity));
         uint id = MatchingMarket(targetExchange).offer(giveQuantity, giveAsset, getQuantity, getAsset);
+        Fund(this).addOpenMakeOrder(targetExchange, giveAsset, id);
         require(id != 0);   // defines success in MatchingMarket
         require(
             Fund(this).isInAssetList(getAsset) ||
@@ -104,8 +105,12 @@ contract MatchingMarketAdapter is DSMath, DBC {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(Fund(this).owner() == msg.sender || Fund(this).isShutDown()) // TODO: add back expiring order(?)
+        pre_cond(Fund(this).owner() == msg.sender ||
+                 Fund(this).isShutDown()          ||
+                 Fund(this).orderExpired(targetExchange, orderAddresses[2])
+        )
     {
+        Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );

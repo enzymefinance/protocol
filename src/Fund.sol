@@ -78,7 +78,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     Request[] public requests; // All the requests this fund received from participants
     mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
     mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
-    mapping (uint => mapping(address => Order)) public exchangeIdsToOpenMakeOrders; // exchangeIndex to: asset to open make orders
+    mapping (address => mapping(address => Order)) public exchangesToOpenMakeOrders; // exchangeIndex to: asset to open make orders
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
@@ -411,11 +411,11 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
         // Since there is only one openMakeOrder allowed for each asset, we can assume that openMakeOrderId is set as zero by quantityHeldInCustodyOfExchange() function
         require(address(exchanges[exchangeId].exchangeAdapter).delegatecall(bytes4(keccak256("makeOrder(address,address,address,uint256,uint256)")), exchanges[exchangeId].exchange, sellAsset, buyAsset, sellQuantity, buyQuantity));
-        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id = ExchangeInterface(exchanges[exchangeId].exchangeAdapter).getLastOrderId(exchanges[exchangeId].exchange);
-        exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
+        exchangesToOpenMakeOrders[0x0][sellAsset].id = ExchangeInterface(exchanges[exchangeId].exchangeAdapter).getLastOrderId(exchanges[exchangeId].exchange);
+        exchangesToOpenMakeOrders[0x0][sellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
 
         // Success defined as non-zero order id
-        require(exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id != 0);
+        require(exchangesToOpenMakeOrders[0x0][sellAsset].id != 0);
 
         // Update ownedAssets array and isInAssetList, isInOpenMakeOrder mapping
         isInOpenMakeOrder[buyAsset] = true;
@@ -424,7 +424,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             isInAssetList[buyAsset] = true;
         }
 
-        OrderUpdated(exchangeId, exchangeIdsToOpenMakeOrders[exchangeId][sellAsset].id);
+        OrderUpdated(exchangeId, exchangesToOpenMakeOrders[0x0][sellAsset].id);
     }
 
     /// @notice Takes an active order on the selected exchange
@@ -485,17 +485,36 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @param ofAsset Asset for which we want to cancel an order
     function cancelOrder(uint exchangeId, address ofAsset)
         external
-        pre_cond(isOwner() || isShutDown || block.timestamp >= exchangeIdsToOpenMakeOrders[exchangeId][ofAsset].expiresAt)
+        pre_cond(isOwner() || isShutDown || block.timestamp >= exchangesToOpenMakeOrders[0x0][ofAsset].expiresAt)
     {
-        uint orderId = exchangeIdsToOpenMakeOrders[exchangeId][ofAsset].id;
+        uint orderId = exchangesToOpenMakeOrders[0x0][ofAsset].id;
         require(orderId != 0); // ensure this order exists
         // Execute request
         require(address(exchanges[exchangeId].exchangeAdapter).delegatecall(bytes4(keccak256("cancelOrder(address,uint256)")), exchanges[exchangeId].exchange, orderId));
-        delete exchangeIdsToOpenMakeOrders[exchangeId][ofAsset];
+        delete exchangesToOpenMakeOrders[0x0][ofAsset];
 
         OrderUpdated(exchangeId, orderId);
     }
 
+    function addOpenMakeOrder(
+        address ofExchange,
+        address ofSellAsset,
+        uint orderId
+    )
+        pre_cond(isOwner() || msg.sender == address(this))
+    {
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
+    }
+
+    function removeOpenMakeOrder(
+        address ofExchange,
+        address ofSellAsset
+    )
+        pre_cond(isOwner() || msg.sender == address(this))
+    {
+        delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
+    }
 
     // PUBLIC METHODS
 
@@ -783,12 +802,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         uint totalSellQuantity;     // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
-            if (exchangeIdsToOpenMakeOrders[i][ofAsset].id == 0) {
+            if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = ExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangeIdsToOpenMakeOrders[i][ofAsset].id);
+            var (sellAsset, , sellQuantity, ) = ExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
-                delete exchangeIdsToOpenMakeOrders[i][ofAsset];
+                delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
             if (exchanges[i].takesCustody) {
@@ -821,4 +840,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
     function getManager() view returns (address) { return owner; }
     function getOwnedAssetsLength() view returns (uint) { return ownedAssets.length; }
+    function orderExpired(address ofExchange, address ofAsset) view returns (bool) {
+        return block.timestamp >= exchangesToOpenMakeOrders[ofExchange][ofAsset].expiresAt;
+    }
 }
