@@ -34,7 +34,7 @@ test("Can setup a new fund", async t => {
     config.protocol.fund.performanceFee,
     deployed.NoCompliance.address,
     deployed.RMMakeOrders.address,
-    [deployed.SimpleMarket.address],
+    [deployed.MatchingMarket.address],
     v,
     r,
     s,
