@@ -1,133 +1,168 @@
 pragma solidity ^0.4.19;
 
-import "../ExchangeInterface.sol";
 import "../thirdparty/CentralizedExchangeBridge.sol";
+import "../../Fund.sol";
+import "../../dependencies/DBC.sol";
 import "../../assets/Asset.sol";
+import "ds-math/math.sol";
 
-contract CentralizedAdapter is ExchangeInterface {
+contract CentralizedAdapter is DBC, DSMath {
 
-    // CONSTANT FIELDS
-
-    bool public constant approveOnly = false; // If the exchange implementation requires asset approve instead of transfer on make orders
-
-    event OrderUpdated(uint id);
+    event OrderUpdated(address ofExchangeBridge, uint orderId);
 
     // NON-CONSTANT METHODS
 
-    /// @notice Makes an order on the given exchange
-    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
-    /// @param onExchange Address of the exchange
-    /// @param sellAsset Asset (as registered in Asset registrar) to be sold
-    /// @param buyAsset Asset (as registered in Asset registrar) to be bought
-    /// @param sellQuantity Quantity of sellAsset to be sold
-    /// @param buyQuantity Quantity of buyAsset to be bought
-    /// @return Order id
+    // Responsibilities of makeOrder are:
+    // - check price recent
+    // - check risk management passes
+    // - approve funds to be traded (if necessary)
+    // - make order on the exchange
+    // - check order was made (if possible)
+    // - place asset in ownedAssets if not already tracked
+    /// @notice Makes an order on the selected exchange
+    /// @dev get/give is from maker's perspective
+    /// @dev These orders are not expected to settle immediately
+    /// @param orderAddresses [2] Asset to be sold (giveAsset)
+    /// @param orderAddresses [3] Asset to be bought (getAsset)
+    /// @param orderValues [0] Quantity of giveAsset to be sold
+    /// @param orderValues [1] Quantity of getAsset to be bought
     function makeOrder(
-        address onExchange,
-        address sellAsset,
-        address buyAsset,
-        uint sellQuantity,
-        uint buyQuantity
+        address targetExchange,
+        address[5] orderAddresses,
+        uint[6] orderValues,
+        bytes32 identifier,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     )
-        external returns (uint id)
+        pre_cond(Fund(this).owner() == msg.sender)
+        pre_cond(!Fund(this).isShutDown())
     {
-        id = CentralizedExchangeBridge(onExchange).makeOrder(
-            Asset(sellAsset),
-            Asset(buyAsset),
-            sellQuantity,
-            buyQuantity
+        require(Fund(this).owner() == msg.sender);
+        require(!Fund(this).isShutDown());
+
+        address giveAsset = orderAddresses[2];
+        address getAsset = orderAddresses[3];
+        uint giveQuantity = orderValues[0];
+        uint getQuantity = orderValues[1];
+
+        require(makeOrderPermitted(giveQuantity, giveAsset, getQuantity, getAsset));
+        require(Asset(giveAsset).approve(targetExchange, giveQuantity));
+
+        uint orderId = CentralizedExchangeBridge(targetExchange).makeOrder(
+            giveAsset,
+            getAsset,
+            giveQuantity,
+            getQuantity
         );
-        OrderUpdated(id);
+
+        require(
+            Fund(this).isInAssetList(getAsset) ||
+            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+        );
+
+        Fund(this).addOpenMakeOrder(targetExchange, giveAsset, orderId);
+        Fund(this).addAssetToOwnedAssets(getAsset);
+        emit OrderUpdated(targetExchange, uint(orderId));
     }
 
-    /// @notice Takes an order on the given exchange
-    /// @dev For this subset of adapter no immediate settlement can be expected
-    /// @param onExchange Address of the exchange
-    /// @param id Order id
-    /// @param quantity Quantity of order to be executed (For partial taking)
-    /// @return Whether the takeOrder is successfully executed
+    /// @dev Dummy function; not implemented yet
     function takeOrder(
-        address onExchange,
-        uint id,
-        uint quantity
-    )
-        external returns (bool success)
-    {
+        address targetExchange,
+        address[5] orderAddresses,
+        uint[6] orderValues,
+        bytes32 identifier,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) {
         revert();
     }
 
-    /// @notice Cancels an order on the given exchange
-    /// @dev Only use this in context of a delegatecall, as spending of sellAsset need to be approved first
-    /// @param onExchange Address of the exchange
-    /// @param id Order id
-    /// @return Whether the order is successfully cancelled
+    // responsibilities of cancelOrder are:
+    // - check sender is this contract or owner, or that order expired
+    // - remove order from tracking array
+    // - cancel order on exchange
+    /// @notice Cancels orders that were not expected to settle immediately
+    /// @param targetExchange Address of the exchange
+    /// @param orderAddresses [2] Asset for which we want to cancel an order
+    /// @param identifier Order ID on the exchange
     function cancelOrder(
-        address onExchange,
-        uint id
+        address targetExchange,
+        address[5] orderAddresses,
+        uint[6] orderValues,
+        bytes32 identifier,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     )
-        external returns (bool success)
+        pre_cond(Fund(this).owner() == msg.sender ||
+                 Fund(this).isShutDown()          ||
+                 Fund(this).orderExpired(targetExchange, orderAddresses[2])
+        )
     {
-        var (sellAsset, , sellQuantity, ) = getOrder(onExchange, id);
-        require(Asset(sellAsset).transferFrom(msg.sender, this, sellQuantity));
-        require(Asset(sellAsset).approve(onExchange, sellQuantity));
-        success = CentralizedExchangeBridge(onExchange).cancelOrder(id);
-        OrderUpdated(id);
+        Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+
+        var (giveAsset, , giveQuantity,) = getOrder(targetExchange, uint(identifier));
+        require(Asset(giveAsset).transferFrom(msg.sender, this, giveQuantity));
+        require(Asset(giveAsset).approve(targetExchange, giveQuantity));
+        require(CentralizedExchangeBridge(targetExchange).cancelOrder(uint(identifier)));
+        emit OrderUpdated(targetExchange, uint(identifier));
     }
 
-    // VIEW METHODS
+    // HELPER METHODS
 
-    function isApproveOnly()
-        constant
-        returns (bool)
+    /// @dev needed to avoid stack too deep error
+    function makeOrderPermitted(
+        uint giveQuantity,
+        address giveAsset,
+        uint getQuantity,
+        address getAsset
+    )
+        internal
+        view
+        returns (bool) 
     {
-        return approveOnly;
-    }
-
-    function getLastOrderId(address onExchange)
-        constant
-        returns (uint)
-    {
-        return CentralizedExchangeBridge(onExchange).getLastOrderId();
-    }
-
-    function isActive(address onExchange, uint id)
-        constant
-        returns (bool)
-    {
-        return CentralizedExchangeBridge(onExchange).isActive(id);
-    }
-
-    function getOwner(address onExchange, uint id)
-        constant
-        returns (address)
-    {
-        return CentralizedExchangeBridge(onExchange).getOwner(id);
-    }
-
-    function getOrder(address onExchange, uint id)
-        constant
-        returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = CentralizedExchangeBridge(onExchange).getOrder(id);
-        return (
-            sellAsset,
-            buyAsset,
-            sellQuantity,
-            buyQuantity
+        require(getAsset != address(this) && giveAsset != address(this));
+        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(giveAsset, getAsset);
+        require(isRecent);
+        uint orderPrice = pricefeed.getOrderPriceInfo(
+            giveAsset,
+            getAsset,
+            giveQuantity,
+            getQuantity
+        );
+        return(
+            riskmgmt.isMakePermitted(
+                orderPrice,
+                referencePrice,
+                giveAsset,
+                getAsset,
+                giveQuantity,
+                getQuantity
+            )
         );
     }
 
-    function getTimestamp(address onExchange, uint id)
-        constant
-        returns (uint)
-    {
-        var (, , , , , , timestamp) = CentralizedExchangeBridge(onExchange).orders(id);
-        return timestamp;
-    }
+    // VIEW FUNCTIONS
 
+    function getOrder(
+        address targetExchange,
+        uint id
+    ) 
+        view
+        returns (
+            address giveAsset, address getAsset,
+            uint giveQuantity, uint getQuantity
+        )
+    {
+        (
+            giveQuantity,
+            giveAsset,
+            getQuantity,
+            getAsset
+        ) = CentralizedExchangeBridge(targetExchange).getOrder(id);
+    }
 }

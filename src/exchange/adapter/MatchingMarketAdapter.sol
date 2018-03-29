@@ -15,14 +15,13 @@ contract MatchingMarketAdapter is DSMath, DBC {
 
     //  METHODS
 
-    // Responsibilities of makeOrder are as follows:
+    // Responsibilities of makeOrder are:
     // - check price recent
     // - check risk management passes
     // - approve funds to be traded (if necessary)
     // - make order on the exchange
     // - check order was made (if possible)
     // - place asset in ownedAssets if not already tracked
-    // TODO: add order tracking for open orders (?)
     /// @notice Makes an order on the selected exchange
     /// @dev get/give is from maker's perspective
     /// @dev These orders are not expected to settle immediately
@@ -72,7 +71,6 @@ contract MatchingMarketAdapter is DSMath, DBC {
     // - take order from the exchange
     // - check order was taken (if possible)
     // - place asset in ownedAssets if not already tracked
-    // TODO: add concept of expiration back to orders(?)
     /// @notice Takes an active order on the selected exchange
     /// @dev These orders are expected to settle immediately
     /// @dev Get/give is from taker's perspective
