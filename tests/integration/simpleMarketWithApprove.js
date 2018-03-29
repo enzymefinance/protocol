@@ -30,6 +30,10 @@ let trade1;
 let version;
 let deployed;
 
+const makeOrderSignature = api.util.abiSignature('makeOrder', [
+  'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+]).slice(0,10);
+
 // mock data
 const offeredValue = new BigNumber(10 ** 21);
 const wantedShares = new BigNumber(10 ** 21);
@@ -54,9 +58,9 @@ test.before(async () => {
     {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
       simpleMarketWithApprove.address,
-      simpleAdapterWithApprove.address,
+      deployed.MatchingMarketAdapter.address,
       true,
-      []
+      [ makeOrderSignature ]
     ]
   );
   const [r, s, v] = await getSignatureParameters(manager);
@@ -120,15 +124,14 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     await updateCanonicalPriceFeed(deployed);
-    await fund.instance.makeOrder.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    await fund.instance.callOnExchange.postTransaction(
+      {from: manager, gas: config.gas},
       [
-        0,
-        mlnToken.address,
-        ethToken.address,
-        trade1.sellQuantity,
-        trade1.buyQuantity,
-      ],
+        0, makeOrderSignature,
+        ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+        '0x0', 0, '0x0', '0x0'
+      ]
     );
     const post = await getAllBalances(deployed, accounts, fund);
     const fundsApproved = await mlnToken.instance.allowance.call({}, [
