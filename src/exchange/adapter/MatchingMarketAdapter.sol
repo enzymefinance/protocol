@@ -10,6 +10,9 @@ import "ds-math/math.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
 contract MatchingMarketAdapter is DSMath, DBC {
+
+    event OrderUpdated(address exchange, uint orderId);
+
     //  METHODS
 
     // Responsibilities of makeOrder are as follows:
@@ -20,7 +23,13 @@ contract MatchingMarketAdapter is DSMath, DBC {
     // - check order was made (if possible)
     // - place asset in ownedAssets if not already tracked
     // TODO: add order tracking for open orders (?)
+    /// @notice Makes an order on the selected exchange
     /// @dev get/give is from maker's perspective
+    /// @dev These orders are not expected to settle immediately
+    /// @param orderAddresses [2] Asset to be sold (giveAsset)
+    /// @param orderAddresses [3] Asset to be bought (getAsset)
+    /// @param orderValues [0] Quantity of giveAsset to be sold
+    /// @param orderValues [1] Quantity of getAsset to be bought
     function makeOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -30,22 +39,28 @@ contract MatchingMarketAdapter is DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(!Fund(this).isShutDown());
         require(Fund(this).owner() == msg.sender);
+        require(!Fund(this).isShutDown());
+
         ERC20 giveAsset = ERC20(orderAddresses[2]);
         ERC20 getAsset = ERC20(orderAddresses[3]);
         uint giveQuantity = orderValues[0];
         uint getQuantity = orderValues[1];
+
         require(makeOrderPermitted(giveQuantity, giveAsset, getQuantity, getAsset));
         require(giveAsset.approve(targetExchange, giveQuantity));
-        uint id = MatchingMarket(targetExchange).offer(giveQuantity, giveAsset, getQuantity, getAsset);
-        Fund(this).addOpenMakeOrder(targetExchange, giveAsset, id);
-        require(id != 0);   // defines success in MatchingMarket
+
+        uint orderId = MatchingMarket(targetExchange).offer(giveQuantity, giveAsset, getQuantity, getAsset);
+
+        require(orderId != 0);   // defines success in MatchingMarket
         require(
             Fund(this).isInAssetList(getAsset) ||
             Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
         );
+
+        Fund(this).addOpenMakeOrder(targetExchange, giveAsset, orderId);
         Fund(this).addAssetToOwnedAssets(getAsset);
+        OrderUpdated(targetExchange, uint(orderId));
     }
 
     // Responsibilities of takeOrder are:
@@ -58,7 +73,11 @@ contract MatchingMarketAdapter is DSMath, DBC {
     // - check order was taken (if possible)
     // - place asset in ownedAssets if not already tracked
     // TODO: add concept of expiration back to orders(?)
-    /// @dev get/give is from taker's perspective
+    /// @notice Takes an active order on the selected exchange
+    /// @dev These orders are expected to settle immediately
+    /// @dev Get/give is from taker's perspective
+    /// @param identifier Active order id
+    /// @param orderValues [1] Buy quantity of what others are selling on selected Exchange
     function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -72,30 +91,39 @@ contract MatchingMarketAdapter is DSMath, DBC {
         require(!Fund(this).isShutDown());
         var (pricefeed,,) = Fund(this).modules();
         uint getQuantity = orderValues[1];
-
         var (
             maxGetQuantity,
             getAsset,
             maxGiveQuantity,
             giveAsset
         ) = MatchingMarket(targetExchange).getOffer(uint(identifier));
-        if(address(getAsset) == address(giveAsset)) throw;
 
         require(giveAsset != address(this) && getAsset != address(this));
-        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset)); // TODO: throws?
-        //// require(Fund(this).isInAssetList(sellAsset) || ownedAssets.length < MAX_FUND_ASSETS); // Limit for max ownable assets by the fund reached
-        // require(getQuantity <= maxGetQuantity);
+        require(address(getAsset) != address(giveAsset));
+        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
+        require(getQuantity <= maxGetQuantity);
+
         uint spendQuantity = mul(getQuantity, maxGiveQuantity) / maxGetQuantity;
         require(giveAsset.approve(targetExchange, spendQuantity));
         require(takeOrderPermitted(spendQuantity, giveAsset, getQuantity, getAsset));
         require(MatchingMarket(targetExchange).buy(uint(identifier), getQuantity));
-        // require(
-        //     Fund(this).isInAssetList(getAsset) ||
-        //     Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
-        // );
-        // Fund(this).addAssetToOwnedAssets(getAsset);
+        require(
+            Fund(this).isInAssetList(getAsset) ||
+            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+        );
+
+        Fund(this).addAssetToOwnedAssets(getAsset);
+        OrderUpdated(targetExchange, uint(identifier));
     }
 
+    // responsibilities of cancelOrder are:
+    // - check sender is this contract or owner, or that order expired
+    // - remove order from tracking array
+    // - cancel order on exchange
+    /// @notice Cancels orders that were not expected to settle immediately
+    /// @param targetExchange Address of the exchange
+    /// @param orderAddresses [2] Asset for which we want to cancel an order
+    /// @param identifier Order ID on the exchange
     function cancelOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -110,10 +138,12 @@ contract MatchingMarketAdapter is DSMath, DBC {
                  Fund(this).orderExpired(targetExchange, orderAddresses[2])
         )
     {
+        require(uint(identifier) != 0);
         Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
+        emit OrderUpdated(targetExchange, uint(identifier));
     }
 
     // VIEW METHODS
@@ -131,6 +161,7 @@ contract MatchingMarketAdapter is DSMath, DBC {
     {
         require(getAsset != address(this) && giveAsset != address(this));
         var (pricefeed, , riskmgmt) = Fund(this).modules();
+        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(giveAsset, getAsset);
         require(isRecent);
         uint orderPrice = pricefeed.getOrderPriceInfo(

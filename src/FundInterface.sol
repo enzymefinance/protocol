@@ -31,10 +31,6 @@ interface FundInterface {
     function enableRedemption(address[] ofAssets) external;
     function disableRedemption(address[] ofAssets) external;
     function shutDown() external;
-    // Managing by Manager
-    function makeOrder(uint exchangeId, address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external;
-    function takeOrder(uint exchangeId, uint id, uint quantity) external;
-    function cancelOrder(uint exchangeId, address ofAsset) external;
 
     // PUBLIC METHODS
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets) public returns (bool success);

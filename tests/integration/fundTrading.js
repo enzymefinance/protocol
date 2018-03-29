@@ -671,7 +671,7 @@ test.serial("manager makes an order and cancels it", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const exchangePreEthToken = Number(
     await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
-  );
+   );
 
   txId = await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
