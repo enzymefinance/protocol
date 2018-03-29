@@ -62,9 +62,19 @@ test.before(async () => {
     deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
       deployed.SimpleMarket.address,
-      deployed.SimpleAdapter.address,
+      deployed.MatchingMarketAdapter.address,
       true,
-      []
+      [
+        api.util.abiSignature('makeOrder', [
+          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+        ]).slice(0,10),
+        api.util.abiSignature('takeOrder', [
+          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+        ]).slice(0,10),
+        api.util.abiSignature('cancelOrder', [
+          'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+        ]).slice(0,10),
+      ]
     ]
   );
   await governanceAction(
@@ -284,39 +294,16 @@ exchangeIndexes.forEach(i => {
         exchanges[i].address,
       ]);
       await updateCanonicalPriceFeed(deployed);
-      console.log(fund.address)
-      console.log(deployed.CanonicalPriceFeed.address)
-      console.log(deployed.MatchingMarket.address)
-      console.log(deployed.MatchingMarketAdapter.address)
-      console.log(mlnToken.address)
-      console.log(ethToken.address)
-      // TODO: whitelist pairs on matching market in deploy script
-      if (i == 1) {
-        console.log('here')
-        txId = await fund.instance.callOnExchange.postTransaction(
-          {from: manager, gas: config.gas},
-          [
-            1, '0x9cb4d904',
-            ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
-            [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
-            '0x0', 0, '0x0', '0x0'
-          ]
-        );
-      } else {
-        txId = await fund.instance.makeOrder.postTransaction(
-          { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-          [
-            i,
-            mlnToken.address,
-            ethToken.address,
-            trade1.sellQuantity,
-            trade1.buyQuantity,
-          ],
-        );
-      }
+      txId = await fund.instance.callOnExchange.postTransaction(
+        {from: manager, gas: config.gas},
+        [
+          i, '0x9cb4d904',
+          ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+          [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+          '0x0', 0, '0x0', '0x0'
+        ]
+      );
       const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      console.log(`GAS USED: ${gasUsed}`);
-      if(gasUsed == config.gas) process.exit();
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = await mlnToken.instance.balanceOf.call({}, [
         exchanges[i].address,
@@ -477,28 +464,16 @@ exchangeIndexes.forEach(i => {
         await ethToken.instance.balanceOf.call({}, [exchanges[i].address]),
       );
       const orderId = await exchanges[i].instance.last_offer_id.call({}, []);
-      console.log(`ORDER ID: ${orderId}`)
-      if (i == 1) {
-        console.log('here')
-        txId = await fund.instance.callOnExchange.postTransaction(
-          {from: manager, gas: config.gas},
-          [
-            1, '0xbeb7f126',
-            ['0x0', '0x0', '0x0', '0x0', '0x0'],
-            [0, trade2.sellQuantity, 0, 0, 0, 0],
-            `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
-          ]
-        );
-        console.log(`ORDER ID ENCODED: ${api.util.hexToBytes(Number(orderId).toString(16).padStart(64, '0'))}`)
-      } else {
-        txId = await fund.instance.takeOrder.postTransaction(
-          { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-          [i, orderId, trade2.sellQuantity],
-        );
-      }
+      txId = await fund.instance.callOnExchange.postTransaction(
+        {from: manager, gas: config.gas},
+        [
+          i, '0xbeb7f126',
+          ['0x0', '0x0', '0x0', '0x0', '0x0'],
+          [0, trade2.sellQuantity, 0, 0, 0, 0],
+          `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
+        ]
+      );
       const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-      console.log(`GAS USED TAKE HERE: ${gasUsed}`)
-      if(gasUsed == config.gas) process.exit()
       runningGasTotal = runningGasTotal.plus(gasUsed);
       const exchangePostMln = Number(
         await mlnToken.instance.balanceOf.call({}, [exchanges[i].address]),
@@ -681,28 +656,37 @@ test.serial(
 );
 
 test.serial("manager makes an order and cancels it", async t => {
-  await fund.instance.makeOrder.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+  txId = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
     [
-      0,
-      mlnToken.address,
-      ethToken.address,
-      trade1.sellQuantity,
-      trade1.buyQuantity,
-    ],
+      0, '0x9cb4d904',
+      ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+      '0x0', 0, '0x0', '0x0'
+    ]
   );
+  const offerNumber = await deployed.SimpleMarket.instance.last_offer_id.call();
+  let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+
   const pre = await getAllBalances(deployed, accounts, fund);
   const exchangePreEthToken = Number(
     await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
   );
-  txId = await fund.instance.cancelOrder.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [0, mlnToken.address],
+
+  txId = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
+    [
+      0, '0xf58ad4c4',
+      ['0x0', '0x0', '0x0', '0x0', '0x0'],
+      [0, 0, 0, 0, 0, 0],
+      `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
+    ]
   );
+
   // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
   // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);
   // const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
-  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+  gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const exchangePostEthToken = Number(
     await mlnToken.instance.balanceOf.call({}, [exchanges[0].address]),
