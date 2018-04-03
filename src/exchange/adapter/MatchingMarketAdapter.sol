@@ -102,8 +102,8 @@ contract MatchingMarketAdapter is DSMath, DBC {
         require(getQuantity <= maxGetQuantity);
 
         uint spendQuantity = mul(getQuantity, maxGiveQuantity) / maxGetQuantity;
-        require(giveAsset.approve(targetExchange, spendQuantity));
         require(takeOrderPermitted(spendQuantity, giveAsset, getQuantity, getAsset));
+        require(giveAsset.approve(targetExchange, spendQuantity));
         require(MatchingMarket(targetExchange).buy(uint(identifier), getQuantity));
         require(
             Fund(this).isInAssetList(getAsset) ||
