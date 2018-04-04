@@ -76,6 +76,7 @@
     "solium": "^1.1.0"
   },
   "dependencies": {
+    "0x.js": "^0.35.0",
     "@parity/api": "^2.1.20",
     "bignumber.js": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
