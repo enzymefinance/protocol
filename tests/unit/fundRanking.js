@@ -1,7 +1,7 @@
 import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
-import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../utils/lib/signing";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../utils/config/environment.js");
@@ -41,7 +41,7 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   // Fund Setup 1
-  let [r, s, v] = await getSignatureParameters(manager);
+  let [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -59,7 +59,7 @@ test.beforeEach(async () => {
   );
 
   // Fund Setup 2
-  [r, s, v] = await getSignatureParameters(deployer);
+  [r, s, v] = await getTermsSignatureParameters(deployer);
   await version.instance.setupFund.postTransaction(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [

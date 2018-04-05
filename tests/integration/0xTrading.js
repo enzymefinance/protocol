@@ -1,12 +1,12 @@
 import test from "ava";
+import { ZeroEx } from '0x.js';
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/getSignatureParameters";
+import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/signing";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
-import { ZeroEx } from '0x.js';
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");

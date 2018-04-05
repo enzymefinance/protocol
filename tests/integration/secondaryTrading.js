@@ -1,7 +1,7 @@
 import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
-import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../utils/lib/signing";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -51,7 +51,7 @@ test.before(async () => {
   );
 
 
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [

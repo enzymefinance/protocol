@@ -3,7 +3,7 @@ import api from "../../utils/lib/api";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
-import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../utils/lib/signing";
 import governanceAction from "../../utils/lib/governanceAction";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
@@ -90,7 +90,7 @@ test.before(async () => {
     ]
   );
 
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [

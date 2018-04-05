@@ -4,7 +4,7 @@ import {retrieveContract} from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import getSignatureParameters from "../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../utils/lib/signing";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
@@ -53,7 +53,7 @@ test.beforeEach(() => {
 const fundName = "MelonPortfolio";
 test.serial("can set up new fund", async t => {
   const preManagerEth = new BigNumber(await api.eth.getBalance(manager));
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   txId = await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -164,7 +164,7 @@ test.serial.skip('direct transfer of a token to the Fund is rejected', async t =
 test.serial.skip(
   "a new fund with a name used before cannot be created",
   async t => {
-    const [r, s, v] = await getSignatureParameters(deployer);
+    const [r, s, v] = await getTermsSignatureParameters(deployer);
     const preFundId = await version.instance.getLastFundId.call({}, []);
     txId = await version.instance.setupFund.postTransaction(
       { from: deployer, gas: config.gas, gasPrice: config.gasPrice },

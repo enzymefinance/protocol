@@ -1,7 +1,7 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import getSignatureParameters from "../../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../../utils/lib/signing";
 import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
 
 const environment = "development";
@@ -20,7 +20,7 @@ test.before(async () => {
   [manager, investor] = accounts;
   compliance = await deployContract("compliance/OnlyManager");
   version = deployed.Version;
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction({from: manager, gas: 6000000}, [
     'Some Fund',
     deployed.MlnToken.address,
