@@ -23,6 +23,8 @@ contract OperatorStaking is DBC, StakeBank {
     uint public minimumStake;
     uint public numOperators;
 
+    // TODO: consider renaming "operator" depending on how this is implemented 
+    //  (i.e. is pricefeed staking itself?)
     function OperatorStaking(
         AssetInterface _stakingToken,
         uint _minimumStake,

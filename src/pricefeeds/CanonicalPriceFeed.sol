@@ -3,18 +3,17 @@ pragma solidity ^0.4.19;
 import "./CanonicalRegistrar.sol";
 import "./PriceFeedInterface.sol";
 import "./SimplePriceFeed.sol";
+import "../system/OperatorStaking.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
+contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
 
-    mapping(address => bool) public isWhitelisted;
-    address[] public whitelist;
     uint public VALIDITY;
     uint public INTERVAL;
     uint public minimumPriceCount = 1;
@@ -34,8 +33,9 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @param quoteAssetBreakOut Break-out address for the quote asset
     /// @param quoteAssetStandards EIP standards quote asset adheres to
     /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
-    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
-    /// @param validity Number of seconds that datafeed update information is valid for
+    // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    // /// @param validity Number of seconds that datafeed update information is valid for
+    /// @param ofGovernance Address of contract governing the Canonical PriceFeed
     function CanonicalPriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
@@ -47,12 +47,15 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         address quoteAssetBreakOut,
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
-        uint interval,
-        uint validity,
+        uint[] updateInfo, // interval validity
+        uint[] stakingInfo, // minStake, numOperators
         address ofGovernance
-    ) SimplePriceFeed(this, ofQuoteAsset, 0x0) {
+    )
+        OperatorStaking(AssetInterface(ofQuoteAsset), stakingInfo[0], stakingInfo[1])
+        SimplePriceFeed(this, ofQuoteAsset, 0x0)
+    {
         registerAsset(
-            QUOTE_ASSET,
+            ofQuoteAsset,
             quoteAssetName,
             quoteAssetSymbol,
             quoteAssetDecimals,
@@ -63,8 +66,8 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             quoteAssetStandards,
             quoteAssetFunctionSignatures
         );
-        INTERVAL = interval;
-        VALIDITY = validity;
+        INTERVAL = updateInfo[0];
+        VALIDITY = updateInfo[1];
         setOwner(ofGovernance);
     }
 
@@ -74,32 +77,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     function update() external { revert(); }
 
     // PUBLIC METHODS
-
-    // WHITELISTING
-
-    function addFeedToWhitelist(address ofFeed)
-        auth
-    {
-        require(!isWhitelisted[ofFeed]);
-        isWhitelisted[ofFeed] = true;
-        whitelist.push(ofFeed);
-    }
-
-    // TODO: check gas usage (what is the max size of whitelist?); maybe can just run update() with array of feeds as argument instead?
-    /// @param ofFeed Address of the SimplePriceFeed to be removed
-    function removeFeedFromWhitelist(address ofFeed)
-        auth
-        pre_cond(isWhitelisted[ofFeed])
-    {
-        uint feedIndex = getFeedWhitelistIndex(ofFeed);
-        require(whitelist[feedIndex] == ofFeed);
-        delete isWhitelisted[ofFeed];
-        delete whitelist[feedIndex];
-        for (uint i = feedIndex; i < whitelist.length-1; i++) { // remove gap in the array
-            whitelist[i] = whitelist[i+1];
-        }
-        whitelist.length--;
-    }
 
     // AGGREGATION
 
@@ -115,11 +92,12 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     function collectAndUpdate(address[] ofAssets)
         public
     {
+        address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
-            uint[] memory assetPrices = new uint[](whitelist.length);
-            for (uint j = 0; j < whitelist.length; j++) {
-                SimplePriceFeed feed = SimplePriceFeed(whitelist[j]);
+            uint[] memory assetPrices = new uint[](operators.length);
+            for (uint j = 0; j < operators.length; j++) {
+                SimplePriceFeed feed = SimplePriceFeed(operators[j]);
                 var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
@@ -182,14 +160,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     function getInterval() view returns (uint) { return INTERVAL; }
     function getValidity() view returns (uint) { return VALIDITY; }
     function getLastUpdateId() view returns (uint) { return updateId; }
-
-    function getFeedWhitelistIndex(address ofFeed) view returns (uint) {
-        require(isWhitelisted[ofFeed]);
-        for (uint i; i < whitelist.length; i++) {
-            if (whitelist[i] == ofFeed) { return i; }
-        }
-        revert(); // not found
-    }
 
     // PRICES
 
@@ -316,6 +286,4 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
-
-    function getWhitelist() view returns(address[]) { return whitelist; }
 }

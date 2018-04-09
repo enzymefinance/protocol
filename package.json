@@ -13,7 +13,7 @@
     "oyente": "oyente -s src/Fund.sol",
     "devchain": "bash utils/chain/devchain.sh",
     "test": "npm run test:ds-test && npm run test:ava",
-    "test:ava": "CHAIN_ENV=development ava --serial",
+    "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
     "test:ds-test": "export DAPP_SKIP_BUILD=1 DAPP_NO_ETHRUN=1 && dapp test",
     "compile": "export SOLC_FLAGS='--optimize --optimize-runs=0' && make all",
