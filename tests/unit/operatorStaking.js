@@ -148,6 +148,9 @@ test("staker unstakes fully, and is no longer an operator", async t => {
 });
 
 test("ranking is correct with multiple stakers", async t => {
+  // "amounts": amount used by $action
+  // "final": expected staked amount after applying $action
+  // "order": order of stakers output after applying $action (from least to most staked)
   const scenario = [
     {
       action:  'stake',
@@ -191,7 +194,7 @@ test("ranking is correct with multiple stakers", async t => {
         {}, [staker]
       );
  
-      console.log(`Staker ${iStaker} in step ${iStep} total ${Number(total)} of ${step.final[iStaker]}`)
+      // console.log(`Staker ${iStaker} in step ${iStep} total ${Number(total)} of ${step.final[iStaker]}`)
       t.is(Number(total), step.final[iStaker]);
     };
     const [rawStakers, rawAmounts] = await t.context.staking.instance.getStakersAndAmounts.call();
@@ -200,6 +203,15 @@ test("ranking is correct with multiple stakers", async t => {
     const sortedFinal = step.order.map(item => step.final[item]);
     const sortedStakers = step.order.map(item => stakers[item]);
 
+    for (let i = 0; i < sortedStakers.length; i++) {
+      const currentOperator = sortedStakers[sortedStakers.length - (i+1)];
+      const isOperator = await t.context.staking.instance.isOperator.call({}, [currentOperator]);
+      if (i < 4) { // only top 4 stakers should be operator (max defined at contract deploy)
+        t.true(isOperator);
+      } else {
+        t.false(isOperator);
+      }
+    }
     t.is(outAmounts.join(', '), sortedFinal.join(', '));
     t.is(outStakers.join(', '), sortedStakers.join(', '));
   };
