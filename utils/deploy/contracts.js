@@ -240,8 +240,8 @@ async function deployEnvironment(environment) {
       mockAddress,
       [],
       [],
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
+      [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
+      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       deployed.Governance.address
     ]);
 
@@ -283,9 +283,6 @@ async function deployEnvironment(environment) {
 
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
-
-    // whitelist simple feed
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'addFeedToWhitelist', [deployed.SimplePriceFeed.address]);
 
     // whitelist exchange
     await governanceAction(

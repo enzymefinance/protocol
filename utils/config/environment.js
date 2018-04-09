@@ -17,7 +17,7 @@ module.exports = {
       },
       governance: {
         authority: '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B'
-      }
+      },
     },
   },
   kovan: {
@@ -56,6 +56,10 @@ module.exports = {
       fund: {
         managementFee: 10 ** 16,
         performanceFee: 10
+      },
+      staking: {
+        minimumAmount: 1000000,
+        numOperators: 4
       }
     },
   },
