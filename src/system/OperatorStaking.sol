@@ -121,7 +121,7 @@ contract OperatorStaking is DBC, StakeBank {
                     break;
                 } else if (i == stakeRanking.length - 1) { // end of array
                     stakeRanking.length++;
-                    stakeRanking[i] = newItem;
+                    stakeRanking[i+1] = newItem;
                     break;
                 } else {
                     continue;
