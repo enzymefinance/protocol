@@ -7,7 +7,7 @@ import "./dependencies/Owned.sol";
 import "./compliance/ComplianceInterface.sol";
 import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
-import "./exchange/ExchangeInterface.sol";
+import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
 import "ds-weth/weth9.sol";
 import "ds-math/math.sol";
@@ -681,7 +681,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = ExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            var (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
