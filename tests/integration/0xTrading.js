@@ -129,77 +129,71 @@ test.serial("investor receives initial tokens for testing", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial(
-  "fund receives MLN from an investment",
-  async t => {
-    const pre = await getAllBalances(deployed, accounts, fund);
-    await mlnToken.instance.approve.postTransaction(
-      { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-      [fund.address, offeredValue],
-    );
-    await fund.instance.requestInvestment.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [offeredValue, wantedShares, mlnToken.address],
-    );
-    await updateCanonicalPriceFeed(deployed);
-    await updateCanonicalPriceFeed(deployed);
-    const requestId = await fund.instance.getLastRequestId.call({}, []);
-    await fund.instance.executeRequest.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [requestId],
-    );
-    const post = await getAllBalances(deployed, accounts, fund);
+test.serial("fund receives MLN from an investment", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  await mlnToken.instance.approve.postTransaction(
+    { from: investor, gasPrice: config.gasPrice, gas: config.gas },
+    [fund.address, offeredValue],
+  );
+  await fund.instance.requestInvestment.postTransaction(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
+    [offeredValue, wantedShares, mlnToken.address],
+  );
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  const requestId = await fund.instance.getLastRequestId.call({}, []);
+  await fund.instance.executeRequest.postTransaction(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
+    [requestId],
+  );
+  const post = await getAllBalances(deployed, accounts, fund);
 
-    t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
-    t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
-    t.deepEqual(
-      post.investor.MlnToken,
-      pre.investor.MlnToken.minus(offeredValue),
-    );
-    t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-    t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-    t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-    t.deepEqual(post.manager.ether, pre.manager.ether);
-    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(offeredValue));
-    t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
-    t.deepEqual(post.fund.ether, pre.fund.ether);
-  },
-);
+  t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
+  t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
+  t.deepEqual(
+    post.investor.MlnToken,
+    pre.investor.MlnToken.minus(offeredValue),
+  );
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(post.manager.ether, pre.manager.ether);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(offeredValue));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
 
-test.serial(
-  "third party makes and validates an off-chain order",
-  async t => {
-    const makerAddress = deployer.toLowerCase();
-    order = {
-        maker: makerAddress,
-        taker: ZeroEx.NULL_ADDRESS,
-        feeRecipient: ZeroEx.NULL_ADDRESS,
-        makerTokenAddress: ethToken.address.toLowerCase(),
-        takerTokenAddress: mlnToken.address.toLowerCase(),
-        exchangeContractAddress: deployed.ZeroExExchange.address.toLowerCase(),
-        salt: new BigNumber(555),
-        makerFee: new BigNumber(0),
-        takerFee: new BigNumber(0),
-        makerTokenAmount: new BigNumber(trade1.sellQuantity),
-        takerTokenAmount: new BigNumber(trade1.buyQuantity),
-        expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
-    };
-    await ethToken.instance.approve.postTransaction(
-      {from: deployer},
-      [deployed.TokenTransferProxy.address, trade1.sellQuantity]
-    );
-    const orderHash = ZeroEx.getOrderHashHex(order);
-    const [r, s, v] = await getSignatureParameters(makerAddress, orderHash)
-    const ecSignature = { v, r, s };
-    signedOrder = {
-        ...order,
-        ecSignature
-    };
-    const signatureValid = await ZeroEx.isValidSignature(orderHash, ecSignature, makerAddress);
+test.serial("third party makes and validates an off-chain order", async t => {
+  const makerAddress = deployer.toLowerCase();
+  order = {
+      maker: makerAddress,
+      taker: ZeroEx.NULL_ADDRESS,
+      feeRecipient: ZeroEx.NULL_ADDRESS,
+      makerTokenAddress: ethToken.address.toLowerCase(),
+      takerTokenAddress: mlnToken.address.toLowerCase(),
+      exchangeContractAddress: deployed.ZeroExExchange.address.toLowerCase(),
+      salt: new BigNumber(555),
+      makerFee: new BigNumber(0),
+      takerFee: new BigNumber(0),
+      makerTokenAmount: new BigNumber(trade1.sellQuantity),
+      takerTokenAmount: new BigNumber(trade1.buyQuantity),
+      expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
+  };
+  await ethToken.instance.approve.postTransaction(
+    {from: deployer},
+    [deployed.TokenTransferProxy.address, trade1.sellQuantity]
+  );
+  const orderHash = ZeroEx.getOrderHashHex(order);
+  const [r, s, v] = await getSignatureParameters(makerAddress, orderHash)
+  const ecSignature = { v, r, s };
+  signedOrder = {
+      ...order,
+      ecSignature
+  };
+  const signatureValid = await ZeroEx.isValidSignature(orderHash, ecSignature, makerAddress);
 
-    t.true(signatureValid);
-  }
-);
+  t.true(signatureValid);
+});
 
 test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
