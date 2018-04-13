@@ -352,7 +352,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         uint exchangeIndex,
         bytes4 method,
         address[5] orderAddresses, // maker, taker, giveAsset, getAsset, feeRecipient
-        uint[7] orderValues, // giveQuantity, getQuantity, makerFee, takerFee, timestamp, salt and fillTakerTokenAmount
+        uint[8] orderValues, // giveQuantity, getQuantity, makerFee, takerFee, timestamp, salt, fillTakerTokenAmount, and signatureMode (for dexy)
         bytes32 identifier,
         uint8 v,
         bytes32 r,

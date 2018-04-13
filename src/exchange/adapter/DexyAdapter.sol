@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 import "../thirdparty/dexy/Exchange.sol";
 import "../thirdparty/dexy/Vault.sol";
@@ -35,7 +35,7 @@ contract DexyAdapter is DSMath, DBC {
     function makeOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[6] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
@@ -89,43 +89,54 @@ contract DexyAdapter is DSMath, DBC {
     /// @dev These orders are expected to settle immediately
     /// @dev Get/give is from taker's perspective
     /// @param identifier Active order id
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [2] giveAsset (asset that is being sold by maker)
+    /// @param orderAddresses [3] getAsset (asset that is being purchased)
     /// @param orderValues [1] Buy quantity of what others are selling on selected Exchange
+    /// @param orderValues [6] Maximum amount of order to fill (in giveToken)
     function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[6] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) {
-        // require(Fund(this).owner() == msg.sender);
-        // require(!Fund(this).isShutDown());
-        // var (pricefeed,,) = Fund(this).modules();
-        // uint getQuantity = orderValues[1];
-        // var (
-        //     maxGetQuantity,
-        //     getAsset,
-        //     maxGiveQuantity,
-        //     giveAsset
-        // ) = MatchingMarket(targetExchange).getOffer(uint(identifier));
+        require(Fund(this).owner() == msg.sender);
+        require(!Fund(this).isShutDown());
 
-        // require(giveAsset != address(this) && getAsset != address(this));
-        // require(address(getAsset) != address(giveAsset));
-        // require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
-        // require(getQuantity <= maxGetQuantity);
+        ERC20 giveAsset = ERC20(orderAddresses[2]);
+        ERC20 getAsset = ERC20(orderAddresses[3]);
+        uint giveQuantity = orderValues[0];
+        uint getQuantity = orderValues[1];
 
-        // uint spendQuantity = mul(getQuantity, maxGiveQuantity) / maxGetQuantity;
-        // require(takeOrderPermitted(spendQuantity, giveAsset, getQuantity, getAsset));
-        // require(giveAsset.approve(targetExchange, spendQuantity));
-        // require(MatchingMarket(targetExchange).buy(uint(identifier), getQuantity));
-        // require(
-        //     Fund(this).isInAssetList(getAsset) ||
-        //     Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
-        // );
+        require(giveAsset != address(this) && getAsset != address(this));
+        require(address(getAsset) != address(giveAsset));
 
-        // Fund(this).addAssetToOwnedAssets(getAsset);
-        // OrderUpdated(targetExchange, uint(identifier));
+        bytes memory signature = concatenateSignature(uint8(orderValues[7]), v, r, s);
+
+        require(takeOrderPermitted(giveQuantity, giveAsset, getQuantity, getAsset));
+
+        VaultInterface vault = Exchange(targetExchange).vault();
+        if (!vault.isApproved(address(this), targetExchange)) {
+            vault.approve(targetExchange);
+        }
+        getAsset.approve(address(vault), getQuantity); // TODO: may need to change sematics of get/give asset here
+        vault.deposit(address(getAsset), getQuantity);
+        Exchange(targetExchange).trade(
+            [orderAddresses[0], giveAsset, getAsset],
+            [giveQuantity, getQuantity, orderValues[4], orderValues[5]],
+            signature, orderValues[6]
+        );
+
+        require(
+            Fund(this).isInAssetList(getAsset) ||
+            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+        );
+
+        Fund(this).addAssetToOwnedAssets(getAsset);
+        OrderUpdated(targetExchange, uint(identifier));
     }
 
     // responsibilities of cancelOrder are:
@@ -139,7 +150,7 @@ contract DexyAdapter is DSMath, DBC {
     function cancelOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[6] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
@@ -205,25 +216,55 @@ contract DexyAdapter is DSMath, DBC {
         view
         returns (bool)
     {
-        // var (pricefeed, , riskmgmt) = Fund(this).modules();
-        // var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(giveAsset, getAsset);
-        // require(isRecent);
-        // uint orderPrice = pricefeed.getOrderPriceInfo(
-        //     giveAsset,
-        //     getAsset,
-        //     giveQuantity,
-        //     getQuantity
-        // );
-        // return(
-        //     riskmgmt.isTakePermitted(
-        //         orderPrice,
-        //         referencePrice,
-        //         giveAsset,
-        //         getAsset,
-        //         giveQuantity,
-        //         getQuantity
-        //     )
-        // );
+        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(giveAsset, getAsset);
+        require(isRecent);
+        uint orderPrice = pricefeed.getOrderPriceInfo(
+            giveAsset,
+            getAsset,
+            giveQuantity,
+            getQuantity
+        );
+        return true;
+        return(
+            riskmgmt.isTakePermitted(
+                orderPrice,
+                referencePrice,
+                giveAsset,
+                getAsset,
+                giveQuantity,
+                getQuantity
+            )
+        );
+    }
+
+    function concatenateSignature(
+        uint mode,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        internal
+        // pure
+        returns (bytes)
+    {
+        bytes memory modeBytes = uint8ToBytes(uint8(mode));
+        bytes memory vBytes = uint8ToBytes(v);
+        bytes memory sig = new bytes(66);
+        uint k = 0;
+        for (uint i = 0; i < modeBytes.length; i++) sig[k++] = modeBytes[i];
+        for (i = 0; i< vBytes.length; i++) sig[k++] = vBytes[i];
+        for (i = 0; i< r.length; i++) sig[k++] = r[i];
+        for (i = 0; i< s.length; i++) sig[k++] = s[i];
+        return sig;
+    }
+
+    function uint8ToBytes(uint8 input) internal pure returns (bytes) {
+        bytes memory b = new bytes(1);
+        byte temp = byte(input);
+        b[0] = temp;
+        return b;
     }
 
     // // TODO: delete this function if possible
