@@ -197,7 +197,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
 
 test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const txidd = await fund.instance.callOnExchange.postTransaction(
+  await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
     [
       0, takeOrderSignature,

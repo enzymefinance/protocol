@@ -22,6 +22,7 @@ let investor;
 let manager;
 let mlnToken;
 let pricefeed;
+let gasPrice;
 let trade1;
 let trade2;
 let trade3;
@@ -34,17 +35,11 @@ async function getOrderHash(order, orderCreator, exchangeAddress) {
     "address Token Get", "uint Amount Get", "address Token Give", "uint Amount Give",
     "uint Expires", "uint Nonce", "address User", "address Exchange"
   ].join(""));
-  // const innerHash = await api.util.sha3([
-  //   order.getAsset, order.getQuantity, order.giveAsset, order.giveQuantity,
-  //   order.expires, order.nonce, orderCreator, exchangeAddress
-  // ].join(""));
-  // const orderHash = await api.util.sha3([hashScheme, innerHash].join(""));
-
   const innerHash =  await api.util.sha3([
     order.getAsset.substr(2),
-    Number(order.getQuantity).toString(16).padStart(64, '0'),
+    order.getQuantity.toString(16).padStart(64, '0'),
     order.giveAsset.substr(2),
-    Number(order.giveQuantity).toString(16).padStart(64, '0'),
+    order.giveQuantity.toString(16).padStart(64, '0'),
     Number(order.expires).toString(16).padStart(64, '0'),
     Number(order.nonce).toString(16).padStart(64, '0'),
     orderCreator.substr(2),
@@ -54,33 +49,39 @@ async function getOrderHash(order, orderCreator, exchangeAddress) {
     hashScheme.substr(2),
     innerHash.substr(2)
   ].join(""));
-
-  // const inter2 =  await api.util.sha3([
-  //   order.getAsset, order.getQuantity, order.giveAsset.toString(), order.giveQuantity.toString(),
-  //   order.expires, order.nonce, orderCreator, exchangeAddress
-  // ].join(""));
-  // const poss2 = await api.util.sha3([hashScheme, inter2].join(""));
-  // console.log(`POSS 2: ${poss2}`)
-
   return orderHash;
 }
 
-async function signOrder(signer, order) {
-  const orderHash = await getOrderHash(order);
-  const [r, s, v] = await getSignatureParameters(signer, orderHash);
-  const mode = Buffer(1);
-  const signature = "0x" + Buffer.concat([mode, v, r, s]).toString('hex');
+async function getOrderSignature(order, orderCreator, exchangeAddress, signer) {
+  const orderHash = await getOrderHash(order, orderCreator, exchangeAddress);
+  let [r, s, v] = await getSignatureParameters(signer, orderHash);
+  const mode = Number(1).toString(16).padStart(2, '0');
+  const fullSignature = "0x" + [
+    mode,
+    Number(v).toString(16).padStart(2, '0'),
+    r.substr(2),
+    s.substr(2)
+  ].join("");
+
+  const signatureObject = {
+    mode,
+    v,
+    r,
+    s,
+    fullSignature
+  };
+  return signatureObject;
 }
 
 // declare function signatures
 const makeOrderSignature = api.util.abiSignature('makeOrder', [
-  'address', 'address[5]', 'uint256[7]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
 ]).slice(0,10);
 const takeOrderSignature = api.util.abiSignature('takeOrder', [
-  'address', 'address[5]', 'uint256[7]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
 ]).slice(0,10);
 const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
-  'address', 'address[5]', 'uint256[7]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
 ]).slice(0,10);
 
 // mock data
@@ -112,7 +113,8 @@ test.before(async () => {
     {from: deployer}, [deployed.DexyExchange.address]
   );
   await governanceAction(
-    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    {from: deployer},
+    deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
       deployed.DexyExchange.address,
       deployed.DexyAdapter.address,
@@ -139,7 +141,9 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  gasPrice = await api.eth.gasPrice();
 
+  await updateCanonicalPriceFeed(deployed);
   const [, referencePrice] = await pricefeed.instance.getReferencePriceInfo.call(
     {}, [mlnToken.address, ethToken.address]
   );
@@ -148,8 +152,7 @@ test.before(async () => {
     giveAsset: ethToken.address,
     getAsset: mlnToken.address,
     giveQuantity: sellQuantity1,
-    getQuantity: sellQuantity1,
-    // getQuantity: referencePrice.dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
+    getQuantity: referencePrice.dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
     expires: Math.floor((Date.now() / 1000) + 50000),
     nonce: 10
   };
@@ -158,7 +161,7 @@ test.before(async () => {
     getAsset: mlnToken.address,
     giveQuantity: sellQuantity1,
     getQuantity: referencePrice.dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
-    expires: Math.floor((Date.now() / 1000) + 5000),
+    expires: Math.floor((Date.now() / 1000) + 50000),
     nonce: 11
   };
   trade3 = {
@@ -166,14 +169,14 @@ test.before(async () => {
     getAsset: ethToken.address,
     giveQuantity: sellQuantity1,
     getQuantity: referencePrice.dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
-    expires: Math.floor((Date.now() / 1000) + 5000),
+    expires: Math.floor((Date.now() / 1000) + 50000),
     nonce: 12
   };
 });
 
-test.beforeEach(async () => {
-  await updateCanonicalPriceFeed(deployed);
-});
+// test.beforeEach(async () => {
+//   await updateCanonicalPriceFeed(deployed);
+// });
 
 const initialTokenAmount = new BigNumber(10 ** 22);
 test.serial("investor receives initial tokens for testing", async t => {
@@ -233,43 +236,114 @@ test.serial("fund receives MLN from an investment", async t => {
 });
 
 test.serial("third party makes an on-chain order", async t => {
-  await deployed.DexyVault.instance.approve.postTransaction(
+  const pre = await getAllBalances(deployed, accounts, fund);
+  let txid = await deployed.DexyVault.instance.approve.postTransaction(
     {from: deployer}, [deployed.DexyExchange.address]
   );
-  await ethToken.instance.approve.postTransaction(
+  let runningGasTotal = new BigNumber((await api.eth.getTransactionReceipt(txid)).gasUsed);
+  txid = await ethToken.instance.approve.postTransaction(
     {from: deployer}, [deployed.DexyVault.address, trade1.giveQuantity]
   );
-  await deployed.DexyVault.instance.deposit.postTransaction(
+  runningGasTotal = runningGasTotal.plus((await api.eth.getTransactionReceipt(txid)).gasUsed);
+  txid = await deployed.DexyVault.instance.deposit.postTransaction(
     {from: deployer}, [ethToken.address, trade1.giveQuantity]
   );
-  await deployed.DexyExchange.instance.order.postTransaction(
+  runningGasTotal = runningGasTotal.plus((await api.eth.getTransactionReceipt(txid)).gasUsed);
+  txid = await deployed.DexyExchange.instance.order.postTransaction(
     {from: deployer},
     [
       [trade1.giveAsset, trade1.getAsset],
       [trade1.giveQuantity, trade1.getQuantity, trade1.expires, trade1.nonce]
     ]
   );
+  runningGasTotal = runningGasTotal.plus((await api.eth.getTransactionReceipt(txid)).gasUsed);
+  console.log(`GAS TOTAL:   ${runningGasTotal}`)
   const orderHash = await getOrderHash(trade1, deployer, deployed.DexyExchange.address);
   const isOrdered = await deployed.DexyExchange.instance.isOrdered.call({}, [deployer, orderHash]);
+  const post = await getAllBalances(deployed, accounts, fund);
 
   t.true(isOrdered);
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.minus(trade1.giveQuantity));
+  t.deepEqual(
+    post.deployer.ether,
+    pre.deployer.ether.minus(runningGasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
 test.serial("manager takes on-chain order through dexy adapter", async t => {
-});
-
-test.serial.skip("third party makes an off-chain order", async t => {
-  await ethToken.instance.approve.postTransaction({from: deployer}, [trade1.giveQuantity]);
-  await deployed.vault.instance.deposit.postTransaction(
-    {from: deployer}, [ethToken.address, trade1.giveQuantity]
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const sig = await getOrderSignature(trade1, deployer, deployed.DexyExchange.address, deployer);
+  const txid = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
+    [
+      0, takeOrderSignature,
+      [deployer, "0x0", trade1.giveAsset, trade1.getAsset, "0x0"],
+      [
+        trade1.giveQuantity, trade1.getQuantity, 0, 0,
+        trade1.expires, trade1.nonce, trade1.giveQuantity, sig.mode
+      ],
+      "0x0", sig.v, sig.r, sig.s
+    ]
   );
-  const orderHash = await getOrderHash(trade1, deployer, deployed.DexyExchange.address);
-  const isOrdered = await deployed.DexyExchange.instance.isOrdered.call(deployer, orderHash);
+  const gasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  const post = await getAllBalances(deployed, accounts, fund);
 
-  t.true(isOrdered);
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken);
+  t.deepEqual(post.deployer.ether, pre.deployer.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(
+    post.manager.ether,
+    pre.manager.ether.minus(gasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.getQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial.skip("manager takes off-chain order through dexy adapter", async t => {
+test.serial("third party makes off-chain order, and manager takes it", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  let txid = await deployed.DexyVault.instance.approve.postTransaction(
+    {from: deployer}, [deployed.DexyExchange.address]
+  );
+  await ethToken.instance.approve.postTransaction(
+    {from: deployer},
+    [deployed.DexyVault.address, trade2.giveQuantity]
+  );
+  await deployed.DexyVault.instance.deposit.postTransaction(
+    {from: deployer}, [ethToken.address, trade2.giveQuantity]
+  );
+  const sig = await getOrderSignature(trade2, deployer, deployed.DexyExchange.address, deployer);
+  console.log(sig)
+  txid = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
+    [
+      0, takeOrderSignature,
+      [deployer, "0x0", trade2.giveAsset, trade2.getAsset, "0x0"],
+      [
+        trade2.giveQuantity, trade2.getQuantity, 0, 0,
+        trade2.expires, trade2.nonce, trade2.giveQuantity, sig.mode
+      ],
+      "0x0", sig.v, sig.r, sig.s
+    ]
+  );
+  console.log(await api.eth.getTransactionReceipt(txid))
+  const post = await getAllBalances(deployed, accounts, fund);
 });
 
 test.serial.skip("manager makes order through dexy adapter", async t => {
