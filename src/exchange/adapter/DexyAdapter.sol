@@ -65,13 +65,13 @@ contract DexyAdapter is DSMath, DBC {
         );
 
         // require(orderId != 0);   // defines success in MatchingMarket
-        // require(
-        //     Fund(this).isInAssetList(getAsset) ||
-        //     Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
-        // );
+        require(
+            Fund(this).isInAssetList(getAsset) ||
+            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+        );
 
         // Fund(this).addOpenMakeOrder(targetExchange, giveAsset, orderId);
-        // Fund(this).addAssetToOwnedAssets(getAsset);
+        Fund(this).addAssetToOwnedAssets(getAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
         // OrderUpdated(targetExchange, uint(orderId));
     }
@@ -129,6 +129,7 @@ contract DexyAdapter is DSMath, DBC {
             [giveQuantity, getQuantity, orderValues[4], orderValues[5]],
             signature, orderValues[6]
         );
+        vault.withdraw(address(giveAsset), giveQuantity);
 
         require(
             Fund(this).isInAssetList(getAsset) ||

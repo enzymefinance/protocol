@@ -257,7 +257,6 @@ test.serial("third party makes an on-chain order", async t => {
     ]
   );
   runningGasTotal = runningGasTotal.plus((await api.eth.getTransactionReceipt(txid)).gasUsed);
-  console.log(`GAS TOTAL:   ${runningGasTotal}`)
   const orderHash = await getOrderHash(trade1, deployer, deployed.DexyExchange.address);
   const isOrdered = await deployed.DexyExchange.instance.isOrdered.call({}, [deployer, orderHash]);
   const post = await getAllBalances(deployed, accounts, fund);
@@ -283,7 +282,7 @@ test.serial("third party makes an on-chain order", async t => {
 test.serial("manager takes on-chain order through dexy adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const sig = await getOrderSignature(trade1, deployer, deployed.DexyExchange.address, deployer);
-  const txid = await fund.instance.callOnExchange.postTransaction(
+  let txid = await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
     [
       0, takeOrderSignature,
@@ -295,24 +294,31 @@ test.serial("manager takes on-chain order through dexy adapter", async t => {
       "0x0", sig.v, sig.r, sig.s
     ]
   );
-  const gasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  const managerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  txid = await deployed.DexyVault.instance.withdraw.postTransaction(
+    {from: deployer}, [trade1.getAsset, trade1.getQuantity]
+  );
+  const deployerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
   const post = await getAllBalances(deployed, accounts, fund);
 
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
-  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken.plus(trade1.getQuantity));
   t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken);
-  t.deepEqual(post.deployer.ether, pre.deployer.ether);
+  t.deepEqual(
+    post.deployer.ether,
+    pre.deployer.ether.minus(deployerGasTotal.times(gasPrice))
+  );
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(
     post.manager.ether,
-    pre.manager.ether.minus(gasTotal.times(gasPrice))
+    pre.manager.ether.minus(managerGasTotal.times(gasPrice))
   );
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.getQuantity));
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.giveQuantity));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
@@ -321,15 +327,21 @@ test.serial("third party makes off-chain order, and manager takes it", async t =
   let txid = await deployed.DexyVault.instance.approve.postTransaction(
     {from: deployer}, [deployed.DexyExchange.address]
   );
-  await ethToken.instance.approve.postTransaction(
+  let deployerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  txid = await ethToken.instance.approve.postTransaction(
     {from: deployer},
     [deployed.DexyVault.address, trade2.giveQuantity]
   );
-  await deployed.DexyVault.instance.deposit.postTransaction(
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
+  txid = await deployed.DexyVault.instance.deposit.postTransaction(
     {from: deployer}, [ethToken.address, trade2.giveQuantity]
   );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
   const sig = await getOrderSignature(trade2, deployer, deployed.DexyExchange.address, deployer);
-  console.log(sig)
   txid = await fund.instance.callOnExchange.postTransaction(
     {from: manager, gas: config.gas},
     [
@@ -342,14 +354,129 @@ test.serial("third party makes off-chain order, and manager takes it", async t =
       "0x0", sig.v, sig.r, sig.s
     ]
   );
-  console.log(await api.eth.getTransactionReceipt(txid))
+  const managerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  txid = await deployed.DexyVault.instance.withdraw.postTransaction(
+    {from: deployer}, [trade2.getAsset, trade2.getQuantity]
+  );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
   const post = await getAllBalances(deployed, accounts, fund);
+
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken.plus(trade2.getQuantity));
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.minus(trade2.giveQuantity));
+  t.deepEqual(
+    post.deployer.ether,
+    pre.deployer.ether.minus(deployerGasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(
+    post.manager.ether,
+    pre.manager.ether.minus(managerGasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade2.getQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade2.giveQuantity));
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial.skip("manager makes order through dexy adapter", async t => {
+test.serial("manager makes order through dexy adapter", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const txid = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
+    [
+      0, makeOrderSignature,
+      [deployer, "0x0", trade3.giveAsset, trade3.getAsset, "0x0"],
+      [
+        trade3.giveQuantity, trade3.getQuantity, 0, 0,
+        trade3.expires, trade3.nonce, trade3.giveQuantity, 0
+      ],
+      "0x0", 0, "0x0", "0x0"
+    ]
+  );
+  const managerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  const post = await getAllBalances(deployed, accounts, fund);
+
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken);
+  t.deepEqual(post.deployer.ether, pre.deployer.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(
+    post.manager.ether,
+    pre.manager.ether.minus(managerGasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(
+    post.fund.MlnToken,
+    pre.fund.MlnToken.minus(trade3.giveQuantity)
+  );
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial.skip("third party takes an order made by exchange", async t => {
+test.serial.skip("third party takes an order made by fund", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  let txid = await deployed.DexyVault.instance.approve.postTransaction(
+    {from: deployer}, [deployed.DexyExchange.address]
+  );
+  let deployerGasTotal = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  txid = await ethToken.instance.approve.postTransaction(
+    {from: deployer},
+    [deployed.DexyVault.address, trade3.getQuantity]
+  );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
+  txid = await deployed.DexyVault.instance.deposit.postTransaction(
+    {from: deployer}, [ethToken.address, trade3.getQuantity]
+  );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
+  const sig = await getOrderSignature(trade3, deployer, deployed.DexyExchange.address, deployer);
+  txid = await deployed.DexyExchange.instance.trade.postTransaction(
+    {from: deployer, gas: 6000000},
+    [
+      [fund.address, trade3.giveAsset, trade3.getAsset],
+      [trade3.giveQuantity, trade3.getQuantity, trade3.expires, trade3.nonce],
+      sig.fullSignature, trade3.giveQuantity
+    ]
+  );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
+  txid = await deployed.DexyVault.instance.withdraw.postTransaction(
+    {from: deployer}, [trade3.giveAsset, trade3.giveQuantity]
+  );
+  deployerGasTotal = deployerGasTotal.plus(
+    (await api.eth.getTransactionReceipt(txid)).gasUsed
+  );
+  const post = await getAllBalances(deployed, accounts, fund);
+
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken.plus(trade3.giveQuantity));
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.minus(trade3.getQuantity));
+  t.deepEqual(
+    post.deployer.ether,
+    pre.deployer.ether.minus(deployerGasTotal.times(gasPrice))
+  );
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(post.manager.ether, pre.manager.ether);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade3.giveQuantity));
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
 test.serial.skip("manager makes and cancels order through dexy adapter", async t => {
