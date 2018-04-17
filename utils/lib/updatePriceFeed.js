@@ -90,9 +90,12 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}) {
   } else {
     prices = inputPrices;
   }
-  await deployed.SimplePriceFeed.instance.update.postTransaction(
-    { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
+  await deployed.StakingPriceFeed.instance.update.postTransaction(
+    { from: accounts[0], gas: config.gas },
     [Object.keys(prices), Object.values(prices)]
+  );
+  await deployed.CanonicalPriceFeed.instance.collectAndUpdate.postTransaction(
+    {from: accounts[0], gas: 6000000}, [Object.keys(prices)]
   );
 }
 

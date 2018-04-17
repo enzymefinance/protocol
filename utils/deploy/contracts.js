@@ -245,11 +245,21 @@ async function deployEnvironment(environment) {
       deployed.Governance.address
     ]);
 
-    deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", opts, [
+    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
       deployed.MlnToken.address,
       deployed.CanonicalPriceFeed.address
     ]);
+    await deployed.MlnToken.instance.approve.postTransaction(
+      opts,
+      [
+        deployed.StakingPriceFeed.address,
+        config.protocol.staking.minimumAmount
+      ]
+    );
+    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+      opts, [config.protocol.staking.minimumAmount, ""]
+    );
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);

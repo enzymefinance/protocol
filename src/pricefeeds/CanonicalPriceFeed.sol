@@ -14,6 +14,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
 
     // FIELDS
 
+    address public updater;
     uint public VALIDITY;
     uint public INTERVAL;
     uint public minimumPriceCount = 1;
@@ -68,10 +69,18 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         );
         INTERVAL = updateInfo[0];
         VALIDITY = updateInfo[1];
+        updater = msg.sender;
         setOwner(ofGovernance);
     }
 
     // EXTERNAL METHODS
+
+    function setUpdater(address _updater)
+        public
+        auth
+    {
+        updater = _updater;
+    }
 
     /// @dev override inherited update function to prevent manual update from authority
     function update() external { revert(); }
@@ -89,9 +98,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     /// @param ofAssets list of asset addresses
-    function collectAndUpdate(address[] ofAssets)
-        auth
-    {
+    function collectAndUpdate(address[] ofAssets) {
+        require(msg.sender == updater || msg.sender == owner);
         address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {

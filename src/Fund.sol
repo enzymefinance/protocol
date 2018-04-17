@@ -374,7 +374,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofSellAsset,
         uint orderId
     )
-        pre_cond(isOwner() || msg.sender == address(this))
+        pre_cond(msg.sender == address(this))
     {
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
@@ -385,7 +385,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofExchange,
         address ofSellAsset
     )
-        pre_cond(isOwner() || msg.sender == address(this))
+        pre_cond(msg.sender == address(this))
     {
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }

@@ -1,7 +1,7 @@
 import test from "ava";
-import api from "../../utils/lib/api";
-import deployEnvironment from "../../utils/deploy/contracts";
-import {deployContract} from "../../utils/lib/contracts";
+import api from "../../../utils/lib/api";
+import deployEnvironment from "../../../utils/deploy/contracts";
+import {deployContract} from "../../../utils/lib/contracts";
 
 const BigNumber = require("bignumber.js");
 
