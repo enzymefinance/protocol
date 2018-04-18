@@ -32,8 +32,8 @@ let deployed;
 // helper functions
 async function getOrderHash(order, orderCreator, exchangeAddress) {
   const hashScheme = await api.util.sha3([
-    "address Token Get", "uint Amount Get", "address Token Give", "uint Amount Give",
-    "uint Expires", "uint Nonce", "address User", "address Exchange"
+    "address Taker Token", "uint Taker Token Amount", "address Maker Token", "uint Maker Token",
+    "uint Expires", "uint Nonce", "address Maker", "address Exchange"
   ].join(""));
   const innerHash =  await api.util.sha3([
     order.getAsset.substr(2),

@@ -98,12 +98,22 @@ interface VaultInterface {
     event Deposited(address indexed user, address token, uint amount);
     event Withdrawn(address indexed user, address token, uint amount);
 
+    event Approved(address indexed user, address indexed spender);
+    event Unapproved(address indexed user, address indexed spender);
+
+    event AddedSpender(address indexed spender);
+    event RemovedSpender(address indexed spender);
+
     function deposit(address token, uint amount) external payable;
     function withdraw(address token, uint amount) external;
     function transfer(address token, address from, address to, uint amount) external;
-    function approve(address exchange) external;
-    function unapprove(address exchange) external;
-    function isApproved(address user, address exchange) external view returns (bool);
+    function approve(address spender) external;
+    function unapprove(address spender) external;
+    function isApproved(address user, address spender) external view returns (bool);
+    function addSpender(address spender) external;
+    function removeSpender(address spender) external;
+    function latestSpender() external view returns (address);
+    function isSpender(address spender) external view returns (bool);
     function tokenFallback(address from, uint value, bytes data) public;
     function balanceOf(address token, address user) public view returns (uint);
 
@@ -115,17 +125,23 @@ contract Vault is Ownable, VaultInterface {
 
     address constant public ETH = 0x0;
 
-    address public exchange;
+    mapping (address => bool) public isERC777;
 
-    // user => exchange => approved
+    // user => spender => approved
     mapping (address => mapping (address => bool)) private approved;
     mapping (address => mapping (address => uint)) private balances;
     mapping (address => uint) private accounted;
+    mapping (address => bool) private spenders;
 
-    mapping (address => bool) public isERC777;
+    address private latest;
+
+    modifier onlySpender {
+        require(spenders[msg.sender]);
+        _;
+    }
 
     modifier onlyApproved(address user) {
-        require(msg.sender == exchange && approved[user][exchange]);
+        require(approved[user][msg.sender]);
         _;
     }
 
@@ -165,17 +181,35 @@ contract Vault is Ownable, VaultInterface {
         emit Withdrawn(msg.sender, token, amount);
     }
 
-    /// @dev Approves an exchange to trade balances of the sender.
-    /// @param _exchange Address of the exchange to approve.
-    function approve(address _exchange) external {
-        require(exchange == _exchange);
-        approved[msg.sender][exchange] = true;
+    /// @dev Approves an spender to trade balances of the sender.
+    /// @param spender Address of the spender to approve.
+    function approve(address spender) external {
+        require(spenders[spender]);
+        approved[msg.sender][spender] = true;
+        emit Approved(msg.sender, spender);
     }
 
-    /// @dev Unapproves an exchange to trade balances of the sender.
-    /// @param _exchange Address of the exchange to unapprove.
-    function unapprove(address _exchange) external {
-        approved[msg.sender][_exchange] = false;
+    /// @dev Unapproves an spender to trade balances of the sender.
+    /// @param spender Address of the spender to unapprove.
+    function unapprove(address spender) external {
+        approved[msg.sender][spender] = false;
+        emit Unapproved(msg.sender, spender);
+    }
+
+    /// @dev Adds a spender.
+    /// @param spender Address of the spender.
+    function addSpender(address spender) external onlyOwner {
+        require(spender != 0x0);
+        spenders[spender] = true;
+        latest = spender;
+        emit AddedSpender(spender);
+    }
+
+    /// @dev Removes a spender.
+    /// @param spender Address of the spender.
+    function removeSpender(address spender) external onlyOwner {
+        spenders[spender] = false;
+        emit RemovedSpender(spender);
     }
 
     /// @dev Transfers balances of a token between users.
@@ -183,18 +217,30 @@ contract Vault is Ownable, VaultInterface {
     /// @param from Address of the user to transfer tokens from.
     /// @param to Address of the user to transfer tokens to.
     /// @param amount Amount of tokens to transfer.
-    function transfer(address token, address from, address to, uint amount) external onlyApproved(from) {
+    function transfer(address token, address from, address to, uint amount) external onlySpender onlyApproved(from) {
         // We do not check the balance here, as SafeMath will revert if sub / add fail. Due to over/underflows.
+        require(amount > 0);
         balances[token][from] = balances[token][from].sub(amount);
         balances[token][to] = balances[token][to].add(amount);
     }
 
-    /// @dev Returns if an exchange has been approved by a user.
+    /// @dev Returns if an spender has been approved by a user.
     /// @param user Address of the user.
-    /// @param _exchange Address of the exchange.
-    /// @return Boolean whether exchange has been approved.
-    function isApproved(address user, address _exchange) external view returns (bool) {
-        return approved[user][_exchange];
+    /// @param spender Address of the spender.
+    /// @return Boolean whether spender has been approved.
+    function isApproved(address user, address spender) external view returns (bool) {
+        return approved[user][spender];
+    }
+
+    /// @dev Returns if an address has been approved as a spender.
+    /// @param spender Address of the spender.
+    /// @return Boolean whether spender has been approved.
+    function isSpender(address spender) external view returns (bool) {
+        return spenders[spender];
+    }
+
+    function latestSpender() external view returns (address) {
+        return latest;
     }
 
     function tokenFallback(address from, uint value, bytes) public {
@@ -235,13 +281,6 @@ contract Vault is Ownable, VaultInterface {
         }
 
         require(ERC20(token).transfer(msg.sender, overflow(token)));
-    }
-
-    /// @dev Allows the owner to change the current exchange.
-    /// @param _exchange Address of the exchange.
-    function setExchange(address _exchange) public onlyOwner {
-        require(_exchange != 0x0);
-        exchange = _exchange;
     }
 
     /// @dev Returns the balance of a user for a specified token.
