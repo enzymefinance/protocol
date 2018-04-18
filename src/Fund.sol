@@ -278,7 +278,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     {
         Request request = requests[id];
-        require(modules.pricefeed.hasRecentPrice(address(request.requestAsset)));
+        var (isRecent, requestAssetPrice, ) =
+            modules.pricefeed.getPriceInfo(address(request.requestAsset));
+        require(isRecent);
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
