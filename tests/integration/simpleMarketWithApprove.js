@@ -31,7 +31,7 @@ let version;
 let deployed;
 
 const makeOrderSignature = api.util.abiSignature('makeOrder', [
-  'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
 ]).slice(0,10);
 
 // mock data
@@ -129,7 +129,7 @@ test.serial(
       [
         0, makeOrderSignature,
         ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
-        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
         '0x0', 0, '0x0', '0x0'
       ]
     );

@@ -126,13 +126,13 @@ async function deployEnvironment(environment) {
         true,
         [
           api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10),
           api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10),
           api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10)
         ]
       ]
@@ -337,33 +337,13 @@ async function deployEnvironment(environment) {
         true,
         [
           api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10),
           api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10),
           api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-        ]
-      ]
-    );
-
-    await governanceAction(
-      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-      [
-        deployed.MatchingMarket.address,
-        deployed.MatchingMarketAdapter.address,
-        true,
-        [
-          api.util.abiSignature('makeOrder', [
-            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('takeOrder', [
-            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('cancelOrder', [
-            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
           ]).slice(0,10),
         ]
       ]

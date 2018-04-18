@@ -33,7 +33,6 @@ contract CanonicalRegistrar is DSThing, DBC {
         bytes4[] functionSignatures; // Whitelisted function signatures that can be called using `useExternalFunction` in Fund contract. Note: Adhere to a naming convention for `Fund<->ExchangeAdapter` as much as possible. I.e. name same concepts with the same functionSignature.
     }
     // TODO: populate each field here
-    // TODO: add registerExchange function
     // TODO: add whitelistFunction function
 
     // FIELDS

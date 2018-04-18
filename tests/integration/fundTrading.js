@@ -223,7 +223,6 @@ exchangeIndexes.forEach(i => {
     txId = await fund.instance.executeRequest.postTransaction(
       { from: investor, gas: config.gas }, [requestId]
     );
-    console.log('EXEC ' + (await api.eth.getTransactionReceipt(txId)).gasUsed)
     gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     investorGasTotal = investorGasTotal.plus(gasUsed);
     // set approved token back to zero
@@ -231,7 +230,6 @@ exchangeIndexes.forEach(i => {
       { from: investor },
       [fund.address, 0],
     );
-    console.log((await api.eth.getTransactionReceipt(txId)).gasUsed)
     investorGasTotal = investorGasTotal.plus(
       (await api.eth.getTransactionReceipt(txId)).gasUsed,
     );
@@ -289,7 +287,7 @@ exchangeIndexes.forEach(i => {
         [
           i, makeOrderSignature,
           ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
-          [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+          [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
           '0x0', 0, '0x0', '0x0'
         ]
       );
@@ -459,7 +457,7 @@ exchangeIndexes.forEach(i => {
         [
           i, takeOrderSignature,
           ['0x0', '0x0', '0x0', '0x0', '0x0'],
-          [0, trade2.sellQuantity, 0, 0, 0, 0],
+          [0, trade2.sellQuantity, 0, 0, 0, 0, 0, 0],
           `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
         ]
       );
@@ -473,6 +471,7 @@ exchangeIndexes.forEach(i => {
       );
       const post = await getAllBalances(deployed, accounts, fund);
 
+      console.log(exchangePostMln)
       t.deepEqual(exchangePostMln, exchangePreMln - trade2.sellQuantity);
       t.deepEqual(exchangePostEthToken, exchangePreEthToken);
       t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
@@ -516,7 +515,7 @@ test.serial(
       [
         0, makeOrderSignature,
         ['0x0', '0x0', ethToken.address, mlnToken.address, '0x0'],
-        [trade3.sellQuantity, trade3.buyQuantity, 0, 0, 0, 0],
+        [trade3.sellQuantity, trade3.buyQuantity, 0, 0, 0, 0, 0, 0],
         '0x0', 0, '0x0', '0x0'
       ]
     );
@@ -616,7 +615,7 @@ test.serial(
       [
         0, takeOrderSignature,
         ['0x0', '0x0', '0x0', '0x0', '0x0'],
-        [0, trade4.sellQuantity, 0, 0, 0, 0],
+        [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
         `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
       ]
     );
@@ -656,7 +655,7 @@ test.serial("manager makes an order and cancels it", async t => {
     [
       0, makeOrderSignature,
       ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
-      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
       '0x0', 0, '0x0', '0x0'
     ]
   );
@@ -673,7 +672,7 @@ test.serial("manager makes an order and cancels it", async t => {
     [
       0, cancelOrderSignature,
       ['0x0', '0x0', '0x0', '0x0', '0x0'],
-      [0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
       `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
     ]
   );

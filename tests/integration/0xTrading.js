@@ -31,7 +31,7 @@ let signedOrder;
 
 // declare function signatures
 const takeOrderSignature = api.util.abiSignature('takeOrder', [
-  'address', 'address[5]', 'uint256[7]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
 ]).slice(0,10);
 
 // mock data
