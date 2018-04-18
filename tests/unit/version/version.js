@@ -1,7 +1,7 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import getSignatureParameters from "../../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../../utils/lib/signing";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 
@@ -26,7 +26,7 @@ test.before(async () => {
 });
 
 test("Can setup a new fund", async t => {
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   const txId = await version.instance.setupFund.postTransaction(opts, [
     fundName,
     deployed.MlnToken.address, // base asset
@@ -34,8 +34,7 @@ test("Can setup a new fund", async t => {
     config.protocol.fund.performanceFee,
     deployed.NoCompliance.address,
     deployed.RMMakeOrders.address,
-    [deployed.SimpleMarket.address],
-    [deployed.SimpleAdapter.address],
+    [deployed.MatchingMarket.address],
     v,
     r,
     s,

@@ -8,7 +8,7 @@ interface SimplePriceFeedInterface {
 
     // EVENTS
 
-    event PriceUpdated(uint timestamp);
+    event PriceUpdated(bytes32 hash);
 
     // PUBLIC METHODS
 

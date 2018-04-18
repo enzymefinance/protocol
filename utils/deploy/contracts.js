@@ -3,7 +3,7 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract} from "../lib/contracts";
+import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
@@ -36,27 +36,53 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan") {
-    // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
+    // set up governance and tokens
+    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T-M"].address;
     const ethTokenAddress = tokenInfo[environment]["ETH-T-M"].address;
+    const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed",
-      opts, [
+    // set up pricefeeds
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       mlnAddr,
       'Melon Token',
       'MLN-T-M',
       18,
       'melonport.com',
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
+      [],
+      [],
+      [
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
+      ], [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators
+      ],
       deployed.Governance.address
     ]);
 
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
+    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
+      deployed.CanonicalPriceFeed.address,
+      mlnAddr,
+      deployed.CanonicalPriceFeed.address
+    ]);
+    await mlnToken.instance.approve.postTransaction(
+      opts,
+      [
+        deployed.StakingPriceFeed.address,
+        config.protocol.staking.minimumAmount
+      ]
+    );
+    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+      opts, [config.protocol.staking.minimumAmount, ""]
+    );
+
+    // set up exchanges
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
     const pairsToWhitelist = [
       ['MLN-T-M', 'ETH-T-M'],
@@ -72,33 +98,62 @@ async function deployEnvironment(environment) {
       })
     );
 
+    // set up modules and version
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, false], () => {}, true);
+    deployed.Version = await deployContract(
+      "version/Version",
+      Object.assign(opts, {gas: 6900000}),
+      [
+        pkgInfo.version, deployed.Governance.address,
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, false
+      ],
+      () => {}, true
+    );
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
+
+    // whitelist exchange
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10)
+        ]
+      ]
+    );
 
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         const tokenEntry = tokenInfo[environment][assetSymbol];
-        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
           tokenEntry.address,
           tokenEntry.name,
           assetSymbol,
           tokenEntry.decimals,
           tokenEntry.url,
           mockBytes,
-          mockBytes,
           mockAddress,
           mockAddress,
+          [],
+          []
         ]);
         console.log(`Registered ${assetSymbol}`);
       })
@@ -121,17 +176,17 @@ async function deployEnvironment(environment) {
 
     await unlock(authority, authorityPassword);
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", {from: config.protocol.governance.authority}, [
-        mlnAddr,
-        'Melon Token',
-        'MLN',
-        18,
-        'melonport.com',
-        mockBytes,
-        mockBytes,
-        mockAddress,
-        mockAddress,
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity,
+      mlnAddr,
+      'Melon Token',
+      'MLN',
+      18,
+      'melonport.com',
+      mockBytes,
+      mockBytes,
+      mockAddress,
+      mockAddress,
+      config.protocol.pricefeed.interval,
+      config.protocol.pricefeed.validity,
     ]);
 
     await unlock(pricefeedOperator, pricefeedOperatorPassword);
@@ -143,6 +198,28 @@ async function deployEnvironment(environment) {
       {from: config.protocol.governance.authority}, [deployed.SimplePriceFeed.address]
     );
 
+    // whitelist exchange
+    // TODO: make sure that authority account is unlocked for this section
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.SimpleMarket.address,
+        deployed.SimpleAdapter.address,
+        true,
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10), 
+        ]
+      ]
+    );
+
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
@@ -151,16 +228,17 @@ async function deployEnvironment(environment) {
         const tokenEntry = tokenInfo[environment][assetSymbol];
         await governanceAction(
           {from: pricefeedOperator, gas: 6000000},
-          deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+          deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
             tokenEntry.address,
             tokenEntry.name,
             assetSymbol,
             tokenEntry.decimals,
             tokenEntry.url,
             mockBytes,
-            mockBytes,
             mockAddress,
             mockAddress,
+            [],
+            []
           ]
         );
         console.log(`Registered ${assetSymbol}`);
@@ -191,24 +269,38 @@ async function deployEnvironment(environment) {
       18,
       'melonport.com',
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
+      [],
+      [],
+      [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
+      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       deployed.Governance.address
     ]);
 
-    deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", opts, [
+    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
       deployed.MlnToken.address,
       deployed.CanonicalPriceFeed.address
     ]);
+    await deployed.MlnToken.instance.approve.postTransaction(
+      opts,
+      [
+        deployed.StakingPriceFeed.address,
+        config.protocol.staking.minimumAmount
+      ]
+    );
+    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+      opts, [config.protocol.staking.minimumAmount, ""]
+    );
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]);
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.Version = await deployContract(
       "version/Version",
@@ -221,34 +313,86 @@ async function deployEnvironment(environment) {
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
+    // whitelist trading pairs
+    const pairsToWhitelist = [
+      [deployed.MlnToken.address, deployed.EthToken.address],
+      [deployed.EurToken.address, deployed.EthToken.address],
+      [deployed.MlnToken.address, deployed.EurToken.address],
+    ];
+    await Promise.all(
+      pairsToWhitelist.map(async (pair) => {
+        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [pair[0], pair[1]]);
+      })
+    );
+
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
-    // whitelist simple feed
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'addFeedToWhitelist', [deployed.SimplePriceFeed.address]);
+    // whitelist exchange
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          api.util.abiSignature('makeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+        ]
+      ]
+    );
+
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          api.util.abiSignature('makeOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('takeOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+          api.util.abiSignature('cancelOrder', [
+            'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+          ]).slice(0,10),
+        ]
+      ]
+    );
 
     // register assets
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.EthToken.address,
       "Ether token",
       "ETH-T",
       18,
       "ethereum.org",
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
+      [],
+      []
     ]);
-    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'register', [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.EurToken.address,
       "Euro token",
       "EUR-T",
       18,
       "europa.eu",
       mockBytes,
-      mockBytes,
       mockAddress,
       mockAddress,
+      [],
+      []
     ]);
   }
   // await verifyDeployment(deployed);
@@ -282,9 +426,9 @@ if (require.main === module) {
     throw new Error(`Please specify an environment using the environment variable CHAIN_ENV`);
   } else {
     deployEnvironment(environment)
-    .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
-    .catch(err => console.error(err.stack))
-    .finally(() => process.exit())
+      .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
+      .catch(err => console.error(err.stack))
+      .finally(() => process.exit())
   }
 }
 

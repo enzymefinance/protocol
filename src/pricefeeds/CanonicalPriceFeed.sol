@@ -3,18 +3,18 @@ pragma solidity ^0.4.19;
 import "./CanonicalRegistrar.sol";
 import "./PriceFeedInterface.sol";
 import "./SimplePriceFeed.sol";
+import "../system/OperatorStaking.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
+contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
 
-    mapping(address => bool) public isWhitelisted;
-    address[] public whitelist;
+    address public updater;
     uint public VALIDITY;
     uint public INTERVAL;
     uint public minimumPriceCount = 1;
@@ -30,11 +30,13 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
-    /// @param quoteAssetChainId Chain ID associated with quote asset (e.g. "1" for main Ethereum network)
     /// @param quoteAssetBreakIn Break-in address for the quote asset
     /// @param quoteAssetBreakOut Break-out address for the quote asset
-    /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
-    /// @param validity Number of seconds that datafeed update information is valid for
+    /// @param quoteAssetStandards EIP standards quote asset adheres to
+    /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
+    // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    // /// @param validity Number of seconds that datafeed update information is valid for
+    /// @param ofGovernance Address of contract governing the Canonical PriceFeed
     function CanonicalPriceFeed(
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
@@ -42,61 +44,48 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
-        bytes32 quoteAssetChainId,
         address quoteAssetBreakIn,
         address quoteAssetBreakOut,
-        uint interval,
-        uint validity,
+        uint[] quoteAssetStandards,
+        bytes4[] quoteAssetFunctionSignatures,
+        uint[] updateInfo, // interval validity
+        uint[] stakingInfo, // minStake, numOperators
         address ofGovernance
-    ) SimplePriceFeed(this, ofQuoteAsset, 0x0) {
-        register(
-            QUOTE_ASSET,
+    )
+        OperatorStaking(AssetInterface(ofQuoteAsset), stakingInfo[0], stakingInfo[1])
+        SimplePriceFeed(this, ofQuoteAsset, 0x0)
+    {
+        registerAsset(
+            ofQuoteAsset,
             quoteAssetName,
             quoteAssetSymbol,
             quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
-            quoteAssetChainId,
             quoteAssetBreakIn,
-            quoteAssetBreakOut
+            quoteAssetBreakOut,
+            quoteAssetStandards,
+            quoteAssetFunctionSignatures
         );
-        INTERVAL = interval;
-        VALIDITY = validity;
+        INTERVAL = updateInfo[0];
+        VALIDITY = updateInfo[1];
+        updater = msg.sender;
         setOwner(ofGovernance);
     }
 
     // EXTERNAL METHODS
 
+    function setUpdater(address _updater)
+        public
+        auth
+    {
+        updater = _updater;
+    }
+
     /// @dev override inherited update function to prevent manual update from authority
     function update() external { revert(); }
 
     // PUBLIC METHODS
-
-    // WHITELISTING
-
-    function addFeedToWhitelist(address ofFeed)
-        auth
-    {
-        require(!isWhitelisted[ofFeed]);
-        isWhitelisted[ofFeed] = true;
-        whitelist.push(ofFeed);
-    }
-
-    // TODO: check gas usage (what is the max size of whitelist?); maybe can just run update() with array of feeds as argument instead?
-    /// @param ofFeed Address of the SimplePriceFeed to be removed
-    function removeFeedFromWhitelist(address ofFeed)
-        auth
-        pre_cond(isWhitelisted[ofFeed])
-    {
-        uint feedIndex = getFeedWhitelistIndex(ofFeed);
-        require(whitelist[feedIndex] == ofFeed);
-        delete isWhitelisted[ofFeed];
-        delete whitelist[feedIndex];
-        for (uint i = feedIndex; i < whitelist.length-1; i++) { // remove gap in the array
-            whitelist[i] = whitelist[i+1];
-        }
-        whitelist.length--;
-    }
 
     // AGGREGATION
 
@@ -109,14 +98,14 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     /// @param ofAssets list of asset addresses
-    function collectAndUpdate(address[] ofAssets)
-        public
-    {
+    function collectAndUpdate(address[] ofAssets) {
+        require(msg.sender == updater || msg.sender == owner);
+        address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
-            uint[] memory assetPrices = new uint[](whitelist.length);
-            for (uint j = 0; j < whitelist.length; j++) {
-                SimplePriceFeed feed = SimplePriceFeed(whitelist[j]);
+            uint[] memory assetPrices = new uint[](operators.length);
+            for (uint j = 0; j < operators.length; j++) {
+                SimplePriceFeed feed = SimplePriceFeed(operators[j]);
                 var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
@@ -133,38 +122,43 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         view
         returns (uint)
     {
-        uint count;
-        uint[] memory out = new uint[](unsorted.length);
+        uint numValidEntries;
         for (uint i = 0; i < unsorted.length; i++) {
-            uint item = unsorted[i];
-            if (item == 0) {
-                continue;   // skip zero-entries (invalid)
-            } else if (i == 0 || item >= out[i - 1]) {
-                out[i] = item;  // item is larger than last in array (we are home)
-            } else {
-                uint j = 0;
-                while (item >= out[j]) {
-                    j++;  // get to where element belongs (between smaller and larger items)
-                }
-                for (uint k = i; k > j; k--) {
-                    out[k] = out[k - 1];    // bump larger elements rightward to leave slot
-                }
-                out[j] = item;
+            if (unsorted[i] != 0) {
+                numValidEntries++;
             }
-            count++;
         }
-
-        if (count < minimumPriceCount) {
-            revert(); // TODO: maybe return false as validity or something
+        if (numValidEntries < minimumPriceCount) {
+            revert();
+        }
+        uint counter;
+        uint[] memory out = new uint[](numValidEntries);
+        for (uint j = 0; j < unsorted.length; j++) {
+            uint item = unsorted[j];
+            if (item != 0) {    // skip zero (invalid) entries
+                if (counter == 0 || item >= out[counter - 1]) {
+                    out[counter] = item;  // item is larger than last in array (we are home)
+                } else {
+                    uint k = 0;
+                    while (item >= out[k]) {
+                        k++;  // get to where element belongs (between smaller and larger items)
+                    }
+                    for (uint l = counter; l > k; l--) {
+                        out[l] = out[l - 1];    // bump larger elements rightward to leave slot
+                    }
+                    out[k] = item;
+                }
+                counter++;
+            }
         }
 
         uint value;
-        if (count % 2 == 0) {
-            uint value1 = uint(out[(count / 2) - 1]);
-            uint value2 = uint(out[(count / 2)]);
+        if (counter % 2 == 0) {
+            uint value1 = uint(out[(counter / 2) - 1]);
+            uint value2 = uint(out[(counter / 2)]);
             value = add(value1, value2) / 2;
         } else {
-            value = out[(count - 1) / 2];
+            value = out[(counter - 1) / 2];
         }
         return value;
     }
@@ -180,14 +174,6 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     function getValidity() view returns (uint) { return VALIDITY; }
     function getLastUpdateId() view returns (uint) { return updateId; }
 
-    function getFeedWhitelistIndex(address ofFeed) view returns (uint) {
-        require(isWhitelisted[ofFeed]);
-        for (uint i; i < whitelist.length; i++) {
-            if (whitelist[i] == ofFeed) { return i; }
-        }
-        revert(); // not found
-    }
-
     // PRICES
 
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
@@ -195,7 +181,7 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        pre_cond(isRegistered(ofAsset))
+        pre_cond(assetIsRegistered(ofAsset))
         returns (bool isRecent)
     {
         var ( , timestamp) = getPrice(ofAsset);
@@ -313,6 +299,4 @@ contract CanonicalPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
-
-    function getWhitelist() view returns(address[]) { return whitelist; }
 }

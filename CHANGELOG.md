@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Updated
 
 - deployment contract (use config file more)
+- Asset struct in CanonicalRegistrar
+- Exchange struct in CanonicalRegistrar
 
 ### Removed
 
