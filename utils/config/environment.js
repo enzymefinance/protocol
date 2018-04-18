@@ -34,6 +34,10 @@ module.exports = {
           'ETH-T-M', 'MKR-T-M', 'DAI-T-M'
         ],
       },
+      staking: {
+        minimumAmount: 1000000000,
+        numOperators: 1
+      }
     },
   },
   development: {

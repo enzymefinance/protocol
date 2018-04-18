@@ -3,7 +3,7 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract} from "../lib/contracts";
+import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
@@ -36,27 +36,53 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan") {
-    // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
+    // set up governance and tokens
+    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T-M"].address;
     const ethTokenAddress = tokenInfo[environment]["ETH-T-M"].address;
+    const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed",
-      opts, [
-        mlnAddr,
-        'Melon Token',
-        'MLN-T-M',
-        18,
-        'melonport.com',
-        mockBytes,
-        mockBytes,
-        mockAddress,
-        mockAddress,
+    // set up pricefeeds
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+      mlnAddr,
+      'Melon Token',
+      'MLN-T-M',
+      18,
+      'melonport.com',
+      mockBytes,
+      mockAddress,
+      mockAddress,
+      [],
+      [],
+      [
         config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity,
-        deployed.Governance.address
-      ]);
+        config.protocol.pricefeed.validity
+      ], [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators
+      ],
+      deployed.Governance.address
+    ]);
 
+    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
+      deployed.CanonicalPriceFeed.address,
+      mlnAddr,
+      deployed.CanonicalPriceFeed.address
+    ]);
+    await mlnToken.instance.approve.postTransaction(
+      opts,
+      [
+        deployed.StakingPriceFeed.address,
+        config.protocol.staking.minimumAmount
+      ]
+    );
+    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+      opts, [config.protocol.staking.minimumAmount, ""]
+    );
+
+    // set up exchanges
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
     const pairsToWhitelist = [
       ['MLN-T-M', 'ETH-T-M'],
@@ -72,13 +98,20 @@ async function deployEnvironment(environment) {
       })
     );
 
+    // set up modules and version
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, false], () => {}, true);
+    deployed.Version = await deployContract(
+      "version/Version",
+      Object.assign(opts, {gas: 6900000}),
+      [
+        pkgInfo.version, deployed.Governance.address,
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, false
+      ],
+      () => {}, true
+    );
     deployed.FundRanking = await deployContract("FundRanking", opts);
 
     // add Version to Governance tracking
@@ -89,7 +122,7 @@ async function deployEnvironment(environment) {
       opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
       [
         deployed.MatchingMarket.address,
-        deployed.SimpleAdapter.address,
+        deployed.MatchingMarketAdapter.address,
         true,
         [
           api.util.abiSignature('makeOrder', [
@@ -265,6 +298,7 @@ async function deployEnvironment(environment) {
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]);
     deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
