@@ -124,6 +124,6 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
             assetsToPrices[ofAssets[i]].timestamp = now;
             assetsToPrices[ofAssets[i]].price = newPrices[i];
         }
-        PriceUpdated(now);
+        emit PriceUpdated(keccak256(ofAssets, newPrices));
     }
 }

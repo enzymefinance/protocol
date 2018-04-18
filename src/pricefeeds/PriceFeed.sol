@@ -88,7 +88,7 @@ contract PriceFeed is PriceFeedInterface, AssetRegistrar, DSMath {
             information[ofAssets[i]].timestamp = now;
             information[ofAssets[i]].price = newPrices[i];
         }
-        PriceUpdated(now);
+        emit PriceUpdated(keccak256(ofAssets, newPrices));
     }
 
     // PUBLIC VIEW METHODS
