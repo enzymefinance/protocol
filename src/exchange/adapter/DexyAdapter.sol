@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/dexy/Exchange.sol";
 import "../thirdparty/dexy/Vault.sol";
 import "../../Fund.sol";
@@ -10,9 +11,7 @@ import "ds-math/math.sol";
 /// @title Dexy Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and Dexy Exchange
-contract DexyAdapter is DSMath, DBC {
-
-    event OrderUpdated(address exchange, uint orderId);
+contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
 
@@ -73,7 +72,7 @@ contract DexyAdapter is DSMath, DBC {
         // Fund(this).addOpenMakeOrder(targetExchange, giveAsset, orderId);
         Fund(this).addAssetToOwnedAssets(getAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
-        // OrderUpdated(targetExchange, uint(orderId));
+        // OrderUpdated(targetExchange, bytes32(orderId), UpdateTypes.Make);
     }
 
     // Responsibilities of takeOrder are:
@@ -137,7 +136,7 @@ contract DexyAdapter is DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(getAsset);
-        OrderUpdated(targetExchange, uint(identifier));
+        OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Take);
     }
 
     // responsibilities of cancelOrder are:
@@ -167,7 +166,7 @@ contract DexyAdapter is DSMath, DBC {
         // MatchingMarket(targetExchange).cancel(
         //     uint(identifier)
         // );
-        // emit OrderUpdated(targetExchange, uint(identifier));
+        // emit OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Cancel);
     }
 
     // VIEW METHODS

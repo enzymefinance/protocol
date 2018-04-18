@@ -18,7 +18,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     function makeOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[7] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
@@ -45,7 +45,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[7] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
@@ -77,7 +77,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     function cancelOrder(
         address targetExchange,
         address[5] orderAddresses,
-        uint[7] orderValues,
+        uint[8] orderValues,
         bytes32 identifier,
         uint8 v,
         bytes32 r,
@@ -90,7 +90,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     function executeFill(
         address targetExchange,
         address[5] orderAddresses,
-        uint[7] orderValues,
+        uint[8] orderValues,
         uint fillGiveQuantity,
         uint8 v,
         bytes32 r,
