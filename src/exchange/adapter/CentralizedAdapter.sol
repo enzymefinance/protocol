@@ -1,14 +1,13 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
+import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/CentralizedExchangeBridge.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
 import "../../assets/Asset.sol";
 import "ds-math/math.sol";
 
-contract CentralizedAdapter is DBC, DSMath {
-
-    event OrderUpdated(address ofExchangeBridge, uint orderId);
+contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     // NON-CONSTANT METHODS
 
@@ -63,10 +62,10 @@ contract CentralizedAdapter is DBC, DSMath {
 
         Fund(this).addOpenMakeOrder(targetExchange, giveAsset, orderId);
         Fund(this).addAssetToOwnedAssets(getAsset);
-        emit OrderUpdated(targetExchange, uint(orderId));
+        emit OrderUpdated(targetExchange, bytes32(orderId), UpdateTypes.Make);
     }
 
-    /// @dev Dummy function; not implemented yet
+    /// @dev Dummy function; not implemented on exchange
     function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -107,7 +106,7 @@ contract CentralizedAdapter is DBC, DSMath {
         require(Asset(giveAsset).transferFrom(msg.sender, this, giveQuantity));
         require(Asset(giveAsset).approve(targetExchange, giveQuantity));
         require(CentralizedExchangeBridge(targetExchange).cancelOrder(uint(identifier)));
-        emit OrderUpdated(targetExchange, uint(identifier));
+        emit OrderUpdated(targetExchange, identifier, UpdateTypes.Cancel);
     }
 
     // HELPER METHODS

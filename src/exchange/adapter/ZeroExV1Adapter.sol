@@ -1,5 +1,6 @@
 pragma solidity ^0.4.20;
 
+import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/0x/Exchange.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
@@ -9,12 +10,11 @@ import "ds-math/math.sol";
 /// @title ZeroExV1Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract ZeroExV1Adapter is DSMath, DBC {
-
-    event OrderUpdated(address exchange, uint orderId);
+contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
 
+    /// @notice Make order not implemented for smart contracts in this exchange version
     function makeOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -70,17 +70,10 @@ contract ZeroExV1Adapter is DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(getAsset);
-        OrderUpdated(targetExchange, uint(identifier));
+        OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Take);
     }
 
-    // responsibilities of cancelOrder are:
-    // - check sender is this contract or owner, or that order expired
-    // - remove order from tracking array
-    // - cancel order on exchange
-    /// @notice Cancels orders that were not expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Asset for which we want to cancel an order
-    /// @param identifier Order ID on the exchange
+    /// @notice Cancel is not implemented on exchange for smart contracts
     function cancelOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -89,19 +82,8 @@ contract ZeroExV1Adapter is DSMath, DBC {
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-        // pre_cond(Fund(this).owner() == msg.sender ||
-        //          Fund(this).isShutDown()          ||
-        //          Fund(this).orderExpired(targetExchange, orderAddresses[2])
-        // )
-    {
+    ) {
         revert();
-        // require(uint(identifier) != 0);
-        // Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
-        // MatchingMarket(targetExchange).cancel(
-        //     uint(identifier)
-        // );
-        // emit OrderUpdated(targetExchange, uint(identifier));
     }
 
     /// @dev needed to avoid stack too deep error
