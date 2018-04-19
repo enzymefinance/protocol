@@ -46,20 +46,20 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  deployed.TokenTransferProxy = await deployContract(
+  deployed.ZeroExTokenTransferProxy = await deployContract(
     "exchange/thirdparty/0x/TokenTransferProxy",
     {from: deployer}
   );
   deployed.ZeroExExchange = await deployContract(
     "exchange/thirdparty/0x/Exchange",
     { from: deployer },
-    [ ZeroEx.NULL_ADDRESS, deployed.TokenTransferProxy.address ]
+    [ ZeroEx.NULL_ADDRESS, deployed.ZeroExTokenTransferProxy.address ]
   );
   deployed.ZeroExV1Adapter = await deployContract(
     "exchange/adapter/ZeroExV1Adapter",
     { from: deployer }
   );
-  await deployed.TokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
+  await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
     { from: deployer }, [ deployed.ZeroExExchange.address ]
   );
   await governanceAction(
@@ -181,7 +181,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
   };
   await ethToken.instance.approve.postTransaction(
     {from: deployer},
-    [deployed.TokenTransferProxy.address, trade1.sellQuantity]
+    [deployed.ZeroExTokenTransferProxy.address, trade1.sellQuantity]
   );
   const orderHash = ZeroEx.getOrderHashHex(order);
   const [r, s, v] = await getSignatureParameters(makerAddress, orderHash)
@@ -201,8 +201,11 @@ test.serial("manager takes order through 0x adapter", async t => {
     {from: manager, gas: config.gas},
     [
       0, takeOrderSignature,
-     [deployer, ZeroEx.NULL_ADDRESS, ethToken.address, mlnToken.address, ZeroEx.NULL_ADDRESS],
-      [trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), new BigNumber(0), order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity],
+      [deployer, ZeroEx.NULL_ADDRESS, ethToken.address, mlnToken.address, ZeroEx.NULL_ADDRESS],
+      [
+        trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), new BigNumber(0),
+        order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
+      ],
       '0x0', signedOrder.ecSignature.v, signedOrder.ecSignature.r, signedOrder.ecSignature.s
     ]
   );

@@ -61,28 +61,12 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  // TODO: do we really need to deploy the matchingmarket here again?
-  deployed.MatchingMarket = await deployContract(
-    "exchange/thirdparty/MatchingMarket",
-    { from: deployer, gas: config.gas }, [1546304461]
-  );
-  deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", {from: deployer}, [deployed.MatchingMarket.address]);
   exchanges = [deployed.SimpleMarket, deployed.MatchingMarket];
   await governanceAction(
     {from: deployer},
     deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
       deployed.SimpleMarket.address,
-      deployed.MatchingMarketAdapter.address,
-      true,
-      [ makeOrderSignature, takeOrderSignature, cancelOrderSignature ]
-    ]
-  );
-  await governanceAction(
-    {from: deployer},
-    deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-    [
-      deployed.MatchingMarket.address,
       deployed.MatchingMarketAdapter.address,
       true,
       [ makeOrderSignature, takeOrderSignature, cancelOrderSignature ]
@@ -471,7 +455,6 @@ exchangeIndexes.forEach(i => {
       );
       const post = await getAllBalances(deployed, accounts, fund);
 
-      console.log(exchangePostMln)
       t.deepEqual(exchangePostMln, exchangePreMln - trade2.sellQuantity);
       t.deepEqual(exchangePostEthToken, exchangePreEthToken);
       t.deepEqual(post.deployer.MlnToken, pre.deployer.MlnToken);
@@ -677,9 +660,10 @@ test.serial("manager makes an order and cancels it", async t => {
     ]
   );
 
-  // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
-  // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);
-  // const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
+  const [orderId, ] = await fund.instance.getOpenOrderInfo.call(
+    {}, [exchanges[0].address, mlnToken.address]
+  );
+  const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   runningGasTotal = runningGasTotal.plus(gasUsed);
   const exchangePostEthToken = Number(
@@ -687,7 +671,7 @@ test.serial("manager makes an order and cancels it", async t => {
   );
   const post = await getAllBalances(deployed, accounts, fund);
 
-  // t.false(orderOpen);
+  t.false(orderOpen);
   t.deepEqual(exchangePostEthToken, exchangePreEthToken - trade1.sellQuantity);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);

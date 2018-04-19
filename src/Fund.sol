@@ -719,4 +719,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function orderExpired(address ofExchange, address ofAsset) view returns (bool) {
         return block.timestamp >= exchangesToOpenMakeOrders[ofExchange][ofAsset].expiresAt;
     }
+    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint) {
+        Order order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
+        return (order.id, order.expiresAt);
+    }
 }
