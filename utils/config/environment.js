@@ -31,7 +31,7 @@ module.exports = {
         interval: 60,
         validity: 60,
         assetsToRegister: [
-          'ETH-T-M', 'MKR-T-M', 'DAI-T-M'
+          'ETH-T-M', 'MKR-T-M', 'DAI-T-M', 'EUR-T'
         ],
       },
       staking: {

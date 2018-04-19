@@ -319,6 +319,13 @@ module.exports = {
       url: 'https://www.basicattentiontoken.org/',
       ipfsHash: '',
     },
+    'ZRX': {
+      address: '0xe41d2489571d322189246dafa5ebde1f4699f498',
+      name: '0x Token',
+      decimals: 18,
+      url: '0xproject.com',
+      ipfsHash: '',
+    }
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
     // 'W-GNT': {
     //   address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',

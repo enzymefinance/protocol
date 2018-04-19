@@ -9,6 +9,7 @@ import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
 import verifyDeployment from "./verify";
 
+// Constants and mocks
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -32,6 +33,17 @@ async function deployEnvironment(environment) {
     gas: config.gas,
     gasPrice: config.gasPrice,
   };
+
+  // TODO: put signature functions in a lib and use across all tests/utils
+  const makeOrderSignature = api.util.abiSignature('makeOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
+  const takeOrderSignature = api.util.abiSignature('takeOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
+  const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
 
   const deployed = {};
 
@@ -80,7 +92,7 @@ async function deployEnvironment(environment) {
       opts, [config.protocol.staking.minimumAmount, ""]
     );
 
-    // set up exchanges
+    // set up exchanges and adapters
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
     deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
@@ -97,6 +109,18 @@ async function deployEnvironment(environment) {
         await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
       })
     );
+
+    deployed.ZeroExTokenTransferProxy = await deployContract(
+      "exchange/thirdparty/0x/TokenTransferProxy", opts
+    );
+    deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
+      [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
+    );
+    deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
+    await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
+      opts, [ deployed.ZeroExExchange.address ]
+    );
+
 
     // set up modules and version
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
@@ -117,7 +141,7 @@ async function deployEnvironment(environment) {
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
-    // whitelist exchange
+    // whitelist exchanges
     await governanceAction(
       opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
       [
@@ -125,39 +149,41 @@ async function deployEnvironment(environment) {
         deployed.MatchingMarketAdapter.address,
         true,
         [
-          api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10)
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
         ]
       ]
     );
 
-    // register assets
-    await Promise.all(
-      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
-        console.log(`Registering ${assetSymbol}`);
-        const tokenEntry = tokenInfo[environment][assetSymbol];
-        await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-          tokenEntry.address,
-          tokenEntry.name,
-          assetSymbol,
-          tokenEntry.decimals,
-          tokenEntry.url,
-          mockBytes,
-          mockAddress,
-          mockAddress,
-          [],
-          []
-        ]);
-        console.log(`Registered ${assetSymbol}`);
-      })
+    await governanceAction(
+     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.ZeroExExchange.address,
+        deployed.ZeroExV1Adapter.address,
+        false,
+        [ takeOrderSignature ]
+      ]
     );
+
+    // register assets
+    for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+      console.log(`Registering ${assetSymbol}`);
+      const tokenEntry = tokenInfo[environment][assetSymbol];
+      await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+        tokenEntry.address,
+        tokenEntry.name,
+        assetSymbol,
+        tokenEntry.decimals,
+        tokenEntry.url,
+        mockBytes,
+        mockAddress,
+        mockAddress,
+        [],
+        []
+      ]);
+      console.log(`Registered ${assetSymbol}`);
+    }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     // const deployerPassword = '/path/to/password/file';
@@ -207,15 +233,9 @@ async function deployEnvironment(environment) {
         deployed.SimpleAdapter.address,
         true,
         [
-          api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10), 
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
         ]
       ]
     );
@@ -336,15 +356,9 @@ async function deployEnvironment(environment) {
         deployed.MatchingMarketAdapter.address,
         true,
         [
-          api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
         ]
       ]
     );
