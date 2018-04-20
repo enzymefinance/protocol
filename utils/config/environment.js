@@ -58,8 +58,8 @@ module.exports = {
         validity: 60,
       },
       fund: {
-        managementFee: 10 ** 16,
-        performanceFee: 10
+        managementFee: 0,
+        performanceFee: 0
       },
       staking: {
         minimumAmount: 1000000,
