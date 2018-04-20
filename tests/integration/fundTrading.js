@@ -441,7 +441,7 @@ exchangeIndexes.forEach(i => {
         [
           i, takeOrderSignature,
           ['0x0', '0x0', '0x0', '0x0', '0x0'],
-          [0, trade2.sellQuantity, 0, 0, 0, 0, 0, 0],
+          [trade2.sellQuantity, 0, 0, 0, 0, 0, 0, 0],
           `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
         ]
       );
@@ -598,7 +598,7 @@ test.serial(
       [
         0, takeOrderSignature,
         ['0x0', '0x0', '0x0', '0x0', '0x0'],
-        [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
+        [trade4.sellQuantity, 0, 0, 0, 0, 0, 0, 0],
         `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
       ]
     );
