@@ -74,7 +74,7 @@ async function deployEnvironment(environment) {
         config.protocol.staking.numOperators
       ],
       deployed.Governance.address
-    ]);
+    ], () => {}, true);
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
@@ -213,7 +213,7 @@ async function deployEnvironment(environment) {
       mockAddress,
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
-    ]);
+    ], () => {}, true);
 
     await unlock(pricefeedOperator, pricefeedOperatorPassword);
     deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", {from: pricefeedOperator}, [deployed.CanonicalPriceFeed.address, mlnAddr]);
@@ -296,7 +296,7 @@ async function deployEnvironment(environment) {
       [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
       [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       deployed.Governance.address
-    ]);
+    ], () => {}, true);
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,

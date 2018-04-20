@@ -1,6 +1,6 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
-import { deployContract } from "../../../utils/lib/contracts";
+import { deployContract, retrieveContract } from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -80,18 +80,20 @@ function registerBtc(pricefeed) {
 }
 
 async function createPriceFeedAndStake(context) {
-  const feed = await deployContract("pricefeeds/StakingPriceFeed", { from: accounts[0] }, [
-    context.canonicalPriceFeed.address,
-    mlnToken.address,
-    context.canonicalPriceFeed.address,
-  ]);
-  await mlnToken.instance.approve.postTransaction(
-    {from: accounts[0]}, [feed.address, config.protocol.staking.minimumAmount]
+  const txid = await context.canonicalPriceFeed.instance.setupStakingPriceFeed.postTransaction(opts);
+  const receipt = await api.eth.getTransactionReceipt(txid)
+  const setupLog = receipt.logs.find(
+    e => e.topics[0] === api.util.sha3('SetupPriceFeed(address)')
   );
-  await feed.instance.depositStake.postTransaction(
+  const stakingFeedAddress = api.util.toChecksumAddress(`0x${setupLog.data.slice(-40)}`);
+  const stakingFeed = await retrieveContract("pricefeeds/StakingPriceFeed", stakingFeedAddress);
+  await mlnToken.instance.approve.postTransaction(
+    {from: accounts[0]}, [stakingFeed.address, config.protocol.staking.minimumAmount]
+  );
+  await stakingFeed.instance.depositStake.postTransaction(
     {from: accounts[0]}, [config.protocol.staking.minimumAmount, ""]
   );
-  context.pricefeeds.push(feed);
+  context.pricefeeds.push(stakingFeed);
 }
 
 function medianize(pricesArray) {
@@ -119,7 +121,7 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
-    { from: accounts[0] },
+    { from: accounts[0], gas: 6900000 },
     [
       mlnToken.address,
       "Melon Token",
@@ -134,7 +136,7 @@ test.beforeEach(async t => {
       [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
       [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       accounts[0]
-    ],
+    ], () => {}, true
   );
   t.context.pricefeeds = [];
 });

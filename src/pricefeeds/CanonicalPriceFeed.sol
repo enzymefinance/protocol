@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
 import "./CanonicalRegistrar.sol";
-import "./PriceFeedInterface.sol";
 import "./SimplePriceFeed.sol";
+import "./StakingPriceFeed.sol";
 import "../system/OperatorStaking.sol";
 
 /// @title Price Feed Template
@@ -12,8 +12,10 @@ import "../system/OperatorStaking.sol";
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
-    // FIELDS
+    // EVENTS
+    event SetupPriceFeed(address ofPriceFeed);
 
+    // FIELDS
     address public updater;
     uint public VALIDITY;
     uint public INTERVAL;
@@ -74,6 +76,17 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     // EXTERNAL METHODS
+
+    /// @notice Create a new StakingPriceFeed
+    function setupStakingPriceFeed() external {
+        address ofStakingPriceFeed = new StakingPriceFeed(
+            address(this),
+            stakingToken,
+            address(this)
+        );
+        StakingPriceFeed(ofStakingPriceFeed).setOwner(msg.sender);
+        emit SetupPriceFeed(ofStakingPriceFeed);
+    }
 
     function setUpdater(address _updater)
         public

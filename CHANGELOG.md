@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - tests to fit new protocol developments
 - utils to use governance contract more easily
 - Fund function to retrieve order ID by exchange/asset pair
+- Canonical pricefeed is a staking pricefeed factory
 
 ### Changed
 
