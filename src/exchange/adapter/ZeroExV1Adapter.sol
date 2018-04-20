@@ -37,11 +37,23 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     // - check order was taken (if possible)
     // - place asset in ownedAssets if not already tracked
     /// @notice Takes an active order on the selected exchange
-    /// @notice Risk management
     /// @dev These orders are expected to settle immediately
-    /// @dev Get/give is from taker's perspective
-    /// @param identifier Active order id
-    /// @param orderValues [6] Buy quantity of what others are selling on selected Exchange
+    /// @param targetExchange Address of the exchange
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [1] Order taker
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] Fee recipient
+    /// @param orderValues [0] Maker token quantity
+    /// @param orderValues [1] Taker token quantity
+    /// @param orderValues [2] Maker fee
+    /// @param orderValues [3] Taker fee
+    /// @param orderValues [4] Expiration timestamp in seconds
+    /// @param orderValues [5] Salt
+    /// @param orderValues [6] Fill amount : amount of taker token to fill
+    /// @param v ECDSA recovery id
+    /// @param r ECDSA signature output r
+    /// @param s ECDSA signature output s
     function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
@@ -53,23 +65,23 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     ) {
         require(Fund(this).owner() == msg.sender);
         require(!Fund(this).isShutDown());
-        Token getAsset = Token(orderAddresses[2]);
-        Token giveAsset = Token(orderAddresses[3]);
-        uint maxGetQuantity = orderValues[0];
-        uint maxGiveQuantity = orderValues[1];
-        uint fillGiveQuantity = orderValues[6];
-        uint fillGetQuantity = mul(fillGiveQuantity, maxGetQuantity) / maxGiveQuantity;
+        Token makerAsset = Token(orderAddresses[2]);
+        Token takerAsset = Token(orderAddresses[3]);
+        uint maxMakerQuantity = orderValues[0];
+        uint maxTakerQuantity = orderValues[1];
+        uint fillTakerQuantity = orderValues[6];
+        uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        require(takeOrderPermitted(fillGiveQuantity, giveAsset, fillGetQuantity, getAsset));
-        require(giveAsset.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillGiveQuantity));
-        uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillGiveQuantity, v, r, s);
-        require(filledAmount == fillGiveQuantity);
+        require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
+        require(takerAsset.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
+        uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
+        require(filledAmount == fillTakerQuantity);
         require(
-            Fund(this).isInAssetList(getAsset) ||
+            Fund(this).isInAssetList(makerAsset) ||
             Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addAssetToOwnedAssets(getAsset);
+        Fund(this).addAssetToOwnedAssets(makerAsset);
         OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Take);
     }
 
@@ -91,11 +103,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         address targetExchange,
         address[5] orderAddresses,
         uint[8] orderValues,
-        uint fillGiveQuantity,
+        uint fillTakerQuantity,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
+        internal
         returns (uint)
     {
         return Exchange(targetExchange).fillOrder(
@@ -104,7 +117,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
                 orderValues[0], orderValues[1], orderValues[2], 
                 orderValues[3], orderValues[4], orderValues[5]
             ],
-            fillGiveQuantity,
+            fillTakerQuantity,
             false,
             v,
             r,
@@ -115,51 +128,37 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     // VIEW METHODS
 
     /// @dev needed to avoid stack too deep error
-    function makeOrderPermitted(
-        uint giveQuantity,
-        Token giveAsset,
-        uint getQuantity,
-        Token getAsset
-    )
-        internal
-        view
-        returns (bool) 
-    {
-        revert();
-    }
-
-    /// @dev needed to avoid stack too deep error
     function takeOrderPermitted(
-        uint giveQuantity,
-        Token giveAsset,
-        uint getQuantity,
-        Token getAsset
+        uint takerQuantity,
+        Token takerAsset,
+        uint makerQuantity,
+        Token makerAsset
     )
         internal
         view
         returns (bool)
     {
-        require(giveAsset != address(this) && getAsset != address(this));
-        require(address(getAsset) != address(giveAsset));
-        // require(fillGiveQuantity <= maxGiveQuantity);
+        require(takerAsset != address(this) && makerAsset != address(this));
+        require(address(makerAsset) != address(takerAsset));
+        // require(fillTakerQuantity <= maxTakerQuantity);
         var (pricefeed, , riskmgmt) = Fund(this).modules();
-        require(pricefeed.existsPriceOnAssetPair(giveAsset, getAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(giveAsset, getAsset);
+        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
         require(isRecent);
         uint orderPrice = pricefeed.getOrderPriceInfo(
-            giveAsset,
-            getAsset,
-            giveQuantity,
-            getQuantity
+            takerAsset,
+            makerAsset,
+            takerQuantity,
+            makerQuantity
         );
         return(
             riskmgmt.isTakePermitted(
                 orderPrice,
                 referencePrice,
-                giveAsset,
-                getAsset,
-                giveQuantity,
-                getQuantity
+                takerAsset,
+                makerAsset,
+                takerQuantity,
+                makerQuantity
             )
         );
     }
