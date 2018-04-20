@@ -108,7 +108,7 @@ async function deployEnvironment(environment) {
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address,
-        ethTokenAddress, deployed.CanonicalPriceFeed.address, false
+        ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployer
       ],
       () => {}, true
     );
@@ -215,7 +215,7 @@ async function deployEnvironment(environment) {
           ]).slice(0,10),
           api.util.abiSignature('cancelOrder', [
             'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10), 
+          ]).slice(0,10),
         ]
       ]
     );
@@ -248,7 +248,7 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, true], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployer], () => {}, true);
 
     deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -307,7 +307,7 @@ async function deployEnvironment(environment) {
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address, deployed.EthToken.address,
-        deployed.CanonicalPriceFeed.address, false
+        deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, accounts[0]
       ],
       () => {}, true
     );

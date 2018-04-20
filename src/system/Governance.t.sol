@@ -30,7 +30,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_addAndGetVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken, address(0), false);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, melonToken, address(0), address(0));
         activateVersion(version);
         var (returnedVersion, active, ) = governance.getVersionById(0);
         assertEq(returnedVersion, version);
@@ -38,7 +38,7 @@ contract GovernanceTest is DSTest {
     }
 
     function test_shutDownVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken, address(0), false);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, melonToken, address(0), address(0));
         activateVersion(version);
         bytes memory calldata = new bytes(36);
         bytes4 sig = bytes4(sha3("shutDownVersion(uint256)"));
