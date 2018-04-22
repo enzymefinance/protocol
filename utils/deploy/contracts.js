@@ -302,16 +302,20 @@ async function deployEnvironment(environment) {
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
     deployed.Version = await deployContract(
       "version/Version",
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address, deployed.EthToken.address,
-        deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, accounts[0]
+        deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
       ],
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
+    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.Version.address, accounts[0], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 10]);
+    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 18, [accounts[0], accounts[1], accounts[2]]]);
 
     // whitelist trading pairs
     const pairsToWhitelist = [

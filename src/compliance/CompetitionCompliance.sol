@@ -2,6 +2,7 @@ pragma solidity ^0.4.19;
 
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
+import "../competitions/CompetitionInterface.sol";
 import "./ComplianceInterface.sol";
 
 /// @title Competition Compliance Contract
@@ -53,6 +54,21 @@ contract CompetitionCompliance is ComplianceInterface, DBC, Owned {
         return competitionAddress == ofParticipant;
     }
 
+    /// @notice Checks whether an address is whitelisted in the competition contract
+    /// @param x Address
+    /// @return Whether the address is whitelisted
+    function isCompetitionWhitelisted(
+        address x
+    )
+        view
+        returns (bool)
+    {
+        return CompetitionInterface(competitionAddress).isWhitelisted(x);
+    }
+
+
+    // PUBLIC METHODS
+
     /// @notice Changes the competition address
     /// @param ofCompetition Address of the competition contract
     function changeCompetitionAddress(
@@ -62,4 +78,5 @@ contract CompetitionCompliance is ComplianceInterface, DBC, Owned {
     {
         competitionAddress = ofCompetition;
     }
+
 }
