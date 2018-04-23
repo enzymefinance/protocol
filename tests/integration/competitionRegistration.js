@@ -105,10 +105,28 @@ test.serial(
     t.is(registrantFund, fund.address);
     t.is(Number(preTotalSupply), 0);
     t.deepEqual(post.custodian.ether, pre.custodian.ether.add(buyinValue));
-    // t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
+    t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
+    //t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
+    t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnReward));
+    t.deepEqual(post.fund.ether, pre.fund.ether);
     t.deepEqual(postCompetitionMln, preCompetitionMln.sub(estimatedMlnReward));
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedMlnReward));
 
+    // Verify registration parameters
+    const registrantId = await competition.instance.getRegistrantId.call(
+      {},
+      [manager],
+    );
+    const registrationDetails =  await competition.instance.registrants.call(
+      {},
+      [registrantId],
+    );
+    t.is(registrationDetails[0], fund.address);
+    t.is(registrationDetails[1], manager);
+    t.is(registrationDetails[2], true);
+    t.deepEqual(registrationDetails[3], buyinValue);
+    t.deepEqual(registrationDetails[4], estimatedMlnReward);
+    t.is(registrationDetails[5], false);
   },
 );
