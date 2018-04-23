@@ -13,6 +13,7 @@ interface CompetitionInterface {
 
     function termsAndConditionsAreSigned(address byManager, uint8 v, bytes32 r, bytes32 s) view returns (bool);
     function isWhitelisted(address x) view returns (bool);
+    function isCompetitionActive() view returns (bool);
 
     // CONSTANT METHODS
 

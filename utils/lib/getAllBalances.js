@@ -9,7 +9,7 @@ const BigNumber = require('bignumber.js');
 // TODO: consider making this more general, rather than assuming certain account numbers are manager, investor, etc.
 async function getAllBalances(instances, accounts, fund) {
 
-  const [deployer, manager, investor, worker, exchangeOwner] = accounts;
+  const [deployer, manager, investor, worker, exchangeOwner, custodian] = accounts;
 
   return {
     investor: {
@@ -41,6 +41,11 @@ async function getAllBalances(instances, accounts, fund) {
       MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [exchangeOwner])),
       EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [exchangeOwner])),
       ether: new BigNumber(await api.eth.getBalance(deployer)),
+    },
+    custodian: {
+      MlnToken: new BigNumber(await instances.MlnToken.instance.balanceOf.call({}, [custodian])),
+      EthToken: new BigNumber(await instances.EthToken.instance.balanceOf.call({}, [custodian])),
+      ether: new BigNumber(await api.eth.getBalance(custodian)),
     }
   };
 }

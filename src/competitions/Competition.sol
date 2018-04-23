@@ -86,6 +86,9 @@ contract Competition is CompetitionInterface, DBC, Owned {
     /// @param x Address to be checked for KYC verification
     function isWhitelisted(address x) view returns (bool) { return whitelistantToMaxBuyin[x] > 0; }
 
+    /// @dev Whether the competition is on-going
+    function isCompetitionActive() view returns (bool) { return now >= startTime && now < endTime; }
+
     // CONSTANT METHODS
 
     function getMelonAsset() view returns (address) { return MELON_ASSET; }
@@ -95,8 +98,6 @@ contract Competition is CompetitionInterface, DBC, Owned {
 
     /// @return Address of the fund registered by the registrant address
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
-
-    function getTime() view returns (uint) { return block.timestamp; }
 
     /**
     @notice Returns an array of fund addresses and an associated array of whether competing and whether disqualified
@@ -161,7 +162,8 @@ contract Competition is CompetitionInterface, DBC, Owned {
         bytes32 s
     )
         payable
-        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender) && now >= startTime)
+        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
+        pre_cond(isCompetitionActive())
         pre_cond(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false)
     {
         require(msg.value <= totalMaxBuyin && registrants.length <= maxRegistrants);
@@ -169,7 +171,7 @@ contract Competition is CompetitionInterface, DBC, Owned {
         require(VersionInterface(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
-        uint payoutQuantity = msg.value * buyinRate;
+        uint payoutQuantity = (msg.value * buyinRate) / 10 ** 18;
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
         FundInterface fundContract = FundInterface(fund);
@@ -200,7 +202,7 @@ contract Competition is CompetitionInterface, DBC, Owned {
         address[] whitelistants
     )
         pre_cond(isOwner())
-        pre_cond(now >= startTime && now < endTime)
+        pre_cond(isCompetitionActive())
     {
         for (uint i = 0; i < whitelistants.length; ++i) {
             whitelistantToMaxBuyin[whitelistants[i]] = maxBuyinQuantity;

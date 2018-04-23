@@ -82,7 +82,7 @@ test.serial("can set up new fund", async t => {
   const fundAddress = await version.instance.getFundById.call({}, [fundId]);
   fund = await retrieveContract("Fund", fundAddress);
   const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
-  // Change competition address to investo just for testing purpose so it allows invest / redeem
+  // Change competition address to investor just for testing purpose so it allows invest / redeem
   await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction({ from: deployer, gas: config.gas, gasPrice: config.gasPrice }, [investor]);
 
   t.deepEqual(
