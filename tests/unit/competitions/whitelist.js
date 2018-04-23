@@ -28,12 +28,20 @@ test("Owner of competition can add addresses to whitelist", async t => {
     [accounts[4], accounts[5]],
   ]);
   const buyins = [
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]])),
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]])),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]]),
+    ),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]]),
+    ),
   ];
   const areWhitelisted = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[4]]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[5]])
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[4],
+    ]),
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[5],
+    ]),
   ];
   t.deepEqual(buyins, [10 ** 22, 10 ** 22]);
   t.deepEqual(areWhitelisted, [true, true]);
@@ -45,24 +53,40 @@ test("Owner of competition can remove addresses from whitelist", async t => {
     [accounts[4], accounts[5]],
   ]);
   const buyinsBefore = [
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]])),
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]])),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]]),
+    ),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]]),
+    ),
   ];
   const areWhitelistedBefore = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[4]]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[5]])
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[4],
+    ]),
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[5],
+    ]),
   ];
   await competition.instance.batchAddToWhitelist.postTransaction(opts, [
     0,
     [accounts[4], accounts[5]],
   ]);
   const buyinsAfter = [
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]])),
-    Number(await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]])),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[4]]),
+    ),
+    Number(
+      await competition.instance.whitelistantToMaxBuyin.call({}, [accounts[5]]),
+    ),
   ];
   const areWhitelistedAfter = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[4]]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [accounts[5]])
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[4],
+    ]),
+    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+      accounts[5],
+    ]),
   ];
   t.deepEqual(buyinsBefore, [10 ** 22, 10 ** 22]);
   t.deepEqual(areWhitelistedBefore, [true, true]);

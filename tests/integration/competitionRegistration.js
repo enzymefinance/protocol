@@ -17,9 +17,7 @@ const competitionTerms =
 // hoisted variables
 let accounts;
 let deployer;
-let ethToken;
 let fund;
-let investor;
 let manager;
 let mlnToken;
 let version;
@@ -29,11 +27,10 @@ let deployed;
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
-  [deployer, manager, investor] = accounts;
+  [deployer, manager] = accounts;
   version = await deployed.Version;
   competition = await deployed.Competition;
   mlnToken = await deployed.MlnToken;
-  ethToken = await deployed.EthToken;
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -86,16 +83,25 @@ test.serial(
     const buyinValue = new BigNumber(0.5 * 10 ** 20);
     await updateCanonicalPriceFeed(deployed);
     const pre = await getAllBalances(deployed, accounts, fund);
-    const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [competition.address,]);
+    const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
+      competition.address,
+    ]);
     const preTotalSupply = await fund.instance.totalSupply.call({}, []);
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
-    const buyinRate  = await competition.instance.buyinRate.call({}, []);
+    const buyinRate = await competition.instance.buyinRate.call({}, []);
     await competition.instance.registerForCompetition.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice, value: buyinValue },
+      {
+        from: manager,
+        gas: config.gas,
+        gasPrice: config.gasPrice,
+        value: buyinValue,
+      },
       [fund.address, v, r, s],
     );
     const post = await getAllBalances(deployed, accounts, fund);
-    const postCompetitionMln = await mlnToken.instance.balanceOf.call({}, [competition.address,]);
+    const postCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
+      competition.address,
+    ]);
     const postTotalSupply = await fund.instance.totalSupply.call({}, []);
     const estimatedMlnReward = buyinValue.mul(buyinRate).div(10 ** 18);
     const registrantFund = await competition.instance.getRegistrantFund.call(
@@ -106,7 +112,7 @@ test.serial(
     t.is(Number(preTotalSupply), 0);
     t.deepEqual(post.custodian.ether, pre.custodian.ether.add(buyinValue));
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
-    //t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
+    // t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnReward));
     t.deepEqual(post.fund.ether, pre.fund.ether);
@@ -114,11 +120,10 @@ test.serial(
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedMlnReward));
 
     // Verify registration parameters
-    const registrantId = await competition.instance.getRegistrantId.call(
-      {},
-      [manager],
-    );
-    const registrationDetails =  await competition.instance.registrants.call(
+    const registrantId = await competition.instance.getRegistrantId.call({}, [
+      manager,
+    ]);
+    const registrationDetails = await competition.instance.registrants.call(
       {},
       [registrantId],
     );

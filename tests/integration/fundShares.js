@@ -1,11 +1,11 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import {retrieveContract} from "../../utils/lib/contracts";
+import { retrieveContract } from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {getTermsSignatureParameters} from "../../utils/lib/signing";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
+import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -83,7 +83,10 @@ test.serial("can set up new fund", async t => {
   fund = await retrieveContract("Fund", fundAddress);
   const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
   // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction({ from: deployer, gas: config.gas, gasPrice: config.gasPrice }, [investor]);
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [investor],
+  );
 
   t.deepEqual(
     postManagerEth,
@@ -163,7 +166,7 @@ test.serial.skip('direct transfer of a token to the Fund is rejected', async t =
 
 // TODO: this one may be more suitable to a unit test
 // TODO: remove skip when we re-introduce fund name tracking
-test.serial.skip(
+test.serial(
   "a new fund with a name used before cannot be created",
   async t => {
     const [r, s, v] = await getTermsSignatureParameters(deployer);
@@ -180,7 +183,7 @@ test.serial.skip(
         [deployed.MatchingMarket.address],
         v,
         r,
-        s
+        s,
       ],
     );
     await version._pollTransactionReceipt(txId);
@@ -328,7 +331,11 @@ subsequentTests.forEach(testInstance => {
 
       txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.offeredValue, testInstance.wantedShares, mlnToken.address],
+        [
+          testInstance.offeredValue,
+          testInstance.wantedShares,
+          mlnToken.address,
+        ],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -480,7 +487,8 @@ subsequentTests.forEach(testInstance => {
     );
     const gav = await fund.instance.calcGav.call({}, []);
     const calculatedFee =
-      (config.protocol.fund.managementFee / 10 ** 18) *
+      config.protocol.fund.managementFee /
+      10 ** 18 *
       (gav / 31536000 / 1000) *
       (currentTime - atLastUnclaimedFeeAllocation);
     atLastUnclaimedFeeAllocation = currentTime;
