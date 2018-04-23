@@ -91,10 +91,6 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
-  await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [mlnToken.address, ethToken.address],
-  );
 });
 
 test.beforeEach(async () => {
@@ -654,7 +650,7 @@ test.serial("manager makes an order and cancels it", async t => {
     {from: manager, gas: config.gas},
     [
       0, cancelOrderSignature,
-      ['0x0', '0x0', '0x0', '0x0', '0x0'],
+      ['0x0', '0x0', mlnToken.address, '0x0', '0x0'],
       [0, 0, 0, 0, 0, 0, 0, 0],
       `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
     ]
@@ -1021,6 +1017,49 @@ test.serial("converts fees and manager receives them", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
+test.serial("manger opens new order, but not anyone can cancel", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  txId = await fund.instance.callOnExchange.postTransaction(
+    {from: manager, gas: config.gas},
+    [
+      0, makeOrderSignature,
+      ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+      '0x0', 0, '0x0', '0x0'
+    ]
+  );
+  let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+  runningGasTotal = runningGasTotal.plus(gasUsed);
+  const offerNumber = await exchanges[0].instance.last_offer_id.call({}, []);
+  txId = await fund.instance.callOnExchange.postTransaction(
+    {from: accounts[3], gas: config.gas},
+    [
+      0, cancelOrderSignature,
+      ['0x0', '0x0', mlnToken.address, '0x0', '0x0'],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
+    ]
+  );
+  const gasUsedCancel = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+  const offerActive = await exchanges[0].instance.isActive.call({}, [offerNumber]);
+  const post = await getAllBalances(deployed, accounts, fund);
+
+  t.is(Number(gasUsedCancel), config.gas);
+  t.true(offerActive);
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(
+    post.manager.ether,
+    pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
+  );
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
 // shutdown fund
 test.serial("manager can shut down a fund", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
@@ -1029,8 +1068,8 @@ test.serial("manager can shut down a fund", async t => {
     [fund.address],
   );
   const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
-  const isShutDown = await fund.instance.isShutDown.call({}, []);
   runningGasTotal = runningGasTotal.plus(gasUsed);
+  const isShutDown = await fund.instance.isShutDown.call({}, []);
   const post = await getAllBalances(deployed, accounts, fund);
 
   t.true(isShutDown);
@@ -1046,4 +1085,20 @@ test.serial("manager can shut down a fund", async t => {
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
   t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
+test.serial("shutdown of fund allows anyone to cancel order", async t => {
+  const offerNumber = await exchanges[0].instance.last_offer_id.call({}, []);
+  txId = await fund.instance.callOnExchange.postTransaction(
+    {from: accounts[3], gas: config.gas},
+    [
+      0, cancelOrderSignature,
+      ['0x0', '0x0', mlnToken.address, '0x0', '0x0'],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      `0x${Number(offerNumber).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
+    ]
+  );
+  const offerActive = await exchanges[0].instance.isActive.call({}, [offerNumber]);
+
+  t.false(offerActive);
 });

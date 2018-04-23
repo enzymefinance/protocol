@@ -140,6 +140,11 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         )
     {
         require(uint(identifier) != 0);
+
+        var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
+
+        require(address(makerAsset) == orderAddresses[2]); // ensure we are checking correct asset
+
         Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)

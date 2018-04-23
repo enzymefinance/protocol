@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - bug allowing emergencyRedeem to drain funds
+- bug where orderExpired returned `true` for invalid assets
 
 ### Updated
 

@@ -64,7 +64,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
 
     // Constant fields
     uint public constant MAX_FUND_ASSETS = 4; // Max ownable assets by the fund supported by gas limits
-    uint public constant ORDER_EXPIRATION_TIME = 86400; // Expiration time for make orders
+    uint public constant ORDER_EXPIRATION_TIME = 86400; // Make order expiration time (1 day)
     // Constructor fields
     uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
@@ -736,7 +736,9 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function getManager() view returns (address) { return owner; }
     function getOwnedAssetsLength() view returns (uint) { return ownedAssets.length; }
     function orderExpired(address ofExchange, address ofAsset) view returns (bool) {
-        return block.timestamp >= exchangesToOpenMakeOrders[ofExchange][ofAsset].expiresAt;
+        uint expiryTime = exchangesToOpenMakeOrders[ofExchange][ofAsset].expiresAt;
+        require(expiryTime > 0);
+        return block.timestamp >= expiryTime;
     }
     function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint) {
         Order order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
