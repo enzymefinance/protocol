@@ -251,12 +251,17 @@ test("update price for even number of pricefeeds", async t => {
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
   );
+  let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
   const [price, ] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
       eurToken.address
     ]),
   );
+  ownedFeeds = ownedFeeds.map(e => e._value).sort();
+  const feedAddresses = t.context.pricefeeds.map(e => e.address).sort();
+
   t.is(Number(price), Number(medianize(prices)));
+  t.deepEqual(ownedFeeds, feedAddresses);
 });
 
 test("update price for odd number of pricefeeds", async t => {
@@ -279,13 +284,17 @@ test("update price for odd number of pricefeeds", async t => {
     { from: accounts[0], gas: 6000000 },
     [[eurToken.address]],
   );
+  let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
   const [, price] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
       eurToken.address,
     ]),
   );
+  ownedFeeds = ownedFeeds.map(e => e._value).sort();
+  const feedAddresses = t.context.pricefeeds.map(e => e.address).sort();
 
   t.deepEqual(price, medianize(prices));
+  t.deepEqual(ownedFeeds, feedAddresses);
 });
 
 test("canonical feed gets price when minimum number of feeds updated, but not all", async t => {

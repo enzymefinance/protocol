@@ -212,6 +212,7 @@ test("ranking is correct with multiple stakers", async t => {
         t.false(isOperator);
       }
     }
+
     t.is(outAmounts.join(', '), sortedFinal.join(', '));
     t.is(outStakers.join(', '), sortedStakers.join(', '));
   };

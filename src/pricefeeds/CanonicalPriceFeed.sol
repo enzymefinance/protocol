@@ -312,4 +312,19 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
+
+    /// @return Sparse array of addresses of owned pricefeeds
+    function getPriceFeedsByOwner(address _owner)
+        view
+        returns(address[])
+    {
+        address[] memory ofPriceFeeds = new address[](stakeRanking.length);
+        for (uint i; i < stakeRanking.length; i++) {
+            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeRanking[i].staker);
+            if (stakingFeed.owner() == _owner) {
+                ofPriceFeeds[i] = address(stakingFeed);
+            }
+        }
+        return ofPriceFeeds;
+    }
 }
