@@ -12,7 +12,6 @@ interface CompetitionInterface {
     // PRE, POST, INVARIANT CONDITIONS
 
     function termsAndConditionsAreSigned(address byManager, uint8 v, bytes32 r, bytes32 s) view returns (bool);
-    function isOracle() view returns (bool);
     function isWhitelisted(address x) view returns (bool);
 
     // CONSTANT METHODS

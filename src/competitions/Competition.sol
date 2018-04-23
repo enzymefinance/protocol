@@ -6,11 +6,12 @@ import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';
 import '../version/VersionInterface.sol';
 import '../dependencies/DBC.sol';
+import '../dependencies/Owned.sol';
 
 /// @title Competition Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Register Melon funds in competition
-contract Competition is CompetitionInterface, DBC {
+contract Competition is CompetitionInterface, DBC, Owned {
 
     // TYPES
 
@@ -36,7 +37,7 @@ contract Competition is CompetitionInterface, DBC {
     bytes32 public constant TERMS_AND_CONDITIONS = 0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E;
     uint public MELON_BASE_UNIT = 10 ** 18;
     // Constructor fields
-    address public oracle; // Information e.g. from Kovan can be passed to contract from this address
+    address public custodian; // Address of the custodian which holds the funds sent
     uint public startTime; // Competition start time in seconds (Temporarily Set)
     uint public endTime; // Competition end time in seconds
     uint public buyinRate; // Buy in Rate
@@ -80,9 +81,6 @@ contract Competition is CompetitionInterface, DBC {
             s
         ) == byManager; // Has sender signed TERMS_AND_CONDITIONS
     }
-
-    /// @return Whether message sender is oracle or not
-    function isOracle() view returns (bool) { return msg.sender == oracle; }
 
     /// @dev Whether message sender is KYC verified through CERTIFIER
     /// @param x Address to be checked for KYC verification
@@ -132,7 +130,7 @@ contract Competition is CompetitionInterface, DBC {
     function Competition(
         address ofMelonAsset,
         address ofCompetitionVersion,
-        address ofOracle,
+        address ofCustodian,
         uint ofStartTime,
         uint ofEndTime,
         uint ofBuyinRate,
@@ -142,7 +140,7 @@ contract Competition is CompetitionInterface, DBC {
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20Interface(MELON_ASSET);
         COMPETITION_VERSION = ofCompetitionVersion;
-        oracle = ofOracle;
+        custodian = ofCustodian;
         startTime = ofStartTime;
         endTime = ofEndTime;
         buyinRate = ofBuyinRate;
@@ -178,6 +176,7 @@ contract Competition is CompetitionInterface, DBC {
         MELON_CONTRACT.approve(fund, payoutQuantity);
         fundContract.requestInvestment(payoutQuantity, payoutQuantity, MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
+        custodian.transfer(msg.value);
 
         // Emit Register event
         emit Register(registrants.length, fund, msg.sender);
@@ -192,15 +191,15 @@ contract Competition is CompetitionInterface, DBC {
         }));
     }
 
-    /// @notice Closing oracle service, inputs final stats and triggers payouts
-    /// @dev Only the oracle can call this function
+    /// @notice Add batch addresses to whitelist with set maxBuyinQuantity
+    /// @dev Only the owner can call this function
     /// @param maxBuyinQuantity Quantity of payoutAsset received as prize
     /// @param whitelistants Performance of Melon fund at competition endTime; Can be changed for any other comparison metric
     function batchAddToWhitelist(
         uint maxBuyinQuantity,
         address[] whitelistants
     )
-        pre_cond(isOracle())
+        pre_cond(isOwner())
         pre_cond(now >= startTime && now < endTime)
     {
         for (uint i = 0; i < whitelistants.length; ++i) {
