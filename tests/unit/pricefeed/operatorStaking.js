@@ -194,7 +194,6 @@ test("ranking is correct with multiple stakers", async t => {
         {}, [staker]
       );
  
-      // console.log(`Staker ${iStaker} in step ${iStep} total ${Number(total)} of ${step.final[iStaker]}`)
       t.is(Number(total), step.final[iStaker]);
     };
     const [rawStakers, rawAmounts] = await t.context.staking.instance.getStakersAndAmounts.call();
