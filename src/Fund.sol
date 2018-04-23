@@ -380,8 +380,6 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         bytes32 s
     )
         external
-        pre_cond(isOwner())
-        pre_cond(!isShutDown)
     {
         require(modules.pricefeed.exchangeMethodIsAllowed(
             exchanges[exchangeIndex].exchange, method

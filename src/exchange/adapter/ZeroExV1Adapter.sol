@@ -28,6 +28,8 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     }
 
     // Responsibilities of takeOrder are:
+    // - check sender
+    // - check fund not shut down
     // - check not buying own fund tokens
     // - check price exists for asset pair
     // - check price is recent
@@ -65,6 +67,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     ) {
         require(Fund(this).owner() == msg.sender);
         require(!Fund(this).isShutDown());
+
         Token makerAsset = Token(orderAddresses[2]);
         Token takerAsset = Token(orderAddresses[3]);
         uint maxMakerQuantity = orderValues[0];

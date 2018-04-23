@@ -16,6 +16,8 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
     //  METHODS
 
     // Responsibilities of makeOrder are:
+    // - check sender
+    // - check fund not shut down
     // - check price recent
     // - check risk management passes
     // - approve funds to be traded (if necessary)
@@ -76,6 +78,8 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
     }
 
     // Responsibilities of takeOrder are:
+    // - check sender
+    // - check fund not shut down
     // - check not buying own fund tokens
     // - check price exists for asset pair
     // - check price is recent
@@ -147,7 +151,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
     }
 
     // responsibilities of cancelOrder are:
-    // - check sender is this contract or owner, or that order expired
+    // - check sender is this contract or owner, or that order expired, or that fund shut down
     // - remove order from tracking array
     // - cancel order on exchange
     /// @notice Cancels orders that were not expected to settle immediately
