@@ -73,7 +73,7 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     /// @notice Takes an active order on the selected exchange
     /// @dev These orders are expected to settle immediately
     /// @param targetExchange Address of the exchange
-    /// @param orderValues [0] Maker token quantity (how much of the maker token to fill)
+    /// @param orderValues [6] Fill amount : amount of taker token to fill
     /// @param identifier Active order id
     function takeOrder(
         address targetExchange,
@@ -87,23 +87,23 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         require(Fund(this).owner() == msg.sender);
         require(!Fund(this).isShutDown());
         var (pricefeed,,) = Fund(this).modules();
-        uint makerQuantity = orderValues[0];
+        uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
             makerAsset,
             maxTakerQuantity,
             takerAsset
         ) = MatchingMarket(targetExchange).getOffer(uint(identifier));
+        uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
         require(takerAsset != address(this) && makerAsset != address(this));
         require(address(makerAsset) != address(takerAsset));
         require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        require(makerQuantity <= maxMakerQuantity);
-
-        uint fillTakerQuantity = mul(makerQuantity, maxTakerQuantity) / maxMakerQuantity;
-        require(takeOrderPermitted(fillTakerQuantity, takerAsset, makerQuantity, makerAsset));
+        require(fillMakerQuantity <= maxMakerQuantity);
+        require(fillTakerQuantity <= maxTakerQuantity);
+        require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         require(takerAsset.approve(targetExchange, fillTakerQuantity));
-        require(MatchingMarket(targetExchange).buy(uint(identifier), makerQuantity));
+        require(MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity));
         require(
             Fund(this).isInAssetList(makerAsset) ||
             Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
