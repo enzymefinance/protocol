@@ -31,12 +31,13 @@ module.exports = {
         interval: 60,
         validity: 60,
         assetsToRegister: [
-          'ETH-T-M', 'MKR-T-M', 'DAI-T-M', 'EUR-T'
+          'ETH-T-M', 'MKR-T-M', 'DAI-T-M', 'EUR-T', 'ANT-T', 'ZRX-T', 'BAT-T',
+          'DGX-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
       staking: {
         minimumAmount: 1000000000,
-        numOperators: 1
+        numOperators: 5
       }
     },
   },
