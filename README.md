@@ -27,8 +27,8 @@ You will need the `dapp` developer tools, which you can install using [these ste
 
 ```sh
 # Clone this repository
-git clone --recursive git@github.com:melonproject/protocol.git
-cd protocol
+git clone --recursive git@github.com:melonproject/smart-contracts.git
+cd smart-contracts
 # Install dependencies
 npm install
 # Generate bytecode and abi of smart-contracts using dapp suite
