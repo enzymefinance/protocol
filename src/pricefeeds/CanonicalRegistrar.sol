@@ -57,8 +57,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     /// @param inputDecimals Human-readable symbol of the Asset as in ERC223 token standard
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
-    /// @param ofBreakIn Address of break in contract on destination chain
-    /// @param ofBreakOut Address of break out contract on this chain
+    /// @param breakInBreakOut Address of break in and break out contracts on destination chain
     /// @param inputStandards Integers of EIP standards this asset adheres to
     /// @param inputFunctionSignatures Function signatures for whitelisted asset functions
     function registerAsset(
@@ -68,8 +67,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
-        address ofBreakIn,
-        address ofBreakOut,
+        address[2] breakInBreakOut,
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
@@ -85,8 +83,8 @@ contract CanonicalRegistrar is DSThing, DBC {
             inputDecimals,
             inputUrl,
             inputIpfsHash,
-            ofBreakIn,
-            ofBreakOut,
+            breakInBreakOut[0],
+            breakInBreakOut[1],
             inputStandards,
             inputFunctionSignatures
         );

@@ -96,6 +96,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
+    /// @param ofDefaultAssets Addresses of assets to enable invest/redeem for (quote asset is already enabled)
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
@@ -106,7 +107,8 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address ofCompliance,
         address ofRiskMgmt,
         address ofPriceFeed,
-        address[] ofExchanges
+        address[] ofExchanges,
+        address[] ofDefaultAssets
     )
         RestrictedShares(withName, "MLNF", 18, now)
     {
@@ -131,12 +133,16 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
                 takesCustody: takesCustody
             }));
         }
-        // Require Quote assets exists in pricefeed
         QUOTE_ASSET = Asset(ofQuoteAsset);
         // Quote Asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;
         require(address(QUOTE_ASSET) == modules.pricefeed.getQuoteAsset()); // Sanity check
+        for (uint j = 0; j < ofDefaultAssets.length; j++) {
+            require(modules.pricefeed.assetIsRegistered(ofDefaultAssets[j]));
+            isInvestAllowed[ofDefaultAssets[j]] = true;
+            isRedeemAllowed[ofDefaultAssets[j]] = true;
+        }
         atLastUnclaimedFeeAllocation = Calculations({
             gav: 0,
             managementFee: 0,

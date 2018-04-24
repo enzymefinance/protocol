@@ -26,35 +26,35 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     // CONSTRUCTOR
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
+    /// @param ofStakingAsset Address of staking asset (may or may not be quoteAsset)
     /// @param ofQuoteAsset Address of quote asset
     /// @param quoteAssetName Name of quote asset
     /// @param quoteAssetSymbol Symbol for quote asset
     /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
-    /// @param quoteAssetBreakIn Break-in address for the quote asset
-    /// @param quoteAssetBreakOut Break-out address for the quote asset
+    /// @param quoteAssetBreakInBreakOut Break-in/break-out for quote asset on destination chain
     /// @param quoteAssetStandards EIP standards quote asset adheres to
     /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
     // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     // /// @param validity Number of seconds that datafeed update information is valid for
     /// @param ofGovernance Address of contract governing the Canonical PriceFeed
     function CanonicalPriceFeed(
+        address ofStakingAsset,
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
-        address quoteAssetBreakIn,
-        address quoteAssetBreakOut,
+        address[2] quoteAssetBreakInBreakOut,
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
-        uint[] updateInfo, // interval validity
-        uint[] stakingInfo, // minStake, numOperators
+        uint[2] updateInfo, // interval validity
+        uint[2] stakingInfo, // minStake, numOperators
         address ofGovernance
     )
-        OperatorStaking(AssetInterface(ofQuoteAsset), stakingInfo[0], stakingInfo[1])
+        OperatorStaking(AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1])
         SimplePriceFeed(this, ofQuoteAsset, 0x0)
     {
         registerAsset(
@@ -64,8 +64,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
-            quoteAssetBreakIn,
-            quoteAssetBreakOut,
+            quoteAssetBreakInBreakOut,
             quoteAssetStandards,
             quoteAssetFunctionSignatures
         );
