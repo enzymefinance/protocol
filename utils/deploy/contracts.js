@@ -50,20 +50,20 @@ async function deployEnvironment(environment) {
   if (environment === "kovan") {
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-    const mlnAddr = tokenInfo[environment]["MLN-T-M"].address;
-    const ethTokenAddress = tokenInfo[environment]["ETH-T-M"].address;
+    const mlnAddr = tokenInfo[environment]["MLN-T"].address;
+    const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
     // set up pricefeeds
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       mlnAddr,
-      'Melon Token',
-      'MLN-T-M',
+      ethTokenAddress,
+      'Eth Token',
+      'WETH-T',
       18,
-      'melonport.com',
+      'ethereum.org',
       mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
       [],
       [],
       [
@@ -78,7 +78,7 @@ async function deployEnvironment(environment) {
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
-      mlnAddr,
+      ethTokenAddress,
       deployed.CanonicalPriceFeed.address
     ]);
     await mlnToken.instance.approve.postTransaction(
@@ -97,9 +97,9 @@ async function deployEnvironment(environment) {
     deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
     const pairsToWhitelist = [
-      ['MLN-T-M', 'ETH-T-M'],
-      ['MLN-T-M', 'MKR-T-M'],
-      ['MLN-T-M', 'DAI-T-M'],
+      ['MLN-T', 'ETH-T'],
+      ['MLN-T', 'MKR-T'],
+      ['MLN-T', 'DAI-T'],
     ];
     await Promise.all(
       pairsToWhitelist.map(async (pair) => {
@@ -177,8 +177,7 @@ async function deployEnvironment(environment) {
         tokenEntry.decimals,
         tokenEntry.url,
         mockBytes,
-        mockAddress,
-        mockAddress,
+        [mockAddress, mockAddress],
         [],
         []
       ]);
@@ -209,8 +208,7 @@ async function deployEnvironment(environment) {
       'melonport.com',
       mockBytes,
       mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
       config.protocol.pricefeed.interval,
       config.protocol.pricefeed.validity,
     ], () => {}, true);
@@ -255,8 +253,7 @@ async function deployEnvironment(environment) {
             tokenEntry.decimals,
             tokenEntry.url,
             mockBytes,
-            mockAddress,
-            mockAddress,
+            [mockAddress, mockAddress],
             [],
             []
           ]
@@ -284,13 +281,13 @@ async function deployEnvironment(environment) {
 
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
-      'Melon Token',
-      'MLN-T',
+      deployed.EthToken.address,
+      'Ether token',
+      'ETH-T',
       18,
-      'melonport.com',
+      'ethereum.org',
       mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
       [],
       [],
       [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
@@ -300,7 +297,7 @@ async function deployEnvironment(environment) {
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
-      deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address
     ]);
     await deployed.MlnToken.instance.approve.postTransaction(
@@ -365,14 +362,13 @@ async function deployEnvironment(environment) {
 
     // register assets
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-      deployed.EthToken.address,
-      "Ether token",
-      "ETH-T",
+      deployed.MlnToken.address,
+      "Melon token",
+      "MLN-T",
       18,
-      "ethereum.org",
+      "melonport.com",
       mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
       [],
       []
     ]);
@@ -383,8 +379,7 @@ async function deployEnvironment(environment) {
       18,
       "europa.eu",
       mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
       [],
       []
     ]);

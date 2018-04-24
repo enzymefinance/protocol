@@ -32,7 +32,7 @@ module.exports = {
         interval: 60,
         validity: 60,
         assetsToRegister: [
-          'WETH-T', 'MKR-T-M', 'DAI-T-M', 'ANT-T', 'ZRX-T', 'BAT-T',
+          'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
           'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
