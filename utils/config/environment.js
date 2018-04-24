@@ -12,7 +12,8 @@ module.exports = {
         validity: 60 * 60,
         operator: '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54',
         assetsToRegister: [
-          'W-ETH', 'MKR', 'DAI'
+          'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'BAT',
+          'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
         ],
       },
       governance: {
@@ -31,8 +32,8 @@ module.exports = {
         interval: 60,
         validity: 60,
         assetsToRegister: [
-          'ETH-T-M', 'MKR-T-M', 'DAI-T-M', 'EUR-T', 'ANT-T', 'ZRX-T', 'BAT-T',
-          'DGX-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
+          'WETH-T', 'MKR-T-M', 'DAI-T-M', 'ANT-T', 'ZRX-T', 'BAT-T',
+          'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
       staking: {
