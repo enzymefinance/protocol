@@ -93,7 +93,6 @@ test.serial("can set up new fund", async t => {
     preManagerEth.minus(runningGasTotal.times(gasPrice)),
   );
   t.deepEqual(Number(fundId), 0);
-  // t.true(await version.instance.fundNameTaken.call({}, [fundName]));
   // t.deepEqual(postManagerEth, preManagerEth.minus(runningGasTotal.times(gasPrice)));
 });
 
@@ -187,15 +186,11 @@ test.serial(
       ],
     );
     await version._pollTransactionReceipt(txId);
-    const fundNameTaken = await version.instance.fundNameTaken.call({}, [
-      fundName,
-    ]);
     const newFundAddress = await version.instance.getFundByManager.call({}, [
       deployer,
     ]);
     const postFundId = await version.instance.getLastFundId.call({}, []);
 
-    t.true(fundNameTaken);
     t.is(Number(preFundId), Number(postFundId));
     t.is(newFundAddress, "0x0000000000000000000000000000000000000000");
   },

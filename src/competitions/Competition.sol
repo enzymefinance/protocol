@@ -4,7 +4,7 @@ import "./ERC20Interface.sol";
 import "./CompetitionInterface.sol";
 import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';
-import '../version/VersionInterface.sol';
+import '../version/Version.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 import "ds-math/math.sol";
@@ -173,7 +173,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     {
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length <= maxRegistrants);
         require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
-        require(VersionInterface(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
+        require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
         uint payoutQuantity = mul(msg.value, buyinRate) / 10 ** 18;
@@ -208,7 +208,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         address[] whitelistants
     )
         pre_cond(isOwner())
-        pre_cond(isCompetitionActive())
+        pre_cond(now < endTime)
     {
         for (uint i = 0; i < whitelistants.length; ++i) {
             whitelistantToMaxBuyin[whitelistants[i]] = maxBuyinQuantity;
@@ -218,7 +218,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @notice Claim Reward
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))
-        pre_cond(now >= endTime)
+        pre_cond(now >= endTime || Version(COMPETITION_VERSION).isShutDown())
     {
         Registrant registrant  = registrants[getRegistrantId(msg.sender)];
         require(registrant.isRewarded == false);

@@ -94,6 +94,8 @@
       "tests/integration/redeemMaliciousAsset.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/pricefeed/canonicalPriceFeed.js",
+      "tests/unit/competitions/registration.js",
+      "tests/unit/competitions/redeem.js",
       "tests/unit/competitions/version.js",
       "tests/unit/competitions/whitelist.js",
       "tests/unit/compliance/noCompliance.js",

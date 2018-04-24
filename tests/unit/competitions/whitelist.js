@@ -36,10 +36,10 @@ test("Owner of competition can add addresses to whitelist", async t => {
     ),
   ];
   const areWhitelisted = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[4],
     ]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[5],
     ]),
   ];
