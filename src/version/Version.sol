@@ -85,7 +85,7 @@ contract Version is DBC, Owned, VersionInterface {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         // Check if the
-        require(CompetitionCompliance(COMPLIANCE).isCompetitionWhitelisted(msg.sender));
+        require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address ofFund = new Fund(

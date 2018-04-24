@@ -3,7 +3,7 @@ import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters, getSignatureParameters } from "../../utils/lib/signing";
-import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import { retrieveContract } from "../../utils/lib/contracts";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");

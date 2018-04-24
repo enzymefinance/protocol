@@ -54,16 +54,16 @@ contract CompetitionCompliance is ComplianceInterface, DBC, Owned {
         return competitionAddress == ofParticipant;
     }
 
-    /// @notice Checks whether an address is whitelisted in the competition contract
+    /// @notice Checks whether an address is whitelisted in the competition contract and competition is active
     /// @param x Address
     /// @return Whether the address is whitelisted
-    function isCompetitionWhitelisted(
+    function isCompetitionAllowed(
         address x
     )
         view
         returns (bool)
     {
-        return CompetitionInterface(competitionAddress).isWhitelisted(x);
+        return CompetitionInterface(competitionAddress).isWhitelisted(x) && CompetitionInterface(competitionAddress).isCompetitionActive();
     }
 
 

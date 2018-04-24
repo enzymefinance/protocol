@@ -21,6 +21,7 @@ interface CompetitionInterface {
     function getRegistrantId(address x) view returns (uint);
     function getRegistrantFund(address x) view returns (address);
     function getCompetitionStatusOfRegistrants() view returns (address[], address[], bool[]);
+    function getTimeTillEnd() view returns (uint);
 
     // PUBLIC METHODS
 

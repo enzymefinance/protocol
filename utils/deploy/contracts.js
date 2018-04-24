@@ -108,7 +108,7 @@ async function deployEnvironment(environment) {
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address,
-        ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployer
+        ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, accounts[0]
       ],
       () => {}, true
     );

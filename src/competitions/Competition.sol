@@ -7,11 +7,12 @@ import '../FundInterface.sol';
 import '../version/VersionInterface.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
+import "ds-math/math.sol";
 
 /// @title Competition Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Register Melon funds in competition
-contract Competition is CompetitionInterface, DBC, Owned {
+contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
     // TYPES
 
@@ -42,6 +43,7 @@ contract Competition is CompetitionInterface, DBC, Owned {
     uint public endTime; // Competition end time in seconds
     uint public buyinRate; // Buy in Rate
     uint public totalMaxBuyin; // Limit amount of deposit to participate in competition
+    uint public currentTotalBuyin; // Total buyin till now
     uint public maxRegistrants; // Limit number of participate in competition
     uint public prizeMoneyAsset; // Equivalent to payoutAsset
     uint public prizeMoneyQuantity; // Total prize money pool
@@ -98,6 +100,9 @@ contract Competition is CompetitionInterface, DBC, Owned {
 
     /// @return Address of the fund registered by the registrant address
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
+
+    /// @return Address of the fund registered by the registrant address
+    function getTimeTillEnd() view returns (uint) { return sub(endTime, block.timestamp); }
 
     /**
     @notice Returns an array of fund addresses and an associated array of whether competing and whether disqualified
@@ -166,12 +171,12 @@ contract Competition is CompetitionInterface, DBC, Owned {
         pre_cond(isCompetitionActive())
         pre_cond(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false)
     {
-        require(msg.value <= totalMaxBuyin && registrants.length <= maxRegistrants);
+        require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length <= maxRegistrants);
         require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
         require(VersionInterface(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
-        uint payoutQuantity = (msg.value * buyinRate) / 10 ** 18;
+        uint payoutQuantity = mul(msg.value, buyinRate) / 10 ** 18;
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
         FundInterface fundContract = FundInterface(fund);
@@ -179,6 +184,7 @@ contract Competition is CompetitionInterface, DBC, Owned {
         fundContract.requestInvestment(payoutQuantity, payoutQuantity, MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
         custodian.transfer(msg.value);
+        currentTotalBuyin = add(currentTotalBuyin, msg.value);
 
         // Emit Register event
         emit Register(registrants.length, fund, msg.sender);

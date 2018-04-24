@@ -87,6 +87,7 @@
       "tests/integration/fundShares.js",
       "tests/integration/fundTrading.js",
       "tests/integration/competitionRegistration.js",
+      "tests/integration/competitionPayout.js",
       "tests/integration/centralizedExchange.js",
       "tests/integration/secondaryTrading.js",
       "tests/integration/simpleMarketWithApprove.js",

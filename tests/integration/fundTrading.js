@@ -264,7 +264,6 @@ exchangeIndexes.forEach(i => {
       { from: investor, gas: config.gas },
       [requestId],
     );
-    console.log(`EXEC ${  (await api.eth.getTransactionReceipt(txId)).gasUsed}`);
     gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     investorGasTotal = investorGasTotal.plus(gasUsed);
     // set approved token back to zero
@@ -272,7 +271,6 @@ exchangeIndexes.forEach(i => {
       fund.address,
       0,
     ]);
-    console.log((await api.eth.getTransactionReceipt(txId)).gasUsed);
     investorGasTotal = investorGasTotal.plus(
       (await api.eth.getTransactionReceipt(txId)).gasUsed,
     );
