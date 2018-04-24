@@ -166,7 +166,7 @@ module.exports = {
       address: '0x37c46878Da1B762F686dB529e7cED1b0Ffb6c578',
       name: 'FunFair',
       decimals: 8,
-      url: 'fundfair.io',
+      url: 'funfair.io',
       ipfsHash: '',
     },
     'SAN-T': {
@@ -230,6 +230,27 @@ module.exports = {
       name: 'Dai (no fallback)',
       decimals: 18,
       url: '',
+      ipfsHash: '',
+    },
+    'KNC-T': {
+      address: '0x46c4B65F40f686c3F3738395c36AceA70C06F3C2',
+      name: 'Kyber Network',
+      decimals: 18,
+      url: 'kyber.network',
+      ipfsHash: '',
+    },
+    'JNT-T': {
+      address: '0xB04985BFaB8550C43C00528D9d06492916cB9df6',
+      name: 'Jibrel Network',
+      decimals: 18,
+      url: 'jibrel.network',
+      ipfsHash: '',
+    },
+    'OMG-T': {
+      address: '0xfdBe0D69a110D1f0dc6aEc8588804da88173B8F0',
+      name: 'Omise-Go',
+      decimals: 18,
+      url: 'omise.co',
       ipfsHash: '',
     },
   },
@@ -325,7 +346,28 @@ module.exports = {
       decimals: 18,
       url: '0xproject.com',
       ipfsHash: '',
-    }
+    },
+    'KNC': {
+      address: '0xdd974d5c2e2928dea5f71b9825b8b646686bd200',
+      name: 'Kyber Network',
+      decimals: 18,
+      url: 'kyber.network',
+      ipfsHash: '',
+    },
+    'JNT': {
+      address: '0xa5fd1a791c4dfcaacc963d4f73c6ae5824149ea7',
+      name: 'Jibrel Network',
+      decimals: 18,
+      url: 'jibrel.network',
+      ipfsHash: '',
+    },
+    'OMG': {
+      address: '0xd26114cd6EE289AccF82350c8d8487fedB8A0C07',
+      name: 'Omise-Go',
+      decimals: 18,
+      url: 'omise.co',
+      ipfsHash: '',
+    },
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
     // 'W-GNT': {
     //   address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
