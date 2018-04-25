@@ -61,10 +61,10 @@ test("Owner of competition can remove addresses from whitelist", async t => {
     ),
   ];
   const areWhitelistedBefore = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[4],
     ]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[5],
     ]),
   ];
@@ -81,10 +81,10 @@ test("Owner of competition can remove addresses from whitelist", async t => {
     ),
   ];
   const areWhitelistedAfter = [
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[4],
     ]),
-    await competitionCompliance.instance.isCompetitionWhitelisted.call({}, [
+    await competitionCompliance.instance.isCompetitionAllowed.call({}, [
       accounts[5],
     ]),
   ];

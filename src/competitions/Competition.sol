@@ -102,7 +102,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
 
     /// @return Address of the fund registered by the registrant address
-    function getTimeTillEnd() view returns (uint) { return sub(endTime, block.timestamp); }
+    function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
 
     /**
     @notice Returns an array of fund addresses and an associated array of whether competing and whether disqualified

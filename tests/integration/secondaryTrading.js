@@ -1,4 +1,4 @@
-import test from "ava";
+/* import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
@@ -116,3 +116,4 @@ test.serial("Investor cannot give allowance to his shares", async t => {
   ]);
   t.is(allowance.toNumber(), 0);
 });
+*/
