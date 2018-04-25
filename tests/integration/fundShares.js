@@ -64,6 +64,7 @@ test.serial("can set up new fund", async t => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [],
       v,
       r,
       s,

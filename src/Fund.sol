@@ -741,6 +741,17 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
     function getManager() view returns (address) { return owner; }
     function getOwnedAssetsLength() view returns (uint) { return ownedAssets.length; }
+    function getExchangeInfo() view returns (address[], address[], bool[]) {
+        address[] memory ofExchanges = new address[](exchanges.length);
+        address[] memory ofAdapters = new address[](exchanges.length);
+        bool[] memory takesCustody = new bool[](exchanges.length);
+        for (uint i = 0; i < exchanges.length; i++) {
+            ofExchanges[i] = exchanges[i].exchange;
+            ofAdapters[i] = exchanges[i].exchangeAdapter;
+            takesCustody[i] = exchanges[i].takesCustody;
+        }
+        return (ofExchanges, ofAdapters, takesCustody);
+    }
     function orderExpired(address ofExchange, address ofAsset) view returns (bool) {
         uint expiryTime = exchangesToOpenMakeOrders[ofExchange][ofAsset].expiresAt;
         require(expiryTime > 0);

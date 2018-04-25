@@ -84,6 +84,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.SimpleMarket.address, deployed.MatchingMarket.address],
+      [],
       v,
       r,
       s,
@@ -152,15 +153,8 @@ test.serial("investor receives initial mlnToken for testing", async t => {
   const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
   const post = await getAllBalances(deployed, accounts, fund);
 
-  t.deepEqual(
-    postDeployerEth,
-    preDeployerEth.minus(runningGasTotal.times(gasPrice)),
-  );
-  t.deepEqual(
-    post.investor.MlnToken,
-    pre.investor.MlnToken.add(initialTokenAmount),
-  );
-
+  t.deepEqual(postDeployerEth, preDeployerEth.minus(runningGasTotal.times(gasPrice)));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken.add(initialTokenAmount));
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
