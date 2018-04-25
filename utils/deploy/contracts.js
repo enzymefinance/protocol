@@ -281,11 +281,11 @@ async function deployEnvironment(environment) {
 
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
-      deployed.EthToken.address,
-      'Ether token',
-      'ETH-T',
+      deployed.MlnToken.address,
+      'Melon token',
+      'MLN-T',
       18,
-      'ethereum.org',
+      'melonport.com',
       mockBytes,
       [mockAddress, mockAddress],
       [],
@@ -297,7 +297,7 @@ async function deployEnvironment(environment) {
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
-      deployed.EthToken.address,
+      deployed.MlnToken.address,
       deployed.CanonicalPriceFeed.address
     ]);
     await deployed.MlnToken.instance.approve.postTransaction(
@@ -362,11 +362,11 @@ async function deployEnvironment(environment) {
 
     // register assets
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-      deployed.MlnToken.address,
-      "Melon token",
-      "MLN-T",
+      deployed.EthToken.address,
+      "Ether token",
+      "ETH-T",
       18,
-      "melonport.com",
+      "ethereum.org",
       mockBytes,
       [mockAddress, mockAddress],
       [],
