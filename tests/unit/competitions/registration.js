@@ -80,7 +80,7 @@ test.beforeEach(async () => {
   );
 });
 
-test("Cannot register in the Competition without being whitelisted", async t => {
+test.serial("Cannot register in the Competition without being whitelisted", async t => {
   await registerFund(fund.address, deployer, 10);
   const registrantFund = await competition.instance.getRegistrantFund.call({}, [
     manager,
@@ -88,7 +88,7 @@ test("Cannot register in the Competition without being whitelisted", async t => 
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
 
-test("Cannot register fund someone else owns even if whitelisted", async t => {
+test.serial("Cannot register fund someone else owns even if whitelisted", async t => {
   await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [deployer]]);
   await registerFund(fund.address, deployer, 10);
   const registrantFund = await competition.instance.getRegistrantFund.call({}, [
@@ -97,10 +97,33 @@ test("Cannot register fund someone else owns even if whitelisted", async t => {
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
 
-test("Can setup a new fund from whitelisted account", async t => {
+test.serial("Can register from a whitelisted account", async t => {
   await registerFund(fund.address, manager, 10);
   const registrantFund = await competition.instance.getRegistrantFund.call({}, [
     manager,
   ]);
   t.is(registrantFund, fund.address);
+});
+
+test.serial("Cannot register for more than individual maxBuyin", async t => {
+  await registerFund(fund.address, manager, 10 ** 24);
+  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
+    manager,
+  ]);
+  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+});
+
+test.serial("Cannot register after endTime", async t => {
+  competition = await deployContract("competitions/Competition", Object.assign(opts, {gas: 6800000}), [deployed.MlnToken.address, version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 10], () => {}, true);
+  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [manager]]);
+  // Send some MLN to competition contract
+  await deployed.MlnToken.instance.transfer.postTransaction(
+    { from: deployer, gasPrice: config.gasPrice },
+    [competition.address, 10 ** 24, ""],
+  );
+  await registerFund(fund.address, manager, 10);
+  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
+    manager,
+  ]);
+  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
