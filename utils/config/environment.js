@@ -12,7 +12,7 @@ module.exports = {
         validity: 60 * 60,
         operator: '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54',
         assetsToRegister: [
-          'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'BAT',
+          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'BAT',
           'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
         ],
       },
@@ -32,7 +32,7 @@ module.exports = {
         interval: 60,
         validity: 60,
         assetsToRegister: [
-          'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
           'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },

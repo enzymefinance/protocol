@@ -347,6 +347,27 @@ module.exports = {
       url: 'omise.co',
       ipfsHash: '',
     },
+    'ANT': {
+      address: '0x960b236A07cf122663c4303350609A66A7B288C0',
+      name: 'Aragon Network Token',
+      decimals: 18,
+      url: 'https://aragon.one/',
+      ipfsHash: '',
+    },
+    'GNO': {
+      address: '0x6810e776880c02933d47db1b9fc05908e5386b96',
+      name: 'Gnosis Token',
+      decimals: 18,
+      url: 'https://gnosis.pm/',
+      ipfsHash: '',
+    },
+    'REQ': {
+      address: '0x8f8221afbb33998d8584a2b05749ba73c37a938a',
+      name: 'Request Network',
+      decimals: 18,
+      url: 'https://request.network',
+      ipfsHash: '',
+    },
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
     // 'W-GNT': {
     //   address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
