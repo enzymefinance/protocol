@@ -171,7 +171,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         pre_cond(isCompetitionActive())
         pre_cond(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false)
     {
-        require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length <= maxRegistrants);
+        require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
         require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
