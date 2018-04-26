@@ -60,7 +60,14 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(this).addAssetToOwnedAssets(takerAsset);
-        Fund(this).orderUpdateHook(targetExchange, bytes32(orderId), Fund.UpdateType.make);
+        Fund(this).orderUpdateHook(
+            targetExchange,
+            bytes32(identifier),
+            Fund.UpdateType.make,
+            [address(makerAsset), address(takerAsset)],
+            [makerQuantity, takerQuantity, uint(0)]
+        );
+
     }
 
     // Responsibilities of takeOrder are:
@@ -114,7 +121,13 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(makerAsset);
-        Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.take);
+        Fund(this).orderUpdateHook(
+            targetExchange,
+            bytes32(identifier),
+            Fund.UpdateType.take,
+            [address(makerAsset), address(takerAsset)],
+            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+        );
     }
 
     // responsibilities of cancelOrder are:
@@ -149,7 +162,13 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
-        Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.cancel);
+        Fund(this).orderUpdateHook(
+            targetExchange,
+            bytes32(identifier),
+            Fund.UpdateType.cancel,
+            [address(0x0), address(0x0)],
+            [uint(0), uint(0), uint(0)]
+        );
     }
 
     // VIEW METHODS

@@ -155,6 +155,7 @@ async function deployEnvironment(environment) {
         ]
       ]
     );
+    console.log('Registered MatchingMarket');
 
     await governanceAction(
      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
@@ -165,6 +166,7 @@ async function deployEnvironment(environment) {
         [ takeOrderSignature ]
       ]
     );
+    console.log('Registered ZeroEx');
 
     // register assets
     for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {

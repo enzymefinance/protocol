@@ -74,7 +74,13 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         // Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(this).addAssetToOwnedAssets(takerAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
-        // Fund(this).orderUpdateHook(targetExchange, bytes32(orderId), Fund.UpdateType.make);
+        // Fund(this).orderUpdateHook(
+        //     targetExchange,
+        //     bytes32(identifier),
+        //     Fund.UpdateType.make,
+        //     [makerAsset, takerAsset],
+        //     [makerQuantity, takerQuantity, uint(0)]
+        // );
     }
 
     // Responsibilities of takeOrder are:
@@ -147,7 +153,13 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(makerAsset);
-        Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.take);
+        // Fund(this).orderUpdateHook(
+        //     targetExchange,
+        //     bytes32(identifier),
+        //     Fund.UpdateType.take,
+        //     [address(makerAsset), address(takerAsset)],
+        //     [makerQuantity, takerQuantity, orderValues[6]]
+        // );
     }
 
     // responsibilities of cancelOrder are:
@@ -177,7 +189,13 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         // MatchingMarket(targetExchange).cancel(
         //     uint(identifier)
         // );
-        // Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.cancel);
+        // Fund(this).orderUpdateHook(
+        //     targetExchange,
+        //     bytes32(identifier),
+        //     Fund.UpdateType.cancel,
+        //     [address(0x0), address(0x0)],
+        //     [uint(0), uint(0), uint(0)]
+        // );
     }
 
     // VIEW METHODS

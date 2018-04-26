@@ -59,9 +59,21 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         bool takesCustody;  // exchange takes custody before making order
     }
 
-    struct Order {
-        uint id; // Order Id
+    struct OpenMakeOrder {
+        uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
+    }
+
+    struct Order { // Describes an order event (make or take order)
+        address exchangeAddress; // address of the exchange this order is on
+        bytes32 orderId; // Id as returned from exchange
+        UpdateType updateType; // Enum: make, take (cancel should be ignored)
+        address makerAsset; // Order maker's asset
+        address takerAsset; // Order taker's asset
+        uint makerQuantity; // Quantity of makerAsset to be traded
+        uint takerQuantity; // Quantity of takerAsset to be traded
+        uint timestamp; // Time of order creation in seconds
+        uint fillTakerQuantity; // Quantity of takerAsset to be filled
     }
 
     // FIELDS
@@ -78,11 +90,12 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     Modules public modules; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
     Calculations public atLastUnclaimedFeeAllocation; // Calculation results at last allocateUnclaimedFees() call
+    Order[] public orders;  // append-only list of makes/takes from this fund
+    mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders; // exchangeIndex to: asset to open make orders
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
     mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
     mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
-    mapping (address => mapping(address => Order)) public exchangesToOpenMakeOrders; // exchangeIndex to: asset to open make orders
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
@@ -424,10 +437,26 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     function orderUpdateHook(
         address ofExchange,
         bytes32 orderId,
-        UpdateType updateType
+        UpdateType updateType,
+        address[2] orderAddresses, // makerAsset, takerAsset
+        uint[3] orderValues        // makerQuantity, takerQuantity, fillTakerQuantity (take only)
     )
         pre_cond(msg.sender == address(this))
     {
+        // only save make/take
+        if (updateType == UpdateType.make || updateType == UpdateType.take) {
+            orders.push(Order({
+                exchangeAddress: ofExchange,
+                orderId: orderId,
+                updateType: updateType,
+                makerAsset: orderAddresses[0],
+                takerAsset: orderAddresses[1],
+                makerQuantity: orderValues[0],
+                takerQuantity: orderValues[1],
+                timestamp: block.timestamp,
+                fillTakerQuantity: orderValues[2]
+            }));
+        }
         emit OrderUpdated(ofExchange, orderId, updateType);
     }
 
@@ -608,7 +637,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         // The value of unclaimedFees measured in shares of this fund at current value
         feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-        uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
+         uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
         sharePrice = nav > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
@@ -753,6 +782,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
     }
 
     function getLastRequestId() view returns (uint) { return requests.length - 1; }
+    function getLastOrderIndex() view returns (uint) { return orders.length - 1; }
     function getManager() view returns (address) { return owner; }
     function getOwnedAssetsLength() view returns (uint) { return ownedAssets.length; }
     function getExchangeInfo() view returns (address[], address[], bool[]) {
@@ -772,7 +802,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         return block.timestamp >= expiryTime;
     }
     function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint) {
-        Order order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
+        OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
         return (order.id, order.expiresAt);
     }
 }
