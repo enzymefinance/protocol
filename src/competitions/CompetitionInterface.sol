@@ -22,6 +22,8 @@ interface CompetitionInterface {
     function getRegistrantFund(address x) view returns (address);
     function getCompetitionStatusOfRegistrants() view returns (address[], address[], bool[]);
     function getTimeTillEnd() view returns (uint);
+    function getCHFValue(uint etherQuantity) view returns (uint);
+    function getMLNPrice() view returns (uint, uint);
 
     // PUBLIC METHODS
 

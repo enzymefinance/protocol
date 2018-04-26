@@ -2,7 +2,10 @@ import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import { deployContract, retrieveContract } from "../../../utils/lib/contracts";
-import { getTermsSignatureParameters, getSignatureParameters } from "../../../utils/lib/signing";
+import {
+  getTermsSignatureParameters,
+  getSignatureParameters,
+} from "../../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -38,6 +41,7 @@ async function registerFund(fundAddress, by, value) {
     },
     [fundAddress, v, r, s],
   );
+  return competition.instance.getRegistrantFund.call({}, [by]);
 }
 
 test.before(async () => {
@@ -48,13 +52,51 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  competitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
-  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, deployed.Governance.address, deployed.EthToken.address, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, competitionCompliance.address], () => {}, true);
-  competition = await deployContract("competitions/Competition", Object.assign(opts, {gas: 6800000}), [deployed.MlnToken.address, version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 10], () => {}, true);
+  competitionCompliance = await deployContract(
+    "compliance/CompetitionCompliance",
+    opts,
+    [accounts[0]],
+  );
+  version = await deployContract(
+    "version/Version",
+    Object.assign(opts, { gas: 6800000 }),
+    [
+      1,
+      deployed.Governance.address,
+      deployed.EthToken.address,
+      deployed.MlnToken.address,
+      deployed.CanonicalPriceFeed.address,
+      competitionCompliance.address,
+    ],
+    () => {},
+    true,
+  );
+  competition = await deployContract(
+    "competitions/Competition",
+    Object.assign(opts, { gas: 6800000 }),
+    [
+      deployed.MlnToken.address,
+      version.address,
+      accounts[5],
+      Math.round(new Date().getTime() / 1000),
+      Math.round(new Date().getTime() / 1000) + 86400,
+      10 ** 17,
+      10 ** 22,
+      10,
+    ],
+    () => {},
+    true,
+  );
 
   // Change competition address to the newly deployed competition and add manager to whitelist
-  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [competition.address]);
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [manager]]);
+  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    opts,
+    [competition.address],
+  );
+  await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+    10 ** 22,
+    [manager],
+  ]);
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
@@ -81,96 +123,156 @@ test.beforeEach(async () => {
   );
 });
 
-test.serial("Cannot register in the Competition without being whitelisted", async t => {
-  await registerFund(fund.address, deployer, 10 ** 19);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
-  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
-});
+test.serial(
+  "Cannot register in the Competition without being whitelisted",
+  async t => {
+    const registrantFund = await registerFund(fund.address, deployer, 10 ** 19);
+    t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+  },
+);
 
-test.serial("Cannot register fund someone else owns even if whitelisted", async t => {
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [deployer]]);
-  await registerFund(fund.address, deployer, 10 ** 19);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    deployer,
-  ]);
-  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
-});
+test.serial(
+  "Cannot register fund someone else owns even if whitelisted",
+  async t => {
+    await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+      10 ** 22,
+      [deployer],
+    ]);
+    const registrantFund = await registerFund(fund.address, deployer, 10 ** 19);
+    t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+  },
+);
 
 test.serial("Can register from a whitelisted account", async t => {
-  await registerFund(fund.address, manager, 10 ** 19);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
+  const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
   t.is(registrantFund, fund.address);
 });
 
 test.serial("Cannot register for more than individual maxBuyin", async t => {
-  await registerFund(fund.address, manager, 10 ** 24);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
+  const registrantFund = await registerFund(fund.address, manager, 10 ** 24);
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
 
-test.serial("Cannot register twice even if individual maxBuyin is not reached", async t => {
-  const buyInAmount = new BigNumber(10 ** 19);
-  await registerFund(fund.address, manager, buyInAmount);
-  const fundMlnOnFirst = await deployed.MlnToken.instance.balanceOf.call({}, [fund.address]);
-  await registerFund(fund.address, manager, buyInAmount);
-  const fundMlnOnSecond = await deployed.MlnToken.instance.balanceOf.call({}, [fund.address]);
-  const buyinRate = await competition.instance.buyinRate.call({}, []);
-  t.deepEqual(fundMlnOnFirst, buyInAmount.mul(buyinRate).div(10 ** 18));
-  t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
-});
-
+test.serial(
+  "Cannot register twice even if individual maxBuyin is not reached",
+  async t => {
+    const buyInAmount = new BigNumber(10 ** 19);
+    await registerFund(fund.address, manager, buyInAmount);
+    const fundMlnOnFirst = await deployed.MlnToken.instance.balanceOf.call({}, [
+      fund.address,
+    ]);
+    await registerFund(fund.address, manager, buyInAmount);
+    const fundMlnOnSecond = await deployed.MlnToken.instance.balanceOf.call(
+      {},
+      [fund.address],
+    );
+    const buyinRate = await competition.instance.buyinRate.call({}, []);
+    t.deepEqual(fundMlnOnFirst, buyInAmount.mul(buyinRate).div(10 ** 18));
+    t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
+  },
+);
 
 test.serial("Cannot register after endTime", async t => {
-  competition = await deployContract("competitions/Competition", Object.assign(opts, {gas: 6800000}), [deployed.MlnToken.address, version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) - 86400, 10 ** 17, 10 ** 22, 10], () => {}, true);
-  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [competition.address]);
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [manager]]);
+  competition = await deployContract(
+    "competitions/Competition",
+    Object.assign(opts, { gas: 6800000 }),
+    [
+      deployed.MlnToken.address,
+      version.address,
+      accounts[5],
+      Math.round(new Date().getTime() / 1000),
+      Math.round(new Date().getTime() / 1000) - 86400,
+      10 ** 17,
+      10 ** 22,
+      10,
+    ],
+    () => {},
+    true,
+  );
+  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    opts,
+    [competition.address],
+  );
+  await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+    10 ** 22,
+    [manager],
+  ]);
   // Send some MLN to competition contract
   await deployed.MlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [competition.address, 10 ** 24, ""],
   );
-  await registerFund(fund.address, manager, 10);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
+  const registrantFund = await registerFund(fund.address, manager, 10);
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
-
 
 test.serial("Cannot register before startTime", async t => {
-  competition = await deployContract("competitions/Competition", Object.assign(opts, {gas: 6800000}), [deployed.MlnToken.address, version.address, accounts[5], Math.round(new Date().getTime() / 1000) - 86400, Math.round(new Date().getTime() / 1000) - 86400, 10 ** 17, 10 ** 22, 10], () => {}, true);
-  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [competition.address]);
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [manager]]);
+  competition = await deployContract(
+    "competitions/Competition",
+    Object.assign(opts, { gas: 6800000 }),
+    [
+      deployed.MlnToken.address,
+      version.address,
+      accounts[5],
+      Math.round(new Date().getTime() / 1000) - 86400,
+      Math.round(new Date().getTime() / 1000) - 86400,
+      10 ** 17,
+      10 ** 22,
+      10,
+    ],
+    () => {},
+    true,
+  );
+  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    opts,
+    [competition.address],
+  );
+  await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+    10 ** 22,
+    [manager],
+  ]);
   // Send some MLN to competition contract
   await deployed.MlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [competition.address, 10 ** 24, ""],
   );
-  await registerFund(fund.address, manager, 10);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
+  const registrantFund = await registerFund(fund.address, manager, 10);
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
 });
 
-test.serial("Cannot register if max number of registrants is reached", async t => {
-  competition = await deployContract("competitions/Competition", Object.assign(opts, {gas: 6800000}), [deployed.MlnToken.address, version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 0], () => {}, true);
-  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [competition.address]);
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [manager]]);
-  // Send some MLN to competition contract
-  await deployed.MlnToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [competition.address, 10 ** 24, ""],
-  );
-  await registerFund(fund.address, manager, 10);
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
-  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
-});
+test.serial(
+  "Cannot register if max number of registrants is reached",
+  async t => {
+    competition = await deployContract(
+      "competitions/Competition",
+      Object.assign(opts, { gas: 6800000 }),
+      [
+        deployed.MlnToken.address,
+        version.address,
+        accounts[5],
+        Math.round(new Date().getTime() / 1000),
+        Math.round(new Date().getTime() / 1000) + 86400,
+        10 ** 17,
+        10 ** 22,
+        0,
+      ],
+      () => {},
+      true,
+    );
+    await competitionCompliance.instance.changeCompetitionAddress.postTransaction(
+      opts,
+      [competition.address],
+    );
+    await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+      10 ** 22,
+      [manager],
+    ]);
+    // Send some MLN to competition contract
+    await deployed.MlnToken.instance.transfer.postTransaction(
+      { from: deployer, gasPrice: config.gasPrice },
+      [competition.address, 10 ** 24, ""],
+    );
+    const registrantFund = await registerFund(fund.address, manager, 10);
+    t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+  },
+);

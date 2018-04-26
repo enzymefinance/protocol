@@ -80,7 +80,7 @@ test.serial(
 test.serial(
   "Competition registration takes input value of Ether from the registrant and transfers to custodian, deposits corresponding reward amount of MLN into their fund",
   async t => {
-    const buyinValue = new BigNumber(0.5 * 10 ** 20);
+    const buyinValue = new BigNumber(0.5 * 10 ** 18);
     await updateCanonicalPriceFeed(deployed);
     const pre = await getAllBalances(deployed, accounts, fund);
     const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
@@ -88,7 +88,7 @@ test.serial(
     ]);
     const preTotalSupply = await fund.instance.totalSupply.call({}, []);
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
-    const buyinRate = await competition.instance.buyinRate.call({}, []);
+    const bonusRate = await competition.instance.bonusRate.call({}, []);
     await competition.instance.registerForCompetition.postTransaction(
       {
         from: manager,
@@ -103,7 +103,7 @@ test.serial(
       competition.address,
     ]);
     const postTotalSupply = await fund.instance.totalSupply.call({}, []);
-    const estimatedMlnReward = buyinValue.mul(buyinRate).div(10 ** 18);
+    const estimatedMlnReward = buyinValue.mul(bonusRate).div(10 ** 18);
     const registrantFund = await competition.instance.getRegistrantFund.call(
       {},
       [manager],
@@ -116,6 +116,7 @@ test.serial(
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnReward));
     t.deepEqual(post.fund.ether, pre.fund.ether);
+
     t.deepEqual(postCompetitionMln, preCompetitionMln.sub(estimatedMlnReward));
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedMlnReward));
 

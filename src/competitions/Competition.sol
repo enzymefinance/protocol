@@ -5,6 +5,7 @@ import "./CompetitionInterface.sol";
 import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';
 import '../version/Version.sol';
+import '../pricefeeds/CanonicalPriceFeed.sol';
 import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 import "ds-math/math.sol";
@@ -41,20 +42,21 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     address public custodian; // Address of the custodian which holds the funds sent
     uint public startTime; // Competition start time in seconds (Temporarily Set)
     uint public endTime; // Competition end time in seconds
-    uint public buyinRate; // Buy in Rate
-    uint public totalMaxBuyin; // Limit amount of deposit to participate in competition
+    uint public bonusRate; // Buy in Rate
+    uint public totalMaxBuyin; // Limit amount of deposit to participate in competition (Valued in Ether)
     uint public currentTotalBuyin; // Total buyin till now
     uint public maxRegistrants; // Limit number of participate in competition
     uint public prizeMoneyAsset; // Equivalent to payoutAsset
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20Interface public MELON_CONTRACT; // Melon as ERC20 contract
+    address public CHF_ASSET; // Adresss of CHF asset based on the Canonical Registrar
     address public COMPETITION_VERSION; // Version contract address
     // Methods fields
     Registrant[] public registrants; // List of all registrants, can be externally accessed
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
-    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address indexed accessing of registrant ids
+    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
 
     //EVENTS
 
@@ -104,6 +106,26 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @return Address of the fund registered by the registrant address
     function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
 
+    /// @return Get value of the ether quantity in CHF
+    function getCHFValue(uint etherQuantity) view returns (uint) {
+        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
+        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getPriceInfo(CHF_ASSET);
+        if (!isRecent) {
+            revert();
+        }
+        return mul(price, etherQuantity) / (10 ** 18);
+    }
+
+    /// @return Price of MLN in Ether
+    function getMLNPrice() view returns (uint, uint) {
+        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
+        var (isRecent, price, decimals) = CanonicalPriceFeed(feedAddress).getPriceInfo(MELON_ASSET);
+        if (!isRecent) {
+            revert();
+        }
+        return (price, decimals);
+    }
+
     /**
     @notice Returns an array of fund addresses and an associated array of whether competing and whether disqualified
     @return {
@@ -135,21 +157,23 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
     function Competition(
         address ofMelonAsset,
+        address ofCHFAsset,
         address ofCompetitionVersion,
         address ofCustodian,
         uint ofStartTime,
         uint ofEndTime,
-        uint ofBuyinRate,
+        uint ofBonusRate,
         uint ofTotalMaxBuyin,
         uint ofMaxRegistrants
     ) {
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20Interface(MELON_ASSET);
+        CHF_ASSET = ofCHFAsset;
         COMPETITION_VERSION = ofCompetitionVersion;
         custodian = ofCustodian;
         startTime = ofStartTime;
         endTime = ofEndTime;
-        buyinRate = ofBuyinRate;
+        bonusRate = ofBonusRate;
         totalMaxBuyin = ofTotalMaxBuyin;
         maxRegistrants = ofMaxRegistrants;
     }
@@ -167,16 +191,18 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         bytes32 s
     )
         payable
-        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
         pre_cond(isCompetitionActive())
-        pre_cond(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false)
+        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
     {
+        require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
-        require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
+        //require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
-        uint payoutQuantity = mul(msg.value, buyinRate) / 10 ** 18;
+        var (mlnPrice, mlnDecimals) = getMLNPrice();
+        uint payoutQuantityBeforeBonus = mul(msg.value, mlnPrice) / mlnDecimals;
+        uint payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
         FundInterface fundContract = FundInterface(fund);
