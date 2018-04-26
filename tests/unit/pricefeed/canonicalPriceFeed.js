@@ -42,8 +42,7 @@ function registerEur(pricefeed) {
     eurDecimals,
     eurUrl,
     mockIpfs,
-    mockBreakIn,
-    mockBreakOut,
+    [mockBreakIn, mockBreakOut],
     [],
     []
   ]);
@@ -57,8 +56,7 @@ function registerEth(pricefeed) {
     ethDecimals,
     "ethereum.org",
     mockIpfs,
-    mockBreakIn,
-    mockBreakOut,
+    [mockBreakIn, mockBreakOut],
     [],
     []
   ]);
@@ -72,8 +70,7 @@ function registerBtc(pricefeed) {
     btcDecimals,
     "bitcoin.org",
     mockIpfs,
-    mockBreakIn,
-    mockBreakOut,
+    [mockBreakIn, mockBreakOut],
     [],
     []
   ]);
@@ -124,13 +121,13 @@ test.beforeEach(async t => {
     { from: accounts[0], gas: 6900000 },
     [
       mlnToken.address,
+      mlnToken.address,
       "Melon Token",
       "MLN-T",
       mlnDecimals,
       "melonport.com",
       mockBytes,
-      mockBreakIn,
-      mockBreakOut,
+      [mockBreakIn, mockBreakOut],
       [],
       [],
       [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],

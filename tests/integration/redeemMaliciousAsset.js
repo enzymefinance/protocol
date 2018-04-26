@@ -46,8 +46,7 @@ test.before(async () => {
   mlnToken = await deployed.MlnToken;
   maliciousToken = await deployContract("testing/MaliciousToken", { from: deployer });
   await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
-    { from: deployer },
-    [mlnToken.address, maliciousToken.address],
+    { from: deployer }, [mlnToken.address, maliciousToken.address]
   );
   await governanceAction(
     { from: deployer }, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
@@ -62,7 +61,7 @@ test.before(async () => {
     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset',
     [
       maliciousToken.address, 'MaliciousToken', 'MAL', 18, '',
-      mockBytes, mockAddress, mockAddress, [], []
+      mockBytes, [mockAddress, mockAddress], [], []
     ]
   );
 
@@ -83,6 +82,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [],
       v,
       r,
       s,

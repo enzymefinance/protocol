@@ -34,12 +34,8 @@ test.before(async () => {
   [deployer, manager, investor, ,] = accounts;
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
-  simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", {
-    from: deployer,
-  });
-  simpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {
-    from: deployer,
-  });
+  simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", {from: deployer});
+  simpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
   await governanceAction(
     {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
@@ -62,6 +58,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [simpleMarket.address],
+      [],
       v,
       r,
       s,

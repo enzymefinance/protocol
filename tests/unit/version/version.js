@@ -35,6 +35,7 @@ test("Can setup a new fund", async t => {
     deployed.NoCompliance.address,
     deployed.RMMakeOrders.address,
     [deployed.MatchingMarket.address],
+    [],
     v,
     r,
     s,

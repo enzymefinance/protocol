@@ -48,8 +48,7 @@ test.before(async () => {
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   deployed.CentralizedExchangeBridge = await deployContract(
-    "exchange/thirdparty/CentralizedExchangeBridge",
-    { from: deployer },
+    "exchange/thirdparty/CentralizedExchangeBridge", { from: deployer }
   );
   await governanceAction(
     {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
@@ -75,6 +74,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.CentralizedExchangeBridge.address],
+      [],
       v,
       r,
       s,

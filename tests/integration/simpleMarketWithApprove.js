@@ -25,7 +25,6 @@ let manager;
 let mlnToken;
 let pricefeed;
 let simpleMarketWithApprove;
-let simpleAdapterWithApprove;
 let trade1;
 let version;
 let deployed;
@@ -47,12 +46,7 @@ test.before(async () => {
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   simpleMarketWithApprove = await deployContract(
-    "exchange/thirdparty/SimpleMarketWithApprove",
-    { from: deployer },
-  );
-  simpleAdapterWithApprove = await deployContract(
-    "exchange/adapter/SimpleAdapterWithApprove",
-    { from: deployer },
+    "exchange/thirdparty/SimpleMarketWithApprove", { from: deployer }
   );
   await governanceAction(
     {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
@@ -74,6 +68,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [simpleMarketWithApprove.address],
+      [],
       v,
       r,
       s,
