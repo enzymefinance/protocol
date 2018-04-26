@@ -96,19 +96,19 @@ async function deployEnvironment(environment) {
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
     deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
-    const pairsToWhitelist = [
-      ['MLN-T', 'ETH-T'],
-      ['MLN-T', 'MKR-T'],
-      ['MLN-T', 'DAI-T'],
-    ];
-    await Promise.all(
-      pairsToWhitelist.map(async (pair) => {
-        console.log(`Whitelisting ${pair}`);
-        const tokenA = tokenInfo[environment][pair[0]].address;
-        const tokenB = tokenInfo[environment][pair[1]].address;
-        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
-      })
-    );
+    const quoteSymbol = "WETH-T";
+    const pairsToWhitelist = [];
+    config.protocol.pricefeed.assetsToRegister.forEach((sym) => {
+      if (sym !== quoteSymbol)
+        pairsToWhitelist.push([quoteSymbol, sym]);
+    });
+
+    for (const pair of pairsToWhitelist) {
+      console.log(`Whitelisting ${pair}`);
+      const tokenA = tokenInfo[environment][pair[0]].address;
+      const tokenB = tokenInfo[environment][pair[1]].address;
+      await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+    } 
 
     deployed.ZeroExTokenTransferProxy = await deployContract(
       "exchange/thirdparty/0x/TokenTransferProxy", opts
