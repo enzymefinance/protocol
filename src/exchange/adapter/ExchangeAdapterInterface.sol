@@ -1,13 +1,6 @@
 pragma solidity ^0.4.20;
 
-contract ExchangeAdapterInterface {
-    enum UpdateTypes {
-        Make,
-        Take,
-        Cancel
-    }
-    event OrderUpdated(address exchange, bytes32 orderId, UpdateTypes updateType);
-
+interface ExchangeAdapterInterface {
     function makeOrder(
         address targetExchange,
         address[5] orderAddresses,

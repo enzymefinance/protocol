@@ -16,6 +16,9 @@ import "ds-math/math.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
 contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223ReceivingContract {
+
+    event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
+
     // TYPES
 
     struct Modules { // Describes all modular parts, standardised through an interface
@@ -35,6 +38,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         uint timestamp; // Time when calculations are performed in seconds
     }
 
+    enum UpdateType { make, take, cancel }
     enum RequestStatus { active, cancelled, executed }
     enum RequestType { invest, redeem, tokenFallbackRedeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
@@ -415,6 +419,16 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         pre_cond(msg.sender == address(this))
     {
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
+    }
+
+    function orderUpdateHook(
+        address ofExchange,
+        bytes32 orderId,
+        UpdateType updateType
+    )
+        pre_cond(msg.sender == address(this))
+    {
+        emit OrderUpdated(ofExchange, orderId, updateType);
     }
 
     // PUBLIC METHODS

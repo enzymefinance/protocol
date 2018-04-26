@@ -62,7 +62,7 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
         Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(this).addAssetToOwnedAssets(takerAsset);
-        emit OrderUpdated(targetExchange, bytes32(orderId), UpdateTypes.Make);
+        Fund(this).orderUpdateHook(targetExchange, bytes32(orderId), Fund.UpdateType.make);
     }
 
     /// @dev Dummy function; not implemented on exchange
@@ -106,7 +106,7 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         require(Asset(makerAsset).transferFrom(msg.sender, this, makerQuantity));
         require(Asset(makerAsset).approve(targetExchange, makerQuantity));
         require(CentralizedExchangeBridge(targetExchange).cancelOrder(uint(identifier)));
-        emit OrderUpdated(targetExchange, identifier, UpdateTypes.Cancel);
+        Fund(this).orderUpdateHook(targetExchange, identifier, Fund.UpdateType.cancel);
     }
 
     // HELPER METHODS

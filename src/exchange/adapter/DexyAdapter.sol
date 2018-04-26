@@ -74,7 +74,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         // Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(this).addAssetToOwnedAssets(takerAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
-        // OrderUpdated(targetExchange, bytes32(orderId), UpdateTypes.Make);
+        // Fund(this).orderUpdateHook(targetExchange, bytes32(orderId), Fund.UpdateType.make);
     }
 
     // Responsibilities of takeOrder are:
@@ -147,7 +147,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(makerAsset);
-        OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Take);
+        Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.take);
     }
 
     // responsibilities of cancelOrder are:
@@ -177,7 +177,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         // MatchingMarket(targetExchange).cancel(
         //     uint(identifier)
         // );
-        // emit OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Cancel);
+        // Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.cancel);
     }
 
     // VIEW METHODS

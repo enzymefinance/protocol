@@ -85,7 +85,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         );
 
         Fund(this).addAssetToOwnedAssets(makerAsset);
-        OrderUpdated(targetExchange, bytes32(identifier), UpdateTypes.Take);
+        Fund(this).orderUpdateHook(targetExchange, bytes32(identifier), Fund.UpdateType.take);
     }
 
     /// @notice Cancel is not implemented on exchange for smart contracts
