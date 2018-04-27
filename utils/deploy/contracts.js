@@ -132,7 +132,7 @@ async function deployEnvironment(environment) {
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address,
-        ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, accounts[0]
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, false
       ],
       () => {}, true
     );
@@ -233,15 +233,9 @@ async function deployEnvironment(environment) {
         deployed.SimpleAdapter.address,
         true,
         [
-          api.util.abiSignature('makeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('takeOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
-          api.util.abiSignature('cancelOrder', [
-            'address', 'address[5]', 'uint256[6]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-          ]).slice(0,10),
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
         ]
       ]
     );
@@ -273,7 +267,7 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployer], () => {}, true);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, true], () => {}, true);
 
     deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -341,6 +335,7 @@ async function deployEnvironment(environment) {
     deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [accounts[0], accounts[1], accounts[2]]]);
+
 
     // whitelist trading pairs
     const pairsToWhitelist = [
