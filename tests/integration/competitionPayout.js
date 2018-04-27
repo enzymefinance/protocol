@@ -64,6 +64,7 @@ test.before(async () => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.address,
+      deployed.EurToken.address,
       version.address,
       accounts[5],
       blockchainTime,
@@ -151,8 +152,8 @@ test.serial(
     );
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
-    const buyinRate = await competition.instance.buyinRate.call({}, []);
-    const expectedReward = buyinValue.mul(buyinRate).div(10 ** 18);
+    const bonusRate = await competition.instance.bonusRate.call({}, []);
+    const expectedReward = buyinValue.mul(bonusRate).div(10 ** 18);
     const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     const competitionPostShares = await fund.instance.balanceOf.call({}, [
       competition.address,

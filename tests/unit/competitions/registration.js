@@ -76,6 +76,7 @@ test.beforeEach(async () => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.address,
+      deployed.EurToken.address,
       version.address,
       accounts[5],
       Math.round(new Date().getTime() / 1000),
@@ -166,8 +167,8 @@ test.serial(
       {},
       [fund.address],
     );
-    const buyinRate = await competition.instance.buyinRate.call({}, []);
-    t.deepEqual(fundMlnOnFirst, buyInAmount.mul(buyinRate).div(10 ** 18));
+    const bonusRate = await competition.instance.bonusRate.call({}, []);
+    t.deepEqual(fundMlnOnFirst, buyInAmount.mul(bonusRate).div(10 ** 18));
     t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
   },
 );
@@ -178,6 +179,7 @@ test.serial("Cannot register after endTime", async t => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.address,
+      deployed.EurToken.address,
       version.address,
       accounts[5],
       Math.round(new Date().getTime() / 1000),
@@ -212,6 +214,7 @@ test.serial("Cannot register before startTime", async t => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.address,
+      deployed.EurToken.address,
       version.address,
       accounts[5],
       Math.round(new Date().getTime() / 1000) - 86400,
@@ -248,6 +251,7 @@ test.serial(
       Object.assign(opts, { gas: 6800000 }),
       [
         deployed.MlnToken.address,
+        deployed.EurToken.address,
         version.address,
         accounts[5],
         Math.round(new Date().getTime() / 1000),
