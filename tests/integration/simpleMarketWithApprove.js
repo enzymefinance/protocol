@@ -80,6 +80,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [simpleMarketWithApprove.address],
+      [],
       v,
       r,
       s,

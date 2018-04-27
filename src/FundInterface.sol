@@ -9,13 +9,9 @@ interface FundInterface {
 
     event PortfolioContent(address[] assets, uint[] holdings, uint[] prices);
     event RequestUpdated(uint id);
-    event Invested(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
     event Redeemed(address indexed ofParticipant, uint atTimestamp, uint shareQuantity);
-    event SpendingApproved(address onConsigned, address ofAsset, uint amount);
     event FeesConverted(uint atTimestamp, uint shareQuantityConverted, uint unclaimed);
     event CalculationUpdate(uint atTimestamp, uint managementFee, uint performanceFee, uint nav, uint sharePrice, uint totalSupply);
-    event OrderUpdated(uint exchangeId, uint orderId);
-    event LogError(uint ERROR_CODE);
     event ErrorMessage(string errorMessage);
 
     // EXTERNAL METHODS

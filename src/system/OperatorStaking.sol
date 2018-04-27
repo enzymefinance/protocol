@@ -169,4 +169,14 @@ contract OperatorStaking is DBC, StakeBank {
         }
         return (stakers, amounts);
     }
+
+    /// @return Zero-indexed rank of a staked party (zero being lowest ranked)
+    function getStakingRank(address ofRankedParty) view returns (uint) {
+        require(isRanked[ofRankedParty]);
+        for (uint i; i < stakeRanking.length; i++) {
+            if(address(stakeRanking[i].staker) == ofRankedParty) {
+                return i;
+            }
+        }
+    }
 }

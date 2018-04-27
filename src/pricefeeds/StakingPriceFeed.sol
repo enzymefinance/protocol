@@ -9,8 +9,8 @@ import "../assets/AssetInterface.sol";
 /// @notice Simple pricefeed that can increase and decrease stake
 contract StakingPriceFeed is SimplePriceFeed {
 
-    OperatorStaking stakingContract;
-    AssetInterface stakingToken;
+    OperatorStaking public stakingContract;
+    AssetInterface public stakingToken;
 
     // CONSTRUCTOR
 

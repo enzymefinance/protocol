@@ -10,7 +10,7 @@ const config = environmentConfig[environment];
 
 const apiPath = "https://min-api.cryptocompare.com/data/price";
 
-const tokenInfo = require("../../utils/info/tokenInfo.js").kovan; // get decimal info from kovan config
+const tokenInfo = require("../../utils/info/tokenInfo.js"); // get decimals from info file
 
 // retry the request if it fails (helps with bad connections)
 async function requestWithRetries(options, maxRetries) {
@@ -27,32 +27,43 @@ async function requestWithRetries(options, maxRetries) {
 }
 
 // TODO: make this more dynamic (different tokens) and flexible, so it can be imported by other projects like our updater
-async function getConvertedPrices(deployed) {
-  const fromSymbol = 'MLN';
-  const toSymbols = ['ETH', 'EUR', 'MLN'];
+/**
+ * Get prices converted to the format our contracts expect
+ * @param {Object} deployed - Contracts as returned by our deploy script
+ * @param {string} fromSymbol - Quote asset symbol, used to price other assets
+ */
+async function getConvertedPrices(deployed, fromSymbol) {
+  const toSymbols = ['MLN', 'EUR', 'ETH'];
   const options = {
     uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
     json: true
   }
   const queryResult = await requestWithRetries(options, 3);
-  if(queryResult.MLN !== 1) {
-    throw new Error('API call returned incorrect price for MLN');
-  } else if(queryResult.ETH === 0 || queryResult.EUR === 0) {
+  if(queryResult[fromSymbol] !== 1) {
+    throw new Error(`API call returned incorrect price for ${fromSymbol}`);
+  } else if(Object.values(queryResult).indexOf(0) !== -1) {
     throw new Error('API call returned a zero price');
   }
-  const ethDecimals = tokenInfo['ETH-T'].decimals
-  const eurDecimals = tokenInfo['EUR-T'].decimals
-  const mlnDecimals = tokenInfo['MLN-T'].decimals
+  let fromTokenSymbol;
+  if (fromSymbol === 'ETH') {
+    fromTokenSymbol = 'WETH';   // special case for ETH, since WETH does not have a price in api
+  } else {
+    fromTokenSymbol = fromSymbol;
+  }
+  const quoteDecimals = tokenInfo.live[fromTokenSymbol].decimals;
+  const ethDecimals = tokenInfo.live['WETH'].decimals;
+  const eurDecimals = tokenInfo.kovan['EUR-T'].decimals;
+  const mlnDecimals = tokenInfo.live['MLN'].decimals;
   const inverseEth = new BigNumber(1).div(new BigNumber(queryResult.ETH)).toNumber().toFixed(15);
   const inverseEur = new BigNumber(1).div(new BigNumber(queryResult.EUR)).toNumber().toFixed(15);
   const inverseMln = new BigNumber(1).div(new BigNumber(queryResult.MLN)).toNumber().toFixed(15);
-  const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - mlnDecimals)).times(10 ** ethDecimals);
-  const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - mlnDecimals)).times(10 ** eurDecimals);
-  const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - mlnDecimals)).times(10 ** mlnDecimals);
+  const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - quoteDecimals)).times(10 ** ethDecimals);
+  const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - quoteDecimals)).times(10 ** eurDecimals);
+  const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - quoteDecimals)).times(10 ** mlnDecimals);
   return {
-    [deployed.EthToken.address]: convertedEth,
     [deployed.EurToken.address]: convertedEur,
-    [deployed.MlnToken.address]: convertedMln
+    [deployed.EthToken.address]: convertedEth,
+    [deployed.MlnToken.address]: convertedMln,
   };
 }
 
@@ -66,7 +77,7 @@ async function updatePriceFeed(deployed, inputPrices = {}) {
   let prices;
   const accounts = await api.eth.accounts();
   if(Object.keys(inputPrices).length === 0) {
-    prices = await getConvertedPrices(deployed);
+    prices = await getConvertedPrices(deployed, 'MLN');
   } else {
     prices = inputPrices;
   }
@@ -81,12 +92,13 @@ async function updatePriceFeed(deployed, inputPrices = {}) {
  * NB: Deprecating this functrion when we get rid of regular (non-canonical) pricefeed
  * @param {Object} deployed - Object of deployed contracts from deployment script
  * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
+ * @param {string} quoteSymbol - Symbol for quote asset
  */
-async function updateCanonicalPriceFeed(deployed, inputPrices = {}) {
+async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'MLN') {
   let prices;
   const accounts = await api.eth.accounts();
   if(Object.keys(inputPrices).length === 0) {
-    prices = await getConvertedPrices(deployed);
+    prices = await getConvertedPrices(deployed, quoteSymbol);
   } else {
     prices = inputPrices;
   }

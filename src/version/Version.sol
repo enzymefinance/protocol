@@ -67,6 +67,7 @@ contract Version is DBC, Owned, VersionInterface {
     /// @param ofCompliance Address of participation module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
+    /// @param ofDefaultAssets Enable invest/redeem with these assets (quote asset already enabled)
     /// @param v ellipitc curve parameter v
     /// @param r ellipitc curve parameter r
     /// @param s ellipitc curve parameter s
@@ -78,6 +79,7 @@ contract Version is DBC, Owned, VersionInterface {
         address ofCompliance,
         address ofRiskMgmt,
         address[] ofExchanges,
+        address[] ofDefaultAssets,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -97,7 +99,8 @@ contract Version is DBC, Owned, VersionInterface {
             COMPLIANCE,
             ofRiskMgmt,
             CANONICAL_PRICEFEED,
-            ofExchanges
+            ofExchanges,
+            ofDefaultAssets
         );
         listOfFunds.push(ofFund);
         managerToFunds[msg.sender] = ofFund;

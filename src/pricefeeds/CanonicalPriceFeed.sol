@@ -1,8 +1,8 @@
 pragma solidity ^0.4.19;
 
 import "./CanonicalRegistrar.sol";
-import "./PriceFeedInterface.sol";
 import "./SimplePriceFeed.sol";
+import "./StakingPriceFeed.sol";
 import "../system/OperatorStaking.sol";
 
 /// @title Price Feed Template
@@ -12,8 +12,10 @@ import "../system/OperatorStaking.sol";
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
-    // FIELDS
+    // EVENTS
+    event SetupPriceFeed(address ofPriceFeed);
 
+    // FIELDS
     address public updater;
     uint public VALIDITY;
     uint public INTERVAL;
@@ -24,35 +26,35 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     // CONSTRUCTOR
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
+    /// @param ofStakingAsset Address of staking asset (may or may not be quoteAsset)
     /// @param ofQuoteAsset Address of quote asset
     /// @param quoteAssetName Name of quote asset
     /// @param quoteAssetSymbol Symbol for quote asset
     /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
-    /// @param quoteAssetBreakIn Break-in address for the quote asset
-    /// @param quoteAssetBreakOut Break-out address for the quote asset
+    /// @param quoteAssetBreakInBreakOut Break-in/break-out for quote asset on destination chain
     /// @param quoteAssetStandards EIP standards quote asset adheres to
     /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
     // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     // /// @param validity Number of seconds that datafeed update information is valid for
     /// @param ofGovernance Address of contract governing the Canonical PriceFeed
     function CanonicalPriceFeed(
+        address ofStakingAsset,
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
         uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
-        address quoteAssetBreakIn,
-        address quoteAssetBreakOut,
+        address[2] quoteAssetBreakInBreakOut,
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
-        uint[] updateInfo, // interval validity
-        uint[] stakingInfo, // minStake, numOperators
+        uint[2] updateInfo, // interval validity
+        uint[2] stakingInfo, // minStake, numOperators
         address ofGovernance
     )
-        OperatorStaking(AssetInterface(ofQuoteAsset), stakingInfo[0], stakingInfo[1])
+        OperatorStaking(AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1])
         SimplePriceFeed(this, ofQuoteAsset, 0x0)
     {
         registerAsset(
@@ -62,8 +64,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
-            quoteAssetBreakIn,
-            quoteAssetBreakOut,
+            quoteAssetBreakInBreakOut,
             quoteAssetStandards,
             quoteAssetFunctionSignatures
         );
@@ -74,6 +75,17 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     // EXTERNAL METHODS
+
+    /// @notice Create a new StakingPriceFeed
+    function setupStakingPriceFeed() external {
+        address ofStakingPriceFeed = new StakingPriceFeed(
+            address(this),
+            stakingToken,
+            address(this)
+        );
+        StakingPriceFeed(ofStakingPriceFeed).setOwner(msg.sender);
+        emit SetupPriceFeed(ofStakingPriceFeed);
+    }
 
     function setUpdater(address _updater)
         public
@@ -298,5 +310,20 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+    }
+
+    /// @return Sparse array of addresses of owned pricefeeds
+    function getPriceFeedsByOwner(address _owner)
+        view
+        returns(address[])
+    {
+        address[] memory ofPriceFeeds = new address[](stakeRanking.length);
+        for (uint i; i < stakeRanking.length; i++) {
+            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeRanking[i].staker);
+            if (stakingFeed.owner() == _owner) {
+                ofPriceFeeds[i] = address(stakingFeed);
+            }
+        }
+        return ofPriceFeeds;
     }
 }
