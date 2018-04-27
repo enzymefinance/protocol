@@ -89,6 +89,7 @@ test.serial(
     const preTotalSupply = await fund.instance.totalSupply.call({}, []);
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
     const bonusRate = await competition.instance.bonusRate.call({}, []);
+    console.log(await competition.instance.getMLNPrice.call({}, []));
     await competition.instance.registerForCompetition.postTransaction(
       {
         from: manager,

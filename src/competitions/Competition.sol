@@ -201,7 +201,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
         var (mlnPrice, mlnDecimals) = getMLNPrice();
-        uint payoutQuantityBeforeBonus = mul(msg.value, mlnPrice) / mlnDecimals;
+        uint payoutQuantityBeforeBonus = mul(msg.value, mlnPrice) / 10 ** mlnDecimals;
         uint payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
