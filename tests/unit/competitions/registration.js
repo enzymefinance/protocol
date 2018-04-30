@@ -109,6 +109,7 @@ test.beforeEach(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address, deployed.EthToken.address],
       v,
       r,
       s,

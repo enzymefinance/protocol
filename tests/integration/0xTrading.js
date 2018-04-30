@@ -83,6 +83,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.ZeroExExchange.address],
+      [],
       v,
       r,
       s,

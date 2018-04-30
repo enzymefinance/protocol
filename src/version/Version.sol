@@ -104,7 +104,7 @@ contract Version is DBC, Owned, VersionInterface {
         );
         listOfFunds.push(ofFund);
         managerToFunds[msg.sender] = ofFund;
-        FundUpdated(ofFund);
+        emit FundUpdated(ofFund);
     }
 
     /// @dev Dereference Fund and trigger selfdestruct
@@ -115,7 +115,7 @@ contract Version is DBC, Owned, VersionInterface {
         Fund fund = Fund(ofFund);
         delete managerToFunds[msg.sender];
         fund.shutDown();
-        FundUpdated(ofFund);
+        emit FundUpdated(ofFund);
     }
 
     // PUBLIC VIEW METHODS
