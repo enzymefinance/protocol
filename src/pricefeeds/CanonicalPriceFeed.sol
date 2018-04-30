@@ -5,10 +5,11 @@ import "./SimplePriceFeed.sol";
 import "./StakingPriceFeed.sol";
 import "../system/OperatorStaking.sol";
 
-/// @title Canonical Price Feed
+/// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-/// @notice PriceFeed operator must be staked and sharePrice input validated on chain
+/// @notice Where external data includes sharePrice of Melon funds
+/// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
     // EVENTS
@@ -18,9 +19,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     address public updater;
     uint public VALIDITY;
     uint public INTERVAL;
-    uint public INCEPTION;
     uint public minimumPriceCount = 1;
-    uint public lastUpdateTime;
 
     // METHODS
 
@@ -37,11 +36,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     /// @param quoteAssetBreakInBreakOut Break-in/break-out for quote asset on destination chain
     /// @param quoteAssetStandards EIP standards quote asset adheres to
     /// @param quoteAssetFunctionSignatures Whitelisted functions of quote asset contract
-    /// @param updateInfo [0] interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
-    /// @param updateInfo [1] validity Number of seconds that datafeed update information is valid for
-    // /// @param updateInfo [2] minimumFreshness 
-    /// @param stakingInfo [0] Minimum amount of staking asset to stake
-    /// @param stakingInfo [1] Number of top stakers that will be given operator status
+    // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
+    // /// @param validity Number of seconds that datafeed update information is valid for
     /// @param ofGovernance Address of contract governing the Canonical PriceFeed
     function CanonicalPriceFeed(
         address ofStakingAsset,
@@ -74,7 +70,6 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         );
         INTERVAL = updateInfo[0];
         VALIDITY = updateInfo[1];
-        INCEPTION = block.timestamp;
         updater = msg.sender;
         setOwner(ofGovernance);
     }
@@ -104,23 +99,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
 
     // PUBLIC METHODS
 
-    /// @notice Collect and update prices (if necessary), then return prices
-    function getPriceWithUpdateHook(address ofAsset) public returns {
-        if (isNewEpoch()) {
-            collectAndUpdate(getRegisteredAssets());
-        }
-        return getPrices(ofAsset);
-    }
-
     // AGGREGATION
 
-    /** @notice Description of updating behaviour:
-      *   An "epoch" is the passing of an interval.
-      *   After an epoch, the first time one gets a price, the prices are updated before returned.
-      *   Updating the canonical price for each asset involves looping through all operators.
-      *   Only prices recently given before the epoch are used, as older prices may have changed.
-      *   Thus, operators must push prices to their feeds just before a new epoch to be included.
-      */
     /// @dev Only Owner; Same sized input arrays
     /// @dev Updates price of asset relative to QUOTE_ASSET
     /** Ex:
@@ -132,7 +112,6 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets) {
         require(msg.sender == updater || msg.sender == owner);
-        require(isNewEpoch());
         address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
@@ -140,7 +119,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             for (uint j = 0; j < operators.length; j++) {
                 SimplePriceFeed feed = SimplePriceFeed(operators[j]);
                 var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
-                if (!isFresh(timestamp)) {
+                if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
                 }
                 assetPrices[j] = price;
@@ -148,7 +127,6 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             newPrices[i] = medianize(assetPrices);
         }
         _updatePrices(ofAssets, newPrices);
-        lastUpdateTime = block.timestamp;
     }
 
     /// @dev from MakerDao medianizer contract
@@ -211,7 +189,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     // PRICES
 
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
-    /// @param ofAsset Asset in AssetRegistrar
+    /// @param ofAsset Existend asset in AssetRegistrar
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
@@ -238,10 +216,11 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     function getPriceInfo(address ofAsset)
+        view
         returns (bool isRecent, uint price, uint assetDecimals)
     {
-        (price, ) = getPriceWithUpdateHook(ofAsset);
         isRecent = hasRecentPrice(ofAsset);
+        (price, ) = getPrice(ofAsset);
         assetDecimals = getDecimals(ofAsset);
     }
 
@@ -346,29 +325,5 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
         }
         return ofPriceFeeds;
-    }
-
-    // UPDATE TRACKING
-
-    /// @return Timestamp for the last epoch, regardless of whether an update occurred for it
-    function getLastEpochTime() view returns (uint) {
-        uint timeSinceLastEpoch = sub(block.timestamp, INCEPTION) % INTERVAL;
-        return sub(block.timestamp, timeSinceLastEpoch);
-    }
-
-    /// @return Whether a new epoch has occurred since the last full canonical update
-    function isNewEpoch() view returns (bool) {
-        return lastUpdateTime < getLastEpochTime();
-    }
-
-    /// @notice "Fresh" means that the given timestamp is acceptably recent
-    /// @return Whether the given timestamp is "fresh" with respect to the last epoch
-    function isFresh(uint timestamp) view returns (bool) {
-        uint lastEpochTime = getLastEpochTime();
-        if (timestamp > lasEpochTime) {
-            return false;
-        } else {
-            return sub(lastEpochTime, timestamp) <= VALIDITY;
-        }
     }
 }
