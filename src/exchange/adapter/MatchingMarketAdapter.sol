@@ -67,7 +67,6 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-
     }
 
     // Responsibilities of takeOrder are:
