@@ -334,7 +334,7 @@ async function deployEnvironment(environment) {
     deployed.FundRanking = await deployContract("FundRanking", opts);
     deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 2 * 10 ** 18, 10 ** 22, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
-    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [accounts[0], accounts[1], accounts[2]]]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
 
 
     // whitelist trading pairs

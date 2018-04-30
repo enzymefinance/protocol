@@ -91,6 +91,9 @@ test.serial(
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
     const estimatedMlnReward = await competition.instance.calculatePayout.call({}, [buyinValue]);
     const bonusRate = await competition.instance.bonusRate.call({}, []);
+    const chfvalue = await competition.instance.getCHFValue.call({}, [buyinValue]);
+    console.log(chfvalue);
+
     const estimatedShares = bonusRate.mul(buyinValue).div(10 ** 18)
     await competition.instance.registerForCompetition.postTransaction(
       {

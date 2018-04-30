@@ -64,7 +64,7 @@ test.beforeEach(async () => {
       1,
       deployed.Governance.address,
       deployed.EthToken.address,
-      deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,
     ],
@@ -109,7 +109,7 @@ test.beforeEach(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address, deployed.EthToken.address],
+      [deployed.EthToken.address],
       v,
       r,
       s,
@@ -168,8 +168,8 @@ test.serial(
       {},
       [fund.address],
     );
-    const bonusRate = await competition.instance.bonusRate.call({}, []);
-    t.deepEqual(fundMlnOnFirst, buyInAmount.mul(bonusRate).div(10 ** 18));
+    const expectedReward = await competition.instance.calculatePayout.call({}, [buyInAmount]);
+    t.deepEqual(fundMlnOnFirst, expectedReward);
     t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
   },
 );

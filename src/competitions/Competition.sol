@@ -107,13 +107,13 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
 
     /// @return Get value of the ether quantity in CHF
-    function getCHFValue(uint etherQuantity) view returns (uint) {
+    function getCHFValue(uint payin) view returns (uint) {
         address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
-        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getPriceInfo(CHF_ASSET);
+        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getInvertedPriceInfo(CHF_ASSET);
         if (!isRecent) {
             revert();
         }
-        return mul(price, etherQuantity) / (10 ** 18);
+        return mul(price, payin) / (10 ** 18);
     }
 
     /// @return Calculated payout in MLN with bonus for payin in Ether
@@ -192,7 +192,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         bytes32 s
     )
         payable
-        pre_cond(isCompetitionActive())
+        pre_cond(isCompetitionActive() && !Version(COMPETITION_VERSION).isShutDown())
         pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
     {
         require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
