@@ -116,14 +116,15 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         return mul(price, etherQuantity) / (10 ** 18);
     }
 
-    /// @return Price of MLN in Ether
-    function getMLNPrice() view returns (uint, uint) {
+    /// @return Calculated payout in MLN with bonus for payin in Ether
+    function calculatePayout(uint payin) view returns (uint payoutQuantity) {
         address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
-        var (isRecent, price, decimals) = CanonicalPriceFeed(feedAddress).getPriceInfo(MELON_ASSET);
+        var (isRecent, invertedMlnPrice, mlnDecimals) = CanonicalPriceFeed(feedAddress).getInvertedPriceInfo(MELON_ASSET);
         if (!isRecent) {
             revert();
         }
-        return (price, decimals);
+        uint payoutQuantityBeforeBonus = mul(payin, invertedMlnPrice) / 10 ** mlnDecimals;
+        payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
     }
 
     /**
@@ -196,18 +197,18 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     {
         require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
-        //require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
+        require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
-        var (mlnPrice, mlnDecimals) = getMLNPrice();
-        uint payoutQuantityBeforeBonus = mul(msg.value, mlnPrice) / 10 ** mlnDecimals;
-        uint payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
+        uint payoutQuantity = calculatePayout(msg.value);
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
         FundInterface fundContract = FundInterface(fund);
         MELON_CONTRACT.approve(fund, payoutQuantity);
-        fundContract.requestInvestment(payoutQuantity, payoutQuantity, MELON_ASSET);
+
+        // Give payoutRequest MLN in return for msg.value multiplied by bonusRate shares
+        fundContract.requestInvestment(payoutQuantity, mul(msg.value, bonusRate) / 10 ** 18, MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
         custodian.transfer(msg.value);
         currentTotalBuyin = add(currentTotalBuyin, msg.value);

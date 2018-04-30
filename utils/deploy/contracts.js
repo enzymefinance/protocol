@@ -283,11 +283,11 @@ async function deployEnvironment(environment) {
 
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
-      deployed.MlnToken.address,
-      'Melon token',
-      'MLN-T',
+      deployed.EthToken.address,
+      'ETH token',
+      'ETH-T',
       18,
-      'melonport.com',
+      'ethereum.org',
       mockBytes,
       [mockAddress, mockAddress],
       [],
@@ -299,7 +299,7 @@ async function deployEnvironment(environment) {
 
     deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
       deployed.CanonicalPriceFeed.address,
-      deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address
     ]);
     await deployed.MlnToken.instance.approve.postTransaction(
@@ -327,12 +327,12 @@ async function deployEnvironment(environment) {
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address, deployed.EthToken.address,
-        deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+        deployed.EthToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
       ],
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
-    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 10 ** 17, 10 ** 22, 10]);
+    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 2 * 10 ** 18, 10 ** 22, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 22, [accounts[0], accounts[1], accounts[2]]]);
 
@@ -369,11 +369,11 @@ async function deployEnvironment(environment) {
 
     // register assets
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-      deployed.EthToken.address,
-      "Ether token",
-      "ETH-T",
+      deployed.MlnToken.address,
+      "Melon token",
+      "MLN-T",
       18,
-      "ethereum.org",
+      "melonport.com",
       mockBytes,
       [mockAddress, mockAddress],
       [],

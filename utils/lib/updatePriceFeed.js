@@ -73,11 +73,11 @@ async function getConvertedPrices(deployed, fromSymbol) {
  * @param {Object} deployed - Object of deployed contracts from deployment script
  * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
  */
-async function updatePriceFeed(deployed, inputPrices = {}) {
+async function updatePriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
   const accounts = await api.eth.accounts();
   if(Object.keys(inputPrices).length === 0) {
-    prices = await getConvertedPrices(deployed, 'MLN');
+    prices = await getConvertedPrices(deployed, quoteSymbol);
   } else {
     prices = inputPrices;
   }
@@ -94,7 +94,7 @@ async function updatePriceFeed(deployed, inputPrices = {}) {
  * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
  * @param {string} quoteSymbol - Symbol for quote asset
  */
-async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'MLN') {
+async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
   const accounts = await api.eth.accounts();
   if(Object.keys(inputPrices).length === 0) {

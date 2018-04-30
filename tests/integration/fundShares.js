@@ -25,6 +25,7 @@ let manager;
 let investor;
 let opts;
 let mlnToken;
+let ethToken;
 let txId;
 let runningGasTotal;
 let fund;
@@ -40,6 +41,7 @@ test.before(async () => {
   [deployer, manager, investor] = accounts;
   version = deployed.Version;
   mlnToken = deployed.MlnToken;
+  ethToken = deployed.EthToken;
   gasPrice = Number(await api.eth.gasPrice());
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
@@ -58,13 +60,13 @@ test.serial("can set up new fund", async t => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // name
-      mlnToken.address, // base asset
+      ethToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address, deployed.EthToken.address],
+      [],
       v,
       r,
       s,
@@ -373,6 +375,7 @@ subsequentTests.forEach(testInstance => {
         .timestamp;
       atLastUnclaimedFeeAllocation = new Date(timestamp).valueOf();
       let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
+      console.log(gasUsed);
       investorGasTotal = investorGasTotal.plus(gasUsed);
       const investorPostShares = await fund.instance.balanceOf.call({}, [
         investor,
