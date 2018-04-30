@@ -32,7 +32,7 @@ const makeOrderSignature = api.util
   .abiSignature("makeOrder", [
     "address",
     "address[5]",
-    "uint256[6]",
+    "uint256[8]",
     "bytes32",
     "uint8",
     "bytes32",
@@ -43,7 +43,7 @@ const cancelOrderSignature = api.util
   .abiSignature("cancelOrder", [
     "address",
     "address[5]",
-    "uint256[6]",
+    "uint256[8]",
     "bytes32",
     "uint8",
     "bytes32",
@@ -214,7 +214,7 @@ test.serial(
         0,
         makeOrderSignature,
         ["0x0", "0x0", mlnToken.address, ethToken.address, "0x0"],
-        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
         "0x0",
         0,
         "0x0",
@@ -293,7 +293,7 @@ test.serial("Manager cancels an order from the fund", async t => {
         .abiSignature("makeOrder", [
           "address",
           "address[5]",
-          "uint256[6]",
+          "uint256[8]",
           "bytes32",
           "uint8",
           "bytes32",
@@ -323,8 +323,8 @@ test.serial("Manager cancels an order from the fund", async t => {
     [
       0,
       cancelOrderSignature,
-      ["0x0", "0x0", "0x0", "0x0", "0x0"],
-      [0, 0, 0, 0, 0, 0],
+      ["0x0", "0x0", mlnToken.address, "0x0", "0x0"],
+      [0, 0, 0, 0, 0, 0, 0, 0],
       `0x${Number(orderId)
         .toString(16)
         .padStart(64, "0")}`,

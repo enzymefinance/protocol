@@ -45,7 +45,7 @@ const makeOrderSignature = api.util
   .abiSignature("makeOrder", [
     "address",
     "address[5]",
-    "uint256[6]",
+    "uint256[8]",
     "bytes32",
     "uint8",
     "bytes32",
@@ -56,7 +56,7 @@ const takeOrderSignature = api.util
   .abiSignature("takeOrder", [
     "address",
     "address[5]",
-    "uint256[6]",
+    "uint256[8]",
     "bytes32",
     "uint8",
     "bytes32",
@@ -67,7 +67,7 @@ const cancelOrderSignature = api.util
   .abiSignature("cancelOrder", [
     "address",
     "address[5]",
-    "uint256[6]",
+    "uint256[8]",
     "bytes32",
     "uint8",
     "bytes32",
@@ -461,7 +461,7 @@ exchangeIndexes.forEach(i => {
           i,
           takeOrderSignature,
           ["0x0", "0x0", "0x0", "0x0", "0x0"],
-          [0, trade2.sellQuantity, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
           `0x${Number(orderId)
             .toString(16)
             .padStart(64, "0")}`,
@@ -667,8 +667,8 @@ test.serial("manager makes an order and cancels it", async t => {
     [
       0,
       cancelOrderSignature,
-      ["0x0", "0x0", "0x0", "0x0", "0x0"],
-      [0, 0, 0, 0, 0, 0],
+      ["0x0", "0x0", mlnToken.address, "0x0", "0x0"],
+      [0, 0, 0, 0, 0, 0, 0, 0],
       `0x${Number(offerNumber)
         .toString(16)
         .padStart(64, "0")}`,
