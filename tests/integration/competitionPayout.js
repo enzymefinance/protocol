@@ -49,7 +49,7 @@ test.before(async () => {
       1,
       deployed.Governance.address,
       deployed.EthToken.address,
-      deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,
     ],
@@ -97,6 +97,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -153,16 +154,16 @@ test.serial(
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
     const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const expectedReward = buyinValue.mul(bonusRate).div(10 ** 18);
+    const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
     const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     const competitionPostShares = await fund.instance.balanceOf.call({}, [
       competition.address,
     ]);
     const fundPostSupply = await fund.instance.totalSupply.call({}, []);
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedReward));
+    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
     t.deepEqual(
       competitionPostShares,
-      competitionPreShares.sub(expectedReward),
+      competitionPreShares.sub(expectedShares),
     );
     t.deepEqual(fundPostSupply, fundPreSupply);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
