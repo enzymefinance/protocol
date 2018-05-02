@@ -658,7 +658,7 @@ testArray.forEach(testInstance => {
     if (Math.abs(feeShareDifference - expectedFeeShareDifference) === 1) {
       expectedFeeShareDifference = feeShareDifference;
     }
-    if (Number(totalShares) !== 0) &&
+    if (Number(totalShares) !== 0) {
       t.is(Number(postSharePrice), Number(preSharePrice));
     }
     else {

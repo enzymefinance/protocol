@@ -213,7 +213,7 @@ test("gets getOrderPrice for orders containing assets with different decimals", 
   t.is(18, Number(returnedEthDecimals));
 });
 
-test("Joseph", async t => {
+test("gets getOrderPrice for more assets with different decimals", async t => {
   await registerEur(t.context.pricefeed);
   await registerEth(t.context.pricefeed);
   await registerBtc(t.context.pricefeed);
