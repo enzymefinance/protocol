@@ -81,7 +81,7 @@ test.beforeEach(async () => {
       accounts[5],
       Math.round(new Date().getTime() / 1000),
       Math.round(new Date().getTime() / 1000) + 86400,
-      10 ** 17,
+      2 * 10 ** 18,
       10 ** 22,
       10,
     ],
@@ -95,7 +95,7 @@ test.beforeEach(async () => {
     [competition.address],
   );
   await competition.instance.batchAddToWhitelist.postTransaction(opts, [
-    10 ** 22,
+    10 ** 25,
     [manager],
   ]);
   const [r, s, v] = await getTermsSignatureParameters(manager);

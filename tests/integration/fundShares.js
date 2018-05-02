@@ -66,7 +66,7 @@ test.serial("can set up new fund", async t => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [],
+      [mlnToken.address],
       v,
       r,
       s,
@@ -111,7 +111,7 @@ test.serial("initial calculations", async t => {
     sharePrice,
   ] = Object.values(await fund.instance.performCalculations.call(opts, []));
 
-  //t.deepEqual(Number(gav), 0);
+  t.deepEqual(Number(gav), 0);
   t.deepEqual(Number(managementFee), 0);
   t.deepEqual(Number(performanceFee), 0);
   t.deepEqual(Number(unclaimedFees), 0);
