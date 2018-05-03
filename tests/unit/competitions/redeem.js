@@ -1,6 +1,7 @@
-/*import test from "ava";
+import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
+import getChainTime from "../../../utils/lib/getChainTime";
 import { deployContract, retrieveContract } from "../../../utils/lib/contracts";
 import {
   getTermsSignatureParameters,
@@ -29,6 +30,21 @@ let fund;
 
 const fundName = "Super Fund";
 
+async function registerFund(fundAddress, by, value) {
+  await updateCanonicalPriceFeed(deployed);
+  const [r, s, v] = await getSignatureParameters(by, competitionTerms);
+  await competition.instance.registerForCompetition.postTransaction(
+    {
+      from: by,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+      value,
+    },
+    [fundAddress, v, r, s],
+  );
+  return competition.instance.getRegistrantFund.call({}, [by]);
+}
+
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
@@ -47,15 +63,16 @@ test.beforeEach(async () => {
     Object.assign(opts, { gas: 6800000 }),
     [
       1,
-      deployed.Governance.address,
+      deployer, // For easy shutdown
       deployed.EthToken.address,
-      deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,
     ],
     () => {},
     true,
   );
+  const blockchainTime = await getChainTime();
   competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
@@ -64,8 +81,8 @@ test.beforeEach(async () => {
       deployed.EurToken.address,
       version.address,
       accounts[5],
-      Math.round(new Date().getTime() / 1000),
-      Math.round(new Date().getTime() / 1000) + 86400,
+      blockchainTime,
+      blockchainTime + 86400,
       10 ** 17,
       10 ** 22,
       10,
@@ -83,17 +100,18 @@ test.beforeEach(async () => {
     10 ** 22,
     [manager],
   ]);
-  let [r, s, v] = await getTermsSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName,
-      deployed.MlnToken.address, // base asset
+      deployed.EthToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -108,40 +126,61 @@ test.beforeEach(async () => {
     [competition.address, 10 ** 24, ""],
   );
   await updateCanonicalPriceFeed(deployed);
-  [r, s, v] = await getSignatureParameters(manager, competitionTerms);
-  await competition.instance.registerForCompetition.postTransaction(
-    {
-      from: manager,
-      gas: config.gas,
-      gasPrice: config.gasPrice,
-      value: 10,
-    },
-    [fundAddress, v, r, s],
-  );
 });
 
 test.serial(
   "Cannot redeem before end time",
   async t => {
-    const registrantFund = await registerFund(fund.address, deployer, 10 ** 19);
-    t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+    const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
+    const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
+    await competition.instance.claimReward.postTransaction(
+      {
+        from: manager,
+        gas: config.gas,
+        gasPrice: config.gasPrice,
+      },
+      [],
+    );
+    const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
+    t.not(registrantFund, "0x0000000000000000000000000000000000000000");
+    t.deepEqual(managerPreShares, managerPostShares);
   },
 );
 
 test.serial(
   "Cannot redeem without being registered",
   async t => {
-    await competition.instance.batchAddToWhitelist.postTransaction(opts, [
-      10 ** 22,
-      [deployer],
-    ]);
-    const registrantFund = await registerFund(fund.address, deployer, 10 ** 19);
+    const registrantFund = await competition.instance.getRegistrantFund.call({}, [manager]);
+    const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
+    await competition.instance.claimReward.postTransaction(
+      {
+        from: manager,
+        gas: config.gas,
+        gasPrice: config.gasPrice,
+      },
+      [],
+    );
+    const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+    t.deepEqual(managerPreShares, managerPostShares);
   },
 );
 
 test.serial("Can redeem before endTime if version is shutdown", async t => {
   const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
+  await version.instance.shutDown.postTransaction({ from: deployer, gas: config.gas, gasPrice: config.gasPrice }, []);
+  const versionShutDown = await version.instance.isShutDown.call({}, []);
+  const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
+  await competition.instance.claimReward.postTransaction(
+    {
+      from: manager,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+    },
+    [],
+  );
+  const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
   t.is(registrantFund, fund.address);
+  t.true(versionShutDown);
+  t.deepEqual(managerPreShares, managerPostShares);
 });
-*/

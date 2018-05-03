@@ -169,7 +169,6 @@ test.serial(
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-    t.deepEqual(post.manager.ether, pre.manager.ether);
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
     t.deepEqual(post.custodian.ether, pre.custodian.ether);
   },

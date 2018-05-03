@@ -6,6 +6,7 @@ import {
   getTermsSignatureParameters,
   getSignatureParameters,
 } from "../../../utils/lib/signing";
+import getChainTime from "../../../utils/lib/getChainTime";
 import { updateCanonicalPriceFeed } from "../../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -71,6 +72,7 @@ test.beforeEach(async () => {
     () => {},
     true,
   );
+  const blockchainTime = await getChainTime();
   competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
@@ -79,10 +81,10 @@ test.beforeEach(async () => {
       deployed.EurToken.address,
       version.address,
       accounts[5],
-      Math.round(new Date().getTime() / 1000),
-      Math.round(new Date().getTime() / 1000) + 86400,
+      blockchainTime,
+      blockchainTime + 86400,
       2 * 10 ** 18,
-      10 ** 22,
+      10 ** 23,
       10,
     ],
     () => {},
@@ -103,13 +105,13 @@ test.beforeEach(async () => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName,
-      deployed.MlnToken.address, // base asset
+      deployed.EthToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [deployed.EthToken.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -146,7 +148,7 @@ test.serial(
 );
 
 test.serial("Can register from a whitelisted account", async t => {
-  const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
+  const registrantFund = await registerFund(fund.address, manager, 10);
   t.is(registrantFund, fund.address);
 });
 
@@ -175,6 +177,7 @@ test.serial(
 );
 
 test.serial("Cannot register after endTime", async t => {
+  const blockchainTime = await getChainTime();
   competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
@@ -183,8 +186,8 @@ test.serial("Cannot register after endTime", async t => {
       deployed.EurToken.address,
       version.address,
       accounts[5],
-      Math.round(new Date().getTime() / 1000),
-      Math.round(new Date().getTime() / 1000) - 86400,
+      blockchainTime,
+      blockchainTime - 86400,
       10 ** 17,
       10 ** 22,
       10,
@@ -210,6 +213,7 @@ test.serial("Cannot register after endTime", async t => {
 });
 
 test.serial("Cannot register before startTime", async t => {
+  const blockchainTime = await getChainTime();
   competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
@@ -218,8 +222,8 @@ test.serial("Cannot register before startTime", async t => {
       deployed.EurToken.address,
       version.address,
       accounts[5],
-      Math.round(new Date().getTime() / 1000) - 86400,
-      Math.round(new Date().getTime() / 1000) - 86400,
+      blockchainTime - 86400,
+      blockchainTime - 86400,
       10 ** 17,
       10 ** 22,
       10,
@@ -247,6 +251,7 @@ test.serial("Cannot register before startTime", async t => {
 test.serial(
   "Cannot register if max number of registrants is reached",
   async t => {
+    const blockchainTime = await getChainTime();
     competition = await deployContract(
       "competitions/Competition",
       Object.assign(opts, { gas: 6800000 }),
@@ -255,8 +260,8 @@ test.serial(
         deployed.EurToken.address,
         version.address,
         accounts[5],
-        Math.round(new Date().getTime() / 1000),
-        Math.round(new Date().getTime() / 1000) + 86400,
+        blockchainTime,
+        blockchainTime + 86400,
         10 ** 17,
         10 ** 22,
         0,
