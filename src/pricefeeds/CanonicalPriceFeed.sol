@@ -97,6 +97,24 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     /// @dev override inherited update function to prevent manual update from authority
     function update() external { revert(); }
 
+    /// @dev Burn state for a pricefeed operator
+    /// @param user Address of pricefeed operator to burn the stake from
+    /// @param amount Amount of stake to burn
+    /// @param data Additional data
+    function burnStake(address user, uint amount, bytes data)
+        external
+        auth
+    {
+        require(totalStakedFor(user) >= amount);
+        uint preStake = totalStakedFor(user);
+        uint postStake = sub(preStake, amount);
+        require(postStake >= minimumStake || postStake == 0);
+        updateCheckpointAtNow(stakesFor[user], amount, true);
+        updateCheckpointAtNow(stakeHistory, amount, true);
+        updateStakerRanking(user);
+        StakeBurned(user, amount, data);
+    }
+
     // PUBLIC METHODS
 
     // AGGREGATION

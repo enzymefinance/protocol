@@ -96,7 +96,7 @@ async function createPriceFeedAndStake(context) {
 function medianize(pricesArray) {
   let prices = pricesArray.filter(e => {
     if (e === 0) { return false; }
-    else { return true; }
+    return true;
   });
   prices = prices.sort();
   const len = prices.length;
@@ -341,6 +341,7 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
     ]
   ];
 
+  /* eslint no-restricted-syntax: ["error", "for"] */
   for (const prices of priceScenarios) {
     for (const [i, price] of prices.entries()) { // will only update to length of `prices`
       await t.context.pricefeeds[i].instance.update.postTransaction(
@@ -359,6 +360,7 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
   }
 });
 
+// Governance assumed to be accounts[0]
 test("governance cannot manually force a price update", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   const preUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
@@ -369,4 +371,99 @@ test("governance cannot manually force a price update", async t => {
   const postUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
 
   t.is(preUpdateId, postUpdateId)
+});
+
+test("governance can burn stake of an operator", async t => {
+  await createPriceFeedAndStake(t.context);
+  const stakingFeedAddress = t.context.pricefeeds[0].address;
+  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
+    { from: accounts[0], gas: 6000000 },
+    [stakingFeedAddress, config.protocol.staking.minimumAmount, ""]
+  );
+  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  t.is(Number(stakedAmountBefore), config.protocol.staking.minimumAmount)
+  t.is(Number(stakedAmountAfter), 0)
+  t.true(isOperatorBefore);
+  t.false(isOperatorAfter);
+});
+
+test("only governance is allowed to call burnStake", async t => {
+  await createPriceFeedAndStake(t.context);
+  const stakingFeedAddress = t.context.pricefeeds[0].address;
+  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [t.context.pricefeeds[0].address]
+  );
+  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
+    { from: accounts[1], gas: 6000000 },
+    [stakingFeedAddress, config.protocol.staking.minimumAmount, ""]
+  );
+  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  t.deepEqual(stakedAmountAfter, stakedAmountBefore);
+  t.true(isOperatorBefore);
+  t.true(isOperatorAfter);
+});
+
+test("cannot burn stake lower than minimum stake unless it becomes zero", async t => {
+  await createPriceFeedAndStake(t.context);
+  // Stake additional amount
+  const additionalStake = 100;
+  const stakingFeedAddress = t.context.pricefeeds[0].address;
+  await mlnToken.instance.approve.postTransaction(
+    {from: accounts[0]}, [stakingFeedAddress, additionalStake]
+  );
+  await t.context.pricefeeds[0].instance.depositStake.postTransaction(
+    {from: accounts[0]}, [additionalStake, ""]
+  );
+  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
+    { from: accounts[0], gas: 6000000 },
+    [stakingFeedAddress, additionalStake + 1, ""]
+  );
+  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  t.deepEqual(stakedAmountAfter, stakedAmountBefore);
+  t.true(isOperatorBefore);
+  t.true(isOperatorAfter);
+
+  // Works if stake is burnt equal or greater than minimum stake
+  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
+    { from: accounts[0], gas: 6000000 },
+    [stakingFeedAddress, additionalStake, ""]
+  );
+  const isOperatorFurtherAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
+    {}, [stakingFeedAddress]
+  );
+  const stakedAmountFurtherAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
+    {}, [stakingFeedAddress]
+  );
+  t.true(isOperatorFurtherAfter);
+  t.is(Number(stakedAmountFurtherAfter), config.protocol.staking.minimumAmount);
 });
