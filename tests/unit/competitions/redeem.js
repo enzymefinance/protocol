@@ -128,48 +128,8 @@ test.beforeEach(async () => {
   await updateCanonicalPriceFeed(deployed);
 });
 
-test.serial(
-  "Cannot redeem before end time",
-  async t => {
-    const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
-    const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
-    await competition.instance.claimReward.postTransaction(
-      {
-        from: manager,
-        gas: config.gas,
-        gasPrice: config.gasPrice,
-      },
-      [],
-    );
-    const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
-    t.not(registrantFund, "0x0000000000000000000000000000000000000000");
-    t.deepEqual(managerPreShares, managerPostShares);
-  },
-);
-
-test.serial(
-  "Cannot redeem without being registered",
-  async t => {
-    const registrantFund = await competition.instance.getRegistrantFund.call({}, [manager]);
-    const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
-    await competition.instance.claimReward.postTransaction(
-      {
-        from: manager,
-        gas: config.gas,
-        gasPrice: config.gasPrice,
-      },
-      [],
-    );
-    const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
-    t.is(registrantFund, "0x0000000000000000000000000000000000000000");
-    t.deepEqual(managerPreShares, managerPostShares);
-  },
-);
-
-test.serial("Can redeem before endTime if version is shutdown", async t => {
+test.serial("Cannot redeem before end time", async t => {
   const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
-  await version.instance.shutDown.postTransaction({ from: deployer, gas: config.gas, gasPrice: config.gasPrice }, []);
-  const versionShutDown = await version.instance.isShutDown.call({}, []);
   const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
   await competition.instance.claimReward.postTransaction(
     {
@@ -180,7 +140,59 @@ test.serial("Can redeem before endTime if version is shutdown", async t => {
     [],
   );
   const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
+  t.not(registrantFund, "0x0000000000000000000000000000000000000000");
+  t.deepEqual(managerPreShares, managerPostShares);
+});
+
+test.serial("Cannot redeem without being registered", async t => {
+  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
+    manager,
+  ]);
+  const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
+  await competition.instance.claimReward.postTransaction(
+    {
+      from: manager,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+    },
+    [],
+  );
+  const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
+  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+  t.deepEqual(managerPreShares, managerPostShares);
+});
+
+test.serial("Can redeem before endTime if version is shutdown", async t => {
+  const buyinValue = new BigNumber(10 ** 19);
+  const registrantFund = await registerFund(fund.address, manager, buyinValue);
+  await version.instance.shutDown.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [],
+  );
+  const versionShutDown = await version.instance.isShutDown.call({}, []);
+  const bonusRate = await competition.instance.bonusRate.call({}, []);
+  const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
+  const fundPreSupply = await fund.instance.totalSupply.call({}, []);
+  const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
+  const competitionPreShares = await fund.instance.balanceOf.call({}, [
+    competition.address,
+  ]);
+  await competition.instance.claimReward.postTransaction(
+    {
+      from: manager,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+    },
+    [],
+  );
+  const fundPostSupply = await fund.instance.totalSupply.call({}, []);
+  const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
+  const competitionPostShares = await fund.instance.balanceOf.call({}, [
+    competition.address,
+  ]);
   t.is(registrantFund, fund.address);
   t.true(versionShutDown);
-  t.deepEqual(managerPreShares, managerPostShares);
+  t.deepEqual(fundPostSupply, fundPreSupply);
+  t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+  t.deepEqual(competitionPostShares, competitionPreShares.sub(expectedShares));
 });

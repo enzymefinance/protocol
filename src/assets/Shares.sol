@@ -32,6 +32,73 @@ contract Shares is Asset, SharesInterface {
     }
 
     // PUBLIC METHODS
+
+    /**
+     * @notice Send `_value` tokens to `_to` from `msg.sender`
+     * @dev Transfers sender's tokens to a given address
+     * @dev Similar to transfer(address, uint, bytes), but without _data parameter
+     * @param _to Address of token receiver
+     * @param _value Number of tokens to transfer
+     * @return Returns success of function call
+     */
+    function transfer(address _to, uint _value)
+        public
+        returns (bool success)
+    {
+        uint codeLength;
+        bytes memory empty;
+
+        assembly {
+            // Retrieve the size of the code on target address, this needs assembly.
+            codeLength := extcodesize(_to)
+        }
+
+        require(balances[msg.sender] >= _value); // sanity checks
+        require(balances[_to] + _value >= balances[_to]);
+
+        balances[msg.sender] = sub(balances[msg.sender], _value);
+        balances[_to] = add(balances[_to], _value);
+        if (codeLength > 0) {
+            ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
+            receiver.tokenFallback(msg.sender, _value, empty);
+        }
+        Transfer(msg.sender, _to, _value, empty);
+        return true;
+    }
+
+    /**
+     * @notice Send `_value` tokens to `_to` from `msg.sender` and trigger tokenFallback if sender is a contract
+     * @dev Function that is called when a user or contract wants to transfer funds
+     * @param _to Address of token receiver
+     * @param _value Number of tokens to transfer
+     * @param _data Data to be sent to tokenFallback
+     * @return Returns success of function call
+     */
+    function transfer(address _to, uint _value, bytes _data)
+        public
+        returns (bool success)
+    {
+        bytes memory empty;
+        uint codeLength;
+
+        assembly {
+            // Retrieve the size of the code on target address, this needs assembly.
+            codeLength := extcodesize(_to)
+        }
+
+        require(balances[msg.sender] >= _value); // sanity checks
+        require(balances[_to] + _value >= balances[_to]);
+
+        balances[msg.sender] = sub(balances[msg.sender], _value);
+        balances[_to] = add(balances[_to], _value);
+        if (codeLength > 0) {
+            ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
+            receiver.tokenFallback(msg.sender, _value, _data);
+        }
+        Transfer(msg.sender, _to, _value, empty);
+        return true;
+    }
+
     // PUBLIC VIEW METHODS
 
     function getName() view returns (bytes32) { return name; }

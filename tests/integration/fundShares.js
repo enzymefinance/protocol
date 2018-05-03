@@ -224,7 +224,7 @@ async function calculateOfferValue(wantedShares) {
   ]);
   const sharePrice = await fund.instance.calcSharePriceAndAllocateFees.call({}, []);
   const sharesWorth = await fund.instance.toWholeShareUnit.call({}, [sharePrice.mul(wantedShares)]);
-  return new BigNumber(Math.round(sharesWorth.mul(invertedPrice).div(10 ** assetDecimals)));
+  return new BigNumber(Math.floor(sharesWorth.mul(invertedPrice).div(10 ** assetDecimals)));
 }
 
 test.serial("allows request and execution on the first investment", async t => {

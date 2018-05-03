@@ -1080,8 +1080,8 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   t.deepEqual(investorPostShares, investorPreShares.minus(redemptionAmount));
   t.deepEqual(post.worker.MlnToken, pre.worker.MlnToken);
   t.deepEqual(post.worker.EthToken, pre.worker.EthToken);
-  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken.add(wantedValue));
-  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken.add(wantedValue));
   t.deepEqual(
     post.investor.ether,
     pre.investor.ether.minus(investorGasTotal.times(gasPrice)),
@@ -1089,8 +1089,8 @@ test.serial(`Allows redemption by tokenFallback method)`, async t => {
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(wantedValue));
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(wantedValue));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 

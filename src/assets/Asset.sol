@@ -97,7 +97,7 @@ contract Asset is DSMath, AssetInterface, ERC223Interface {
         returns (bool)
     {
         bytes memory empty;
-        
+
         require(_from != 0x0);
         require(_to != 0x0);
         require(_to != address(this));
