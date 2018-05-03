@@ -83,8 +83,7 @@ contract CanonicalRegistrar is DSThing, DBC {
             inputDecimals,
             inputUrl,
             inputIpfsHash,
-            breakInBreakOut[0],
-            breakInBreakOut[1],
+            breakInBreakOut,
             inputStandards,
             inputFunctionSignatures
         );
@@ -133,8 +132,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
-        address ofBreakIn,
-        address ofBreakOut,
+        address[2] ofBreakInBreakOut,
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
@@ -147,8 +145,8 @@ contract CanonicalRegistrar is DSThing, DBC {
         asset.decimals = inputDecimals;
         asset.url = inputUrl;
         asset.ipfsHash = inputIpfsHash;
-        asset.breakIn = ofBreakIn;
-        asset.breakOut = ofBreakOut;
+        asset.breakIn = ofBreakInBreakOut[0];
+        asset.breakOut = ofBreakInBreakOut[1];
         asset.standards = inputStandards;
         asset.functionSignatures = inputFunctionSignatures;
     }
@@ -201,7 +199,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         pre_cond(exchangeInformation[ofExchange].exists)
     {
         require(registeredExchanges[exchangeIndex] == ofExchange);
-        delete assetInformation[ofExchange];
+        delete exchangeInformation[ofExchange];
         delete registeredExchanges[exchangeIndex];
         for (uint i = exchangeIndex; i < registeredExchanges.length-1; i++) {
             registeredExchanges[i] = registeredExchanges[i+1];

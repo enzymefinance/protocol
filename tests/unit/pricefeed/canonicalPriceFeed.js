@@ -76,6 +76,13 @@ function registerBtc(pricefeed) {
   ]);
 }
 
+function bytesToAscii(byteArray) {
+  while(byteArray[byteArray.length-1] === 0) {
+    byteArray.pop();    // strip zeros from end of array
+  }
+  return api.util.hexToAscii(api.util.bytesToHex(byteArray));
+}
+
 async function createPriceFeedAndStake(context) {
   const txid = await context.canonicalPriceFeed.instance.setupStakingPriceFeed.postTransaction(opts);
   const receipt = await api.eth.getTransactionReceipt(txid)
@@ -138,7 +145,7 @@ test.beforeEach(async t => {
   t.context.pricefeeds = [];
 });
 
-test("registers more than one asset without error", async t => {
+test("can register assets, as well as update and remove them", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   await registerEth(t.context.canonicalPriceFeed);
   const eurRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [eurToken.address]);
@@ -155,6 +162,78 @@ test("registers more than one asset without error", async t => {
   t.true(ethRegistered);
   t.true(mlnRegistered); // MLN registered by default
   t.true(allInRegistry);
+
+  await t.context.canonicalPriceFeed.instance.updateAsset.postTransaction(opts, [
+    eurToken.address,
+    'New name',
+    'NEW',
+    12,
+    eurUrl,
+    mockIpfs,
+    [mockBreakIn, mockBreakOut],
+    [],
+    []
+  ]);
+  const updatedInfo = await t.context.canonicalPriceFeed.instance.assetInformation.call({}, [eurToken.address]);
+
+  t.is(bytesToAscii(updatedInfo[1]), "New name");
+  t.is(bytesToAscii(updatedInfo[2]), "NEW");
+  t.is(Number(updatedInfo[3]), 12);
+
+  await t.context.canonicalPriceFeed.instance.removeAsset.postTransaction(opts, [
+    eurToken.address, 1
+  ]);
+  const eurRegisteredPostRemoval = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [eurToken.address]);
+
+  t.false(eurRegisteredPostRemoval);
+});
+
+test("can register exchanges, as well as update and remove them", async t => {
+  const mockBytes4 = "0x12345678"
+  await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
+    deployed.MatchingMarket.address,
+    deployed.MatchingMarketAdapter.address,
+    true,
+    [mockBytes4]
+  ]);
+  await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
+    deployed.SimpleMarket.address,
+    deployed.SimpleAdapter.address,
+    false,
+    [mockBytes4]
+  ]);
+
+  const matchingMarketRegistered = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.MatchingMarket.address]);
+  const simpleMarketRegistered = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.SimpleMarket.address]);
+  let registeredExchanges = await t.context.canonicalPriceFeed.instance.getRegisteredExchanges.call();
+  registeredExchanges = registeredExchanges.map(e => e._value);
+  const allExchangesInRegistry =
+    registeredExchanges.includes(deployed.MatchingMarket.address) &&
+    registeredExchanges.includes(deployed.SimpleMarket.address)
+
+  t.true(matchingMarketRegistered);
+  t.true(simpleMarketRegistered);
+  t.true(allExchangesInRegistry);
+
+  await t.context.canonicalPriceFeed.instance.updateExchange.postTransaction(opts, [
+    deployed.MatchingMarket.address,
+    deployed.SimpleAdapter.address,
+    false,
+    []
+  ]);
+  const updatedInfo = await t.context.canonicalPriceFeed.instance.exchangeInformation.call({}, [deployed.MatchingMarket.address]);
+  const functionAllowedPostUpdate = await t.context.canonicalPriceFeed.instance.exchangeMethodIsAllowed.call({}, [deployed.MatchingMarket.address, mockBytes4]);
+
+  t.is(updatedInfo[1], deployed.SimpleAdapter.address);
+  t.false(updatedInfo[2]);
+  t.false(functionAllowedPostUpdate);
+
+  await t.context.canonicalPriceFeed.instance.removeExchange.postTransaction(opts, [
+    deployed.MatchingMarket.address, 0
+  ]);
+  const matchingMarketRegisteredPostRemoval = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.MatchingMarket.address]);
+
+  t.false(matchingMarketRegisteredPostRemoval);
 });
 
 test("staked pricefeed gets price accounted for, but does not count when unstaked", async t => {
