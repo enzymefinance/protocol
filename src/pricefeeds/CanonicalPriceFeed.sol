@@ -20,6 +20,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     uint public VALIDITY;
     uint public INTERVAL;
     uint public minimumPriceCount = 1;
+    mapping (address => bool) public isStakingFeed; // If the Staking Feed has been created through this contract
 
     // METHODS
 
@@ -83,12 +84,13 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             stakingToken,
             address(this)
         );
+        isStakingFeed[ofStakingPriceFeed] = true;
         StakingPriceFeed(ofStakingPriceFeed).setOwner(msg.sender);
         emit SetupPriceFeed(ofStakingPriceFeed);
     }
 
     function setUpdater(address _updater)
-        public
+        external
         auth
     {
         updater = _updater;
@@ -116,6 +118,30 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     // PUBLIC METHODS
+
+    // STAKING
+
+    function stake(
+        uint amount,
+        bytes data
+    )
+        public
+        pre_cond(isStakingFeed[msg.sender])
+    {
+        OperatorStaking.stake(amount, data);
+    }
+  
+    function stakeFor(
+        address user,
+        uint amount,
+        bytes data
+    )
+        public
+        pre_cond(isStakingFeed[user])
+    {
+
+        OperatorStaking.stakeFor(user, amount, data);
+    }
 
     // AGGREGATION
 
