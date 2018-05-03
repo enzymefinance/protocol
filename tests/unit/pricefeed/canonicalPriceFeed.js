@@ -1,7 +1,8 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
-import { deployContract, retrieveContract } from "../../../utils/lib/contracts";
+import { deployContract } from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
+import createStakingFeed from "../../../utils/lib/createStakingFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
@@ -77,13 +78,7 @@ function registerBtc(pricefeed) {
 }
 
 async function createPriceFeedAndStake(context) {
-  const txid = await context.canonicalPriceFeed.instance.setupStakingPriceFeed.postTransaction(opts);
-  const receipt = await api.eth.getTransactionReceipt(txid)
-  const setupLog = receipt.logs.find(
-    e => e.topics[0] === api.util.sha3('SetupPriceFeed(address)')
-  );
-  const stakingFeedAddress = api.util.toChecksumAddress(`0x${setupLog.data.slice(-40)}`);
-  const stakingFeed = await retrieveContract("pricefeeds/StakingPriceFeed", stakingFeedAddress);
+  const stakingFeed = await createStakingFeed(opts, context.canonicalPriceFeed);
   await mlnToken.instance.approve.postTransaction(
     {from: accounts[0]}, [stakingFeed.address, config.protocol.staking.minimumAmount]
   );
