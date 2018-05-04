@@ -25,7 +25,7 @@ module.exports = {
     networkId: '42',
     host: 'localhost',
     port: 8547,
-    gas: 6690000,
+    gas: 7000000,
     gasPrice: 100000000000,
     protocol: {
       pricefeed: {

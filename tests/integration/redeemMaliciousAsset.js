@@ -129,6 +129,7 @@ test.serial("initial investment with ETH", async t => {
     [deployed.MlnToken.address]: 10 ** 18,
     [maliciousToken.address]: 10 ** 18,
     [deployed.EthToken.address]: 10 ** 18,
+    [deployed.EurToken.address]: 10 ** 18,
   });
   await ethToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
@@ -155,6 +156,7 @@ test.serial("fund buys some mlnToken", async t => {
     [deployed.MlnToken.address]: 10 ** 18,
     [maliciousToken.address]: 10 ** 18,
     [deployed.EthToken.address]: 10 ** 18,
+    [deployed.EurToken.address]: 10 ** 18,
   });
   await fund.instance.callOnExchange.postTransaction(
     { from: manager, gas: config.gas },
