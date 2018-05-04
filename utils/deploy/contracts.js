@@ -7,7 +7,8 @@ import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
-import verifyDeployment from "./verify";
+import createStakingFeed from "../lib/createStakingFeed";
+// import verifyDeployment from "./verify";
 
 // Constants and mocks
 const addressBookFile = "./addressBook.json";
@@ -86,11 +87,7 @@ async function deployEnvironment(environment) {
       deployed.Governance.address
     ], () => {}, true);
 
-    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
-      deployed.CanonicalPriceFeed.address,
-      ethTokenAddress,
-      deployed.CanonicalPriceFeed.address
-    ]);
+    deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
     await mlnToken.instance.approve.postTransaction(
       opts,
       [
@@ -310,11 +307,7 @@ async function deployEnvironment(environment) {
       deployed.Governance.address
     ], () => {}, true);
 
-    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
-      deployed.CanonicalPriceFeed.address,
-      deployed.MlnToken.address,
-      deployed.CanonicalPriceFeed.address
-    ]);
+    deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
     await deployed.MlnToken.instance.approve.postTransaction(
       opts,
       [

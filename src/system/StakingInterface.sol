@@ -4,6 +4,7 @@ interface StakingInterface {
 
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
+    event StakeBurned(address indexed user, uint256 amount, bytes data);
 
     function stake(uint256 amount, bytes data) public;
     function stakeFor(address user, uint256 amount, bytes data) public;
