@@ -55,6 +55,7 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
+    const chfAddress = tokenInfo[environment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
 //     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
@@ -87,17 +88,18 @@ async function deployEnvironment(environment) {
       deployed.Governance.address
     ], () => {}, true);
 
-    deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
-    await mlnToken.instance.approve.postTransaction(
-      opts,
-      [
-        deployed.StakingPriceFeed.address,
-        config.protocol.staking.minimumAmount
-      ]
-    );
-    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
-      opts, [config.protocol.staking.minimumAmount, ""]
-    );
+    // below not needed right now (TODO: remove in cleanup if still here)
+    // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
+    // await mlnToken.instance.approve.postTransaction(
+    //   opts,
+    //   [
+    //     deployed.StakingPriceFeed.address,
+    //     config.protocol.staking.minimumAmount
+    //   ]
+    // );
+    // await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+    //   opts, [config.protocol.staking.minimumAmount, ""]
+    // );
 
     // set up exchanges and adapters
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
@@ -145,9 +147,9 @@ async function deployEnvironment(environment) {
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
-    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 864000, 2 * 10 ** 18, 10 ** 22, 10]);
-    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
-    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
+    // deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 864000, 2 * 10 ** 18, 10 ** 22, 10]);
+    // await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    // await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
 
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
