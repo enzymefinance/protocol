@@ -40,9 +40,6 @@ contract Shares is Asset, SharesInterface {
     function getCreationTime() view returns (uint) { return creationTime; }
     function toSmallestShareUnit(uint quantity) view returns (uint) { return mul(quantity, 10 ** getDecimals()); }
     function toWholeShareUnit(uint quantity) view returns (uint) { return quantity / (10 ** getDecimals()); }
-    function transfer(address _to, uint256 _value) public returns (bool) { require(_to == address(this)); }
-    function transfer(address _to, uint256 _value, bytes _data) public returns (bool) { require(_to == address(this)); }
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) { require(_to == address(this)); }
 
     // INTERNAL METHODS
 

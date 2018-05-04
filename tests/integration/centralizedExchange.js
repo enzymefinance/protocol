@@ -2,9 +2,9 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {getTermsSignatureParameters} from "../../utils/lib/signing";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
-import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
+import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -28,12 +28,28 @@ let version;
 let deployed;
 
 // declare function signatures
-const makeOrderSignature = api.util.abiSignature('makeOrder', [
-  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-]).slice(0,10);
-const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
-  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-]).slice(0,10);
+const makeOrderSignature = api.util
+  .abiSignature("makeOrder", [
+    "address",
+    "address[5]",
+    "uint256[6]",
+    "bytes32",
+    "uint8",
+    "bytes32",
+    "bytes32",
+  ])
+  .slice(0, 10);
+const cancelOrderSignature = api.util
+  .abiSignature("cancelOrder", [
+    "address",
+    "address[5]",
+    "uint256[6]",
+    "bytes32",
+    "uint8",
+    "bytes32",
+    "bytes32",
+  ])
+  .slice(0, 10);
 
 // mock data
 const offeredValue = new BigNumber(10 ** 10);
@@ -51,16 +67,16 @@ test.before(async () => {
     "exchange/thirdparty/CentralizedExchangeBridge", { from: deployer }
   );
   await governanceAction(
-    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    { from: deployer },
+    deployed.Governance,
+    deployed.CanonicalPriceFeed,
+    "registerExchange",
     [
       deployed.CentralizedExchangeBridge.address,
       deployed.CentralizedAdapter.address,
       false,
-      [
-        makeOrderSignature,
-        cancelOrderSignature
-      ]
-    ]
+      [makeOrderSignature, cancelOrderSignature],
+    ],
   );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
@@ -82,15 +98,23 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  // Change competition address to investor just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [investor],
+  );
 });
 
 test.beforeEach(async () => {
   await updateCanonicalPriceFeed(deployed);
 
-  const [, referencePrice] = await pricefeed.instance.getReferencePriceInfo.call(
-    {},
-    [mlnToken.address, ethToken.address],
-  );
+  const [
+    ,
+    referencePrice,
+  ] = await pricefeed.instance.getReferencePriceInfo.call({}, [
+    mlnToken.address,
+    ethToken.address,
+  ]);
   const sellQuantity1 = new BigNumber(10 * 19);
   trade1 = {
     sellQuantity: sellQuantity1,
@@ -101,12 +125,18 @@ test.beforeEach(async () => {
 test.serial(
   "transfer ownership of exchange from deployer to new owner",
   async t => {
-    const oldOwner = await deployed.CentralizedExchangeBridge.instance.owner.call({}, []);
+    const oldOwner = await deployed.CentralizedExchangeBridge.instance.owner.call(
+      {},
+      [],
+    );
     await deployed.CentralizedExchangeBridge.instance.changeOwner.postTransaction(
       { from: deployer, gasPrice: config.gasPrice },
       [exchangeOwner],
     );
-    const newOwner = await deployed.CentralizedExchangeBridge.instance.owner.call({}, []);
+    const newOwner = await deployed.CentralizedExchangeBridge.instance.owner.call(
+      {},
+      [],
+    );
     t.is(oldOwner, deployer);
     t.is(newOwner, exchangeOwner);
   },
@@ -179,13 +209,17 @@ test.serial(
     const pre = await getAllBalances(deployed, accounts, fund);
     await updateCanonicalPriceFeed(deployed);
     await fund.instance.callOnExchange.postTransaction(
-      {from: manager, gas: config.gas},
+      { from: manager, gas: config.gas },
       [
-        0, makeOrderSignature,
-        ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+        0,
+        makeOrderSignature,
+        ["0x0", "0x0", mlnToken.address, ethToken.address, "0x0"],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
-        '0x0', 0, '0x0', '0x0'
-      ]
+        "0x0",
+        0,
+        "0x0",
+        "0x0",
+      ],
     );
     const post = await getAllBalances(deployed, accounts, fund);
     const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
@@ -252,16 +286,27 @@ test.serial("Manager settles an order on the exchange interface", async t => {
 test.serial("Manager cancels an order from the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
   await fund.instance.callOnExchange.postTransaction(
-    {from: manager, gas: config.gas},
+    { from: manager, gas: config.gas },
     [
       0,
-      api.util.abiSignature('makeOrder', [
-        'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-      ]).slice(0,10),
-      ['0x0', '0x0', mlnToken.address, ethToken.address, '0x0'],
+      api.util
+        .abiSignature("makeOrder", [
+          "address",
+          "address[5]",
+          "uint256[6]",
+          "bytes32",
+          "uint8",
+          "bytes32",
+          "bytes32",
+        ])
+        .slice(0, 10),
+      ["0x0", "0x0", mlnToken.address, ethToken.address, "0x0"],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
-      '0x0', 0, '0x0', '0x0'
-    ]
+      "0x0",
+      0,
+      "0x0",
+      "0x0",
+    ],
   );
   const pre = await getAllBalances(deployed, accounts, fund);
   await mlnToken.instance.transfer.postTransaction(
@@ -274,13 +319,19 @@ test.serial("Manager cancels an order from the fund", async t => {
   );
   const orderId = await deployed.CentralizedExchangeBridge.instance.getLastOrderId.call();
   await fund.instance.callOnExchange.postTransaction(
-    {from: manager, gas: config.gas},
+    { from: manager, gas: config.gas },
     [
-      0, cancelOrderSignature,
-      ['0x0', '0x0', '0x0', '0x0', '0x0'],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      `0x${Number(orderId).toString(16).padStart(64, '0')}`, 0, '0x0', '0x0'
-    ]
+      0,
+      cancelOrderSignature,
+      ["0x0", "0x0", "0x0", "0x0", "0x0"],
+      [0, 0, 0, 0, 0, 0],
+      `0x${Number(orderId)
+        .toString(16)
+        .padStart(64, "0")}`,
+      0,
+      "0x0",
+      "0x0",
+    ],
   );
   // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
   // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);

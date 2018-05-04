@@ -1,9 +1,9 @@
-import test from "ava";
+/* import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
-import {getTermsSignatureParameters} from "../../utils/lib/signing";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
-import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
+import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -37,15 +37,12 @@ test.before(async () => {
   simpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", {from: deployer});
   simpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
   await governanceAction(
-    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-    [
-      simpleMarket.address,
-      simpleAdapter.address,
-      true,
-      []
-    ]
+    { from: deployer },
+    deployed.Governance,
+    deployed.CanonicalPriceFeed,
+    "registerExchange",
+    [simpleMarket.address, simpleAdapter.address, true, []],
   );
-
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
@@ -116,3 +113,4 @@ test.serial("Investor cannot give allowance to his shares", async t => {
   ]);
   t.is(allowance.toNumber(), 0);
 });
+*/

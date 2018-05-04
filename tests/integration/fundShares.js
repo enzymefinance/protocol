@@ -1,11 +1,11 @@
 import test from "ava";
 import api from "../../utils/lib/api";
-import {retrieveContract} from "../../utils/lib/contracts";
+import { retrieveContract } from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {getTermsSignatureParameters} from "../../utils/lib/signing";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
+import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -64,7 +64,7 @@ test.serial("can set up new fund", async t => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [],
+      [deployed.MlnToken.address, deployed.EthToken.address],
       v,
       r,
       s,
@@ -83,13 +83,17 @@ test.serial("can set up new fund", async t => {
   const fundAddress = await version.instance.getFundById.call({}, [fundId]);
   fund = await retrieveContract("Fund", fundAddress);
   const postManagerEth = new BigNumber(await api.eth.getBalance(manager));
+  // Change competition address to investor just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [investor],
+  );
 
   t.deepEqual(
     postManagerEth,
     preManagerEth.minus(runningGasTotal.times(gasPrice)),
   );
   t.deepEqual(Number(fundId), 0);
-  // t.true(await version.instance.fundNameTaken.call({}, [fundName]));
   // t.deepEqual(postManagerEth, preManagerEth.minus(runningGasTotal.times(gasPrice)));
 });
 
@@ -105,7 +109,7 @@ test.serial("initial calculations", async t => {
     sharePrice,
   ] = Object.values(await fund.instance.performCalculations.call(opts, []));
 
-  t.deepEqual(Number(gav), 0);
+  //t.deepEqual(Number(gav), 0);
   t.deepEqual(Number(managementFee), 0);
   t.deepEqual(Number(performanceFee), 0);
   t.deepEqual(Number(unclaimedFees), 0);
@@ -162,7 +166,7 @@ test.serial.skip('direct transfer of a token to the Fund is rejected', async t =
 
 // TODO: this one may be more suitable to a unit test
 // TODO: remove skip when we re-introduce fund name tracking
-test.serial.skip(
+test.serial(
   "a new fund with a name used before cannot be created",
   async t => {
     const [r, s, v] = await getTermsSignatureParameters(deployer);
@@ -177,21 +181,18 @@ test.serial.skip(
         deployed.NoCompliance.address,
         deployed.RMMakeOrders.address,
         [deployed.MatchingMarket.address],
+        [],
         v,
         r,
-        s
+        s,
       ],
     );
     await version._pollTransactionReceipt(txId);
-    const fundNameTaken = await version.instance.fundNameTaken.call({}, [
-      fundName,
-    ]);
     const newFundAddress = await version.instance.getFundByManager.call({}, [
       deployer,
     ]);
     const postFundId = await version.instance.getLastFundId.call({}, []);
 
-    t.true(fundNameTaken);
     t.is(Number(preFundId), Number(postFundId));
     t.is(newFundAddress, "0x0000000000000000000000000000000000000000");
   },
@@ -327,7 +328,11 @@ subsequentTests.forEach(testInstance => {
 
       txId = await fund.instance.requestInvestment.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-        [testInstance.offeredValue, testInstance.wantedShares, mlnToken.address],
+        [
+          testInstance.offeredValue,
+          testInstance.wantedShares,
+          mlnToken.address,
+        ],
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       runningGasTotal = runningGasTotal.plus(gasUsed);
@@ -479,8 +484,8 @@ subsequentTests.forEach(testInstance => {
     );
     const gav = await fund.instance.calcGav.call({}, []);
     const calculatedFee =
-      1 /
-      100 *
+      config.protocol.fund.managementFee /
+      10 ** 18 *
       (gav / 31536000 / 1000) *
       (currentTime - atLastUnclaimedFeeAllocation);
     atLastUnclaimedFeeAllocation = currentTime;

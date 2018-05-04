@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import "./assets/RestrictedShares.sol";
+import "./assets/Shares.sol";
 import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
@@ -15,7 +15,7 @@ import "ds-math/math.sol";
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223ReceivingContract {
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContract {
 
     event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
 
@@ -127,7 +127,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         address[] ofExchanges,
         address[] ofDefaultAssets
     )
-        RestrictedShares(withName, "MLNF", 18, now)
+        Shares(withName, "MLNF", 18, now)
     {
         require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
         require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
@@ -638,7 +638,7 @@ contract Fund is DSMath, DBC, Owned, RestrictedShares, FundInterface, ERC223Rece
         feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
          uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
-        sharePrice = nav > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+        sharePrice = totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares

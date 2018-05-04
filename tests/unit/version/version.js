@@ -20,7 +20,7 @@ const fundName = "Super Fund";
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
-  [ , , , , manager] = accounts;
+  [ , manager] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
   version = deployed.Version;
 });

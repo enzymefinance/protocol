@@ -3,6 +3,7 @@ pragma solidity ^0.4.19;
 import "../Fund.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
+import "../compliance/CompetitionCompliance.sol";
 import "./VersionInterface.sol";
 
 /// @title Version Contract
@@ -12,19 +13,20 @@ contract Version is DBC, Owned, VersionInterface {
     // FIELDS
 
     bytes32 public constant TERMS_AND_CONDITIONS = 0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
-    address public COMPLIANCE = 0xFb5978C7ca78074B2044034CbdbC3f2E03Dfe2bA; // restrict to OnlyManager compliance module for this version
 
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
     address public NATIVE_ASSET; // Address of wrapped native asset contract
+    address public QUOTE_ASSET; // Address of Fixed quote asset
     address public GOVERNANCE; // Address of Melon protocol governance contract
     address public CANONICAL_PRICEFEED; // Address of the canonical pricefeed
-    bool public IS_MAINNET;  // whether this contract is on the mainnet (to use hardcoded module)
 
     // Methods fields
     bool public isShutDown; // Governance feature, if yes than setupFund gets blocked and shutDownFund gets opened
+    address public COMPLIANCE; // restrict to Competition compliance module for this version
     address[] public listOfFunds; // A complete list of fund addresses created using this version
     mapping (address => address) public managerToFunds; // Links manager address to fund address created using this version
+
     // EVENTS
 
     event FundUpdated(address ofFund);
@@ -40,14 +42,16 @@ contract Version is DBC, Owned, VersionInterface {
         string versionNumber,
         address ofGovernance,
         address ofNativeAsset,
+        address ofQuoteAsset,
         address ofCanonicalPriceFeed,
-        bool isMainnet
+        address ofCompetitionCompliance
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
         NATIVE_ASSET = ofNativeAsset;
+        QUOTE_ASSET = ofQuoteAsset;
         CANONICAL_PRICEFEED = ofCanonicalPriceFeed;
-        IS_MAINNET = isMainnet;
+        COMPLIANCE = ofCompetitionCompliance;
     }
 
     // EXTERNAL METHODS
@@ -82,21 +86,17 @@ contract Version is DBC, Owned, VersionInterface {
     ) {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
+        // Check if the
+        require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
-        address complianceModule;
-        if (IS_MAINNET) {
-            complianceModule = COMPLIANCE;  // only for this version, with restricted compliance module on mainnet
-        } else {
-            complianceModule = ofCompliance;
-        }
         address ofFund = new Fund(
             msg.sender,
             ofFundName,
-            ofQuoteAsset,
-            ofManagementFee,
-            ofPerformanceFee,
-            ofCompliance,
+            QUOTE_ASSET,
+            0,
+            0,
+            COMPLIANCE,
             ofRiskMgmt,
             CANONICAL_PRICEFEED,
             ofExchanges,
@@ -104,7 +104,7 @@ contract Version is DBC, Owned, VersionInterface {
         );
         listOfFunds.push(ofFund);
         managerToFunds[msg.sender] = ofFund;
-        FundUpdated(ofFund);
+        emit FundUpdated(ofFund);
     }
 
     /// @dev Dereference Fund and trigger selfdestruct
@@ -115,7 +115,7 @@ contract Version is DBC, Owned, VersionInterface {
         Fund fund = Fund(ofFund);
         delete managerToFunds[msg.sender];
         fund.shutDown();
-        FundUpdated(ofFund);
+        emit FundUpdated(ofFund);
     }
 
     // PUBLIC VIEW METHODS

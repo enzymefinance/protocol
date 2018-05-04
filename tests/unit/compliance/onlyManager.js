@@ -7,6 +7,7 @@ import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
 const environment = "development";
 
 // hoisted variables TODO: replace with t.context object
+let deployer;
 let manager;
 let investor;
 let version;
@@ -17,7 +18,7 @@ let deployed;
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   const accounts = await api.eth.accounts();
-  [manager, investor] = accounts;
+  [deployer, manager, investor] = accounts;
   compliance = await deployContract("compliance/OnlyManager");
   version = deployed.Version;
   const [r, s, v] = await getTermsSignatureParameters(manager);
@@ -36,6 +37,9 @@ test.before(async () => {
   ]);
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  // Change competition address to manager just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction({ from: deployer }, [manager]);
+
 });
 
 test("Manager can request investment", async t => {
