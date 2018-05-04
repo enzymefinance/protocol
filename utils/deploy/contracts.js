@@ -79,8 +79,6 @@ async function deployEnvironment(environment) {
       [
         config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
         config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
-      ],
-      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       ], [
         config.protocol.staking.minimumAmount,
         config.protocol.staking.numOperators
