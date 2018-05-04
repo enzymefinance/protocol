@@ -15,7 +15,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const buyinValue = new BigNumber(0.5 * 10 ** 20);
+const buyinValue = new BigNumber(0.5 * 10 ** 19);
 const competitionDuration = 9; // Duration in seconds
 const competitionTerms =
   "0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E";
@@ -48,8 +48,8 @@ test.before(async () => {
     [
       1,
       deployed.Governance.address,
-      deployed.EthToken.address,
       deployed.MlnToken.address,
+      deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,
     ],
@@ -97,6 +97,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -153,22 +154,21 @@ test.serial(
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
     const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const expectedReward = buyinValue.mul(bonusRate).div(10 ** 18);
+    const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
     const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     const competitionPostShares = await fund.instance.balanceOf.call({}, [
       competition.address,
     ]);
     const fundPostSupply = await fund.instance.totalSupply.call({}, []);
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedReward));
+    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
     t.deepEqual(
       competitionPostShares,
-      competitionPreShares.sub(expectedReward),
+      competitionPreShares.sub(expectedShares),
     );
     t.deepEqual(fundPostSupply, fundPreSupply);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-    t.deepEqual(post.manager.ether, pre.manager.ether);
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
     t.deepEqual(post.custodian.ether, pre.custodian.ether);
   },

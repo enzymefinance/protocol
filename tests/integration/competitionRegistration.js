@@ -42,6 +42,7 @@ test.before(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -88,8 +89,9 @@ test.serial(
     ]);
     const preTotalSupply = await fund.instance.totalSupply.call({}, []);
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
+    const estimatedMlnReward = await competition.instance.calculatePayout.call({}, [buyinValue]);
     const bonusRate = await competition.instance.bonusRate.call({}, []);
-    console.log(await competition.instance.getMLNPrice.call({}, []));
+    const estimatedShares = bonusRate.mul(buyinValue).div(10 ** 18)
     await competition.instance.registerForCompetition.postTransaction(
       {
         from: manager,
@@ -104,7 +106,6 @@ test.serial(
       competition.address,
     ]);
     const postTotalSupply = await fund.instance.totalSupply.call({}, []);
-    const estimatedMlnReward = buyinValue.mul(bonusRate).div(10 ** 18);
     const registrantFund = await competition.instance.getRegistrantFund.call(
       {},
       [manager],
@@ -119,7 +120,7 @@ test.serial(
     t.deepEqual(post.fund.ether, pre.fund.ether);
 
     t.deepEqual(postCompetitionMln, preCompetitionMln.sub(estimatedMlnReward));
-    t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedMlnReward));
+    t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedShares));
 
     // Verify registration parameters
     const registrantId = await competition.instance.getRegistrantId.call({}, [

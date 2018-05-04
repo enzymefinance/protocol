@@ -89,7 +89,6 @@
       "tests/integration/competitionRegistration.js",
       "tests/integration/competitionPayout.js",
       "tests/integration/centralizedExchange.js",
-      "tests/integration/secondaryTrading.js",
       "tests/integration/simpleMarketWithApprove.js",
       "tests/integration/redeemMaliciousAsset.js",
       "tests/integration/0xTrading.js",

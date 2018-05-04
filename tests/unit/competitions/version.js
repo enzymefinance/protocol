@@ -26,7 +26,7 @@ test.before(async () => {
   version = deployed.Version;
 });
 
-test("Cannot setup a new fund without whitelist in Competition", async t => {
+test.serial("Cannot setup a new fund without whitelist in Competition", async t => {
   const [r, s, v] = await getTermsSignatureParameters(nonwhitelist);
   await version.instance.setupFund.postTransaction(
     { from: nonwhitelist, gas: config.gas, gasPrice: config.gasPrice },
@@ -38,6 +38,7 @@ test("Cannot setup a new fund without whitelist in Competition", async t => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
+      [deployed.MlnToken.address],
       v,
       r,
       s,
@@ -48,7 +49,7 @@ test("Cannot setup a new fund without whitelist in Competition", async t => {
   t.is(lastFund, "0x0000000000000000000000000000000000000000");
 });
 
-test("Can setup a new fund from whitelisted account", async t => {
+test.serial("Can setup a new fund from whitelisted account", async t => {
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(opts, [
     fundName,
@@ -58,6 +59,7 @@ test("Can setup a new fund from whitelisted account", async t => {
     deployed.NoCompliance.address,
     deployed.RMMakeOrders.address,
     [deployed.MatchingMarket.address],
+    [deployed.MlnToken.address],
     v,
     r,
     s,

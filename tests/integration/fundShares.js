@@ -1,3 +1,4 @@
+/* eslint no-underscore-dangle: ["error", { "allow": ["_pollTransactionReceipt"] }] */
 import test from "ava";
 import api from "../../utils/lib/api";
 import { retrieveContract } from "../../utils/lib/contracts";
@@ -25,10 +26,12 @@ let manager;
 let investor;
 let opts;
 let mlnToken;
+let ethToken;
 let txId;
 let runningGasTotal;
 let fund;
 let version;
+let pricefeed;
 let deployed;
 let atLastUnclaimedFeeAllocation;
 
@@ -39,7 +42,9 @@ test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer, manager, investor] = accounts;
   version = deployed.Version;
+  pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = deployed.MlnToken;
+  ethToken = deployed.EthToken;
   gasPrice = Number(await api.eth.gasPrice());
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
@@ -58,13 +63,13 @@ test.serial("can set up new fund", async t => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName, // name
-      mlnToken.address, // base asset
+      ethToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address, deployed.EthToken.address],
+      [mlnToken.address],
       v,
       r,
       s,
@@ -109,7 +114,7 @@ test.serial("initial calculations", async t => {
     sharePrice,
   ] = Object.values(await fund.instance.performCalculations.call(opts, []));
 
-  //t.deepEqual(Number(gav), 0);
+  t.deepEqual(Number(gav), 0);
   t.deepEqual(Number(managementFee), 0);
   t.deepEqual(Number(performanceFee), 0);
   t.deepEqual(Number(unclaimedFees), 0);
@@ -117,7 +122,7 @@ test.serial("initial calculations", async t => {
   t.deepEqual(Number(nav), 0);
   t.deepEqual(Number(sharePrice), 10 ** 18);
 });
-const initialTokenAmount = new BigNumber(10 ** 19);
+const initialTokenAmount = new BigNumber(10 ** 23);
 test.serial("investor receives initial mlnToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer)); // TODO: this is now in getAllBalances
@@ -201,20 +206,27 @@ test.serial(
 // investment
 // TODO: reduce code duplication between this and subsequent tests
 // split first and subsequent tests due to differing behaviour
-const firstTest = {
-  wantedShares: new BigNumber(2000),
-  offeredValue: new BigNumber(2000),
-};
+const firstTest = { wantedShares: new BigNumber(2000) };
+
 const subsequentTests = [
-  {
-    wantedShares: new BigNumber(10 ** 18),
-    offeredValue: new BigNumber(10 ** 18),
-  },
-  {
-    wantedShares: new BigNumber(0.5 * 10 ** 18),
-    offeredValue: new BigNumber(10 ** 18),
-  },
+  { wantedShares: new BigNumber(10 ** 18) },
+  { wantedShares: new BigNumber(0.5 * 10 ** 18) },
 ];
+
+async function calculateOfferValue(wantedShares) {
+  // new
+  const [
+    ,
+    invertedPrice,
+    assetDecimals
+  ] = await pricefeed.instance.getInvertedPriceInfo.call({}, [
+    mlnToken.address
+  ]);
+  const sharePrice = await fund.instance.calcSharePriceAndAllocateFees.call({}, []);
+  const sharesWorth = await fund.instance.toWholeShareUnit.call({}, [sharePrice.mul(wantedShares)]);
+  return new BigNumber(Math.floor(sharesWorth.mul(invertedPrice).div(10 ** assetDecimals)));
+}
+
 test.serial("allows request and execution on the first investment", async t => {
   let investorGasTotal = new BigNumber(0);
   const pre = await getAllBalances(deployed, accounts, fund);
@@ -222,6 +234,9 @@ test.serial("allows request and execution on the first investment", async t => {
     investor,
     fund.address,
   ]);
+  const offerValue = await calculateOfferValue(firstTest.wantedShares);
+  // Offer additional value than market price to avoid price fluctation failures
+  firstTest.offeredValue = new BigNumber(Math.round(offerValue.mul(1.1)));
   const inputAllowance = firstTest.offeredValue;
   txId = await mlnToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice },
@@ -239,15 +254,11 @@ test.serial("allows request and execution on the first investment", async t => {
   );
   gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   investorGasTotal = investorGasTotal.plus(gasUsed);
-  const sharePrice = await fund.instance.calcSharePrice.call({}, []);
-  const requestedSharesTotalValue = await fund.instance.toWholeShareUnit.call(
-    {},
-    [firstTest.wantedShares * sharePrice],
-  );
-  const offerRemainder = firstTest.offeredValue - requestedSharesTotalValue;
   const investorPreShares = await fund.instance.balanceOf.call({}, [investor]);
   await updateCanonicalPriceFeed(deployed);
   await updateCanonicalPriceFeed(deployed);
+  const requestedSharesTotalValue = await calculateOfferValue(firstTest.wantedShares);
+  const offerRemainder = firstTest.offeredValue.minus(requestedSharesTotalValue);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   txId = await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -308,6 +319,10 @@ subsequentTests.forEach(testInstance => {
         await fund.instance.performCalculations.call(opts, []),
       );
       const pre = await getAllBalances(deployed, accounts, fund);
+      const offerValue = await calculateOfferValue(testInstance.wantedShares);
+      // Offer additional value than market price to avoid price fluctation failures
+      /* eslint-disable no-param-reassign */
+      testInstance.offeredValue = new BigNumber(Math.round(offerValue.mul(1.1)));
       const inputAllowance = testInstance.offeredValue;
       const fundPreAllowance = await mlnToken.instance.allowance.call({}, [
         investor,
@@ -443,9 +458,11 @@ subsequentTests.forEach(testInstance => {
       postSharePrice,
     ] = Object.values(await fund.instance.performCalculations.call({}, []));
 
+    const [, mlnPrice, mlnDecimals] = await pricefeed.instance.getPriceInfo.call({}, [mlnToken.address]);
+    const additionalValueInEther = Math.round(testInstance.offeredValue.minus(offerRemainder).mul(mlnPrice).div(10 ** mlnDecimals));
     t.deepEqual(
       postGav,
-      preGav.add(testInstance.offeredValue).minus(offerRemainder),
+      preGav.add(additionalValueInEther),
     );
     const totalShares = await fund.instance.totalSupply.call({}, []);
     const feeDifference = postUnclaimedFees.minus(preUnclaimedFees);
@@ -463,8 +480,7 @@ subsequentTests.forEach(testInstance => {
     t.deepEqual(
       postNav,
       preNav
-        .add(testInstance.offeredValue)
-        .minus(offerRemainder)
+        .add(additionalValueInEther)
         .minus(feeDifference),
     );
     t.true(Number(postSharePrice) <= Number(preSharePrice));
@@ -642,8 +658,12 @@ testArray.forEach(testInstance => {
     if (Math.abs(feeShareDifference - expectedFeeShareDifference) === 1) {
       expectedFeeShareDifference = feeShareDifference;
     }
-
-    t.true(Number(postSharePrice) <= Number(preSharePrice));
+    if (Number(totalShares) !== 0) {
+      t.is(Number(postSharePrice), Number(preSharePrice));
+    }
+    else {
+      t.deepEqual(postSharePrice, new BigNumber(10 ** 18));
+    }
     fundPreCalculations = [];
   });
 });
