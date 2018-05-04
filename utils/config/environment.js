@@ -31,6 +31,8 @@ module.exports = {
       pricefeed: {
         interval: 60,
         validity: 60,
+        preEpochUpdatePeriod: 30,
+        minimumUpdates: 3,
         assetsToRegister: [
           'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
           'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'

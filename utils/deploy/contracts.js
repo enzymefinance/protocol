@@ -48,11 +48,21 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan") {
+    const previous = require('../../addressBook.json').kovan;
+
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
+
+//     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
+//     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed)
+//     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket)
+//     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter)
+//     deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy)
+//     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange)
+//     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
 
     // set up pricefeeds
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
@@ -67,8 +77,10 @@ async function deployEnvironment(environment) {
       [],
       [],
       [
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity
+        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
+        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+      ],
+      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       ], [
         config.protocol.staking.minimumAmount,
         config.protocol.staking.numOperators
@@ -292,7 +304,10 @@ async function deployEnvironment(environment) {
       [mockAddress, mockAddress],
       [],
       [],
-      [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
+      [
+        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
+        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+      ],
       [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       deployed.Governance.address
     ], () => {}, true);
