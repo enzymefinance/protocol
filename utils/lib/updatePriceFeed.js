@@ -1,5 +1,4 @@
 import api from "./api";
-import governanceAction from "./governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../config/environment.js");
@@ -105,9 +104,6 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await deployed.StakingPriceFeed.instance.update.postTransaction(
     { from: accounts[0], gas: config.gas },
     [Object.keys(prices), Object.values(prices)]
-  );
-  await deployed.CanonicalPriceFeed.instance.collectAndUpdate.postTransaction(
-    {from: accounts[0], gas: 6000000}, [Object.keys(prices)]
   );
 }
 
