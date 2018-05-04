@@ -30,7 +30,7 @@ interface VersionInterface {
 
     // PUBLIC VIEW METHODS
 
-    function getNativeAsset() view returns (address);
+    function getMelonAsset() view returns (address);
     function getFundById(uint withId) view returns (address);
     function getLastFundId() view returns (uint);
     function getFundByManager(address ofManager) view returns (address);

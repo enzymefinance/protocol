@@ -16,7 +16,7 @@ contract Version is DBC, Owned, VersionInterface {
 
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
-    address public NATIVE_ASSET; // Address of wrapped native asset contract
+    address public MELON_ASSET; // Address of Melon asset contract
     address public QUOTE_ASSET; // Address of Fixed quote asset
     address public GOVERNANCE; // Address of Melon protocol governance contract
     address public CANONICAL_PRICEFEED; // Address of the canonical pricefeed
@@ -37,18 +37,18 @@ contract Version is DBC, Owned, VersionInterface {
 
     /// @param versionNumber SemVer of Melon protocol version
     /// @param ofGovernance Address of Melon governance contract
-    /// @param ofNativeAsset Address of wrapped native asset contract
+    /// @param ofMelonAsset Address of Melon asset contract
     function Version(
         string versionNumber,
         address ofGovernance,
-        address ofNativeAsset,
+        address ofMelonAsset,
         address ofQuoteAsset,
         address ofCanonicalPriceFeed,
         address ofCompetitionCompliance
     ) {
         VERSION_NUMBER = versionNumber;
         GOVERNANCE = ofGovernance;
-        NATIVE_ASSET = ofNativeAsset;
+        MELON_ASSET = ofMelonAsset;
         QUOTE_ASSET = ofQuoteAsset;
         CANONICAL_PRICEFEED = ofCanonicalPriceFeed;
         COMPLIANCE = ofCompetitionCompliance;
@@ -90,6 +90,8 @@ contract Version is DBC, Owned, VersionInterface {
         require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
+        address[] memory melonAsDefaultAsset = new address[](1);
+        melonAsDefaultAsset[0] = MELON_ASSET; // Melon asset should be in default assets
         address ofFund = new Fund(
             msg.sender,
             ofFundName,
@@ -100,7 +102,7 @@ contract Version is DBC, Owned, VersionInterface {
             ofRiskMgmt,
             CANONICAL_PRICEFEED,
             ofExchanges,
-            ofDefaultAssets
+            melonAsDefaultAsset
         );
         listOfFunds.push(ofFund);
         managerToFunds[msg.sender] = ofFund;
@@ -141,7 +143,7 @@ contract Version is DBC, Owned, VersionInterface {
         ) == msg.sender; // Has sender signed TERMS_AND_CONDITIONS
     }
 
-    function getNativeAsset() view returns (address) { return NATIVE_ASSET; }
+    function getMelonAsset() view returns (address) { return MELON_ASSET; }
     function getFundById(uint withId) view returns (address) { return listOfFunds[withId]; }
     function getLastFundId() view returns (uint) { return listOfFunds.length - 1; }
     function getFundByManager(address ofManager) view returns (address) { return managerToFunds[ofManager]; }

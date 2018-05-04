@@ -48,7 +48,7 @@ test.before(async () => {
     [
       1,
       deployed.Governance.address,
-      deployed.EthToken.address,
+      deployed.MlnToken.address,
       deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,

@@ -64,7 +64,7 @@ test.beforeEach(async () => {
     [
       1,
       deployer, // For easy shutdown
-      deployed.EthToken.address,
+      deployed.MlnToken.address,
       deployed.EthToken.address,
       deployed.CanonicalPriceFeed.address,
       competitionCompliance.address,
@@ -101,6 +101,7 @@ test.beforeEach(async () => {
     [manager],
   ]);
   const [r, s, v] = await getTermsSignatureParameters(manager);
+  // Without passing MLN in default assets list
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
@@ -111,7 +112,7 @@ test.beforeEach(async () => {
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
       [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address],
+      [],
       v,
       r,
       s,
