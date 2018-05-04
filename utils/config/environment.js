@@ -58,6 +58,8 @@ module.exports = {
       pricefeed: {
         interval: 0,
         validity: 60,
+        preEpochUpdatePeriod: 60,
+        minimumUpdates: 1
       },
       fund: {
         managementFee: 10 ** 16,

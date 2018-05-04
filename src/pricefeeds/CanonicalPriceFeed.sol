@@ -104,13 +104,25 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
 
     // TODO: convert requires to pre_cond when number of variables is finalized
     function subFeedPostUpdateHook() public {
-        if (lastUpdateTime < getLastEpochTime()) {
-            delete operatorsUpdatingThisEpoch;  // new epoch, so clear list
-        }
         require(isOperator(msg.sender));
+        if (INTERVAL == 0) { // special case: update (new epoch) any time (useful for testing)
+            delete operatorsUpdatingThisEpoch;
+            updatesThisEpoch = 0;
+        } else {
+            if (lastUpdateTime < getLastEpochTime()) { // new epoch
+                delete operatorsUpdatingThisEpoch;     // clear list
+                updatesThisEpoch = 0;                  // and reset counter
+            }
+            uint nextEpoch = getNextEpochTime();
+            require(
+                (nextEpoch - PRE_EPOCH_UPDATE_PERIOD) <= block.timestamp &&
+                block.timestamp < nextEpoch
+            );
+        }
         require(!hasUpdatedThisEpoch(msg.sender));
+        lastUpdateTime = block.timestamp;
         operatorsUpdatingThisEpoch.push(msg.sender);
-        updatesThisEpoch++;
+        updatesThisEpoch++; // TODO: can this be replaced by operatorsUpdatingThisEpoch.length?
         if (updatesThisEpoch >= MINIMUM_UPDATES_PER_EPOCH) {
             collectAndUpdate(getRegisteredAssets());
         }
@@ -126,13 +138,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
      */
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets) internal {
-        lastUpdateTime = block.timestamp;
-        uint nextEpoch = getNextEpochTime();
-        require(
-            (nextEpoch - PRE_EPOCH_UPDATE_PERIOD) <= block.timestamp &&
-            block.timestamp < nextEpoch
-        );
-        address[] memory operators = getOperators();
+        address[] memory operators = operatorsUpdatingThisEpoch;
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
             uint[] memory assetPrices = new uint[](operators.length);
