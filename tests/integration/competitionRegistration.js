@@ -36,7 +36,7 @@ test.before(async () => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       "Suisse Fund",
-      deployed.MlnToken.address, // base asset
+      deployed.EthToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
