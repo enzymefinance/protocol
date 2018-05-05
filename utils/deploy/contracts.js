@@ -7,6 +7,7 @@ import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
+import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
 // import verifyDeployment from "./verify";
 
@@ -345,7 +346,8 @@ async function deployEnvironment(environment) {
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
-    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], Math.round(new Date().getTime() / 1000), Math.round(new Date().getTime() / 1000) + 86400, 2 * 10 ** 18, 10 ** 22, 10]);
+    const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 86400, 2 * 10 ** 18, 10 ** 23, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
 
