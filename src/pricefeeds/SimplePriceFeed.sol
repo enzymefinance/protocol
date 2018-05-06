@@ -24,7 +24,8 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     address public QUOTE_ASSET; // Asset of a portfolio against which all other assets are priced
 
     // Contract-level variables
-    uint public updateId;        // Update counter for this pricefeed; used as a check during investment
+    uint public updateId; // Update counter for this pricefeed; used as a check during investment
+    bool public isPaused; // Is Pricefeed paused by the owner; Only price fetching is effected
     CanonicalRegistrar public registrar;
     CanonicalPriceFeed public superFeed;
 
@@ -65,6 +66,22 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
         superFeed.subFeedPostUpdateHook();
     }
 
+    /// @notice Pause the pricefeed so price fetches throw
+    function pause()
+        external
+        auth
+    {
+        isPaused = true;
+    }
+
+    /// @notice Unpause the pricefeed
+    function unpause()
+        external
+        auth
+    {
+        isPaused = false;
+    }
+
     // PUBLIC VIEW METHODS
 
     // Get pricefeed specific information
@@ -82,6 +99,7 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     */
     function getPrice(address ofAsset)
         view
+        pre_cond(!isPaused)
         returns (uint price, uint timestamp)
     {
         Data data = assetsToPrices[ofAsset];
@@ -99,6 +117,7 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     */
     function getPrices(address[] ofAssets)
         view
+        pre_cond(!isPaused)
         returns (uint[], uint[])
     {
         uint[] memory prices = new uint[](ofAssets.length);
