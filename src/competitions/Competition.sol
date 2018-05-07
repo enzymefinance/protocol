@@ -56,7 +56,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
     mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
-
+    uint public failSafePrice; // Least value of invertedMlnPrice that is acceptable (As a fail safe)
+    
     //EVENTS
 
     event Register(uint withId, address fund, address manager);
@@ -120,6 +121,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
         var (isRecent, invertedMlnPrice, mlnDecimals) = CanonicalPriceFeed(feedAddress).getInvertedPriceInfo(MELON_ASSET);
         if (!isRecent) {
+            revert();
+        }
+        if (invertedMlnPrice < failSafePrice) {
             revert();
         }
         uint payoutQuantityBeforeBonus = mul(payin, invertedMlnPrice) / 10 ** mlnDecimals;
@@ -239,6 +243,16 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         for (uint i = 0; i < whitelistants.length; ++i) {
             whitelistantToMaxBuyin[whitelistants[i]] = maxBuyinQuantity;
         }
+    }
+
+    /// @notice Change Fail Safe Price
+    /// @param newFailSafePrice New fail safe price
+    function changeFailSafePrice(
+        uint newFailSafePrice,
+    )
+        pre_cond(isOwner())
+    {
+        failSafePrice = newFailSafePrice;
     }
 
     /// @notice Claim Reward
