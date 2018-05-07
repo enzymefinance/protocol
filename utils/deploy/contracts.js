@@ -137,20 +137,19 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
+    deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
     deployed.Version = await deployContract(
       "version/Version",
       Object.assign(opts, {gas: 6900000}),
       [
         pkgInfo.version, deployed.Governance.address, mlnAddr,
-        ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.OnlyManagerCompetition.address
       ],
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
     const blockchainTime = await getChainTime();
     deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 2 * 10 ** 18, 10 ** 24, 1000]);
-    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0]]]);
 
     // add Version to Governance tracking
