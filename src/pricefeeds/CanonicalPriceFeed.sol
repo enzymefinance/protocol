@@ -249,8 +249,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     function setMinimumPriceCount(uint newCount) auth { minimumPriceCount = newCount; }
-    function enableUpdates() auth { updatesAreAllowed = true; }
-    function disableUpdates() auth { updatesAreAllowed = false; }
+    // function enableUpdates() auth { updatesAreAllowed = true; }
+    // function disableUpdates() auth { updatesAreAllowed = false; }
 
     // PUBLIC VIEW METHODS
 

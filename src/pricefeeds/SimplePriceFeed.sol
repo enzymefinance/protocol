@@ -67,20 +67,9 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
     }
 
     /// @notice Pause the pricefeed so price fetches throw
-    function pause()
-        external
-        auth
-    {
-        isPaused = true;
-    }
-
+    function pause() external auth { isPaused = true; }
     /// @notice Unpause the pricefeed
-    function unpause()
-        external
-        auth
-    {
-        isPaused = false;
-    }
+    function unpause() external auth { isPaused = false; }
 
     // PUBLIC VIEW METHODS
 
