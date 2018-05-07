@@ -8,6 +8,7 @@ interface CompetitionInterface {
     // EVENTS
 
     event Register(uint withId, address fund, address manager);
+    event ClaimReward(address registrant, address fund, uint shares);
 
     // PRE, POST, INVARIANT CONDITIONS
 

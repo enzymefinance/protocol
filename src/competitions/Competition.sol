@@ -252,5 +252,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         // Is this safe to assume this or should we transfer all the balance instead?
         uint balance = AssetInterface(registrant.fund).balanceOf(this);
         assert(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
+        registrant.isRewarded = true;
+
+        // Emit ClaimedReward event
+        emit ClaimReward(msg.sender, registrant.fund, balance);
     }
 }
