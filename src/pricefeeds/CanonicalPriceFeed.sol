@@ -131,7 +131,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     {
         OperatorStaking.stake(amount, data);
     }
-  
+
     function stakeFor(
         address user,
         uint amount,
@@ -188,6 +188,9 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             uint[] memory assetPrices = new uint[](operators.length);
             for (uint j = 0; j < operators.length; j++) {
                 SimplePriceFeed feed = SimplePriceFeed(operators[j]);
+                if (feed.isPaused()) {
+                    continue;
+                }
                 var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
@@ -246,8 +249,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     function setMinimumPriceCount(uint newCount) auth { minimumPriceCount = newCount; }
-    function enableUpdates() auth { updatesAreAllowed = true; }
-    function disableUpdates() auth { updatesAreAllowed = false; }
+    // function enableUpdates() auth { updatesAreAllowed = true; }
+    // function disableUpdates() auth { updatesAreAllowed = false; }
 
     // PUBLIC VIEW METHODS
 
@@ -266,6 +269,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     function hasRecentPrice(address ofAsset)
         view
         pre_cond(assetIsRegistered(ofAsset))
+        pre_cond(!isPaused)
         returns (bool isRecent)
     {
         var ( , timestamp) = getPrice(ofAsset);
@@ -400,7 +404,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     // UPDATE TRACKING
- 
+
     /// @return Timestamp for the last epoch, regardless of whether an update occurred for it
     function getLastEpochTime() view returns (uint) { // TODO: special case for zero INTERVAL?
         uint timeSinceLastEpoch = sub(block.timestamp, INCEPTION) % INTERVAL;
@@ -411,7 +415,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         uint lastEpochTime = getLastEpochTime();
         return add(lastEpochTime, INTERVAL);
     }
- 
+
     // TODO: may not be necessary in the end. Remove if commented out during cleanup.
     // /// @return Whether a new epoch has occurred since the last full canonical update
     // function isNewEpoch() view returns (bool) { // TODO: special case for zero INTERVAL?

@@ -553,6 +553,35 @@ test.only("updates can only occur within last N seconds before a new epoch", asy
 
 test.todo("authority can toggle updating, and turning off before delay ends prevents update");
 
+test("governance can pause the feed so price fetching throwss", async t => {
+  await createPriceFeedAndStake(t.context);
+  await createPriceFeedAndStake(t.context);
+  const prices = [new BigNumber(10 ** 20), new BigNumber(2 * 10 ** 20)];
+  await registerEur(t.context.canonicalPriceFeed);
+  for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
+    await t.context.pricefeeds[i].instance.update.postTransaction(
+      { from: accounts[0], gas: 6000000 },
+      [[mlnToken.address, eurToken.address], [defaultMlnPrice, prices[i]]],
+    );
+  }
+  const [priceBefore, ] = Object.values(
+    await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
+      eurToken.address
+    ]),
+  );
+  await t.context.canonicalPriceFeed.instance.pause.postTransaction(
+    { from: accounts[0], gas: 6000000 },
+    []
+  );
+  const [priceAfter, ] = Object.values(
+    await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
+      eurToken.address
+    ]),
+  );
+  t.deepEqual(priceBefore, prices[1]);
+  t.is(Number(priceAfter), 0);
+});
+
 test("governance can burn stake of an operator", async t => {
   await createPriceFeedAndStake(t.context);
   const stakingFeedAddress = t.context.pricefeeds[0].address;
