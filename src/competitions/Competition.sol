@@ -57,7 +57,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
     mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
     uint public failSafePrice; // Least value of invertedMlnPrice that is acceptable (As a fail safe)
-    
+
     //EVENTS
 
     event Register(uint withId, address fund, address manager);
@@ -248,7 +248,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @notice Change Fail Safe Price
     /// @param newFailSafePrice New fail safe price
     function changeFailSafePrice(
-        uint newFailSafePrice,
+        uint newFailSafePrice
     )
         pre_cond(isOwner())
     {

@@ -339,3 +339,15 @@ test.serial(
     t.is(registrantFund, "0x0000000000000000000000000000000000000000");
   },
 );
+
+test.serial("Cannot register if price is less than failSafePrice", async t => {
+  const [, invertedPrice, ] = await deployed.CanonicalPriceFeed.instance.getInvertedPriceInfo.call({}, [
+    deployed.MlnToken.address
+  ]);
+  await competition.instance.changeFailSafePrice.postTransaction(
+    opts,
+    [invertedPrice.add(1)],
+  );
+  const registrantFund = await registerFund(fund.address, manager, 10);
+  t.is(registrantFund, "0x0000000000000000000000000000000000000000");
+});
