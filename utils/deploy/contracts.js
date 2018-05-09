@@ -141,7 +141,7 @@ async function deployEnvironment(environment) {
     deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
     deployed.Version = await deployContract(
       "version/Version",
-      Object.assign(opts, {gas: 6900000}),
+      opts,
       [
         pkgInfo.version, deployed.Governance.address, mlnAddr,
         ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.OnlyManagerCompetition.address
@@ -343,7 +343,7 @@ async function deployEnvironment(environment) {
     deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
     deployed.Version = await deployContract(
       "version/Version",
-      Object.assign(opts, {gas: 6900000}),
+      opts,
       [
         pkgInfo.version, deployed.Governance.address, deployed.MlnToken.address,
         deployed.EthToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
