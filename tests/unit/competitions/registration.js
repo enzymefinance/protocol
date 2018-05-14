@@ -173,8 +173,6 @@ test.serial(
       [fund.address],
     );
     const expectedReward = await competition.instance.calculatePayout.call({}, [buyInAmount]);
-    console.log(await competition.instance.getEtherValue.call({}, [buyInAmount]));
-    console.log(await competition.instance.calculatePayout.call({}, [buyInAmount]));
 
     t.deepEqual(fundMlnOnFirst, expectedReward);
     t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
