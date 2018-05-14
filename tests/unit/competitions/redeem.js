@@ -83,7 +83,7 @@ test.beforeEach(async () => {
       accounts[5],
       blockchainTime,
       blockchainTime + 86400,
-      10 ** 17,
+      22 * 10 ** 18,
       10 ** 22,
       10,
     ],
@@ -130,7 +130,7 @@ test.beforeEach(async () => {
 });
 
 test.serial("Cannot redeem before end time", async t => {
-  const registrantFund = await registerFund(fund.address, manager, 10 ** 19);
+  const registrantFund = await registerFund(fund.address, manager, 10 ** 14);
   const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
   await competition.instance.claimReward.postTransaction(
     {
@@ -171,8 +171,9 @@ test.serial("Can redeem before endTime if version is shutdown", async t => {
     [],
   );
   const versionShutDown = await version.instance.isShutDown.call({}, []);
-  const bonusRate = await competition.instance.bonusRate.call({}, []);
-  const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
+  const payoutRate = await competition.instance.payoutRate.call({}, []);
+  const expectedPayout = buyinValue.mul(payoutRate).div(10 ** 18);
+  const expectedShares = await competition.instance.getEtherValue.call({}, [expectedPayout]);
   const fundPreSupply = await fund.instance.totalSupply.call({}, []);
   const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
   const competitionPreShares = await fund.instance.balanceOf.call({}, [

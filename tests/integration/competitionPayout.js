@@ -69,8 +69,8 @@ test.before(async () => {
       accounts[5],
       blockchainTime,
       blockchainTime + competitionDuration,
-      10 ** 17,
-      10 ** 22,
+      22 * 10 ** 18,
+      10 ** 23,
       10,
     ],
     () => {},
@@ -81,7 +81,7 @@ test.before(async () => {
     [competition.address],
   );
   await competition.instance.batchAddToWhitelist.postTransaction(opts, [
-    10 ** 22,
+    10 ** 23,
     [manager],
   ]);
 
