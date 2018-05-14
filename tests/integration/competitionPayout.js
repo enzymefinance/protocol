@@ -16,7 +16,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 const buyinValue = new BigNumber(0.5 * 10 ** 19);
-const competitionDuration = 9; // Duration in seconds
+const competitionDuration = 15; // Duration in seconds
 const competitionTerms =
   "0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E";
 

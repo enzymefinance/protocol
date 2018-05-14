@@ -81,7 +81,7 @@ test.serial(
 test.serial(
   "Competition registration takes input value of Ether from the registrant and transfers to custodian, deposits corresponding reward amount of MLN into their fund",
   async t => {
-    const buyinValue = new BigNumber(0.5 * 10 ** 18);
+    const buyinValue = new BigNumber(0.78 * 10 ** 21);
     await updateCanonicalPriceFeed(deployed);
     const pre = await getAllBalances(deployed, accounts, fund);
     const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
@@ -90,8 +90,7 @@ test.serial(
     const preTotalSupply = await fund.instance.totalSupply.call({}, []);
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
     const estimatedMlnReward = await competition.instance.calculatePayout.call({}, [buyinValue]);
-    const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const estimatedShares = bonusRate.mul(buyinValue).div(10 ** 18)
+    const estimatedShares = await competition.instance.getEtherValue.call({}, [estimatedMlnReward]);
     await competition.instance.registerForCompetition.postTransaction(
       {
         from: manager,
