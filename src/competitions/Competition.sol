@@ -1,5 +1,6 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.19;
 
+import "./ERC20Interface.sol";
 import "./CompetitionInterface.sol";
 import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';
@@ -41,7 +42,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     address public custodian; // Address of the custodian which holds the funds sent
     uint public startTime; // Competition start time in seconds (Temporarily Set)
     uint public endTime; // Competition end time in seconds
-    uint public payoutRate; // Fixed MLN - Ether conversion rate
+    uint public rewardRate; // Fixed MLN - Ether conversion rate
     uint public bonusRate; // Bonus multiplier
     uint public totalMaxBuyin; // Limit amount of deposit to participate in competition (Valued in Ether)
     uint public currentTotalBuyin; // Total buyin till now
@@ -57,7 +58,6 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
     mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
-    uint public failSafePrice; // Least value of invertedMlnPrice that is acceptable (As a fail safe)
 
     //EVENTS
 
@@ -117,19 +117,10 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         return mul(price, payin) / (10 ** 18);
     }
 
-    /// @return Get value of MLN amount in Ether
-    function getEtherValue(uint amount) view returns (uint) {
-        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
-        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getPriceInfo(MELON_ASSET);
-        if (!isRecent) {
-            revert();
-        }
-        return mul(price, amount) / 10 ** 18;
-    }
-
     /// @return Calculated payout in MLN with bonus for payin in Ether
     function calculatePayout(uint payin) view returns (uint payoutQuantity) {
-        payoutQuantity = mul(payin, payoutRate) / 10 ** 18;
+        uint payoutQuantityBeforeBonus = mul(payin, rewardRate) / 10 ** 18;
+        payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
     }
 
     /**
@@ -168,7 +159,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         address ofCustodian,
         uint ofStartTime,
         uint ofEndTime,
-        uint ofPayoutRate,
+        uint ofRewardRate,
+        uint ofBonusRate,
         uint ofTotalMaxBuyin,
         uint ofMaxRegistrants
     ) {
@@ -179,7 +171,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         custodian = ofCustodian;
         startTime = ofStartTime;
         endTime = ofEndTime;
-        payoutRate= ofPayoutRate;
+        rewardRate= ofRewardRate;
+        bonusRate = ofBonusRate;
         totalMaxBuyin = ofTotalMaxBuyin;
         maxRegistrants = ofMaxRegistrants;
     }
@@ -205,15 +198,15 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
-        // Calculate Payout Quantity, invest the quantity in registrant's fund
+        // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
         uint payoutQuantity = calculatePayout(msg.value);
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
         FundInterface fundContract = FundInterface(fund);
         MELON_CONTRACT.approve(fund, payoutQuantity);
 
-        // Give payoutRequest MLN in return for msg.value
-        fundContract.requestInvestment(payoutQuantity, getEtherValue(payoutQuantity), MELON_ASSET);
+        // Give payoutRequest MLN in return for msg.value multiplied by bonusRate shares
+        fundContract.requestInvestment(payoutQuantity, mul(msg.value, bonusRate) / 10 ** 18, MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
         custodian.transfer(msg.value);
         currentTotalBuyin = add(currentTotalBuyin, msg.value);
@@ -247,24 +240,13 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         }
     }
 
-    /// @notice Change Fail Safe Price
-    /// @param newFailSafePrice New fail safe price
-    function changeFailSafePrice(
-        uint newFailSafePrice
-    )
-        pre_cond(isOwner())
-    {
-        failSafePrice = newFailSafePrice;
-    }
-
     /// @notice Claim Reward
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))
         pre_cond(now >= endTime || Version(COMPETITION_VERSION).isShutDown())
     {
-        require(registrant.isRewarded == false);
-        registrant.isRewarded = true;
         Registrant registrant  = registrants[getRegistrantId(msg.sender)];
+        require(registrant.isRewarded == false);
         // Is this safe to assume this or should we transfer all the balance instead?
         uint balance = AssetInterface(registrant.fund).balanceOf(this);
         assert(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
