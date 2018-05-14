@@ -1,6 +1,13 @@
 // this file tracks addresses of tokens relevant to the Melon protocol
 module.exports = {
   kovan: {
+    'CHF-T': {
+      address: '0x0000000000000000000000000000000000000000',
+      name: 'Swiss Franc token (dummy)',
+      decimals: 18,
+      url: '',
+      ipfsHash: ''
+    },
     'ANT-T': {
       address: '0x560848C7a470b9aA87F7283FDb31bD6773771660',
       name: 'Aragon Network Token',
@@ -234,6 +241,13 @@ module.exports = {
     },
   },
   live: {
+    'CHF': {
+      address: '0x0000000000000000000000000000000000000000',
+      name: 'Swiss Franc token (dummy)',
+      decimals: 18,
+      url: '',
+      ipfsHash: ''
+    },
     'WETH': {
       address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
       name: 'Wrapped ETH contract - Ether in ERC20 format',
@@ -345,6 +359,27 @@ module.exports = {
       name: 'Omise-Go',
       decimals: 18,
       url: 'omise.co',
+      ipfsHash: '',
+    },
+    'ANT': {
+      address: '0x960b236A07cf122663c4303350609A66A7B288C0',
+      name: 'Aragon Network Token',
+      decimals: 18,
+      url: 'https://aragon.one/',
+      ipfsHash: '',
+    },
+    'GNO': {
+      address: '0x6810e776880c02933d47db1b9fc05908e5386b96',
+      name: 'Gnosis Token',
+      decimals: 18,
+      url: 'https://gnosis.pm/',
+      ipfsHash: '',
+    },
+    'REQ': {
+      address: '0x8f8221afbb33998d8584a2b05749ba73c37a938a',
+      name: 'Request Network',
+      decimals: 18,
+      url: 'https://request.network',
       ipfsHash: '',
     },
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"

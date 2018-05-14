@@ -7,7 +7,9 @@ import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
-import verifyDeployment from "./verify";
+import getChainTime from "../../utils/lib/getChainTime";
+// import createStakingFeed from "../lib/createStakingFeed";
+// import verifyDeployment from "./verify";
 
 // Constants and mocks
 const addressBookFile = "./addressBook.json";
@@ -48,78 +50,98 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan") {
+    const previous = require('../../addressBook.json').kovan;
+
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
+    const chfAddress = tokenInfo[environment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    // set up pricefeeds
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-      mlnAddr,
-      ethTokenAddress,
-      'Eth Token',
-      'WETH-T',
-      18,
-      'ethereum.org',
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-      [
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity
-      ], [
-        config.protocol.staking.minimumAmount,
-        config.protocol.staking.numOperators
-      ],
-      deployed.Governance.address
-    ], () => {}, true);
+    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
+    deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
+    deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter);
+    deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy);
+    deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange);
+    deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter);
+    deployed.Version = await retrieveContract("version/Version", previous.Version);
 
-    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
-      deployed.CanonicalPriceFeed.address,
-      ethTokenAddress,
-      deployed.CanonicalPriceFeed.address
-    ]);
-    await mlnToken.instance.approve.postTransaction(
-      opts,
-      [
-        deployed.StakingPriceFeed.address,
-        config.protocol.staking.minimumAmount
-      ]
-    );
-    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
-      opts, [config.protocol.staking.minimumAmount, ""]
-    );
+    deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
+    const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 22 * 10 ** 18, 10 ** 24, 1000]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0]]]);
 
-    // set up exchanges and adapters
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
-    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+    console.log(deployed.Competition.address)
+    console.log(deployed.OnlyManagerCompetition.address)
 
-    const pairsToWhitelist = [
-      ['MLN-T', 'ETH-T'],
-      ['MLN-T', 'MKR-T'],
-      ['MLN-T', 'DAI-T'],
-    ];
-    await Promise.all(
-      pairsToWhitelist.map(async (pair) => {
-        console.log(`Whitelisting ${pair}`);
-        const tokenA = tokenInfo[environment][pair[0]].address;
-        const tokenB = tokenInfo[environment][pair[1]].address;
-        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
-      })
-    );
+    process.exit()
 
-    deployed.ZeroExTokenTransferProxy = await deployContract(
-      "exchange/thirdparty/0x/TokenTransferProxy", opts
-    );
-    deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
-      [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
-    );
-    deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
-    await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
-      opts, [ deployed.ZeroExExchange.address ]
-    );
+
+
+    // // set up pricefeeds
+    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+    //   mlnAddr,
+    //   ethTokenAddress,
+    //   'Eth Token',
+    //   'WETH-T',
+    //   18,
+    //   'ethereum.org',
+    //   mockBytes,
+    //   [mockAddress, mockAddress],
+    //   [],
+    //   [],
+    //   [
+    //     config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
+    //     config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+    //   ], [
+    //     config.protocol.staking.minimumAmount,
+    //     config.protocol.staking.numOperators
+    //   ],
+    //   deployed.Governance.address
+    // ], () => {}, true);
+
+    // below not needed right now (TODO: remove in cleanup if still here)
+    // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
+    // await mlnToken.instance.approve.postTransaction(
+    //   opts,
+    //   [
+    //     deployed.StakingPriceFeed.address,
+    //     config.protocol.staking.minimumAmount
+    //   ]
+    // );
+    // await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+    //   opts, [config.protocol.staking.minimumAmount, ""]
+    // );
+
+    // // set up exchanges and adapters
+    // deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
+    // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+
+    // const quoteSymbol = "WETH-T";
+    // const pairsToWhitelist = [];
+    // config.protocol.pricefeed.assetsToRegister.forEach((sym) => {
+    //   if (sym !== quoteSymbol)
+    //     pairsToWhitelist.push([quoteSymbol, sym]);
+    // });
+
+    // for (const pair of pairsToWhitelist) {
+    //   console.log(`Whitelisting ${pair}`);
+    //   const tokenA = tokenInfo[environment][pair[0]].address;
+    //   const tokenB = tokenInfo[environment][pair[1]].address;
+    //   await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+    // }
+
+    // deployed.ZeroExTokenTransferProxy = await deployContract(
+    //   "exchange/thirdparty/0x/TokenTransferProxy", opts
+    // );
+    // deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
+    //   [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
+    // );
+    // deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
+    // await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
+    //   opts, [ deployed.ZeroExExchange.address ]
+    // );
 
 
     // set up modules and version
@@ -127,62 +149,68 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+    deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
     deployed.Version = await deployContract(
       "version/Version",
-      Object.assign(opts, {gas: 6900000}),
+      opts,
       [
-        pkgInfo.version, deployed.Governance.address,
-        ethTokenAddress, deployed.CanonicalPriceFeed.address, false
+        pkgInfo.version, deployed.Governance.address, mlnAddr,
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.OnlyManagerCompetition.address
       ],
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
+    // const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 22 * 10 ** 18, 10 ** 24, 1000]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0]]]);
 
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
-    // whitelist exchanges
-    await governanceAction(
-      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-      [
-        deployed.MatchingMarket.address,
-        deployed.MatchingMarketAdapter.address,
-        true,
-        [
-          makeOrderSignature,
-          takeOrderSignature,
-          cancelOrderSignature
-        ]
-      ]
-    );
+    // // whitelist exchanges // TODO: move above this
+    // await governanceAction(
+    //   opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    //   [
+    //     deployed.MatchingMarket.address,
+    //     deployed.MatchingMarketAdapter.address,
+    //     true,
+    //     [
+    //       makeOrderSignature,
+    //       takeOrderSignature,
+    //       cancelOrderSignature
+    //     ]
+    //   ]
+    // );
+    // console.log('Registered MatchingMarket');
 
-    await governanceAction(
-     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-      [
-        deployed.ZeroExExchange.address,
-        deployed.ZeroExV1Adapter.address,
-        false,
-        [ takeOrderSignature ]
-      ]
-    );
+    // await governanceAction(
+    //  opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    //   [
+    //     deployed.ZeroExExchange.address,
+    //     deployed.ZeroExV1Adapter.address,
+    //     false,
+    //     [ takeOrderSignature ]
+    //   ]
+    // );
+    // console.log('Registered ZeroEx');
 
-    // register assets
-    for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
-      console.log(`Registering ${assetSymbol}`);
-      const tokenEntry = tokenInfo[environment][assetSymbol];
-      await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-        tokenEntry.address,
-        tokenEntry.name,
-        assetSymbol,
-        tokenEntry.decimals,
-        tokenEntry.url,
-        mockBytes,
-        [mockAddress, mockAddress],
-        [],
-        []
-      ]);
-      console.log(`Registered ${assetSymbol}`);
-    }
+    // // register assets
+    // for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+    //   console.log(`Registering ${assetSymbol}`);
+    //   const tokenEntry = tokenInfo[environment][assetSymbol];
+    //   await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+    //     tokenEntry.address,
+    //     tokenEntry.name,
+    //     assetSymbol,
+    //     tokenEntry.decimals,
+    //     tokenEntry.url,
+    //     mockBytes,
+    //     [mockAddress, mockAddress],
+    //     [],
+    //     []
+    //   ]);
+    //   console.log(`Registered ${assetSymbol}`);
+    // }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     // const deployerPassword = '/path/to/password/file';
@@ -265,7 +293,8 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, deployed.CanonicalPriceFeed.address, true], () => {}, true);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address], () => {}, true);
 
     deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -282,7 +311,7 @@ async function deployEnvironment(environment) {
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
       deployed.EthToken.address,
-      'Ether token',
+      'ETH token',
       'ETH-T',
       18,
       'ethereum.org',
@@ -290,23 +319,23 @@ async function deployEnvironment(environment) {
       [mockAddress, mockAddress],
       [],
       [],
-      [config.protocol.pricefeed.interval, config.protocol.pricefeed.validity],
+      [
+        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
+        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates,
+        config.protocol.pricefeed.postEpochInterventionDelay
+      ],
       [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
       deployed.Governance.address
     ], () => {}, true);
 
-    deployed.StakingPriceFeed = await deployContract("pricefeeds/StakingPriceFeed", opts, [
-      deployed.CanonicalPriceFeed.address,
-      deployed.EthToken.address,
-      deployed.CanonicalPriceFeed.address
-    ]);
-    await deployed.MlnToken.instance.approve.postTransaction(
-      opts,
-      [
-        deployed.StakingPriceFeed.address,
-        config.protocol.staking.minimumAmount
-      ]
-    );
+    // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
+    // await deployed.MlnToken.instance.approve.postTransaction(
+    //   opts,
+    //   [
+    //     deployed.StakingPriceFeed.address,
+    //     config.protocol.staking.minimumAmount
+    //   ]
+    // );
     await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
       opts, [config.protocol.staking.minimumAmount, ""]
     );
@@ -319,16 +348,22 @@ async function deployEnvironment(environment) {
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
     deployed.Version = await deployContract(
       "version/Version",
-      Object.assign(opts, {gas: 6900000}),
+      opts,
       [
-        pkgInfo.version, deployed.Governance.address, deployed.EthToken.address,
-        deployed.CanonicalPriceFeed.address, false
+        pkgInfo.version, deployed.Governance.address, deployed.MlnToken.address,
+        deployed.EthToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
       ],
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
+    const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 86400, 22 * 10 ** 18, 10 ** 23, 10]);
+    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
+
 
     // whitelist trading pairs
     const pairsToWhitelist = [
