@@ -26,12 +26,12 @@ let deployed;
 let version;
 let competition;
 let competitionCompliance;
+let canonicalPriceFeed;
 let fund;
 
 const fundName = "Super Fund";
 
 async function registerFund(fundAddress, by, value) {
-  await updateCanonicalPriceFeed(deployed);
   const [r, s, v] = await getSignatureParameters(by, competitionTerms);
   await competition.instance.registerForCompetition.postTransaction(
     {
@@ -47,6 +47,7 @@ async function registerFund(fundAddress, by, value) {
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
+  canonicalPriceFeed = deployed.CanonicalPriceFeed;
   accounts = await api.eth.accounts();
   [deployer, manager] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
@@ -125,6 +126,7 @@ test.beforeEach(async () => {
     { from: deployer, gasPrice: config.gasPrice },
     [competition.address, 10 ** 24, ""],
   );
+  await updateCanonicalPriceFeed(deployed);
 });
 
 test.serial(
@@ -173,6 +175,57 @@ test.serial(
     const expectedReward = await competition.instance.calculatePayout.call({}, [buyInAmount]);
     t.deepEqual(fundMlnOnFirst, expectedReward);
     t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
+  },
+);
+
+test.serial(
+  "Mln deposited to the fund is deterministic",
+  async t => {
+    const buyInAmount = new BigNumber(10 ** 19);
+    await registerFund(fund.address, manager, buyInAmount);
+    const fundMln = await deployed.MlnToken.instance.balanceOf.call({}, [
+      fund.address,
+    ]);
+    const fundSupply = await fund.instance.totalSupply.call({}, []);
+    const expectedReward = await competition.instance.calculatePayout.call({}, [buyInAmount]);
+
+    await competition.instance.batchAddToWhitelist.postTransaction(opts, [
+      10 ** 25,
+      [deployer],
+    ]);
+    const [r, s, v] = await getTermsSignatureParameters(deployer);
+    await version.instance.setupFund.postTransaction(
+      { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+      [
+        "Second",
+        deployed.EthToken.address, // base asset
+        config.protocol.fund.managementFee,
+        config.protocol.fund.performanceFee,
+        deployed.NoCompliance.address,
+        deployed.RMMakeOrders.address,
+        [deployed.MatchingMarket.address],
+        [deployed.MlnToken.address],
+        v,
+        r,
+        s,
+      ],
+    );
+    const fundAddress = await version.instance.managerToFunds.call({}, [deployer]);
+    const secondFund = await retrieveContract("Fund", fundAddress);
+    const [mlnPrice, ] = await canonicalPriceFeed.instance.getPrice.call({}, [deployed.MlnToken.address])
+    await updateCanonicalPriceFeed(deployed, {
+      [deployed.EthToken.address]: new BigNumber(10 ** 18),
+      [deployed.MlnToken.address]: new BigNumber(mlnPrice).mul(4.78 * 10 ** 18).div(10 ** 18),
+    });
+    await registerFund(secondFund.address, deployer, buyInAmount);
+    const secondFundMln = await deployed.MlnToken.instance.balanceOf.call({}, [
+      fund.address,
+    ]);
+    const secondFundSupply = await secondFund.instance.totalSupply.call({}, []);
+
+    t.deepEqual(fundMln, secondFundMln);
+    t.deepEqual(fundMln, expectedReward);;
+    t.true(fundSupply < secondFundSupply);
   },
 );
 
