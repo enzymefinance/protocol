@@ -58,10 +58,12 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
         uint[4] updateInfo, // interval, validity, preEpochUpdatePeriod, minimumUpdatesPerEpoch
-        uint[2] stakingInfo, // minStake, numOperators
+        uint[3] stakingInfo, // minStake, numOperators, unstakeDelay
         address ofGovernance
     )
-        OperatorStaking(AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1])
+        OperatorStaking(
+            AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
+        )
         SimplePriceFeed(this, ofQuoteAsset, 0x0)
     {
         registerAsset(

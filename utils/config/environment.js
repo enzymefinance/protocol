@@ -40,7 +40,8 @@ module.exports = {
       },
       staking: {
         minimumAmount: 1000000000,
-        numOperators: 5
+        numOperators: 5,
+        unstakeDelay: 60 * 60 * 24 * 7 // one week
       }
     },
   },
@@ -69,7 +70,8 @@ module.exports = {
       },
       staking: {
         minimumAmount: 1000000,
-        numOperators: 4
+        numOperators: 4,
+        unstakeDelay: 0
       }
     },
   },

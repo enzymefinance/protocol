@@ -19,22 +19,26 @@ contract OperatorStaking is DBC, StakeBank {
     }
 
     mapping (address => bool) public isRanked;
+    mapping (address => uint) public latestStakingTime;
     StakeData[] public stakeRanking;
     uint public minimumStake;
     uint public numOperators;
+    uint public unstakeDelay;
 
     // TODO: consider renaming "operator" depending on how this is implemented 
     //  (i.e. is pricefeed staking itself?)
     function OperatorStaking(
         AssetInterface _stakingToken,
         uint _minimumStake,
-        uint _numOperators
+        uint _numOperators,
+        uint _unstakeDelay
     )
         public
         StakeBank(_stakingToken)
     {
         minimumStake = _minimumStake;
         numOperators = _numOperators;
+        unstakeDelay = _unstakeDelay;
     }
 
     // METHODS : STAKING
@@ -48,21 +52,22 @@ contract OperatorStaking is DBC, StakeBank {
     {
         StakeBank.stake(amount, data);
         updateStakerRanking(msg.sender);
+        latestStakingTime[msg.sender] = block.timestamp;
     }
 
+    /// @dev Override and revert (prevent denial of service possibility)
     function stakeFor(
         address user,
         uint amount,
         bytes data
     )
         public
-        pre_cond(amount >= minimumStake)
     {
-        StakeBank.stakeFor(user, amount, data);
-        updateStakerRanking(user);
+        revert();
     }
 
     /// @dev Ensures final staked amount is either zero or above minimum
+    /// @dev at least unstakeDelay time must pass since last stake for this to work
     function unstake(
         uint amount,
         bytes data
