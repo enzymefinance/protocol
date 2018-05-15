@@ -120,6 +120,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         internal
         returns (uint)
     {
+        uint takerFee = orderValues[3];
+        if (takerFee > 0) {
+            Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
+            require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
+        }
+
         return Exchange(targetExchange).fillOrder(
             orderAddresses,
             [
