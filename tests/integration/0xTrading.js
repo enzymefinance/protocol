@@ -18,10 +18,11 @@ const config = environmentConfig[environment];
 let accounts;
 let deployer;
 let ethToken;
+let mlnToken;
+let zrxToken;
 let fund;
 let investor;
 let manager;
-let mlnToken;
 let pricefeed;
 let trade1;
 let version;
@@ -46,6 +47,7 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
+  zrxToken = await deployContract("assets/PreminedAsset", {from: deployer});
   deployed.ZeroExTokenTransferProxy = await deployContract(
     "exchange/thirdparty/0x/TokenTransferProxy",
     {from: deployer}
@@ -53,7 +55,7 @@ test.before(async () => {
   deployed.ZeroExExchange = await deployContract(
     "exchange/thirdparty/0x/Exchange",
     { from: deployer },
-    [ ZeroEx.NULL_ADDRESS, deployed.ZeroExTokenTransferProxy.address ]
+    [ zrxToken.address, deployed.ZeroExTokenTransferProxy.address ]
   );
   deployed.ZeroExV1Adapter = await deployContract(
     "exchange/adapter/ZeroExV1Adapter",
@@ -113,7 +115,7 @@ test.beforeEach(async () => {
 });
 
 const initialTokenAmount = new BigNumber(10 ** 22);
-test.serial("investor receives initial ethToken for testing", async t => {
+test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await ethToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
@@ -137,7 +139,7 @@ test.serial("investor receives initial ethToken for testing", async t => {
 });
 
 test.serial(
-  "fund receives ETH from a investment (request & execute)",
+  "fund receives ETH from investment, and gets ZRX from direct transfer",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     await ethToken.instance.approve.postTransaction(
@@ -154,6 +156,10 @@ test.serial(
     await fund.instance.executeRequest.postTransaction(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice },
       [requestId],
+    );
+    await zrxToken.instance.transfer.postTransaction(
+      { from: deployer, gasPrice: config.gasPrice },
+      [investor, initialTokenAmount, ""],
     );
     const post = await getAllBalances(deployed, accounts, fund);
 
@@ -184,7 +190,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
       exchangeContractAddress: deployed.ZeroExExchange.address.toLowerCase(),
       salt: new BigNumber(555),
       makerFee: new BigNumber(0),
-      takerFee: new BigNumber(0),
+      takerFee: new BigNumber(1000),
       makerTokenAmount: new BigNumber(trade1.sellQuantity),
       takerTokenAmount: new BigNumber(trade1.buyQuantity),
       expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
@@ -213,13 +219,12 @@ test.serial("manager takes order through 0x adapter", async t => {
       0, takeOrderSignature,
       [deployer, ZeroEx.NULL_ADDRESS, mlnToken.address, ethToken.address, ZeroEx.NULL_ADDRESS],
       [
-        trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), new BigNumber(0),
+        trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), order.takerFee,
         order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
       ],
       '0x0', signedOrder.ecSignature.v, signedOrder.ecSignature.r, signedOrder.ecSignature.s
     ]
   );
-  const gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
     {},
