@@ -56,15 +56,15 @@ contract OperatorStaking is DBC, StakeBank {
     }
 
     /// @dev Override and revert (prevent denial of service possibility)
-    function stakeFor(
-        address user,
-        uint amount,
-        bytes data
-    )
-        public
-    {
-        revert();
-    }
+    // function stakeFor(
+    //     address user,
+    //     uint amount,
+    //     bytes data
+    // )
+    //     public
+    // {
+    //     revert();
+    // }
 
     /// @dev Ensures final staked amount is either zero or above minimum
     /// @dev at least unstakeDelay time must pass since last stake for this to work

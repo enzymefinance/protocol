@@ -1,4 +1,5 @@
 import api from "./api";
+import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../config/environment.js");
@@ -105,6 +106,9 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
     { from: accounts[0], gas: config.gas },
     [Object.keys(prices), Object.values(prices)]
   );
+  let assetList = await deployed.CanonicalPriceFeed.instance.getRegisteredAssets.call();
+  assetList = assetList.map(e => e._value);
+  await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 
 export { updatePriceFeed, updateCanonicalPriceFeed };

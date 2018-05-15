@@ -20,12 +20,6 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     uint public minimumPriceCount = 1;
     uint public VALIDITY;
     uint public INTERVAL;
-    uint public INCEPTION;
-    uint public PRE_EPOCH_UPDATE_PERIOD;
-    uint public MINIMUM_UPDATES_PER_EPOCH;
-    uint public updatesThisEpoch;
-    uint public lastUpdateTime;
-    address[] public operatorsUpdatingThisEpoch;
     mapping (address => bool) public isStakingFeed; // If the Staking Feed has been created through this contract
 
     // METHODS
@@ -57,7 +51,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         address[2] quoteAssetBreakInBreakOut,
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
-        uint[4] updateInfo, // interval, validity, preEpochUpdatePeriod, minimumUpdatesPerEpoch
+        uint[2] updateInfo, // interval, validity
         uint[3] stakingInfo, // minStake, numOperators, unstakeDelay
         address ofGovernance
     )
@@ -79,9 +73,6 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         );
         INTERVAL = updateInfo[0];
         VALIDITY = updateInfo[1];
-        INCEPTION = block.timestamp;
-        PRE_EPOCH_UPDATE_PERIOD = updateInfo[2];
-        MINIMUM_UPDATES_PER_EPOCH = updateInfo[3];
         setOwner(ofGovernance);
     }
 
@@ -134,45 +125,19 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         OperatorStaking.stake(amount, data);
     }
   
-    function stakeFor(
-        address user,
-        uint amount,
-        bytes data
-    )
-        public
-        pre_cond(isStakingFeed[user])
-    {
+    // function stakeFor(
+    //     address user,
+    //     uint amount,
+    //     bytes data
+    // )
+    //     public
+    //     pre_cond(isStakingFeed[user])
+    // {
 
-        OperatorStaking.stakeFor(user, amount, data);
-    }
+    //     OperatorStaking.stakeFor(user, amount, data);
+    // }
 
     // AGGREGATION
-
-    // TODO: convert requires to pre_cond when number of variables is finalized
-    function subFeedPostUpdateHook() public {
-        require(isOperator(msg.sender));
-        if (INTERVAL == 0) { // special case: update (new epoch) any time (useful for testing)
-            delete operatorsUpdatingThisEpoch;
-            updatesThisEpoch = 0;
-        } else {
-            if (lastUpdateTime < getLastEpochTime()) { // new epoch
-                delete operatorsUpdatingThisEpoch;     // clear list
-                updatesThisEpoch = 0;                  // and reset counter
-            }
-            uint nextEpoch = getNextEpochTime();
-            require(
-                (nextEpoch - PRE_EPOCH_UPDATE_PERIOD) <= block.timestamp &&
-                block.timestamp < nextEpoch
-            );
-        }
-        require(!hasUpdatedThisEpoch(msg.sender));
-        lastUpdateTime = block.timestamp;
-        operatorsUpdatingThisEpoch.push(msg.sender);
-        updatesThisEpoch++; // TODO: can this be replaced by operatorsUpdatingThisEpoch.length?
-        if (updatesThisEpoch >= MINIMUM_UPDATES_PER_EPOCH) {
-            collectAndUpdate(getRegisteredAssets());
-        }
-    }
 
     /// @dev Only Owner; Same sized input arrays
     /// @dev Updates price of asset relative to QUOTE_ASSET
@@ -183,8 +148,12 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     /// @param ofAssets list of asset addresses
-    function collectAndUpdate(address[] ofAssets) internal {
-        address[] memory operators = operatorsUpdatingThisEpoch;
+    function collectAndUpdate(address[] ofAssets)
+        public
+        auth 
+        pre_cond(updatesAreAllowed)
+    {
+        address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
             uint[] memory assetPrices = new uint[](operators.length);
@@ -399,33 +368,5 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
         }
         return ofPriceFeeds;
-    }
-
-    // UPDATE TRACKING
- 
-    /// @return Timestamp for the last epoch, regardless of whether an update occurred for it
-    function getLastEpochTime() view returns (uint) { // TODO: special case for zero INTERVAL?
-        uint timeSinceLastEpoch = sub(block.timestamp, INCEPTION) % INTERVAL;
-        return sub(block.timestamp, timeSinceLastEpoch);
-    }
-
-    function getNextEpochTime() view returns (uint) { // TODO: special case for zero INVERVAL?
-        uint lastEpochTime = getLastEpochTime();
-        return add(lastEpochTime, INTERVAL);
-    }
- 
-    // TODO: may not be necessary in the end. Remove if commented out during cleanup.
-    // /// @return Whether a new epoch has occurred since the last full canonical update
-    // function isNewEpoch() view returns (bool) { // TODO: special case for zero INTERVAL?
-    //     return lastUpdateTime < getLastEpochTime();
-    // }
-
-    function hasUpdatedThisEpoch(address ofOperator) view returns (bool) {
-        for (uint i = 0; i < operatorsUpdatingThisEpoch.length; i++) {
-            if (operatorsUpdatingThisEpoch[i] == ofOperator) {
-                return true;
-            }
-        }
-        return false; // default
     }
 }

@@ -62,7 +62,6 @@ contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
         auth
     {
         _updatePrices(ofAssets, newPrices);
-        superFeed.subFeedPostUpdateHook();
     }
 
     // PUBLIC VIEW METHODS

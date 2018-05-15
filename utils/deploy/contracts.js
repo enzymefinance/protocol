@@ -79,8 +79,8 @@ async function deployEnvironment(environment) {
       [],
       [],
       [
-        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
-        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
       ], [
         config.protocol.staking.minimumAmount,
         config.protocol.staking.numOperators,
@@ -308,10 +308,14 @@ async function deployEnvironment(environment) {
       [],
       [],
       [
-        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
-        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
       ],
-      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators, config.protocol.staking.unstakeDelay],
+      [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators,
+        config.protocol.staking.unstakeDelay
+      ],
       deployed.Governance.address
     ], () => {}, true);
 
