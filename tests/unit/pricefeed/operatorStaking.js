@@ -2,6 +2,7 @@ import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import {deployContract} from "../../../utils/lib/contracts";
+import {mineToTime, txidToTimestamp} from "../../../utils/lib/time";
 
 const BigNumber = require("bignumber.js");
 
@@ -39,7 +40,8 @@ test.beforeEach(async t => {
     [
       t.context.mlnToken.address,    // staking token
       minimumStake,
-      4                             // number of operators
+      4,                             // number of operators
+      0
     ]
   );
 });
@@ -145,6 +147,57 @@ test("staker unstakes fully, and is no longer an operator", async t => {
   t.is(Number(postTotalStake), 0);
   t.false(postIsOperator);
   t.false(postIsRanked);
+});
+
+test("unstake fails before delay complete", async t => {
+  const inputGas = 6000000;
+  const unstakeDelay = 5;
+  t.context.staking = await deployContract(
+    "system/OperatorStaking",
+    {from: deployer, gas: 6000000},
+    [
+      t.context.mlnToken.address,    // staking token
+      minimumStake,
+      4,                             // number of operators
+      unstakeDelay
+    ]
+  );
+  await t.context.mlnToken.instance.approve.postTransaction(
+    {from: stakers[0]}, [t.context.staking.address, minimumStake]
+  );
+  let txid = await t.context.staking.instance.stake.postTransaction(
+    {from: stakers[0]}, [minimumStake, ""]
+  );
+  const initialStakeTime = await txidToTimestamp(txid);
+  const stakedAmount = await t.context.staking.instance.totalStakedFor.call(
+    {}, [stakers[0]]
+  );
+
+  t.is(Number(stakedAmount), Number(minimumStake));
+
+  txid = await t.context.staking.instance.unstake.postTransaction(
+    {from: stakers[0], gas: inputGas}, [minimumStake, ""]
+  );
+  const failedUnstakeGas = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  const failedUnstakeTime = await txidToTimestamp(txid);
+
+  t.true(initialStakeTime + unstakeDelay > failedUnstakeTime); // delay not reached
+  t.is(Number(failedUnstakeGas), inputGas);
+
+  await mineToTime(initialStakeTime + unstakeDelay); // pass delay
+
+  txid = await t.context.staking.instance.unstake.postTransaction(
+    {from: stakers[0], gas: inputGas}, [minimumStake, ""]
+  );
+  const unstakeGas = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  const postUnstakeStakedAmount = await t.context.staking.instance.totalStakedFor.call(
+    {}, [stakers[0]]
+  );
+  const unstakeTime = await txidToTimestamp(txid);
+
+  t.true(unstakeTime > initialStakeTime + unstakeDelay);  // delay was indeed passed
+  t.true(Number(unstakeGas) < inputGas);
+  t.is(Number(postUnstakeStakedAmount), 0);
 });
 
 test("ranking is correct with multiple stakers", async t => {

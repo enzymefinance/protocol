@@ -73,6 +73,7 @@ contract OperatorStaking is DBC, StakeBank {
         bytes data
     )
         public
+        pre_cond(block.timestamp >= add(latestStakingTime[msg.sender], unstakeDelay))
     {
         uint preStake = totalStakedFor(msg.sender);
         uint postStake = sub(preStake, amount);
