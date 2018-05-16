@@ -18,12 +18,13 @@ contract OperatorStaking is DBC, StakeBank {
         address staker;
     }
 
-    mapping (address => bool) public isRanked;
-    mapping (address => uint) public latestStakingTime;
-    StakeData[] public stakeRanking;
+    uint public MAX_STAKERS = 100;  // maximum number of stakers; prevent array denial of service
     uint public minimumStake;
     uint public numOperators;
     uint public unstakeDelay;
+    mapping (address => bool) public isRanked;
+    mapping (address => uint) public latestStakingTime;
+    StakeData[] public stakeRanking;
 
     // TODO: consider renaming "operator" depending on how this is implemented 
     //  (i.e. is pricefeed staking itself?)
@@ -49,22 +50,29 @@ contract OperatorStaking is DBC, StakeBank {
     )
         public
         pre_cond(amount >= minimumStake)
+        pre_cond(
+            stakeRanking.length < MAX_STAKERS ||    // still room in array
+            amount > stakeRanking[0].amount         // or larger than smallest element
+        )
     {
         StakeBank.stake(amount, data);
         updateStakerRanking(msg.sender);
         latestStakingTime[msg.sender] = block.timestamp;
     }
 
-    /// @dev Override and revert (prevent denial of service possibility)
-    // function stakeFor(
-    //     address user,
-    //     uint amount,
-    //     bytes data
-    // )
-    //     public
-    // {
-    //     revert();
-    // }
+    function stakeFor(
+        address user,
+        uint amount,
+        bytes data
+    )
+        public
+        pre_cond(amount >= minimumStake)
+    {
+        StakeBank.stakeFor(user, amount, data);
+        updateStakerRanking(user);
+        latestStakingTime[msg.sender] = block.timestamp;
+        // revert();
+    }
 
     /// @dev Ensures final staked amount is either zero or above minimum
     /// @dev at least unstakeDelay time must pass since last stake for this to work
@@ -152,7 +160,6 @@ contract OperatorStaking is DBC, StakeBank {
         view
         returns (address[])
     {
-        // TODO: see if there is a cleaner way to do this (limit to stakeRanking.length if it is smaller than numOperators)
         uint arrLength = (numOperators > stakeRanking.length) ?
             stakeRanking.length :
             numOperators;

@@ -47,6 +47,9 @@ test.beforeEach(async t => {
 });
 
 test("staker cannot stake below minimum", async t => {
+  await t.context.mlnToken.instance.approve.postTransaction(
+    {from: stakers[0]}, [t.context.staking.address, minimumStake.minus(1)]
+  );
   await t.context.staking.instance.stake.postTransaction(
     {from: stakers[0]}, [minimumStake.minus(1), ""]
   );
@@ -151,7 +154,7 @@ test("staker unstakes fully, and is no longer an operator", async t => {
 
 test("unstake fails before delay complete", async t => {
   const inputGas = 6000000;
-  const unstakeDelay = 5;
+  const unstakeDelay = 7;
   t.context.staking = await deployContract(
     "system/OperatorStaking",
     {from: deployer, gas: 6000000},
@@ -270,3 +273,22 @@ test("ranking is correct with multiple stakers", async t => {
   };
 });
 
+test("worst-case sorting/insertion is possible at max number of stakers", async t => {
+  const inputGas = 6900000;
+  // const maxStakers = Number(await t.context.staking.instance.MAX_STAKERS.call());
+  const maxStakers = 10;
+  const allGasUsage = [];
+  for (let i = 0; i < maxStakers; i++) {    // stake max number of addresses
+    const stakeThisRound = minimumStake.times(100000000000000).minus(1000 * i);
+    const addressThisRound = `0x${i.toString(16).padStart(40, "0")}`;
+    await t.context.mlnToken.instance.approve.postTransaction(
+      {from: stakers[0]}, [t.context.staking.address, stakeThisRound]
+    );
+    const txid = await t.context.staking.instance.stakeFor.postTransaction(
+      {from: stakers[0], gas: inputGas}, [addressThisRound, stakeThisRound, ""]
+    );
+    allGasUsage.push(Number(await api.eth.getTransactionReceipt(txid)).gasUsed);
+  }
+
+  t.true(allGasUsage.indexOf(inputGas) == -1); // none of the staking tx failed
+});
