@@ -273,13 +273,15 @@ test("ranking is correct with multiple stakers", async t => {
   };
 });
 
-test("worst-case sorting/insertion is possible at max number of stakers", async t => {
+test("worst-case sorting/insertion does not block at max number of stakers, and new stakers of higher amounts can still be introduced", async t => {
   const inputGas = 6900000;
+  const standardStake = 100000000000000;
+  const greaterStake = 10 ** 20;
   // const maxStakers = Number(await t.context.staking.instance.MAX_STAKERS.call());
   const maxStakers = 10;
   const allGasUsage = [];
   for (let i = 0; i < maxStakers; i++) {    // stake max number of addresses
-    const stakeThisRound = minimumStake.times(100000000000000).minus(1000 * i);
+    const stakeThisRound = minimumStake.times(standardStake).minus(1000 * i);
     const addressThisRound = `0x${i.toString(16).padStart(40, "0")}`;
     await t.context.mlnToken.instance.approve.postTransaction(
       {from: stakers[0]}, [t.context.staking.address, stakeThisRound]
