@@ -13,58 +13,59 @@ let accounts;
 let nonwhitelist;
 let manager;
 let opts;
-let deployed;
-let version;
 
 const fundName = "Super Fund";
 
 test.before(async () => {
-  deployed = await deployEnvironment(environment);
   accounts = await api.eth.accounts();
   [, manager, , , nonwhitelist] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
-  version = deployed.Version;
 });
 
-test.serial("Cannot setup a new fund without whitelist in Competition", async t => {
+test.beforeEach(async t => {
+  t.context.deployed = await deployEnvironment(environment);
+  t.context.version = t.context.deployed.Version;
+});
+
+test("Cannot setup a new fund without whitelist in Competition", async t => {
   const [r, s, v] = await getTermsSignatureParameters(nonwhitelist);
-  await version.instance.setupFund.postTransaction(
+  await t.context.version.instance.setupFund.postTransaction(
     { from: nonwhitelist, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName,
-      deployed.MlnToken.address, // base asset
+      t.context.deployed.MlnToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address],
+      t.context.deployed.NoCompliance.address,
+      t.context.deployed.RMMakeOrders.address,
+      [t.context.deployed.MatchingMarket.address],
+      [t.context.deployed.MlnToken.address],
       v,
       r,
       s,
     ],
   );
-  const lastFundId = await version.instance.getLastFundId.call({}, []);
-  const lastFund = await version.instance.getFundById.call({}, [lastFundId]);
+  const lastFundId = await t.context.version.instance.getLastFundId.call({}, []);
+  const lastFund = await t.context.version.instance.getFundById.call({}, [lastFundId]);
   t.is(lastFund, "0x0000000000000000000000000000000000000000");
 });
 
-test.serial("Can setup a new fund from whitelisted account", async t => {
+test("Can setup a new fund from whitelisted account", async t => {
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(opts, [
+  await t.context.version.instance.setupFund.postTransaction(opts, [
     fundName,
-    deployed.MlnToken.address, // base asset
+    t.context.deployed.MlnToken.address, // base asset
     config.protocol.fund.managementFee,
     config.protocol.fund.performanceFee,
-    deployed.NoCompliance.address,
-    deployed.RMMakeOrders.address,
-    [deployed.MatchingMarket.address],
-    [deployed.MlnToken.address],
+    t.context.deployed.NoCompliance.address,
+    t.context.deployed.RMMakeOrders.address,
+    [t.context.deployed.MatchingMarket.address],
+    [t.context.deployed.MlnToken.address],
     v,
     r,
     s,
   ]);
-  const lastFundId = await version.instance.getLastFundId.call({}, []);
-  const lastFund = await version.instance.getFundById.call({}, [lastFundId]);
+  const lastFundId = await t.context.version.instance.getLastFundId.call({}, []);
+  const lastFund = await t.context.version.instance.getFundById.call({}, [lastFundId]);
   t.not(lastFund, "0x0000000000000000000000000000000000000000");
 });
