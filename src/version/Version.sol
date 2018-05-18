@@ -79,7 +79,7 @@ contract Version is DBC, Owned {
     ) {
         require(!isShutDown);
         // Check if the
-        require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
+        // require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
         // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address[] memory melonAsDefaultAsset = new address[](1);
