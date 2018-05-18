@@ -53,41 +53,41 @@ async function deployEnvironment(environment) {
     const previous = require('../../addressBook.json').kovan;
 
     // set up governance and tokens
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
+    // deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[environment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
     const chfAddress = tokenInfo[environment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-//     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
-//     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed)
-//     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket)
-//     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter)
-//     deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy)
-//     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange)
-//     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
+    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
+    // deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed)
+    deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket)
+    deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter)
+    deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy)
+    deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange)
+    deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
 
-    // set up pricefeeds
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-      mlnAddr,
-      ethTokenAddress,
-      'Eth Token',
-      'WETH-T',
-      18,
-      'ethereum.org',
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-      [
-        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
-        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
-      ], [
-        config.protocol.staking.minimumAmount,
-        config.protocol.staking.numOperators
-      ],
-      deployed.Governance.address
-    ], () => {}, true);
+    // // set up pricefeeds
+    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+    //   mlnAddr,
+    //   ethTokenAddress,
+    //   'Eth Token',
+    //   'WETH-T',
+    //   18,
+    //   'ethereum.org',
+    //   mockBytes,
+    //   [mockAddress, mockAddress],
+    //   [],
+    //   [],
+    //   [
+    //     config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
+    //     config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+    //   ], [
+    //     config.protocol.staking.minimumAmount,
+    //     config.protocol.staking.numOperators
+    //   ],
+    //   deployed.Governance.address
+    // ], () => {}, true);
 
     // below not needed right now (TODO: remove in cleanup if still here)
     // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
@@ -102,51 +102,52 @@ async function deployEnvironment(environment) {
     //   opts, [config.protocol.staking.minimumAmount, ""]
     // );
 
-    // set up exchanges and adapters
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
-    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+    // // set up exchanges and adapters
+    // deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
+    // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
-    const quoteSymbol = "WETH-T";
-    const pairsToWhitelist = [];
-    config.protocol.pricefeed.assetsToRegister.forEach((sym) => {
-      if (sym !== quoteSymbol)
-        pairsToWhitelist.push([quoteSymbol, sym]);
-    });
+    // const quoteSymbol = "WETH-T";
+    // const pairsToWhitelist = [];
+    // config.protocol.pricefeed.assetsToRegister.forEach((sym) => {
+    //   if (sym !== quoteSymbol)
+    //     pairsToWhitelist.push([quoteSymbol, sym]);
+    // });
 
-    for (const pair of pairsToWhitelist) {
-      console.log(`Whitelisting ${pair}`);
-      const tokenA = tokenInfo[environment][pair[0]].address;
-      const tokenB = tokenInfo[environment][pair[1]].address;
-      await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
-    }
+    // for (const pair of pairsToWhitelist) {
+    //   console.log(`Whitelisting ${pair}`);
+    //   const tokenA = tokenInfo[environment][pair[0]].address;
+    //   const tokenB = tokenInfo[environment][pair[1]].address;
+    //   await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+    // }
 
-    deployed.ZeroExTokenTransferProxy = await deployContract(
-      "exchange/thirdparty/0x/TokenTransferProxy", opts
-    );
-    deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
-      [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
-    );
-    deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
-    await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
-      opts, [ deployed.ZeroExExchange.address ]
-    );
-
+    // deployed.ZeroExTokenTransferProxy = await deployContract(
+    //   "exchange/thirdparty/0x/TokenTransferProxy", opts
+    // );
+    // deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
+    //   [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
+    // );
+    // deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
+    // await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
+    //   opts, [ deployed.ZeroExExchange.address ]
+    // );
 
     // set up modules and version
-    deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
-    deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
-    deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
+    // deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
+    // deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
+    // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
+    // deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
     deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
     deployed.Version = await deployContract(
       "version/Version",
-      Object.assign(opts, {gas: 6900000}),
+      Object.assign(opts, {gas: 7000000}),
       [
-        pkgInfo.version, deployed.Governance.address, mlnAddr,
+        pkgInfo.version, '0x03286b52843541360E84084c1A8e8E6E00c8E95e', mlnAddr,
         ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.OnlyManagerCompetition.address
       ],
       () => {}, true
     );
+    console.log(`Version address: ${deployed.Version.address}`)
+    process.exit()
     deployed.FundRanking = await deployContract("FundRanking", opts);
     const blockchainTime = await getChainTime();
     deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 2 * 10 ** 18, 10 ** 24, 1000]);

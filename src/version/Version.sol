@@ -9,8 +9,7 @@ import "./VersionInterface.sol";
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple and static Management Fee.
-contract Version is DBC, Owned, VersionInterface {
-    // FIELDS
+contract Version is DBC, Owned {
 
     bytes32 public constant TERMS_AND_CONDITIONS = 0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
 
@@ -68,9 +67,6 @@ contract Version is DBC, Owned, VersionInterface {
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
     /// @param ofDefaultAssets Enable invest/redeem with these assets (quote asset already enabled)
-    /// @param v ellipitc curve parameter v
-    /// @param r ellipitc curve parameter r
-    /// @param s ellipitc curve parameter s
     function setupFund(
         bytes32 ofFundName,
         address ofQuoteAsset,
@@ -79,13 +75,9 @@ contract Version is DBC, Owned, VersionInterface {
         address ofCompliance,
         address ofRiskMgmt,
         address[] ofExchanges,
-        address[] ofDefaultAssets,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        address[] ofDefaultAssets
     ) {
         require(!isShutDown);
-        require(termsAndConditionsAreSigned(v, r, s));
         // Check if the
         require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
         // Either novel fund name or previous owner of fund name
