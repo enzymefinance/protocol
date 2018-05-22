@@ -153,10 +153,14 @@ test.beforeEach(async t => {
       [],
       [],
       [
-        config.protocol.pricefeed.interval, config.protocol.pricefeed.validity,
-        config.protocol.pricefeed.preEpochUpdatePeriod, config.protocol.pricefeed.minimumUpdates
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
       ],
-      [config.protocol.staking.minimumAmount, config.protocol.staking.numOperators],
+      [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators,
+        config.protocol.staking.unstakeDelay
+      ],
       accounts[0]
     ], () => {}, true
   );
@@ -208,7 +212,7 @@ test("can register assets, as well as update and remove them", async t => {
 
 test("can register exchanges, as well as update and remove them", async t => {
   const mockBytes4 = "0x12345678"
-  await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
+  const txid = await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
     deployed.MatchingMarket.address,
     deployed.MatchingMarketAdapter.address,
     true,
@@ -263,6 +267,7 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
     { from: accounts[0]},
     [[mlnToken.address, eurToken.address], [defaultMlnPrice, firstPrice]]
   );
+  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
   const isOperatorWhileStaked = await t.context.canonicalPriceFeed.instance.isOperator.call(
     {}, [t.context.pricefeeds[0].address]
   );
@@ -345,6 +350,7 @@ test("update price for even number of pricefeeds", async t => {
       [[mlnToken.address, eurToken.address], [defaultMlnPrice, prices[i]]],
     );
   }
+  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
   let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
   const [price, ] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
@@ -374,6 +380,7 @@ test("update price for odd number of pricefeeds", async t => {
       [[mlnToken.address, eurToken.address], [defaultMlnPrice, prices[i]]],
     );
   }
+  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
   let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
   const [, price] = Object.values(
     await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
@@ -441,6 +448,7 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
         { from: accounts[0] }, [[mlnToken.address, eurToken.address], [defaultMlnPrice, price]],
       );
     }
+    await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
     const operators = (await t.context.canonicalPriceFeed.instance.getOperators.call()).map(e => e._value);
     const [canonicalPrice, ] = await t.context.canonicalPriceFeed.instance.getPrice.call({}, [eurToken.address]);
 
@@ -462,7 +470,8 @@ test("governance cannot manually force a price update", async t => {
   t.is(preUpdateId, postUpdateId)
 });
 
-test.only("updates can only occur within last N seconds before a new epoch", async t => {
+// test skipped since feature removed
+test.skip("updates can only occur within last N seconds before a new epoch", async t => {
   const inputGas = 6000000;
   const initialEurPrice = new BigNumber(10 ** 10);
   const modifiedEurPrice1 = new BigNumber(2 * 10 ** 10);
@@ -499,10 +508,15 @@ test.only("updates can only occur within last N seconds before a new epoch", asy
     { from: accounts[0], gas: inputGas},
     [[mlnToken.address, eurToken.address], [defaultMlnPrice, initialEurPrice]]
   );    // set first epoch time
+  const [eurPrice1, ] = await t.context.canonicalPriceFeed.instance.getPrice.call(
+    {}, [eurToken.address]
+  );
   const update1Time = await txidToTimestamp(txid)
 
+  t.is(Number(eurPrice1), Number(initialEurPrice));
+
   txid = await t.context.pricefeeds[0].instance.update.postTransaction(
-    { from: accounts[0], gas: inputGas},
+    {from: accounts[0], gas: inputGas},
     [[mlnToken.address, eurToken.address], [defaultMlnPrice, modifiedEurPrice1]]
   );    // expected to fail, since it is before update time
   const update2Time = await txidToTimestamp(txid)
@@ -523,7 +537,6 @@ test.only("updates can only occur within last N seconds before a new epoch", asy
     [[mlnToken.address, eurToken.address], [defaultMlnPrice, modifiedEurPrice1]]
   );
   const update3Time = await txidToTimestamp(txid)
-  console.log(`UPDATE 3 GAS: ${(await api.eth.getTransactionReceipt(txid)).gasUsed}`)
   const [eurPriceAfterUpdate3, ] = await t.context.canonicalPriceFeed.instance.getPrice.call(
     {}, [eurToken.address]
   );
@@ -535,12 +548,6 @@ test.only("updates can only occur within last N seconds before a new epoch", asy
   const [eurPriceAfterUpdate4, ] = await t.context.canonicalPriceFeed.instance.getPrice.call(
     {}, [eurToken.address]
   );
-
-  // console.log(`UPDATE 4 GAS: ${(await api.eth.getTransactionReceipt(txid)).gasUsed}`)
-  // console.log(`UPDATE 4 TIME: ${update4Time}`)
-  // console.log(`LAST UPDATE TIME: ${await t.context.canonicalPriceFeed.instance.lastUpdateTime.call()}`)
-  // console.log(`LAST EPOCH TIME: ${await t.context.canonicalPriceFeed.instance.getLastEpochTime.call()}`)
-  // console.log(`NEXT EPOCH TIME: ${await t.context.canonicalPriceFeed.instance.getNextEpochTime.call()}`)
 
   t.true((nextEpochTime - update3Time) <= preEpochUpdatePeriod);
   t.true((nextEpochTime - update4Time) <= preEpochUpdatePeriod);
