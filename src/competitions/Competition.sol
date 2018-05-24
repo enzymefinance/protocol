@@ -246,11 +246,11 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         pre_cond(getRegistrantFund(msg.sender) != address(0))
         pre_cond(now >= endTime || Version(COMPETITION_VERSION).isShutDown())
     {
-        Registrant registrant  = registrants[getRegistrantId(msg.sender)];
         require(registrant.isRewarded == false);
+        registrant.isRewarded = true;
+        Registrant registrant  = registrants[getRegistrantId(msg.sender)];
         // Is this safe to assume this or should we transfer all the balance instead?
         uint balance = AssetInterface(registrant.fund).balanceOf(this);
         assert(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
-        registrant.isRewarded = true;
     }
 }
