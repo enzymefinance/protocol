@@ -1,6 +1,5 @@
 pragma solidity ^0.4.19;
 
-import "./ERC20Interface.sol";
 import "./CompetitionInterface.sol";
 import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';

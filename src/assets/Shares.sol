@@ -2,6 +2,7 @@ pragma solidity ^0.4.19;
 
 import "../assets/Asset.sol";
 import "./SharesInterface.sol";
+import "./ERC223ReceivingContract.sol";
 
 /// @title Shares Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
@@ -62,7 +63,7 @@ contract Shares is Asset, SharesInterface {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, empty);
         }
-        Transfer(msg.sender, _to, _value, empty);
+        Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -95,7 +96,7 @@ contract Shares is Asset, SharesInterface {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, _data);
         }
-        Transfer(msg.sender, _to, _value, empty);
+        Transfer(msg.sender, _to, _value);
         return true;
     }
 
