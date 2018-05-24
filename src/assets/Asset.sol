@@ -11,7 +11,7 @@ contract Asset is DSMath, ERC20Interface {
 
     mapping (address => uint) balances;
     mapping (address => mapping (address => uint)) allowed;
-    uint public totalSupply;
+    uint public _totalSupply;
 
     // PUBLIC METHODS
 
@@ -107,6 +107,6 @@ contract Asset is DSMath, ERC20Interface {
     }
 
     function totalSupply() view public returns (uint) {
-        return totalSupply;
+        return _totalSupply;
     }
 }

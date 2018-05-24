@@ -11,6 +11,6 @@ contract PreminedAsset is Asset {
     function PreminedAsset() {
         // Premine balances of contract creator and totalSupply
         balances[msg.sender] = 10 ** uint256(28);
-        totalSupply = 10 ** uint256(28);
+        _totalSupply = 10 ** uint256(28);
     }
 }

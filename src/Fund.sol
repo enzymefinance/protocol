@@ -167,7 +167,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             unclaimedFees: 0,
             nav: 0,
             highWaterMark: 10 ** getDecimals(),
-            totalSupply: totalSupply,
+            totalSupply: _totalSupply,
             timestamp: now
         });
     }
@@ -292,7 +292,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         pre_cond(requests[id].status == RequestStatus.active)
         pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
-            totalSupply == 0 ||
+            _totalSupply == 0 ||
             (
                 now >= add(requests[id].timestamp, modules.pricefeed.getInterval()) &&
                 modules.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
@@ -570,10 +570,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
         // Performance fee calculation
         // Handle potential division through zero by defining a default value
-        uint valuePerShareExclMgmtFees = totalSupply > 0 ? calcValuePerShare(sub(gav, managementFee), totalSupply) : toSmallestShareUnit(1);
+        uint valuePerShareExclMgmtFees = _totalSupply > 0 ? calcValuePerShare(sub(gav, managementFee), _totalSupply) : toSmallestShareUnit(1);
         if (valuePerShareExclMgmtFees > atLastUnclaimedFeeAllocation.highWaterMark) {
             uint gainInSharePrice = sub(valuePerShareExclMgmtFees, atLastUnclaimedFeeAllocation.highWaterMark);
-            uint investmentProfits = wmul(gainInSharePrice, totalSupply);
+            uint investmentProfits = wmul(gainInSharePrice, _totalSupply);
             performanceFee = wmul(investmentProfits, PERFORMANCE_FEE_RATE);
         }
 
@@ -635,10 +635,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         nav = calcNav(gav, unclaimedFees);
 
         // The value of unclaimedFees measured in shares of this fund at current value
-        feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
+        feesShareQuantity = (gav == 0) ? 0 : mul(_totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-         uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
-        sharePrice = totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
+         uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
+        sharePrice = _totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
     /// @notice Converts unclaimed fees of the manager into fund shares
@@ -655,7 +655,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             sharePrice
         ) = performCalculations();
 
-        createShares(owner, feesShareQuantity); // Updates totalSupply by creating shares allocated to manager
+        createShares(owner, feesShareQuantity); // Updates _totalSupply by creating shares allocated to manager
 
         // Update Calculations
         uint highWaterMark = atLastUnclaimedFeeAllocation.highWaterMark >= sharePrice ? atLastUnclaimedFeeAllocation.highWaterMark : sharePrice;
@@ -666,12 +666,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             unclaimedFees: unclaimedFees,
             nav: nav,
             highWaterMark: highWaterMark,
-            totalSupply: totalSupply,
+            totalSupply: _totalSupply,
             timestamp: now
         });
 
         FeesConverted(now, feesShareQuantity, unclaimedFees);
-        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, totalSupply);
+        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
 
         return sharePrice;
     }
@@ -710,7 +710,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             if (assetHoldings == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / totalSupply;
+            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / _totalSupply;
 
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
             if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {

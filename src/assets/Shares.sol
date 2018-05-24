@@ -114,7 +114,7 @@ contract Shares is Asset, SharesInterface {
     /// @param recipient Address the new shares should be sent to
     /// @param shareQuantity Number of shares to be created
     function createShares(address recipient, uint shareQuantity) internal {
-        totalSupply = add(totalSupply, shareQuantity);
+        _totalSupply = add(_totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
         Created(msg.sender, now, shareQuantity);
     }
@@ -122,7 +122,7 @@ contract Shares is Asset, SharesInterface {
     /// @param recipient Address the new shares should be taken from when destroyed
     /// @param shareQuantity Number of shares to be annihilated
     function annihilateShares(address recipient, uint shareQuantity) internal {
-        totalSupply = sub(totalSupply, shareQuantity);
+        _totalSupply = sub(_totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);
         Annihilated(msg.sender, now, shareQuantity);
     }
