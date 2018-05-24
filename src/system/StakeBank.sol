@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "ds-math/math.sol";
 import "../dependencies/Owned.sol";

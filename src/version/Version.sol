@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "../Fund.sol";
 import "../dependencies/DBC.sol";
@@ -86,9 +86,7 @@ contract Version is DBC, Owned, VersionInterface {
     ) {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
-        // Check if the
         require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
-        // Either novel fund name or previous owner of fund name
         require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
         address[] memory melonAsDefaultAsset = new address[](1);
         melonAsDefaultAsset[0] = MELON_ASSET; // Melon asset should be in default assets
@@ -109,7 +107,7 @@ contract Version is DBC, Owned, VersionInterface {
         emit FundUpdated(ofFund);
     }
 
-    /// @dev Dereference Fund and trigger selfdestruct
+    /// @dev Dereference Fund and shut it down
     /// @param ofFund Address of the fund to be shut down
     function shutDownFund(address ofFund)
         pre_cond(isShutDown || managerToFunds[msg.sender] == ofFund)

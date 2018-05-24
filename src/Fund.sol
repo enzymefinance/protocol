@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "./assets/Shares.sol";
 import "./assets/ERC223ReceivingContract.sol";

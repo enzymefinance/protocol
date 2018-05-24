@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "../../assets/Asset.sol";
 import "../thirdparty/SimpleMarket.sol";

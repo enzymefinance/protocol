@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/0x/Exchange.sol";

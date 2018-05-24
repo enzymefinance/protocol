@@ -2,7 +2,7 @@
 //! By Gav Wood (Parity Technologies), 2016.
 //! Released under the Apache Licence 2.
 
-pragma solidity ^0.4.7;
+pragma solidity ^0.4.21;
 
 // From Owned.sol
 contract Owned {

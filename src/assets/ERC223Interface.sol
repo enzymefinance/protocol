@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 /// @title Interface for ERC223 token contract
 /// @notice Adapted from https://git.io/vNyA0
