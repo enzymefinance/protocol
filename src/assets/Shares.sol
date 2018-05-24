@@ -3,11 +3,12 @@ pragma solidity ^0.4.19;
 import "../assets/Asset.sol";
 import "./SharesInterface.sol";
 import "./ERC223ReceivingContract.sol";
+import "./ERC223Interface.sol";
 
 /// @title Shares Contract for creating ERC20 compliant assets.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Fund
-contract Shares is Asset, SharesInterface {
+contract Shares is SharesInterface, ERC223Interface, Asset {
 
     // FIELDS
 
@@ -97,6 +98,7 @@ contract Shares is Asset, SharesInterface {
             receiver.tokenFallback(msg.sender, _value, _data);
         }
         Transfer(msg.sender, _to, _value);
+        Transfer(msg.sender, _to, _value, _data);
         return true;
     }
 
