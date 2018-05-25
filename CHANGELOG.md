@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - utils to use governance contract more easily
 - Fund function to retrieve order ID by exchange/asset pair
 - Canonical pricefeed is a staking pricefeed factory
+- Add history to canonical pricefeed
 
 ### Changed
 
@@ -34,6 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - allocate fees and calculate share price at same time
 - use different ports for different deployment environments
 - use object format for token addresses
+- remove ERC223 code from Asset.sol (also changes event signatures)
+- issue both ERC20 and ERC223 events from Shares.sol
 
 ### Fixed
 

@@ -15,12 +15,19 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     // EVENTS
     event SetupPriceFeed(address ofPriceFeed);
 
+    struct HistoricalPrices {
+        address[] assets;
+        uint[] prices;
+        uint timestamp;
+    }
+
     // FIELDS
     bool public updatesAreAllowed = true;
     uint public minimumPriceCount = 1;
     uint public VALIDITY;
     uint public INTERVAL;
     mapping (address => bool) public isStakingFeed; // If the Staking Feed has been created through this contract
+    HistoricalPrices[] public priceHistory;
 
     // METHODS
 
@@ -167,6 +174,9 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
             newPrices[i] = medianize(assetPrices);
         }
+        priceHistory.push(
+            HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
+        );
         _updatePrices(ofAssets, newPrices);
     }
 
@@ -368,5 +378,14 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
         }
         return ofPriceFeeds;
+    }
+
+    function getHistoryLength() returns (uint) { return priceHistory.length; }
+
+    function getHistoryAt(uint id) returns (address[], uint[], uint) {
+        address[] memory assets = priceHistory[id].assets;
+        uint[] memory prices = priceHistory[id].prices;
+        uint timestamp = priceHistory[id].timestamp;
+        return (assets, prices, timestamp);
     }
 }
