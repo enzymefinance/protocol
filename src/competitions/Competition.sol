@@ -104,7 +104,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @return Address of the fund registered by the registrant address
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
 
-    /// @return Address of the fund registered by the registrant address
+    /// @return Get time to end of the competition
     function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
 
     /// @return Get value of the ether quantity in CHF
@@ -205,7 +205,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
-        // Calculate Payout Quantity, invest the quantity in registrant's fund and transfer it to registrant
+        // Calculate Payout Quantity, invest the quantity in registrant's fund
         uint payoutQuantity = calculatePayout(msg.value);
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
