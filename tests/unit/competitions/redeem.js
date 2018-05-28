@@ -124,7 +124,7 @@ test.beforeEach(async t => {
   await updateCanonicalPriceFeed(t.context.deployed);
 });
 
-test.serial("Cannot redeem before end time", async t => {
+test("Cannot redeem before end time", async t => {
   const registrantFund = await registerFund(t, t.context.fund.address, manager, 10 ** 14);
   const managerPreShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
   await t.context.competition.instance.claimReward.postTransaction(
@@ -140,7 +140,7 @@ test.serial("Cannot redeem before end time", async t => {
   t.deepEqual(managerPreShares, managerPostShares);
 });
 
-test.serial("Cannot redeem without being registered", async t => {
+test("Cannot redeem without being registered", async t => {
   const registrantFund = await t.context.competition.instance.getRegistrantFund.call({}, [
     manager,
   ]);
@@ -158,7 +158,7 @@ test.serial("Cannot redeem without being registered", async t => {
   t.deepEqual(managerPreShares, managerPostShares);
 });
 
-test.serial("Can redeem before endTime if version is shutdown", async t => {
+test("Can redeem before endTime if version is shutdown", async t => {
   const buyinValue = new BigNumber(10 ** 19);
   const registrantFund = await registerFund(t, t.context.fund.address, manager, buyinValue);
   await t.context.version.instance.shutDown.postTransaction(
