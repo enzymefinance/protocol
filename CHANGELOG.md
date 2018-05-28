@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PicopsCompliance module and tests
 - MatchingMarket (from OasisDex)
 - hardcoded compliance module for mainnet
+- Competition contract and associated tests
 - etherscan verification helper script
 - README.md tracking deployed Versions
 - tests to fit new protocol developments
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - use object format for token addresses
 - remove ERC223 code from Asset.sol (also changes event signatures)
 - issue both ERC20 and ERC223 events from Shares.sol
+- all unit tests to run non-serially
 
 ### Fixed
 
