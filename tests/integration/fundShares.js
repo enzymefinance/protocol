@@ -459,7 +459,7 @@ subsequentTests.forEach(testInstance => {
     ] = Object.values(await fund.instance.performCalculations.call({}, []));
 
     const [, mlnPrice, mlnDecimals] = await pricefeed.instance.getPriceInfo.call({}, [mlnToken.address]);
-    const additionalValueInEther = Math.round(testInstance.offeredValue.minus(offerRemainder).mul(mlnPrice).div(10 ** mlnDecimals));
+    const additionalValueInEther = Math.floor(testInstance.offeredValue.minus(offerRemainder).mul(mlnPrice).div(10 ** mlnDecimals));
     t.deepEqual(
       postGav,
       preGav.add(additionalValueInEther),
