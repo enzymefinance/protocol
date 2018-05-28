@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "../assets/Shares.sol";
 
@@ -14,8 +14,8 @@ contract RestrictedShares is Shares {
     /// @param _decimal Amount of decimals sharePrice is denominated in, defined to be equal as deciamls in REFERENCE_ASSET contract
     /// @param _creationTime Timestamp of share creation
     function RestrictedShares(
-        string _name,
-        string _symbol,
+        bytes32 _name,
+        bytes8 _symbol,
         uint _decimal,
         uint _creationTime
     ) Shares(_name, _symbol, _decimal, _creationTime) {}
@@ -52,7 +52,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, empty);
         }
-        Transfer(msg.sender, _to, _value, empty);
+        Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -69,6 +69,8 @@ contract RestrictedShares is Shares {
         returns (bool success)
     {
         require(msg.sender == address(this) || _to == address(this));
+        
+        bytes memory empty;
         uint codeLength;
 
         assembly {

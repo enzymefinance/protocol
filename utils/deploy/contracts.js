@@ -3,10 +3,15 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract} from "../lib/contracts";
+import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import unlock from "../lib/unlockAccount";
+import governanceAction from "../lib/governanceAction";
+import getChainTime from "../../utils/lib/getChainTime";
+import createStakingFeed from "../lib/createStakingFeed";
+// import verifyDeployment from "./verify";
 
+// Constants and mocks
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -31,127 +36,245 @@ async function deployEnvironment(environment) {
     gasPrice: config.gasPrice,
   };
 
+  // TODO: put signature functions in a lib and use across all tests/utils
+  const makeOrderSignature = api.util.abiSignature('makeOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
+  const takeOrderSignature = api.util.abiSignature('takeOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
+  const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
+    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
+  ]).slice(0,10);
+
   const deployed = {};
-  let txid;
 
   if (environment === "kovan") {
-    // const oasisDexAddress = exchangeInfo[environment].find(e => e.name === "OasisDex").address;
-    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN-T-M").address;
-    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "ETH-T-M").address;
+    // const previous = require('../../addressBook.json').kovan;
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed",
-      opts, [
+    // set up governance and tokens
+    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
+    const mlnAddr = tokenInfo[environment]["MLN-T"].address;
+    const ethTokenAddress = tokenInfo[environment]["WETH-T"].address;
+    const chfAddress = tokenInfo[environment]["CHF-T"].address;
+    const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
+
+//     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
+//     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed)
+//     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket)
+//     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter)
+//     deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy)
+//     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange)
+//     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
+
+    // set up pricefeeds
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       mlnAddr,
-      'Melon Token',
-      'MLN-T-M',
+      ethTokenAddress,
+      'Eth Token',
+      'WETH-T',
       18,
-      'melonport.com',
+      'ethereum.org',
       mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
-    ]);
+      [mockAddress, mockAddress],
+      [],
+      [],
+      [
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
+      ], [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators,
+        config.protocol.staking.unstakeDelay
+      ],
+      deployed.Governance.address
+    ], () => {}, true);
 
-    // deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-    // deployed.SimpleMarket = await retrieveContract("exchange/thirdparty/SimpleMarket", '0x7B1a19E7C84036503a177a456CF1C13e0239Fc02');
-    // console.log(`Using already-deployed SimpleMarket at ${deployed.SimpleMarket.address}\n`);
+    // below not needed right now (TODO: remove in cleanup if still here)
+    // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
+    // await mlnToken.instance.approve.postTransaction(
+    //   opts,
+    //   [
+    //     deployed.StakingPriceFeed.address,
+    //     config.protocol.staking.minimumAmount
+    //   ]
+    // );
+    // await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+    //   opts, [config.protocol.staking.minimumAmount, ""]
+    // );
 
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [1546304461]); // number is first day of 2019 (expiration date for market)
+    // set up exchanges and adapters
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
 
-    const pairsToWhitelist = [
-      ['MLN-T-M', 'ETH-T-M'],
-      ['MLN-T-M', 'MKR-T-M'],
-      ['MLN-T-M', 'DAI-T-M'],
-    ];
-    await Promise.all(
-      pairsToWhitelist.map(async (pair) => {
-        console.log(`Whitelisting ${pair}`);
-        const tokenA = tokenInfo[environment].find(t => t.symbol === pair[0]).address;
-        const tokenB = tokenInfo[environment].find(t => t.symbol === pair[1]).address;
-        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
-      })
+    const quoteSymbol = "WETH-T";
+    const pairsToWhitelist = [];
+    config.protocol.pricefeed.assetsToRegister.forEach((sym) => {
+      if (sym !== quoteSymbol)
+        pairsToWhitelist.push([quoteSymbol, sym]);
+    });
+
+    for (const pair of pairsToWhitelist) {
+      console.log(`Whitelisting ${pair}`);
+      const tokenA = tokenInfo[environment][pair[0]].address;
+      const tokenB = tokenInfo[environment][pair[1]].address;
+      await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [tokenA, tokenB]);
+    }
+
+    deployed.ZeroExTokenTransferProxy = await deployContract(
+      "exchange/thirdparty/0x/TokenTransferProxy", opts
+    );
+    deployed.ZeroExExchange = await deployContract("exchange/thirdparty/0x/Exchange", opts,
+      [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
+    );
+    deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
+    await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
+      opts, [ deployed.ZeroExExchange.address ]
     );
 
+
+    // set up modules and version
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, ethTokenAddress, false], () => {}, true);
-    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
+    deployed.OnlyManagerCompetition = await deployContract("compliance/OnlyManagerCompetition", opts, []);
+    deployed.Version = await deployContract(
+      "version/Version",
+      opts,
+      [
+        pkgInfo.version, deployed.Governance.address, mlnAddr,
+        ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.OnlyManagerCompetition.address
+      ],
+      () => {}, true
+    );
+    deployed.FundRanking = await deployContract("FundRanking", opts);
+    const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 22 * 10 ** 18, 10 ** 24, 1000]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0]]]);
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
+
+    // whitelist exchanges
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
+        ]
+      ]
+    );
+    console.log('Registered MatchingMarket');
+
+    await governanceAction(
+     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.ZeroExExchange.address,
+        deployed.ZeroExV1Adapter.address,
+        false,
+        [ takeOrderSignature ]
+      ]
+    );
+    console.log('Registered ZeroEx');
 
     // register assets
-    await Promise.all(
-      config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
-        console.log(`Registering ${assetSymbol}`);
-        const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-        await deployed.PriceFeed.instance.register
-          .postTransaction({from: accounts[0]}, [
-            tokenEntry.address,
-            tokenEntry.name,
-            tokenEntry.symbol,
-            tokenEntry.decimals,
-            tokenEntry.url,
-            mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
-        ]);
-        console.log(`Registered ${assetSymbol}`);
-      })
-    );
+    for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+      console.log(`Registering ${assetSymbol}`);
+      const tokenEntry = tokenInfo[environment][assetSymbol];
+      await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+        tokenEntry.address,
+        tokenEntry.name,
+        assetSymbol,
+        tokenEntry.decimals,
+        tokenEntry.url,
+        mockBytes,
+        [mockAddress, mockAddress],
+        [],
+        []
+      ]);
+      console.log(`Registered ${assetSymbol}`);
+    }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     // const deployerPassword = '/path/to/password/file';
     const pricefeedOperator = config.protocol.pricefeed.operator;
     const pricefeedOperatorPassword = '/path/to/password/file';
     const authority = config.protocol.governance.authority;
-    const authorityPassword = '/home/travis/prg/keys/mainnet/authority_password';
-    // const authorityPassword = '/path/to/password/file';
-    const mlnAddr = tokenInfo[environment].find(t => t.symbol === "MLN").address;
-    const ethTokenAddress = tokenInfo[environment].find(t => t.symbol === "W-ETH").address;
+    const authorityPassword = '/path/to/password/file';
+    const mlnAddr = tokenInfo[environment].MLN.address;
+    const ethTokenAddress = tokenInfo[environment]["W-ETH"].address;
+
+    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
+      [config.protocol.governance.authority],
+      1,
+      yearInSeconds
+    ]);
+
+    await unlock(authority, authorityPassword);
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", {from: config.protocol.governance.authority}, [
+      mlnAddr,
+      'Melon Token',
+      'MLN',
+      18,
+      'melonport.com',
+      mockBytes,
+      mockBytes,
+      [mockAddress, mockAddress],
+      config.protocol.pricefeed.interval,
+      config.protocol.pricefeed.validity,
+    ], () => {}, true);
 
     await unlock(pricefeedOperator, pricefeedOperatorPassword);
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", {from: pricefeedOperator}, [
-        mlnAddr,
-        'Melon Token',
-        'MLN',
-        18,
-        'melonport.com',
-        mockBytes,
-        mockBytes,
-        mockAddress,
-        mockAddress,
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity,
-    ]);
+    deployed.SimplePriceFeed = await deployContract("pricefeeds/SimplePriceFeed", {from: pricefeedOperator}, [deployed.CanonicalPriceFeed.address, mlnAddr]);
+
+    // NB: setting whitelist below will only work if quorum=1
+    await unlock(authority, authorityPassword);
+    await deployed.CanonicalPriceFeed.instance.addFeedToWhitelist.postTransaction(
+      {from: config.protocol.governance.authority}, [deployed.SimplePriceFeed.address]
+    );
+
+    // whitelist exchange
+    // TODO: make sure that authority account is unlocked for this section
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.SimpleMarket.address,
+        deployed.SimpleAdapter.address,
+        true,
+        [
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
+        ]
+      ]
+    );
 
     // register assets
     await Promise.all(
       config.protocol.pricefeed.assetsToRegister.map(async (assetSymbol) => {
         console.log(`Registering ${assetSymbol}`);
         await unlock(pricefeedOperator, pricefeedOperatorPassword);
-        const [tokenEntry] = tokenInfo[environment].filter(entry => entry.symbol === assetSymbol);
-        await deployed.PriceFeed.instance.register
-          .postTransaction({from: pricefeedOperator, gas: 6000000}, [
+        const tokenEntry = tokenInfo[environment][assetSymbol];
+        await governanceAction(
+          {from: pricefeedOperator, gas: 6000000},
+          deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
             tokenEntry.address,
             tokenEntry.name,
-            tokenEntry.symbol,
+            assetSymbol,
             tokenEntry.decimals,
             tokenEntry.url,
             mockBytes,
-            mockBytes,
-            mockAddress,
-            mockAddress,
-        ]);
+            [mockAddress, mockAddress],
+            [],
+            []
+          ]
+        );
         console.log(`Registered ${assetSymbol}`);
       })
     );
@@ -159,105 +282,136 @@ async function deployEnvironment(environment) {
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", {from: deployer});
-    deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
-      [config.protocol.governance.authority],
-      1,
-      yearInSeconds
-    ]);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
+    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address], () => {}, true);
 
-    deployed.Version = await deployContract("version/Version", {from: deployer, gas: 6900000}, [pkgInfo.version, deployed.Governance.address, ethTokenAddress, true], () => {}, true);
-
-    deployed.Fundranking = await deployContract("FundRanking", {from: deployer}, [deployed.Version.address]);
+    deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
     // add Version to Governance tracking
-    await unlock(authority, authorityPassword);
-    console.log('Proposing version');
-    txid = await deployed.Governance.instance.proposeVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
-    await unlock(authority, authorityPassword);
-    console.log('Approving version');
-    txid = await deployed.Governance.instance.approveVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
-    await unlock(authority, authorityPassword);
-    console.log('Triggering version');
-    txid = await deployed.Governance.instance.triggerVersion.postTransaction({from: config.protocol.governance.authority}, [deployed.Version.address]);
-    await deployed.Governance._pollTransactionReceipt(txid);
-    console.log(txid);
+    // NB: be sure that relevant authority account is unlocked
+    console.log('Adding version to Governance tracking');
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
   } else if (environment === "development") {
+    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed ether token");
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed melon token");
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
-    console.log("Deployed euro token");
 
-    deployed.PriceFeed = await deployContract("pricefeeds/PriceFeed", opts, [
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
-      'Melon Token',
-      'MLN-T',
+      deployed.EthToken.address,
+      'ETH token',
+      'ETH-T',
       18,
-      'melonport.com',
+      'ethereum.org',
       mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-      config.protocol.pricefeed.interval,
-      config.protocol.pricefeed.validity,
-    ]);
+      [mockAddress, mockAddress],
+      [],
+      [],
+      [
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
+      ],
+      [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators,
+        config.protocol.staking.unstakeDelay
+      ],
+      deployed.Governance.address
+    ], () => {}, true);
+
+    deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
+    await deployed.MlnToken.instance.approve.postTransaction(
+      opts,
+      [
+        deployed.StakingPriceFeed.address,
+        config.protocol.staking.minimumAmount
+      ]
+    );
+    await deployed.StakingPriceFeed.instance.depositStake.postTransaction(
+      opts, [config.protocol.staking.minimumAmount, ""]
+    );
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
+    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]);
+    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.CentralizedAdapter = await deployContract("exchange/adapter/CentralizedAdapter", opts);
-    deployed.Version = await deployContract("version/Version", Object.assign(opts, {gas: 6900000}), [pkgInfo.version, deployed.Governance.address, deployed.EthToken.address, false], () => {}, true);
-    deployed.FundRanking = await deployContract("FundRanking", opts, [deployed.Version.address]);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [accounts[0]]);
+    deployed.Version = await deployContract(
+      "version/Version",
+      opts,
+      [
+        pkgInfo.version, deployed.Governance.address, deployed.MlnToken.address,
+        deployed.EthToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+      ],
+      () => {}, true
+    );
+    deployed.FundRanking = await deployContract("FundRanking", opts);
+    const blockchainTime = await getChainTime();
+    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 86400, 22 * 10 ** 18, 10 ** 23, 10]);
+    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
+
+
+    // whitelist trading pairs
+    const pairsToWhitelist = [
+      [deployed.MlnToken.address, deployed.EthToken.address],
+      [deployed.EurToken.address, deployed.EthToken.address],
+      [deployed.MlnToken.address, deployed.EurToken.address],
+    ];
+    await Promise.all(
+      pairsToWhitelist.map(async (pair) => {
+        await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(opts, [pair[0], pair[1]]);
+      })
+    );
 
     // add Version to Governance tracking
-    await deployed.Governance.instance.proposeVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.approveVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    await deployed.Governance.instance.triggerVersion.postTransaction({from: accounts[0]}, [deployed.Version.address]);
-    console.log('Version added to Governance');
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
+
+    // whitelist exchange
+    await governanceAction(
+      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+      [
+        deployed.MatchingMarket.address,
+        deployed.MatchingMarketAdapter.address,
+        true,
+        [
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
+        ]
+      ]
+    );
 
     // register assets
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
-      deployed.EthToken.address,
-      "Ether token",
-      "ETH-T",
-      18,
-      "ethereum.org",
-      mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-    ]);
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
-      deployed.EurToken.address,
-      "Euro token",
-      "EUR-T",
-      18,
-      "europa.eu",
-      mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
-    ]);
-    await deployed.PriceFeed.instance.register.postTransaction({}, [
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.MlnToken.address,
       "Melon token",
       "MLN-T",
       18,
       "melonport.com",
       mockBytes,
-      mockBytes,
-      mockAddress,
-      mockAddress,
+      [mockAddress, mockAddress],
+      [],
+      []
     ]);
-    console.log("Done registration");
+    await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+      deployed.EurToken.address,
+      "Euro token",
+      "EUR-T",
+      18,
+      "europa.eu",
+      mockBytes,
+      [mockAddress, mockAddress],
+      [],
+      []
+    ]);
   }
+  // await verifyDeployment(deployed);
   return deployed;  // return instances of contracts we just deployed
 }
 
@@ -288,9 +442,9 @@ if (require.main === module) {
     throw new Error(`Please specify an environment using the environment variable CHAIN_ENV`);
   } else {
     deployEnvironment(environment)
-    .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
-    .catch(err => console.error(err.stack))
-    .finally(() => process.exit())
+      .then(deployedContracts => writeToAddressBook(deployedContracts, environment))
+      .catch(err => console.error(err.stack))
+      .finally(() => process.exit())
   }
 }
 

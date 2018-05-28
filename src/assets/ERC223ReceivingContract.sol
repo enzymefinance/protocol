@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 /// @title ERC223ReceivingContractInterface - Standard contract implementation for compatibility with ERC223 tokens.
 /// @author Melonport AG <team@melonport.com>

@@ -1,13 +1,13 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
-/// @title Exchange Interface Contract
+/// @title Generic Exchange Interface Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice This is to be considered as an interface on how to access the underlying Exchange Contract
 /// @notice This interface should work for any fully decentralised exchanges such as OasisDex, Kyber, Bancor
 /// @notice Interface influenced by
 ///   https://github.com/makerdao/maker-otc/blob/master/src/simple_market.sol and
 ///   https://github.com/0xProject/contracts/blob/master/contracts/Exchange.sol
-interface ExchangeInterface {
+interface GenericExchangeInterface {
 
     // EVENTS
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "ds-test/test.sol";
 import "../assets/PreminedAsset.sol";
@@ -30,55 +30,80 @@ contract GovernanceTest is DSTest {
     }
 
     function test_addAndGetVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken, false);
-        pal.proposeVersion(governance, version);
-        pal.approveVersion(governance, version);
-        hal.approveVersion(governance, version);
-        hal.triggerVersion(governance, version);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, melonToken, address(0), address(0));
+        activateVersion(version);
         var (returnedVersion, active, ) = governance.getVersionById(0);
         assertEq(returnedVersion, version);
         assert(active);
     }
 
     function test_shutDownVersion() {
-        version = new Version(VERSION_NUMBER, governance, nativeToken, false);
-        pal.proposeVersion(governance, version);
-        pal.approveVersion(governance, version);
-        hal.approveVersion(governance, version);
-        hal.triggerVersion(governance, version);
-        hal.proposeShutdown(governance, 0);
-        hal.approveShutdown(governance, 0);
-        pal.approveShutdown(governance, 0);
-        pal.triggerShutdown(governance, 0);
+        version = new Version(VERSION_NUMBER, governance, nativeToken, melonToken, address(0), address(0));
+        activateVersion(version);
+        bytes memory calldata = new bytes(36);
+        bytes4 sig = bytes4(sha3("shutDownVersion(uint256)"));
+        bytes memory uintInBytes = uintToBytes(0);
+        calldata[0] = sig[0];
+        calldata[1] = sig[1];
+        calldata[2] = sig[2];
+        calldata[3] = sig[3];
+        // Padded address
+        for (uint j = 0; j < uintInBytes.length; j++) {
+            calldata[4 + j] = uintInBytes[j];
+        }
+        pal.propose(governance, address(governance), calldata, 0);
+        uint id = governance.actionCount();
+        hal.confirm(governance, id);
+        hal.trigger(governance, id);
         var (, active, ) = governance.getVersionById(0);
         assert(!active);
+    }
+
+    function activateVersion(Version version) {
+        bytes memory calldata = new bytes(36);
+        bytes4 sig = bytes4(sha3("addVersion(address)"));
+        bytes memory addressInBytes = addressToBytes(address(version));
+        calldata[0] = sig[0];
+        calldata[1] = sig[1];
+        calldata[2] = sig[2];
+        calldata[3] = sig[3];
+        // Padded address
+        for (uint j = 0; j < addressInBytes.length; j++) {
+            calldata[16 + j] = addressInBytes[j];
+        }
+        pal.propose(governance, address(governance), calldata, 0);
+        uint id = governance.actionCount();
+        hal.confirm(governance, id);
+        hal.trigger(governance, id);
+    }
+
+    function addressToBytes(address a) constant returns (bytes b){
+       assembly {
+            let m := mload(0x40)
+            mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
+            mstore(0x40, add(m, 52))
+            b := m
+       }
+    }
+
+    function uintToBytes(uint256 x) returns (bytes b) {
+        b = new bytes(32);
+        assembly { mstore(add(b, 32), x) }
     }
 }
 
 contract Caller {
     function () payable {}
 
-    function proposeVersion(Governance governance, address ofVersion) {
-        governance.proposeVersion(ofVersion);
+    function propose(Governance governance, address target, bytes calldata, uint value) {
+        governance.propose(target, calldata, value);
     }
 
-    function approveVersion(Governance governance, address ofVersion) {
-        governance.approveVersion(ofVersion);
+    function confirm(Governance governance, uint id) {
+        governance.confirm(id);
     }
 
-    function triggerVersion(Governance governance, address ofVersion) {
-        governance.triggerVersion(ofVersion);
-    }
-
-    function proposeShutdown(Governance governance, uint ofVersionId) {
-        governance.proposeShutdown(ofVersionId);
-    }
-
-    function approveShutdown(Governance governance, uint ofVersionId) {
-        governance.approveShutdown(ofVersionId);
-    }
-
-    function triggerShutdown(Governance governance, uint ofVersionId) {
-        governance.triggerShutdown(ofVersionId);
+    function trigger(Governance governance, uint id) {
+        governance.trigger(id);
     }
 }

@@ -1,12 +1,13 @@
 import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
-import getSignatureParameters from "../../../utils/lib/getSignatureParameters";
+import {getTermsSignatureParameters} from "../../../utils/lib/signing";
 import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
 
 const environment = "development";
 
 // hoisted variables TODO: replace with t.context object
+let deployer;
 let manager;
 let investor;
 let version;
@@ -17,10 +18,10 @@ let deployed;
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   const accounts = await api.eth.accounts();
-  [manager, investor] = accounts;
+  [deployer, manager, investor] = accounts;
   compliance = await deployContract("compliance/OnlyManager");
   version = deployed.Version;
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction({from: manager, gas: 6000000}, [
     'Some Fund',
     deployed.MlnToken.address,
@@ -28,19 +29,21 @@ test.before(async () => {
     0,
     compliance.address,
     deployed.RMMakeOrders.address,
-    deployed.PriceFeed.address,
-    [deployed.SimpleMarket.address],
-    [deployed.SimpleAdapter.address],
+    [deployed.MatchingMarket.address],
+    [],
     v,
     r,
     s
   ]);
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  // Change competition address to manager just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction({ from: deployer }, [manager]);
+
 });
 
 test("Manager can request investment", async t => {
-  const txid = await fund.instance.requestInvestment.postTransaction({from: manager, gas: 6000000}, [100, 100, false]);
+  const txid = await fund.instance.requestInvestment.postTransaction({from: manager, gas: 6000000}, [100, 100, deployed.EthToken.address]);
   const requestId = parseInt((await api.eth.getTransactionReceipt(txid)).logs[0].data, 16);   // get request ID from log
   const request = await fund.instance.requests.call({}, [Number(requestId)]);
 
@@ -49,7 +52,7 @@ test("Manager can request investment", async t => {
 });
 
 test("Someone who is not manager can not request investment", async t => {
-  const txid = await fund.instance.requestInvestment.postTransaction({from: investor, gas: 6000000}, [100, 100, false]);
+  const txid = await fund.instance.requestInvestment.postTransaction({from: investor, gas: 6000000}, [100, 100, deployed.EthToken.address]);
   const logsArrayLength = (await api.eth.getTransactionReceipt(txid)).logs.length; // get length of logs (0 if tx failed)
   // TODO: check for actual throw in tx receipt (waiting for parity.js to support this: https://github.com/paritytech/js-api/issues/16)
 
@@ -67,4 +70,3 @@ test("Anyone can perform redemption", async t => {
   t.true(isManagerRedemptionPermitted);
   t.true(isInvestorRedemptionPermitted);
 });
-

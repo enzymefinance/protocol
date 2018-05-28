@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.21;
 
 /// @title Asset Interface Contract
 /// @author Melonport AG <team@melonport.com>
@@ -11,8 +11,8 @@ interface SharesInterface {
 
     // VIEW METHODS
 
-    function getName() view returns (string);
-    function getSymbol() view returns (string);
+    function getName() view returns (bytes32);
+    function getSymbol() view returns (bytes8);
     function getDecimals() view returns (uint);
     function getCreationTime() view returns (uint);
     function toSmallestShareUnit(uint quantity) view returns (uint);

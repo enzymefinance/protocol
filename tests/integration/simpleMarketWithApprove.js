@@ -2,9 +2,10 @@ import test from "ava";
 import api from "../../utils/lib/api";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import getSignatureParameters from "../../utils/lib/getSignatureParameters";
-import updatePriceFeed from "../../utils/lib/updatePriceFeed";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
+import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -24,10 +25,21 @@ let manager;
 let mlnToken;
 let pricefeed;
 let simpleMarketWithApprove;
-let simpleAdapterWithApprove;
 let trade1;
 let version;
 let deployed;
+
+const makeOrderSignature = api.util
+  .abiSignature("makeOrder", [
+    "address",
+    "address[5]",
+    "uint256[8]",
+    "bytes32",
+    "uint8",
+    "bytes32",
+    "bytes32",
+  ])
+  .slice(0, 10);
 
 // mock data
 const offeredValue = new BigNumber(10 ** 21);
@@ -38,30 +50,37 @@ test.before(async () => {
   accounts = await api.eth.accounts();
   [deployer, manager, investor, ,] = accounts;
   version = await deployed.Version;
-  pricefeed = await deployed.PriceFeed;
+  pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   simpleMarketWithApprove = await deployContract(
     "exchange/thirdparty/SimpleMarketWithApprove",
     { from: deployer },
   );
-  simpleAdapterWithApprove = await deployContract(
-    "exchange/adapter/SimpleAdapterWithApprove",
+  await governanceAction(
     { from: deployer },
+    deployed.Governance,
+    deployed.CanonicalPriceFeed,
+    "registerExchange",
+    [
+      simpleMarketWithApprove.address,
+      deployed.MatchingMarketAdapter.address,
+      true,
+      [makeOrderSignature],
+    ],
   );
-  const [r, s, v] = await getSignatureParameters(manager);
+  const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.instance.setupFund.postTransaction(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [
       "Suisse Fund",
-      deployed.MlnToken.address, // base asset
+      deployed.EthToken.address, // base asset
       config.protocol.fund.managementFee,
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.address,
       deployed.RMMakeOrders.address,
-      deployed.PriceFeed.address,
       [simpleMarketWithApprove.address],
-      [simpleAdapterWithApprove.address],
+      [],
       v,
       r,
       s,
@@ -69,23 +88,28 @@ test.before(async () => {
   );
   const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
   fund = await retrieveContract("Fund", fundAddress);
+  // Change competition address to investor just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [investor],
+  );
 
   // investment
   const initialTokenAmount = new BigNumber(10 ** 22);
-  await mlnToken.instance.transfer.postTransaction(
+  await ethToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [investor, initialTokenAmount, ""],
   );
-  await mlnToken.instance.approve.postTransaction(
+  await ethToken.instance.approve.postTransaction(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas },
     [fund.address, offeredValue],
   );
   await fund.instance.requestInvestment.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredValue, wantedShares, false],
+    [offeredValue, wantedShares, ethToken.address],
   );
-  await updatePriceFeed(deployed);
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
   const requestId = await fund.instance.getLastRequestId.call({}, []);
   await fund.instance.executeRequest.postTransaction(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice },
@@ -94,12 +118,15 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updatePriceFeed(deployed);
+  await updateCanonicalPriceFeed(deployed);
 
-  const [, referencePrice] = await pricefeed.instance.getReferencePrice.call(
-    {},
-    [mlnToken.address, ethToken.address],
-  );
+  const [
+    ,
+    referencePrice,
+  ] = await pricefeed.instance.getReferencePriceInfo.call({}, [
+    ethToken.address,
+    mlnToken.address,
+  ]);
   const sellQuantity1 = new BigNumber(10 ** 19);
   trade1 = {
     sellQuantity: sellQuantity1,
@@ -111,25 +138,28 @@ test.serial(
   "Manager makes an order through simple exchange adapter (with approve)",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await updatePriceFeed(deployed);
-    await fund.instance.makeOrder.postTransaction(
-      { from: manager, gas: config.gas, gasPrice: config.gasPrice },
+    await updateCanonicalPriceFeed(deployed);
+    await fund.instance.callOnExchange.postTransaction(
+      { from: manager, gas: config.gas },
       [
         0,
-        mlnToken.address,
-        ethToken.address,
-        trade1.sellQuantity,
-        trade1.buyQuantity,
+        makeOrderSignature,
+        ["0x0", "0x0", ethToken.address, mlnToken.address, "0x0"],
+        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
+        "0x0",
+        0,
+        "0x0",
+        "0x0",
       ],
     );
     const post = await getAllBalances(deployed, accounts, fund);
-    const fundsApproved = await mlnToken.instance.allowance.call({}, [
+    const fundsApproved = await ethToken.instance.allowance.call({}, [
       fund.address,
       simpleMarketWithApprove.address,
     ]);
     const heldinExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
       {},
-      [mlnToken.address],
+      [ethToken.address],
     );
     t.is(Number(heldinExchange), 0);
     t.deepEqual(fundsApproved, trade1.sellQuantity);
@@ -155,7 +185,7 @@ test.serial("Third party takes the order", async t => {
       simpleMarketWithApprove.address,
     ]),
   );
-  await ethToken.instance.approve.postTransaction(
+  await mlnToken.instance.approve.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
     [simpleMarketWithApprove.address, trade1.buyQuantity],
   );
@@ -163,7 +193,6 @@ test.serial("Third party takes the order", async t => {
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
     [orderId, trade1.sellQuantity],
   );
-
   const exchangePostMln = Number(
     await mlnToken.instance.balanceOf.call({}, [
       simpleMarketWithApprove.address,
@@ -180,14 +209,14 @@ test.serial("Third party takes the order", async t => {
   t.deepEqual(exchangePostEthToken, exchangePreEthToken);
   t.deepEqual(
     post.deployer.MlnToken,
-    pre.deployer.MlnToken.add(trade1.sellQuantity),
+    pre.deployer.MlnToken.minus(trade1.buyQuantity),
   );
   t.deepEqual(
     post.deployer.EthToken,
-    pre.deployer.EthToken.minus(trade1.buyQuantity),
+    pre.deployer.EthToken.add(trade1.sellQuantity),
   );
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(trade1.buyQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.buyQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(trade1.sellQuantity));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 /// @title Version Contract
 /// @author Melonport AG <team@melonport.com>
@@ -14,15 +14,14 @@ interface VersionInterface {
     function shutDown() external;
 
     function setupFund(
-        string ofFundName,
+        bytes32 ofFundName,
         address ofQuoteAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
         address ofRiskMgmt,
-        address ofPriceFeed,
         address[] ofExchanges,
-        address[] ofExchangeAdapters,
+        address[] ofDefaultAssets,
         uint8 v,
         bytes32 r,
         bytes32 s

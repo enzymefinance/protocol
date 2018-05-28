@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 /// @title Compliance Interface Contract
 /// @author Melonport AG <team@melonport.com>

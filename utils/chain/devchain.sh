@@ -18,4 +18,4 @@ parity \
   --no-persistent-txqueue \
   --jsonrpc-apis all \
   --reseal-min-period 0 \
-  --gas-floor-target 6900000
+  --gas-floor-target 8000000

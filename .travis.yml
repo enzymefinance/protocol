@@ -1,4 +1,4 @@
-language: nix
+language: 8
 sudo: required
 compiler:
 - gcc
@@ -15,11 +15,11 @@ addons:
     - gcc-4.8
     - g++-4.8
     - clang
-cache: yarn
+cache:
+  directories:
+    - node_modules
 install:
 - ./utils/travis/install.sh
-- nvm install 8
-- nvm use 8
 - npm install
 script:
 - npm run compile &> compile.log || cat compile.log
