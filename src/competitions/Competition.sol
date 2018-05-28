@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 
-import "./ERC20Interface.sol";
 import "./CompetitionInterface.sol";
+import "../assets/ERC20Interface.sol";
 import '../assets/AssetInterface.sol';
 import '../FundInterface.sol';
 import '../version/Version.sol';
@@ -209,6 +209,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         uint payoutQuantity = calculatePayout(msg.value);
         registeredFundToRegistrants[fund] = msg.sender;
         registrantToRegistrantIds[msg.sender] = RegistrantId({id: registrants.length, exists: true});
+        currentTotalBuyin = add(currentTotalBuyin, msg.value);
         FundInterface fundContract = FundInterface(fund);
         MELON_CONTRACT.approve(fund, payoutQuantity);
 
@@ -216,7 +217,6 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         fundContract.requestInvestment(payoutQuantity, getEtherValue(payoutQuantity), MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
         custodian.transfer(msg.value);
-        currentTotalBuyin = add(currentTotalBuyin, msg.value);
 
         // Emit Register event
         emit Register(registrants.length, fund, msg.sender);
