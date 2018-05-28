@@ -50,7 +50,7 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan") {
-    const previous = require('../../addressBook.json').kovan;
+    // const previous = require('../../addressBook.json').kovan;
 
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
