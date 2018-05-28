@@ -42,7 +42,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     address public custodian; // Address of the custodian which holds the funds sent
     uint public startTime; // Competition start time in seconds (Temporarily Set)
     uint public endTime; // Competition end time in seconds
-    uint public rewardRate; // Fixed MLN - Ether conversion rate
+    uint public payoutRate; // Fixed MLN - Ether conversion rate
     uint public bonusRate; // Bonus multiplier
     uint public totalMaxBuyin; // Limit amount of deposit to participate in competition (Valued in Ether)
     uint public currentTotalBuyin; // Total buyin till now
@@ -104,7 +104,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @return Address of the fund registered by the registrant address
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
 
-    /// @return Time until end of the competition
+    /// @return Address of the fund registered by the registrant address
     function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
 
     /// @return Get value of the ether quantity in CHF
@@ -117,10 +117,19 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         return mul(price, payin) / (10 ** 18);
     }
 
+    /// @return Get value of MLN amount in Ether
+    function getEtherValue(uint amount) view returns (uint) {
+        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
+        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getPriceInfo(MELON_ASSET);
+        if (!isRecent) {
+            revert();
+        }
+        return mul(price, amount) / 10 ** 18;
+    }
+
     /// @return Calculated payout in MLN with bonus for payin in Ether
     function calculatePayout(uint payin) view returns (uint payoutQuantity) {
-        uint payoutQuantityBeforeBonus = mul(payin, rewardRate) / 10 ** 18;
-        payoutQuantity = mul(payoutQuantityBeforeBonus, bonusRate) / 10 ** 18;
+        payoutQuantity = mul(payin, payoutRate) / 10 ** 18;
     }
 
     /**
@@ -159,8 +168,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         address ofCustodian,
         uint ofStartTime,
         uint ofEndTime,
-        uint ofRewardRate,
-        uint ofBonusRate,
+        uint ofPayoutRate,
         uint ofTotalMaxBuyin,
         uint ofMaxRegistrants
     ) {
@@ -171,8 +179,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         custodian = ofCustodian;
         startTime = ofStartTime;
         endTime = ofEndTime;
-        rewardRate= ofRewardRate;
-        bonusRate = ofBonusRate;
+        payoutRate= ofPayoutRate;
         totalMaxBuyin = ofTotalMaxBuyin;
         maxRegistrants = ofMaxRegistrants;
     }
@@ -205,8 +212,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         FundInterface fundContract = FundInterface(fund);
         MELON_CONTRACT.approve(fund, payoutQuantity);
 
-        // Give payoutRequest MLN in return for msg.value multiplied by bonusRate shares
-        fundContract.requestInvestment(payoutQuantity, mul(msg.value, bonusRate) / 10 ** 18, MELON_ASSET);
+        // Give payoutRequest MLN in return for msg.value
+        fundContract.requestInvestment(payoutQuantity, getEtherValue(payoutQuantity), MELON_ASSET);
         fundContract.executeRequest(fundContract.getLastRequestId());
         custodian.transfer(msg.value);
         currentTotalBuyin = add(currentTotalBuyin, msg.value);
