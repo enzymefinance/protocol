@@ -179,7 +179,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         custodian = ofCustodian;
         startTime = ofStartTime;
         endTime = ofEndTime;
-        payoutRate= ofPayoutRate;
+        payoutRate = ofPayoutRate;
         totalMaxBuyin = ofTotalMaxBuyin;
         maxRegistrants = ofMaxRegistrants;
     }
