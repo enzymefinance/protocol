@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - utils to use governance contract more easily
 - Fund function to retrieve order ID by exchange/asset pair
 - Canonical pricefeed is a staking pricefeed factory
-- Add history to canonical pricefeed
+- history to canonical pricefeed
 
 ### Changed
 
@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - bug allowing emergencyRedeem to drain funds
 - bug where orderExpired returned `true` for invalid assets
+- bug allowing stake/do something/unstake in one block
 
 ### Updated
 
