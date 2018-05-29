@@ -17,15 +17,12 @@ interface FundInterface {
     // EXTERNAL METHODS
     // Compliance by Investor
     function requestInvestment(uint giveQuantity, uint shareQuantity, address investmentAsset) external;
-    function requestRedemption(uint shareQuantity, uint receiveQuantity, address redemptionAsset) external;
     function executeRequest(uint requestId) external;
     function cancelRequest(uint requestId) external;
     function redeemAllOwnedAssets(uint shareQuantity) external returns (bool);
     // Administration by Manager
     function enableInvestment(address[] ofAssets) external;
     function disableInvestment(address[] ofAssets) external;
-    function enableRedemption(address[] ofAssets) external;
-    function disableRedemption(address[] ofAssets) external;
     function shutDown() external;
 
     // PUBLIC METHODS

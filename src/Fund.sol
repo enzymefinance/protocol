@@ -39,11 +39,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     enum UpdateType { make, take, cancel }
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { invest, redeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
-        RequestType requestType; // Enum: invest, redeem
         address requestAsset; // Address of the asset being requested
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
@@ -94,7 +92,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
     mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
-    mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
@@ -105,14 +102,14 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
-    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest/redeem using this single asset
+    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest using this single asset
     /// @param ofManagementFee A time based fee expressed, given in a number which is divided by 1 WAD
     /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
-    /// @param ofDefaultAssets Addresses of assets to enable invest/redeem for (quote asset is already enabled)
+    /// @param ofDefaultAssets Addresses of assets to enable invest for (quote asset is already enabled)
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
@@ -131,7 +128,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
         require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
         isInvestAllowed[ofQuoteAsset] = true;
-        isRedeemAllowed[ofQuoteAsset] = true;
         owner = ofManager;
         MANAGEMENT_FEE_RATE = ofManagementFee; // 1 percent is expressed as 0.01 * 10 ** 18
         PERFORMANCE_FEE_RATE = ofPerformanceFee; // 1 percent is expressed as 0.01 * 10 ** 18
@@ -157,7 +153,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         for (uint j = 0; j < ofDefaultAssets.length; j++) {
             require(modules.pricefeed.assetIsRegistered(ofDefaultAssets[j]));
             isInvestAllowed[ofDefaultAssets[j]] = true;
-            isRedeemAllowed[ofDefaultAssets[j]] = true;
         }
         atLastUnclaimedFeeAllocation = Calculations({
             gav: 0,
@@ -197,28 +192,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
-    /// @notice Enable redemption in specified assets
-    /// @param ofAssets Array of assets to enable redemption in
-    function enableRedemption(address[] ofAssets)
-        external
-        pre_cond(isOwner())
-    {
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            isRedeemAllowed[ofAssets[i]] = true;
-        }
-    }
-
-    /// @notice Disable redemption in specified assets
-    /// @param ofAssets Array of assets to disable redemption in
-    function disableRedemption(address[] ofAssets)
-        external
-        pre_cond(isOwner())
-    {
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            isRedeemAllowed[ofAssets[i]] = false;
-        }
-    }
-
     function shutDown() external pre_cond(msg.sender == VERSION) { isShutDown = true; }
 
     // EXTERNAL : PARTICIPATION
@@ -241,40 +214,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
-            requestType: RequestType.invest,
             requestAsset: investmentAsset,
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
-            timestamp: now,
-            atUpdateId: modules.pricefeed.getLastUpdateId()
-        }));
-        RequestUpdated(getLastRequestId());
-    }
-
-    /// @notice Give shares of this fund to receive melon tokens
-    /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
-    /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
-    /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
-    /// @param redemptionAsset Address of asset to redeem in
-    function requestRedemption(
-        uint shareQuantity,
-        uint receiveQuantity,
-        address redemptionAsset
-      )
-        external
-        pre_cond(!isShutDown)
-        pre_cond(isRedeemAllowed[redemptionAsset]) // Redemption using the redemptionAsset has not been deactivated by Manager
-        pre_cond(modules.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
-    {
-        requests.push(Request({
-            participant: msg.sender,
-            status: RequestStatus.active,
-            requestType: RequestType.redeem,
-            requestAsset: redemptionAsset,
-            shareQuantity: shareQuantity,
-            giveQuantity: shareQuantity,
-            receiveQuantity: receiveQuantity,
             timestamp: now,
             atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
@@ -289,7 +232,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
+        pre_cond(requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
             _totalSupply == 0 ||
             (
@@ -316,7 +259,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         if (
             isInvestAllowed[request.requestAsset] &&
-            request.requestType == RequestType.invest &&
             costQuantity <= request.giveQuantity
         ) {
             request.status = RequestStatus.executed;
@@ -326,14 +268,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 ownedAssets.push(request.requestAsset);
                 isInAssetList[request.requestAsset] = true;
             }
-        } else if (
-            isRedeemAllowed[request.requestAsset] &&
-            request.requestType == RequestType.redeem &&
-            request.receiveQuantity <= costQuantity
-        ) {
-            request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
-            annihilateShares(request.participant, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
@@ -637,7 +571,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
     /// @dev This works, but with loops, so only up to a certain number of assets (right now the max is 4)
     /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for a slice of assets
     /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
     /// @return Whether all assets sent to shareholder or not
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
