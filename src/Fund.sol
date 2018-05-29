@@ -39,11 +39,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     enum UpdateType { make, take, cancel }
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { invest, redeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
-        RequestType requestType; // Enum: invest, redeem
         address requestAsset; // Address of the asset being requested
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
@@ -104,14 +102,14 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
-    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest/redeem using this single asset
+    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest using this single asset
     /// @param ofManagementFee A time based fee expressed, given in a number which is divided by 1 WAD
     /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
-    /// @param ofDefaultAssets Addresses of assets to enable invest/redeem for (quote asset is already enabled)
+    /// @param ofDefaultAssets Addresses of assets to enable invest for (quote asset is already enabled)
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
@@ -216,7 +214,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
-            requestType: RequestType.invest,
             requestAsset: investmentAsset,
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
@@ -235,7 +232,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
+        pre_cond(requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
             _totalSupply == 0 ||
             (
@@ -262,7 +259,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
         if (
             isInvestAllowed[request.requestAsset] &&
-            request.requestType == RequestType.invest &&
             costQuantity <= request.giveQuantity
         ) {
             request.status = RequestStatus.executed;
@@ -575,7 +571,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
     /// @dev This works, but with loops, so only up to a certain number of assets (right now the max is 4)
     /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for a slice of assets
     /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
     /// @return Whether all assets sent to shareholder or not
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
