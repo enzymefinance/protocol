@@ -168,7 +168,7 @@ test(
     );
     const expectedReward = await t.context.competition.instance.calculatePayout.call({}, [buyInAmount]);
 
-    t.deepEqual(fundMlnOnFirst, expectedReward);
+    t.is(Number(fundMlnOnFirst), Number(expectedReward));
     t.deepEqual(fundMlnOnSecond, fundMlnOnFirst);
   },
 );
@@ -219,7 +219,7 @@ test(
     const secondFundSupply = await secondFund.instance.totalSupply.call({}, []);
 
     t.deepEqual(fundMln, secondFundMln);
-    t.deepEqual(fundMln, expectedReward);;
+    t.is(Number(fundMln), Number(expectedReward));
     t.true(fundSupply < secondFundSupply);
   },
 );

@@ -115,10 +115,9 @@ test.serial(
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
     // t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnReward));
     t.deepEqual(post.fund.ether, pre.fund.ether);
-
-    t.deepEqual(postCompetitionMln, preCompetitionMln.sub(estimatedMlnReward));
+    t.is(Number(post.fund.MlnToken), Number(pre.fund.MlnToken.add(estimatedMlnReward)));
+    t.deepEqual(Number(postCompetitionMln), Number(preCompetitionMln.sub(estimatedMlnReward)));
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedShares));
 
     // Verify registration parameters
