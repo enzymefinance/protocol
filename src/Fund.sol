@@ -1,7 +1,6 @@
 pragma solidity ^0.4.21;
 
 import "./assets/Shares.sol";
-import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./compliance/ComplianceInterface.sol";
@@ -15,7 +14,7 @@ import "ds-math/math.sol";
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContract {
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
 
@@ -40,11 +39,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     enum UpdateType { make, take, cancel }
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { invest, redeem, tokenFallbackRedeem }
+    enum RequestType { invest, redeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
-        RequestType requestType; // Enum: invest, redeem, tokenFallbackRedeem
+        RequestType requestType; // Enum: invest, redeem
         address requestAsset; // Address of the asset being requested
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
@@ -335,14 +334,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             request.status = RequestStatus.executed;
             assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
             annihilateShares(request.participant, request.shareQuantity); // Accounting
-        } else if (
-            isRedeemAllowed[request.requestAsset] &&
-            request.requestType == RequestType.tokenFallbackRedeem &&
-            request.receiveQuantity <= costQuantity
-        ) {
-            request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
-            annihilateShares(this, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
@@ -461,41 +452,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     }
 
     // PUBLIC METHODS
-
-    // PUBLIC METHODS : ERC223
-
-    /// @dev Standard ERC223 function that handles incoming token transfers.
-    /// @dev This type of redemption can be seen as a "market order", where price is calculated at execution time
-    /// @param ofSender  Token sender address.
-    /// @param tokenAmount Amount of tokens sent.
-    /// @param metadata  Transaction metadata.
-    function tokenFallback(
-        address ofSender,
-        uint tokenAmount,
-        bytes metadata
-    ) {
-        if (msg.sender != address(this)) {
-            // when ofSender is a recognized exchange, receive tokens, otherwise revert
-            for (uint i; i < exchanges.length; i++) {
-                if (exchanges[i].exchange == ofSender) return; // receive tokens and do nothing
-            }
-            revert();
-        } else {    // otherwise, make a redemption request
-            requests.push(Request({
-                participant: ofSender,
-                status: RequestStatus.active,
-                requestType: RequestType.tokenFallbackRedeem,
-                requestAsset: address(QUOTE_ASSET), // redeem in QUOTE_ASSET
-                shareQuantity: tokenAmount,
-                giveQuantity: tokenAmount,              // shares being sent
-                receiveQuantity: 0,          // value of the shares at request time
-                timestamp: now,
-                atUpdateId: modules.pricefeed.getLastUpdateId()
-            }));
-            RequestUpdated(getLastRequestId());
-        }
-    }
-
 
     // PUBLIC METHODS : ACCOUNTING
 
