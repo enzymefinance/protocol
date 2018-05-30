@@ -801,8 +801,14 @@ redemptions.forEach((redemption, index) => {
       ]);
       const preTotalShares = await fund.instance.totalSupply.call({}, []);
       const pre = await getAllBalances(deployed, accounts, fund);
-      const expectedMlnRedemption = new BigNumber(pre.fund.MlnToken.mul(redemption.amount).div(preTotalShares)).dp(0, BigNumber.ROUND_DOWN);
-      const expectedEthTokenRedemption = new BigNumber(pre.fund.EthToken.mul(redemption.amount).div(preTotalShares)).dp(0, BigNumber.ROUND_DOWN);
+      const mlnInCustody = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [
+        deployed.MlnToken.address,
+      ]);
+      const ethTokenInCustody = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [
+        deployed.EthToken.address,
+      ]);
+      const expectedMlnRedemption = new BigNumber(pre.fund.MlnToken).add(mlnInCustody).mul(redemption.amount).dividedToIntegerBy(preTotalShares);
+      const expectedEthTokenRedemption = new BigNumber(pre.fund.EthToken).add(ethTokenInCustody).mul(redemption.amount).dividedToIntegerBy(preTotalShares);
       txId = await fund.instance.redeemAllOwnedAssets.postTransaction(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice },
         [redemption.amount],

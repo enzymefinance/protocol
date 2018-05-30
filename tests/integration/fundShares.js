@@ -538,7 +538,7 @@ testArray.forEach(shares => {
     const mlnInCustody = await fund.instance.quantityHeldInCustodyOfExchange.call({}, [
       deployed.MlnToken.address,
     ]);
-    const expectedMlnRedemption = new BigNumber(pre.fund.MlnToken.add(mlnInCustody).mul(shares).div(totalSupply)).dp(0, BigNumber.ROUND_DOWN);
+    const expectedMlnRedemption = new BigNumber(pre.fund.MlnToken).add(mlnInCustody).mul(shares).dividedToIntegerBy(totalSupply);
 
     t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken.add(expectedMlnRedemption));
     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
