@@ -45,6 +45,30 @@ module.exports = {
       }
     },
   },
+  competitionReplica: {
+    networkId: '42',
+    host: 'localhost',
+    port: 8547,
+    gas: 7000000,
+    gasPrice: 100000000000,
+    protocol: {
+      pricefeed: {
+        interval: 60,
+        validity: 60,
+        preEpochUpdatePeriod: 30,
+        minimumUpdates: 1,
+        assetsToRegister: [
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
+          'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
+        ],
+      },
+      staking: {
+        minimumAmount: 1000000000,
+        numOperators: 5,
+        unstakeDelay: 60 * 60 * 24 * 7 // one week
+      }
+    },
+  },
   development: {
     networkId: '*',
     host: 'localhost',
