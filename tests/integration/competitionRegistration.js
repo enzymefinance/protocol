@@ -12,7 +12,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 const competitionTerms =
-  "0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E";
+  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 // hoisted variables
 let accounts;
@@ -115,9 +115,10 @@ test.serial(
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
     // t.deepEqual(post.manager.ether, pre.manager.ether.sub(buyinValue));
     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(estimatedMlnReward));
     t.deepEqual(post.fund.ether, pre.fund.ether);
-    t.is(Number(post.fund.MlnToken), Number(pre.fund.MlnToken.add(estimatedMlnReward)));
-    t.deepEqual(Number(postCompetitionMln), Number(preCompetitionMln.sub(estimatedMlnReward)));
+
+    t.deepEqual(postCompetitionMln, preCompetitionMln.sub(estimatedMlnReward));
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedShares));
 
     // Verify registration parameters

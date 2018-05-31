@@ -34,9 +34,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     // FIELDS
 
     // Constant fields
-    // Competition terms and conditions as displayed on https://ipfs.io/ipfs/QmQ7DqjpxmTDbaxcH5qwv8QmGvJY7rhb8UV2QRfCEFBp8V
+    // Competition terms and conditions as displayed on https://ipfs.io/ipfs/QmXuUfPi6xeYfuMwpVAughm7GjGUjkbEojhNR8DJqVBBxc
     // IPFS hash encoded using http://lenschulwitz.com/base58
-    bytes32 public constant TERMS_AND_CONDITIONS = 0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E;
+    bytes public constant TERMS_AND_CONDITIONS = hex"12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
     uint public MELON_BASE_UNIT = 10 ** 18;
     // Constructor fields
     address public custodian; // Address of the custodian which holds the funds sent
@@ -80,7 +80,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
             //  As a result, in order to use this value, you will have to parse it to an
             //  integer and then add 27. This will result in either a 27 or a 28.
             //  https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsign
-            keccak256("\x19Ethereum Signed Message:\n32", TERMS_AND_CONDITIONS),
+            keccak256("\x19Ethereum Signed Message:\n34", TERMS_AND_CONDITIONS),
             v,
             r,
             s
