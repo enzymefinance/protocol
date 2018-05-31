@@ -48,7 +48,7 @@ test("Manager can request investment", async t => {
   const request = await fund.instance.requests.call({}, [Number(requestId)]);
 
   t.is(request[0], manager);
-  t.not(Number(request[7]), 0);
+  t.not(Number(request[6]), 0);
 });
 
 test("Someone who is not manager can not request investment", async t => {
