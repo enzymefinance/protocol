@@ -4,7 +4,7 @@ import "./NoCompliance.sol";
 
 /// @title Compliance Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Only allow manager to invest in the Fund.
+/// @notice Anyone is allowed to invest / redeem
 contract NoComplianceCompetition is NoCompliance {
 
     // PUBLIC VIEW METHODS
