@@ -206,7 +206,7 @@ async function deployEnvironment(environment) {
     //     []
     //   ]);
     //   console.log(`Registered ${assetSymbol}`);
-    }
+    // }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     // const deployerPassword = '/path/to/password/file';
