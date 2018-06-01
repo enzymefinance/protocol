@@ -50,7 +50,7 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan" || environment === "competition-replica") {
-    // const previous = require('../../addressBook.json').kovan;
+    const previous = require('../../addressBook.json').kovan;
     const commonEnvironment = "kovan";
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, yearInSeconds]);
@@ -59,7 +59,7 @@ async function deployEnvironment(environment) {
     const chfAddress = tokenInfo[commonEnvironment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-//     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
+    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed)
 //     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed)
 //     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket)
 //     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter)
@@ -68,27 +68,27 @@ async function deployEnvironment(environment) {
 //     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
 
     // set up pricefeeds
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-      mlnAddr,
-      ethTokenAddress,
-      'Eth Token',
-      'WETH-T',
-      18,
-      'ethereum.org',
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-      [
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity
-      ], [
-        config.protocol.staking.minimumAmount,
-        config.protocol.staking.numOperators,
-        config.protocol.staking.unstakeDelay
-      ],
-      deployed.Governance.address
-    ], () => {}, true);
+    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+    //   mlnAddr,
+    //   ethTokenAddress,
+    //   'Eth Token',
+    //   'WETH-T',
+    //   18,
+    //   'ethereum.org',
+    //   mockBytes,
+    //   [mockAddress, mockAddress],
+    //   [],
+    //   [],
+    //   [
+    //     config.protocol.pricefeed.interval,
+    //     config.protocol.pricefeed.validity
+    //   ], [
+    //     config.protocol.staking.minimumAmount,
+    //     config.protocol.staking.numOperators,
+    //     config.protocol.staking.unstakeDelay
+    //   ],
+    //   deployed.Governance.address
+    // ], () => {}, true);
 
     // below not needed right now (TODO: remove in cleanup if still here)
     // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
@@ -163,49 +163,49 @@ async function deployEnvironment(environment) {
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
-    // whitelist exchanges
-    await governanceAction(
-      opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-      [
-        deployed.MatchingMarket.address,
-        deployed.MatchingMarketAdapter.address,
-        true,
-        [
-          makeOrderSignature,
-          takeOrderSignature,
-          cancelOrderSignature
-        ]
-      ]
-    );
-    console.log('Registered MatchingMarket');
+    // // whitelist exchanges
+    // await governanceAction(
+    //   opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    //   [
+    //     deployed.MatchingMarket.address,
+    //     deployed.MatchingMarketAdapter.address,
+    //     true,
+    //     [
+    //       makeOrderSignature,
+    //       takeOrderSignature,
+    //       cancelOrderSignature
+    //     ]
+    //   ]
+    // );
+    // console.log('Registered MatchingMarket');
 
-    await governanceAction(
-     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-      [
-        deployed.ZeroExExchange.address,
-        deployed.ZeroExV1Adapter.address,
-        false,
-        [ takeOrderSignature ]
-      ]
-    );
-    console.log('Registered ZeroEx');
+    // await governanceAction(
+    //  opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    //   [
+    //     deployed.ZeroExExchange.address,
+    //     deployed.ZeroExV1Adapter.address,
+    //     false,
+    //     [ takeOrderSignature ]
+    //   ]
+    // );
+    // console.log('Registered ZeroEx');
 
-    // register assets
-    for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
-      console.log(`Registering ${assetSymbol}`);
-      const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
-      await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-        tokenEntry.address,
-        tokenEntry.name,
-        assetSymbol,
-        tokenEntry.decimals,
-        tokenEntry.url,
-        mockBytes,
-        [mockAddress, mockAddress],
-        [],
-        []
-      ]);
-      console.log(`Registered ${assetSymbol}`);
+    // // register assets
+    // for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+    //   console.log(`Registering ${assetSymbol}`);
+    //   const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
+    //   await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
+    //     tokenEntry.address,
+    //     tokenEntry.name,
+    //     assetSymbol,
+    //     tokenEntry.decimals,
+    //     tokenEntry.url,
+    //     mockBytes,
+    //     [mockAddress, mockAddress],
+    //     [],
+    //     []
+    //   ]);
+    //   console.log(`Registered ${assetSymbol}`);
     }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
