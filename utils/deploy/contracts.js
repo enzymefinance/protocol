@@ -19,7 +19,7 @@ const yearInSeconds = 60 * 60 * 24 * 365;
 
 // TODO: make clearer the separation between deployments in different environments
 // TODO: make JSdoc style documentation tags here
-async function deployEnvironment(environment) { 
+async function deployEnvironment(environment) {
   const config = masterConfig[environment];
   if (config === undefined) {
     throw new Error(`Deployment for environment ${environment} not defined`);
@@ -157,7 +157,9 @@ async function deployEnvironment(environment) {
     if (environment === "competition-replica") {
       await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     }
-
+    await mlnToken.instance.transfer.postTransaction(opts,
+      [deployed.Competition.address, 10 ** 22],
+    );
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
 
@@ -360,7 +362,6 @@ async function deployEnvironment(environment) {
     deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 86400, 20 * 10 ** 18, 10 ** 23, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
-
 
     // whitelist trading pairs
     const pairsToWhitelist = [
