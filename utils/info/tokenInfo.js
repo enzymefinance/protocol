@@ -2,7 +2,7 @@
 module.exports = {
   kovan: {
     'CHF-T': {
-      address: '0x0000000000000000000000000000000000000000',
+      address: '0xe6B8dc9357b42Fa67a0ac9BDEe59D4B6ebe11406',
       name: 'Swiss Franc token (dummy)',
       decimals: 18,
       url: '',
