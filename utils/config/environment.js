@@ -34,8 +34,8 @@ module.exports = {
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
-          'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
+          'MLN-T', 'WETH-T', 'MKR-T', 'CHF-T', 'DAI-T', 'ANT-T', 'ZRX-T',
+          'BAT-T','DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
       staking: {
