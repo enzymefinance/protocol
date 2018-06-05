@@ -53,6 +53,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     ERC20Interface public MELON_CONTRACT; // Melon as ERC20 contract
     address public CHF_ASSET; // Adresss of CHF asset based on the Canonical Registrar
     address public COMPETITION_VERSION; // Version contract address
+    bool public deployedOnMainnet;  // is this contract on the mainnet (constructor param)
+
     // Methods fields
     Registrant[] public registrants; // List of all registrants, can be externally accessed
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
@@ -170,7 +172,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         uint ofEndTime,
         uint ofPayoutRate,
         uint ofTotalMaxBuyin,
-        uint ofMaxRegistrants
+        uint ofMaxRegistrants,
+        bool isMainnet
     ) {
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20Interface(MELON_ASSET);
@@ -182,6 +185,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         payoutRate = ofPayoutRate;
         totalMaxBuyin = ofTotalMaxBuyin;
         maxRegistrants = ofMaxRegistrants;
+        deployedOnMainnet = isMainnet;
     }
 
     /// @notice Register to take part in the competition
@@ -200,7 +204,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         pre_cond(isCompetitionActive() && !Version(COMPETITION_VERSION).isShutDown())
         pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
     {
-        require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
+        if (deployedOnMainnet) {
+            require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
+        }
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
         require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
@@ -250,8 +256,10 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     /// @notice Claim Reward
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))
-        pre_cond(now >= endTime || Version(COMPETITION_VERSION).isShutDown())
     {
+        if (deployedOnMainnet) {
+            require(block.timestamp >= endTime || Version(COMPETITION_VERSION).isShutDown());
+        }
         Registrant registrant  = registrants[getRegistrantId(msg.sender)];
         require(registrant.isRewarded == false);
         registrant.isRewarded = true;
