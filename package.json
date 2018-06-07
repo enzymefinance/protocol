@@ -19,7 +19,7 @@
     "compile": "export SOLC_FLAGS='--optimize --optimize-runs=0' && make all",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
-    "deploy:competitionReplica": "CHAIN_ENV=competitionReplica babel-node utils/deploy/contracts.js",
+    "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",

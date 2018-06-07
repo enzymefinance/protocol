@@ -139,7 +139,6 @@ async function deployEnvironment(environment) {
     //   opts, [ deployed.ZeroExExchange.address ]
     // );
 
-
     // set up modules and version
     deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
