@@ -49,7 +49,7 @@ async function deployEnvironment(environment) {
 
   const deployed = {};
 
-  if (environment === "kovan" || environment === "competition-replica") {
+  if (environment === "kovan" || environment === "kovan-competition") {
     const previous = require('../../addressBook.json').kovan;
     const commonEnvironment = "kovan";
     // set up governance and tokens
@@ -160,7 +160,7 @@ async function deployEnvironment(environment) {
     const blockchainTime = await getChainTime();
     deployed.Competition = await deployContract("competitions/Competition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 20 * 10 ** 18, 10 ** 24, 1000, false]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]);
-    if (environment === "competition-replica") {
+    if (environment === "kovan-competition") {
       await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     }
     await mlnToken.instance.transfer.postTransaction(opts,
