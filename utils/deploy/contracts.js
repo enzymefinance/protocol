@@ -367,7 +367,6 @@ async function deployEnvironment(environment) {
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
     const blockchainTime = await getChainTime();
-    // Set isMainnet to True in Competition contract
     deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 86400, 20 * 10 ** 18, 10 ** 23, 10]);
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);

@@ -137,7 +137,7 @@ test("Cannot redeem before end time", async t => {
   );
   const managerPostShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
   t.not(registrantFund, "0x0000000000000000000000000000000000000000");
-  console.log(await t.context.competition.instance.endTime.call());
+  console.log(await t.context.version.instance.endTime.call());
   t.deepEqual(managerPreShares, managerPostShares);
 });
 
@@ -157,4 +157,40 @@ test("Cannot redeem without being registered", async t => {
   const managerPostShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
   t.is(registrantFund, "0x0000000000000000000000000000000000000000");
   t.deepEqual(managerPreShares, managerPostShares);
+});
+
+test("Can redeem before endTime if version is shutdown", async t => {
+  const buyinValue = new BigNumber(10 ** 19);
+  const registrantFund = await registerFund(t, t.context.fund.address, manager, buyinValue);
+  await t.context.version.instance.shutDown.postTransaction(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
+    [],
+  );
+  const versionShutDown = await t.context.version.instance.isShutDown.call({}, []);
+  const payoutRate = await t.context.competition.instance.payoutRate.call({}, []);
+  const expectedPayout = buyinValue.mul(payoutRate).div(10 ** 18);
+  const expectedShares = await t.context.competition.instance.getEtherValue.call({}, [expectedPayout]);
+  const fundPreSupply = await t.context.fund.instance.totalSupply.call({}, []);
+  const managerPreShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
+  const competitionPreShares = await t.context.fund.instance.balanceOf.call({}, [
+    t.context.competition.address,
+  ]);
+  await t.context.competition.instance.claimReward.postTransaction(
+    {
+      from: manager,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+    },
+    [],
+  );
+  const fundPostSupply = await t.context.fund.instance.totalSupply.call({}, []);
+  const managerPostShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
+  const competitionPostShares = await t.context.fund.instance.balanceOf.call({}, [
+    t.context.competition.address,
+  ]);
+  t.is(registrantFund, t.context.fund.address);
+  t.true(versionShutDown);
+  t.deepEqual(fundPostSupply, fundPreSupply);
+  t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+  t.deepEqual(competitionPostShares, competitionPreShares.sub(expectedShares));
 });
