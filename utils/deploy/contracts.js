@@ -162,6 +162,7 @@ async function deployEnvironment(environment) {
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]);
     if (environment === "kovan-competition") {
       await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+      deployed.TestCompetition = await deployContract("competitions/TestCompetition", opts, [mlnAddr, chfAddress, deployed.Version.address, accounts[0], blockchainTime, blockchainTime + 864000, 20 * 10 ** 18, 10 ** 24, 1000, false]);
     }
     await mlnToken.instance.transfer.postTransaction(opts,
       [deployed.Competition.address, 10 ** 22],
