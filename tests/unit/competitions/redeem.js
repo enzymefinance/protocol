@@ -80,8 +80,7 @@ test.beforeEach(async t => {
       blockchainTime + 864000,
       22 * 10 ** 18,
       10 ** 22,
-      10,
-      true
+      10
     ],
     () => {},
     true,
@@ -138,6 +137,7 @@ test("Cannot redeem before end time", async t => {
   );
   const managerPostShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
   t.not(registrantFund, "0x0000000000000000000000000000000000000000");
+  console.log(await t.context.competition.instance.endTime.call());
   t.deepEqual(managerPreShares, managerPostShares);
 });
 

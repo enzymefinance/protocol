@@ -71,7 +71,7 @@ test.before(async () => {
       blockchainTime + competitionDuration,
       22 * 10 ** 18,
       10 ** 23,
-      10,
+      10
     ],
     () => {},
     true,
