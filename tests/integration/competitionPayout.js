@@ -155,17 +155,15 @@ test.serial(
     );
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
-    const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
     const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     const competitionPostShares = await fund.instance.balanceOf.call({}, [
       competition.address,
     ]);
     const fundPostSupply = await fund.instance.totalSupply.call({}, []);
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+    t.deepEqual(managerPostShares, managerPreShares.add(fundPreSupply));
     t.deepEqual(
       competitionPostShares,
-      competitionPreShares.sub(expectedShares),
+      competitionPreShares.sub(fundPreSupply),
     );
     t.deepEqual(fundPostSupply, fundPreSupply);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
