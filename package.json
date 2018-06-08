@@ -55,7 +55,7 @@
   "homepage": "https://github.com/melonproject/protocol#readme",
   "devDependencies": {
     "@digix/doxity": "^0.5.2",
-    "ava": "^0.24.0",
+    "ava": "^0.25.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^7.2.3",
