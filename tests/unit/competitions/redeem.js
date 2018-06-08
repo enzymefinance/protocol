@@ -137,7 +137,6 @@ test("Cannot redeem before end time", async t => {
   );
   const managerPostShares = await t.context.fund.instance.balanceOf.call({}, [manager]);
   t.not(registrantFund, "0x0000000000000000000000000000000000000000");
-  console.log(await t.context.version.instance.endTime.call());
   t.deepEqual(managerPreShares, managerPostShares);
 });
 

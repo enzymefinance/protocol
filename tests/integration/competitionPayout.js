@@ -142,6 +142,7 @@ test.serial(
     ]);
     const fundPreSupply = await fund.instance.totalSupply.call({}, []);
     const timeTillEnd = await competition.instance.getTimeTillEnd.call({}, []);
+    console.log(timeTillEnd);
     await sleep(Number(timeTillEnd) + 2);
     // Random transaction to mine block
     await api.eth.sendTransaction();

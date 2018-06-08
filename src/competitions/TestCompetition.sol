@@ -10,10 +10,10 @@ import '../dependencies/DBC.sol';
 import '../dependencies/Owned.sol';
 import "ds-math/math.sol";
 
-/// @title Competition Contract
+/// @title Test Competition Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Register Melon funds in competition
-contract Competition is CompetitionInterface, DSMath, DBC, Owned {
+contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
 
     // TYPES
 
@@ -162,7 +162,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function Competition(
+    function TestCompetition(
         address ofMelonAsset,
         address ofCHFAsset,
         address ofCompetitionVersion,
