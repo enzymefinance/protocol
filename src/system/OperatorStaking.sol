@@ -21,9 +21,10 @@ contract OperatorStaking is DBC, StakeBank {
     uint public MAX_STAKERS = 100;  // maximum number of stakers; prevent array denial of service
     uint public minimumStake;
     uint public numOperators;
-    uint public unstakeDelay;
+    uint public withdrawalDelay;
     mapping (address => bool) public isRanked;
-    mapping (address => uint) public latestStakingTime;
+    mapping (address => uint) public latestUnstakeTime;
+    mapping (address => uint) public stakeToWithdraw;
     StakeData[] public stakeRanking;
 
     // TODO: consider renaming "operator" depending on how this is implemented 
@@ -32,14 +33,14 @@ contract OperatorStaking is DBC, StakeBank {
         AssetInterface _stakingToken,
         uint _minimumStake,
         uint _numOperators,
-        uint _unstakeDelay
+        uint _withdrawalDelay
     )
         public
         StakeBank(_stakingToken)
     {
         minimumStake = _minimumStake;
         numOperators = _numOperators;
-        unstakeDelay = _unstakeDelay;
+        withdrawalDelay = _withdrawalDelay;
     }
 
     // METHODS : STAKING
@@ -57,7 +58,6 @@ contract OperatorStaking is DBC, StakeBank {
     {
         StakeBank.stake(amount, data);
         updateStakerRanking(msg.sender);
-        latestStakingTime[msg.sender] = block.timestamp;
     }
 
     function stakeFor(
@@ -70,24 +70,34 @@ contract OperatorStaking is DBC, StakeBank {
     {
         StakeBank.stakeFor(user, amount, data);
         updateStakerRanking(user);
-        latestStakingTime[msg.sender] = block.timestamp;
-        // revert();
     }
 
-    /// @dev Ensures final staked amount is either zero or above minimum
-    /// @dev at least unstakeDelay time must pass since last stake for this to work
     function unstake(
         uint amount,
         bytes data
     )
         public
-        pre_cond(block.timestamp >= add(latestStakingTime[msg.sender], unstakeDelay))
     {
         uint preStake = totalStakedFor(msg.sender);
         uint postStake = sub(preStake, amount);
         require(postStake >= minimumStake || postStake == 0);
-        StakeBank.unstake(amount, data);
+        require(totalStakedFor(msg.sender) >= amount);
+        updateCheckpointAtNow(stakesFor[msg.sender], amount, true);
+        updateCheckpointAtNow(stakeHistory, amount, true);
+        Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        latestUnstakeTime[msg.sender] = block.timestamp;
+        stakeToWithdraw[msg.sender] += amount;
         updateStakerRanking(msg.sender);
+    }
+
+    function withdrawStake()
+        public
+        pre_cond(stakeToWithdraw[msg.sender] > 0)
+        pre_cond(block.timestamp >= add(latestUnstakeTime[msg.sender], withdrawalDelay))
+    {
+        uint amount = stakeToWithdraw[msg.sender];
+        stakeToWithdraw[msg.sender] = 0;
+        require(stakingToken.transfer(msg.sender, amount));
     }
 
     function updateStakerRanking(address _staker) internal {
