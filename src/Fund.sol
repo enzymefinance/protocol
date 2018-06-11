@@ -8,13 +8,14 @@ import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
+import "./policies/Manager.sol";
 import "ds-weth/weth9.sol";
 import "ds-math/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
+contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
 
     event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
 
