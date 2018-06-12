@@ -16,7 +16,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 const buyinValue = new BigNumber(0.5 * 10 ** 19);
-const competitionDuration = 15; // Duration in seconds
+const competitionDuration = 13; // Duration in seconds
 const competitionTerms =
   "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
@@ -142,9 +142,8 @@ test.serial(
     ]);
     const fundPreSupply = await fund.instance.totalSupply.call({}, []);
     const timeTillEnd = await competition.instance.getTimeTillEnd.call({}, []);
-    console.log(timeTillEnd);
-    await sleep(Number(timeTillEnd) + 2);
-    // Random transaction to mine block
+    await api.eth.sendTransaction();
+    await sleep(Number(timeTillEnd) + 1);
     await api.eth.sendTransaction();
     await competition.instance.claimReward.postTransaction(
       {
