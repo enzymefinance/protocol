@@ -15,7 +15,7 @@ contract MockFund is PolicyManager {
     }
 
     function testPolicy(address[4] addresses, uint[2] values) public view 
-        validPolicy(addresses, values) 
+        isValidPolicy(addresses, values) 
     {
         // dummy
     }
