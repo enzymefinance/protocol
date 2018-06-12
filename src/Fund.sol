@@ -232,7 +232,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        //pre_cond(requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
             _totalSupply == 0 ||
             (
