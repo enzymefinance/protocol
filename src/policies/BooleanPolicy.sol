@@ -11,13 +11,13 @@ contract BooleanPolicy is Policy {
 }
 
 contract TruePolicy is BooleanPolicy {
-    constructor() public {
+    function TruePolicy() public {
         allowed = true;
     }
 }
 
 contract FalsePolicy is BooleanPolicy {
-    constructor() public {
+    function FalsePolicy() public {
         allowed = false;
     }
 }
