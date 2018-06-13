@@ -645,7 +645,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
-            if (exchanges[i].takesCustody) {
+            if (!exchanges[i].takesCustody) {
                 totalSellQuantityInApprove += sellQuantity;
             }
         }
