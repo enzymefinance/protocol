@@ -131,7 +131,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     {
         OperatorStaking.stake(amount, data);
     }
-  
+
     // function stakeFor(
     //     address user,
     //     uint amount,
@@ -157,7 +157,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets)
         public
-        auth 
+        auth
         pre_cond(updatesAreAllowed)
     {
         address[] memory operators = getOperators();
@@ -370,12 +370,15 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns(address[])
     {
-        address[] memory ofPriceFeeds = new address[](stakeRanking.length);
-        for (uint i; i < stakeRanking.length; i++) {
-            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeRanking[i].staker);
+        address[] memory ofPriceFeeds = new address[](numStakers);
+        if (numStakers == 0) return ofPriceFeeds;
+        uint current = stakeNodes[0].next;
+        for (uint i; i < numStakers; i++) {
+            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeNodes[current].data.staker);
             if (stakingFeed.owner() == _owner) {
                 ofPriceFeeds[i] = address(stakingFeed);
             }
+            current = stakeNodes[current].next;
         }
         return ofPriceFeeds;
     }
