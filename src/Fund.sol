@@ -586,6 +586,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            require(isInAssetList[ofAsset]);
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
