@@ -177,6 +177,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner())
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
+            require(modules.pricefeed.assetIsRegistered(ofAssets[i]));
             isInvestAllowed[ofAssets[i]] = true;
         }
     }
@@ -221,7 +222,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now,
             atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
-        RequestUpdated(getLastRequestId());
+        emit RequestUpdated(getLastRequestId());
     }
 
     /// @notice Executes active investment and redemption requests, in a way that minimises information advantages of investor
@@ -422,7 +423,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
         }
-        PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
+        emit PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
     }
 
     /// @notice Add an asset to the list that this fund owns
@@ -560,8 +561,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
 
-        FeesConverted(now, feesShareQuantity, unclaimedFees);
-        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
+        emit FeesConverted(now, feesShareQuantity, unclaimedFees);
+        emit CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
 
         return sharePrice;
     }
@@ -606,7 +607,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
             if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
                 isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;
             }
         }
@@ -624,7 +625,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 revert();
             }
         }
-        Redeemed(msg.sender, now, shareQuantity);
+        emit Redeemed(msg.sender, now, shareQuantity);
         return true;
     }
 

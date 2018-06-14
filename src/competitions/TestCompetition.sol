@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "./CompetitionInterface.sol";
 import "../assets/ERC20Interface.sol";
@@ -63,6 +63,33 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     //EVENTS
 
     event Register(uint withId, address fund, address manager);
+
+    // METHODS
+
+    // CONSTRUCTOR
+
+    function Competition(
+        address ofMelonAsset,
+        address ofCHFAsset,
+        address ofCompetitionVersion,
+        address ofCustodian,
+        uint ofStartTime,
+        uint ofEndTime,
+        uint ofPayoutRate,
+        uint ofTotalMaxBuyin,
+        uint ofMaxRegistrants
+    ) {
+        MELON_ASSET = ofMelonAsset;
+        MELON_CONTRACT = ERC20Interface(MELON_ASSET);
+        CHF_ASSET = ofCHFAsset;
+        COMPETITION_VERSION = ofCompetitionVersion;
+        custodian = ofCustodian;
+        startTime = ofStartTime;
+        endTime = ofEndTime;
+        payoutRate = ofPayoutRate;
+        totalMaxBuyin = ofTotalMaxBuyin;
+        maxRegistrants = ofMaxRegistrants;
+    }
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -161,29 +188,6 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     }
 
     // NON-CONSTANT METHODS
-
-    function Competition(
-        address ofMelonAsset,
-        address ofCHFAsset,
-        address ofCompetitionVersion,
-        address ofCustodian,
-        uint ofStartTime,
-        uint ofEndTime,
-        uint ofPayoutRate,
-        uint ofTotalMaxBuyin,
-        uint ofMaxRegistrants
-    ) {
-        MELON_ASSET = ofMelonAsset;
-        MELON_CONTRACT = ERC20Interface(MELON_ASSET);
-        CHF_ASSET = ofCHFAsset;
-        COMPETITION_VERSION = ofCompetitionVersion;
-        custodian = ofCustodian;
-        startTime = ofStartTime;
-        endTime = ofEndTime;
-        payoutRate = ofPayoutRate;
-        totalMaxBuyin = ofTotalMaxBuyin;
-        maxRegistrants = ofMaxRegistrants;
-    }
 
     /// @notice Register to take part in the competition
     /// @dev Check if the fund address is actually from the Competition Version

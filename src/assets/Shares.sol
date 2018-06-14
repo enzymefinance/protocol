@@ -64,7 +64,7 @@ contract Shares is SharesInterface, ERC223Interface, Asset {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, empty);
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -97,8 +97,8 @@ contract Shares is SharesInterface, ERC223Interface, Asset {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, _data);
         }
-        Transfer(msg.sender, _to, _value);
-        Transfer(msg.sender, _to, _value, _data);
+        emit Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value, _data);
         return true;
     }
 
@@ -118,7 +118,7 @@ contract Shares is SharesInterface, ERC223Interface, Asset {
     function createShares(address recipient, uint shareQuantity) internal {
         _totalSupply = add(_totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
-        Created(msg.sender, now, shareQuantity);
+        emit Created(msg.sender, now, shareQuantity);
     }
 
     /// @param recipient Address the new shares should be taken from when destroyed
@@ -126,6 +126,6 @@ contract Shares is SharesInterface, ERC223Interface, Asset {
     function annihilateShares(address recipient, uint shareQuantity) internal {
         _totalSupply = sub(_totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);
-        Annihilated(msg.sender, now, shareQuantity);
+        emit Annihilated(msg.sender, now, shareQuantity);
     }
 }

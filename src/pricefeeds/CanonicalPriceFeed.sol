@@ -115,7 +115,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         updateCheckpointAtNow(stakesFor[user], amount, true);
         updateCheckpointAtNow(stakeHistory, amount, true);
         updateStakerRanking(user);
-        StakeBurned(user, amount, data);
+        emit StakeBurned(user, amount, data);
     }
 
     // PUBLIC METHODS

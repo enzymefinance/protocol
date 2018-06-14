@@ -42,7 +42,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
 
         require(stakingToken.transferFrom(msg.sender, address(this), amount));
 
-        Staked(user, amount, totalStakedFor(user), data);
+        emit Staked(user, amount, totalStakedFor(user), data);
     }
 
     /// @notice Unstakes a certain amount of tokens.
@@ -55,7 +55,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
         updateCheckpointAtNow(stakeHistory, amount, true);
 
         require(stakingToken.transfer(msg.sender, amount));
-        Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
     }
 
     /// @notice Returns total tokens staked for address.

@@ -99,7 +99,7 @@ contract OperatorStaking is DBC, StakeBank {
         require(totalStakedFor(msg.sender) >= amount);
         updateCheckpointAtNow(stakesFor[msg.sender], amount, true);
         updateCheckpointAtNow(stakeHistory, amount, true);
-        Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
         latestUnstakeTime[msg.sender] = block.timestamp;
         stakeToWithdraw[msg.sender] += amount;
         updateStakerRanking(msg.sender);

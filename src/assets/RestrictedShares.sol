@@ -52,7 +52,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, empty);
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -69,7 +69,7 @@ contract RestrictedShares is Shares {
         returns (bool success)
     {
         require(msg.sender == address(this) || _to == address(this));
-        
+
         bytes memory empty;
         uint codeLength;
 
@@ -87,7 +87,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, _data);
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -107,7 +107,7 @@ contract RestrictedShares is Shares {
         require(_value == 0 || allowed[msg.sender][_spender] == 0);
 
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 

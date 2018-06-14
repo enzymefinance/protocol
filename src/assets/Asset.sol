@@ -32,7 +32,7 @@ contract Asset is DSMath, ERC20Interface {
 
         balances[msg.sender] = sub(balances[msg.sender], _value);
         balances[_to] = add(balances[_to], _value);
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
     /// @notice Transfer `_value` tokens from `_from` to `_to` if `msg.sender` is allowed.
@@ -61,7 +61,7 @@ contract Asset is DSMath, ERC20Interface {
         balances[_from] -= _value;
         allowed[_from][msg.sender] -= _value;
 
-        Transfer(_from, _to, _value);
+        emit Transfer(_from, _to, _value);
         return true;
     }
 
@@ -74,7 +74,7 @@ contract Asset is DSMath, ERC20Interface {
         require(_spender != 0x0);
 
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 
