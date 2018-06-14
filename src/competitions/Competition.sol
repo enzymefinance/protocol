@@ -258,7 +258,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         registrant.isRewarded = true;
         // Is this safe to assume this or should we transfer all the balance instead?
         uint balance = AssetInterface(registrant.fund).balanceOf(this);
-        assert(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
+        require(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
 
         // Emit ClaimedReward event
         emit ClaimReward(msg.sender, registrant.fund, balance);
