@@ -13,6 +13,8 @@ import "./StakeBank.sol";
 /// @notice Enables pricefeed operators to self-select via staking
 contract OperatorStaking is DBC, StakeBank {
 
+    // TYPES
+
     struct StakeData {
         uint amount;
         address staker;
@@ -21,17 +23,22 @@ contract OperatorStaking is DBC, StakeBank {
     // Circular linked list
     struct Node {
         StakeData data;
-        uint256 prev;
-        uint256 next;
+        uint prev;
+        uint next;
     }
 
+    // FIELDS
+
+    // INTERNAL FIELDS
+    Node[] internal stakeNodes; // Sorted circular linked list nodes conaining stake data (Built on top https://programtheblockchain.com/posts/2018/03/30/storage-patterns-doubly-linked-list/)
+
+    // PUBLIC FIELDS
     uint public minimumStake;
     uint public numOperators;
     uint public withdrawalDelay;
     mapping (address => bool) public isRanked;
     mapping (address => uint) public latestUnstakeTime;
     mapping (address => uint) public stakeToWithdraw;
-    Node[] public stakeNodes; // Circular linked list nodes conaining stake data
     uint public numStakers; // Current number of stakers (Needed because of array holes)
 
     // TODO: consider renaming "operator" depending on how this is implemented
@@ -48,7 +55,7 @@ contract OperatorStaking is DBC, StakeBank {
         minimumStake = _minimumStake;
         numOperators = _numOperators;
         withdrawalDelay = _withdrawalDelay;
-        StakeData memory temp = StakeData(0, 0x0000000000000000000000000000000000000000);
+        StakeData memory temp = StakeData({ amount: 0, staker: 0x0000000000000000000000000000000000000000 });
         stakeNodes.push(Node(temp, 0, 0));
     }
 
@@ -106,21 +113,21 @@ contract OperatorStaking is DBC, StakeBank {
         require(stakingToken.transfer(msg.sender, amount));
     }
 
-    // EXTERNAL METHODS
+    // INTERNAL METHODS
 
-    function insert(uint amount, address add) internal returns (uint256 newID) {
+    function insertNodeSorted(uint amount, address staker) internal returns (uint) {
         uint current = stakeNodes[0].next;
-        if (current == 0) return insertAfter(0, amount, add);
+        if (current == 0) return insertNodeAfter(0, amount, staker);
         while (isValidNode(current)) {
             if (amount > stakeNodes[current].data.amount) {
                 break;
             }
             current = stakeNodes[current].next;
         }
-        return insertBefore(current, amount, add);
+        return insertNodeBefore(current, amount, staker);
     }
 
-    function insertAfter(uint256 id, uint amount, address add) internal returns (uint256 newID) {
+    function insertNodeAfter(uint id, uint amount, address staker) internal returns (uint newID) {
 
         // 0 is allowed here to insert at the beginning.
         require(id == 0 || isValidNode(id));
@@ -128,7 +135,7 @@ contract OperatorStaking is DBC, StakeBank {
         Node storage node = stakeNodes[id];
 
         stakeNodes.push(Node({
-            data: StakeData(amount, add),
+            data: StakeData(amount, staker),
             prev: id,
             next: node.next
         }));
@@ -140,22 +147,11 @@ contract OperatorStaking is DBC, StakeBank {
         numStakers++;
     }
 
-    function insertBefore(uint256 id, uint amount, address add) internal returns (uint256 newID) {
-        return insertAfter(stakeNodes[id].prev, amount, add);
+    function insertNodeBefore(uint id, uint amount, address staker) internal returns (uint) {
+        return insertNodeAfter(stakeNodes[id].prev, amount, staker);
     }
 
-    function search(address add) public returns (uint) {
-        uint current = stakeNodes[0].next;
-        while (isValidNode(current)) {
-            if (add == stakeNodes[current].data.staker) {
-                return current;
-            }
-            current = stakeNodes[current].next;
-        }
-        return 0;
-    }
-
-    function remove(uint256 id) internal {
+    function removeNode(uint id) internal {
         require(isValidNode(id));
 
         Node storage node = stakeNodes[id];
@@ -167,12 +163,6 @@ contract OperatorStaking is DBC, StakeBank {
         numStakers--;
     }
 
-    function isValidNode(uint256 id) public view returns (bool) {
-        // 0 is a sentinel and therefore invalid.
-        // A valid node is the head or has a previous node.
-        return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
-    }
-
     function updateStakerRanking(address _staker) internal {
         uint newStakedAmount = totalStakedFor(_staker);
         if (newStakedAmount == 0) {
@@ -180,20 +170,37 @@ contract OperatorStaking is DBC, StakeBank {
             removeStakerFromArray(_staker);
         } else if (isRanked[_staker]) {
             removeStakerFromArray(_staker);
-            insert(newStakedAmount, _staker);
+            insertNodeSorted(newStakedAmount, _staker);
         } else {
             isRanked[_staker] = true;
-            insert(newStakedAmount, _staker);
+            insertNodeSorted(newStakedAmount, _staker);
         }
     }
 
     function removeStakerFromArray(address _staker) internal {
-        uint id = search(_staker);
+        uint id = searchNode(_staker);
         require(id > 0);
-        remove(id);
+        removeNode(id);
     }
 
     // VIEW FUNCTIONS
+
+    function isValidNode(uint id) view returns (bool) {
+        // 0 is a sentinel and therefore invalid.
+        // A valid node is the head or has a previous node.
+        return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
+    }
+
+    function searchNode(address staker) view returns (uint) {
+        uint current = stakeNodes[0].next;
+        while (isValidNode(current)) {
+            if (staker == stakeNodes[current].data.staker) {
+                return current;
+            }
+            current = stakeNodes[current].next;
+        }
+        return 0;
+    }
 
     function isOperator(address user) view returns (bool) {
         address[] memory operators = getOperators();

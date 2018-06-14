@@ -310,7 +310,6 @@ async function deployEnvironment(environment) {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
-
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
       deployed.EthToken.address,
