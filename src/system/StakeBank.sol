@@ -82,7 +82,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
     function supportsHistory() public pure returns (bool) {
         return true;
     }
-    
+
     /// @notice Returns the token address.
     /// @return Address of token.
     function token() public view returns (address) {
@@ -117,9 +117,11 @@ contract StakeBank is StakingInterface, DSMath, Owned {
         return stakedAt(stakeHistory, blockNumber);
     }
 
+    /// @dev Decrement index if multiple updates in the same block
     function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake) internal {
 
         uint256 length = history.length;
+        uint256 index = length;
         if (length == 0) {
             history.push(Checkpoint({at: block.number, amount: amount}));
             return;
@@ -129,7 +131,11 @@ contract StakeBank is StakingInterface, DSMath, Owned {
             history.push(Checkpoint({at: block.number, amount: history[length-1].amount}));
         }
 
-        Checkpoint storage checkpoint = history[length];
+        else if (history[length-1].at == block.number) {
+            index--;
+        }
+
+        Checkpoint storage checkpoint = history[index];
 
         if (isUnstake) {
             checkpoint.amount = sub(checkpoint.amount, amount);

@@ -67,8 +67,10 @@ contract OperatorStaking is DBC, StakeBank {
     )
         public
         pre_cond(amount >= minimumStake)
-        //pre_cond(amount > stakeRanking[0].amount)
     {
+        uint tailNodeId = stakeNodes[0].prev;
+        // Staking amount is greater than the least amount in the array
+        require(amount > stakeNodes[tailNodeId].data.amount || numStakers < numOperators);
         StakeBank.stake(amount, data);
         updateStakerRanking(msg.sender);
     }

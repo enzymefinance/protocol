@@ -140,7 +140,7 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
-    { from: accounts[0], gas: 6900000 },
+    opts,
     [
       mlnToken.address,
       mlnToken.address,

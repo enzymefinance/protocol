@@ -51,4 +51,3 @@ contract StakingPriceFeed is SimplePriceFeed {
         require(stakingToken.transfer(msg.sender, amount));
     }
 }
-
