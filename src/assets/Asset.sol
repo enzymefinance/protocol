@@ -47,8 +47,6 @@ contract Asset is DSMath, ERC20Interface {
         public
         returns (bool)
     {
-        bytes memory empty;
-
         require(_from != 0x0);
         require(_to != 0x0);
         require(_to != address(this));

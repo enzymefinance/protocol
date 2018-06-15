@@ -2,12 +2,12 @@ pragma solidity ^0.4.21;
 
 import "./CompetitionInterface.sol";
 import "../assets/ERC20Interface.sol";
-import '../assets/AssetInterface.sol';
-import '../FundInterface.sol';
-import '../version/Version.sol';
-import '../pricefeeds/CanonicalPriceFeed.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
+import "../assets/AssetInterface.sol";
+import "../FundInterface.sol";
+import "../version/Version.sol";
+import "../pricefeeds/CanonicalPriceFeed.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
 import "ds-math/math.sol";
 
 /// @title Competition Contract
@@ -27,8 +27,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     }
 
     struct RegistrantId {
-      uint id; // Actual Registrant Id
-      bool exists; // Used to check if the mapping exists
+        uint id; // Actual Registrant Id
+        bool exists; // Used to check if the mapping exists
     }
 
     // FIELDS
@@ -67,7 +67,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     // METHODS
 
     // CONSTRUCTOR
-    
+
     function Competition(
         address ofMelonAsset,
         address ofCHFAsset,
@@ -227,12 +227,12 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         emit Register(registrants.length, fund, msg.sender);
 
         registrants.push(Registrant({
-          fund: fund,
-          registrant: msg.sender,
-          hasSigned: true,
-          buyinQuantity: msg.value,
-          payoutQuantity: payoutQuantity,
-          isRewarded: false
+            fund: fund,
+            registrant: msg.sender,
+            hasSigned: true,
+            buyinQuantity: msg.value,
+            payoutQuantity: payoutQuantity,
+            isRewarded: false
         }));
     }
 

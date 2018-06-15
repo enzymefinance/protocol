@@ -14,6 +14,8 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
 
+    //  PUBLIC METHODS
+
     // Responsibilities of makeOrder are:
     // - check sender
     // - check fund not shut down
@@ -172,6 +174,35 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
     // VIEW METHODS
 
+    // TODO: delete this function if possible
+    function getLastOrderId(address targetExchange)
+        view
+        returns (uint)
+    {
+        return MatchingMarket(targetExchange).last_offer_id();
+    }
+
+    // TODO: delete this function if possible
+    function getOrder(address targetExchange, uint id)
+        view
+        returns (address, address, uint, uint)
+    {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = MatchingMarket(targetExchange).getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
+    }
+
+    //  INTERNAL METHODS
+
     /// @dev needed to avoid stack too deep error
     function makeOrderPermitted(
         uint makerQuantity,
@@ -181,7 +212,7 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     )
         internal
         view
-        returns (bool) 
+        returns (bool)
     {
         require(takerAsset != address(this) && makerAsset != address(this));
         var (pricefeed, , riskmgmt) = Fund(this).modules();
@@ -235,33 +266,6 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
                 takerQuantity,
                 makerQuantity
             )
-        );
-    }
-
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        return MatchingMarket(targetExchange).last_offer_id();
-    }
-
-    // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
-        view
-        returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = MatchingMarket(targetExchange).getOffer(id);
-        return (
-            address(sellAsset),
-            address(buyAsset),
-            sellQuantity,
-            buyQuantity
         );
     }
 }

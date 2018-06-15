@@ -14,6 +14,8 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
 
+    //  PUBLIC METHODS
+
     /// @notice Make order not implemented for smart contracts in this exchange version
     function makeOrder(
         address targetExchange,
@@ -107,6 +109,24 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         revert();
     }
 
+    // TODO: delete this function if possible
+    function getLastOrderId(address targetExchange)
+        view
+        returns (uint)
+    {
+        revert();
+    }
+
+    // TODO: delete this function if possible
+    function getOrder(address targetExchange, uint id)
+        view
+        returns (address, address, uint, uint)
+    {
+        revert();
+    }
+
+    // INTERNAL METHODS
+
     /// @dev needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
@@ -129,7 +149,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         return Exchange(targetExchange).fillOrder(
             orderAddresses,
             [
-                orderValues[0], orderValues[1], orderValues[2], 
+                orderValues[0], orderValues[1], orderValues[2],
                 orderValues[3], orderValues[4], orderValues[5]
             ],
             fillTakerQuantity,
@@ -138,7 +158,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
             r,
             s
         );
-     }
+    }
 
     // VIEW METHODS
 
@@ -177,21 +197,4 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
             )
         );
     }
-
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        revert();
-    }
-
-    // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
-        view
-        returns (address, address, uint, uint)
-    {
-        revert();
-    }
 }
-

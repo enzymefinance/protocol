@@ -222,6 +222,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now,
             atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
+
         emit RequestUpdated(getLastRequestId());
     }
 
@@ -244,7 +245,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     {
         Request request = requests[id];
-        var (isRecent, requestAssetPrice, ) =
+        var (isRecent, , ) =
             modules.pricefeed.getPriceInfo(address(request.requestAsset));
         require(isRecent);
 
@@ -528,7 +529,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The value of unclaimedFees measured in shares of this fund at current value
         feesShareQuantity = (gav == 0) ? 0 : mul(_totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-         uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
+        uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
         sharePrice = _totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 

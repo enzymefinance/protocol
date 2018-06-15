@@ -115,6 +115,66 @@ contract OperatorStaking is DBC, StakeBank {
         require(stakingToken.transfer(msg.sender, amount));
     }
 
+    // VIEW FUNCTIONS
+
+    function isValidNode(uint id) view returns (bool) {
+        // 0 is a sentinel and therefore invalid.
+        // A valid node is the head or has a previous node.
+        return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
+    }
+
+    function searchNode(address staker) view returns (uint) {
+        uint current = stakeNodes[0].next;
+        while (isValidNode(current)) {
+            if (staker == stakeNodes[current].data.staker) {
+                return current;
+            }
+            current = stakeNodes[current].next;
+        }
+        return 0;
+    }
+
+    function isOperator(address user) view returns (bool) {
+        address[] memory operators = getOperators();
+        for (uint i; i < operators.length; i++) {
+            if (operators[i] == user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getOperators()
+        view
+        returns (address[])
+    {
+        uint arrLength = (numOperators > numStakers) ?
+            numStakers :
+            numOperators;
+        address[] memory operators = new address[](arrLength);
+        uint current = stakeNodes[0].next;
+        for (uint i; i < arrLength; i++) {
+            operators[i] = stakeNodes[current].data.staker;
+            current = stakeNodes[current].next;
+        }
+        return operators;
+    }
+
+    function getStakersAndAmounts()
+        view
+        returns (address[], uint[])
+    {
+        address[] memory stakers = new address[](numStakers);
+        uint[] memory amounts = new uint[](numStakers);
+        uint current = stakeNodes[0].next;
+        for (uint i; i < numStakers; i++) {
+            stakers[i] = stakeNodes[current].data.staker;
+            amounts[i] = stakeNodes[current].data.amount;
+            current = stakeNodes[current].next;
+        }
+        return (stakers, amounts);
+    }
+
     // INTERNAL METHODS
 
     function insertNodeSorted(uint amount, address staker) internal returns (uint) {
@@ -185,63 +245,4 @@ contract OperatorStaking is DBC, StakeBank {
         removeNode(id);
     }
 
-    // VIEW FUNCTIONS
-
-    function isValidNode(uint id) view returns (bool) {
-        // 0 is a sentinel and therefore invalid.
-        // A valid node is the head or has a previous node.
-        return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
-    }
-
-    function searchNode(address staker) view returns (uint) {
-        uint current = stakeNodes[0].next;
-        while (isValidNode(current)) {
-            if (staker == stakeNodes[current].data.staker) {
-                return current;
-            }
-            current = stakeNodes[current].next;
-        }
-        return 0;
-    }
-
-    function isOperator(address user) view returns (bool) {
-        address[] memory operators = getOperators();
-        for (uint i; i < operators.length; i++) {
-            if (operators[i] == user) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function getOperators()
-        view
-        returns (address[])
-    {
-        uint arrLength = (numOperators > numStakers) ?
-            numStakers :
-            numOperators;
-        address[] memory operators = new address[](arrLength);
-        uint current = stakeNodes[0].next;
-        for (uint i; i < arrLength; i++) {
-            operators[i] = stakeNodes[current].data.staker;
-            current = stakeNodes[current].next;
-        }
-        return operators;
-    }
-
-    function getStakersAndAmounts()
-        view
-        returns (address[], uint[])
-    {
-        address[] memory stakers = new address[](numStakers);
-        uint[] memory amounts = new uint[](numStakers);
-        uint current = stakeNodes[0].next;
-        for (uint i; i < numStakers; i++) {
-            stakers[i] = stakeNodes[current].data.staker;
-            amounts[i] = stakeNodes[current].data.amount;
-            current = stakeNodes[current].next;
-        }
-        return (stakers, amounts);
-    }
 }

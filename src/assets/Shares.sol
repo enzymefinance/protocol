@@ -80,7 +80,6 @@ contract Shares is SharesInterface, ERC223Interface, Asset {
         public
         returns (bool success)
     {
-        bytes memory empty;
         uint codeLength;
 
         assembly {

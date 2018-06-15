@@ -121,7 +121,27 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         );
     }
 
-    // HELPER METHODS
+    // VIEW FUNCTIONS
+
+    function getOrder(
+        address targetExchange,
+        uint id
+    )
+        view
+        returns (
+            address makerAsset, address takerAsset,
+            uint makerQuantity, uint takerQuantity
+        )
+    {
+        (
+            makerQuantity,
+            makerAsset,
+            takerQuantity,
+            takerAsset
+        ) = CentralizedExchangeBridge(targetExchange).getOrder(id);
+    }
+
+    // INTERNAL FUNCTIONS
 
     /// @dev needed to avoid stack too deep error
     function makeOrderPermitted(
@@ -132,7 +152,7 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
     )
         internal
         view
-        returns (bool) 
+        returns (bool)
     {
         require(takerAsset != address(this) && makerAsset != address(this));
         var (pricefeed, , riskmgmt) = Fund(this).modules();
@@ -155,25 +175,5 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
                 takerQuantity
             )
         );
-    }
-
-    // VIEW FUNCTIONS
-
-    function getOrder(
-        address targetExchange,
-        uint id
-    ) 
-        view
-        returns (
-            address makerAsset, address takerAsset,
-            uint makerQuantity, uint takerQuantity
-        )
-    {
-        (
-            makerQuantity,
-            makerAsset,
-            takerQuantity,
-            takerAsset
-        ) = CentralizedExchangeBridge(targetExchange).getOrder(id);
     }
 }

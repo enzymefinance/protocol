@@ -209,7 +209,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
     )
         internal
         view
-        returns (bool) 
+        returns (bool)
     {
         // require(takerAsset != address(this) && makerAsset != address(this));
         // var (pricefeed, , riskmgmt) = Fund(this).modules();
@@ -255,7 +255,6 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
             takerQuantity,
             makerQuantity
         );
-        return true;
         return(
             riskmgmt.isTakePermitted(
                 orderPrice,
@@ -323,4 +322,3 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
     //     );
     // }
 }
-

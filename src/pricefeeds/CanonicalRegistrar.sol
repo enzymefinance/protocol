@@ -223,7 +223,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     {
         bytes4[] memory signatures = assetInformation[ofAsset].functionSignatures;
         for (uint i = 0; i < signatures.length; i++) {
-            if(signatures[i] == querySignature) {
+            if (signatures[i] == querySignature) {
                 return true;
             }
         }
@@ -256,7 +256,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     {
         bytes4[] memory signatures = exchangeInformation[ofExchange].functionSignatures;
         for (uint i = 0; i < signatures.length; i++) {
-            if(signatures[i] == querySignature) {
+            if (signatures[i] == querySignature) {
                 return true;
             }
         }

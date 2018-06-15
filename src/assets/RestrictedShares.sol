@@ -70,7 +70,6 @@ contract RestrictedShares is Shares {
     {
         require(msg.sender == address(this) || _to == address(this));
 
-        bytes memory empty;
         uint codeLength;
 
         assembly {
