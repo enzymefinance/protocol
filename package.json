@@ -96,6 +96,7 @@
       "tests/integration/tradingAlternativeToken.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/pricefeed/canonicalPriceFeed.js",
+      "tests/unit/pricefeed/operatorStaking.js",
       "tests/unit/competitions/registration.js",
       "tests/unit/competitions/redeem.js",
       "tests/unit/competitions/version.js",
