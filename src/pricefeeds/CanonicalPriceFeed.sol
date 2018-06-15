@@ -102,20 +102,18 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
 
     /// @dev Burn state for a pricefeed operator
     /// @param user Address of pricefeed operator to burn the stake from
-    /// @param amount Amount of stake to burn
+    /// @param burnAmount Amount of stake to burn
     /// @param data Additional data
-    function burnStake(address user, uint amount, bytes data)
+    function burnStake(address user, uint burnAmount, bytes data)
         external
         auth
     {
-        require(totalStakedFor(user) >= amount);
-        uint preStake = totalStakedFor(user);
-        uint postStake = sub(preStake, amount);
-        require(postStake >= minimumStake || postStake == 0);
-        updateCheckpointAtNow(stakesFor[user], amount, true);
-        updateCheckpointAtNow(stakeHistory, amount, true);
+        require(stakedAmounts[user] >= burnAmount);
+        uint preStake = stakedAmounts[user];
+        uint postStake = sub(preStake, burnAmount);
+        stakedAmounts[user] -= burnAmount;
         updateStakerRanking(user);
-        emit StakeBurned(user, amount, data);
+        emit StakeBurned(user, burnAmount, data);
     }
 
     // PUBLIC METHODS

@@ -1,17 +1,21 @@
 pragma solidity ^0.4.21;
 
 import "ds-group/group.sol";
-import "ds-math/math.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../version/VersionInterface.sol";
 import "../assets/AssetInterface.sol";
-import "./StakeBank.sol";
 
 /// @title Operator Staking Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Enables pricefeed operators to self-select via staking
-contract OperatorStaking is DBC, StakeBank {
+contract OperatorStaking is DBC {
+
+    // EVENTS
+
+    event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
+    event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
+    event StakeBurned(address indexed user, uint256 amount, bytes data);
 
     // TYPES
 
@@ -30,7 +34,7 @@ contract OperatorStaking is DBC, StakeBank {
     // FIELDS
 
     // INTERNAL FIELDS
-    Node[] internal stakeNodes; // Sorted circular linked list nodes conaining stake data (Built on top https://programtheblockchain.com/posts/2018/03/30/storage-patterns-doubly-linked-list/)
+    Node[] internal stakeNodes; // Sorted circular linked list nodes containing stake data (Built on top https://programtheblockchain.com/posts/2018/03/30/storage-patterns-doubly-linked-list/)
 
     // PUBLIC FIELDS
     uint public minimumStake;
@@ -39,7 +43,9 @@ contract OperatorStaking is DBC, StakeBank {
     mapping (address => bool) public isRanked;
     mapping (address => uint) public latestUnstakeTime;
     mapping (address => uint) public stakeToWithdraw;
+    mapping (address => uint) public stakedAmounts;
     uint public numStakers; // Current number of stakers (Needed because of array holes)
+    AssetInterface public stakingToken;
 
     // TODO: consider renaming "operator" depending on how this is implemented
     //  (i.e. is pricefeed staking itself?)
@@ -50,12 +56,13 @@ contract OperatorStaking is DBC, StakeBank {
         uint _withdrawalDelay
     )
         public
-        StakeBank(_stakingToken)
     {
+        require(address(_stakingToken) != address(0));
+        stakingToken = _stakingToken;
         minimumStake = _minimumStake;
         numOperators = _numOperators;
         withdrawalDelay = _withdrawalDelay;
-        StakeData memory temp = StakeData({ amount: 0, staker: 0x0000000000000000000000000000000000000000 });
+        StakeData memory temp = StakeData({ amount: 0, staker: address(0) });
         stakeNodes.push(Node(temp, 0, 0));
     }
 
@@ -69,22 +76,9 @@ contract OperatorStaking is DBC, StakeBank {
         pre_cond(amount >= minimumStake)
     {
         uint tailNodeId = stakeNodes[0].prev;
-        // Staking amount is greater than the least amount in the array
-        require(amount > stakeNodes[tailNodeId].data.amount || numStakers < numOperators);
-        StakeBank.stake(amount, data);
+        stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
-    }
-
-    function stakeFor(
-        address user,
-        uint amount,
-        bytes data
-    )
-        public
-        pre_cond(amount >= minimumStake)
-    {
-        StakeBank.stakeFor(user, amount, data);
-        updateStakerRanking(user);
+        require(stakingToken.transferFrom(msg.sender, address(this), amount));
     }
 
     function unstake(
@@ -93,22 +87,21 @@ contract OperatorStaking is DBC, StakeBank {
     )
         public
     {
-        uint preStake = totalStakedFor(msg.sender);
-        uint postStake = sub(preStake, amount);
+        uint preStake = stakedAmounts[msg.sender];
+        uint postStake = preStake - amount;
         require(postStake >= minimumStake || postStake == 0);
-        require(totalStakedFor(msg.sender) >= amount);
-        updateCheckpointAtNow(stakesFor[msg.sender], amount, true);
-        updateCheckpointAtNow(stakeHistory, amount, true);
-        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        require(stakedAmounts[msg.sender] >= amount);
         latestUnstakeTime[msg.sender] = block.timestamp;
+        stakedAmounts[msg.sender] -= amount;
         stakeToWithdraw[msg.sender] += amount;
         updateStakerRanking(msg.sender);
+        emit Unstaked(msg.sender, amount, stakedAmounts[msg.sender], data);
     }
 
     function withdrawStake()
         public
         pre_cond(stakeToWithdraw[msg.sender] > 0)
-        pre_cond(block.timestamp >= add(latestUnstakeTime[msg.sender], withdrawalDelay))
+        pre_cond(block.timestamp >= latestUnstakeTime[msg.sender] + withdrawalDelay)
     {
         uint amount = stakeToWithdraw[msg.sender];
         stakeToWithdraw[msg.sender] = 0;
@@ -175,7 +168,16 @@ contract OperatorStaking is DBC, StakeBank {
         return (stakers, amounts);
     }
 
+    function totalStakedFor(address user)
+        view
+        returns (uint)
+    {
+        return stakedAmounts[user];
+    }
+
     // INTERNAL METHODS
+
+    // DOUBLY-LINKED LIST
 
     function insertNodeSorted(uint amount, address staker) internal returns (uint) {
         uint current = stakeNodes[0].next;
@@ -225,8 +227,10 @@ contract OperatorStaking is DBC, StakeBank {
         numStakers--;
     }
 
+    // UPDATING OPERATORS
+
     function updateStakerRanking(address _staker) internal {
-        uint newStakedAmount = totalStakedFor(_staker);
+        uint newStakedAmount = stakedAmounts[_staker];
         if (newStakedAmount == 0) {
             isRanked[_staker] = false;
             removeStakerFromArray(_staker);
