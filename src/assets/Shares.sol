@@ -71,6 +71,7 @@ contract Shares is SharesInterface, Asset {
         _totalSupply = add(_totalSupply, shareQuantity);
         balances[recipient] = add(balances[recipient], shareQuantity);
         emit Created(msg.sender, now, shareQuantity);
+        emit Transfer(address(0), recipient, shareQuantity);
     }
 
     /// @param recipient Address the new shares should be taken from when destroyed
@@ -79,5 +80,6 @@ contract Shares is SharesInterface, Asset {
         _totalSupply = sub(_totalSupply, shareQuantity);
         balances[recipient] = sub(balances[recipient], shareQuantity);
         emit Annihilated(msg.sender, now, shareQuantity);
+        emit Transfer(recipient, address(0), shareQuantity);
     }
 }
