@@ -128,7 +128,7 @@ test("staker unstakes fully, and is no longer an operator", async t => {
   await t.context.staking.instance.unstake.postTransaction(
     {from: stakers[0]}, [minimumStake, ""]
   );
- 
+
   const postUnstakeStakerMln = await t.context.mlnToken.instance.balanceOf.call(
     {}, [stakers[0]]
   );
@@ -241,6 +241,7 @@ test.only("ranking is correct with multiple stakers", async t => {
     }
   ];
 
+  /*eslint-disable */
   for (const [iStep, step] of scenario.entries()) {
     for (const [iStaker, staker] of stakers.entries()) {
       if (step.amounts[iStaker] !== 0) { // TODO: iterate stakers randomly
@@ -267,7 +268,7 @@ test.only("ranking is correct with multiple stakers", async t => {
       const total = await t.context.staking.instance.stakedAmounts.call(
         {}, [staker]
       );
- 
+
       t.is(Number(total), step.final[iStaker]);
     };
     const [rawStakers, rawAmounts] = await t.context.staking.instance.getStakersAndAmounts.call();
@@ -285,9 +286,8 @@ test.only("ranking is correct with multiple stakers", async t => {
         t.false(isOperator);
       }
     }
-
+    /* eslint-enable */
     t.is(outAmounts.join(', '), sortedFinal.join(', '));
     t.is(outStakers.join(', '), sortedStakers.join(', '));
   };
 });
-
