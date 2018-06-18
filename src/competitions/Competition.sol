@@ -133,7 +133,12 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
 
     /// @return Get time to end of the competition
-    function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
+    function getTimeTillEnd() view returns (uint) {
+        if (now > endTime) {
+            return 0;
+        }
+        return sub(endTime, now);
+    }
 
     /// @return Get value of the ether quantity in CHF
     function getCHFValue(uint payin) view returns (uint) {
