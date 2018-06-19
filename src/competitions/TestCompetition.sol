@@ -51,14 +51,13 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20Interface public MELON_CONTRACT; // Melon as ERC20 contract
-    address public CHF_ASSET; // Adresss of CHF asset based on the Canonical Registrar
     address public COMPETITION_VERSION; // Version contract address
 
     // Methods fields
     Registrant[] public registrants; // List of all registrants, can be externally accessed
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
-    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
+    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in Ether)
 
     //EVENTS
 
@@ -70,7 +69,6 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
 
     function Competition(
         address ofMelonAsset,
-        address ofCHFAsset,
         address ofCompetitionVersion,
         address ofCustodian,
         uint ofStartTime,
@@ -81,7 +79,6 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
     ) {
         MELON_ASSET = ofMelonAsset;
         MELON_CONTRACT = ERC20Interface(MELON_ASSET);
-        CHF_ASSET = ofCHFAsset;
         COMPETITION_VERSION = ofCompetitionVersion;
         custodian = ofCustodian;
         startTime = ofStartTime;
@@ -134,16 +131,6 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
 
     /// @return Get time to end of the competition
     function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
-
-    /// @return Get value of the ether quantity in CHF
-    function getCHFValue(uint payin) view returns (uint) {
-        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
-        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getInvertedPriceInfo(CHF_ASSET);
-        if (!isRecent) {
-            revert();
-        }
-        return mul(price, payin) / (10 ** 18);
-    }
 
     /// @return Get value of MLN amount in Ether
     function getEtherValue(uint amount) view returns (uint) {
@@ -206,7 +193,7 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
         pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
     {
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
-        require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
+        require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund

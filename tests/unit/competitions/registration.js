@@ -73,13 +73,12 @@ test.beforeEach(async t => {
     Object.assign(opts, { gas: 6800000 }),
     [
       t.context.deployed.MlnToken.address,
-      t.context.deployed.EurToken.address,
       t.context.version.address,
       accounts[5],
       blockchainTime,
       blockchainTime + 86400,
       22 * 10 ** 18,
-      10 ** 23,
+      10 ** 25,
       10
     ],
     () => {},
@@ -92,7 +91,7 @@ test.beforeEach(async t => {
     [t.context.competition.address],
   );
   await t.context.competition.instance.batchAddToWhitelist.postTransaction(opts, [
-    10 ** 25,
+    10 ** 23,
     [manager],
   ]);
   const [r, s, v] = await getTermsSignatureParameters(manager);
@@ -118,7 +117,7 @@ test.beforeEach(async t => {
   // Send some MLN to competition contract
   await t.context.deployed.MlnToken.instance.transfer.postTransaction(
     { from: deployer, gasPrice: config.gasPrice },
-    [t.context.competition.address, 10 ** 24, ""],
+    [t.context.competition.address, 10 ** 26, ""],
   );
   await updateCanonicalPriceFeed(t.context.deployed);
 });

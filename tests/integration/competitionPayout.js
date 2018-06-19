@@ -64,7 +64,6 @@ test.before(async () => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.address,
-      deployed.EurToken.address,
       version.address,
       accounts[5],
       blockchainTime,
