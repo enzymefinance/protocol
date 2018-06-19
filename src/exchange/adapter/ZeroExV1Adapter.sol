@@ -67,8 +67,8 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         Token makerAsset = Token(orderAddresses[2]);
         Token takerAsset = Token(orderAddresses[3]);
@@ -82,12 +82,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
         require(filledAmount == fillTakerQuantity);
         require(
-            Fund(this).isInAssetList(makerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addAssetToOwnedAssets(makerAsset);
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.take,
@@ -176,7 +176,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         require(takerAsset != address(this) && makerAsset != address(this));
         require(address(makerAsset) != address(takerAsset));
         // require(fillTakerQuantity <= maxTakerQuantity);
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
         require(isRecent);

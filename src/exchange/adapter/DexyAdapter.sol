@@ -43,8 +43,8 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 s
     ) {
         // TODO: account for orders made/taken with ETH (?)
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
@@ -67,14 +67,14 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         // require(orderId != 0);   // defines success in MatchingMarket
         require(
-            Fund(this).isInAssetList(takerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(takerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        // Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
-        Fund(this).addAssetToOwnedAssets(takerAsset);
+        // Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        Fund(address(this)).addAssetToOwnedAssets(takerAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
-        // Fund(this).orderUpdateHook(
+        // Fund(address(this)).orderUpdateHook(
         //     targetExchange,
         //     bytes32(identifier),
         //     Fund.UpdateType.make,
@@ -119,8 +119,8 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         ERC20 takerAsset = ERC20(orderAddresses[2]);
         ERC20 makerAsset = ERC20(orderAddresses[3]);
@@ -148,12 +148,12 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         vault.withdraw(address(takerAsset), takerQuantity);
 
         require(
-            Fund(this).isInAssetList(makerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addAssetToOwnedAssets(makerAsset);
-        // Fund(this).orderUpdateHook(
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        // Fund(address(this)).orderUpdateHook(
         //     targetExchange,
         //     bytes32(identifier),
         //     Fund.UpdateType.take,
@@ -179,21 +179,21 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(Fund(this).owner() == msg.sender ||
-                 Fund(this).isShutDown()          ||
-                 Fund(this).orderExpired(targetExchange, orderAddresses[2])
+        pre_cond(Fund(address(this)).owner() == msg.sender ||
+                 Fund(address(this)).isShutDown()          ||
+                 Fund(address(this)).orderExpired(targetExchange, orderAddresses[2])
         )
     {
         // require(uint(identifier) != 0);
-        // Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+        // Fund(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         // MatchingMarket(targetExchange).cancel(
         //     uint(identifier)
         // );
-        // Fund(this).orderUpdateHook(
+        // Fund(address(this)).orderUpdateHook(
         //     targetExchange,
         //     bytes32(identifier),
         //     Fund.UpdateType.cancel,
-        //     [address(0x0), address(0x0)],
+        //     [address(0), address(0)],
         //     [uint(0), uint(0), uint(0)]
         // );
     }
@@ -212,7 +212,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         returns (bool)
     {
         // require(takerAsset != address(this) && makerAsset != address(this));
-        // var (pricefeed, , riskmgmt) = Fund(this).modules();
+        // var (pricefeed, , riskmgmt) = Fund(address(this.modules();
         // require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
         // var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
         // require(isRecent);
@@ -245,7 +245,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         view
         returns (bool)
     {
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
         require(isRecent);

@@ -34,11 +34,11 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(Fund(this).owner() == msg.sender)
-        pre_cond(!Fund(this).isShutDown())
+        pre_cond(Fund(address(this)).owner() == msg.sender)
+        pre_cond(!Fund(address(this)).isShutDown())
     {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -56,13 +56,13 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         );
 
         require(
-            Fund(this).isInAssetList(takerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(takerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
-        Fund(this).addAssetToOwnedAssets(takerAsset);
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        Fund(address(this)).addAssetToOwnedAssets(takerAsset);
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.make,
@@ -101,22 +101,22 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(Fund(this).owner() == msg.sender ||
-                 Fund(this).isShutDown()          ||
-                 Fund(this).orderExpired(targetExchange, orderAddresses[2])
+        pre_cond(Fund(address(this)).owner() == msg.sender ||
+                 Fund(address(this)).isShutDown()          ||
+                 Fund(address(this)).orderExpired(targetExchange, orderAddresses[2])
         )
     {
-        Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+        Fund(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
 
         var (makerAsset, , makerQuantity,) = getOrder(targetExchange, uint(identifier));
-        require(Asset(makerAsset).transferFrom(msg.sender, this, makerQuantity));
+        require(Asset(makerAsset).transferFrom(msg.sender, address(this), makerQuantity));
         require(Asset(makerAsset).approve(targetExchange, makerQuantity));
         require(CentralizedExchangeBridge(targetExchange).cancelOrder(uint(identifier)));
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.cancel,
-            [address(0x0), address(0x0)],
+            [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
         );
     }
@@ -155,7 +155,7 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         returns (bool)
     {
         require(takerAsset != address(this) && makerAsset != address(this));
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
         require(isRecent);

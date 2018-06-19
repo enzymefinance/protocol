@@ -99,7 +99,7 @@ contract RestrictedShares is ERC223Interface, Shares {
     /// @return Returns success of function call.
     function approve(address _spender, uint _value) public returns (bool) {
         require(msg.sender == address(this));
-        require(_spender != 0x0);
+        require(_spender != address(0));
 
         // To change the approve amount you first have to reduce the addresses`
         // allowance to zero by calling `approve(_spender, 0)` if it is not

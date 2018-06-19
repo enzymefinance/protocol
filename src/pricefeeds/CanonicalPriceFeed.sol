@@ -65,7 +65,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         OperatorStaking(
             AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
         )
-        SimplePriceFeed(this, ofQuoteAsset, 0x0)
+        SimplePriceFeed(address(this), ofQuoteAsset, address(0))
     {
         registerAsset(
             ofQuoteAsset,

@@ -264,7 +264,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             costQuantity <= request.giveQuantity
         ) {
             request.status = RequestStatus.executed;
-            require(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            require(AssetInterface(request.requestAsset).transferFrom(request.participant, address(this), costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
             if (!isInAssetList[request.requestAsset]) {
                 ownedAssets.push(request.requestAsset);
@@ -406,7 +406,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(AssetInterface(ofAsset).balanceOf(address(this))), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -596,7 +596,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)),
+                uint(AssetInterface(ofAsset).balanceOf(address(this))),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -606,7 +606,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / _totalSupply;
 
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
+            if (uint(AssetInterface(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
                 isShutDown = true;
                 emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;

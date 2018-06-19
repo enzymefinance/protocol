@@ -21,7 +21,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
 
     /// @param _token Token that can be staked.
     function StakeBank(AssetInterface _token) public {
-        require(address(_token) != 0x0);
+        require(address(_token) != address(0));
         stakingToken = _token;
     }
 
