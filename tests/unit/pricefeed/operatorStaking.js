@@ -218,7 +218,7 @@ test("unstake fails before delay complete", async t => {
   t.true(Number(unstakeGas) < inputGas);
 });
 
-test.only("ranking is correct with multiple stakers", async t => {
+test("ranking is correct with multiple stakers", async t => {
   // "amounts": amount used by $action
   // "final": expected staked amount after applying $action
   // "order": order of stakers output after applying $action (from most to least staked)
