@@ -77,10 +77,10 @@ test.beforeEach(async t => {
       t.context.version.address,
       accounts[5],
       blockchainTime,
-      blockchainTime + 86400,
+      blockchainTime + 864000,
       22 * 10 ** 18,
       10 ** 22,
-      10,
+      10
     ],
     () => {},
     true,

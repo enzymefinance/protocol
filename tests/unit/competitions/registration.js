@@ -80,7 +80,7 @@ test.beforeEach(async t => {
       blockchainTime + 86400,
       22 * 10 ** 18,
       10 ** 23,
-      10,
+      10
     ],
     () => {},
     true,

@@ -16,7 +16,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 const buyinValue = new BigNumber(0.5 * 10 ** 19);
-const competitionDuration = 15; // Duration in seconds
+const competitionDuration = 13; // Duration in seconds
 const competitionTerms =
   "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
@@ -71,7 +71,7 @@ test.before(async () => {
       blockchainTime + competitionDuration,
       22 * 10 ** 18,
       10 ** 23,
-      10,
+      10
     ],
     () => {},
     true,
@@ -142,8 +142,8 @@ test.serial(
     ]);
     const fundPreSupply = await fund.instance.totalSupply.call({}, []);
     const timeTillEnd = await competition.instance.getTimeTillEnd.call({}, []);
-    await sleep(Number(timeTillEnd) + 2);
-    // Random transaction to mine block
+    await api.eth.sendTransaction();
+    await sleep(Number(timeTillEnd) + 1);
     await api.eth.sendTransaction();
     await competition.instance.claimReward.postTransaction(
       {
@@ -155,17 +155,15 @@ test.serial(
     );
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
-    const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
     const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
     const competitionPostShares = await fund.instance.balanceOf.call({}, [
       competition.address,
     ]);
     const fundPostSupply = await fund.instance.totalSupply.call({}, []);
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+    t.deepEqual(managerPostShares, managerPreShares.add(fundPreSupply));
     t.deepEqual(
       competitionPostShares,
-      competitionPreShares.sub(expectedShares),
+      competitionPreShares.sub(fundPreSupply),
     );
     t.deepEqual(fundPostSupply, fundPreSupply);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
