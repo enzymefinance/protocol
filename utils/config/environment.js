@@ -3,21 +3,30 @@ module.exports = {
     networkId: '1',
     host: 'localhost',
     port: 8549,
-    gas: 6700000,
+    gas: 7000000,
     gasPrice: 100000000000,
     protocol: {
-      deployer: '0xc11149e320c31179195fe2c25105b98a9d4e045e',
+      deployer: '0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC',
       pricefeed: {
-        interval: 60 * 60, // one hour
-        validity: 60 * 60,
-        operator: '0x145a3bb5f5fe0b9eb1ad38bd384c0ec06cc14b54',
+        updater: '0xD041e27AC805ed204Ba227Ff9a3E159940DDF0e4',
+        interval: 60 * 60 * 24, // one day
+        validity: 60 * 60 * 24,
+        preEpochUpdatePeriod: 30 * 60,
+        minimumUpdates: 1,
         assetsToRegister: [
-          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'BAT',
-          'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
+          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX',
+          'BAT', 'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
         ],
       },
+      staking: {
+        minimumAmount: 1000000000,  // TODO: change to appropriate amount
+        numOperators: 5,
+        unstakeDelay: 60 * 60 * 24 * 7 // one week
+      },
       governance: {
-        authority: '0x00b5d2D3DB5CBAb9c2eb3ED3642A0c289008425B'
+        authorities: ['0x2c7cf699e9e2bf78020ad8a6b4faa28ee6722b7b'],
+        quorum: 1,
+        window: 60 * 60 * 24 * 365
       },
     },
   },
@@ -45,7 +54,7 @@ module.exports = {
       }
     },
   },
-  competitionReplica: {
+  kovanCompetition: {
     networkId: '42',
     host: 'localhost',
     port: 8547,
@@ -58,8 +67,8 @@ module.exports = {
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'BAT-T',
-          'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T',
+          'BAT-T', 'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
       staking: {
