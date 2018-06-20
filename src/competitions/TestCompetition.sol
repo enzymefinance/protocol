@@ -238,6 +238,14 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
         }
     }
 
+    /// @notice Withdraw MLN
+    /// @dev Only the owner can call this function
+    function withdrawMln(address to, uint amount)
+        pre_cond(isOwner())
+    {
+        MELON_CONTRACT.transfer(to, amount);
+    }
+
     /// @notice Claim Reward
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))

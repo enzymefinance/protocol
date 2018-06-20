@@ -30,6 +30,7 @@ interface CompetitionInterface {
 
     function registerForCompetition(address fund, uint8 v, bytes32 r, bytes32 s) payable;
     function batchAddToWhitelist(uint maxBuyinQuantity, address[] whitelistants);
+    function withdrawMln(address to, uint amount);
     function claimReward();
 
 }

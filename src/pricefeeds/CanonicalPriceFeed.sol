@@ -158,6 +158,17 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         auth
         pre_cond(updatesAreAllowed)
     {
+        uint[] memory newPrices = pricesToCommit(ofAssets);
+        priceHistory.push(
+            HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
+        );
+        _updatePrices(ofAssets, newPrices);
+    }
+
+    function pricesToCommit(address[] ofAssets)
+        view
+        returns (uint[])
+    {
         address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
         for (uint i = 0; i < ofAssets.length; i++) {
@@ -172,10 +183,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
             newPrices[i] = medianize(assetPrices);
         }
-        priceHistory.push(
-            HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
-        );
-        _updatePrices(ofAssets, newPrices);
+        return newPrices;
     }
 
     /// @dev from MakerDao medianizer contract
