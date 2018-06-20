@@ -117,7 +117,7 @@ async function txidToTimestamp(txid) {
 }
 
 async function mineSeconds(seconds) {
-  for (let i = 0; i < seconds; i++) {
+  for (let i = 0; i < seconds; i += 1) {
     await sleep(1000);
     await api.eth.sendTransaction();
   }
@@ -140,7 +140,7 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
-    { from: accounts[0], gas: 6900000 },
+    opts,
     [
       mlnToken.address,
       mlnToken.address,
@@ -212,7 +212,7 @@ test("can register assets, as well as update and remove them", async t => {
 
 test("can register exchanges, as well as update and remove them", async t => {
   const mockBytes4 = "0x12345678"
-  const txid = await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
+  await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
     deployed.MatchingMarket.address,
     deployed.MatchingMarketAdapter.address,
     true,
@@ -262,7 +262,6 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
   await createPriceFeedAndStake(t.context);
   await registerEur(t.context.canonicalPriceFeed);
   const firstPrice = 150000000;
-  const secondPrice = 20000000000;
   await t.context.pricefeeds[0].instance.update.postTransaction(
     { from: accounts[0]},
     [[mlnToken.address, eurToken.address], [defaultMlnPrice, firstPrice]]
@@ -282,7 +281,7 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
   t.is(firstPrice, Number(subfeedPriceStaked));
   t.is(firstPrice, Number(canonicalPriceStaked));
 
-  await t.context.pricefeeds[0].instance.withdrawStake.postTransaction(
+  await t.context.pricefeeds[0].instance.unstake.postTransaction(
     {from: accounts[0]}, [config.protocol.staking.minimumAmount, ""]
   );
   const isOperatorAfterUnstaked = await t.context.canonicalPriceFeed.instance.isOperator.call(
@@ -517,50 +516,4 @@ test("only governance is allowed to call burnStake", async t => {
   t.deepEqual(stakedAmountAfter, stakedAmountBefore);
   t.true(isOperatorBefore);
   t.true(isOperatorAfter);
-});
-
-test("cannot burn stake lower than minimum stake unless it becomes zero", async t => {
-  await createPriceFeedAndStake(t.context);
-  // Stake additional amount
-  const additionalStake = 100;
-  const stakingFeedAddress = t.context.pricefeeds[0].address;
-  await mlnToken.instance.approve.postTransaction(
-    {from: accounts[0]}, [stakingFeedAddress, additionalStake]
-  );
-  await t.context.pricefeeds[0].instance.depositStake.postTransaction(
-    {from: accounts[0]}, [additionalStake, ""]
-  );
-  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [stakingFeedAddress, additionalStake + 1, ""]
-  );
-  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  t.deepEqual(stakedAmountAfter, stakedAmountBefore);
-  t.true(isOperatorBefore);
-  t.true(isOperatorAfter);
-
-  // Works if stake is burnt equal or greater than minimum stake
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [stakingFeedAddress, additionalStake, ""]
-  );
-  const isOperatorFurtherAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountFurtherAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  t.true(isOperatorFurtherAfter);
-  t.is(Number(stakedAmountFurtherAfter), config.protocol.staking.minimumAmount);
 });

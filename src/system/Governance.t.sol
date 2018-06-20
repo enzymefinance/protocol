@@ -41,7 +41,7 @@ contract GovernanceTest is DSTest {
         version = new Version(VERSION_NUMBER, governance, nativeToken, melonToken, address(0), address(0));
         activateVersion(version);
         bytes memory calldata = new bytes(36);
-        bytes4 sig = bytes4(sha3("shutDownVersion(uint256)"));
+        bytes4 sig = bytes4(keccak256("shutDownVersion(uint256)"));
         bytes memory uintInBytes = uintToBytes(0);
         calldata[0] = sig[0];
         calldata[1] = sig[1];
@@ -61,7 +61,7 @@ contract GovernanceTest is DSTest {
 
     function activateVersion(Version version) {
         bytes memory calldata = new bytes(36);
-        bytes4 sig = bytes4(sha3("addVersion(address)"));
+        bytes4 sig = bytes4(keccak256("addVersion(address)"));
         bytes memory addressInBytes = addressToBytes(address(version));
         calldata[0] = sig[0];
         calldata[1] = sig[1];
@@ -78,12 +78,12 @@ contract GovernanceTest is DSTest {
     }
 
     function addressToBytes(address a) constant returns (bytes b){
-       assembly {
+        assembly {
             let m := mload(0x40)
             mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
             mstore(0x40, add(m, 52))
             b := m
-       }
+        }
     }
 
     function uintToBytes(uint256 x) returns (bytes b) {

@@ -16,11 +16,15 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   const options = Object.assign({}, optsIn); // clone object value instead of reference
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
+
   const bytecode = `0x${fs.readFileSync(`${filepath}.bin`, 'utf8')}`;
   options.data = bytecode;
+
   const deployedAddress = await api.newContract(abi).deploy(options, constructorArgs, ...rest);
+
   if(process.env.CHAIN_ENV !== 'development')
     console.log(`Deployed ${contractPath}\nat ${deployedAddress}\n`);
+
   return api.newContract(abi, deployedAddress);  // return instance
 }
 

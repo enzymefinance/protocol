@@ -35,7 +35,7 @@ contract CentralizedExchangeBridge is Owned {
     function makeOrder(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity)
     returns (uint orderId)
     {
-        require(Asset(sellAsset).transferFrom(msg.sender, this, sellQuantity));
+        require(Asset(sellAsset).transferFrom(msg.sender, address(this), sellQuantity));
         require(Asset(sellAsset).transfer(owner, sellQuantity));
         orderId = ++lastOrderId;
         orders[orderId] = OrderInfo({
@@ -56,7 +56,7 @@ contract CentralizedExchangeBridge is Owned {
     function settleOrder(uint orderId, uint settleQuantity) returns (bool success) {
         OrderInfo order = orders[orderId];
         require(settleQuantity >= order.buyQuantity);
-        require(Asset(order.buyAsset).transferFrom(msg.sender, this, settleQuantity));
+        require(Asset(order.buyAsset).transferFrom(msg.sender, address(this), settleQuantity));
         require(Asset(order.buyAsset).transfer(order.creator, settleQuantity));
         order.sellQuantity = 0;
         order.active = false;
@@ -67,7 +67,7 @@ contract CentralizedExchangeBridge is Owned {
     /// @param orderId Active order id
     function cancelOrder(uint orderId) returns (bool success) {
         OrderInfo order = orders[orderId];
-        require(Asset(order.sellAsset).transferFrom(msg.sender, this, order.sellQuantity));
+        require(Asset(order.sellAsset).transferFrom(msg.sender, address(this), order.sellQuantity));
         require(Asset(order.sellAsset).transfer(msg.sender, order.sellQuantity));
         order.sellQuantity = 0;
         order.active = false;

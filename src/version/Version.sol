@@ -87,7 +87,7 @@ contract Version is DBC, Owned, VersionInterface {
         require(!isShutDown);
         require(termsAndConditionsAreSigned(v, r, s));
         require(CompetitionCompliance(COMPLIANCE).isCompetitionAllowed(msg.sender));
-        require(managerToFunds[msg.sender] == 0); // Add limitation for simpler migration process of shutting down and setting up fund
+        require(managerToFunds[msg.sender] == address(0)); // Add limitation for simpler migration process of shutting down and setting up fund
         address[] memory melonAsDefaultAsset = new address[](1);
         melonAsDefaultAsset[0] = MELON_ASSET; // Melon asset should be in default assets
         address ofFund = new Fund(

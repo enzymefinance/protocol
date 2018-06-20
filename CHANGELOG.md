@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove ERC223 code from Asset.sol (also changes event signatures)
 - issue both ERC20 and ERC223 events from Shares.sol
 - all unit tests to run non-serially
+- add withdrawStake function to OperatorStaking
+- add withdrawStake function to StakingPriceFeed
+- introduce delay *after* unstake, needing another call to withdraw stake after delay
 
 ### Fixed
 

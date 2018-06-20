@@ -29,7 +29,7 @@ test.beforeEach(async t => {
 
 test("Cannot setup a new fund without whitelist in Competition", async t => {
   const [r, s, v] = await getTermsSignatureParameters(nonwhitelist);
-  await t.context.version.instance.setupFund.postTransaction(
+  const txid = await t.context.version.instance.setupFund.postTransaction(
     { from: nonwhitelist, gas: config.gas, gasPrice: config.gasPrice },
     [
       fundName,
@@ -45,9 +45,8 @@ test("Cannot setup a new fund without whitelist in Competition", async t => {
       s,
     ],
   );
-  const lastFundId = await t.context.version.instance.getLastFundId.call({}, []);
-  const lastFund = await t.context.version.instance.getFundById.call({}, [lastFundId]);
-  t.is(lastFund, "0x0000000000000000000000000000000000000000");
+  const gasUsed = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  t.is(Number(gasUsed), config.gas);
 });
 
 test("Can setup a new fund from whitelisted account", async t => {

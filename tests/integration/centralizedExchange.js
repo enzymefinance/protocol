@@ -74,7 +74,7 @@ test.before(async () => {
     [
       deployed.CentralizedExchangeBridge.address,
       deployed.CentralizedAdapter.address,
-      false,
+      true,
       [makeOrderSignature, cancelOrderSignature],
     ],
   );

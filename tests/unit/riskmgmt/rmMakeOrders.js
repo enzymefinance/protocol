@@ -68,9 +68,9 @@ test("Make order should be permitted for the cutoff orderPrice w.r.t referencePr
 });
 
 test("Make and take orders should not be permitted for a low orderPrice w.r.t referencePrice", async t => {
-  const orderPrice =
-    referencePrice -
-    (referencePrice * riskLevel.div(10 ** 18).toNumber() + 0.1);
+  const orderPrice = Math.floor(
+    referencePrice - (referencePrice * riskLevel.div(10 ** 18).toNumber() + 0.1)
+  );
   const isMakePermitted = await riskMgmt.instance.isMakePermitted.call({}, [
     orderPrice,
     referencePrice,

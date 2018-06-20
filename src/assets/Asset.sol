@@ -32,7 +32,7 @@ contract Asset is DSMath, ERC20Interface {
 
         balances[msg.sender] = sub(balances[msg.sender], _value);
         balances[_to] = add(balances[_to], _value);
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
     /// @notice Transfer `_value` tokens from `_from` to `_to` if `msg.sender` is allowed.
@@ -47,10 +47,8 @@ contract Asset is DSMath, ERC20Interface {
         public
         returns (bool)
     {
-        bytes memory empty;
-
-        require(_from != 0x0);
-        require(_to != 0x0);
+        require(_from != address(0));
+        require(_to != address(0));
         require(_to != address(this));
         require(balances[_from] >= _value);
         require(allowed[_from][msg.sender] >= _value);
@@ -61,7 +59,7 @@ contract Asset is DSMath, ERC20Interface {
         balances[_from] -= _value;
         allowed[_from][msg.sender] -= _value;
 
-        Transfer(_from, _to, _value);
+        emit Transfer(_from, _to, _value);
         return true;
     }
 
@@ -71,10 +69,10 @@ contract Asset is DSMath, ERC20Interface {
     /// @param _value Number of approved tokens.
     /// @return Returns success of function call.
     function approve(address _spender, uint _value) public returns (bool) {
-        require(_spender != 0x0);
+        require(_spender != address(0));
 
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 

@@ -74,7 +74,7 @@
     "eslint-plugin-react": "^7.5.1",
     "flow-bin": "^0.63.1",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.1.0"
+    "solium": "^1.1.7"
   },
   "dependencies": {
     "0x.js": "^0.35.0",
@@ -96,6 +96,7 @@
       "tests/integration/tradingAlternativeToken.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/pricefeed/canonicalPriceFeed.js",
+      "tests/unit/pricefeed/operatorStaking.js",
       "tests/unit/competitions/registration.js",
       "tests/unit/competitions/redeem.js",
       "tests/unit/competitions/version.js",
