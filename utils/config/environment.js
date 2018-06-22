@@ -3,7 +3,7 @@ module.exports = {
     networkId: '1',
     host: 'localhost',
     port: 8549,
-    gas: 7000000,
+    gas: 6900000,
     gasPrice: 100000000000,
     protocol: {
       deployer: '0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC',
@@ -11,7 +11,7 @@ module.exports = {
         updater: '0xD041e27AC805ed204Ba227Ff9a3E159940DDF0e4',
         interval: 60 * 60 * 24, // one day
         validity: 60 * 60 * 24,
-        preEpochUpdatePeriod: 30 * 60,
+        preEpochUpdatePeriod: 60 * 60 * 6,
         minimumUpdates: 1,
         assetsToRegister: [
           'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX',
@@ -19,7 +19,7 @@ module.exports = {
         ],
       },
       staking: {
-        minimumAmount: 1000000000,  // TODO: change to appropriate amount
+        minimumAmount: 50000000000000000000,  // 5 MLN
         numOperators: 5,
         unstakeDelay: 60 * 60 * 24 * 7 // one week
       },
