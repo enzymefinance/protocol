@@ -112,6 +112,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         uint preStake = stakedAmounts[user];
         uint postStake = sub(preStake, burnAmount);
         stakedAmounts[user] -= burnAmount;
+        stakeToWithdraw[user] -= burnAmount;
         updateStakerRanking(user);
         emit StakeBurned(user, burnAmount, data);
     }
