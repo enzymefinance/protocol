@@ -96,11 +96,11 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
-
+    
     // METHODS
 
     // CONSTRUCTOR
-
+    
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
     /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest using this single asset
@@ -170,7 +170,6 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     // EXTERNAL METHODS
 
     // EXTERNAL : ADMINISTRATION
-
     /// @notice Enable investment in specified assets
     /// @param ofAssets Array of assets to enable investment in
     function enableInvestment(address[] ofAssets)
@@ -338,7 +337,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             orderAddresses, orderValues, identifier, v, r, s
         ));
     }
-
+    
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
@@ -390,6 +389,28 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
 
     // PUBLIC METHODS : ACCOUNTING
 
+    function getOwnedAssets() (uint[], address[]) {
+        uint[] memory _prices;
+        address[] memory _assets;
+
+        for (uint i = 0; i < ownedAssets.length; ++i) {
+            address ofAsset = ownedAssets[i];
+
+            // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
+            uint assetHoldings = add(
+                uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+                quantityHeldInCustodyOfExchange(ofAsset)
+            );
+
+            if (assetHoldings != 0) {
+                _assets.push(ofAsset);
+                _prices.push(assetHoldings)
+            }
+        }
+
+        return (_prices, _assets);
+    }
+    
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPriceInfo(..) returns recent prices
