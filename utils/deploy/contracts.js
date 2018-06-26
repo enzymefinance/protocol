@@ -5,6 +5,7 @@ import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
+import web3 from "../lib/web3";
 import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
@@ -32,7 +33,7 @@ async function deployEnvironment(environment) {
   const accounts = await api.eth.accounts();
   const opts = {
     from: accounts[0],
-    gas: config.gas,
+    gas: 8000000,
     gasPrice: config.gasPrice,
   };
 
@@ -311,11 +312,12 @@ async function deployEnvironment(environment) {
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
 
+    console.log('deploying canonical feed')
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.address,
       deployed.EthToken.address,
-      'ETH token',
-      'ETH-T',
+      web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+      web3.utils.padLeft(web3.utils.toHex('ETH-T'), 34),
       18,
       'ethereum.org',
       mockBytes,
@@ -332,7 +334,8 @@ async function deployEnvironment(environment) {
         config.protocol.staking.unstakeDelay
       ],
       deployed.Governance.address
-    ], () => {}, true);
+    ]);
+    console.log('deployed feed')
 
     deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
     await deployed.MlnToken.instance.approve.postTransaction(
