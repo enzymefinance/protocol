@@ -79,8 +79,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public constant MAX_FUND_ASSETS = 20; // Max ownable assets by the fund supported by gas limits
     uint public constant ORDER_EXPIRATION_TIME = 86400; // Make order expiration time (1 day)
     // Constructor fields
-    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
-    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     // Methods fields
