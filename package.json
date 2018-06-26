@@ -74,7 +74,8 @@
     "eslint-plugin-react": "^7.5.1",
     "flow-bin": "^0.63.1",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.1.0"
+    "solium": "^1.1.0",
+    "web3": "^1.0.0-beta.34"
   },
   "dependencies": {
     "0x.js": "^0.35.0",
