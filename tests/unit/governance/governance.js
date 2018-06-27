@@ -1,5 +1,5 @@
 import test from 'ava';
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import {deployContract} from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
@@ -16,31 +16,31 @@ let version;
 let deployed;
 
 async function activateVersion() {
-  const calldata = await api.util.abiEncode(
-    'addVersion(address)', ['address'], [version.address]
-  );
-  await governance.instance.propose.postTransaction(opts, [governance.address, calldata, 0]);
-  const proposalId = await governance.instance.actionCount.call();
-  await governance.instance.confirm.postTransaction(opts, [proposalId]);
-  await governance.instance.trigger.postTransaction(opts, [proposalId]);
+  const calldata = await governance.methods.addVersion(version.options.address).encodeABI();
+  console.log(calldata);
+
+  await governance.methods.propose(governance.options.address, calldata, 0).send(opts);
+  const proposalId = await governance.methods.actionCount().call();
+  await governance.methods.confirm(proposalId).send();
+  await governance.methods.trigger(proposalId).send();
 }
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async () => {
   governance = await deployContract("system/Governance", opts, [[deployer], 1, 100000]);
-  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), [1, governance.address, deployed.EthToken.address, deployed.MlnToken.address, deployed.CanonicalPriceFeed.address, deployer], () => {}, true);
+  version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), ["V1", governance.options.address, deployed.EthToken.options.address, deployed.MlnToken.options.address, deployed.CanonicalPriceFeed.options.address, deployer], () => {}, true);
 });
 
 test('Triggering a Version activates it within Governance', async t => {
 
-  const [ , activeBeforeTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
+  const [ , activeBeforeTriggering, ] = await governance.methods.getVersionById(0).call();
   await activateVersion();
-  const [ , activeAfterTriggering, ] = await governance.instance.getVersionById.call({}, [0]);
+  const [ , activeAfterTriggering, ] = await governance.methods.getVersionById(0).call();
 
   t.false(activeBeforeTriggering);
   t.true(activeAfterTriggering);
@@ -48,18 +48,16 @@ test('Triggering a Version activates it within Governance', async t => {
 
 test('Governance can shut down Version', async t => {
   await activateVersion();
-  const [ , activeBeforeShutdown, ] = await governance.instance.getVersionById.call({}, [0]);
+  const [ , activeBeforeShutdown, ] = await governance.methods.getVersionById(0).call();
 
-  const calldata = await api.util.abiEncode(
-    'shutDownVersion(uint)', ['uint'], [0]
-  );
-  await governance.instance.propose.postTransaction(opts, [governance.address, calldata, 0]);
-  const proposalId = await governance.instance.actionCount.call();
-  await governance.instance.confirm.postTransaction(opts, [proposalId]);
-  await governance.instance.trigger.postTransaction(opts, [proposalId]);
+  const calldata = await governance.methods.shutDownVersion(0).encodeABI();
+  await governance.methods.propose(governance.address, calldata, 0).send(opts);
+  const proposalId = await governance.methods.actionCount().call();
+  await governance.methods.confirm(proposalId).send();
+  await governance.methods.trigger(proposalId).send();
 
-  const versionShutDown = await version.instance.isShutDown.call({}, []);
-  const [ , activeAfterShutdown, ] = await governance.instance.getVersionById.call({}, [0]);
+  const versionShutDown = await version.metbods.isShutDown().call();
+  const [ , activeAfterShutdown, ] = await governance.methods.getVersionById(0).call();
 
   t.true(versionShutDown);
   t.true(activeBeforeShutdown);

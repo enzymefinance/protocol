@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import {getTermsSignatureParameters} from "../../../utils/lib/signing";
 import {deployContract, retrieveContract} from "../../../utils/lib/contracts";
@@ -17,7 +17,7 @@ let deployed;
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  const accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   compliance = await deployContract("compliance/OnlyManager");
   version = deployed.Version;
