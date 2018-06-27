@@ -313,7 +313,6 @@ async function deployEnvironment(environment) {
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
-    console.log('deploying canonical feed')
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.options.address,
       deployed.EthToken.options.address,
@@ -336,21 +335,16 @@ async function deployEnvironment(environment) {
       ],
       deployed.Governance.options.address
     ]);
-    console.log('deployed feed');
-    deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
-
-/*
+    deployed.StakingPriceFeed = await createStakingFeed({...opts}, deployed.CanonicalPriceFeed);
     await deployed.MlnToken.methods.approve(
       deployed.StakingPriceFeed.options.address,
       config.protocol.staking.minimumAmount
     ).send(
-      opts
+      {...opts}
     );
-
     await deployed.StakingPriceFeed.methods.depositStake(config.protocol.staking.minimumAmount, web3.utils.asciiToHex("")).send(
-      opts
+      {...opts}
     );
-*/
 
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
