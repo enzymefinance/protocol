@@ -24,10 +24,7 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
   // console.log(deployTx)
   // console.log(await deployTx.estimateGas())
-  const deployedContract = await deployTx.send(options2,
-    async (e,r) => {
-      console.log(r);
-    });
+  const deployedContract = await deployTx.send(options2);
   if(process.env.CHAIN_ENV !== 'development')
     console.log(`Deployed ${contractPath}\nat ${deployedContract.address}\n`);
   return deployedContract;

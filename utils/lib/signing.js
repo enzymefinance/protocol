@@ -1,4 +1,15 @@
-import api from "./api";
+import web3 from "./web3";
+
+async function getSignature(signer, contents) {
+  const append = "\x19Ethereum Signed Message:\n32" + contents;
+  const sig = await web3.eth.accounts.sign(append, signer);
+  return sig;
+}
+
+async function getSignatureParameters(signer, contents) {
+  const sig = await getSignature(signer, contents);
+  return [sig.r, sig.s, sig.v];
+}
 
 async function getTermsSignatureParameters(managerAddress) {
   const termsAndConditionsHash =
@@ -6,18 +17,5 @@ async function getTermsSignatureParameters(managerAddress) {
   return getSignatureParameters(managerAddress, termsAndConditionsHash);
 }
 
-async function getSignatureParameters(signer, contents) {
-  let sig = await getSignature(signer, contents)
-  sig = sig.substr(2, sig.length);
-  const r = `0x${sig.substr(0, 64)}`;
-  const s = `0x${sig.substr(64, 64)}`;
-  const v = parseInt(sig.substr(128, 2), 16);
-  return [r, s, v];
-}
-
-async function getSignature(signer, contents) {
-  const sig = await api.eth.sign(signer, contents);
-  return sig;
-}
 
 export { getSignature, getSignatureParameters, getTermsSignatureParameters }
