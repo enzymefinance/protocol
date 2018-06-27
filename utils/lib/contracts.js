@@ -13,7 +13,6 @@ const outpath = path.join(__dirname, '..', '..', 'out');
  * @returns {Object} - Instance of the deployed contract
  */
 async function deployContract(contractPath, optsIn = {}, constructorArgs = [], ...rest) {
-  console.log(optsIn)
   const options = Object.assign({}, optsIn); // clone object value instead of reference
   const options2 = Object.assign({}, optsIn); // clone object value instead of reference
   const filepath = path.resolve(outpath, contractPath);
@@ -28,8 +27,6 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   const deployedContract = await deployTx.send(options2,
     async (e,r) => {
       console.log(r);
-      console.log(await web3.eth.getTransactionReceipt(r));
-      console.log(Object.keys(deployTx))
     });
   if(process.env.CHAIN_ENV !== 'development')
     console.log(`Deployed ${contractPath}\nat ${deployedContract.address}\n`);
