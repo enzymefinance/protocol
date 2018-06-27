@@ -26,7 +26,7 @@ test.beforeEach(async t => {
   t.context.deployed = await deployEnvironment(environment);
   t.context.version = t.context.deployed.Version;
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  console.log(await t.context.version.methods.termsAndConditionsAreSigned(v, r, s).call());
+  console.log(`TERMS SIGNED WEB3: ${await t.context.version.methods.termsAndConditionsAreSigned(v, r, s).call({from: manager})}`);
   t.context.tx = await t.context.version.methods.setupFund(
     fundName,
     t.context.deployed.MlnToken.options.address, // base asset
