@@ -10,7 +10,7 @@
  */
 async function governanceAction(opts, governance, target, methodName, methodArgs = [], value = 0) {
   const calldata = target.methods[methodName](...methodArgs).encodeABI();
-  await governance.methods.propose(target.address, calldata, value).send(opts);
+  await governance.methods.propose(target.options.address, calldata, value).send(opts);
   const proposalId = await governance.methods.actionCount().call();
   await governance.methods.confirm(proposalId).send(opts);
   await governance.methods.trigger(proposalId).send(opts);
