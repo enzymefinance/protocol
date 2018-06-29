@@ -153,7 +153,7 @@ async function deployEnvironment(environment) {
     deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     deployed.NoComplianceCompetition = await deployContract("compliance/NoComplianceCompetition", opts, []);
     deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deploymentAddress]);
-    const complianceAddress = (environment === "kovan" ? deployed.NoComplianceCompetition.address : deployed.CompetitionCompliance.address);
+    const complianceAddress = (environment === "kovan" ? deployed.NoComplianceCompetition.options.address : deployed.CompetitionCompliance.options.address);
     deployed.Version = await deployContract(
       "version/Version",
       opts,
@@ -170,7 +170,7 @@ async function deployEnvironment(environment) {
       "competitions/Competition",
       opts,
       [
-        mlnAddr, chfAddress, deployed.Version.address, deploymentAddress,
+        mlnAddr, chfAddress, deployed.Version.options.address, deploymentAddress,
         blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000, false
       ]
     );
@@ -179,13 +179,13 @@ async function deployEnvironment(environment) {
       [10 ** 25, [deploymentAddress, "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]
     );
     if (environment === "kovanCompetition") {
-      await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+      await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.options.address]);
     } else if (environment === "kovan") {
       deployed.TestCompetition = await deployContract(
         "competitions/TestCompetition",
         opts,
         [
-          mlnAddr, chfAddress, deployed.Version.address, deploymentAddress, blockchainTime,
+          mlnAddr, chfAddress, deployed.Version.options.address, deploymentAddress, blockchainTime,
           blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000, false
         ]
       );
@@ -217,8 +217,8 @@ async function deployEnvironment(environment) {
     //   [
     //     "0x90fe2af704b34e0224bf2299c838e04d4dcf1364",
     //     "0x33A844A83cb7407C74C15fC862dEacCeC8B4EeF6",
-    //     // deployed.ZeroExExchange.address,
-    //     // deployed.ZeroExV1Adapter.address,
+    //     // deployed.ZeroExExchange.options.address,
+    //     // deployed.ZeroExV1Adapter.options.address,
     //     false,
     //     [ takeOrderSignature ]
     //   ]
@@ -283,7 +283,7 @@ async function deployEnvironment(environment) {
     //       config.protocol.staking.unstakeDelay
     //     ],
     //     pricefeedUpdater,  // single address performing update calls instead of multisig
-    //     // deployed.Governance.address,
+    //     // deployed.Governance.options.address,
     //   ],
     //   () => {}, true
     // );
@@ -309,8 +309,8 @@ async function deployEnvironment(environment) {
     //   "version/Version",
     //   {from: deployer, gas: 6900000},
     //   [
-    //     pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
-    //     deployed.CanonicalPriceFeed.address, deployed.BugBountyCompliance.address
+    //     pkgInfo.version, deployed.Governance.options.address, mlnAddr, ethTokenAddress,
+    //     deployed.CanonicalPriceFeed.options.address, deployed.BugBountyCompliance.options.address
     //   ], () => {}, true
     // );
 
@@ -319,7 +319,7 @@ async function deployEnvironment(environment) {
     // add Version to Governance tracking
     // NB: be sure that relevant authority account is unlocked
     // console.log('Adding version to Governance tracking');
-    // await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
+    // await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
 
     // NB: this is not needed when using third-party exchanges
     // // whitelist exchanges
@@ -329,9 +329,9 @@ async function deployEnvironment(environment) {
     //   opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     //   [
     //     // TODO: replace with deployed MatchingMarket
-    //     // deployed.MatchingMarket.address,
+    //     // deployed.MatchingMarket.options.address,
     //     "0x14fbca95be7e99c15cc2996c6c9d841e54b79425",
-    //     deployed.MatchingMarketAdapter.address,
+    //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
     //       makeOrderSignature,
@@ -346,7 +346,7 @@ async function deployEnvironment(environment) {
     //   opts,
     //   [
     //     "0x14fbca95be7e99c15cc2996c6c9d841e54b79425",
-    //     deployed.MatchingMarketAdapter.address,
+    //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
     //       makeOrderSignature,
@@ -365,7 +365,7 @@ async function deployEnvironment(environment) {
     //     await governanceAction(
     //       {from: authority, gas: 500000},
     //       deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-    //         tokenEntry.address,
+    //         tokenEntry.options.address,
     //         tokenEntry.name,
     //         assetSymbol,
     //         tokenEntry.decimals,
@@ -388,7 +388,7 @@ async function deployEnvironment(environment) {
         await deployed.CanonicalPriceFeed.instance.registerAsset.postTransaction(
           {from: pricefeedUpdater, gas: 500000},
           [
-            tokenEntry.address,
+            tokenEntry.options.address,
             tokenEntry.name,
             assetSymbol,
             tokenEntry.decimals,
@@ -471,9 +471,17 @@ async function deployEnvironment(environment) {
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
     const blockchainTime = await getChainTime();
-    deployed.Competition = await deployContract("competitions/Competition", opts, [deployed.MlnToken.address, deployed.EurToken.address, deployed.Version.address, accounts[5], blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 23, 10, false]);
-    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
-    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(opts, [10 ** 25, [accounts[0], accounts[1], accounts[2]]]);
+    deployed.Competition = await deployContract(
+      "competitions/Competition",
+      opts,
+      [
+        deployed.MlnToken.options.address, deployed.Version.options.address,
+        accounts[5], blockchainTime, blockchainTime + 8640000,
+        20 * 10 ** 18, new BigNumber(10 ** 23), 10
+      ]
+    );
+    await deployed.CompetitionCompliance.methods.changeCompetitionAddress(deployed.Competition.options.address).send(opts);
+    await deployed.Competition.methods.batchAddToWhitelist(new BigNumber(10 ** 25), [accounts[0], accounts[1], accounts[2]]).send(opts);
 
     // whitelist trading pairs
     const pairsToWhitelist = [
