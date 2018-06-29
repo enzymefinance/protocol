@@ -14,7 +14,6 @@ BigNumber.config({ DECIMAL_PLACES: 18 });
 // hoisted variables
 let eurToken;
 let ethToken;
-let mlnToken;
 let accounts;
 let opts;
 let deployed;
@@ -22,8 +21,8 @@ let deployed;
 // mock data
 const mockBtcAddress = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
 const mockIpfs = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
-const mockBytes =
-  "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockBytes32 = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockBytes4 = "0x12345678"
 const mockBreakIn = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
 const mockBreakOut = "0xc6Eb2A235627Ac97EAbc6452F98Ce296a1EF3984";
 const eurDecimals = 12; // For different decimal test
@@ -74,18 +73,19 @@ function registerBtc(pricefeed) {
     []
   ).send(opts);
 }
-
-function bytesToAscii(byteArray) {
-  while(byteArray[byteArray.length-1] === 0) {
-    byteArray.pop();    // strip zeros from end of array
-  }
-  return web3.utils.hexToAscii(web3.utils.bytesToHex(byteArray));
+//
+// hex to ascii string, stripping extra zereoes in case of fixed length bytes
+function hexToAsciiStrip(hexString) {
+  return web3.utils.hexToAscii(hexString.replace(/0+$/, ""));
 }
 
 async function createPriceFeedAndStake(context) {
   const stakingFeed = await createStakingFeed(opts, context.canonicalPriceFeed);
-  await mlnToken.methods.approve(stakingFeed.options.address, config.protocol.staking.minimumAmount).send({from: accounts[0]});
+  console.log('created')
+  await context.mlnToken.methods.approve(stakingFeed.options.address, config.protocol.staking.minimumAmount).send({from: accounts[0]});
+  console.log('approved')
   await stakingFeed.methods.depositStake(config.protocol.staking.minimumAmount, "0x00").send({from: accounts[0]});
+  console.log('deposited')
   context.pricefeeds.push(stakingFeed);
 }
 
@@ -108,21 +108,21 @@ test.before(async () => {
   opts = { from: accounts[0], gas: config.gas };
   ethToken = await deployed.EthToken;
   eurToken = await deployed.EurToken;
-  mlnToken = await deployed.MlnToken;
 });
 
 test.beforeEach(async t => {
+  t.context.mlnToken = await deployContract("assets/PreminedAsset", opts);
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
     opts,
     [
-      mlnToken.options.address,
-      mlnToken.options.address,
+      t.context.mlnToken.options.address,
+      t.context.mlnToken.options.address,
       web3.utils.padLeft(web3.utils.toHex('MLN token'), 34),
       web3.utils.padLeft(web3.utils.toHex('MLN-T'), 34),
       mlnDecimals,
-      "melonport.com",
-      mockBytes,
+      web3.utils.padLeft(web3.utils.toHex("melonport.com"), 34),
+      mockBytes32,
       [mockBreakIn, mockBreakOut],
       [],
       [],
@@ -146,24 +146,24 @@ test("can register assets, as well as update and remove them", async t => {
   await registerEth(t.context.canonicalPriceFeed);
   const eurRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(eurToken.options.address).call();
   const ethRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(ethToken.options.address).call();
-  const mlnRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(mlnToken.options.address).call();
+  const mlnRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(t.context.mlnToken.options.address).call();
   const registeredAssets = await t.context.canonicalPriceFeed.methods.getRegisteredAssets().call();
-  console.log(registeredAssets);
   const allInRegistry =
     registeredAssets.includes(eurToken.options.address) &&
     registeredAssets.includes(ethToken.options.address) &&
-    registeredAssets.includes(mlnToken.options.address)
-  //t.true(eurRegistered);
+    registeredAssets.includes(t.context.mlnToken.options.address)
+
+  t.true(eurRegistered);
   t.true(ethRegistered);
   t.true(mlnRegistered); // MLN registered by default
   t.true(allInRegistry);
 
   await t.context.canonicalPriceFeed.methods.updateAsset(
     eurToken.options.address,
-    'New name',
-    'NEW',
+    web3.utils.asciiToHex('New name'),
+    web3.utils.asciiToHex('NEW'),
     12,
-    "europa.eu",
+    web3.utils.asciiToHex("europa.eu"),
     mockIpfs,
     [mockBreakIn, mockBreakOut],
     [],
@@ -171,8 +171,8 @@ test("can register assets, as well as update and remove them", async t => {
   ).send(opts);
   const updatedInfo = await t.context.canonicalPriceFeed.methods.assetInformation(eurToken.options.address).call();
 
-  t.is(bytesToAscii(updatedInfo[1]), "New name");
-  t.is(bytesToAscii(updatedInfo[2]), "NEW");
+  t.is(hexToAsciiStrip(updatedInfo[1]), "New name");
+  t.is(hexToAsciiStrip(updatedInfo[2]), "NEW");
   t.is(Number(updatedInfo[3]), 12);
 
   await t.context.canonicalPriceFeed.methods.removeAsset(eurToken.options.address, 1).send(opts);
@@ -182,7 +182,6 @@ test("can register assets, as well as update and remove them", async t => {
 });
 
 test("can register exchanges, as well as update and remove them", async t => {
-  const mockBytes4 = "0x12345678"
   await t.context.canonicalPriceFeed.methods.registerExchange(
     deployed.MatchingMarket.options.address,
     deployed.MatchingMarketAdapter.options.address,
@@ -199,7 +198,6 @@ test("can register exchanges, as well as update and remove them", async t => {
   const matchingMarketRegistered = await t.context.canonicalPriceFeed.methods.exchangeIsRegistered(deployed.MatchingMarket.options.address).call();
   const simpleMarketRegistered = await t.context.canonicalPriceFeed.methods.exchangeIsRegistered(deployed.SimpleMarket.options.address).call();
   let registeredExchanges = await t.context.canonicalPriceFeed.methods.getRegisteredExchanges().call();
-  registeredExchanges = registeredExchanges.map(e => e._value);
   const allExchangesInRegistry =
     registeredExchanges.includes(deployed.MatchingMarket.options.address) &&
     registeredExchanges.includes(deployed.SimpleMarket.options.address)
@@ -235,9 +233,9 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
   const firstPrice = 150000000;
   const secondPrice = 20000000000;
   await t.context.pricefeeds[0].methods.update(
-    [mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, firstPrice]
+    [t.context.mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, firstPrice]
   ).send({from: accounts[0]});
-  await t.context.canonicalPriceFeed.methods.collectAndUpdate([mlnToken.options.address, eurToken.options.address]).send(opts);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, eurToken.options.address]).send(opts);
   const isOperatorWhileStaked = await t.context.canonicalPriceFeed.methods.isOperator(
     t.context.pricefeeds[0].options.address
   ).call();
@@ -259,7 +257,7 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
     t.context.pricefeeds[0].options.address
   ).call();
   await t.context.pricefeeds[0].methods.update(
-    [mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, firstPrice]
+    [t.context.mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, firstPrice]
   ).send({from: accounts[0]}); // tx expected to fail, since no longer an operator. This means no price is updated.
   const [subfeedPriceUnstaked, ] = await t.context.pricefeeds[0].methods.getPrice(
     eurToken.options.address
@@ -281,7 +279,7 @@ test("subfeed returns price correctly", async t => {
   const inputPriceEth = 2905;
   const inputPriceBtc = 12000000000;
   await t.context.pricefeeds[0].methods.update(
-    [mlnToken.options.address, eurToken.options.address, ethToken.options.address, mockBtcAddress],
+    [t.context.mlnToken.options.address, eurToken.options.address, ethToken.options.address, mockBtcAddress],
     [defaultMlnPrice, inputPriceEur, inputPriceEth, inputPriceBtc],
   ).send({from: accounts[0], gas: 6000000});
   const [eurPrice, ] = Object.values(
@@ -294,7 +292,7 @@ test("subfeed returns price correctly", async t => {
     await t.context.pricefeeds[0].methods.getPrice(mockBtcAddress).call()
   );
   const [mlnPrice, ] = Object.values(
-    await t.context.pricefeeds[0].methods.getPrice(mlnToken.options.address).call()
+    await t.context.pricefeeds[0].methods.getPrice(t.context.mlnToken.options.address).call()
   );
 
   t.is(inputPriceEur, Number(eurPrice));
@@ -311,10 +309,10 @@ test("update price for even number of pricefeeds", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
     await t.context.pricefeeds[i].methods.update(
-      [mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, prices[i]],
+      [t.context.mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, prices[i]],
     ).send({from: accounts[0], gas: 6000000});
   }
-  await t.context.canonicalPriceFeed.methods.collectAndUpdate([mlnToken.options.address, eurToken.options.address]).send(opts);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, eurToken.options.address]).send(opts);
   let ownedFeeds = await t.context.canonicalPriceFeed.methods.getPriceFeedsByOwner.call(accounts[0]).call();
   const [price, ] = Object.values(
     await t.context.canonicalPriceFeed.methods.getPrice(
@@ -340,10 +338,10 @@ test("update price for odd number of pricefeeds", async t => {
   await registerEur(t.context.canonicalPriceFeed);
   for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
     await t.context.pricefeeds[i].methods.update(
-      [mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, prices[i]],
+      [t.context.mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, prices[i]],
     ).send({from: accounts[0], gas: 6000000});
   }
-  await t.context.canonicalPriceFeed.methods.collectAndUpdate([mlnToken.options.address, eurToken.options.address]).send(opts);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, eurToken.options.address]).send(opts);
   let ownedFeeds = await t.context.canonicalPriceFeed.methods.getPriceFeedsByOwner(accounts[0]).call();
   const [, price] = Object.values(
     await t.context.canonicalPriceFeed.methods.getPriceInfo(eurToken.options.address).call()
@@ -406,10 +404,10 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
   for (const prices of priceScenarios) {
     for (const [i, price] of prices.entries()) { // will only update to length of `prices`
       await t.context.pricefeeds[i].methods.update(
-        [mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, price]
+        [t.context.mlnToken.options.address, eurToken.options.address], [defaultMlnPrice, price]
       ).send({from: accounts[0]});
     }
-    await t.context.canonicalPriceFeed.methods.collectAndUpdate([mlnToken.options.address, eurToken.options.address]).send(opts);
+    await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, eurToken.options.address]).send(opts);
     const operators = (await t.context.canonicalPriceFeed.methods.getOperators().call()).map(e => e._value);
     const [canonicalPrice, ] = await t.context.canonicalPriceFeed.methods.getPrice().call({}, [eurToken.options.address]);
 
@@ -472,7 +470,7 @@ test("cannot burn stake lower than minimum stake unless it becomes zero", async 
   // Stake additional amount
   const additionalStake = 100;
   const stakingFeedAddress = t.context.pricefeeds[0].options.address;
-  await mlnToken.methods.approve(stakingFeedAddress, additionalStake).send({from: accounts[0]});
+  await t.context.mlnToken.methods.approve(stakingFeedAddress, additionalStake).send({from: accounts[0]});
   await t.context.pricefeeds[0].methods.depositStake(
     additionalStake, "0x00"
   ).send({from: accounts[0]});
