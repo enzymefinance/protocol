@@ -21,7 +21,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
 
     /// @param _token Token that can be staked.
     function StakeBank(AssetInterface _token) public {
-        require(address(_token) != 0x0);
+        require(address(_token) != address(0));
         stakingToken = _token;
     }
 
@@ -42,7 +42,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
 
         require(stakingToken.transferFrom(msg.sender, address(this), amount));
 
-        Staked(user, amount, totalStakedFor(user), data);
+        emit Staked(user, amount, totalStakedFor(user), data);
     }
 
     /// @notice Unstakes a certain amount of tokens.
@@ -55,7 +55,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
         updateCheckpointAtNow(stakeHistory, amount, true);
 
         require(stakingToken.transfer(msg.sender, amount));
-        Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
     }
 
     /// @notice Returns total tokens staked for address.
@@ -82,7 +82,7 @@ contract StakeBank is StakingInterface, DSMath, Owned {
     function supportsHistory() public pure returns (bool) {
         return true;
     }
-    
+
     /// @notice Returns the token address.
     /// @return Address of token.
     function token() public view returns (address) {
@@ -117,9 +117,11 @@ contract StakeBank is StakingInterface, DSMath, Owned {
         return stakedAt(stakeHistory, blockNumber);
     }
 
+    /// @dev Decrement index if multiple updates in the same block
     function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake) internal {
 
         uint256 length = history.length;
+        uint256 index = length;
         if (length == 0) {
             history.push(Checkpoint({at: block.number, amount: amount}));
             return;
@@ -129,7 +131,11 @@ contract StakeBank is StakingInterface, DSMath, Owned {
             history.push(Checkpoint({at: block.number, amount: history[length-1].amount}));
         }
 
-        Checkpoint storage checkpoint = history[length];
+        else if (history[length-1].at == block.number) {
+            index--;
+        }
+
+        Checkpoint storage checkpoint = history[index];
 
         if (isUnstake) {
             checkpoint.amount = sub(checkpoint.amount, amount);

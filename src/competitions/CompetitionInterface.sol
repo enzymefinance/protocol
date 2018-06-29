@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 /// @title Competition interface
 /// @author Melonport AG <team@melonport.com>
@@ -23,7 +23,6 @@ interface CompetitionInterface {
     function getRegistrantFund(address x) view returns (address);
     function getCompetitionStatusOfRegistrants() view returns (address[], address[], bool[]);
     function getTimeTillEnd() view returns (uint);
-    function getCHFValue(uint etherQuantity) view returns (uint);
     function getEtherValue(uint amount) view returns (uint);
     function calculatePayout(uint payin) view returns (uint);
 
@@ -31,6 +30,7 @@ interface CompetitionInterface {
 
     function registerForCompetition(address fund, uint8 v, bytes32 r, bytes32 s) payable;
     function batchAddToWhitelist(uint maxBuyinQuantity, address[] whitelistants);
+    function withdrawMln(address to, uint amount);
     function claimReward();
 
 }

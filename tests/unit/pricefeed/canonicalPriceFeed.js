@@ -114,7 +114,7 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
-    { from: accounts[0], gas: 6900000 },
+    opts,
     [
       mlnToken.options.address,
       mlnToken.options.address,
@@ -267,7 +267,6 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
   const [canonicalPriceUnstaked, ] = await t.context.canonicalPriceFeed.methods.getPrice(
     eurToken.options.address
   ).call();
-
   t.false(isOperatorAfterUnstaked);
   t.is(firstPrice, Number(subfeedPriceUnstaked));
   t.is(firstPrice, Number(canonicalPriceUnstaked));

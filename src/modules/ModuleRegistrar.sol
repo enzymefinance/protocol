@@ -118,7 +118,7 @@ contract ModuleRegistrar is DBC {
     {
         moduleNameExists[keccak256(information[ofModule].name)] = false;
         delete information[ofModule]; // Sets exists boolean to false
-        creatorOperatesModules[msg.sender] = 0;
+        creatorOperatesModules[msg.sender] = address(0);
         assert(!information[ofModule].exists);
     }
 

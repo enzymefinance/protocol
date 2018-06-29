@@ -259,14 +259,13 @@ exchangeIndexes.forEach(i => {
       investorGasTotal = investorGasTotal.plus(gasUsed);
       await updateCanonicalPriceFeed(deployed);
       await updateCanonicalPriceFeed(deployed);
-      const totalSupply = await fund.instance.totalSupply.call();
       const requestId = await fund.instance.getLastRequestId.call();
       txId = await fund.instance.executeRequest.postTransaction(
-        { from: investor, gas: config.gas },
-        [requestId],
+        { from: investor, gas: config.gas }, [requestId]
       );
       gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
       investorGasTotal = investorGasTotal.plus(gasUsed);
+      const totalSupply = await fund.instance.totalSupply.call();
       // set approved token back to zero
       txId = await ethToken.instance.approve.postTransaction(
         { from: investor },
@@ -276,9 +275,7 @@ exchangeIndexes.forEach(i => {
         (await api.eth.getTransactionReceipt(txId)).gasUsed,
       );
       const post = await getAllBalances(deployed, accounts, fund);
-      const [gav, , , unclaimedFees, ,] = Object.values(
-        await fund.instance.atLastUnclaimedFeeAllocation.call(),
-      );
+      const [gav, , , unclaimedFees, , ] = await fund.instance.performCalculations.call()
       const feesShareQuantity = parseInt(
         unclaimedFees
           .mul(totalSupply)

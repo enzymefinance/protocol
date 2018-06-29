@@ -94,7 +94,7 @@ contract ModuleRegistrarTest is DSTest {
 
         assert(!exists);
         assert(!registrar.moduleNameExists(keccak256(inputName)));
-        assertEq(registrar.creatorOperatesModules(caller), 0x0);
+        assertEq(registrar.creatorOperatesModules(caller), address(0));
     }
 
     function test_votingWhenCertified() {

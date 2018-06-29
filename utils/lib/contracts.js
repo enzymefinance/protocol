@@ -18,6 +18,7 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   const options2 = Object.assign({}, options); // clone object value instead of reference
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
+
   const bytecode = `0x${fs.readFileSync(`${filepath}.bin`, 'utf8')}`;
   const contract = new web3.eth.Contract(abi, options);
   const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
