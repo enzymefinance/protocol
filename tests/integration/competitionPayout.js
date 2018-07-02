@@ -133,12 +133,10 @@ test.serial(
     });
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
-    const payoutRate = await competition.methods.payoutRate().call();
-    const expectedShares = buyinValue.mul(payoutRate).div(10 ** 18);
     const managerPostShares = new BigNumber(await fund.methods.balanceOf(manager).call());
     const competitionPostShares = new BigNumber(await fund.methods.balanceOf(competition.options.address).call());
     const fundPostSupply = await fund.methods.totalSupply().call();
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+    t.deepEqual(managerPostShares, managerPreShares.add(fundPreSupply));
     t.deepEqual(
       competitionPostShares,
       competitionPreShares.sub(fundPreSupply),
