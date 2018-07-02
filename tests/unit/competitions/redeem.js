@@ -72,15 +72,13 @@ test.beforeEach(async t => {
     Object.assign(opts, { gas: 6800000 }),
     [
       t.context.deployed.MlnToken.options.address,
-      t.context.deployed.EurToken.options.address,
       t.context.version.options.address,
       accounts[5],
       blockchainTime,
       blockchainTime + 86400,
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 22),
-      10,
-      true
+      10
     ],
     () => {},
     true,
@@ -173,15 +171,12 @@ test("Can redeem before endTime if version is shutdown", async t => {
 });
 
 test("Owner can and only they can withdraw MLN deposited to the contract", async t => {
-  const deployerPreMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [deployer]);
-  const competitionPreMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [t.context.competition.address]);
-  await t.context.competition.instance.withdrawMln.postTransaction(
-    { from: manager, gasPrice: config.gasPrice },
-    [manager, competitionPreMln]
-  );
-  await t.context.competition.instance.withdrawMln.postTransaction(opts, [deployer, competitionPreMln]);
-  const deployerPostMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [deployer]);
-  const competitionPostMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [t.context.competition.address]);
+  const deployerPreMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
+  const competitionPreMln = await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call();
+  await t.context.competition.methods.withdrawMln(manager, competitionPreMln).send(opts);
+  await t.throws(t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send(opts));
+  const deployerPostMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
+  const competitionPostMln = await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call();
   t.is(Number(competitionPostMln), 0);
   t.deepEqual(deployerPostMln, deployerPreMln.add(competitionPreMln));
 });

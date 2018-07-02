@@ -1,6 +1,7 @@
 import test from "ava";
 import { ZeroEx } from '0x.js';
 import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/signing";
@@ -29,6 +30,7 @@ let version;
 let deployed;
 let order;
 let signedOrder;
+let opts;
 
 // declare function signatures
 const takeOrderSignature = api.util.abiSignature('takeOrder', [
@@ -41,85 +43,79 @@ const wantedShares = new BigNumber(10 ** 20);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager, investor, ,] = accounts;
+  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployed.Version;
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await deployContract("assets/PreminedAsset", {from: deployer});
+  zrxToken = await deployContract("assets/PreminedAsset", opts);
   deployed.ZeroExTokenTransferProxy = await deployContract(
     "exchange/thirdparty/0x/TokenTransferProxy",
-    {from: deployer}
+    opts
   );
   deployed.ZeroExExchange = await deployContract(
     "exchange/thirdparty/0x/Exchange",
-    { from: deployer },
-    [ zrxToken.address, deployed.ZeroExTokenTransferProxy.address ]
+    opts,
+    [ zrxToken.options.address, deployed.ZeroExTokenTransferProxy.options.address ]
   );
   deployed.ZeroExV1Adapter = await deployContract(
     "exchange/adapter/ZeroExV1Adapter",
-    { from: deployer }
+    opts
   );
-  await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
-    { from: deployer }, [ deployed.ZeroExExchange.address ]
+  await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress( deployed.ZeroExExchange.options.address ).send(
+    opts,
   );
   await governanceAction(
-    {from: deployer}, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
+    opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
-      deployed.ZeroExExchange.address,
-      deployed.ZeroExV1Adapter.address,
+      deployed.ZeroExExchange.options.address,
+      deployed.ZeroExV1Adapter.options.address,
       false,
       [ takeOrderSignature ]
     ]
   );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
+  await version.methods.setupFund(
+    web3.utils.toHex("Test Fund"),
+    deployed.EthToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.ZeroExExchange.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send(
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      "Test Fund",
-      deployed.EthToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.ZeroExExchange.address],
-      [],
-      v,
-      r,
-      s,
-    ],
   );
-  const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
+  const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
   // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [investor],
+  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
+    opts
   );
 });
 
 test.beforeEach(async () => {
   await updateCanonicalPriceFeed(deployed);
-
-  const [, referencePrice] = await pricefeed.instance.getReferencePriceInfo.call(
-    {},
-    [mlnToken.address, ethToken.address],
-  );
+  const [, referencePrice] = Object.values(await pricefeed.methods.getReferencePriceInfo(mlnToken.options.address, ethToken.options.address).call());
   const sellQuantity1 = new BigNumber(10 ** 19);
   trade1 = {
     sellQuantity: sellQuantity1,
-    buyQuantity: referencePrice.dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
+    buyQuantity: new BigNumber(referencePrice).dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
   };
 });
 
 const initialTokenAmount = new BigNumber(10 ** 22);
 test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  await ethToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [investor, initialTokenAmount, ""],
+  await ethToken.methods.transfer(investor, initialTokenAmount).send(
+    { from: deployer, gasPrice: config.gasPrice }
   );
   const post = await getAllBalances(deployed, accounts, fund);
 
@@ -142,24 +138,20 @@ test.serial(
   "fund receives ETH from investment, and gets ZRX from direct transfer",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await ethToken.instance.approve.postTransaction(
-      { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-      [fund.address, offeredValue],
+    await ethToken.methods.approve(fund.options.address, offeredValue).send(
+      { from: investor, gasPrice: config.gasPrice, gas: config.gas }
     );
-    await fund.instance.requestInvestment.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [offeredValue, wantedShares, ethToken.address],
+    await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
     await updateCanonicalPriceFeed(deployed);
     await updateCanonicalPriceFeed(deployed);
-    const requestId = await fund.instance.getLastRequestId.call({}, []);
-    await fund.instance.executeRequest.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [requestId],
+    const requestId = await fund.methods.getLastRequestId().call();
+    await fund.methods.executeRequest(requestId).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
-    await zrxToken.instance.transfer.postTransaction(
-      { from: deployer, gasPrice: config.gasPrice },
-      [investor, initialTokenAmount, ""],
+    await zrxToken.methods.transfer(investor, initialTokenAmount).send(
+      { from: deployer, gasPrice: config.gasPrice }
     );
     const post = await getAllBalances(deployed, accounts, fund);
 
@@ -185,9 +177,9 @@ test.serial("third party makes and validates an off-chain order", async t => {
       maker: makerAddress,
       taker: ZeroEx.NULL_ADDRESS,
       feeRecipient: ZeroEx.NULL_ADDRESS,
-      makerTokenAddress: mlnToken.address.toLowerCase(),
-      takerTokenAddress: ethToken.address.toLowerCase(),
-      exchangeContractAddress: deployed.ZeroExExchange.address.toLowerCase(),
+      makerTokenAddress: mlnToken.options.address.toLowerCase(),
+      takerTokenAddress: ethToken.options.address.toLowerCase(),
+      exchangeContractAddress: deployed.ZeroExExchange.options.address.toLowerCase(),
       salt: new BigNumber(555),
       makerFee: new BigNumber(0),
       takerFee: new BigNumber(1000),
@@ -195,9 +187,9 @@ test.serial("third party makes and validates an off-chain order", async t => {
       takerTokenAmount: new BigNumber(trade1.buyQuantity),
       expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
   };
-  await mlnToken.instance.approve.postTransaction(
+  await mlnToken.methods.approve(deployed.ZeroExTokenTransferProxy.options.address, trade1.sellQuantity).send(
     {from: deployer},
-    [deployed.ZeroExTokenTransferProxy.address, trade1.sellQuantity]
+
   );
   const orderHash = ZeroEx.getOrderHashHex(order);
   const [r, s, v] = await getSignatureParameters(makerAddress, orderHash)
@@ -213,23 +205,20 @@ test.serial("third party makes and validates an off-chain order", async t => {
 
 test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const txId = await fund.instance.callOnExchange.postTransaction(
-    {from: manager, gas: config.gas},
+  await fund.methods.callOnExchange(
+    0, takeOrderSignature,
+    [deployer, ZeroEx.NULL_ADDRESS, mlnToken.address, ethToken.address, ZeroEx.NULL_ADDRESS],
     [
-      0, takeOrderSignature,
-      [deployer, ZeroEx.NULL_ADDRESS, mlnToken.address, ethToken.address, ZeroEx.NULL_ADDRESS],
-      [
-        trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), order.takerFee,
-        order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
-      ],
-      '0x0', signedOrder.ecSignature.v, signedOrder.ecSignature.r, signedOrder.ecSignature.s
-    ]
+      trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), order.takerFee,
+      order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
+    ],
+    web3.utils.padLeft('0x0', 64), signedOrder.ecSignature.v, signedOrder.ecSignature.r, signedOrder.ecSignature.s
+  ).send(
+    {from: manager, gas: config.gas}
   );
+
   const post = await getAllBalances(deployed, accounts, fund);
-  const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
-    {},
-    [ethToken.address],
-  );
+  const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 
   t.is(Number(heldInExchange), 0);
   t.deepEqual(

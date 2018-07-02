@@ -2,7 +2,6 @@ import test from "ava";
 import web3 from "../../../utils/lib/web3";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
-const BN = web3.utils.BN;
 const environmentConfig = require("../../../utils/config/environment.js");
 
 const environment = "development";

@@ -64,15 +64,13 @@ test.before(async () => {
     Object.assign(opts, { gas: 6800000 }),
     [
       deployed.MlnToken.options.address,
-      deployed.EurToken.options.address,
       version.options.address,
       accounts[5],
       blockchainTime,
       blockchainTime + competitionDuration,
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 23),
-      10,
-      true
+      10
     ],
     () => {},
     true,

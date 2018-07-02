@@ -106,6 +106,7 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   );
   const assetList = await deployed.CanonicalPriceFeed.methods.getRegisteredAssets().call();
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
+  console.log('suc');
 }
 
 export { updatePriceFeed, updateCanonicalPriceFeed };

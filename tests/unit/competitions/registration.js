@@ -72,15 +72,13 @@ test.beforeEach(async t => {
     Object.assign(opts, { gas: 6800000 }),
     [
       t.context.deployed.MlnToken.options.address,
-      t.context.deployed.EurToken.options.address,
       t.context.version.options.address,
       accounts[5],
       blockchainTime,
       blockchainTime + 86400,
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 23),
-      10,
-      true
+      10
     ],
     () => {},
     true,
@@ -197,12 +195,13 @@ test(
 
 test("Cannot register after endTime", async t => {
   const blockchainTime = await getChainTime();
+  console.log("all good 0");
+
   t.context.competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
     [
       t.context.deployed.MlnToken.options.address,
-      t.context.deployed.EurToken.options.address,
       t.context.version.options.address,
       accounts[5],
       blockchainTime,
@@ -210,14 +209,17 @@ test("Cannot register after endTime", async t => {
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 23),
       10,
-      true
     ],
     () => {},
     true,
   );
+  console.log("all good1");
+
   await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(
     opts
   );
+  console.log("all good 2");
+
   await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
   // Send some MLN to competition contract
   await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 24)).send(
@@ -228,28 +230,28 @@ test("Cannot register after endTime", async t => {
 
 test("Cannot register before startTime", async t => {
   const blockchainTime = await getChainTime();
+  console.log(blockchainTime);
   t.context.competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
     [
       t.context.deployed.MlnToken.options.address,
-      t.context.deployed.EurToken.options.address,
       t.context.version.options.address,
       accounts[5],
       blockchainTime - 86400,
       blockchainTime - 86400,
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 22),
-      10,
-      true
+      10
     ],
     () => {},
     true,
   );
+  console.log('pachaa');
   await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(opts);
   await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
   // Send some MLN to competition contract
-  await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 24)).send({ from: deployer, gasPrice: config.gasPrice });
+  await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 24)).send(opts);
   await t.throws(registerFund(t, t.context.fund.options.address, manager, 10));
 });
 
@@ -257,24 +259,24 @@ test(
   "Cannot register if max number of registrants is reached",
   async t => {
     const blockchainTime = await getChainTime();
+    console.log("yo 1");
     t.context.competition = await deployContract(
       "competitions/Competition",
       Object.assign(opts, { gas: 6800000 }),
       [
         t.context.deployed.MlnToken.options.address,
-        t.context.deployed.EurToken.options.address,
         t.context.version.options.address,
         accounts[5],
         blockchainTime,
         blockchainTime + 86400,
         new BigNumber(22 * 10 ** 18),
         new BigNumber(10 ** 22),
-        0,
-        true
+        0
       ],
       () => {},
       true,
     );
+    console.log("yo 2");
     await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(opts);
     await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
     // Send some MLN to competition contract
