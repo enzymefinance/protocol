@@ -198,22 +198,22 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     await updateCanonicalPriceFeed(deployed);
-  await fund.methods.callOnExchange(
+    await fund.methods.callOnExchange(
       0,
       makeOrderSignature,
       ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-      "0x0",
+      web3.utils.padLeft('0x0', 64),
       0,
-      "0x0",
-      "0x0",
+      web3.utils.padLeft('0x0', 64),
+      web3.utils.padLeft('0x0', 64),
     ).send(
       { from: manager, gas: config.gas }
     );
     const post = await getAllBalances(deployed, accounts, fund);
     const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 
-    t.deepEqual(heldInExchange, trade1.sellQuantity);
+    t.deepEqual(Number(heldInExchange), Number(trade1.sellQuantity));
     t.deepEqual(
       post.exchangeOwner.EthToken,
       pre.exchangeOwner.EthToken.add(trade1.sellQuantity),
@@ -274,11 +274,11 @@ test.serial("Manager cancels an order from the fund", async t => {
       ])
       .slice(0, 10),
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
-    [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
-    "0x0",
+    [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
     0,
-    "0x0",
-    "0x0",
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
   ).send(
     { from: manager, gas: config.gas }
   );
@@ -299,8 +299,8 @@ test.serial("Manager cancels an order from the fund", async t => {
       .toString(16)
       .padStart(64, "0")}`,
     0,
-    "0x0",
-    "0x0",
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
   ).send(
     { from: manager, gas: config.gas }
   );

@@ -33,16 +33,13 @@ test.beforeEach(async t => {
 });
 
 test('Triggering a Version activates it within Governance', async t => {
-  const versionsBeforeTrigger = await t.context.governance.instance.getVersionsLength.call();
-  await activateVersion(t);
-  const versionsAfterTrigger = await t.context.governance.instance.getVersionsLength.call();
-  const [ , activeAfterTriggering, ] = await t.context.governance.instance.getVersionById.call({}, [0]);
-
-  // const { 1: activeBeforeTriggering } = await governance.methods.getVersionById(0).call();
+  const versionsBeforeTrigger = await t.context.governance.methods.getVersionsLength().call();
   await activateVersion(t.context);
-  const { 1: activeAfterTriggering } = await t.context.governance.methods.getVersionById(0).call();
+  const versionsAfterTrigger = await t.context.governance.methods.getVersionsLength().call();
+  const [ , activeAfterTriggering, ] = Object.values(await t.context.governance.methods.getVersionById(0).call());
 
-  // t.false(activeBeforeTriggering);
+  t.is(Number(versionsBeforeTrigger), 0);
+  t.is(Number(versionsAfterTrigger), 1);
   t.true(activeAfterTriggering);
 });
 
@@ -58,7 +55,7 @@ test('Governance can shut down Version', async t => {
 
   const versionShutDown = await t.context.version.methods.isShutDown().call();
   const activeAfterShutdown = await t.context.governance.methods.isActive(0).call();
-  // t.true(versionShutDown);
+  t.true(versionShutDown);
   t.true(activeBeforeShutdown);
   t.false(activeAfterShutdown);
 });

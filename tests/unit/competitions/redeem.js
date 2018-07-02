@@ -172,7 +172,7 @@ test("Can redeem before endTime if version is shutdown", async t => {
 
 test("Owner can and only they can withdraw MLN deposited to the contract", async t => {
   const deployerPreMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
-  const competitionPreMln = await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call();
+  const competitionPreMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call());
   await t.context.competition.methods.withdrawMln(manager, competitionPreMln).send(opts);
   await t.throws(t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send(opts));
   const deployerPostMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
