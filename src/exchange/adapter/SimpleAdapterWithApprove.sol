@@ -100,7 +100,7 @@ contract SimpleAdapterWithApprove {
             buyQuantity,
             Asset(buyAsset)
         );
-        OrderUpdated(id);
+        emit OrderUpdated(id);
     }
 
     /// @notice Takes an order on the given exchange
@@ -117,7 +117,7 @@ contract SimpleAdapterWithApprove {
         returns (bool success)
     {
         success = SimpleMarket(onExchange).buy(id, quantity);
-        OrderUpdated(id);
+        emit OrderUpdated(id);
     }
 
     /// @notice Cancels an order on the given exchange
@@ -132,6 +132,6 @@ contract SimpleAdapterWithApprove {
         returns (bool success)
     {
         success = SimpleMarket(onExchange).cancel(id);
-        OrderUpdated(id);
+        emit OrderUpdated(id);
     }
 }

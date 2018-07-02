@@ -1,13 +1,6 @@
 // this file tracks addresses of tokens relevant to the Melon protocol
 module.exports = {
   kovan: {
-    'CHF-T': {
-      address: '0xe6B8dc9357b42Fa67a0ac9BDEe59D4B6ebe11406',
-      name: 'Swiss Franc token (dummy)',
-      decimals: 18,
-      url: '',
-      ipfsHash: ''
-    },
     'ANT-T': {
       address: '0x560848C7a470b9aA87F7283FDb31bD6773771660',
       name: 'Aragon Network Token',
@@ -241,13 +234,6 @@ module.exports = {
     },
   },
   live: {
-    'CHF': {
-      address: '0x0000000000000000000000000000000000000000',
-      name: 'Swiss Franc token (dummy)',
-      decimals: 18,
-      url: '',
-      ipfsHash: ''
-    },
     'WETH': {
       address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
       name: 'Wrapped ETH contract - Ether in ERC20 format',

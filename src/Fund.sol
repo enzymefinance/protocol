@@ -79,8 +79,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public constant MAX_FUND_ASSETS = 20; // Max ownable assets by the fund supported by gas limits
     uint public constant ORDER_EXPIRATION_TIME = 86400; // Make order expiration time (1 day)
     // Constructor fields
-    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
-    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
     // Methods fields
@@ -177,6 +177,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(isOwner())
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
+            require(modules.pricefeed.assetIsRegistered(ofAssets[i]));
             isInvestAllowed[ofAssets[i]] = true;
         }
     }
@@ -221,7 +222,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now,
             atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
-        RequestUpdated(getLastRequestId());
+
+        emit RequestUpdated(getLastRequestId());
     }
 
     /// @notice Executes active investment and redemption requests, in a way that minimises information advantages of investor
@@ -232,7 +234,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        //pre_cond(requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
             _totalSupply == 0 ||
             (
@@ -243,7 +244,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     {
         Request request = requests[id];
-        var (isRecent, requestAssetPrice, ) =
+        var (isRecent, , ) =
             modules.pricefeed.getPriceInfo(address(request.requestAsset));
         require(isRecent);
 
@@ -262,7 +263,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             costQuantity <= request.giveQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            require(AssetInterface(request.requestAsset).transferFrom(request.participant, address(this), costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
             if (!isInAssetList[request.requestAsset]) {
                 ownedAssets.push(request.requestAsset);
@@ -404,7 +405,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(AssetInterface(ofAsset).balanceOf(address(this))), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -422,7 +423,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
         }
-        PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
+        emit PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
     }
 
     /// @notice Add an asset to the list that this fund owns
@@ -527,7 +528,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // The value of unclaimedFees measured in shares of this fund at current value
         feesShareQuantity = (gav == 0) ? 0 : mul(_totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-         uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
+        uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
         sharePrice = _totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
@@ -560,8 +561,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             timestamp: now
         });
 
-        FeesConverted(now, feesShareQuantity, unclaimedFees);
-        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
+        emit FeesConverted(now, feesShareQuantity, unclaimedFees);
+        emit CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
 
         return sharePrice;
     }
@@ -586,6 +587,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            require(isInAssetList[ofAsset]);
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
@@ -593,7 +595,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
             redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)),
+                uint(AssetInterface(ofAsset).balanceOf(address(this))),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -603,9 +605,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / _totalSupply;
 
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
+            if (uint(AssetInterface(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
                 isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;
             }
         }
@@ -623,7 +625,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 revert();
             }
         }
-        Redeemed(msg.sender, now, shareQuantity);
+        emit Redeemed(msg.sender, now, shareQuantity);
         return true;
     }
 
@@ -644,7 +646,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
-            if (exchanges[i].takesCustody) {
+            if (!exchanges[i].takesCustody) {
                 totalSellQuantityInApprove += sellQuantity;
             }
         }

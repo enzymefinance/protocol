@@ -10,10 +10,10 @@ import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "ds-math/math.sol";
 
-/// @title Competition Contract
+/// @title Test Competition Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Register Melon funds in competition
-contract Competition is CompetitionInterface, DSMath, DBC, Owned {
+contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
 
     // TYPES
 
@@ -51,13 +51,14 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     uint public prizeMoneyQuantity; // Total prize money pool
     address public MELON_ASSET; // Adresss of Melon asset contract
     ERC20Interface public MELON_CONTRACT; // Melon as ERC20 contract
+    address public CHF_ASSET; // Adresss of CHF asset based on the Canonical Registrar
     address public COMPETITION_VERSION; // Version contract address
 
     // Methods fields
     Registrant[] public registrants; // List of all registrants, can be externally accessed
     mapping (address => address) public registeredFundToRegistrants; // For fund address indexed accessing of registrant addresses
     mapping(address => RegistrantId) public registrantToRegistrantIds; // For registrant address indexed accessing of registrant ids
-    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in Ether)
+    mapping(address => uint) public whitelistantToMaxBuyin; // For registrant address to respective max buyIn cap (Valued in CHF)
 
     //EVENTS
 
@@ -67,7 +68,7 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
     // CONSTRUCTOR
 
-    function Competition(
+    function TestCompetition(
         address ofMelonAsset,
         address ofCompetitionVersion,
         address ofCustodian,
@@ -130,11 +131,16 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
 
     /// @return Get time to end of the competition
-    function getTimeTillEnd() view returns (uint) {
-        if (now > endTime) {
-            return 0;
+    function getTimeTillEnd() view returns (uint) { return sub(endTime, now); }
+
+    /// @return Get value of the ether quantity in CHF
+    function getCHFValue(uint payin) view returns (uint) {
+        address feedAddress = Version(COMPETITION_VERSION).CANONICAL_PRICEFEED();
+        var (isRecent, price, ) = CanonicalPriceFeed(feedAddress).getInvertedPriceInfo(CHF_ASSET);
+        if (!isRecent) {
+            revert();
         }
-        return sub(endTime, now);
+        return mul(price, payin) / (10 ** 18);
     }
 
     /// @return Get value of MLN amount in Ether
@@ -195,11 +201,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     )
         payable
         pre_cond(isCompetitionActive() && !Version(COMPETITION_VERSION).isShutDown())
-        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
+        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s))
     {
-        require(registeredFundToRegistrants[fund] == address(0) && registrantToRegistrantIds[msg.sender].exists == false);
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
-        require(msg.value <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund
@@ -256,7 +260,6 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))
     {
-        require(block.timestamp >= endTime || Version(COMPETITION_VERSION).isShutDown());
         Registrant registrant  = registrants[getRegistrantId(msg.sender)];
         require(registrant.isRewarded == false);
         registrant.isRewarded = true;

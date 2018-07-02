@@ -18,6 +18,7 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   const options2 = Object.assign({}, options); // clone object value instead of reference
   const filepath = path.resolve(outpath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
+
   const bytecode = `0x${fs.readFileSync(`${filepath}.bin`, 'utf8')}`;
   const contract = new web3.eth.Contract(abi, options);
   const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
@@ -25,7 +26,7 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = [], .
   // console.log(await deployTx.estimateGas())
   const deployedContract = await deployTx.send(options2);
   if(process.env.CHAIN_ENV !== 'development')
-    console.log(`Deployed ${contractPath}\nat ${deployedContract.address}\n`);
+    console.log(`Deployed ${contractPath}\nat ${deployedContract.options.address}\n`);
   return deployedContract;
 }
 

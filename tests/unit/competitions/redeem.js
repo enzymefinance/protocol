@@ -42,7 +42,7 @@ async function registerFund(t, fundAddress, by, value) {
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
-  opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
+  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async t => {
@@ -170,4 +170,18 @@ test("Can redeem before endTime if version is shutdown", async t => {
   t.deepEqual(fundPostSupply, fundPreSupply);
   t.deepEqual(Number(managerPostShares), Number(managerPreShares) + Number(expectedShares));
   t.deepEqual(Number(competitionPostShares), Number(competitionPreShares) - Number((expectedShares)));
+});
+
+test("Owner can and only they can withdraw MLN deposited to the contract", async t => {
+  const deployerPreMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [deployer]);
+  const competitionPreMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [t.context.competition.address]);
+  await t.context.competition.instance.withdrawMln.postTransaction(
+    { from: manager, gasPrice: config.gasPrice },
+    [manager, competitionPreMln]
+  );
+  await t.context.competition.instance.withdrawMln.postTransaction(opts, [deployer, competitionPreMln]);
+  const deployerPostMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [deployer]);
+  const competitionPostMln = await t.context.deployed.MlnToken.instance.balanceOf.call({}, [t.context.competition.address]);
+  t.is(Number(competitionPostMln), 0);
+  t.deepEqual(deployerPostMln, deployerPreMln.add(competitionPreMln));
 });

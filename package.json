@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/smart-contracts",
-  "version": "0.8.0-alpha.23",
+  "version": "0.8.0-alpha.27",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
@@ -19,7 +19,7 @@
     "compile": "export SOLC_FLAGS='--optimize --optimize-runs=0' && make all",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
-    "deploy:competitionReplica": "CHAIN_ENV=competitionReplica babel-node utils/deploy/contracts.js",
+    "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
     "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
     "docs:build": "doxity build",
@@ -97,6 +97,7 @@
       "tests/integration/tradingAlternativeToken.js",
       "tests/unit/pricefeed/priceFeed.js",
       "tests/unit/pricefeed/canonicalPriceFeed.js",
+      "tests/unit/pricefeed/operatorStaking.js",
       "tests/unit/competitions/registration.js",
       "tests/unit/competitions/redeem.js",
       "tests/unit/competitions/version.js",
