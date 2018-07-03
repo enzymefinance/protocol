@@ -7,6 +7,7 @@ import {
   getSignatureParameters,
 } from "../../../utils/lib/signing";
 import getChainTime from "../../../utils/lib/getChainTime";
+import { increaseTime } from "../../../utils/lib/time";
 import { updateCanonicalPriceFeed } from "../../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -54,7 +55,7 @@ test.beforeEach(async t => {
   );
   t.context.version = await deployContract(
     "version/Version",
-    Object.assign(opts, { gas: 6800000 }),
+    {from: manager, gas: 6800000 },
     [
       "1",
       t.context.deployed.Governance.options.address,
@@ -69,7 +70,7 @@ test.beforeEach(async t => {
   const blockchainTime = await getChainTime();
   t.context.competition = await deployContract(
     "competitions/Competition",
-    Object.assign(opts, { gas: 6800000 }),
+    {from: manager, gas: 6800000 },
     [
       t.context.deployed.MlnToken.options.address,
       t.context.version.options.address,
@@ -88,7 +89,9 @@ test.beforeEach(async t => {
   await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(
     opts,
   );
-  await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 25), [manager]).send(opts);
+  await t.context.competition.methods.batchAddToWhitelist(
+    new BigNumber(10 ** 25), [manager]
+  ).send(opts);
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await t.context.version.methods.setupFund(
     fundName,
@@ -194,18 +197,18 @@ test(
 );
 
 test("Cannot register after endTime", async t => {
+  const competitionDuration = 5000;
   const blockchainTime = await getChainTime();
-  console.log("all good 0");
 
   t.context.competition = await deployContract(
     "competitions/Competition",
-    Object.assign(opts, { gas: 6800000 }),
+    {from: manager, gas: 6800000},
     [
       t.context.deployed.MlnToken.options.address,
       t.context.version.options.address,
       accounts[5],
       blockchainTime,
-      blockchainTime - 86400,
+      blockchainTime + competitionDuration,
       new BigNumber(22 * 10 ** 18),
       new BigNumber(10 ** 23),
       10,
@@ -213,24 +216,29 @@ test("Cannot register after endTime", async t => {
     () => {},
     true,
   );
-  console.log("all good1");
 
   await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(
-    opts
+    {from: manager}
   );
-  console.log("all good 2");
 
-  await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
+  t.context.competition.methods.batchAddToWhitelist(
+    web3.utils.toBN(new BigNumber(10 ** 22)), [manager]
+  ).send({from: deployer})
+
   // Send some MLN to competition contract
-  await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 24)).send(
-    { from: deployer, gasPrice: config.gasPrice },
+  await t.context.deployed.MlnToken.methods.transfer(
+    t.context.competition.options.address, new BigNumber(10 ** 24)
+  ).send({ from: deployer });
+
+  await increaseTime(competitionDuration);
+
+  await t.throws(
+    registerFund(t, t.context.fund.options.address, manager, 10)
   );
-  await t.throws(registerFund(t, t.context.fund.options.address, manager, 10));
 });
 
 test("Cannot register before startTime", async t => {
   const blockchainTime = await getChainTime();
-  console.log(blockchainTime);
   t.context.competition = await deployContract(
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
