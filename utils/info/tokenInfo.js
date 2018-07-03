@@ -232,6 +232,13 @@ module.exports = {
       url: 'omise.co',
       ipfsHash: '',
     },
+    'NMR-T': {
+      address: '0x3572e2074bE26f9D2a03EbB896256394C215FAd4',
+      name: 'Numeraire',
+      decimals: 18,
+      url: 'https://numer.ai',
+      ipfsHash: ''
+    }
   },
   live: {
     'WETH': {
@@ -368,7 +375,13 @@ module.exports = {
       url: 'https://request.network',
       ipfsHash: '',
     },
-    // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
+    'NMR': {
+      address: '0x1776e1F26f98b1A5dF9cD347953a26dd3Cb46671',
+      name: 'Numeraire',
+      decimals: 18,
+      url: 'https://numer.ai',
+      ipfsHash: ''
+    }
     // 'W-GNT': {
     //   address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
     //   name: 'Wrapped Golem Network Token',

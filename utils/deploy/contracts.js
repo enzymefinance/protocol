@@ -55,6 +55,7 @@ async function deployEnvironment(environment) {
     opts.from = deploymentAddress;
     const previous = require('../../addressBook.json').kovan;
     const commonEnvironment = "kovan";
+
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
@@ -133,9 +134,10 @@ async function deployEnvironment(environment) {
     // // set up modules and version
     // deployed.NoCompliance = await deployContract("compliance/NoCompliance", opts);
     // deployed.OnlyManager = await deployContract("compliance/OnlyManager", opts);
-    // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
     // deployed.NoComplianceCompetition = await deployContract("compliance/NoComplianceCompetition", opts, []);
     // deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deploymentAddress]);
+    // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
+    deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
 
     deployed.NoCompliance = await retrieveContract("compliance/NoCompliance", previous.NoCompliance);
     deployed.OnlyManager = await retrieveContract("compliance/OnlyManager", previous.OnlyManager);
@@ -365,6 +367,7 @@ async function deployEnvironment(environment) {
     //     deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
     //   ], () => {}, true
     // );
+    // deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
 
     // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -477,7 +480,6 @@ async function deployEnvironment(environment) {
         blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
       ]
     );
-    process.exit();
   } else if (environment === "development") {
     opts.from = accounts[0];
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
