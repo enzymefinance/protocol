@@ -2,7 +2,7 @@ import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import {deployContract} from "../../../utils/lib/contracts";
-import {mineToTime, txidToTimestamp} from "../../../utils/lib/time";
+import {currentTimestamp, blockNumberToTimestamp} from "../../../utils/lib/time";
 
 const BigNumber = require("bignumber.js");
 
@@ -46,67 +46,61 @@ test.beforeEach(async t => {
   );
 });
 
-test.only("staker cannot stake below minimum", async t => {
-  console.log('-------------------------------------HERE')
+test("staker cannot stake below minimum", async t => {
   await t.context.mlnToken.methods.approve(
     t.context.staking.options.address, minimumStake.minus(1)
   ).send({from: stakers[0]});
-  console.log('-------------------------------------HERE')
-  await t.context.staking.methods.stake(
-    minimumStake.minus(1), ""
-  ).send({from: stakers[0]});
-  console.log('-------------------------------------HERE')
-  const totalStake = await t.context.staking.methods.stakedAmounts(
-    stakers[0]
-  ).call();
-  const isOperator = await t.context.staking.methods.isOperator(
-    stakers[0]
-  ).call();
-  console.log('-------------------------------------HERE')
+
+  await t.throws(
+    t.context.staking.methods.stake(
+      minimumStake.minus(1), "0x00"
+    ).send({from: stakers[0]})
+  );
+
+  const totalStake = await t.context.staking.methods.stakedAmounts(stakers[0]).call();
+  const isOperator = await t.context.staking.methods.isOperator(stakers[0]).call();
 
   t.is(Number(totalStake), 0);
   t.false(isOperator);
 });
 
 test("staker approves, stakes, and is tracked in contract", async t => {
-  const preStakerMln = await t.context.mlnToken.methods.balanceOf(
-    stakers[0]
-  ).call();
+  const preStakerMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(stakers[0]).call()
+  );
   const preContractMln = await t.context.mlnToken.methods.balanceOf(
     t.context.staking.options.address
   ).call();
   await t.context.mlnToken.methods.approve(
     t.context.staking.options.address, minimumStake
   ).send({from: stakers[0]});
-  await t.context.staking.methods.stake(
-    minimumStake, ""
-  ).send({from: stakers[0]});
-  const totalStake = await t.context.staking.methods.stakedAmounts(
-    stakers[0]
-  ).call();
-  const isOperator = await t.context.staking.methods.isOperator(
-    stakers[0]
-  ).call();
-  const operators = await t.context.staking.methods.getOperators.call()
+  await t.context.staking.methods.stake(minimumStake, "0x00").send({from: stakers[0]});
+  const totalStake = await t.context.staking.methods.stakedAmounts(stakers[0]).call();
+  const isOperator = await t.context.staking.methods.isOperator(stakers[0]).call();
+  const operators = await t.context.staking.methods.getOperators().call()
   const postStakerMln = await t.context.mlnToken.methods.balanceOf(stakers[0]).call();
-  const postContractMln = await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call();
+  const postContractMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call()
+  );
 
   t.is(Number(totalStake), Number(minimumStake));
   t.true(isOperator);
-  t.is(operators[0]._value, stakers[0]);
+  t.is(operators[0], stakers[0]);
   t.is(Number(postContractMln.minus(preContractMln)), Number(minimumStake));
   t.is(Number(preStakerMln.minus(postStakerMln)), Number(minimumStake));
 });
 
 test("staker unstakes fully, and is no longer an operator", async t => {
-  const preStakerMln = await t.context.mlnToken.methods.balanceOf(stakers[0]).call();
-  const preContractMln = await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call();
+  const preStakerMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(stakers[0]).call()
+  );
+  const preContractMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call()
+  );
   await t.context.mlnToken.methods.approve(
     t.context.staking.options.address, minimumStake
   ).send({from: stakers[0]});
-  await t.context.staking.methods.stake(
-    minimumStake, ""
-  ).send({from: stakers[0]});
+  await t.context.staking.methods.stake(minimumStake, "0x00").send({from: stakers[0]});
   const preTotalStake = await t.context.staking.methods.stakedAmounts(stakers[0]).call();
   const preIsOperator = await t.context.staking.methods.isOperator(stakers[0]).call();
   const preIsRanked = await t.context.staking.methods.isRanked(stakers[0]).call();
@@ -115,10 +109,13 @@ test("staker unstakes fully, and is no longer an operator", async t => {
   t.true(preIsOperator);
   t.true(preIsRanked);
 
-  await t.context.staking.methods.unstake(minimumStake, "").send({from: stakers[0]});
-
-  const postUnstakeStakerMln = await t.context.mlnToken.methods.balanceOf(stakers[0]).call();
-  const postUnstakeContractMln = await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call();
+  await t.context.staking.methods.unstake(minimumStake, "0x00").send({from: stakers[0]});
+  const postUnstakeStakerMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(stakers[0]).call()
+  );
+  const postUnstakeContractMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call()
+  );
   const postUnstakeTotalStake = await t.context.staking.methods.stakedAmounts(stakers[0]).call();
   const postUnstakeIsOperator = await t.context.staking.methods.isOperator(stakers[0]).call();
   const postUnstakeIsRanked = await t.context.staking.methods.isRanked(stakers[0]).call();
@@ -130,16 +127,18 @@ test("staker unstakes fully, and is no longer an operator", async t => {
   t.false(postUnstakeIsRanked);
 
   await t.context.staking.methods.withdrawStake().send({from: stakers[0]});
-  const postWithdrawStakerMln = await t.context.mlnToken.methods.balanceOf(stakers[0]).call();
-  const postWithdrawContractMln = await t.context.mlnToken.methods.balanceOf(
-    t.context.staking.options.address
-  ).call();
+  const postWithdrawStakerMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(stakers[0]).call()
+  );
+  const postWithdrawContractMln = new BigNumber(
+    await t.context.mlnToken.methods.balanceOf(t.context.staking.options.address).call()
+  );
 
   t.deepEqual(preStakerMln, postWithdrawStakerMln);
   t.deepEqual(preContractMln, postWithdrawContractMln);
 });
 
-test("unstake fails before delay complete", async t => {
+test.only("unstake fails before delay complete", async t => {
   const inputGas = 6000000;
   const withdrawalDelay = 7;
   t.context.staking = await deployContract(
@@ -155,8 +154,8 @@ test("unstake fails before delay complete", async t => {
   await t.context.mlnToken.methods.approve(
     t.context.staking.options.address, minimumStake
   ).send({from: stakers[0]});
-  let txid = await t.context.staking.methods.stake(
-    minimumStake, ""
+  let receipt = await t.context.staking.methods.stake(
+    minimumStake, "0x00"
   ).send({from: stakers[0]});
   const stakedAmount = await t.context.staking.methods.stakedAmounts(
     stakers[0]
@@ -164,34 +163,31 @@ test("unstake fails before delay complete", async t => {
 
   t.is(Number(stakedAmount), Number(minimumStake));
 
-  txid = await t.context.staking.methods.unstake(
-    minimumStake, ""
+  receipt = await t.context.staking.methods.unstake(
+    minimumStake, "0x00"
   ).send({from: stakers[0], gas: inputGas});
   const postUnstakeStakedAmount = await t.context.staking.methods.stakedAmounts(
     stakers[0]
   ).call();
-  const unstakeTime = await txidToTimestamp(txid);
+  const unstakeTime = await blockNumberToTimestamp(receipt.blockNumber);
   t.is(Number(postUnstakeStakedAmount), 0);
 
-  txid = await t.context.staking.methods.withdrawStake(
-    minimumStake, ""
-  ).send({from: stakers[0], gas: inputGas});
-  const failedWithdrawalTime = await txidToTimestamp(txid);
-  const failedWithdrawGas = (await api.eth.getTransactionReceipt(txid)).gasUsed;
+  await t.throws(
+    t.context.staking.methods.withdrawStake().send({from: stakers[0], gas: inputGas})
+  );
+  const failedWithdrawalTime = await currentTimestamp();
+  console.log('----------------------------------------here')
 
   t.true(unstakeTime + withdrawalDelay > failedWithdrawalTime); // delay not reached
-  t.is(Number(failedWithdrawGas), inputGas);
 
-  await mineToTime(unstakeTime + withdrawalDelay + 2); // pass delay
+  // TODO: replace with new methods just made
+  // await mineToTime(unstakeTime + withdrawalDelay + 2); // pass delay
 
-  txid = await t.context.staking.methods.withdrawStake(
-    minimumStake, ""
-  ).send({from: stakers[0], gas: inputGas});
-  const unstakeGas = (await api.eth.getTransactionReceipt(txid)).gasUsed;
-  const withdrawalTime = await txidToTimestamp(txid);
+  receipt = await t.context.staking.methods.withdrawStake().send({from: stakers[0]});
+  console.log(receipt)
+  const withdrawalTime = await blockNumberToTimestamp(receipt.blockNumber);
 
   t.true(withdrawalTime > unstakeTime + withdrawalDelay);  // delay was indeed passed
-  t.true(Number(unstakeGas) < inputGas);
 });
 
 test("ranking is correct with multiple stakers", async t => {
@@ -229,11 +225,11 @@ test("ranking is correct with multiple stakers", async t => {
             t.context.staking.options.address, step.amounts[iStaker]
           ).send({from: staker, gas: 6000000});
           await t.context.staking.methods.stake(
-            step.amounts[iStaker], ""
+            step.amounts[iStaker], "0x00"
           ).send({from: staker, gas: 6000000});
         } else if (step.action === 'unstake') {
           await t.context.staking.methods.unstake(
-            step.amounts[iStaker], ""
+            step.amounts[iStaker], "0x00"
           ).send({from: staker, gas: 6000000});
           await t.context.staking.methods.withdrawStake().send({from: staker, gas: 6000000});
         }
