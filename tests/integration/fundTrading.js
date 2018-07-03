@@ -880,7 +880,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
     { from: manager, gas: config.gas }
   );
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
-  t.throws(await fund.methods.callOnExchange(
+  await t.throws(fund.methods.callOnExchange(
     0,
     cancelOrderSignature,
     ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],

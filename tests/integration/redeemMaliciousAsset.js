@@ -67,23 +67,6 @@ test.before(async () => {
       mockBytes, [mockAddress, mockAddress], [], []
     ]
   );
-  await governanceAction(
-    opts,
-    deployed.Governance,
-    deployed.CanonicalPriceFeed,
-    "registerAsset",
-    [
-      maliciousToken.options.address,
-      web3.utils.toHex("MaliciousToken"),
-      web3.utils.toHex("MAL"),
-      18,
-      "",
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-    ],
-  );
   // give investor some Eth to use
   await ethToken.methods.transfer(investor, initialEth).send(
     opts
@@ -91,7 +74,7 @@ test.before(async () => {
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await version.methods.setupFund(
-    "Fund", // same name as before
+    web3.utils.toHex("Fund"), // same name as before
     ethToken.options.address, // base asset
     config.protocol.fund.managementFee,
     config.protocol.fund.performanceFee,
@@ -148,11 +131,11 @@ test.serial("fund buys some mlnToken", async t => {
     0,
     makeOrderSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
-    [sellQuantity, buyQuantity, 0, 0, 0, 0],
-    "0x0",
+    [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
     0,
-    "0x0",
-    "0x0",
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
   ).send(
     { from: manager, gas: config.gas }
   );
@@ -178,11 +161,11 @@ test.serial("fund buys some MaliciousToken", async t => {
     0,
     makeOrderSignature,
     ["0x0", "0x0", ethToken.options.address, maliciousToken.options.address, "0x0"],
-    [sellQuantity, buyQuantity, 0, 0, 0, 0],
-    "0x0",
+    [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
     0,
-    "0x0",
-    "0x0",
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
   ).send(
     { from: manager, gas: config.gas }
   );
@@ -206,7 +189,7 @@ test.serial("fund buys some MaliciousToken", async t => {
 test.serial("MaliciousToken becomes malicious", async t => {
   await maliciousToken.methods.startThrowing().send();
 
-  const isThrowing = await maliciousToken.methods.isThrowing().maullme();
+  const isThrowing = await maliciousToken.methods.isThrowing().call();
   t.true(isThrowing);
 });
 
@@ -214,9 +197,9 @@ test.serial("Cannot pass asset multiple times in emergencyRedeem", async t => {
   const preShareQuantity = await fund.methods.balanceOf(investor).call();
   const preMlnQuantity = await mlnToken.methods.balanceOf(investor).call();
   const preEthTokenQuantity = await deployed.EthToken.methods.balanceOf(investor).call();
-  await fund.methods.emergencyRedeem(preShareQuantity, [mlnToken.options.address, mlnToken.options.address, deployed.EthToken.options.address]).send(
+  await t.throws(fund.methods.emergencyRedeem(preShareQuantity, [mlnToken.options.address, mlnToken.options.address, deployed.EthToken.options.address]).send(
     { from: investor, gas: 6000000 }
-  );
+  ));
   const postShareQuantity = await fund.methods.balanceOf(investor).call();
   const postMlnQuantity = await mlnToken.methods.balanceOf(investor).call();
   const postEthTokenQuantity = await deployed.EthToken.methods.balanceOf(investor).call();
