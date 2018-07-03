@@ -74,15 +74,15 @@
     "eslint-plugin-react": "^7.5.1",
     "flow-bin": "^0.63.1",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.1.0",
-    "web3": "^1.0.0-beta.34"
+    "solium": "^1.1.0"
   },
   "dependencies": {
     "0x.js": "^0.35.0",
     "@parity/api": "^2.1.20",
     "bignumber.js": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
-    "request-promise": "^4.2.2"
+    "request-promise": "^4.2.2",
+    "web3": "^1.0.0-beta.34"
   },
   "ava": {
     "files": [
