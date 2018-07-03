@@ -259,10 +259,9 @@ test(
   "Cannot register if max number of registrants is reached",
   async t => {
     const blockchainTime = await getChainTime();
-    console.log("yo 1");
     t.context.competition = await deployContract(
       "competitions/Competition",
-      Object.assign(opts, { gas: 6800000 }),
+      opts,
       [
         t.context.deployed.MlnToken.options.address,
         t.context.version.options.address,
@@ -276,7 +275,7 @@ test(
       () => {},
       true,
     );
-    console.log("yo 2");
+    console.log('Gnope');
     await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(opts);
     await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
     // Send some MLN to competition contract
