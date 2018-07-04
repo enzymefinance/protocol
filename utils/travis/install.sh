@@ -19,17 +19,6 @@ sudo snap install parity
 # chmod +x parity
 # sudo mv parity /usr/bin
 
-# install dapp
-wget https://github.com/dapphub/ethrun/releases/download/v0.2.4/ethrun-v0.2.4-linux.tar.gz
-tar -xvf ethrun-v0.2.4-linux.tar.gz
-sudo cp ethrun /usr/local/bin/
-
-curl https://nixos.org/nix/install | sh
-source $HOME/.nix-profile/etc/profile.d/nix.sh
-nix-channel --add https://nix.dapphub.com/pkgs/dapphub
-nix-channel --update
-nix-env -iA dapphub.{dapp,hevm,seth}
-
 # install oyente
 sudo pip2 install z3
 sudo pip2 install z3-solver
