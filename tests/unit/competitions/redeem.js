@@ -21,7 +21,6 @@ const competitionTerms =
 let accounts;
 let manager;
 let deployer;
-let opts;
 
 const fundName = web3.utils.toHex("Super Fund");
 
@@ -42,19 +41,18 @@ async function registerFund(t, fundAddress, by, value) {
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
-  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async t => {
   t.context.deployed = await deployEnvironment(environment);
   t.context.competitionCompliance = await deployContract(
     "compliance/CompetitionCompliance",
-    opts,
+    {from: deployer, gas: 6000000},
     [accounts[0]],
   );
   t.context.version = await deployContract(
     "version/Version",
-    Object.assign(opts, { gas: 6800000 }),
+    {from: deployer, gas: 6800000},
     [
       "1",
       deployer, // For easy shutdown
@@ -69,7 +67,7 @@ test.beforeEach(async t => {
   const blockchainTime = await getChainTime();
   t.context.competition = await deployContract(
     "competitions/Competition",
-    Object.assign(opts, { gas: 6800000 }),
+    {from: deployer, gas: 6800000},
     [
       t.context.deployed.MlnToken.options.address,
       t.context.version.options.address,
@@ -85,8 +83,8 @@ test.beforeEach(async t => {
   );
 
   // Change competition address to the newly deployed competition and add manager to whitelist
-  await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send(opts);
-  await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send(opts);
+  await t.context.competitionCompliance.methods.changeCompetitionAddress(t.context.competition.options.address).send({from: deployer});
+  await t.context.competition.methods.batchAddToWhitelist(new BigNumber(10 ** 22), [manager]).send({from: deployer});
   const [r, s, v] = await getTermsSignatureParameters(manager);
   // Without passing MLN in default assets list
   await t.context.version.methods.setupFund(
@@ -173,8 +171,8 @@ test("Can redeem before endTime if version is shutdown", async t => {
 test("Owner can and only they can withdraw MLN deposited to the contract", async t => {
   const deployerPreMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
   const competitionPreMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call());
-  await t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send(opts);
-  await t.throws(t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send(opts));
+  await t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send({from: deployer});
+  await t.throws(t.context.competition.methods.withdrawMln(deployer, competitionPreMln).send({from: deployer}));
   const deployerPostMln = new BigNumber(await t.context.deployed.MlnToken.methods.balanceOf(deployer).call());
   const competitionPostMln = await t.context.deployed.MlnToken.methods.balanceOf(t.context.competition.options.address).call();
   t.is(Number(competitionPostMln), 0);
