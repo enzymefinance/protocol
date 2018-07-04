@@ -30,7 +30,7 @@ async function increaseTime(addSeconds) {
     web3.currentProvider.send({
       jsonrpc: '2.0', 
       method: 'evm_increaseTime', 
-      params: [addSeconds], 
+      params: [addSeconds * 1000], 
       id: new Date().getMilliseconds()
     }, (err, res) => {
       if (err) reject(err);

@@ -2,7 +2,7 @@ import test from "ava";
 import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import {deployContract} from "../../../utils/lib/contracts";
-import {currentTimestamp, blockNumberToTimestamp} from "../../../utils/lib/time";
+import {increaseTime, currentTimestamp, blockNumberToTimestamp} from "../../../utils/lib/time";
 
 const BigNumber = require("bignumber.js");
 
@@ -23,7 +23,8 @@ function shuffle(array) { // TODO: iterate stakers randomly (further below)
 
 test.before(async () => {
   const accounts = await api.eth.accounts();
-  [deployer, ...stakers] = accounts;
+  deployer = accounts[0];
+  stakers = accounts.slice(1,6);
 });
 
 test.beforeEach(async t => {
@@ -138,9 +139,9 @@ test("staker unstakes fully, and is no longer an operator", async t => {
   t.deepEqual(preContractMln, postWithdrawContractMln);
 });
 
-test.only("unstake fails before delay complete", async t => {
+test("unstake fails before delay complete", async t => {
   const inputGas = 6000000;
-  const withdrawalDelay = 7;
+  const withdrawalDelay = 70000;
   t.context.staking = await deployContract(
     "system/OperatorStaking",
     {from: deployer, gas: 6000000},
@@ -166,25 +167,23 @@ test.only("unstake fails before delay complete", async t => {
   receipt = await t.context.staking.methods.unstake(
     minimumStake, "0x00"
   ).send({from: stakers[0], gas: inputGas});
+  const unstakeTime = await blockNumberToTimestamp(receipt.blockNumber);
   const postUnstakeStakedAmount = await t.context.staking.methods.stakedAmounts(
     stakers[0]
   ).call();
-  const unstakeTime = await blockNumberToTimestamp(receipt.blockNumber);
   t.is(Number(postUnstakeStakedAmount), 0);
 
   await t.throws(
-    t.context.staking.methods.withdrawStake().send({from: stakers[0], gas: inputGas})
+    t.context.staking.methods.withdrawStake().send({from: stakers[0]})
   );
+
   const failedWithdrawalTime = await currentTimestamp();
-  console.log('----------------------------------------here')
 
   t.true(unstakeTime + withdrawalDelay > failedWithdrawalTime); // delay not reached
 
-  // TODO: replace with new methods just made
-  // await mineToTime(unstakeTime + withdrawalDelay + 2); // pass delay
+  await increaseTime(withdrawalDelay + 1);  // pass delay
 
   receipt = await t.context.staking.methods.withdrawStake().send({from: stakers[0]});
-  console.log(receipt)
   const withdrawalTime = await blockNumberToTimestamp(receipt.blockNumber);
 
   t.true(withdrawalTime > unstakeTime + withdrawalDelay);  // delay was indeed passed
@@ -215,32 +214,34 @@ test("ranking is correct with multiple stakers", async t => {
 
   /*eslint-disable */
   for (const [iStep, step] of scenario.entries()) {
-    for (const [iStaker, staker] of stakers.entries()) {
+    for (let iStaker = 0; iStaker < stakers.length; iStaker++) {
+      const staker = stakers[iStaker];
       if (step.amounts[iStaker] !== 0) { // TODO: iterate stakers randomly
-        if (step.action === 'stake') {
-          await t.context.mlnToken.methods.approve(
-            t.context.staking.options.address, 0
-          ).send({from: staker, gas: 6000000});
-          await t.context.mlnToken.methods.approve(
-            t.context.staking.options.address, step.amounts[iStaker]
-          ).send({from: staker, gas: 6000000});
-          await t.context.staking.methods.stake(
-            step.amounts[iStaker], "0x00"
-          ).send({from: staker, gas: 6000000});
-        } else if (step.action === 'unstake') {
-          await t.context.staking.methods.unstake(
-            step.amounts[iStaker], "0x00"
-          ).send({from: staker, gas: 6000000});
-          await t.context.staking.methods.withdrawStake().send({from: staker, gas: 6000000});
+        switch (step.action) {
+          case 'stake':
+            await t.context.mlnToken.methods.approve(
+              t.context.staking.options.address, 0
+            ).send({from: staker, gas: 6000000});
+            await t.context.mlnToken.methods.approve(
+              t.context.staking.options.address, step.amounts[iStaker]
+            ).send({from: staker, gas: 6000000});
+            await t.context.staking.methods.stake(
+              step.amounts[iStaker], "0x00"
+            ).send({from: staker, gas: 6000000});
+            break;
+          case 'unstake':
+            await t.context.staking.methods.unstake(
+              step.amounts[iStaker], "0x00"
+            ).send({from: staker, gas: 6000000});
+            await t.context.staking.methods.withdrawStake().send({from: staker, gas: 6000000});
+            break;
         }
       }
       const total = await t.context.staking.methods.stakedAmounts(staker).call();
 
       t.is(Number(total), step.final[iStaker]);
     };
-    const [rawStakers, rawAmounts] = await t.context.staking.methods.getStakersAndAmounts().call();
-    const outStakers = rawStakers.map(e => e._value);
-    const outAmounts = rawAmounts.map(e => Number(e._value));
+    const {'0': outStakers, '1': outAmounts} = await t.context.staking.methods.getStakersAndAmounts().call();
     const sortedFinal = step.order.map(item => step.final[item]);
     const sortedStakers = step.order.map(item => stakers[item]);
 
