@@ -27,7 +27,7 @@ script:
 - sleep 20
 - npm run deploy
 - npm run test
-- npm run oyente
+# - npm run oyente
 - npm run lint
 after_script:
 - cat parity.log
