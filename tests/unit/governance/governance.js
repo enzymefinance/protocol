@@ -1,6 +1,7 @@
 import test from 'ava';
 import web3 from "../../../utils/lib/web3";
 import {deployContract} from "../../../utils/lib/contracts";
+import {newMockAddress} from "../../../utils/lib/mocks";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -11,7 +12,6 @@ const config = environmentConfig[environment];
 let accounts;
 let deployer;
 let opts;
-let deployed;
 
 async function activateVersion(context) {
   const calldata = await context.governance.methods.addVersion(context.version.options.address).encodeABI();
@@ -23,13 +23,19 @@ async function activateVersion(context) {
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer] = accounts;
-  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
+  opts = { from: deployer, gas: config.gas };
 });
 
 test.beforeEach(async t => {
-  deployed = await deployEnvironment(environment);
   t.context.governance = await deployContract("system/Governance", opts, [[deployer], 1, 100000]);
-  t.context.version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), ["V1", t.context.governance.options.address, deployed.EthToken.options.address, deployed.MlnToken.options.address, deployed.CanonicalPriceFeed.options.address, deployer], () => {}, true);
+  t.context.version = await deployContract(
+    "version/Version",
+    Object.assign(opts, {gas: 6800000}),
+    [
+      "V1", t.context.governance.options.address, newMockAddress(), newMockAddress(),
+      newMockAddress(), deployer
+    ], () => {}, true
+  );
 });
 
 test('Triggering a Version activates it within Governance', async t => {
