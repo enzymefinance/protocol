@@ -8,8 +8,8 @@ import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
-import "ds-weth/weth9.sol";
-import "ds-math/math.sol";
+import "./dependencies/weth9.sol";
+import "./dependencies/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>

@@ -8,7 +8,7 @@ import "../version/Version.sol";
 import "../pricefeeds/CanonicalPriceFeed.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
-import "ds-math/math.sol";
+import "../dependencies/math.sol";
 
 /// @title Test Competition Contract
 /// @author Melonport AG <team@melonport.com>

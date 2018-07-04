@@ -5,7 +5,7 @@ import "../thirdparty/CentralizedExchangeBridge.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
 import "../../assets/Asset.sol";
-import "ds-math/math.sol";
+import "../../dependencies/math.sol";
 
 contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
 

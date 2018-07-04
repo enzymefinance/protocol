@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ds-group/group.sol";
+import "../dependencies/group.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../version/VersionInterface.sol";
