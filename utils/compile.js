@@ -6,6 +6,12 @@ const compileOptions = {
   contracts_directory: path.join(__dirname, "../src"),
   contracts_build_directory: "out",
   all: true,
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 1
+    }
+  }
 };
 
 Compile.compile(compileOptions, (err, result) => {
@@ -21,7 +27,7 @@ Compile.compile(compileOptions, (err, result) => {
   if (!fs.existsSync(binDir)) {
     fs.mkdirSync(binDir);
   }
-  Object.entries(result).forEach(([key, value]) => {
+  Object.entries(result).forEach(([, value]) => {
     fs.writeFileSync(
       `${abiDir + value.contract_name  }.abi`,
       JSON.stringify(value.abi, null, "  "),
