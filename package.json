@@ -11,7 +11,7 @@
     "lint:solium": "solium --dir .",
     "lint:eslint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
-    "devchain": "bash utils/chain/devchain.sh",
+    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "test": "npm run test:ava",
     "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
