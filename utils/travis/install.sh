@@ -20,6 +20,6 @@ sudo snap install parity
 # sudo mv parity /usr/bin
 
 # install oyente
-sudo pip2 install z3
 sudo pip2 install z3-solver
+sudo pip2 install web3==2.7.0
 sudo pip2 install oyente
