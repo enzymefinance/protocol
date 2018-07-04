@@ -21,13 +21,13 @@ async function activateVersion(context) {
   await context.governance.methods.trigger(proposalId).send();
 }
 test.before(async () => {
-  deployed = await deployEnvironment(environment);
   accounts = await web3.eth.getAccounts();
   [deployer] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async t => {
+  deployed = await deployEnvironment(environment);
   t.context.governance = await deployContract("system/Governance", opts, [[deployer], 1, 100000]);
   t.context.version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}), ["V1", t.context.governance.options.address, deployed.EthToken.options.address, deployed.MlnToken.options.address, deployed.CanonicalPriceFeed.options.address, deployer], () => {}, true);
 });
