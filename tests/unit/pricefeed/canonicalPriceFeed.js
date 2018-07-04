@@ -1,7 +1,7 @@
 import test from "ava";
 import web3 from "../../../utils/lib/web3";
-import { deployContract, retrieveContract } from "../../../utils/lib/contracts";
-import deployEnvironment from "../../../utils/deploy/contracts";
+import { deployContract } from "../../../utils/lib/contracts";
+import { newMockAddress } from "../../../utils/lib/mocks";
 import createStakingFeed from "../../../utils/lib/createStakingFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -75,10 +75,6 @@ function registerBtc(context) {
 // hex to ascii string, stripping extra zereoes in case of fixed length bytes
 function hexToAsciiStrip(hexString) {
   return web3.utils.hexToAscii(hexString.replace(/0+$/, ""));
-}
-
-function newMockAddress() {
-  return web3.utils.toChecksumAddress(web3.utils.randomHex(20));
 }
 
 async function createPriceFeedAndStake(context) {
