@@ -98,7 +98,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     /// @dev override inherited update function to prevent manual update from authority
-    function update() external { revert(); }
+    function update(address[] ofAssets, uint[] newPrices) external { revert(); }
 
     /// @dev Burn state for a pricefeed operator
     /// @param user Address of pricefeed operator to burn the stake from
