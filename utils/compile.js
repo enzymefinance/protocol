@@ -16,7 +16,7 @@ const compileOptions = {
 
 Compile.compile(compileOptions, (err, result) => {
   if (err) {
-    console.log(err);
+    console.log(err.message); 
     return;
   }
   const abiDir = path.join(__dirname, "../out/abi/");

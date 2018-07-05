@@ -5,4 +5,15 @@ const config = masterConfig[process.env.CHAIN_ENV];
 const provider = new Web3.providers.HttpProvider(`http://${config.host}:${config.port}`)
 const web3 = new Web3(provider);
 
+web3.extend({
+    property: 'evm',
+    methods: [
+        {
+            name: 'mine',
+            call: 'evm_mine',
+            params: 0
+        }
+    ]
+});
+
 export default web3;

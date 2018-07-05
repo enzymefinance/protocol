@@ -147,7 +147,7 @@ test("Cannot register twice even if individual maxBuyin is not reached", async t
       t.context.fund.options.address,
     ]);
     await t.throws(registerFund(t, t.context.fund.options.address, manager, buyInAmount));
-    const expectedReward = await t.context.competition.methods.calculatePayout.call({}, [buyInAmount]);
+    const expectedReward = await t.context.competition.methods.calculatePayout(buyInAmount).call();
 
     t.is(Number(fundMlnOnFirst), Number(expectedReward));
   },
