@@ -15,7 +15,10 @@ const compileOptions = {
 };
 
 Compile.compile(compileOptions, (err, result) => {
-  if (err) return;
+  if (err) {
+    console.log(err);
+    return;
+  }
   const abiDir = path.join(__dirname, "../out/abi/");
   const binDir = path.join(__dirname, "../out/bin/");
   if (!fs.existsSync(abiDir)) {

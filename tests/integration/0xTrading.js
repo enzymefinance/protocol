@@ -144,8 +144,6 @@ test.serial(
     await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
-    await updateCanonicalPriceFeed(deployed);
-    await updateCanonicalPriceFeed(deployed);
     const requestId = await fund.methods.getLastRequestId().call();
     await fund.methods.executeRequest(requestId).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -207,7 +205,7 @@ test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await fund.methods.callOnExchange(
     0, takeOrderSignature,
-    [deployer, ZeroEx.NULL_ADDRESS, mlnToken.address, ethToken.address, ZeroEx.NULL_ADDRESS],
+    [deployer, ZeroEx.NULL_ADDRESS, mlnToken.options.address, ethToken.options.address, ZeroEx.NULL_ADDRESS],
     [
       trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), order.takerFee,
       order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
@@ -216,7 +214,6 @@ test.serial("manager takes order through 0x adapter", async t => {
   ).send(
     {from: manager, gas: config.gas}
   );
-
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 
