@@ -143,9 +143,7 @@ test("Cannot register for more than individual maxBuyin", async t => {
 test("Cannot register twice even if individual maxBuyin is not reached", async t => {
     const buyInAmount = new BigNumber(10 ** 19);
     await registerFund(t, t.context.fund.options.address, manager, buyInAmount);
-    const fundMlnOnFirst = await t.context.deployed.MlnToken.methods.balanceOf.call({}, [
-      t.context.fund.options.address,
-    ]);
+    const fundMlnOnFirst = await t.context.deployed.MlnToken.methods.balanceOf(t.context.fund.options.address).call();
     await t.throws(registerFund(t, t.context.fund.options.address, manager, buyInAmount));
     const expectedReward = await t.context.competition.methods.calculatePayout(buyInAmount).call();
 
