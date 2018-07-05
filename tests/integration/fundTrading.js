@@ -7,6 +7,11 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import governanceAction from "../../utils/lib/governanceAction";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import {
+  makeOrderSignature,
+  takeOrderSignature,
+  cancelOrderSignature
+} from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -40,41 +45,6 @@ let deployed;
 const offeredValue = new BigNumber(10 ** 22);
 const wantedShares = new BigNumber(10 ** 22);
 const numberofExchanges = 2;
-
-// define order signatures
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
-const takeOrderSignature = api.util
-  .abiSignature("takeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
-const cancelOrderSignature = api.util
-  .abiSignature("cancelOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);

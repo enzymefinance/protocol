@@ -8,6 +8,7 @@ import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/l
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
+import { takeOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -31,11 +32,6 @@ let deployed;
 let order;
 let signedOrder;
 let opts;
-
-// declare function signatures
-const takeOrderSignature = api.util.abiSignature('takeOrder', [
-  'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-]).slice(0,10);
 
 // mock data
 const offeredValue = new BigNumber(10 ** 20);
