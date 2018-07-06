@@ -23,15 +23,13 @@ This repository contains a reference implementation of the Melon protocol writte
 
 ### Installation
 
-You will need the `dapp` developer tools, which you can install using [these steps](http://dapp.tools/).
-
 ```sh
 # Clone this repository
-git clone --recursive git@github.com:melonproject/smart-contracts.git
+git clone git@github.com:melonproject/smart-contracts.git
 cd smart-contracts
 # Install dependencies
 npm install
-# Generate bytecode and abi of smart-contracts using dapp suite
+# Generate bytecode and abi of smart-contracts
 npm run compile
 ```
 
@@ -67,6 +65,9 @@ parity \
 npm run deploy:kovan
 ```
 ## Troubleshooting
+
+#### Permission denied (publickey) when cloning the repo
+Try cloning using `git clone https://github.com/melonproject/smart-contracts.git`
 
 #### Spec json is invalid when running Parity Devchain
 Update your Parity installation to the latest version or try changing `"instantSeal": null` to `"instantSeal": { "params": {} }` in chainGenesis.json
