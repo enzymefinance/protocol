@@ -19,7 +19,7 @@ cache:
   directories:
     - node_modules
 install:
-- ./utils/travis/install.sh
+# - ./utils/travis/install.sh
 - npm install
 script:
 - npm run compile &> compile.log || cat compile.log
