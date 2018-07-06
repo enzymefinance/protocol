@@ -6,7 +6,6 @@ import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
 import api from "../lib/api";
 import web3 from "../lib/web3";
-import unlock from "../lib/unlockAccount";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
@@ -55,8 +54,8 @@ async function deployEnvironment(environment) {
   if (environment === "kovan" || environment === "kovanCompetition") {
     // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
     const deploymentAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
-    const pricefeedUpdaterAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
     opts.from = deploymentAddress;
+    /* eslint-disable global-require */
     const previous = require('../../addressBook.json').kovan;
     const commonEnvironment = "kovan";
     // set up governance and tokens
@@ -243,14 +242,14 @@ async function deployEnvironment(environment) {
     //   console.log(`Registered ${assetSymbol}`);
     // }
   } else if (environment === "live") {
-    const deployer = config.protocol.deployer;
+    // const deployer = config.protocol.deployer;
     const pricefeedUpdater = config.protocol.pricefeed.updater;
-    const pricefeedUpdaterPassword = '';
-    const authority = config.protocol.governance.authorities[0];
-    const authorityPassword = '';
+    // const pricefeedUpdaterPassword = '';
+    // const authority = config.protocol.governance.authorities[0];
+    // const authorityPassword = '';
     opts.from = pricefeedUpdater;
-    const mlnAddr = tokenInfo[environment].MLN.address;
-    const ethTokenAddress = tokenInfo[environment]["WETH"].address;
+    // const mlnAddr = tokenInfo[environment].MLN.address;
+    // const ethTokenAddress = tokenInfo[environment]["WETH"].address;
 
     // deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
     //   config.protocol.governance.authorities,
@@ -413,7 +412,7 @@ async function deployEnvironment(environment) {
     //   ]
     // );
   } else if (environment === "development") {
-    opts.from = accounts[0];
+    [opts.from] = accounts;
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);

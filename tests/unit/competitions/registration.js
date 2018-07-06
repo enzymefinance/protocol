@@ -24,7 +24,6 @@ const fundName = web3.utils.toHex("Super Fund");
 let accounts;
 let deployer;
 let manager;
-let opts;
 
 async function registerFund(t, fundAddress, by, value) {
   const [r, s, v] = await getSignatureParameters(by, competitionTerms);
@@ -42,7 +41,6 @@ async function registerFund(t, fundAddress, by, value) {
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
-  opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async t => {

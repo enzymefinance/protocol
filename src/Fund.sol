@@ -8,7 +8,6 @@ import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
-import "./dependencies/weth9.sol";
 import "./dependencies/math.sol";
 
 /// @title Melon Fund Contract
@@ -330,13 +329,17 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     )
         external
     {
-        require(modules.pricefeed.exchangeMethodIsAllowed(
-            exchanges[exchangeIndex].exchange, method
-        ));
-        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(
-            method, exchanges[exchangeIndex].exchange,
-            orderAddresses, orderValues, identifier, v, r, s
-        ));
+        require(
+            modules.pricefeed.exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange, method
+            )
+        );
+        require(
+            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
+                method, exchanges[exchangeIndex].exchange,
+                orderAddresses, orderValues, identifier, v, r, s
+            )
+        );
     }
 
     function addOpenMakeOrder(

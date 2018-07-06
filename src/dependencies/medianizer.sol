@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import './value.sol';
+import "./value.sol";
 
 contract Medianizer is DSValue {
     event LogValue(bytes32 val);

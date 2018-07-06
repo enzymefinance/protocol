@@ -209,8 +209,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
                     while (item >= out[k]) {
                         k++;  // get to where element belongs (between smaller and larger items)
                     }
-                    for (uint l = counter; l > k; l--) {
-                        out[l] = out[l - 1];    // bump larger elements rightward to leave slot
+                    for (uint m = counter; m > k; m--) {
+                        out[m] = out[m - 1];    // bump larger elements rightward to leave slot
                     }
                     out[k] = item;
                 }

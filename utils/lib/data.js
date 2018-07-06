@@ -21,6 +21,5 @@ const cancelOrderSignature = abiEncode("cancelOrder", [
 export {
   makeOrderSignature,
   takeOrderSignature,
-  cancelOrderSignature,
-}
-
+  cancelOrderSignature
+};

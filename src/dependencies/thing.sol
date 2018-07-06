@@ -17,9 +17,9 @@
 
 pragma solidity ^0.4.13;
 
-import './auth.sol';
-import './note.sol';
-import './math.sol';
+import "./auth.sol";
+import "./note.sol";
+import "./math.sol";
 
 contract DSThing is DSAuth, DSNote, DSMath {
 
