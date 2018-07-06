@@ -9,8 +9,7 @@ import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
 import "./policies/Manager.sol";
-import "ds-weth/weth9.sol";
-import "ds-math/math.sol";
+import "./dependencies/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
@@ -391,8 +390,8 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     // PUBLIC METHODS : ACCOUNTING
 
     function getFundHoldings() returns (uint[], address[]) {
-        uint[] memory _quantities;
-        address[] memory _assets;
+        uint[] memory _quantities = new uint[](ownedAssets.length);
+        address[] memory _assets = new address[](ownedAssets.length);
 
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
@@ -404,19 +403,18 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             );
 
             if (assetHoldings != 0) {
-                _assets.push(ofAsset);
-                _quantities.push(assetHoldings)
+                _assets[i] = ofAsset;
+                _quantities[i] = assetHoldings;
             }
         }
 
         return (_quantities, _assets);
     }
-
+    
     function getFundHoldingsLength() view returns (uint) {
-      (uint[] quantities,) = getFundHoldings();
-      return quantities.length;
+        return 1; // FIX
     }
-
+    
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPriceInfo(..) returns recent prices
