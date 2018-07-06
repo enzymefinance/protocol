@@ -19,4 +19,8 @@ async function getTermsSignatureParameters(managerAddress) {
   return getSignatureParameters(managerAddress, termsAndConditionsHash);
 }
 
-export { getSignature, getSignatureParameters, getTermsSignatureParameters }
+export { 
+  getSignature,
+  getSignatureParameters,
+  getTermsSignatureParameters
+}

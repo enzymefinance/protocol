@@ -1,5 +1,4 @@
 import test from "ava";
-import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
@@ -7,6 +6,7 @@ import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
+import { makeOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -30,18 +30,6 @@ let trade1;
 let version;
 let deployed;
 let opts;
-
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
 
 // mock data
 const offeredValue = new BigNumber(10 ** 21);
@@ -127,7 +115,7 @@ test.beforeEach(async () => {
   const sellQuantity1 = new BigNumber(10 ** 19);
   trade1 = {
     sellQuantity: sellQuantity1,
-    buyQuantity: new BigNumber(referencePrice).dividedBy(10 ** 18).times(sellQuantity1),
+    buyQuantity: Math.floor(new BigNumber(referencePrice).dividedBy(10 ** 18).times(sellQuantity1)),
   };
 });
 

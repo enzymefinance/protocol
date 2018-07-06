@@ -6,6 +6,7 @@ import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import { makeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -28,30 +29,6 @@ let trade1;
 let version;
 let deployed;
 let opts;
-
-// declare function signatures
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
-const cancelOrderSignature = api.util
-  .abiSignature("cancelOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
 
 // mock data
 const offeredValue = new BigNumber(10 ** 10);

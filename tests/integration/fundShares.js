@@ -212,7 +212,7 @@ test.serial("allows request and execution on the first investment", async t => {
   const fundPreAllowance = new BigNumber(await mlnToken.methods.allowance(investor, fund.options.address).call());
   const offerValue = await calculateOfferValue(firstTest.wantedShares);
   // Offer additional value than market price to avoid price fluctation failures
-  firstTest.offeredValue = new BigNumber(Math.round(offerValue.mul(101)));
+  firstTest.offeredValue = new BigNumber(Math.floor(offerValue.mul(101)));
   receipt = await mlnToken.methods.approve(
     fund.options.address, firstTest.offeredValue
   ).send({ from: investor, gasPrice: config.gasPrice });
@@ -286,7 +286,7 @@ subsequentTests.forEach(testInstance => {
       const offerValue = await calculateOfferValue(testInstance.wantedShares);
       // Offer additional value than market price to avoid price fluctation failures
       /* eslint-disable no-param-reassign */
-      testInstance.offeredValue = new BigNumber(Math.round(offerValue.mul(1.1)));
+      testInstance.offeredValue = new BigNumber(Math.floor(offerValue.mul(1.1)));
       const inputAllowance = testInstance.offeredValue;
       const fundPreAllowance = new BigNumber(await mlnToken.methods.allowance(investor, fund.options.address).call());
       receipt = await mlnToken.methods.approve(
@@ -404,10 +404,12 @@ subsequentTests.forEach(testInstance => {
     const [, mlnPrice, mlnDecimals] =
       Object.values(await pricefeed.methods.getPriceInfo(mlnToken.options.address).call()).map(e => new BigNumber(e));
     const additionalValueInEther = Math.floor(testInstance.offeredValue.minus(offerRemainder).mul(mlnPrice).div(10 ** mlnDecimals));
+
     t.deepEqual(
       postGav,
       preGav.add(additionalValueInEther),
     );
+
     const totalShares = await fund.methods.totalSupply().call();
     const feeDifference = postUnclaimedFees.minus(preUnclaimedFees);
     const expectedFeeShareDifference = Math.floor(
@@ -446,7 +448,7 @@ subsequentTests.forEach(testInstance => {
       (gav / 31536000 / 1000) *
       (currentTime - atLastUnclaimedFeeAllocation);
     atLastUnclaimedFeeAllocation = currentTime;
-    t.is(Number(calculationsAtLastAllocation[1]), Math.round(calculatedFee));
+    t.is(Number(calculationsAtLastAllocation[1]), Math.floor(calculatedFee));
   });
 });
 

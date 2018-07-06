@@ -1,11 +1,11 @@
 import test from "ava";
-import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import governanceAction from "../../utils/lib/governanceAction";
+import { makeOrderSignature } from "../../utils/lib/data";
 
 const environmentConfig = require("../../utils/config/environment.js");
 
@@ -33,19 +33,6 @@ const offeredEth = 500000;
 const wantedShares = 500000;
 const sellQuantity = 1000;
 const buyQuantity = 1000;
-
-// define order signatures
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
