@@ -4,7 +4,7 @@ import "./CanonicalRegistrar.sol";
 import "./CanonicalPriceFeed.sol";
 import "./SimplePriceFeedInterface.sol";
 import "../dependencies/DBC.sol";
-import "ds-thing/thing.sol";
+import "../dependencies/thing.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>

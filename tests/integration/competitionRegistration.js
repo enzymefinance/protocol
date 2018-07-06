@@ -1,5 +1,6 @@
 import test from "ava";
 import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters, getSignatureParameters } from "../../utils/lib/signing";
@@ -32,23 +33,22 @@ test.before(async () => {
   competition = await deployed.Competition;
   mlnToken = await deployed.MlnToken;
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      "Suisse Fund",
-      deployed.EthToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address],
-      v,
-      r,
-      s,
-    ],
+  await version.methods.setupFund(
+    web3.utils.toHex("Suisse Fund"),
+    deployed.EthToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.MatchingMarket.options.address],
+    [deployed.MlnToken.options.address],
+    v,
+    r,
+    s,
+  ).send(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice }
   );
-  const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
+  const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
 });
 
@@ -56,22 +56,21 @@ const initialTokenAmount = new BigNumber(10 ** 24);
 test.serial(
   "competition contract receives initial mlnToken for testing",
   async t => {
-    const preDeployerMln = await mlnToken.instance.balanceOf.call({}, [
+    const preDeployerMln = new BigNumber(await mlnToken.methods.balanceOf(
       deployer,
-    ]);
-    const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
-    await mlnToken.instance.transfer.postTransaction(
-      { from: deployer, gasPrice: config.gasPrice },
-      [competition.address, initialTokenAmount, ""],
+    ).call());
+    const preCompetitionMln = new BigNumber(await mlnToken.methods.balanceOf(
+      competition.options.address,
+    ).call());
+    await mlnToken.methods.transfer(competition.options.address, initialTokenAmount).send(
+      { from: deployer, gasPrice: config.gasPrice }
     );
-    const postDeployerMln = await mlnToken.instance.balanceOf.call({}, [
+    const postDeployerMln = new BigNumber(await mlnToken.methods.balanceOf(
       deployer,
-    ]);
-    const postCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
+    ).call());
+    const postCompetitionMln = new BigNumber(await mlnToken.methods.balanceOf(
+      competition.options.address,
+    ).call());
 
     t.deepEqual(postDeployerMln, preDeployerMln.sub(initialTokenAmount));
     t.deepEqual(postCompetitionMln, preCompetitionMln.add(initialTokenAmount));
@@ -84,32 +83,28 @@ test.serial(
     const buyinValue = new BigNumber(0.78 * 10 ** 21);
     await updateCanonicalPriceFeed(deployed);
     const pre = await getAllBalances(deployed, accounts, fund);
-    const preCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
-    const preTotalSupply = await fund.instance.totalSupply.call({}, []);
+    const preCompetitionMln = new BigNumber(await mlnToken.methods.balanceOf(
+      competition.options.address,
+    ).call());
+    const preTotalSupply = new BigNumber(await fund.methods.totalSupply().call());
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
-    const estimatedMlnReward = await competition.instance.calculatePayout.call({}, [buyinValue]);
-    const estimatedShares = await competition.instance.getEtherValue.call({}, [estimatedMlnReward]);
-    await competition.instance.registerForCompetition.postTransaction(
+    const estimatedMlnReward = await competition.methods.calculatePayout(buyinValue).call();
+    const estimatedShares = await competition.methods.getEtherValue(estimatedMlnReward).call();
+    await competition.methods.registerForCompetition(fund.options.address, v, r, s).send(
       {
         from: manager,
         gas: config.gas,
         gasPrice: config.gasPrice,
         value: buyinValue,
-      },
-      [fund.address, v, r, s],
+      }
     );
     const post = await getAllBalances(deployed, accounts, fund);
-    const postCompetitionMln = await mlnToken.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
-    const postTotalSupply = await fund.instance.totalSupply.call({}, []);
-    const registrantFund = await competition.instance.getRegistrantFund.call(
-      {},
-      [manager],
-    );
-    t.is(registrantFund, fund.address);
+    const postCompetitionMln = new BigNumber(await mlnToken.methods.balanceOf(
+      competition.options.address,
+    ).call());
+    const postTotalSupply = new BigNumber(await fund.methods.totalSupply().call());
+    const registrantFund = await competition.methods.getRegistrantFund(manager).call();
+    t.is(registrantFund, fund.options.address);
     t.is(Number(preTotalSupply), 0);
     t.deepEqual(post.custodian.ether, pre.custodian.ether.add(buyinValue));
     t.deepEqual(post.custodian.MlnToken, pre.custodian.MlnToken);
@@ -121,18 +116,15 @@ test.serial(
     t.deepEqual(postTotalSupply, preTotalSupply.add(estimatedShares));
 
     // Verify registration parameters
-    const registrantId = await competition.instance.getRegistrantId.call({}, [
+    const registrantId = await competition.methods.getRegistrantId(
       manager,
-    ]);
-    const registrationDetails = await competition.instance.registrants.call(
-      {},
-      [registrantId],
-    );
-    t.is(registrationDetails[0], fund.address);
+    ).call();
+    const registrationDetails = await competition.methods.registrants(registrantId).call();
+    t.is(registrationDetails[0], fund.options.address);
     t.is(registrationDetails[1], manager);
     t.is(registrationDetails[2], true);
-    t.deepEqual(registrationDetails[3], buyinValue);
-    t.deepEqual(registrationDetails[4], estimatedMlnReward);
+    t.deepEqual(Number(registrationDetails[3]), Number(buyinValue));
+    t.deepEqual(Number(registrationDetails[4]), Number(estimatedMlnReward));
     t.is(registrationDetails[5], false);
   },
 );

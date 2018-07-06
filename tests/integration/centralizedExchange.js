@@ -1,10 +1,12 @@
 import test from "ava";
 import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import { makeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -26,30 +28,7 @@ let exchangeOwner;
 let trade1;
 let version;
 let deployed;
-
-// declare function signatures
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
-const cancelOrderSignature = api.util
-  .abiSignature("cancelOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
+let opts;
 
 // mock data
 const offeredValue = new BigNumber(10 ** 10);
@@ -57,14 +36,15 @@ const wantedShares = new BigNumber(10 ** 10);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager, investor, , exchangeOwner] = accounts;
+  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployed.Version;
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   deployed.CentralizedExchangeBridge = await deployContract(
-    "exchange/thirdparty/CentralizedExchangeBridge", { from: deployer }
+    "exchange/thirdparty/CentralizedExchangeBridge", opts
   );
   await governanceAction(
     { from: deployer },
@@ -72,36 +52,34 @@ test.before(async () => {
     deployed.CanonicalPriceFeed,
     "registerExchange",
     [
-      deployed.CentralizedExchangeBridge.address,
-      deployed.CentralizedAdapter.address,
-      false,
+      deployed.CentralizedExchangeBridge.options.address,
+      deployed.CentralizedAdapter.options.address,
+      true,
       [makeOrderSignature, cancelOrderSignature],
     ],
   );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      "Suisse Fund",
-      deployed.EthToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.CentralizedExchangeBridge.address],
-      [],
-      v,
-      r,
-      s,
-    ],
+  await version.methods.setupFund(
+    web3.utils.toHex("Suisse Fund"),
+    deployed.EthToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.CentralizedExchangeBridge.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice }
   );
-  const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
+  const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
-  // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [investor],
+  // Change competition.options.address to investor just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
 });
 
@@ -111,32 +89,25 @@ test.beforeEach(async () => {
   const [
     ,
     referencePrice,
-  ] = await pricefeed.instance.getReferencePriceInfo.call({}, [
-    ethToken.address,
-    mlnToken.address,
-  ]);
+  ] = Object.values(await pricefeed.methods.getReferencePriceInfo(
+    ethToken.options.address,
+    mlnToken.options.address,
+  ).call());
   const sellQuantity1 = new BigNumber(10 * 19);
   trade1 = {
     sellQuantity: sellQuantity1,
-    buyQuantity: Math.round(referencePrice / 10 ** 18 * sellQuantity1),
+    buyQuantity: Math.round(new BigNumber(referencePrice) / 10 ** 18 * sellQuantity1),
   };
 });
 
 test.serial(
   "transfer ownership of exchange from deployer to new owner",
   async t => {
-    const oldOwner = await deployed.CentralizedExchangeBridge.instance.owner.call(
-      {},
-      [],
+    const oldOwner = await deployed.CentralizedExchangeBridge.methods.owner().call();
+    await deployed.CentralizedExchangeBridge.methods.changeOwner(exchangeOwner).send(
+      { from: deployer, gasPrice: config.gasPrice }
     );
-    await deployed.CentralizedExchangeBridge.instance.changeOwner.postTransaction(
-      { from: deployer, gasPrice: config.gasPrice },
-      [exchangeOwner],
-    );
-    const newOwner = await deployed.CentralizedExchangeBridge.instance.owner.call(
-      {},
-      [],
-    );
+    const newOwner = await deployed.CentralizedExchangeBridge.methods.owner().call();
     t.is(oldOwner, deployer);
     t.is(newOwner, exchangeOwner);
   },
@@ -145,9 +116,8 @@ test.serial(
 const initialTokenAmount = new BigNumber(10 ** 20);
 test.serial("investor receives initial ethToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  await ethToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [investor, initialTokenAmount, ""],
+  await ethToken.methods.transfer(investor, initialTokenAmount).send(
+    { from: deployer, gasPrice: config.gasPrice }
   );
   const post = await getAllBalances(deployed, accounts, fund);
 
@@ -170,20 +140,17 @@ test.serial(
   "fund receives ETH from a investment (request & execute)",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await ethToken.instance.approve.postTransaction(
-      { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-      [fund.address, offeredValue],
+    await ethToken.methods.approve(fund.options.address, offeredValue).send(
+      { from: investor, gasPrice: config.gasPrice, gas: config.gas }
     );
-    await fund.instance.requestInvestment.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [offeredValue, wantedShares, ethToken.address],
+    await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
     await updateCanonicalPriceFeed(deployed);
     await updateCanonicalPriceFeed(deployed);
-    const requestId = await fund.instance.getLastRequestId.call({}, []);
-    await fund.instance.executeRequest.postTransaction(
-      { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-      [requestId],
+    const requestId = await fund.methods.getLastRequestId().call();
+    await fund.methods.executeRequest(requestId).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
     const post = await getAllBalances(deployed, accounts, fund);
 
@@ -208,26 +175,22 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     await updateCanonicalPriceFeed(deployed);
-    await fund.instance.callOnExchange.postTransaction(
-      { from: manager, gas: config.gas },
-      [
-        0,
-        makeOrderSignature,
-        ["0x0", "0x0", ethToken.address, mlnToken.address, "0x0"],
-        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        "0x0",
-        0,
-        "0x0",
-        "0x0",
-      ],
+    await fund.methods.callOnExchange(
+      0,
+      makeOrderSignature,
+      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+      web3.utils.padLeft('0x0', 64),
+      0,
+      web3.utils.padLeft('0x0', 64),
+      web3.utils.padLeft('0x0', 64),
+    ).send(
+      { from: manager, gas: config.gas }
     );
     const post = await getAllBalances(deployed, accounts, fund);
-    const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
-      {},
-      [ethToken.address],
-    );
+    const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 
-    t.deepEqual(heldInExchange, trade1.sellQuantity);
+    t.deepEqual(Number(heldInExchange), Number(trade1.sellQuantity));
     t.deepEqual(
       post.exchangeOwner.EthToken,
       pre.exchangeOwner.EthToken.add(trade1.sellQuantity),
@@ -246,23 +209,15 @@ test.serial(
 
 test.serial("Manager settles an order on the exchange interface", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const orderId = await deployed.CentralizedExchangeBridge.instance.getLastOrderId.call(
-    {},
-    [],
+  const orderId = await deployed.CentralizedExchangeBridge.methods.getLastOrderId().call();
+  await mlnToken.methods.approve(deployed.CentralizedExchangeBridge.options.address, trade1.buyQuantity).send(
+    { from: deployer, gasPrice: config.gasPrice, gas: config.gas }
   );
-  await mlnToken.instance.approve.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice, gas: config.gas },
-    [deployed.CentralizedExchangeBridge.address, trade1.buyQuantity],
-  );
-  await deployed.CentralizedExchangeBridge.instance.settleOrder.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [orderId, trade1.buyQuantity],
+  await deployed.CentralizedExchangeBridge.methods.settleOrder(orderId, trade1.buyQuantity).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
   const post = await getAllBalances(deployed, accounts, fund);
-  const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
-    {},
-    [ethToken.address],
-  );
+  const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 
   t.is(Number(heldInExchange), 0);
   t.deepEqual(
@@ -282,62 +237,55 @@ test.serial("Manager settles an order on the exchange interface", async t => {
 
 test.serial("Manager cancels an order from the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
-  await fund.instance.callOnExchange.postTransaction(
-    { from: manager, gas: config.gas },
-    [
-      0,
-      api.util
-        .abiSignature("makeOrder", [
-          "address",
-          "address[5]",
-          "uint256[8]",
-          "bytes32",
-          "uint8",
-          "bytes32",
-          "bytes32",
-        ])
-        .slice(0, 10),
-      ["0x0", "0x0", mlnToken.address, ethToken.address, "0x0"],
-      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0],
-      "0x0",
-      0,
-      "0x0",
-      "0x0",
-    ],
+  await fund.methods.callOnExchange(
+    0,
+    api.util
+      .abiSignature("makeOrder", [
+        "address",
+        "address[5]",
+        "uint256[8]",
+        "bytes32",
+        "uint8",
+        "bytes32",
+        "bytes32",
+      ])
+      .slice(0, 10),
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
   );
   const pre = await getAllBalances(deployed, accounts, fund);
-  await mlnToken.instance.transfer.postTransaction(
-    { from: exchangeOwner, gasPrice: config.gasPrice, gas: config.gas },
-    [manager, trade1.sellQuantity, ""],
+  await mlnToken.methods.transfer(manager, trade1.sellQuantity).send(
+    { from: exchangeOwner, gasPrice: config.gasPrice, gas: config.gas }
   );
-  await mlnToken.instance.approve.postTransaction(
-    { from: manager, gasPrice: config.gasPrice, gas: config.gas },
-    [fund.address, trade1.sellQuantity],
+  await mlnToken.methods.approve(fund.options.address, trade1.sellQuantity).send(
+    { from: manager, gasPrice: config.gasPrice, gas: config.gas }
   );
-  const orderId = await deployed.CentralizedExchangeBridge.instance.getLastOrderId.call();
-  await fund.instance.callOnExchange.postTransaction(
-    { from: manager, gas: config.gas },
-    [
-      0,
-      cancelOrderSignature,
-      ["0x0", "0x0", mlnToken.address, "0x0", "0x0"],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      `0x${Number(orderId)
-        .toString(16)
-        .padStart(64, "0")}`,
-      0,
-      "0x0",
-      "0x0",
-    ],
+  const orderId = await deployed.CentralizedExchangeBridge.methods.getLastOrderId().call();
+  await fund.methods.callOnExchange(
+    0,
+    cancelOrderSignature,
+    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    `0x${Number(orderId)
+      .toString(16)
+      .padStart(64, "0")}`,
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
   );
   // TODO: check that the order is cancelled (need order ID, which requires 2D mapping access from parity.js)
-  // const orderId = await fund.instance.exchangeIdsToOpenMakeOrderIds.call({}, [0, mlnToken.address]);
-  // const orderOpen = await exchanges[0].instance.isActive.call({}, [orderId]);
+  // const orderId = await fund.methods.exchangeIdsToOpenMakeOrderIds(0, mlnToken.options.address).call();
+  // const orderOpen = await exchanges[0].methods.isActive(orderId).call();
   const post = await getAllBalances(deployed, accounts, fund);
-  const heldInExchange = await fund.instance.quantityHeldInCustodyOfExchange.call(
-    {},
-    [mlnToken.address],
-  );
+  const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(mlnToken.options.address).call();
 
   t.is(Number(heldInExchange), 0);
   // t.false(orderOpen);

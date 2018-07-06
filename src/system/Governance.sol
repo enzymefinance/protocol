@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ds-group/group.sol";
+import "../dependencies/group.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../version/VersionInterface.sol";
@@ -82,7 +82,7 @@ contract Governance is DBC, Owned, DSGroup {
         info.active = true;
         info.timestamp = now;
         versions.push(info);
-        VersionUpdated(versions.length - 1);
+        emit VersionUpdated(versions.length - 1);
     }
 
     /// @notice Remove and shut down version of Melon
@@ -95,7 +95,7 @@ contract Governance is DBC, Owned, DSGroup {
         VersionInterface Version = VersionInterface(versions[id].version);
         Version.shutDown();
         delete versions[id];
-        VersionUpdated(id);
+        emit VersionUpdated(id);
     }
 
     function getVersionsLength() public view returns (uint) {

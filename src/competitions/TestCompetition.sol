@@ -1,19 +1,19 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 import "./CompetitionInterface.sol";
 import "../assets/ERC20Interface.sol";
-import '../assets/AssetInterface.sol';
-import '../FundInterface.sol';
-import '../version/Version.sol';
-import '../pricefeeds/CanonicalPriceFeed.sol';
-import '../dependencies/DBC.sol';
-import '../dependencies/Owned.sol';
-import "ds-math/math.sol";
+import "../assets/AssetInterface.sol";
+import "../FundInterface.sol";
+import "../version/Version.sol";
+import "../pricefeeds/CanonicalPriceFeed.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/Owned.sol";
+import "../dependencies/math.sol";
 
-/// @title Competition Contract
+/// @title Test Competition Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Register Melon funds in competition
-contract Competition is CompetitionInterface, DSMath, DBC, Owned {
+contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
 
     // TYPES
 
@@ -27,8 +27,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     }
 
     struct RegistrantId {
-      uint id; // Actual Registrant Id
-      bool exists; // Used to check if the mapping exists
+        uint id; // Actual Registrant Id
+        bool exists; // Used to check if the mapping exists
     }
 
     // FIELDS
@@ -63,6 +63,31 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     //EVENTS
 
     event Register(uint withId, address fund, address manager);
+
+    // METHODS
+
+    // CONSTRUCTOR
+
+    function TestCompetition(
+        address ofMelonAsset,
+        address ofCompetitionVersion,
+        address ofCustodian,
+        uint ofStartTime,
+        uint ofEndTime,
+        uint ofPayoutRate,
+        uint ofTotalMaxBuyin,
+        uint ofMaxRegistrants
+    ) {
+        MELON_ASSET = ofMelonAsset;
+        MELON_CONTRACT = ERC20Interface(MELON_ASSET);
+        COMPETITION_VERSION = ofCompetitionVersion;
+        custodian = ofCustodian;
+        startTime = ofStartTime;
+        endTime = ofEndTime;
+        payoutRate = ofPayoutRate;
+        totalMaxBuyin = ofTotalMaxBuyin;
+        maxRegistrants = ofMaxRegistrants;
+    }
 
     // PRE, POST, INVARIANT CONDITIONS
 
@@ -162,29 +187,6 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
 
     // NON-CONSTANT METHODS
 
-    function Competition(
-        address ofMelonAsset,
-        address ofCHFAsset,
-        address ofCompetitionVersion,
-        address ofCustodian,
-        uint ofStartTime,
-        uint ofEndTime,
-        uint ofPayoutRate,
-        uint ofTotalMaxBuyin,
-        uint ofMaxRegistrants
-    ) {
-        MELON_ASSET = ofMelonAsset;
-        MELON_CONTRACT = ERC20Interface(MELON_ASSET);
-        CHF_ASSET = ofCHFAsset;
-        COMPETITION_VERSION = ofCompetitionVersion;
-        custodian = ofCustodian;
-        startTime = ofStartTime;
-        endTime = ofEndTime;
-        payoutRate = ofPayoutRate;
-        totalMaxBuyin = ofTotalMaxBuyin;
-        maxRegistrants = ofMaxRegistrants;
-    }
-
     /// @notice Register to take part in the competition
     /// @dev Check if the fund address is actually from the Competition Version
     /// @param fund Address of the Melon fund
@@ -199,10 +201,9 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     )
         payable
         pre_cond(isCompetitionActive() && !Version(COMPETITION_VERSION).isShutDown())
-        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s) && isWhitelisted(msg.sender))
+        pre_cond(termsAndConditionsAreSigned(msg.sender, v, r, s))
     {
         require(add(currentTotalBuyin, msg.value) <= totalMaxBuyin && registrants.length < maxRegistrants);
-        require(getCHFValue(msg.value) <= whitelistantToMaxBuyin[msg.sender]);
         require(Version(COMPETITION_VERSION).getFundByManager(msg.sender) == fund);
 
         // Calculate Payout Quantity, invest the quantity in registrant's fund
@@ -222,12 +223,12 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         emit Register(registrants.length, fund, msg.sender);
 
         registrants.push(Registrant({
-          fund: fund,
-          registrant: msg.sender,
-          hasSigned: true,
-          buyinQuantity: msg.value,
-          payoutQuantity: payoutQuantity,
-          isRewarded: false
+            fund: fund,
+            registrant: msg.sender,
+            hasSigned: true,
+            buyinQuantity: msg.value,
+            payoutQuantity: payoutQuantity,
+            isRewarded: false
         }));
     }
 
@@ -247,6 +248,14 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         }
     }
 
+    /// @notice Withdraw MLN
+    /// @dev Only the owner can call this function
+    function withdrawMln(address to, uint amount)
+        pre_cond(isOwner())
+    {
+        MELON_CONTRACT.transfer(to, amount);
+    }
+
     /// @notice Claim Reward
     function claimReward()
         pre_cond(getRegistrantFund(msg.sender) != address(0))
@@ -255,8 +264,8 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
         require(registrant.isRewarded == false);
         registrant.isRewarded = true;
         // Is this safe to assume this or should we transfer all the balance instead?
-        uint balance = AssetInterface(registrant.fund).balanceOf(this);
-        assert(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
+        uint balance = AssetInterface(registrant.fund).balanceOf(address(this));
+        require(AssetInterface(registrant.fund).transfer(registrant.registrant, balance));
 
         // Emit ClaimedReward event
         emit ClaimReward(msg.sender, registrant.fund, balance);

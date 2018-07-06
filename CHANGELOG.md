@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fund function to retrieve order ID by exchange/asset pair
 - Canonical pricefeed is a staking pricefeed factory
 - history to canonical pricefeed
+- withdrawMln function to Competition contract callable by the owner
 
 ### Changed
 
@@ -39,12 +40,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove ERC223 code from Asset.sol (also changes event signatures)
 - issue both ERC20 and ERC223 events from Shares.sol
 - all unit tests to run non-serially
+- add withdrawStake function to OperatorStaking
+- add withdrawStake function to StakingPriceFeed
+- introduce delay *after* unstake, needing another call to withdraw stake after delay
+- Competition contract no longer relies on pricefeed / CHF asset price. Whitelist limit is denominated now in Ether.
 
 ### Fixed
 
 - bug allowing emergencyRedeem to drain funds
 - bug where orderExpired returned `true` for invalid assets
 - bug allowing stake/do something/unstake in one block
+- inconsistencies like 'this vs address(this), '0x0 vs address(0), solidity version, event handling, functions ordering
 
 ### Updated
 
@@ -57,6 +63,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - superfluous Fund functions (getLastOrderId, getNameHash)
 - unnecessary governance functions (everything can be triggered with calldata)
 - fund name tracking in Version
+- StakeBank dependency from OperatorStaking
+- CHFAsset from deployment
+- Unused Weth9.t.sol
 
 ## [0.7.0]
 

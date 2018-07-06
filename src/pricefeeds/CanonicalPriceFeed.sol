@@ -65,7 +65,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         OperatorStaking(
             AssetInterface(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
         )
-        SimplePriceFeed(this, ofQuoteAsset, 0x0)
+        SimplePriceFeed(address(this), ofQuoteAsset, address(0))
     {
         registerAsset(
             ofQuoteAsset,
@@ -98,24 +98,19 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     /// @dev override inherited update function to prevent manual update from authority
-    function update() external { revert(); }
+    function update(address[] ofAssets, uint[] newPrices) external { revert(); }
 
     /// @dev Burn state for a pricefeed operator
     /// @param user Address of pricefeed operator to burn the stake from
-    /// @param amount Amount of stake to burn
-    /// @param data Additional data
-    function burnStake(address user, uint amount, bytes data)
+    function burnStake(address user)
         external
         auth
     {
-        require(totalStakedFor(user) >= amount);
-        uint preStake = totalStakedFor(user);
-        uint postStake = sub(preStake, amount);
-        require(postStake >= minimumStake || postStake == 0);
-        updateCheckpointAtNow(stakesFor[user], amount, true);
-        updateCheckpointAtNow(stakeHistory, amount, true);
+        uint totalToBurn = add(stakedAmounts[user], stakeToWithdraw[user]);
+        stakedAmounts[user] = 0;
+        stakeToWithdraw[user] = 0;
         updateStakerRanking(user);
-        StakeBurned(user, amount, data);
+        emit StakeBurned(user, totalToBurn, "");
     }
 
     // PUBLIC METHODS
@@ -131,7 +126,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     {
         OperatorStaking.stake(amount, data);
     }
-  
+
     // function stakeFor(
     //     address user,
     //     uint amount,
@@ -157,8 +152,19 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     /// @param ofAssets list of asset addresses
     function collectAndUpdate(address[] ofAssets)
         public
-        auth 
+        auth
         pre_cond(updatesAreAllowed)
+    {
+        uint[] memory newPrices = pricesToCommit(ofAssets);
+        priceHistory.push(
+            HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
+        );
+        _updatePrices(ofAssets, newPrices);
+    }
+
+    function pricesToCommit(address[] ofAssets)
+        view
+        returns (uint[])
     {
         address[] memory operators = getOperators();
         uint[] memory newPrices = new uint[](ofAssets.length);
@@ -174,10 +180,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             }
             newPrices[i] = medianize(assetPrices);
         }
-        priceHistory.push(
-            HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
-        );
-        _updatePrices(ofAssets, newPrices);
+        return newPrices;
     }
 
     /// @dev from MakerDao medianizer contract
@@ -206,8 +209,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
                     while (item >= out[k]) {
                         k++;  // get to where element belongs (between smaller and larger items)
                     }
-                    for (uint l = counter; l > k; l--) {
-                        out[l] = out[l - 1];    // bump larger elements rightward to leave slot
+                    for (uint m = counter; m > k; m--) {
+                        out[m] = out[m - 1];    // bump larger elements rightward to leave slot
                     }
                     out[k] = item;
                 }
@@ -370,12 +373,15 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns(address[])
     {
-        address[] memory ofPriceFeeds = new address[](stakeRanking.length);
-        for (uint i; i < stakeRanking.length; i++) {
-            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeRanking[i].staker);
+        address[] memory ofPriceFeeds = new address[](numStakers);
+        if (numStakers == 0) return ofPriceFeeds;
+        uint current = stakeNodes[0].next;
+        for (uint i; i < numStakers; i++) {
+            StakingPriceFeed stakingFeed = StakingPriceFeed(stakeNodes[current].data.staker);
             if (stakingFeed.owner() == _owner) {
                 ofPriceFeeds[i] = address(stakingFeed);
             }
+            current = stakeNodes[current].next;
         }
         return ofPriceFeeds;
     }

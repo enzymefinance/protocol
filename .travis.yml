@@ -23,11 +23,11 @@ install:
 - npm install
 script:
 - npm run compile &> compile.log || cat compile.log
-- npm run devchain > parity.log &
+- npm run 
+- npm run devchain > ganache.log &
 - sleep 20
-- npm run deploy
 - npm run test
-- npm run oyente
+# - npm run oyente
 - npm run lint
 after_script:
-- cat parity.log
+- cat ganache.log

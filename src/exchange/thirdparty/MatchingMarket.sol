@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ds-thing/thing.sol";
+import "../../dependencies/thing.sol";
 
 
 contract ERC20Events {

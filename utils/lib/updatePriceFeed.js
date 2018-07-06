@@ -1,4 +1,4 @@
-import api from "./api";
+import web3 from './web3';
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -51,6 +51,7 @@ async function getConvertedPrices(deployed, fromSymbol) {
     fromTokenSymbol = fromSymbol;
   }
   const quoteDecimals = tokenInfo.live[fromTokenSymbol].decimals;
+  /* eslint-disable dot-notation */
   const ethDecimals = tokenInfo.live['WETH'].decimals;
   const eurDecimals = tokenInfo.kovan['EUR-T'].decimals;
   const mlnDecimals = tokenInfo.live['MLN'].decimals;
@@ -61,9 +62,9 @@ async function getConvertedPrices(deployed, fromSymbol) {
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - quoteDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - quoteDecimals)).times(10 ** mlnDecimals);
   return {
-    [deployed.EurToken.address]: convertedEur,
-    [deployed.EthToken.address]: convertedEth,
-    [deployed.MlnToken.address]: convertedMln,
+    [deployed.EurToken.options.address]: convertedEur,
+    [deployed.EthToken.options.address]: convertedEth,
+    [deployed.MlnToken.options.address]: convertedMln,
   };
 }
 
@@ -75,15 +76,14 @@ async function getConvertedPrices(deployed, fromSymbol) {
  */
 async function updatePriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
-  const accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   if(Object.keys(inputPrices).length === 0) {
     prices = await getConvertedPrices(deployed, quoteSymbol);
   } else {
     prices = inputPrices;
   }
-  await deployed.PriceFeed.instance.update.postTransaction(
+  await deployed.PriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice },
-    [Object.keys(prices), Object.values(prices)]
   );
 }
 
@@ -96,18 +96,16 @@ async function updatePriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') 
  */
 async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
-  const accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   if(Object.keys(inputPrices).length === 0) {
     prices = await getConvertedPrices(deployed, quoteSymbol);
   } else {
     prices = inputPrices;
   }
-  await deployed.StakingPriceFeed.instance.update.postTransaction(
+  await deployed.StakingPriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
     { from: accounts[0], gas: config.gas },
-    [Object.keys(prices), Object.values(prices)]
   );
-  let assetList = await deployed.CanonicalPriceFeed.instance.getRegisteredAssets.call();
-  assetList = assetList.map(e => e._value);
+  const assetList = await deployed.CanonicalPriceFeed.methods.getRegisteredAssets().call();
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 

@@ -1,9 +1,8 @@
-import api from "./api";
+import web3 from './web3';
 
 async function getChainTime() {
-  const blockNo = await api.eth.blockNumber();
-  const block = await api.eth.getBlockByNumber(blockNo);
-  return Math.round(new Date(block.timestamp).valueOf() / 1000);
+  const block = await web3.eth.getBlock('latest');
+  return block.timestamp;
 }
 
 export default getChainTime;

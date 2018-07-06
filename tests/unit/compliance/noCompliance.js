@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
 const environment = "development";
@@ -13,22 +13,16 @@ test.before(async () => {
   // TODO: do we need to re-deploy everything here? maybe just the compliance module
   const deployed = await deployEnvironment(environment);
   compliance = deployed.NoCompliance;
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [investor] = accounts;
 });
 
 test("Anyone can perform investment", async t => {
-  const isInvestmentPermitted = await compliance.instance.isInvestmentPermitted.call(
-    {},
-    [investor, 100, 100],
-  );
+  const isInvestmentPermitted = await compliance.methods.isInvestmentPermitted(investor, 100, 100).call();
   t.true(isInvestmentPermitted);
 });
 
 test("Anyone can perform redemption", async t => {
-  const isRedemptionPermitted = await compliance.instance.isRedemptionPermitted.call(
-    {},
-    [investor, 100, 100],
-  );
+  const isRedemptionPermitted = await compliance.methods.isRedemptionPermitted(investor, 100, 100).call();
   t.true(isRedemptionPermitted);
 });

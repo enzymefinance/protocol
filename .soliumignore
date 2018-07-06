@@ -3,4 +3,5 @@ scripts
 lib
 out
 src/exchange/thirdparty
+src/dependencies
 utils/etherscan/concatenated

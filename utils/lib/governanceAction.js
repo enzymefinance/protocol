@@ -1,5 +1,3 @@
-import api from './api';
-
 /**
  * Send a transaction from Governance, using propose, confirm and trigger.
  * Only works if quorum of Governance is 1.
@@ -11,18 +9,11 @@ import api from './api';
  * @param {number} value - Amount of Ether to send to target contract
  */
 async function governanceAction(opts, governance, target, methodName, methodArgs = [], value = 0) {
-  const calldata = await api.util.encodeMethodCallAbi(
-    target.instance[methodName]._abi,
-    methodArgs
-  );
-  let txid;
-  txid = await governance.instance.propose.postTransaction(opts, [target.address, calldata, value]);
-  await governance._pollTransactionReceipt(txid);
-  const proposalId = await governance.instance.actionCount.call();
-  txid = await governance.instance.confirm.postTransaction(opts, [proposalId]);
-  await governance._pollTransactionReceipt(txid);
-  txid = await governance.instance.trigger.postTransaction(opts, [proposalId]);
-  await governance._pollTransactionReceipt(txid);
+  const calldata = target.methods[methodName](...methodArgs).encodeABI();
+  await governance.methods.propose(target.options.address, calldata, value).send(opts);
+  const proposalId = await governance.methods.actionCount().call();
+  await governance.methods.confirm(proposalId).send(opts);
+  await governance.methods.trigger(proposalId).send(opts);
 }
 
 export default governanceAction;
