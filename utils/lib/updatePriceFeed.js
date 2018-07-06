@@ -51,6 +51,7 @@ async function getConvertedPrices(deployed, fromSymbol) {
     fromTokenSymbol = fromSymbol;
   }
   const quoteDecimals = tokenInfo.live[fromTokenSymbol].decimals;
+  /* eslint-disable dot-notation */
   const ethDecimals = tokenInfo.live['WETH'].decimals;
   const eurDecimals = tokenInfo.kovan['EUR-T'].decimals;
   const mlnDecimals = tokenInfo.live['MLN'].decimals;

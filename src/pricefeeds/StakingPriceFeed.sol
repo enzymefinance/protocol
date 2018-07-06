@@ -43,7 +43,10 @@ contract StakingPriceFeed is SimplePriceFeed {
 
     /// @param amount Number of tokens to unstake for this feed
     /// @param data Data may be needed for some future applications (can be empty for now)
-    function unstake(uint amount, bytes data) {
+    function unstake(uint amount, bytes data)
+        external
+        auth
+    {
         stakingContract.unstake(amount, data);
     }
 

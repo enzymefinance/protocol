@@ -14,7 +14,7 @@ const outPath = path.join(__dirname, '..', '..', 'out');
  * @param {...*} rest - Catch extra parameters to the parity.js deploy function TODO: remove?
  * @returns {Object} - Instance of the deployed contract
  */
-async function deployContract(contractPath, optsIn = {}, constructorArgs = [], ...rest) {
+async function deployContract(contractPath, optsIn = {}, constructorArgs = []) {
   const [contractName] = cNameRegex.exec(contractPath);
   const options = Object.assign({}, optsIn); // clone object value instead of reference
   const options2 = Object.assign({}, options); // clone object value instead of reference

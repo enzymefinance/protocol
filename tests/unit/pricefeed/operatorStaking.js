@@ -17,13 +17,15 @@ const initialMln = new BigNumber(10 ** 20);
 const minimumStake = new BigNumber(1000);
 
 // helpers
+/*
 function shuffle(array) { // TODO: iterate stakers randomly (further below)
   array.sort(() => .5 - Math.random());
 }
+*/
 
 test.before(async () => {
   const accounts = await api.eth.accounts();
-  deployer = accounts[0];
+  [deployer] = accounts;
   stakers = accounts.slice(1,6);
 });
 

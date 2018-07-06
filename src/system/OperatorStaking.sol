@@ -75,7 +75,6 @@ contract OperatorStaking is DBC {
         public
         pre_cond(amount >= minimumStake)
     {
-        uint tailNodeId = stakeNodes[0].prev;
         stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
         require(stakingToken.transferFrom(msg.sender, address(this), amount));
