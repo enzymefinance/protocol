@@ -410,11 +410,25 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
 
         return (_quantities, _assets);
     }
-    
+
     function getFundHoldingsLength() view returns (uint) {
         return 1; // FIX
     }
-    
+
+    /// @notice Calculates gross asset value of specified fund holding
+    function calcAssetGAV(address ofAsset) returns (uint) {
+      uint assetHolding = add(
+          uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+          quantityHeldInCustodyOfExchange(ofAsset)
+      );
+      // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
+      var (isRecent, assetPrice, assetDecimals) = modules.pricefeed.getPriceInfo(ofAsset);
+      if (!isRecent) {
+          revert();
+      }
+      return mul(assetHolding, assetPrice) / (10 ** uint256(assetDecimals));
+    }
+
     /// @notice Calculates gross asset value of the fund
     /// @dev Decimals in assets must be equal to decimals in PriceFeed for all entries in AssetRegistrar
     /// @dev Assumes that module.pricefeed.getPriceInfo(..) returns recent prices
