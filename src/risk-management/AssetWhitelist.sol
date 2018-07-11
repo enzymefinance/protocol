@@ -15,4 +15,8 @@ contract AssetWhitelist is AssetList, Policy {
   function rule(address[4] addresses, uint[2] values) external view returns (bool) {
     return exists(addresses[3]);
   }
+  
+    function position() external view returns (uint) {
+        return 0;
+    }
 }

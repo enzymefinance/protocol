@@ -96,4 +96,7 @@ contract TradeTurnover is DSMath, Policy, Owned {
     return (currentEpochTrades <= maxTrades);
   }
 
+    function position() external view returns (uint) {
+        return 0;
+    }
 }

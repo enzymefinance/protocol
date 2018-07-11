@@ -23,4 +23,8 @@ contract PriceTolerance is DSMath, Policy {
         uint price = getPrice(addresses[3]);
         return values[1] < sub(price, wmul(tolerance, price));
     }
+
+    function position() external view returns (uint) {
+        return 0;
+    }
 }

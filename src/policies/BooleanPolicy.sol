@@ -8,6 +8,10 @@ contract BooleanPolicy is Policy {
     function rule(address[4] addresses, uint[2] values) external view returns (bool) {
         return allowed;
     }
+
+    function position() external view returns (uint) {
+        return 0;
+    }
 }
 
 contract TruePolicy is BooleanPolicy {

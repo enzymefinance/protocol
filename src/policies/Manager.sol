@@ -3,29 +3,51 @@ pragma solidity ^0.4.21;
 import "./Policy.sol";
 
 contract PolicyManager {
-    mapping(bytes4 => Policy[]) policies;
+    struct Entry {
+        Policy[] pre;
+        Policy[] post;
+    }
+
+    mapping(bytes4 => Entry) policies;
 
     function register(bytes4 sign, address ofPolicy) public {
-        policies[sign].push(Policy(ofPolicy));  // can use keckkak256
+        uint position = Policy(ofPolicy).position();
+        if (position == 0) {
+            // Pre condition
+            policies[sign].pre.push(Policy(ofPolicy));
+        } else if (position == 1) {
+            // Post condition
+            policies[sign].post.push(Policy(ofPolicy));
+        } else {
+            revert();    // Only 0 or 1 allowed
+        }
     }
 
     modifier isValidPolicyBySig(bytes4 sig, address[4] addresses, uint[2] values) {
-        require(validatePolicy(sig, addresses, values) == true);
+        preValidate(sig, addresses, values);
         _;
+        postValidate(sig, addresses, values);
     }
 
     modifier isValidPolicy(address[4] addresses, uint[2] values) {
-        require(validatePolicy(msg.sig, addresses, values) == true);
+        preValidate(msg.sig, addresses, values);
         _;
+        postValidate(msg.sig, addresses, values);
+    }
+    
+    function preValidate(bytes4 sig, address[4] addresses, uint[2] values) view public {
+        validate(policies[sig].pre, addresses, values);
     }
 
-    function validatePolicy(bytes4 sig, address[4] addresses, uint[2] values) view internal returns (bool) {
-        Policy[] memory aux = policies[sig];
-        for(uint i = 0; i < aux.length; ++i) {  // delegatecall
+    function postValidate(bytes4 sig, address[4] addresses, uint[2] values) view public {
+        validate(policies[sig].post, addresses, values);
+    }
+
+    function validate(Policy[] storage aux, address[4] addresses, uint[2] values) view internal {
+        for(uint i = 0; i < aux.length; ++i) {
             if (aux[i].rule(addresses, values) == false) {
-                return false;
+                revert();
             }
         }
-        return true;
     }
 }

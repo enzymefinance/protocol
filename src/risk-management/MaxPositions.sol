@@ -15,4 +15,8 @@ contract MaxPositions is Policy {
     function rule(address[4] addresses, uint[2] values) external view returns (bool) {
       return Fund(msg.sender).getFundHoldingsLength() <= maxPositions;
     }
+
+    function position() external view returns (uint) {
+        return 1;
+    }
 }
