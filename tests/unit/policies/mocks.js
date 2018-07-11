@@ -1,7 +1,7 @@
 import test from "ava";
 import Api from '@parity/api';
 
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import { deployContract } from "../../../utils/lib/contracts";
 
 let testPolicy = Api.util.sha3("testPolicy(address[4],uint256[2])").substring(0, 10);
@@ -11,68 +11,55 @@ const EMPTY = '0x0000000000000000000000000000000000000000';
 const DUMMY_ADDR = [EMPTY, EMPTY, EMPTY, EMPTY];
 const DUMMY_VALS = [0, 0];
 
-async function isReverted(txHash) {
-    return (await api.eth.getTransactionReceipt(txHash)).gasUsed == 1600000;
-}
+let opts;
 
-async function createFund() {
-    const accounts = await api.eth.accounts();
+let truePolicy;
+let falsePolicy;
 
-    let opts = {
-        from: accounts[0]
-    };
+test.before(async () => {
+    const accounts = await web3.eth.getAccounts();
+    const [deployer,] = accounts;
+    opts = {from: deployer, gas: 8000000}
 
-    let fund = await deployContract('policies/mocks/MockFund', opts);
-    return fund;
-}
+    falsePolicy = await deployContract('policies/FalsePolicy', opts);
+    truePolicy  = await deployContract('policies/TruePolicy', opts);
+});
 
 test('PriceFeed', async t => {
-    let pricefeed = await deployContract('policies/mocks/MockPriceFeed', {});
+    let pricefeed = await deployContract('policies/mocks/MockPriceFeed', opts);
 
-    const mockOne = "0x1110E6384FEa0791e18151c531fe70da23c55fa2";
-    const mockTwo = "0x222b2A235627Ac97EAbc6452F98Ce296a1EF3984";
+    const mockOne = "0x1110E6384FEA0791E18151C531FE70DA23C55FA2";
+    const mockTwo = "0x222B2A235627AC97EABC6452F98CE296A1EF3984";
 
-    const txHash = await pricefeed.instance.update.postTransaction({}, [[mockOne, mockTwo], [2, 3]]);
+    await pricefeed.methods.update([mockOne, mockTwo], [2, 3]).send();
 
-    t.is(await isReverted(txHash), false);
-    t.is((await pricefeed.instance.getPrice.call({}, [mockOne]))[0].toNumber(), 2)
-    t.is((await pricefeed.instance.getPrice.call({}, [mockTwo]))[0].toNumber(), 3)
+    t.is((await pricefeed.methods.getPrice(mockOne).call())['price'], '2')
+    t.is((await pricefeed.methods.getPrice(mockTwo).call())['price'], '3')
 })
 
-test("True policy", async t => {
-    const accounts = await api.eth.accounts();
+async function createManagerAndRegister(contract, policy) {
+    let manager = await deployContract(contract, opts);
+    await manager.methods.register(testPolicy, policy).send();
+    return manager;
+}
 
-    let opts = {
-        from: accounts[0]
-    };
-
-    let fund = await deployContract('policies/mocks/MockFund', opts);
-    let truePolicy = await deployContract('policies/TruePolicy', opts);
-
-    await fund.instance.register.postTransaction({}, [
-        testPolicy,
-        truePolicy.address
-    ]);
-
-    const txHash = await fund.instance.testPolicy.postTransaction({}, [DUMMY_ADDR, DUMMY_VALS]);
-    t.is(await isReverted(txHash), false);
+test('Boolean policies', async t => {
+    t.false(await falsePolicy.methods.rule(DUMMY_ADDR, DUMMY_VALS).call())
+    t.true(await truePolicy.methods.rule(DUMMY_ADDR, DUMMY_VALS).call())
 })
 
-test("False policy", async t => {
-    const accounts = await api.eth.accounts();
+test('Boolean policies on policy manager', async t => {
+    let manager1 = await createManagerAndRegister('policies/PolicyManager', falsePolicy.options.address)
+    await t.throws(manager1.methods.preValidate(testPolicy, DUMMY_ADDR, DUMMY_VALS).call())
 
-    let opts = {
-        from: accounts[0]
-    };
+    let manager2 = await createManagerAndRegister('policies/PolicyManager', truePolicy.options.address)
+    await t.notThrows(manager2.methods.preValidate(testPolicy, DUMMY_ADDR, DUMMY_VALS).call())
+})
 
-    let fund = await deployContract('policies/mocks/MockFund', opts);
-    let falsePolicy = await deployContract('policies/FalsePolicy', opts);
+test('Boolean policies on fund', async t => {
+    let manager1 = await createManagerAndRegister('policies/mocks/MockFund', truePolicy.options.address)
+    await t.notThrows(manager1.methods.testPolicy(DUMMY_ADDR, DUMMY_VALS).call())
 
-    await fund.instance.register.postTransaction({}, [
-        testPolicy,
-        falsePolicy.address
-    ]);
-
-    const txHash = await fund.instance.testPolicy.postTransaction({}, [DUMMY_ADDR, DUMMY_VALS]);
-    t.is(await isReverted(txHash), true);
+    let manager2 = await createManagerAndRegister('policies/mocks/MockFund', falsePolicy.options.address)
+    await t.throws(manager2.methods.testPolicy(DUMMY_ADDR, DUMMY_VALS).call())
 })
