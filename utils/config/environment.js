@@ -14,7 +14,7 @@ module.exports = {
         preEpochUpdatePeriod: 60 * 60 * 6,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX',
+          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'DGX',
           'BAT', 'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
         ],
       },
@@ -43,7 +43,7 @@ module.exports = {
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T',
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'DGX-T',
           'BAT-T','DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
