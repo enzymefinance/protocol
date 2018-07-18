@@ -59,6 +59,7 @@ async function deployEnvironment(environment) {
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
+    const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
     const chfAddress = '0x0';
     // const chfAddress = tokenInfo[commonEnvironment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
@@ -137,13 +138,14 @@ async function deployEnvironment(environment) {
     // deployed.NoComplianceCompetition = await deployContract("compliance/NoComplianceCompetition", opts, []);
     // deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deploymentAddress]);
     // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", opts);
-    deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
+    deployed.NoRiskMgmt = await retrieveContract("riskmgmt/NoRiskMgmt", previous.NoRiskMgmt);
 
     deployed.NoCompliance = await retrieveContract("compliance/NoCompliance", previous.NoCompliance);
     deployed.OnlyManager = await retrieveContract("compliance/OnlyManager", previous.OnlyManager);
     deployed.RMMakeOrders = await retrieveContract("riskmgmt/RMMakeOrders", previous.RMMakeOrders);
     deployed.NoComplianceCompetition = await retrieveContract("compliance/NoComplianceCompetition", previous.NoComplianceCompetition);
     deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", previous.CompetitionCompliance);
+    deployed.OnlyManagerCompetition = await retrieveContract("compliance/OnlyManagerCompetition", previous.OnlyManagerCompetition);
 
     let complianceAddress;
     if (environment === "kovan") {
@@ -172,8 +174,8 @@ async function deployEnvironment(environment) {
       "competitions/Competition",
       opts,
       [
-        mlnAddr, chfAddress, deployed.Version.address, deploymentAddress,
-        blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000, false
+        mlnAddr, deployed.Version.address, deploymentAddress,
+        blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
       ]
     );
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(
@@ -187,8 +189,8 @@ async function deployEnvironment(environment) {
         "competitions/TestCompetition",
         opts,
         [
-          mlnAddr, chfAddress, deployed.Version.address, deploymentAddress, blockchainTime,
-          blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000, false
+          mlnAddr, deployed.Version.address, deploymentAddress, blockchainTime,
+          blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
         ]
       );
     }
