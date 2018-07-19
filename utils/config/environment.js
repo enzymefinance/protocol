@@ -105,7 +105,11 @@ module.exports = {
         minimumAmount: 1000000,
         numOperators: 4,
         unstakeDelay: 0
-      }
+      },
+      governance: {
+        quorum: 1,
+        window: 60 * 60 * 24 * 365
+      },
     },
   },
 }
