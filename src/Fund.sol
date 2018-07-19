@@ -82,6 +82,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
+    Asset public NATIVE_ASSET; // NATIVE asset as ERC20 contract
     // Methods fields
     Modules public modules; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
@@ -114,6 +115,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         address ofManager,
         bytes32 withName,
         address ofQuoteAsset,
+        address ofNativeAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
@@ -145,6 +147,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }));
         }
         QUOTE_ASSET = Asset(ofQuoteAsset);
+        NATIVE_ASSET = Asset(ofNativeAsset);
         // Quote Asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;

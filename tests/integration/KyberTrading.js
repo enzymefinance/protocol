@@ -4,6 +4,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/signing";
+import { makeOrderSignature } from "../../utils/lib/data";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -55,21 +56,19 @@ let qtySellStepY = [0,   0, 120, 170, 3000];
 let imbalanceSellStepX = [-8500, -2800, -1500, 0, 1500, 2800,  4500];
 let imbalanceSellStepY = [-1500,  -320,   -75, 0,    0,  110,   650];
 
-function bytesToHex(byteArray) {
-    let strNum = toHexString(byteArray);
-    let num = '0x' + strNum;
-    return num;
-};
-
-function toHexString(byteArray) {
-  return Array.from(byteArray, function(byte) {
-    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-  }).join('')
-};
+let deployer;
+let manager;
+let investor;
+let fund;
+let ethToken;
 
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
+  [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
+  deployed = await deployEnvironment(environment);
+
+  // Setup Kyber env
   deployed.ConversionRates = await deployContract(
     "ConversionRates",
     opts,
@@ -110,18 +109,6 @@ test.before(async () => {
   await deployed.ConversionRates.methods.addOperator(accounts[0]).send();
   await deployed.ConversionRates.methods.setBaseRate([deployed.TokenA.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
   const updateRateBlock = await web3.eth.getBlockNumber();
-  /*compactBuyArr = [0, 0, 0, 0, 0, 0o6, 0x07, 0x08, 0x09, 1, 0, 11, 12, 13, 14];
-  let compactBuyHex = "0x00000000000607080901000b0c0d0e";
-  console.log(compactBuyHex);
-  buys.push(compactBuyHex);
-
-  compactSellArr = [0, 0, 0, 0, 0, 26, 27, 28, 29, 30, 31, 32, 33, 34];
-  let compactSellHex = "0x00000000001a1b1c1d1e1f202122";
-  console.log(compactSellHex);
-  sells.push(compactSellHex);
-  indices[0] = 0;
-  await deployed.ConversionRates.methods.setCompactData(buys, sells, currentBlock, indices).send();
-  */
   await deployed.ConversionRates.methods.setQtyStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
   await deployed.ConversionRates.methods.setImbalanceStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
 
@@ -165,16 +152,101 @@ test.before(async () => {
   console.log(await deployed.KyberReserve.methods.getBalance(deployed.TokenA.options.address).call());
   console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, deployed.TokenA.options.address, new BigNumber(10 ** 19), currentBlock).call());
   console.log(await deployed.KyberNetwork.methods.getExpectedRate(ethAddress, deployed.TokenA.options.address, 100).call());
+
+  // Melon Fund env
+  ethToken = deployed.EthToken;
+  deployed.KyberAdapter = await deployContract(
+    "exchange/adapter/KyberAdapter", opts
+  );
+  await governanceAction(
+    { from: accounts[0] },
+    deployed.Governance,
+    deployed.CanonicalPriceFeed,
+    "registerExchange",
+    [
+      deployed.KyberNetworkProxy.options.address,
+      deployed.KyberAdapter.options.address,
+      true,
+      [makeOrderSignature],
+    ],
+  );
+  const [r, s, v] = await getTermsSignatureParameters(manager);
+  await deployed.Version.methods.setupFund(
+    web3.utils.toHex("Suisse Fund"),
+    deployed.EthToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.KyberNetworkProxy.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice }
+  );
+  const fundAddress = await deployed.Version.methods.managerToFunds(manager).call();
+  fund = await retrieveContract("Fund", fundAddress);
+  // Change competition.options.address to investor just for testing purpose so it allows invest / redeem
+  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
+  );
 });
 
 test.beforeEach(async () => {
 
 });
 
+const initialTokenAmount = new BigNumber(10 ** 20);
+test.serial("investor receives initial ethToken for testing", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  await ethToken.methods.transfer(investor, initialTokenAmount).send(
+    { from: deployer, gasPrice: config.gasPrice }
+  );
+  const post = await getAllBalances(deployed, accounts, fund);
+
+  t.deepEqual(
+    post.investor.EthToken,
+    new BigNumber(pre.investor.EthToken).add(initialTokenAmount),
+  );
+});
+
+// mock data
+const offeredValue = new BigNumber(10 ** 10);
+const wantedShares = new BigNumber(10 ** 10);
+test.serial(
+  "fund receives ETH from a investment (request & execute)",
+  async t => {
+    const pre = await getAllBalances(deployed, accounts, fund);
+    await ethToken.methods.approve(fund.options.address, offeredValue).send(
+      { from: investor, gasPrice: config.gasPrice, gas: config.gas }
+    );
+    await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
+    );
+    await updateCanonicalPriceFeed(deployed);
+    await updateCanonicalPriceFeed(deployed);
+    const requestId = await fund.methods.getLastRequestId().call();
+    await fund.methods.executeRequest(requestId).send(
+      { from: investor, gas: config.gas, gasPrice: config.gasPrice }
+    );
+    const post = await getAllBalances(deployed, accounts, fund);
+
+    t.deepEqual(
+      post.investor.EthToken,
+      pre.investor.EthToken.minus(offeredValue),
+    );
+    t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(offeredValue));
+    t.deepEqual(post.fund.ether, pre.fund.ether);
+  },
+);
+
 test.serial("test", async t => {
    // await deployed.KyberReserve.methods.setContracts(accounts[0], deployed.ConversionRates.options.address, 0).send();
    // await deployed.KyberReserve.methods.trade(ethAddress, new BigNumber(10 ** 16), deployed.TokenA.options.address, accounts[0], new BigNumber(10 ** 17), false).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
    console.log(await deployed.KyberNetwork.methods.isEnabled().call());
    console.log(await deployed.KyberNetwork.methods.findBestRate(ethAddress, deployed.TokenA.options.address, 100).call());
-   await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
+  // await deployed.KyberNetworkProxy.methods.trade(ethAddress, new BigNumber(10 ** 17), deployed.TokenA.options.address, accounts[2], new BigNumber(10 ** 28), 0, accounts[2]).send();
+   //await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
 });

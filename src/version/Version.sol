@@ -94,6 +94,7 @@ contract Version is DBC, Owned, VersionInterface {
             msg.sender,
             ofFundName,
             NATIVE_ASSET,
+            NATIVE_ASSET,
             0,
             0,
             COMPLIANCE,
