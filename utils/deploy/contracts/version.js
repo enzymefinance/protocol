@@ -1,16 +1,19 @@
+import web3 from "../../lib/web3";
 import {deployContract} from "../../lib/contracts";
 
-async function deploy(environment, accounts=[], previous={}) {
+async function deploy(environment, previous={}) {
   const deployed = {};
-  const opts = Object.freeze({from: accounts[0], gas: 1000000});
+  const accounts = await web3.eth.getAccounts();
+  const opts = Object.freeze({from: accounts[0], gas: 6000000});
   switch (environment) {
     case 'development':
       deployed.Version = await deployContract(
         "version/Version",
         opts,
         [
-          pkgInfo.version, deployed.Governance.address, deployed.MlnToken.address,
-          deployed.EthToken.address, deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+          "0.8.0", previous.Governance.options.address, previous.MlnToken.options.address,
+          previous.EthToken.options.address, previous.CanonicalPriceFeed.options.address,
+          previous.CompetitionCompliance.options.address
         ],
         () => {}, true
       );
@@ -48,7 +51,7 @@ async function deploy(environment, accounts=[], previous={}) {
       );
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;

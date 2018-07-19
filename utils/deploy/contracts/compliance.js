@@ -45,7 +45,7 @@ async function deploy(environment, previous={}) {
       deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [config.protocol.deployer]);
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;

@@ -14,7 +14,7 @@ async function deploy(environment, previous={}) {
     default:
       console.warn(`Environment "${environment}" not found`);
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;

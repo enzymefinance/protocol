@@ -1,18 +1,25 @@
 import {deployContract} from "../../lib/contracts";
+import {newMockAddress, newMockBytes32} from "../../lib/mocks";
+import web3 from "../../lib/web3";
+import * as masterConfig from "../../config/environment";
 
-async function deploy(environment, accounts=[], previous={}) {
+async function deploy(environment, previous={}) {
   const deployed = {};
-  const opts = Object.freeze({from: accounts[0], gas: 1000000});
+  const config = masterConfig[environment];
+  const mockBytes32 = newMockBytes32();
+  const mockAddress = newMockAddress();
   switch (environment) {
     case 'development':
+      const accounts = await web3.eth.getAccounts();
+      const opts = Object.freeze({from: accounts[0], gas: 7000000});
       deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-        deployed.MlnToken.address,
-        deployed.EthToken.address,
-        'ETH token',
-        'ETH-T',
+        previous.MlnToken.options.address,
+        previous.EthToken.options.address,
+        web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+        web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
         18,
         'ethereum.org',
-        mockBytes,
+        mockBytes32,
         [mockAddress, mockAddress],
         [],
         [],
@@ -25,7 +32,7 @@ async function deploy(environment, accounts=[], previous={}) {
           config.protocol.staking.numOperators,
           config.protocol.staking.unstakeDelay
         ],
-        deployed.Governance.address
+        previous.Governance.options.address
       ], () => {}, true);
       break;
     case 'kovan-demo':
@@ -103,7 +110,7 @@ async function deploy(environment, accounts=[], previous={}) {
       );
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;

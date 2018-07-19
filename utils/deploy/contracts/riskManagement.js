@@ -23,7 +23,7 @@ async function deploy(environment, previous={}) {
       deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;

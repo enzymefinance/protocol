@@ -22,16 +22,14 @@ async function deploy(environment, previous={}) {
         [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
       );
       deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
-      await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
-        opts, [ deployed.ZeroExExchange.address ]
-      );
+      await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress(deployed.ZeroExExchange.address).send(opts);
       break;
     case 'kovan-competition':
       break;
     case 'live-competition':
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;
