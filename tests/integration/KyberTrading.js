@@ -91,8 +91,12 @@ test.before(async () => {
     opts,
     [deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, accounts[0]]
   );
-  deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
-  deployed.KyberReserve.methods.approveWithdrawAddress(deployed.TokenA.options.address, accounts[0], true).send();
+  await deployed.ConversionRates.methods.setReserveAddress(deployed.KyberReserve.options.address).send();
+  await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
+  await deployed.KyberReserve.methods.approveWithdrawAddress(deployed.TokenA.options.address, accounts[0], true).send();
+  await deployed.KyberReserve.methods.enableTrade().send();
+  await deployed.KyberReserve.methods.setTokenWallet(deployed.TokenA.options.address, accounts[0]).send();
+  await deployed.TokenA.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 25)).send();
 
   // Set pricing for Token
   deployed.TokenA.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 22)).send();
@@ -120,7 +124,6 @@ test.before(async () => {
   */
   await deployed.ConversionRates.methods.setQtyStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
   await deployed.ConversionRates.methods.setImbalanceStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
-  console.log('So FAR SO GOOD');
 
   deployed.KyberWhiteList = await deployContract(
     "KyberWhitelist",
@@ -128,7 +131,7 @@ test.before(async () => {
     [accounts[0], deployed.KGTToken.options.address]
   );
   await deployed.KyberWhiteList.methods.addOperator(accounts[0]).send();
-  await deployed.KyberWhiteList.methods.setCategoryCap(0, 1000).send();
+  await deployed.KyberWhiteList.methods.setCategoryCap(0, new BigNumber(10 * 28)).send();
   await deployed.KyberWhiteList.methods.setSgdToEthRate(30000).send();
 
   deployed.FeeBurner = await deployContract(
@@ -142,15 +145,21 @@ test.before(async () => {
     [deployed.KyberNetwork.options.address, accounts[0]]
   );
 
+  deployed.KyberNetworkProxy = await deployContract(
+    "KyberNetworkProxy",
+    opts,
+    [accounts[0]]
+  );
+  // await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
+  await deployed.KyberNetworkProxy.methods.setKyberNetworkContract(deployed.KyberNetwork.options.address).send();
   await deployed.KyberNetwork.methods.setWhiteList(deployed.KyberWhiteList.options.address).send();
   await deployed.KyberNetwork.methods.setExpectedRate(deployed.ExpectedRate.options.address).send();
   await deployed.KyberNetwork.methods.setFeeBurner(deployed.FeeBurner.options.address).send();
-  await deployed.KyberNetwork.methods.setKyberProxy(accounts[0]).send();
+  await deployed.KyberNetwork.methods.setKyberProxy(deployed.KyberNetworkProxy.options.address).send();
   await deployed.KyberNetwork.methods.setEnable(true).send();
-
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, deployed.TokenA.options.address, true, true, true).send();
 
-  //console.log(await deployed.ConversionRates.methods.getTokenBasicData(deployed.TokenA.options.address).call());
+  // console.log(await deployed.ConversionRates.methods.getTokenBasicData(deployed.TokenA.options.address).call());
   console.log(await deployed.ConversionRates.methods.getBasicRate(deployed.TokenA.options.address, true).call());
   console.log(await deployed.ConversionRates.methods.getRate(deployed.TokenA.options.address, currentBlock, false, new BigNumber(10 ** 19)).call());
   console.log(await deployed.KyberReserve.methods.getBalance(deployed.TokenA.options.address).call());
@@ -163,5 +172,9 @@ test.beforeEach(async () => {
 });
 
 test.serial("test", async t => {
-  t.true(true);
+   // await deployed.KyberReserve.methods.setContracts(accounts[0], deployed.ConversionRates.options.address, 0).send();
+   // await deployed.KyberReserve.methods.trade(ethAddress, new BigNumber(10 ** 16), deployed.TokenA.options.address, accounts[0], new BigNumber(10 ** 17), false).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
+   console.log(await deployed.KyberNetwork.methods.isEnabled().call());
+   console.log(await deployed.KyberNetwork.methods.findBestRate(ethAddress, deployed.TokenA.options.address, 100).call());
+   await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
 });
