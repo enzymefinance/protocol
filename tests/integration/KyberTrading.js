@@ -98,7 +98,7 @@ test.before(async () => {
   await deployed.TokenA.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 25)).send();
 
   // Set pricing for Token
-  deployed.TokenA.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 22)).send();
+  await deployed.TokenA.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 22)).send();
   const tokensPerEther = (new BigNumber(precisionUnits.mul(2 * 3)).floor());
   const ethersPerToken = (new BigNumber(precisionUnits.div(2 * 3)).floor());
   baseBuyRate1.push(tokensPerEther.valueOf());
@@ -137,7 +137,7 @@ test.before(async () => {
     opts,
     [accounts[0]]
   );
-  // await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
+  await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
   await deployed.KyberNetworkProxy.methods.setKyberNetworkContract(deployed.KyberNetwork.options.address).send();
   await deployed.KyberNetwork.methods.setWhiteList(deployed.KyberWhiteList.options.address).send();
   await deployed.KyberNetwork.methods.setExpectedRate(deployed.ExpectedRate.options.address).send();
@@ -146,7 +146,7 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.setEnable(true).send();
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, deployed.TokenA.options.address, true, true, true).send();
 
-  // console.log(await deployed.ConversionRates.methods.getTokenBasicData(deployed.TokenA.options.address).call());
+  console.log(await deployed.ConversionRates.methods.getTokenBasicData(deployed.TokenA.options.address).call());
   console.log(await deployed.ConversionRates.methods.getBasicRate(deployed.TokenA.options.address, true).call());
   console.log(await deployed.ConversionRates.methods.getRate(deployed.TokenA.options.address, currentBlock, false, new BigNumber(10 ** 19)).call());
   console.log(await deployed.KyberReserve.methods.getBalance(deployed.TokenA.options.address).call());

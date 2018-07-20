@@ -375,6 +375,22 @@ contract TestToken is Asset {
         symbol = _symbol;
         decimals = _decimals;
     }
+
+    event Burn(address indexed _burner, uint _value);
+
+    function burn(uint _value) public returns (bool) {
+        balances[msg.sender] = sub(balances[msg.sender], _value);
+        _totalSupply = sub(_totalSupply, _value);
+        Burn(msg.sender, _value);
+        Transfer(msg.sender, address(0x0), _value);
+        return true;
+    }
+
+    // save some gas by making only one contract call
+    function burnFrom(address _from, uint256 _value) public returns (bool) {
+        transferFrom( _from, msg.sender, _value );
+        return burn(_value);
+    }
 }
 
 contract KyberWhiteList is WhiteListInterface, Withdrawable {
