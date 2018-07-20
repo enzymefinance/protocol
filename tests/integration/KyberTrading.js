@@ -14,6 +14,9 @@ const BigNumber = require("bignumber.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
+const mockBytes =
+  "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 
 // hoisted variables
 let accounts;
@@ -74,7 +77,7 @@ test.before(async () => {
     opts,
     [accounts[0]]
   );
-  deployed.TokenA = await deployContract("TestToken", opts, ["Test", "T1", 18]);
+  deployed.TokenA = deployed.MlnToken;
   deployed.KGTToken = await deployContract("TestToken", opts, ["KGT", "KGT", 18]);
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
   await deployed.ConversionRates.methods.addToken(deployed.TokenA.options.address).send();
@@ -246,5 +249,5 @@ test.serial("test", async t => {
    console.log(await deployed.KyberNetworkProxy.methods.getUserCapInWei(accounts[2]).call());
    console.log(await deployed.KyberNetwork.methods.findBestRate(ethAddress, deployed.TokenA.options.address, new BigNumber(10 ** 23)).call());
   // await deployed.KyberNetworkProxy.methods.trade(ethAddress, new BigNumber(10 ** 17), deployed.TokenA.options.address, accounts[2], new BigNumber(10 ** 28), 0, accounts[2]).send();
-   await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(2 * 10 ** 18)});
+   await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(10 ** 18)});
 });
