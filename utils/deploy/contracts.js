@@ -416,9 +416,10 @@ async function deployEnvironment(environment) {
     const mockBytes8 = "0x99ABD417";
     const mockTimestamp = 1532100783;
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-    deployed.EthToken = await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, mockTimestamp]);
+    deployed.EthToken =  await deployContract("assets/WETH9", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, mockTimestamp]);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [mockBytes, mockBytes8, 18, mockTimestamp]);
+    deployed.EthToken.methods.deposit().send({from: accounts[0], value: new BigNumber(10 ** 26)});
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.options.address,
       deployed.EthToken.options.address,
