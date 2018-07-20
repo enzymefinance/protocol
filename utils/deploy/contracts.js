@@ -60,8 +60,6 @@ async function deployEnvironment(environment) {
     deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
-    const chfAddress = '0x0';
-    // const chfAddress = tokenInfo[commonEnvironment]["CHF-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
@@ -175,7 +173,7 @@ async function deployEnvironment(environment) {
       opts,
       [
         mlnAddr, deployed.Version.address, deploymentAddress,
-        blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
+        blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
       ]
     );
     await deployed.Competition.instance.batchAddToWhitelist.postTransaction(
@@ -189,8 +187,8 @@ async function deployEnvironment(environment) {
         "competitions/TestCompetition",
         opts,
         [
-          mlnAddr, deployed.Version.address, deploymentAddress, blockchainTime,
-          blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
+          mlnAddr, deployed.Version.address, deploymentAddress,
+          blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
         ]
       );
     }
@@ -355,20 +353,20 @@ async function deployEnvironment(environment) {
     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", "0x752e85aE6297B17f42c1619008Ad8c2271f1C30f");
     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", "0x4A3943269C581eFCbd0875A7c60Da1C35a7C85c2");
     deployed.BugBountyCompliance = await retrieveContract("compliance/BugBountyCompliance", "0xD42316be0E813104096ab537FeE2fe0f5076bB2F");
-    deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", "0x6B3521005dDc38a6B57750b85f1c9753E304AC5D");
-    deployed.Version = await retrieveContract("version/Version", "0xB81F5B60E186CF84ab21E43064B4deFD77E96d4D");
+    // deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", "");
+    deployed.Version = await retrieveContract("version/Version", "0x930C29476D290264BFe6C0f6B6da83595642e6f6");
 
     // deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
-    // deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deployer]);
+    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deployer]);
     // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
-    // deployed.Version = await deployContract(
-    //   "version/Version",
-    //   {from: deployer, gas: 6900000},
-    //   [
-    //     pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
-    //     deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
-    //   ], () => {}, true
-    // );
+    deployed.Version = await deployContract(
+      "version/Version",
+      {from: deployer, gas: 6900000},
+      [
+        pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
+        deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+      ], () => {}, true
+    );
     // deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
 
     // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
@@ -473,15 +471,18 @@ async function deployEnvironment(environment) {
     //   })
     // );
 
-    const blockchainTime = await getChainTime();
+    const startTime = 1532430000;   // 11AM GMT, Tuesday, 27 July, 2018
+    const twoWeeksInSeconds = 60 * 60 * 24 * 14;
     deployed.Competition = await deployContract(
       "competitions/Competition",
       opts,
       [
         mlnAddr, deployed.Version.address, deployer,
-        blockchainTime, blockchainTime + 8640000, 20 * 10 ** 18, 10 ** 24, 1000
+        startTime, startTime + twoWeeksInSeconds, 38 * 10 ** 18, 15 * 10 ** 18, 180
       ]
     );
+    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    // then need to whitelist participants
   } else if (environment === "development") {
     opts.from = accounts[0];
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
