@@ -28,8 +28,8 @@ const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
 // base buy and sell rates (prices)
-const baseBuyRate1 = [];
-const baseSellRate1 = [];
+let baseBuyRate1 = [];
+let baseSellRate1 = [];
 
 // compact data.
 const sells = [];
@@ -310,7 +310,6 @@ test.serial("make order with specific order price (minRate)", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-
 test.serial("make order fails if minPrice is not satisfied", async t => {
   const makerQuantity = new  BigNumber(10 ** 17);
   const takerQuantity = makerQuantity.mul(mlnPrice * 2).div(precisionUnits);
@@ -319,6 +318,27 @@ test.serial("make order fails if minPrice is not satisfied", async t => {
     makeOrderSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
     [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  ));
+});
+
+test.serial("risk management prevents conversion in the case of bad kyber network price", async t => {
+  // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
+  baseBuyRate1 = [mlnPrice * 2];
+  baseSellRate1 = [precisionUnits.mul(precisionUnits).div(baseBuyRate1).toFixed(0)];
+  const currentBlock = await web3.eth.getBlockNumber();
+  await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
+  const makerQuantity = new  BigNumber(10 ** 17);
+  await t.throws(fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
