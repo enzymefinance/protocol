@@ -635,6 +635,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         return true;
     }
 
+    function() public payable { }
+
     // PUBLIC : FEES
 
     /// @dev Quantity of asset held in exchange according to associated order id

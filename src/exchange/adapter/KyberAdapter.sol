@@ -5,9 +5,12 @@ import "../thirdparty/kyber/KyberNetworkProxy.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
 import "../../assets/Asset.sol";
+import "../../assets/WETH9.sol";
 import "../../dependencies/math.sol";
 
 contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
+
+    address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     // NON-CONSTANT METHODS
 
@@ -38,43 +41,36 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
+        address nativeAsset = Fund(address(this)).NATIVE_ASSET();
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
-        uint minRate;
+        uint minRate = 0;
+        uint actualReceiveQuantity;
 
-        // Min rate obtained from Kyber Contract
-        if (takerQuantity == 0) {
-          (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(makerAsset), ERC20(takerAsset), makerQuantity);
-          takerQuantity = mul(minRate, makerQuantity) / 10 ** 18;
-        }
-        else {
-          var (pricefeed, , ,) = Fund(address(this)).modules();
-          minRate = pricefeed.getOrderPriceInfo(
-              makerAsset,
-              takerAsset,
-              makerQuantity,
-              takerQuantity
-          );
+        if (takerQuantity != 0) {
+            minRate = calcMinRate(
+                  makerAsset,
+                  takerAsset,
+                  makerQuantity,
+                  takerQuantity
+              );
         }
 
-        require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
-        require(Asset(makerAsset).approve(targetExchange, makerQuantity));
+        if (makerAsset == nativeAsset) {
+            actualReceiveQuantity = swapNativeAssetToToken(targetExchange, nativeAsset, makerQuantity, takerAsset, minRate);
+        }
+        else if (takerAsset == nativeAsset) {
+            actualReceiveQuantity = swapTokenToNativeAsset(targetExchange, makerAsset, makerQuantity, nativeAsset, minRate);
+        }
 
-        uint actualReceiveQuantity = KyberNetworkProxy(targetExchange).swapTokenToToken(
-            ERC20(makerAsset),
-            makerQuantity,
-            ERC20(takerAsset),
-            minRate
-        );
-
+        require(makeOrderPermitted(makerQuantity, makerAsset, actualReceiveQuantity, takerAsset));
         require(
             Fund(address(this)).isInAssetList(takerAsset) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        // Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(address(this)).addAssetToOwnedAssets(takerAsset);
         Fund(address(this)).orderUpdateHook(
             targetExchange,
@@ -135,6 +131,72 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     }
 
     // INTERNAL FUNCTIONS
+
+    function swapNativeAssetToToken(
+        address targetExchange,
+        address nativeAsset,
+        uint makerQuantity,
+        address takerAsset,
+        uint minRate
+    )
+        internal
+        returns (uint receivedAmount)
+    {
+        WETH9(nativeAsset).withdraw(makerQuantity);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(ETH_TOKEN_ADDRESS), ERC20(takerAsset), makerQuantity);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(makerQuantity)(ERC20(takerAsset), minRate);
+    }
+
+    function swapTokenToNativeAsset(
+        address targetExchange,
+        address makerAsset,
+        uint makerQuantity,
+        address nativeAsset,
+        uint minRate
+    )
+        internal
+        returns (uint receivedAmount)
+    {
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(makerAsset), ERC20(ETH_TOKEN_ADDRESS), makerQuantity);
+        ERC20(makerAsset).approve(targetExchange, makerQuantity);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20(makerAsset), makerQuantity, minRate);
+        WETH9(nativeAsset).deposit.value(receivedAmount)();
+    }
+
+    function swapTokenToToken(
+        address targetExchange,
+        address makerAsset,
+        uint makerQuantity,
+        address takerAsset,
+        uint minRate
+    )
+        internal
+        returns (uint receivedAmount)
+    {
+
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(makerAsset), ERC20(takerAsset), makerQuantity);
+        ERC20(makerAsset).approve(targetExchange, makerQuantity);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(makerAsset), makerQuantity, ERC20(takerAsset), minRate);
+    }
+
+    function calcMinRate(
+        address makerAsset,
+        address takerAsset,
+        uint makerQuantity,
+        uint takerQuantity
+    )
+        internal
+        view
+        returns (uint minRate)
+    {
+        var (pricefeed, , ,) = Fund(address(this)).modules();
+        minRate = pricefeed.getOrderPriceInfo(
+            makerAsset,
+            takerAsset,
+            makerQuantity,
+            takerQuantity
+        );
+    }
 
     /// @dev needed to avoid stack too deep error
     function makeOrderPermitted(

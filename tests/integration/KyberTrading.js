@@ -64,6 +64,7 @@ let manager;
 let investor;
 let fund;
 let ethToken;
+let mlnToken;
 
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
@@ -77,12 +78,13 @@ test.before(async () => {
     opts,
     [accounts[0]]
   );
-  deployed.TokenA = deployed.MlnToken;
+  ethToken = deployed.EthToken;
+  mlnToken = deployed.MlnToken;
   deployed.KGTToken = await deployContract("TestToken", opts, ["KGT", "KGT", 18]);
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
-  await deployed.ConversionRates.methods.addToken(deployed.TokenA.options.address).send();
-  await deployed.ConversionRates.methods.setTokenControlInfo(deployed.TokenA.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
-  await deployed.ConversionRates.methods.enableTokenTrade(deployed.TokenA.options.address).send();
+  await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
+  await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
+  await deployed.ConversionRates.methods.enableTokenTrade(mlnToken.options.address).send();
   deployed.KyberNetwork = await deployContract(
     "KyberNetwork",
     opts,
@@ -95,13 +97,13 @@ test.before(async () => {
   );
   await deployed.ConversionRates.methods.setReserveAddress(deployed.KyberReserve.options.address).send();
   await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
-  await deployed.KyberReserve.methods.approveWithdrawAddress(deployed.TokenA.options.address, accounts[0], true).send();
+  await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
   await deployed.KyberReserve.methods.enableTrade().send();
-  await deployed.KyberReserve.methods.setTokenWallet(deployed.TokenA.options.address, accounts[0]).send();
-  await deployed.TokenA.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
+  await deployed.KyberReserve.methods.setTokenWallet(mlnToken.options.address, accounts[0]).send();
+  await mlnToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
 
   // Set pricing for Token
-  await deployed.TokenA.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
+  await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
   const tokensPerEther = (new BigNumber(precisionUnits.mul(2 * 3)).floor());
   const ethersPerToken = (new BigNumber(precisionUnits.div(2 * 3)).floor());
   baseBuyRate1.push(tokensPerEther.valueOf());
@@ -110,10 +112,10 @@ test.before(async () => {
   baseSellRate2.push(ethersPerToken.div(1000).mul(980));
   const currentBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.addOperator(accounts[0]).send();
-  await deployed.ConversionRates.methods.setBaseRate([deployed.TokenA.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
+  await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
   const updateRateBlock = await web3.eth.getBlockNumber();
-  await deployed.ConversionRates.methods.setQtyStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
-  await deployed.ConversionRates.methods.setImbalanceStepFunction(deployed.TokenA.options.address, [0], [0], [0], [0]).send();
+  await deployed.ConversionRates.methods.setQtyStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
+  await deployed.ConversionRates.methods.setImbalanceStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
 
   deployed.KyberWhiteList = await deployContract(
     "KyberWhitelist",
@@ -127,7 +129,7 @@ test.before(async () => {
   deployed.FeeBurner = await deployContract(
     "FeeBurner",
     opts,
-    [accounts[0], deployed.TokenA.options.address, deployed.KyberNetwork.options.address]
+    [accounts[0], mlnToken.options.address, deployed.KyberNetwork.options.address]
   );
   deployed.ExpectedRate = await deployContract(
     "ExpectedRate",
@@ -149,14 +151,13 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.setFeeBurner(deployed.FeeBurner.options.address).send();
   await deployed.KyberNetwork.methods.setKyberProxy(deployed.KyberNetworkProxy.options.address).send();
   await deployed.KyberNetwork.methods.setEnable(true).send();
-  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, deployed.TokenA.options.address, true, true, true).send();
+  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
 
-  console.log(await deployed.ConversionRates.methods.getRate(deployed.TokenA.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
-  console.log(await deployed.KyberReserve.methods.getBalance(deployed.TokenA.options.address).call());
-  console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, deployed.TokenA.options.address, new BigNumber(10 ** 23), currentBlock).call());
+  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
+  console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
+  console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
 
   // Melon Fund env
-  ethToken = deployed.EthToken;
   deployed.KyberAdapter = await deployContract(
     "exchange/adapter/KyberAdapter", opts
   );
@@ -215,8 +216,8 @@ test.serial("investor receives initial ethToken for testing", async t => {
 });
 
 // mock data
-const offeredValue = new BigNumber(10 ** 10);
-const wantedShares = new BigNumber(10 ** 10);
+const offeredValue = new BigNumber(10 ** 20);
+const wantedShares = new BigNumber(10 ** 20);
 test.serial(
   "fund receives ETH from a investment (request & execute)",
   async t => {
@@ -243,11 +244,28 @@ test.serial(
   },
 );
 
-test.serial("test", async t => {
+test.skip("test", async t => {
    // await deployed.KyberReserve.methods.setContracts(accounts[0], deployed.ConversionRates.options.address, 0).send();
-   // await deployed.KyberReserve.methods.trade(ethAddress, new BigNumber(10 ** 16), deployed.TokenA.options.address, accounts[0], new BigNumber(10 ** 17), false).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
+   // await deployed.KyberReserve.methods.trade(ethAddress, new BigNumber(10 ** 16), mlnToken.options.address, accounts[0], new BigNumber(10 ** 17), false).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
    console.log(await deployed.KyberNetworkProxy.methods.getUserCapInWei(accounts[2]).call());
-   console.log(await deployed.KyberNetwork.methods.findBestRate(ethAddress, deployed.TokenA.options.address, new BigNumber(10 ** 23)).call());
-  // await deployed.KyberNetworkProxy.methods.trade(ethAddress, new BigNumber(10 ** 17), deployed.TokenA.options.address, accounts[2], new BigNumber(10 ** 28), 0, accounts[2]).send();
-   await deployed.KyberNetworkProxy.methods.swapEtherToToken(deployed.TokenA.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(10 ** 18)});
+   console.log(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23)).call());
+  // await deployed.KyberNetworkProxy.methods.trade(ethAddress, new BigNumber(10 ** 17), mlnToken.options.address, accounts[2], new BigNumber(10 ** 28), 0, accounts[2]).send();
+   await deployed.KyberNetworkProxy.methods.swapEtherToToken(mlnToken.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(10 ** 18)});
+});
+
+test.serial("make order", async t => {
+  await updateCanonicalPriceFeed(deployed);
+  console.log(await ethToken.methods.balanceOf(fund.options.address).call());
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+    [new  BigNumber(10 ** 17), 0, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  );
 });
