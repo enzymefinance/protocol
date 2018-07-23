@@ -95,7 +95,7 @@
       "tests/integration/centralizedExchange.js",
       "tests/integration/simpleMarketWithApprove.js",
       "tests/integration/redeemMaliciousAsset.js",
-      "tests/integration/KyberTrading.js",
+      "tests/integration/kyberTrading.js",
       "tests/integration/0xTrading.js",
       "tests/integration/tradingAlternativeToken.js",
       "tests/unit/pricefeed/priceFeed.js",

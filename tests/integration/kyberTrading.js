@@ -2,7 +2,7 @@ import test from "ava";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/signing";
+import { getTermsSignatureParameters} from "../../utils/lib/signing";
 import { makeOrderSignature } from "../../utils/lib/data";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
@@ -13,50 +13,29 @@ const BigNumber = require("bignumber.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const mockBytes =
-  "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
-const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 
 // hoisted variables
 let accounts;
 let deployed = {};
 let opts;
-let minimalRecordResolution = 2;
-let maxPerBlockImbalance = new BigNumber(10 ** 29);
-let validRateDurationInBlocks = 5100;
-let precisionUnits = (new BigNumber(10).pow(18));
-let ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-let maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
-//base buy and sell rates (prices)
-let baseBuyRate1 = [];
-let baseBuyRate2 = [];
-let baseSellRate1 = [];
-let baseSellRate2 = [];
+const minimalRecordResolution = 2;
+const maxPerBlockImbalance = new BigNumber(10 ** 29);
+const validRateDurationInBlocks = 5100;
+const precisionUnits = (new BigNumber(10).pow(18));
+const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
-//compact data.
-let sells = [];
-let buys = [];
-let indices = [];
-let compactBuyArr = [];
-let compactSellArr = [];
+// base buy and sell rates (prices)
+const baseBuyRate1 = [];
+const baseBuyRate2 = [];
+const baseSellRate1 = [];
+const baseSellRate2 = [];
 
-//quantity buy steps
-let qtyBuyStepX = [0, 150, 350, 700,  1400];
-let qtyBuyStepY = [0,  0, -70, -160, -3000];
-
-//imbalance buy steps
-let imbalanceBuyStepX = [-8500, -2800, -1500, 0, 1500, 2800,  4500];
-let imbalanceBuyStepY = [ 1300,   130,    43, 0,   0, -110, -1600];
-
-//sell
-//sell price will be 1 / buy (assuming no spread) so sell is actually buy price in other direction
-let qtySellStepX = [0, 150, 350, 700, 1400];
-let qtySellStepY = [0,   0, 120, 170, 3000];
-
-//sell imbalance step
-let imbalanceSellStepX = [-8500, -2800, -1500, 0, 1500, 2800,  4500];
-let imbalanceSellStepY = [-1500,  -320,   -75, 0,    0,  110,   650];
+// compact data.
+const sells = [];
+const buys = [];
+const indices = [];
 
 let deployer;
 let manager;
@@ -112,7 +91,6 @@ test.before(async () => {
   const currentBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.addOperator(accounts[0]).send();
   await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
-  const updateRateBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.setQtyStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
   await deployed.ConversionRates.methods.setImbalanceStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
 
@@ -152,9 +130,9 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.setEnable(true).send();
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
 
-  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
-  console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
-  console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
+  // console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
+  // console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
+  // console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
 
   // Melon Fund env
   deployed.KyberAdapter = await deployContract(
@@ -194,10 +172,6 @@ test.before(async () => {
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
-});
-
-test.beforeEach(async () => {
-
 });
 
 const initialTokenAmount = new BigNumber(10 ** 20);
@@ -243,6 +217,7 @@ test.serial(
   },
 );
 
+/*
 test.skip("test", async t => {
    // await deployed.KyberReserve.methods.setContracts(accounts[0], deployed.ConversionRates.options.address, 0).send();
    // await deployed.KyberReserve.methods.trade(ethAddress, new BigNumber(10 ** 16), mlnToken.options.address, accounts[0], new BigNumber(10 ** 17), false).send({from: accounts[0], gasPrice: 1, value: new BigNumber(10 ** 16)});
@@ -251,6 +226,7 @@ test.skip("test", async t => {
   // await deployed.KyberNetworkProxy.methods.trade(ethAddress, new BigNumber(10 ** 17), mlnToken.options.address, accounts[2], new BigNumber(10 ** 28), 0, accounts[2]).send();
    await deployed.KyberNetworkProxy.methods.swapEtherToToken(mlnToken.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(10 ** 18)});
 });
+*/
 
 test.serial("make order with ethToken as makerAsset", async t => {
   await updateCanonicalPriceFeed(deployed);
@@ -280,7 +256,7 @@ test.serial("make order with ethToken as makerAsset", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("make order with mln as makerAsset", async t => {
+test.serial("make order with mlnToken as makerAsset", async t => {
   await updateCanonicalPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const makerQuantity = new  BigNumber(10 ** 17);
