@@ -1,4 +1,3 @@
-/* eslint-disable */
 import test from "ava";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
@@ -253,14 +252,16 @@ test.skip("test", async t => {
    await deployed.KyberNetworkProxy.methods.swapEtherToToken(mlnToken.options.address, 1).send({from: accounts[2], gasPrice: 1, value: new BigNumber(10 ** 18)});
 });
 
-test.serial("make order", async t => {
+test.serial("make order with ethToken as makerAsset", async t => {
   await updateCanonicalPriceFeed(deployed);
-  console.log(await ethToken.methods.balanceOf(fund.options.address).call());
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const makerQuantity = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
     makeOrderSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
-    [new  BigNumber(10 ** 17), 0, 0, 0, 0, 0, 0, 0],
+    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -268,4 +269,41 @@ test.serial("make order", async t => {
   ).send(
     { from: manager, gas: config.gas }
   );
+  const expectedMln = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const post = await getAllBalances(deployed, accounts, fund);
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.sub(makerQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(expectedMln));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+});
+
+test.serial("make order with mln as makerAsset", async t => {
+  await updateCanonicalPriceFeed(deployed);
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const makerQuantity = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  );
+  const expectedEthToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const post = await getAllBalances(deployed, accounts, fund);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
