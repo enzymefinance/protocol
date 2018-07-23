@@ -330,7 +330,11 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         } else if (getQuoteAsset() == ofBase) {
             (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
-            revert(); // no suitable reference price available
+            var (isRecentBase, referencePriceBase, decimalBase) = getPriceInfo(ofBase);
+            var (isRecentQuote, referencePriceQuote, decimalQuote) = getPriceInfo(ofQuote);
+            isRecent = isRecentBase && isRecentQuote;
+            referencePrice = mul(referencePriceBase, 10 ** 18) / referencePriceQuote;
+            decimal = 18;
         }
     }
 
@@ -363,9 +367,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     {
         return
             hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
-            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+            hasRecentPrice(buyAsset);
     }
 
     /// @return Sparse array of addresses of owned pricefeeds

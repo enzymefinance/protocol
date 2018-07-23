@@ -66,6 +66,9 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         else if (takerAsset == nativeAsset) {
             actualReceiveQuantity = swapTokenToNativeAsset(targetExchange, makerAsset, makerQuantity, nativeAsset, minRate);
         }
+        else {
+            actualReceiveQuantity = swapTokenToToken(targetExchange, makerAsset, makerQuantity, takerAsset, minRate);
+        }
 
         // Apply risk management (Post-trade basis)
         require(makeOrderPermitted(makerQuantity, makerAsset, actualReceiveQuantity, takerAsset));

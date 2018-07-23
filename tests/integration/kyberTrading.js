@@ -42,6 +42,7 @@ let investor;
 let fund;
 let ethToken;
 let mlnToken;
+let eurToken;
 
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
@@ -57,6 +58,7 @@ test.before(async () => {
   );
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
+  eurToken = deployed.EurToken;
   deployed.KGTToken = await deployContract("TestToken", opts, ["KGT", "KGT", 18]);
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
   await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
@@ -303,6 +305,54 @@ test.serial("make order with specific order price (minRate)", async t => {
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+});
+
+test.serial("convert mlnToken directly to eurToken", async t => {
+  // Setup eurToken in Kyber
+  await deployed.ConversionRates.methods.addToken(eurToken.options.address).send();
+  await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
+  await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
+  await deployed.KyberReserve.methods.approveWithdrawAddress(eurToken.options.address, accounts[0], true).send();
+  await deployed.KyberReserve.methods.setTokenWallet(eurToken.options.address, accounts[0]).send();
+  await eurToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
+  await eurToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
+  const [eurPrice] =
+    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
+  const ethersPerToken = eurPrice;
+  const tokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
+  const currentBlock = await web3.eth.getBlockNumber();
+  await deployed.ConversionRates.methods.setBaseRate([eurToken.options.address], [tokensPerEther], [tokensPerEther], buys, sells, currentBlock, indices).send();
+  await deployed.ConversionRates.methods.setQtyStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
+  await deployed.ConversionRates.methods.setImbalanceStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
+  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, eurToken.options.address, true, true, true).send();
+
+  const fundPreEur = new BigNumber(await eurToken.methods.balanceOf(fund.options.address).call());
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const makerQuantity = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, eurToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", mlnToken.options.address, eurToken.options.address, "0x0"],
+    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  );
+  const expectedEurToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const fundPostEur = new BigNumber(await eurToken.methods.balanceOf(fund.options.address).call());
+  const post = await getAllBalances(deployed, accounts, fund);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(fundPostEur, fundPreEur.add(expectedEurToken));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
