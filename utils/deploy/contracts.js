@@ -477,7 +477,7 @@ async function deployEnvironment(environment) {
       "competitions/Competition",
       opts,
       [
-        mlnAddr, deployed.Version.address, deployer,
+        mlnAddr, deployed.Version.address, config.protocol.competition.custodian,
         startTime, startTime + twoWeeksInSeconds, 38 * 10 ** 18, 15 * 10 ** 18, 180
       ]
     );
