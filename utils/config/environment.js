@@ -4,7 +4,7 @@ module.exports = {
     host: 'localhost',
     port: 8549,
     gas: 6900000,
-    gasPrice: 50000000000,
+    gasPrice: 120000000000,
     protocol: {
       deployer: '0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC',
       pricefeed: {
@@ -29,7 +29,7 @@ module.exports = {
         window: 60 * 60 * 24 * 365
       },
       competition: {
-        custodian: ['0xD14AaE595Cec3906c75249494696fA139C206948'],
+        custodian: '0xD14AaE595Cec3906c75249494696fA139C206948',
       }
     },
   },

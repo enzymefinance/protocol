@@ -298,6 +298,7 @@ async function deployEnvironment(environment) {
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     const pricefeedUpdater = config.protocol.pricefeed.updater;
+    opts.from = deployer;
     // const pricefeedUpdaterPassword = '';
     // const authority = config.protocol.governance.authorities[0];
     // const authorityPassword = '';
@@ -357,14 +358,15 @@ async function deployEnvironment(environment) {
 
     // deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
-    deployed.Version = await deployContract(
-      "version/Version",
-      {from: deployer, gas: 6900000},
-      [
-        pkgInfo.version, deployed.Governance.options.address, mlnAddr, ethTokenAddress,
-        deployed.CanonicalPriceFeed.options.address, deployed.CompetitionCompliance.options.address
-      ], () => {}, true
-    );
+    // deployed.Version = await deployContract(
+    //   "version/Version",
+    //   {from: deployer, gas: 6900000, gasPrice: 12000000000},
+    //   [
+    //     pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
+    //     deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+    //   ], () => {}, true
+    // );
+    deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
 
     // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
