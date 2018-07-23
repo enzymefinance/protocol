@@ -358,15 +358,15 @@ async function deployEnvironment(environment) {
 
     // deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
     // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
-    // deployed.Version = await deployContract(
-    //   "version/Version",
-    //   {from: deployer, gas: 6900000, gasPrice: 12000000000},
-    //   [
-    //     pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
-    //     deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
-    //   ], () => {}, true
-    // );
-    deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
+    deployed.Version = await deployContract(
+      "version/Version",
+      {from: deployer, gas: 6900000, gasPrice: 14000000000},
+      [
+        pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
+        deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+      ], () => {}, true
+    );
+    // deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
 
     // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -477,7 +477,7 @@ async function deployEnvironment(environment) {
       opts,
       [
         mlnAddr, deployed.Version.address, config.protocol.competition.custodian,
-        startTime, endTime, 38 * 10 ** 18, 15 * 10 ** 18, 180
+        startTime, endTime, 38 * 10 ** 18, 180 * 15 * 10 ** 18, 180
       ]
     );
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
