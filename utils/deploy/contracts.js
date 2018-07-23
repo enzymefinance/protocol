@@ -298,10 +298,10 @@ async function deployEnvironment(environment) {
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
     const pricefeedUpdater = config.protocol.pricefeed.updater;
-    const pricefeedUpdaterPassword = '';
-    const authority = config.protocol.governance.authorities[0];
-    const authorityPassword = '';
-    opts.from = deployer;
+    // const pricefeedUpdaterPassword = '';
+    // const authority = config.protocol.governance.authorities[0];
+    // const authorityPassword = '';
+    // opts.from = pricefeedUpdater;
     const mlnAddr = tokenInfo[environment].MLN.address;
     const ethTokenAddress = tokenInfo[environment]["WETH"].address;
 
@@ -353,21 +353,18 @@ async function deployEnvironment(environment) {
     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", "0x752e85aE6297B17f42c1619008Ad8c2271f1C30f");
     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", "0x4A3943269C581eFCbd0875A7c60Da1C35a7C85c2");
     deployed.BugBountyCompliance = await retrieveContract("compliance/BugBountyCompliance", "0xD42316be0E813104096ab537FeE2fe0f5076bB2F");
-    // deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", "");
-    deployed.Version = await retrieveContract("version/Version", "0x930C29476D290264BFe6C0f6B6da83595642e6f6");
+    deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", "0x9c76C260d4e72b87B398635313D3fAB11E83b7B3");
 
     // deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
-    deployed.CompetitionCompliance = await deployContract("compliance/CompetitionCompliance", opts, [deployer]);
     // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
     deployed.Version = await deployContract(
       "version/Version",
       {from: deployer, gas: 6900000},
       [
-        pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
-        deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+        pkgInfo.version, deployed.Governance.options.address, mlnAddr, ethTokenAddress,
+        deployed.CanonicalPriceFeed.options.address, deployed.CompetitionCompliance.options.address
       ], () => {}, true
     );
-    // deployed.NoRiskMgmt = await deployContract("riskmgmt/NoRiskMgmt", opts);
 
     // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
 
@@ -471,14 +468,14 @@ async function deployEnvironment(environment) {
     //   })
     // );
 
-    const startTime = 1532430000;   // 11AM GMT, Tuesday, 27 July, 2018
-    const twoWeeksInSeconds = 60 * 60 * 24 * 14;
+    const startTime = 1532426400;   // 10AM UTC, Tuesday, 27 July, 2018
+    const endTime = 1533636000;     // 10AM UTC, Tuesday, 8 August, 2018
     deployed.Competition = await deployContract(
       "competitions/Competition",
       opts,
       [
         mlnAddr, deployed.Version.address, config.protocol.competition.custodian,
-        startTime, startTime + twoWeeksInSeconds, 38 * 10 ** 18, 15 * 10 ** 18, 180
+        startTime, endTime, 38 * 10 ** 18, 15 * 10 ** 18, 180
       ]
     );
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
