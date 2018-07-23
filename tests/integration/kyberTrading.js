@@ -18,6 +18,7 @@ const config = environmentConfig[environment];
 let accounts;
 let deployed = {};
 let opts;
+let mlnPrice;
 
 const minimalRecordResolution = 2;
 const maxPerBlockImbalance = new BigNumber(10 ** 29);
@@ -28,9 +29,7 @@ const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
 // base buy and sell rates (prices)
 const baseBuyRate1 = [];
-const baseBuyRate2 = [];
 const baseSellRate1 = [];
-const baseSellRate2 = [];
 
 // compact data.
 const sells = [];
@@ -82,12 +81,13 @@ test.before(async () => {
 
   // Set pricing for Token
   await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
-  const tokensPerEther = (new BigNumber(precisionUnits.mul(2 * 3)).floor());
-  const ethersPerToken = (new BigNumber(precisionUnits.div(2 * 3)).floor());
-  baseBuyRate1.push(tokensPerEther.valueOf());
-  baseBuyRate2.push(tokensPerEther.valueOf() * 10100 / 10000);
-  baseSellRate1.push(ethersPerToken.valueOf());
-  baseSellRate2.push(ethersPerToken.div(1000).mul(980));
+  await updateCanonicalPriceFeed(deployed);
+  [mlnPrice] =
+    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
+  const ethersPerToken = mlnPrice;
+  const tokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
+  baseBuyRate1.push(tokensPerEther);
+  baseSellRate1.push(ethersPerToken);
   const currentBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.addOperator(accounts[0]).send();
   await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
@@ -201,7 +201,6 @@ test.serial(
     await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
-    await updateCanonicalPriceFeed(deployed);
     const requestId = await fund.methods.getLastRequestId().call();
     await fund.methods.executeRequest(requestId).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -229,7 +228,6 @@ test.skip("test", async t => {
 */
 
 test.serial("make order with ethToken as makerAsset", async t => {
-  await updateCanonicalPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const makerQuantity = new  BigNumber(10 ** 17);
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
@@ -257,7 +255,6 @@ test.serial("make order with ethToken as makerAsset", async t => {
 });
 
 test.serial("make order with mlnToken as makerAsset", async t => {
-  await updateCanonicalPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const makerQuantity = new  BigNumber(10 ** 17);
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
@@ -282,4 +279,51 @@ test.serial("make order with mlnToken as makerAsset", async t => {
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+});
+
+// minPrice is basically set if takerQuantity is non-zero (Otherwise it's just executes at market price)
+test.serial("make order with specific order price (minRate)", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const makerQuantity = new  BigNumber(10 ** 17);
+  const takerQuantity = makerQuantity.mul(mlnPrice).div(precisionUnits);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  );
+  const expectedEthToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const post = await getAllBalances(deployed, accounts, fund);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+});
+
+
+test.serial("make order fails if minPrice is not satisfied", async t => {
+  const makerQuantity = new  BigNumber(10 ** 17);
+  const takerQuantity = makerQuantity.mul(mlnPrice * 2).div(precisionUnits);
+  await t.throws(fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
+  ));
 });
