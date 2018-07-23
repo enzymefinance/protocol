@@ -12,7 +12,7 @@ import "./VersionInterface.sol";
 contract Version is DBC, Owned, VersionInterface {
     // FIELDS
 
-    bytes32 public constant TERMS_AND_CONDITIONS = 0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
+    bytes32 public constant TERMS_AND_CONDITIONS = 0xD35EBA0B0FF284A240D50F43381D8A1E00F19FBFDBF5162224335251A7D6D154; // Hashed terms and conditions as displayed on IPFS, decoded from base 58
 
     // Constructor fields
     string public VERSION_NUMBER; // SemVer of Melon protocol version
