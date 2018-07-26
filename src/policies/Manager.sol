@@ -23,6 +23,18 @@ contract PolicyManager {
         }
     }
 
+    function PoliciesToAddresses(Policy[] storage _policies) internal view returns (address[]) {
+        address[] memory res = new address[](_policies.length);
+        for(uint i = 0; i < _policies.length; ++i) {
+            res[i] = address(_policies[i]);
+        }
+        return res;
+    }
+
+    function getPoliciesBySig(bytes4 sig) public view returns (address[], address[]) {
+        return (PoliciesToAddresses(policies[sig].pre), PoliciesToAddresses(policies[sig].post));
+    }
+    
     modifier isValidPolicyBySig(bytes4 sig, address[4] addresses, uint[2] values) {
         preValidate(sig, addresses, values);
         _;

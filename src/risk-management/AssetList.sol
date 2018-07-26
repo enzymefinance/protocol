@@ -24,26 +24,16 @@ contract AssetList is Owned {
         require(_cap != 1);
         cap = _cap;
     }
-
-    function register(address _asset) external pre_cond(isOwner()) returns (bool) {
-      //fail fast
-      if (isFrozen()) {
-        return false;
-      }
-
-      if (exists(_asset)) {
-        return false;
-      }
-
-      if (mirror.length < cap || cap == 0) {
-        list[_asset] = true;
-        mirror.push(_asset);                                       //Add the asset to the mirror array
-        return true;
-      }
-
-      return false;
+    
+    function register(address _asset) external pre_cond(isOwner()) {
+      require(!isFrozen());
+      require(!exists(_asset));
+      require(cap != 0 && mirror.length < cap);
+      
+      list[_asset] = true;
+      mirror.push(_asset);
     }
-
+    
     function exists(address _asset) public view returns (bool) {
       return list[_asset];
     }

@@ -10,16 +10,16 @@ contract MaxConcentration is DSMath, Policy {
 
     // _maxConcentration: 100000000000000000 equals to 10% of Fund Value
     function MaxConcentration(uint256 _maxConcentration) public {
-      maxConcentration = _maxConcentration;
+        maxConcentration = _maxConcentration;
     }
 
     function getMaxConcentration() public view returns (uint256) {
-      return maxConcentration;
+        return maxConcentration;
     }
 
     // When run as a post-condition, must use "<= maxPositions"
     function rule(address[4] addresses, uint[2] values) external view returns (bool) {
-      return (Fund(msg.sender).calcAssetGAV(addresses[3])*(10 ** uint(18)))/Fund(msg.sender).calcGav() <= maxConcentration;
+        return (Fund(msg.sender).calcAssetGAV(addresses[3])*(10 ** uint(18)))/Fund(msg.sender).calcGav() <= maxConcentration;
     }
 
     function position() external view returns (uint) {
