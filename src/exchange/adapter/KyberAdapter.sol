@@ -154,6 +154,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         WETH9(nativeAsset).withdraw(makerQuantity);
 
         if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(ETH_TOKEN_ADDRESS), ERC20(takerAsset), makerQuantity);
+        require(isMinPricePermitted(minRate, makerQuantity, nativeAsset, takerAsset));
         receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(makerQuantity)(ERC20(takerAsset), minRate);
     }
 
@@ -175,6 +176,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         returns (uint receivedAmount)
     {
         if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(makerAsset), ERC20(ETH_TOKEN_ADDRESS), makerQuantity);
+        require(isMinPricePermitted(minRate, makerQuantity, makerAsset, nativeAsset));
         ERC20(makerAsset).approve(targetExchange, makerQuantity);
         receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20(makerAsset), makerQuantity, minRate);
 
@@ -200,6 +202,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         returns (uint receivedAmount)
     {
         if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(makerAsset), ERC20(takerAsset), makerQuantity);
+        //require(isMinPricePermitted(minRate, makerQuantity, makerAsset, takerAsset));
         ERC20(makerAsset).approve(targetExchange, makerQuantity);
         receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(makerAsset), makerQuantity, ERC20(takerAsset), minRate);
     }
@@ -225,6 +228,38 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
             takerAsset,
             makerQuantity,
             takerQuantity
+        );
+    }
+
+    /// @dev Pre trade execution risk management check for minRate
+    /// @param minPrice minPrice parameter to be supplied to Kyber proxy
+    /// @param makerAsset Address of maker asset
+    /// @param takerAsset Address of taker asset
+    function isMinPricePermitted(
+        uint minPrice,
+        uint makerQuantity,
+        address makerAsset,
+        address takerAsset
+    )
+        internal
+        view
+        returns (bool)
+    {
+        require(takerAsset != address(this) && makerAsset != address(this));
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
+        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
+        require(isRecent);
+        uint takerQuantity = mul(minPrice, makerQuantity) / 10 ** pricefeed.getDecimals(makerAsset);
+        return(
+            riskmgmt.isMakePermitted(
+                minPrice,
+                referencePrice,
+                makerAsset,
+                takerAsset,
+                makerQuantity,
+                takerQuantity
+            )
         );
     }
 
