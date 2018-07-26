@@ -1,6 +1,5 @@
 import test from "ava";
 import { ZeroEx } from '0x.js';
-import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";

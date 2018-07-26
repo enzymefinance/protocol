@@ -105,6 +105,7 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await deployed.StakingPriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
     { from: accounts[0], gas: config.gas },
   );
+  await web3.evm.increaseTime(1);
   const assetList = await deployed.CanonicalPriceFeed.methods.getRegisteredAssets().call();
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }

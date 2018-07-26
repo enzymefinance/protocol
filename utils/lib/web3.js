@@ -12,7 +12,12 @@ web3.extend({
             name: 'mine',
             call: 'evm_mine',
             params: 0
-        }
+        },
+       {
+         name: 'increaseTime',
+         call: 'evm_increaseTime',
+         params: 1
+       }
     ]
 });
 

@@ -329,13 +329,17 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     )
         external
     {
-        require(modules.pricefeed.exchangeMethodIsAllowed(
-            exchanges[exchangeIndex].exchange, method
-        ));
-        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(
-            method, exchanges[exchangeIndex].exchange,
-            orderAddresses, orderValues, identifier, v, r, s
-        ));
+        require(
+            modules.pricefeed.exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange, method
+            )
+        );
+        require(
+            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
+                method, exchanges[exchangeIndex].exchange,
+                orderAddresses, orderValues, identifier, v, r, s
+            )
+        );
     }
 
     function addOpenMakeOrder(

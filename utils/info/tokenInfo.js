@@ -135,7 +135,7 @@ module.exports = {
       ipfsHash: '',
     },
     'ZRX-T': {
-      address: '0x8925daf23aD19c68fF317038C6c6018cfBB70704',
+      address: '0x6ff6c0ff1d68b964901f986d4c9fa3ac68346570',
       name: '0x Protocol Token',
       decimals: 18,
       url: 'https://0xproject.com/',
@@ -366,6 +366,13 @@ module.exports = {
       name: 'Request Network',
       decimals: 18,
       url: 'https://request.network',
+      ipfsHash: '',
+    },
+    'DGX': {
+      address: '0x4f3afec4e5a3f2a6a1a411def7d7dfe50ee057bf',
+      name: 'Digix Gold Token',
+      decimals: 9,
+      url: 'https://dgx.io/',
       ipfsHash: '',
     },
     // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
