@@ -1,14 +1,16 @@
+import web3 from "../../lib/web3";
 import {deployContract} from "../../lib/contracts";
 
-async function deploy(environment, accounts=[], previous={}) {
+async function deploy(environment, previous={}) {
   const deployed = {};
-  const opts = Object.freeze({from: accounts[0], gas: 1000000});
+  const accounts = await web3.eth.getAccounts();
+  const opts = Object.freeze({from: accounts[0], gas: 6000000});
   switch (environment) {
     case 'development':
-    deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
-    deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
-    deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [999999999999]);
-    deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+      deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
+      deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
+      deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [999999999999]);
+      deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
       break;
     case 'kovan-demo':
       deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [999999999999]);
@@ -20,16 +22,14 @@ async function deploy(environment, accounts=[], previous={}) {
         [ "0x0", deployed.ZeroExTokenTransferProxy.address ]
       );
       deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
-      await deployed.ZeroExTokenTransferProxy.instance.addAuthorizedAddress.postTransaction(
-        opts, [ deployed.ZeroExExchange.address ]
-      );
+      await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress(deployed.ZeroExExchange.address).send(opts);
       break;
     case 'kovan-competition':
       break;
     case 'live-competition':
       break;
   }
-  return deployed;
+  return Object.assign(previous, deployed);
 }
 
 export default deploy;
