@@ -186,7 +186,7 @@ test("Mln deposited to the fund is deterministic", async t => {
 
   t.deepEqual(fundMln, secondFundMln);
   t.is(Number(fundMln), Number(expectedReward));;
-  t.true(fundSupply < secondFundSupply);
+  t.true(Number(fundSupply) < Number(secondFundSupply));
 });
 
 test.serial("Cannot register after endTime", async t => {
