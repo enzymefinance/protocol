@@ -124,7 +124,11 @@ contract Competition is CompetitionInterface, DSMath, DBC, Owned {
     function getMelonAsset() view returns (address) { return MELON_ASSET; }
 
     /// @return Get RegistrantId from registrant address
-    function getRegistrantId(address x) view returns (uint) { return registrantToRegistrantIds[x].id; }
+    function getRegistrantId(address x) view returns (uint) {
+        bool isRegistered = registrantToRegistrantIds[x].exists;
+        require(isRegistered);
+        return registrantToRegistrantIds[x].id;
+    }
 
     /// @return Address of the fund registered by the registrant address
     function getRegistrantFund(address x) view returns (address) { return registrants[getRegistrantId(x)].fund; }
