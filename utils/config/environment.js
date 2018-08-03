@@ -29,7 +29,12 @@ module.exports = {
         window: 60 * 60 * 24 * 365
       },
       competition: {
-        custodian: '0xD14AaE595Cec3906c75249494696fA139C206948',
+        custodian:      '0xD14AaE595Cec3906c75249494696fA139C206948',
+        startTime:      1534154400,
+        endTime:        1535364000,
+        mlnPerEth:      50 * 10 ** 18,
+        totalMaxBuyin:  4000 * 10 ** 18,
+        maxRegistrants: 4000
       }
     },
   },

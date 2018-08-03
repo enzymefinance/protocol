@@ -350,17 +350,26 @@ async function deployEnvironment(environment) {
     // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
     // deployed.ZeroExV1Adapter = await deployContract("exchange/adapter/ZeroExV1Adapter", opts);
 
-    // // retrieve exchange adapters (instead of deploy)
+    // retrieve exchanges
+    deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", "0x14fbca95be7e99c15cc2996c6c9d841e54b79425");
+    deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", "0x12459c951127e0c374ff9105dda097662a027093");
+    deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", "0x8da0d80f5007ef1e431dd2127178d224e32c2ef4");
+
+    // retrieve exchange adapters (instead of deploy)
     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", "0x752e85aE6297B17f42c1619008Ad8c2271f1C30f");
     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", "0x4A3943269C581eFCbd0875A7c60Da1C35a7C85c2");
     deployed.BugBountyCompliance = await retrieveContract("compliance/BugBountyCompliance", "0xD42316be0E813104096ab537FeE2fe0f5076bB2F");
     deployed.CompetitionCompliance = await retrieveContract("compliance/CompetitionCompliance", "0x9c76C260d4e72b87B398635313D3fAB11E83b7B3");
 
-    // deployed.OnlyManager = await deployContract("compliance/OnlyManager", {from: deployer});
-    // deployed.RMMakeOrders = await deployContract("riskmgmt/RMMakeOrders", {from: deployer});
+    // risk management modules
+    deployed.OnlyManager = await retrieveContract("compliance/OnlyManager", '0xa7c621d9fe8566585A6BB44a6EaA4e714e4D6496');
+    deployed.RMMakeOrders = await retrieveContract("riskmgmt/RMMakeOrders", '0xa1285Eec7ED4e1D65e55F50F564dCFF40237105a');
+    deployed.NoRiskMgmt = await retrieveContract("riskmgmt/NoRiskMgmt", '0xDB0E414F86F94E69b5be00B5dF8a85f793F94AcA');
+
+
     deployed.Version = await deployContract(
       "version/Version",
-      {from: deployer, gas: 6900000, gasPrice: 14000000000},
+      {from: deployer, gas: 6900000, gasPrice: 4000000000},
       [
         pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
         deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
@@ -368,7 +377,7 @@ async function deployEnvironment(environment) {
     );
     // deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
 
-    // deployed.Fundranking = await deployContract("FundRanking", {from: deployer});
+    deployed.Fundranking = await retrieveContract("FundRanking", '0xE52eE3dB0587170DEb20B1c71B17229A28b79A9b');
 
     // add Version to Governance tracking
     // NB: be sure that relevant authority account is unlocked
@@ -470,14 +479,16 @@ async function deployEnvironment(environment) {
     //   })
     // );
 
-    const startTime = 1532426400;   // 10AM UTC, Tuesday, 27 July, 2018
-    const endTime = 1533636000;     // 10AM UTC, Tuesday, 8 August, 2018
+    const startTime = 1534154400;   // 10AM UTC, 13 August, 2018
+    const endTime = 1535364000;     // 10AM UTC, 27 August, 2018
     deployed.Competition = await deployContract(
       "competitions/Competition",
       opts,
       [
         mlnAddr, deployed.Version.address, config.protocol.competition.custodian,
-        startTime, endTime, 38 * 10 ** 18, 180 * 15 * 10 ** 18, 180
+        config.protocol.competition.startTime, config.protocol.competition.endTime,
+        config.protocol.competition.mlnPerEth, config.protocol.competition.totalMaxBuyin,
+        config.protocol.competition.maxRegistrants
       ]
     );
     await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
