@@ -3,8 +3,7 @@ import * as fs from 'fs';
 import web3 from './web3';
 
 // Contract name regex for new flat directory hierarchy of compiled contracts
-const cNameRegex = new RegExp('[^/]+$');
-const outPath = path.join(__dirname, '..', '..', 'out');
+const outPath = path.join(__dirname, '..', '..', 'out', 'formatted');
 
 /**
  * Deploy a contract, and get back an instance.
@@ -15,13 +14,11 @@ const outPath = path.join(__dirname, '..', '..', 'out');
  * @returns {Object} - Instance of the deployed contract
  */
 async function deployContract(contractPath, optsIn = {}, constructorArgs = []) {
-  const [contractName] = cNameRegex.exec(contractPath);
   const options = Object.assign({}, optsIn); // clone object value instead of reference
   const options2 = Object.assign({}, options); // clone object value instead of reference
-  const abiPath = path.resolve(outPath, 'abi', contractName);
-  const binPath = path.resolve(outPath, 'bin', contractName);
-  const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
-  const bytecode = fs.readFileSync(`${binPath}.bin`, 'utf8');
+  const filepath = path.resolve(outPath, contractPath);
+  const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
+  const bytecode = fs.readFileSync(`${filepath}.bin`, 'utf8');
   const contract = new web3.eth.Contract(abi, options);
   const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
   // console.log(deployTx)
@@ -42,9 +39,8 @@ async function retrieveContract(contractPath, address) {
   if(address === undefined || parseInt(address, 16) === 0) {
     throw new Error('Address is undefined or 0x0');
   }
-  const [contractName] = cNameRegex.exec(contractPath);
-  const abiPath = path.resolve(outPath, 'abi', contractName);
-  const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
+  const filepath = path.resolve(outPath, contractPath);
+  const abi = JSON.parse(fs.readFileSync(`${filepath}.abi`, 'utf8'));
   return new web3.eth.Contract(abi, address);
 }
 
