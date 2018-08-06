@@ -232,6 +232,7 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
   await t.context.pricefeeds[0].methods.update(
     [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, firstPrice]
   ).send({from: accounts[0], gas: 6000000});
+  await web3.evm.increaseTime(1);
   await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, mockEurAddress]).send({from: accounts[0], gas: 6000000});
   const isOperatorWhileStaked = await t.context.canonicalPriceFeed.methods.isOperator(
     t.context.pricefeeds[0].options.address
