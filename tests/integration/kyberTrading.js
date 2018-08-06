@@ -52,25 +52,25 @@ test.before(async () => {
 
   // Setup Kyber env
   deployed.ConversionRates = await deployContract(
-    "ConversionRates",
+    "exchange/thirdparty/kyber/ConversionRates",
     opts,
     [accounts[0]]
   );
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
   eurToken = deployed.EurToken;
-  deployed.KGTToken = await deployContract("TestToken", opts, ["KGT", "KGT", 18]);
+  deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
   await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
   await deployed.ConversionRates.methods.enableTokenTrade(mlnToken.options.address).send();
   deployed.KyberNetwork = await deployContract(
-    "KyberNetwork",
+    "exchange/thirdparty/kyber/KyberNetwork",
     opts,
     [accounts[0]]
   );
   deployed.KyberReserve = await deployContract(
-    "KyberReserve",
+    "exchange/thirdparty/kyber/KyberReserve",
     opts,
     [deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, accounts[0]]
   );
@@ -97,7 +97,7 @@ test.before(async () => {
   await deployed.ConversionRates.methods.setImbalanceStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
 
   deployed.KyberWhiteList = await deployContract(
-    "KyberWhitelist",
+    "exchange/thirdparty/kyber/KyberWhitelist",
     opts,
     [accounts[0], deployed.KGTToken.options.address]
   );
@@ -106,18 +106,18 @@ test.before(async () => {
   await deployed.KyberWhiteList.methods.setSgdToEthRate(30000).send();
 
   deployed.FeeBurner = await deployContract(
-    "FeeBurner",
+    "exchange/thirdparty/kyber/FeeBurner",
     opts,
     [accounts[0], mlnToken.options.address, deployed.KyberNetwork.options.address]
   );
   deployed.ExpectedRate = await deployContract(
-    "ExpectedRate",
+    "exchange/thirdparty/kyber/ExpectedRate",
     opts,
     [deployed.KyberNetwork.options.address, accounts[0]]
   );
 
   deployed.KyberNetworkProxy = await deployContract(
-    "KyberNetworkProxy",
+    "exchange/thirdparty/kyber/KyberNetworkProxy",
     opts,
     [accounts[0]]
   );
