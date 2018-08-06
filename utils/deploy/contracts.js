@@ -56,6 +56,7 @@ async function deployEnvironment(environment) {
     const deploymentAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
     opts.from = deploymentAddress;
     /* eslint-disable global-require */
+    /* eslint-disable import/no-unresolved */
     const previous = require('../../addressBook.json').kovan;
     const commonEnvironment = "kovan";
     // set up governance and tokens

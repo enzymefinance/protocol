@@ -25,7 +25,7 @@ Compile.compile(compileOptions, (err, result) => {
     fs.mkdirSync(formattedDir);
   }
   Object.entries(result).forEach(([, value]) => {
-    const cNameRegex = new RegExp('(src)(.*\/)(.*.sol)$');
+    const cNameRegex = new RegExp('(src)(.*/)(.*.sol)$');
     const contractFolderName = value.sourcePath;
     const [, , contractPath] = cNameRegex.exec(contractFolderName);
     const contractDir = formattedDir + contractPath;
