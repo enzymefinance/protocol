@@ -171,7 +171,7 @@ contract DexyExchange is Ownable, DexyExchangeInterface {
             return;
         }
 
-        ERC20(token).transfer(msg.sender, amount);
+        ERC20A(token).transfer(msg.sender, amount);
     }
 
     /// @dev Takes an order.

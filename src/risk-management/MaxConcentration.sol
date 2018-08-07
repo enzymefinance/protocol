@@ -18,7 +18,7 @@ contract MaxConcentration is DSMath, Policy {
     }
 
     // When run as a post-condition, must use "<= maxPositions"
-    function rule(address[4] addresses, uint[2] values) external view returns (bool) {
+    function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
         return (Fund(msg.sender).calcAssetGAV(addresses[3])*(10 ** uint(18)))/Fund(msg.sender).calcGav() <= maxConcentration;
     }
 

@@ -49,7 +49,7 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
+        // require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
         require(makerAsset.approve(targetExchange, makerQuantity));
 
         uint orderId = MatchingMarket(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
@@ -113,7 +113,7 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         require(fillMakerQuantity <= maxMakerQuantity);
         require(fillTakerQuantity <= maxTakerQuantity);
-        require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
+
         require(takerAsset.approve(targetExchange, fillTakerQuantity));
         require(MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity));
         require(
@@ -198,74 +198,6 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
             address(buyAsset),
             sellQuantity,
             buyQuantity
-        );
-    }
-
-    //  INTERNAL METHODS
-
-    /// @dev needed to avoid stack too deep error
-    function makeOrderPermitted(
-        uint makerQuantity,
-        ERC20 makerAsset,
-        uint takerQuantity,
-        ERC20 takerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            makerAsset,
-            takerAsset,
-            makerQuantity,
-            takerQuantity
-        );
-        return(
-            riskmgmt.isMakePermitted(
-                orderPrice,
-                referencePrice,
-                makerAsset,
-                takerAsset,
-                makerQuantity,
-                takerQuantity
-            )
-        );
-    }
-
-    /// @dev needed to avoid stack too deep error
-    function takeOrderPermitted(
-        uint takerQuantity,
-        ERC20 takerAsset,
-        uint makerQuantity,
-        ERC20 makerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            takerQuantity,
-            makerQuantity
-        );
-        return(
-            riskmgmt.isTakePermitted(
-                orderPrice,
-                referencePrice,
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
-            )
         );
     }
 }

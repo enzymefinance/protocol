@@ -45,7 +45,6 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
         require(Asset(makerAsset).approve(targetExchange, makerQuantity));
 
         uint orderId = CentralizedExchangeBridge(targetExchange).makeOrder(
@@ -139,41 +138,5 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
             takerQuantity,
             takerAsset
         ) = CentralizedExchangeBridge(targetExchange).getOrder(id);
-    }
-
-    // INTERNAL FUNCTIONS
-
-    /// @dev needed to avoid stack too deep error
-    function makeOrderPermitted(
-        uint makerQuantity,
-        address makerAsset,
-        uint takerQuantity,
-        address takerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            makerAsset,
-            takerAsset,
-            makerQuantity,
-            takerQuantity
-        );
-        return(
-            riskmgmt.isMakePermitted(
-                orderPrice,
-                referencePrice,
-                makerAsset,
-                takerAsset,
-                makerQuantity,
-                takerQuantity
-            )
-        );
     }
 }

@@ -34,11 +34,13 @@ contract MockFund is PolicyManager {
         return fundHoldingsLength;
     }
     
-    function testSomePolicy(address[4] addresses, uint[2] values, address _ofPolicy) public view returns (bool) {
-        return Policy(_ofPolicy).rule(addresses, values);
+    function testSomePolicy(address[5] addresses, uint[3] values, address _ofPolicy) public view returns (bool) {
+        return Policy(_ofPolicy).rule(0x0000, addresses, values, 0x0);
     }
     
-    function testMaxPositions(address[4] addresses, uint[2] values, uint _value) public isValidPolicy(addresses, values) {
+    function testMaxPositions(address[5] addresses, uint[3] values, uint _value) public 
+        isValidPolicy(addresses, values, 0x0) 
+    {
         setFundHoldingsLength(_value);
     }
 
@@ -62,14 +64,9 @@ contract MockFund is PolicyManager {
         return gav;
     }
 
-    function testPolicy(address[4] addresses, uint[2] values) public view 
-        isValidPolicy(addresses, values) 
+    function testPolicy(address[5] addresses, uint[3] values) public view 
+        isValidPolicy(addresses, values, 0x0) 
     {
         // dummy
-    }
-
-    // -- price tolerance
-    function testPriceTolerance(address _ofPolicy, address _asset, address _quote, uint _value) view returns (uint, uint, uint, uint, uint, uint, bool) {
-        return PriceTolerance(_ofPolicy).apply(_asset, _quote, _value);
     }
 }

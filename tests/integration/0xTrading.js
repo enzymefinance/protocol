@@ -36,7 +36,7 @@ let opts;
 const offeredValue = new BigNumber(10 ** 20);
 const wantedShares = new BigNumber(10 ** 20);
 
-test.before(async () => {
+test.before(async t => {
   deployed = await deployEnvironment(environment);
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor, ,] = accounts;
@@ -90,6 +90,10 @@ test.before(async () => {
   );
   const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
+
+  const priceTolerance = await deployContract('risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
+  await t.notThrows(fund.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
+
   // Change competition address to investor just for testing purpose so it allows invest / redeem
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
     opts

@@ -65,7 +65,7 @@ contract Ownable {
     }
 }
 
-interface ERC20 {
+interface ERC20A {
 
     function totalSupply() public view returns (uint);
     function balanceOf(address owner) public view returns (uint);
@@ -155,7 +155,7 @@ contract DexyVault is Ownable, DexyVaultInterface {
         if (token == ETH) {
             value = msg.value;
         } else {
-            require(ERC20(token).transferFrom(msg.sender, address(this), value));
+            require(ERC20A(token).transferFrom(msg.sender, address(this), value));
         }
 
         depositFor(msg.sender, token, value);
@@ -175,7 +175,7 @@ contract DexyVault is Ownable, DexyVaultInterface {
         } else if (isERC777[token]) {
             ERC777(token).send(msg.sender, amount);
         } else {
-            require(ERC20(token).transfer(msg.sender, amount));
+            require(ERC20A(token).transfer(msg.sender, amount));
         }
 
         emit Withdrawn(msg.sender, token, amount);
@@ -280,7 +280,7 @@ contract DexyVault is Ownable, DexyVaultInterface {
             return;
         }
 
-        require(ERC20(token).transfer(msg.sender, overflow(token)));
+        require(ERC20A(token).transfer(msg.sender, overflow(token)));
     }
 
     /// @dev Returns the balance of a user for a specified token.
@@ -299,7 +299,7 @@ contract DexyVault is Ownable, DexyVaultInterface {
             return address(this).balance.sub(accounted[token]);
         }
 
-        return ERC20(token).balanceOf(this).sub(accounted[token]);
+        return ERC20A(token).balanceOf(this).sub(accounted[token]);
     }
 
     /// @dev Accounts for token deposits.

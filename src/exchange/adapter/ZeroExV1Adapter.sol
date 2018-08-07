@@ -77,7 +77,6 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         uint fillTakerQuantity = orderValues[6];
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         require(takerAsset.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
         require(filledAmount == fillTakerQuantity);
@@ -157,44 +156,6 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
             v,
             r,
             s
-        );
-    }
-
-    // VIEW METHODS
-
-    /// @dev needed to avoid stack too deep error
-    function takeOrderPermitted(
-        uint takerQuantity,
-        Token takerAsset,
-        uint makerQuantity,
-        Token makerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        require(address(makerAsset) != address(takerAsset));
-        // require(fillTakerQuantity <= maxTakerQuantity);
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            takerQuantity,
-            makerQuantity
-        );
-        return(
-            riskmgmt.isTakePermitted(
-                orderPrice,
-                referencePrice,
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
-            )
         );
     }
 }

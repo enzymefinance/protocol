@@ -10,6 +10,7 @@ import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
 import "./policies/Manager.sol";
 import "./dependencies/math.sol";
+import "./risk-management/PriceTolerance.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
@@ -273,6 +274,28 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         }
     }
 
+    /*
+    function exampleOasisOrder(address _ofPolicy, uint exchangeid, bytes32 identifier, uint fillTakerQuantity)  view returns (uint, uint, bool) {
+        return PriceTolerance(_ofPolicy).exampleOasisOrder(exchanges[exchangeid].exchange, identifier, fillTakerQuantity);
+    }
+
+    function testPriceTolerance(address _ofPolicy, address _asset, address _quote, uint _value1, uint _value2) view returns (uint, uint, uint, uint, uint, bool) {
+        return PriceTolerance(_ofPolicy).apply(_asset, _quote, _value1, _value2);
+    }
+
+    function testTakerPriceTolernace(address _ofPolicy, address[5] orderAddresses, uint[8] orderValues) view returns (uint, uint, uint, uint, bool) {
+        return PriceTolerance(_ofPolicy).exampleTakeGenericOrder(orderAddresses[2], orderAddresses[3], [orderValues[0], orderValues[1], orderValues[6]]);
+    }
+    
+    function takeGenericOrder(address _ofPolicy, address[5] orderAddresses, uint[8] orderValues, bytes32 identifier) view returns (bool) {
+        return PriceTolerance(_ofPolicy).takeOrder(
+            [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], address(0x0)], 
+            [orderValues[0], orderValues[1], orderValues[6]], 
+            identifier
+        );
+    }
+    */
+    
     /// @notice Cancels active investment and redemption requests
     /// @param id Index of request to be executed
     function cancelRequest(uint id)
@@ -327,21 +350,13 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         bytes32 r,
         bytes32 s
     )
-        external
+    external 
+    isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
     {
-        require(
-            modules.pricefeed.exchangeMethodIsAllowed(
-                exchanges[exchangeIndex].exchange, method
-            )
-        );
-        require(
-            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
-                method, exchanges[exchangeIndex].exchange,
-                orderAddresses, orderValues, identifier, v, r, s
-            )
-        );
+        require(modules.pricefeed.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
+        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(method, exchanges[exchangeIndex].exchange,orderAddresses, orderValues, identifier, v, r, s));
     }
-
+    
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,

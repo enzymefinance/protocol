@@ -35,29 +35,29 @@ contract PolicyManager {
         return (PoliciesToAddresses(policies[sig].pre), PoliciesToAddresses(policies[sig].post));
     }
     
-    modifier isValidPolicyBySig(bytes4 sig, address[4] addresses, uint[2] values) {
-        preValidate(sig, addresses, values);
+    modifier isValidPolicyBySig(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) {
+        preValidate(sig, addresses, values, identifier);
         _;
-        postValidate(sig, addresses, values);
+        postValidate(sig, addresses, values, identifier);
     }
 
-    modifier isValidPolicy(address[4] addresses, uint[2] values) {
-        preValidate(msg.sig, addresses, values);
+    modifier isValidPolicy(address[5] addresses, uint[3] values, bytes32 identifier) {
+        preValidate(msg.sig, addresses, values, identifier);
         _;
-        postValidate(msg.sig, addresses, values);
+        postValidate(msg.sig, addresses, values, identifier);
     }
     
-    function preValidate(bytes4 sig, address[4] addresses, uint[2] values) view public {
-        validate(policies[sig].pre, addresses, values);
+    function preValidate(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view public {
+        validate(sig, policies[sig].pre, addresses, values, identifier);
     }
 
-    function postValidate(bytes4 sig, address[4] addresses, uint[2] values) view public {
-        validate(policies[sig].post, addresses, values);
+    function postValidate(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view public {
+        validate(sig, policies[sig].post, addresses, values, identifier);
     }
 
-    function validate(Policy[] storage aux, address[4] addresses, uint[2] values) view internal {
+    function validate(bytes4 sig, Policy[] storage aux, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
         for(uint i = 0; i < aux.length; ++i) {
-            if (aux[i].rule(addresses, values) == false) {
+            if (aux[i].rule(sig, addresses, values, identifier) == false) {
                 revert();
             }
         }

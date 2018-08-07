@@ -48,9 +48,3 @@ test('Freeze', async t => {
     await list.methods.freeze().send();
     await t.throws(list.methods.register(mockTwo).send());
 })
-
-/*
-test('Blacklist', async t => {
-
-});
-*/

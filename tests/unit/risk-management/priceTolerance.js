@@ -34,12 +34,5 @@ test('Mock PriceTolerance', async t => {
 
     let priceTolerance = await deployContract('risk-management/PriceTolerance', opts, [10])
 
-    console.log("- price -")
-    console.log(await mockFund.methods.testPriceTolerance(priceTolerance.options.address, mockOne, mockTwo, toDec(0.55)).call());
-
     t.true(true)
-})
-
-test('Real Fund', async t => {
-
 })

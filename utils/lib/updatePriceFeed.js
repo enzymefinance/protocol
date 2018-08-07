@@ -39,6 +39,11 @@ async function getConvertedPrices(deployed, fromSymbol) {
     json: true
   }
   const queryResult = await requestWithRetries(options, 3);
+  
+  //console.log("-- query --")
+  //console.log(options.uri)
+  //console.log(queryResult)
+  
   if(queryResult[fromSymbol] !== 1) {
     throw new Error(`API call returned incorrect price for ${fromSymbol}`);
   } else if(Object.values(queryResult).indexOf(0) !== -1) {
@@ -61,6 +66,11 @@ async function getConvertedPrices(deployed, fromSymbol) {
   const convertedEth = new BigNumber(inverseEth).div(10 ** (ethDecimals - quoteDecimals)).times(10 ** ethDecimals);
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - quoteDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - quoteDecimals)).times(10 ** mlnDecimals);
+  
+  //console.log(`ETH: ${convertedEth.toString()}. ${inverseEth.toString()}. ${ethDecimals}`)
+  //console.log(`EUR: ${convertedEur.toString()}. ${inverseEur.toString()}. ${eurDecimals}`)
+  //console.log(`MLN: ${convertedMln.toString()}. ${inverseMln.toString()}. ${mlnDecimals}`)
+
   return {
     [deployed.EurToken.options.address]: convertedEur,
     [deployed.EthToken.options.address]: convertedEth,
@@ -99,6 +109,14 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   const accounts = await web3.eth.getAccounts();
   if(Object.keys(inputPrices).length === 0) {
     prices = await getConvertedPrices(deployed, quoteSymbol);
+
+    //console.log("-- prices --")
+    //console.log(prices)
+
+    //Object.keys(prices).map(i => {
+    //  console.log(`+ ${i}: ${prices[i].toString()}`)
+    //})
+
   } else {
     prices = inputPrices;
   }

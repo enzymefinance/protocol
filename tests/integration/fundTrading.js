@@ -46,7 +46,7 @@ const offeredValue = new BigNumber(10 ** 22);
 const wantedShares = new BigNumber(10 ** 22);
 const numberofExchanges = 2;
 
-test.before(async () => {
+test.before(async t => {
   deployed = await deployEnvironment(environment);
   accounts = await web3.eth.getAccounts();
   gasPrice = config.gasPrice;
@@ -110,6 +110,12 @@ test.before(async () => {
   );
   const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
+
+  // Register price tolerance policy
+  const priceTolerance = await deployContract('risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
+  await t.notThrows(fund.methods.register(makeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
+  await t.notThrows(fund.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
+  
   await deployed.MatchingMarket.methods.addTokenPairWhitelist(mlnToken.options.address, ethToken.options.address).send(
     { from: deployer, gasPrice: config.gasPrice }
   );
@@ -318,7 +324,7 @@ exchangeIndexes.forEach(i => {
     );
     t.deepEqual(post.fund.ether, pre.fund.ether);
   });
-
+  
   test.serial(
     `Exchange ${i +
       1}: third party takes entire order, allowing fund to receive mlnToken`,
@@ -428,7 +434,7 @@ exchangeIndexes.forEach(i => {
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
   );
-
+  
   test.serial(
     `Exchange ${i + 1}: manager takes order (buys ETH-T for MLN-T)`,
     async t => {
@@ -580,7 +586,7 @@ test.serial(
       0,
       takeOrderSignature,
       ["0x0", "0x0", "0x0", "0x0", "0x0"],
-      [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, trade4.buyQuantity, 0],
       `0x${Number(orderId)
         .toString(16)
         .padStart(64, "0")}`,
@@ -632,7 +638,7 @@ test.serial("manager makes an order and cancels it", async t => {
   const exchangePreEthToken = Number(
     await mlnToken.methods.balanceOf(exchanges[0].options.address).call(),
   );
-
+  
   receipt = await fund.methods.callOnExchange(
     0,
     cancelOrderSignature,
