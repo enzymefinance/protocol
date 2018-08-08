@@ -1,0 +1,25 @@
+{
+  "tokens": {
+    "MlnToken": {
+      "name": "Melon",
+      "decimals": 18,
+      "address": "",
+      "minimalRecordResolution": "1000000000000000",
+      "maxPerBlockImbalance": "120000000000000000000",
+      "maxTotalImbalance": "180000000000000000000"
+    },
+    "EurToken": {
+      "name": "Melon",
+      "decimals": 18,
+      "address": "",
+      "minimalRecordResolution": "1000000000000000",
+      "maxPerBlockImbalance": "550000000000000000000",
+      "maxTotalImbalance": "820000000000000000000"
+    }
+  },
+  "reserve": "0xc1400758cC253750516eCd0dAc4C4B0E469a90fF",
+  "pricing": "0x54409D8cB061379C97521c3b23a36E9b098c37d7",
+  "network": "0x1F2e33BEc486480a954E0Bab1D6d2E02831e7449",
+  "wrapper": "0x8E7D25b4c9093e01699aDB23B6fD232452f34981",
+  "feeburner": "0x1DF07Ef28347f79D1D32fee0247D9D8390D0B71D"
+}
