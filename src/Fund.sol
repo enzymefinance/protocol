@@ -20,7 +20,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
 
     // TYPES
-
+    
     struct Modules { // Describes all modular parts, standardised through an interface
         CanonicalPriceFeed pricefeed; // Provides all external data
         ComplianceInterface compliance; // Boolean functions regarding invest/redeem
@@ -273,28 +273,6 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
     }
-
-    /*
-    function exampleOasisOrder(address _ofPolicy, uint exchangeid, bytes32 identifier, uint fillTakerQuantity)  view returns (uint, uint, bool) {
-        return PriceTolerance(_ofPolicy).exampleOasisOrder(exchanges[exchangeid].exchange, identifier, fillTakerQuantity);
-    }
-
-    function testPriceTolerance(address _ofPolicy, address _asset, address _quote, uint _value1, uint _value2) view returns (uint, uint, uint, uint, uint, bool) {
-        return PriceTolerance(_ofPolicy).apply(_asset, _quote, _value1, _value2);
-    }
-
-    function testTakerPriceTolernace(address _ofPolicy, address[5] orderAddresses, uint[8] orderValues) view returns (uint, uint, uint, uint, bool) {
-        return PriceTolerance(_ofPolicy).exampleTakeGenericOrder(orderAddresses[2], orderAddresses[3], [orderValues[0], orderValues[1], orderValues[6]]);
-    }
-    
-    function takeGenericOrder(address _ofPolicy, address[5] orderAddresses, uint[8] orderValues, bytes32 identifier) view returns (bool) {
-        return PriceTolerance(_ofPolicy).takeOrder(
-            [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], address(0x0)], 
-            [orderValues[0], orderValues[1], orderValues[6]], 
-            identifier
-        );
-    }
-    */
     
     /// @notice Cancels active investment and redemption requests
     /// @param id Index of request to be executed
@@ -431,9 +409,10 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     function getFundHoldingsLength() view returns (uint) {
-        return 1; // FIX
+        var (holdings, addresses) = getFundHoldings();
+        return addresses.length;
     }
-
+    
     /// @notice Calculates gross asset value of specified fund holding
     function calcAssetGAV(address ofAsset) returns (uint) {
       uint assetHolding = add(
