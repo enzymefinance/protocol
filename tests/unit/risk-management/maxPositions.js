@@ -15,7 +15,7 @@ const mockThree = "0x3333333333333333333333333333333333333333";
 const EMPTY = '0x0000000000000000000000000000000000000000';
 
 const DUMMY_ADDR = [EMPTY, EMPTY, EMPTY, EMPTY];
-const DUMMY_VALS = [0, 0];
+const DUMMY_VALS = [0, 0, 0];
 
 test.before(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -23,7 +23,7 @@ test.before(async () => {
     opts = {from: deployer, gas: 8000000}
 });
 
-let testMaxPositions = Api.util.sha3('testMaxPositions(address[4],uint256[2],uint256)').substring(0, 10);
+let testMaxPositions = Api.util.sha3('testMaxPositions(address[5],uint256[3],uint256)').substring(0, 10);
 
 test('Max positions', async t => {
 
@@ -35,4 +35,4 @@ test('Max positions', async t => {
 
     await t.notThrows(mockFund.methods.testMaxPositions(DUMMY_ADDR, DUMMY_VALS, 2).send())
     await t.throws(mockFund.methods.testMaxPositions(DUMMY_ADDR, DUMMY_VALS, 3).send())
-})
+});
