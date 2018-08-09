@@ -1,6 +1,7 @@
 import Api from "@parity/api";
 
 const fs = require("fs");
+/* eslint-disable import/no-unresolved */
 const addressBook = require("../../addressBook.json");
 const environmentConfig = require("../config/environment.js");
 

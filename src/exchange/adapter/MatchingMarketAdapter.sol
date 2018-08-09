@@ -4,7 +4,7 @@ import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/MatchingMarket.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
-import "ds-math/math.sol";
+import "../../dependencies/math.sol";
 
 
 /// @title MatchingMarketAdapter Contract

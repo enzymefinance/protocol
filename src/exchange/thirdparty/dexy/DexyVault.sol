@@ -93,7 +93,7 @@ interface ERC777 {
 
 }
 
-interface VaultInterface {
+interface DexyVaultInterface {
 
     event Deposited(address indexed user, address token, uint amount);
     event Withdrawn(address indexed user, address token, uint amount);
@@ -119,7 +119,7 @@ interface VaultInterface {
 
 }
 
-contract Vault is Ownable, VaultInterface {
+contract DexyVault is Ownable, DexyVaultInterface {
 
     using SafeMath for *;
 
@@ -312,4 +312,3 @@ contract Vault is Ownable, VaultInterface {
         emit Deposited(user, token, amount);
     }
 }
-

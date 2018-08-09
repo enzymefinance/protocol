@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ds-math/math.sol";
+import "../dependencies/math.sol";
 import "../assets/Asset.sol";
 import "./RiskMgmtInterface.sol";
 

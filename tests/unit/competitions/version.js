@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../../utils/lib/signing";
 
@@ -14,10 +14,10 @@ let nonwhitelist;
 let manager;
 let opts;
 
-const fundName = "Super Fund";
+const fundName = web3.utils.toHex("Super Fund");
 
 test.before(async () => {
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [, manager, , , nonwhitelist] = accounts;
   opts = { from: manager, gas: config.gas, gasPrice: config.gasPrice };
 });
@@ -29,42 +29,37 @@ test.beforeEach(async t => {
 
 test("Cannot setup a new fund without whitelist in Competition", async t => {
   const [r, s, v] = await getTermsSignatureParameters(nonwhitelist);
-  const txid = await t.context.version.instance.setupFund.postTransaction(
-    { from: nonwhitelist, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      fundName,
-      t.context.deployed.MlnToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      t.context.deployed.NoCompliance.address,
-      t.context.deployed.RMMakeOrders.address,
-      [t.context.deployed.MatchingMarket.address],
-      [t.context.deployed.MlnToken.address],
-      v,
-      r,
-      s,
-    ],
-  );
-  const gasUsed = (await api.eth.getTransactionReceipt(txid)).gasUsed;
-  t.is(Number(gasUsed), config.gas);
+  await t.throws(t.context.version.methods.setupFund(
+    fundName,
+    t.context.deployed.MlnToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    t.context.deployed.NoCompliance.options.address,
+    t.context.deployed.RMMakeOrders.options.address,
+    [t.context.deployed.MatchingMarket.options.address],
+    [t.context.deployed.MlnToken.options.address],
+    v,
+    r,
+    s,
+  ).send({ from: nonwhitelist, gas: config.gas, gasPrice: config.gasPrice }));
 });
 
 test("Can setup a new fund from whitelisted account", async t => {
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await t.context.version.instance.setupFund.postTransaction(opts, [
+  await t.context.version.methods.setupFund(
     fundName,
-    t.context.deployed.MlnToken.address, // base asset
+    t.context.deployed.MlnToken.options.address, // base asset
     config.protocol.fund.managementFee,
     config.protocol.fund.performanceFee,
-    t.context.deployed.NoCompliance.address,
-    t.context.deployed.RMMakeOrders.address,
-    [t.context.deployed.MatchingMarket.address],
-    [t.context.deployed.MlnToken.address],
+    t.context.deployed.NoCompliance.options.address,
+    t.context.deployed.RMMakeOrders.options.address,
+    [t.context.deployed.MatchingMarket.options.address],
+    [t.context.deployed.MlnToken.options.address],
     v,
     r,
     s,
-  ]);
-  const lastFundId = await t.context.version.instance.getLastFundId.call({}, []);
-  const lastFund = await t.context.version.instance.getFundById.call({}, [lastFundId]);
+  ).send(opts);
+  const lastFundId = await t.context.version.methods.getLastFundId().call();
+  const lastFund = await t.context.version.methods.getFundById(lastFundId).call();
   t.not(lastFund, "0x0000000000000000000000000000000000000000");
 });

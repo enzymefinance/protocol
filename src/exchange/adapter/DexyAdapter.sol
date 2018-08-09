@@ -1,11 +1,11 @@
 pragma solidity ^0.4.21;
 
 import "./ExchangeAdapterInterface.sol";
-import "../thirdparty/dexy/Exchange.sol";
-import "../thirdparty/dexy/Vault.sol";
+import "../thirdparty/dexy/DexyExchange.sol";
+import "../thirdparty/dexy/DexyVault.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
-import "ds-math/math.sol";
+import "../../dependencies/math.sol";
 
 
 /// @title Dexy Adapter Contract
@@ -52,7 +52,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         uint takerQuantity = orderValues[1];
 
         // require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
-        VaultInterface vault = Exchange(targetExchange).vault();
+        DexyVaultInterface vault = DexyExchange(targetExchange).vault();
 
         if (!vault.isApproved(address(this), targetExchange)) {
             vault.approve(targetExchange);
@@ -60,7 +60,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         makerAsset.approve(address(vault), makerQuantity);
         vault.deposit(address(makerAsset), makerQuantity);
 
-        Exchange(targetExchange).order(
+        DexyExchange(targetExchange).order(
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, orderValues[4], orderValues[5]]
         );
@@ -134,13 +134,13 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         require(takeOrderPermitted(takerQuantity, takerAsset, makerQuantity, makerAsset));
 
-        VaultInterface vault = Exchange(targetExchange).vault();
+        DexyVaultInterface vault = DexyExchange(targetExchange).vault();
         if (!vault.isApproved(address(this), targetExchange)) {
             vault.approve(targetExchange);
         }
         makerAsset.approve(address(vault), makerQuantity);
         vault.deposit(address(makerAsset), makerQuantity);
-        Exchange(targetExchange).trade(
+        DexyExchange(targetExchange).trade(
             [orderAddresses[0], takerAsset, makerAsset],
             [takerQuantity, makerQuantity, orderValues[4], orderValues[5]],
             signature, orderValues[6]

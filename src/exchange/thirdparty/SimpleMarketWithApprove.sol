@@ -12,7 +12,7 @@
 pragma solidity ^0.4.21;
 
 import '../../assets/Asset.sol';
-import 'ds-math/math.sol';
+import "../../dependencies/math.sol";
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);

@@ -1,52 +1,43 @@
 import test from 'ava';
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import {deployContract} from "../../../utils/lib/contracts";
-import deployEnvironment from "../../../utils/deploy/contracts";
+import {newMockAddress} from "../../../utils/lib/mocks";
 
-const environmentConfig = require("../../../utils/config/environment.js");
-
-const environment = "development";
-const config = environmentConfig[environment];
-
-let accounts;
 let deployer;
-let opts;
-let governance;
-let version;
-let deployed;
 
-async function activateVersion(t) {
-  const calldata = api.util.abiEncode(
-    'addVersion(address)', ['address'], [t.context.version.address]
-  );
-  await t.context.governance.instance.propose.postTransaction(opts, [t.context.governance.address, calldata, 0]);
-  const proposalId = await t.context.governance.instance.actionCount.call();
-  await t.context.governance.instance.confirm.postTransaction(opts, [proposalId]);
-  await t.context.governance.instance.trigger.postTransaction(opts, [proposalId]);
+async function activateVersion(context) {
+  const calldata = await context.governance.methods.addVersion(context.version.options.address).encodeABI();
+  await context.governance.methods.propose(context.governance.options.address, calldata, 0).send({from: deployer});
+  const proposalId = await context.governance.methods.actionCount().call();
+  await context.governance.methods.confirm(proposalId).send({from: deployer});
+  await context.governance.methods.trigger(proposalId).send({from: deployer});
 }
 test.before(async () => {
-  deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   [deployer] = accounts;
-  opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
 });
 
 test.beforeEach(async t => {
-  t.context.governance = await deployContract("system/Governance", opts, [[deployer], 1, 100000]);
-  t.context.version = await deployContract("version/Version", Object.assign(opts, {gas: 6800000}),
+  t.context.governance = await deployContract(
+    "system/Governance",
+    {from: deployer, gas: 6800000},
+    [ [deployer], 1, 100000 ]
+  );
+  t.context.version = await deployContract(
+    "version/Version",
+    {from: deployer, gas: 6800000},
     [
-      "1.0.0", t.context.governance.address, deployed.EthToken.address, deployed.MlnToken.address,
-      deployed.CanonicalPriceFeed.address, deployer
-    ],
-    () => {}, true
+      "V1", t.context.governance.options.address, newMockAddress(), newMockAddress(),
+      newMockAddress(), deployer
+    ], () => {}, true
   );
 });
 
 test('Triggering a Version activates it within Governance', async t => {
-  const versionsBeforeTrigger = await t.context.governance.instance.getVersionsLength.call();
-  await activateVersion(t);
-  const versionsAfterTrigger = await t.context.governance.instance.getVersionsLength.call();
-  const [ , activeAfterTriggering, ] = await t.context.governance.instance.getVersionById.call({}, [0]);
+  const versionsBeforeTrigger = await t.context.governance.methods.getVersionsLength().call();
+  await activateVersion(t.context);
+  const versionsAfterTrigger = await t.context.governance.methods.getVersionsLength().call();
+  const [ , activeAfterTriggering, ] = Object.values(await t.context.governance.methods.getVersionById(0).call());
 
   t.is(Number(versionsBeforeTrigger), 0);
   t.is(Number(versionsAfterTrigger), 1);
@@ -54,18 +45,17 @@ test('Triggering a Version activates it within Governance', async t => {
 });
 
 test('Governance can shut down Version', async t => {
-  await activateVersion(t);
-  const [ , activeBeforeShutdown, ] = await t.context.governance.instance.getVersionById.call({}, [0]);
+  await activateVersion(t.context);
+  const activeBeforeShutdown = await t.context.governance.methods.isActive(0).call();
 
-  const calldata = await api.util.abiEncode('shutDownVersion(uint)', ['uint'], [0]);
-  await t.context.governance.instance.propose.postTransaction(opts, [t.context.governance.address, calldata, 0]);
-  const proposalId = await t.context.governance.instance.actionCount.call();
-  await t.context.governance.instance.confirm.postTransaction(opts, [proposalId]);
-  await t.context.governance.instance.trigger.postTransaction(opts, [proposalId]);
+  const calldata = await t.context.governance.methods.shutDownVersion(0).encodeABI();
+  await t.context.governance.methods.propose(t.context.governance.options.address, calldata, 0).send({from: deployer});
+  const proposalId = await t.context.governance.methods.actionCount().call();
+  await t.context.governance.methods.confirm(proposalId).send({from: deployer});
+  await t.context.governance.methods.trigger(proposalId).send({from: deployer});
 
-  const versionShutDown = await t.context.version.instance.isShutDown.call({}, []);
-  const [ , activeAfterShutdown, ] = await t.context.governance.instance.getVersionById.call({}, [0]);
-
+  const versionShutDown = await t.context.version.methods.isShutDown().call();
+  const activeAfterShutdown = await t.context.governance.methods.isActive(0).call();
   t.true(versionShutDown);
   t.true(activeBeforeShutdown);
   t.false(activeAfterShutdown);

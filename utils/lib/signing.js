@@ -1,23 +1,27 @@
-import api from "./api";
+import web3 from "./web3";
 
-async function getTermsSignatureParameters(managerAddress) {
-  const termsAndConditionsHash =
-    "0xD35EBA0B0FF284A240D50F43381D8A1E00F19FBFDBF5162224335251A7D6D154";
-  return getSignatureParameters(managerAddress, termsAndConditionsHash);
+
+async function getSignature(signer, contents) {
+  return web3.eth.sign(contents, signer);
 }
 
 async function getSignatureParameters(signer, contents) {
-  let sig = await getSignature(signer, contents)
-  sig = sig.substr(2, sig.length);
+  let sig = await getSignature(signer, contents);
+  sig = sig.substr(2,);
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
-  const v = parseInt(sig.substr(128, 2), 16);
+  const v = parseInt(sig.substr(128, 2), 16) + 27;
   return [r, s, v];
 }
 
-async function getSignature(signer, contents) {
-  const sig = await api.eth.sign(signer, contents);
-  return sig;
+async function getTermsSignatureParameters(managerAddress) {
+  const termsAndConditionsHash =
+    "0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159";
+  return getSignatureParameters(managerAddress, termsAndConditionsHash);
 }
 
-export { getSignature, getSignatureParameters, getTermsSignatureParameters }
+export { 
+  getSignature,
+  getSignatureParameters,
+  getTermsSignatureParameters
+}

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ds-group/group.sol";
+import "../dependencies/group.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/Owned.sol";
 import "../version/VersionInterface.sol";
@@ -75,7 +75,6 @@ contract OperatorStaking is DBC {
         public
         pre_cond(amount >= minimumStake)
     {
-        uint tailNodeId = stakeNodes[0].prev;
         stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
         require(stakingToken.transferFrom(msg.sender, address(this), amount));

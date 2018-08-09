@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./Vault.sol";
+import "./DexyVault.sol";
 
-interface ExchangeInterface {
+interface DexyExchangeInterface {
 
     event Cancelled(bytes32 indexed hash);
 
@@ -38,7 +38,7 @@ interface ExchangeInterface {
     function availableAmount(address[3] addresses, uint[4] values) external view returns (uint);
     function filled(bytes32 hash) external view returns (uint);
     function isOrdered(address user, bytes32 hash) public view returns (bool);
-    function vault() public view returns (VaultInterface);
+    function vault() public view returns (DexyVaultInterface);
 
 }
 
@@ -136,7 +136,7 @@ library SignatureValidator {
     }
 }
 
-contract Exchange is Ownable, ExchangeInterface {
+contract DexyExchange is Ownable, DexyExchangeInterface {
 
     using SafeMath for *;
     using OrderLibrary for OrderLibrary.Order;
@@ -146,7 +146,7 @@ contract Exchange is Ownable, ExchangeInterface {
     uint256 constant public MAX_FEE = 5000000000000000; // 0.5% ((0.5 / 100) * 10**18)
     uint256 constant private MAX_ROUNDING_PERCENTAGE = 1000; // 0.1%
 
-    VaultInterface public vault;
+    DexyVaultInterface public vault;
 
     uint public takerFee = 0;
     address public feeAccount;
@@ -155,7 +155,7 @@ contract Exchange is Ownable, ExchangeInterface {
     mapping (bytes32 => uint) private fills;
     mapping (bytes32 => bool) private cancelled;
 
-    function Exchange(uint _takerFee, address _feeAccount, VaultInterface _vault) public {
+    function DexyExchange(uint _takerFee, address _feeAccount, DexyVaultInterface _vault) public {
         require(address(_vault) != 0x0);
         setFees(_takerFee);
         setFeeAccount(_feeAccount);
@@ -296,7 +296,7 @@ contract Exchange is Ownable, ExchangeInterface {
         feeAccount = _feeAccount;
     }
 
-    function vault() public view returns (VaultInterface) {
+    function vault() public view returns (DexyVaultInterface) {
         return vault;
     }
 
@@ -403,4 +403,3 @@ contract Exchange is Ownable, ExchangeInterface {
         return remainder.mul(1000000).div(numerator.mul(target));
     }
 }
-

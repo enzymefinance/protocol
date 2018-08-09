@@ -98,7 +98,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     /// @dev override inherited update function to prevent manual update from authority
-    function update() external { revert(); }
+    function update(address[] ofAssets, uint[] newPrices) external { revert(); }
 
     /// @dev Burn state for a pricefeed operator
     /// @param user Address of pricefeed operator to burn the stake from
@@ -209,8 +209,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
                     while (item >= out[k]) {
                         k++;  // get to where element belongs (between smaller and larger items)
                     }
-                    for (uint l = counter; l > k; l--) {
-                        out[l] = out[l - 1];    // bump larger elements rightward to leave slot
+                    for (uint m = counter; m > k; m--) {
+                        out[m] = out[m - 1];    // bump larger elements rightward to leave slot
                     }
                     out[k] = item;
                 }
