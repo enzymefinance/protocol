@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Policy Manager
+- Policy MaxPositions
+- Policy Whitelist and Blacklist
+- Policy PriceTolernace
 - concept of Canonical PriceFeed
 - concept of individually-updatable Simple PriceFeed(s)
 - ability for manager to shut down invest/redeem for individual assets
