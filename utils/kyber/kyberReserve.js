@@ -6,6 +6,7 @@ import { makeOrderSignature } from "../../utils/lib/data";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
+import populateDevConfig from "./populateDevConfig";
 
 const environmentConfig = require("../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
@@ -43,10 +44,23 @@ let ethToken;
 let mlnToken;
 let eurToken;
 
-async function setupReserve() {
+function bytesToHex(byteArray) {
+    let strNum = toHexString(byteArray);
+    let num = '0x' + strNum;
+    return num;
+}
+
+function toHexString(byteArray) {
+  return Array.from(byteArray, function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('')
+}
+
+async function setupReserve(JsonFile) {
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
+  deployed = await deployEnvironment(environment);
 
   // Setup Kyber env
   deployed.ConversionRates = await deployContract(
@@ -54,14 +68,19 @@ async function setupReserve() {
     opts,
     [accounts[0]]
   );
+  deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
   eurToken = deployed.EurToken;
-  deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
-  await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
-  await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
-  await deployed.ConversionRates.methods.enableTokenTrade(mlnToken.options.address).send();
+
+  const tokensInfo = JsonFile.tokens;
+  for (const token of tokensInfo) {
+    await deployed.ConversionRates.methods.addToken(token.address).send();
+    await deployed.ConversionRates.methods.setTokenControlInfo(token.address, tokensInfo[i].minimalRecordResolution, tokensInfo[i].maxPerBlockImbalance, tokensInfo[i].maxTotalImbalance).send();
+    await deployed.ConversionRates.methods.enableTokenTrade(token.address).send();
+  }
+
   deployed.KyberNetwork = await deployContract(
     "exchange/thirdparty/kyber/KyberNetwork",
     opts,
@@ -74,8 +93,9 @@ async function setupReserve() {
   );
   await deployed.ConversionRates.methods.setReserveAddress(deployed.KyberReserve.options.address).send();
   await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
-  await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
   await deployed.KyberReserve.methods.enableTrade().send();
+
+  await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
   await deployed.KyberReserve.methods.setTokenWallet(mlnToken.options.address, accounts[0]).send();
   await mlnToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
 
@@ -122,17 +142,23 @@ async function setupReserve() {
 
   await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
   await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
-  await deployed.KyberNetworkProxy.methods.setKyberNetworkContract(deployed.KyberNetwork.options.address).send();
-  await deployed.KyberNetwork.methods.setWhiteList(deployed.KyberWhiteList.options.address).send();
-  await deployed.KyberNetwork.methods.setExpectedRate(deployed.ExpectedRate.options.address).send();
-  await deployed.KyberNetwork.methods.setFeeBurner(deployed.FeeBurner.options.address).send();
-  await deployed.KyberNetwork.methods.setKyberProxy(deployed.KyberNetworkProxy.options.address).send();
-  await deployed.KyberNetwork.methods.setEnable(true).send();
-  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
 
-  // console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
+  const currentBlock2 = await web3.eth.getBlockNumber();
+  const compactBuyArr = [50, 10, 10, 10];
+  const compactSellArr = [50, 10];
+  let buys1 = [];
+  let sells1 = [];
+  buys1.push(bytesToHex(compactBuyArr));
+  sells1.push(bytesToHex(compactSellArr));
+  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock2, false, new BigNumber(10 ** 25)).call());
+  await deployed.ConversionRates.methods.setCompactData(buys1, sells1, currentBlock2, [0]).send();
+  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock2, false, new BigNumber(10 ** 25)).call());
   // console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
-  // console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
+  console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
 }
 
-setupReserve();
+const fs = require("fs");
+const devchainConfigFile = "./utils/kyber/devchain-reserve.json";
+populateDevConfig();
+const json = JSON.parse(fs.readFileSync(devchainConfigFile));
+setupReserve(json);
