@@ -87,22 +87,6 @@ async function setupPricing() {
   await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
   await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
   await updateReservePrices(deployed.ConversionRates);
- /*
-  const currentBlock2 = await web3.eth.getBlockNumber();
-  const compactBuyArr = [50, 10, 10, 10];
-  const compactSellArr = [50, 10];
-  let buys1 = [];
-  let sells1 = [];
-  buys1.push(bytesToHex(compactBuyArr));
-  sells1.push(bytesToHex(compactSellArr));
-  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock2, false, new BigNumber(10 ** 25)).call());
-  await deployed.ConversionRates.methods.setCompactData(buys1, sells1, currentBlock2, [0]).send();
- */
- const currentBlock2 = await web3.eth.getBlockNumber();
- mlnToken = enabledTokens['MlnToken'];
-  console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock2, false, new BigNumber(10 ** 25)).call());
-  // console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
-  console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock2).call());
 }
 
 const fs = require("fs");
@@ -112,6 +96,6 @@ populateDevConfig();
 const json = JSON.parse(fs.readFileSync(devchainConfigFile));
 setupReserve(json).then(function(env) {
    setupPricing().then(function(as) {
-     setupPricing();
+     updateReservePrices(deployed.ConversionRates);
    });
 });

@@ -10,4 +10,12 @@ function bytesToHex(byteArray) {
     return num;
 }
 
-export default bytesToHex;
+function splitArray(arr, length) {
+    const groups = arr.map( function(e,i){
+        return i%length===0 ? arr.slice(i,i+length) : null;
+    })
+    .filter(function(e){ return e; });
+    return groups;
+}
+
+export {bytesToHex, splitArray};

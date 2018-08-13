@@ -4,7 +4,7 @@
             "name": "Melon",
             "symbol": "MLN",
             "decimals": 18,
-            "address": "0x2f2ed3dE105d6839a1Cc3b7cE424ba56f767dfA4",
+            "address": "0x2D11F7bf39D30d9728EE1ddeCD03246aB7021b35",
             "minimalRecordResolution": "1000000000000000",
             "maxPerBlockImbalance": "120000000000000000000000000",
             "maxTotalImbalance": "180000000000000000000000000"
@@ -13,7 +13,7 @@
             "name": "EurToken",
             "symbol": "EUR",
             "decimals": 18,
-            "address": "0xF859818E2E86073713C691CFcB8D79a0463d3c70",
+            "address": "0x10C15cF57fEE84777D65ee6DE18bfA3f2622D879",
             "minimalRecordResolution": "1000000000000000",
             "maxPerBlockImbalance": "120000000000000000000000000",
             "maxTotalImbalance": "180000000000000000000000000"

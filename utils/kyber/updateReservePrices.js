@@ -7,7 +7,6 @@ const devchainConfigFile = "./utils/kyber/devchain-reserve.json";
 const json = JSON.parse(fs.readFileSync(devchainConfigFile));
 
 async function updateReservePrices(ratesContract) {
-
   const tokens = [];
   const baseBuy = [];
   const baseSell = [];
@@ -18,31 +17,46 @@ async function updateReservePrices(ratesContract) {
 
   for (const i of Object.keys(prices)) {
     const currentBlock = await web3.eth.getBlockNumber();
-    const currentBuyRate = await ratesContract.methods.getRate(i, currentBlock, true, 100).call();
-    const currentSellRate = await ratesContract.methods.getRate(i, currentBlock, false, 100).call();
-    const buyChangeBps = prices[i].buyPrice.mul(100).sub(currentBuyRate).div(currentBuyRate);
-    const sellChangeBps =  prices[i].sellPrice.mul(100).sub(currentSellRate).div(currentSellRate);
-    console.log(currentBuyRate);
-    console.log(currentSellRate);
-    console.log(prices[i]);
-    console.log(buyChangeBps.toNumber());
-    console.log(sellChangeBps.toNumber());
-    tokens.push(i);
-    baseBuy.push(prices[i].buyPrice);
-    baseSell.push(prices[i].sellPrice);
+    const compactBuyArr = [];
+    const compactSellArr = [];
+
+    const currentBuyRate = await ratesContract.methods
+      .getRate(i, currentBlock, true, 100)
+      .call();
+    const basicBuyRate = await ratesContract.methods
+      .getBasicRate(i, true)
+      .call();
+    const currentSellRate = await ratesContract.methods
+      .getRate(i, currentBlock, false, 100)
+      .call();
+    const basicSellRate = await ratesContract.methods
+      .getBasicRate(i, true)
+      .call();
+    const buyChangeBps =
+      Math.round(Number(prices[i].buyPrice.sub(basicBuyRate).mul(100)) / basicBuyRate);
+    const sellChangeBps =
+      Math.floor(Number(prices[i].sellPrice.sub(basicSellRate).mul(100)) / basicSellRate);
+
+    if (
+      buyChangeBps < -128 ||
+      buyChangeBps > 127 ||
+      sellChangeBps < -128 ||
+      sellChangeBps > 127
+    ) {
+      tokens.push(i);
+      baseBuy.push(prices[i].buyPrice);
+      baseSell.push(prices[i].sellPrice);
+      compactBuyArr.push(0);
+      compactSellArr.push(0);
+    } else {
+      compactBuyArr.push(buyChangeBps);
+      compactSellArr.push(sellChangeBps);
+    }
   }
 
   const currentBlock = await web3.eth.getBlockNumber();
   await ratesContract.methods
-    .setBaseRate(
-      tokens,
-      baseBuy,
-      baseSell,
-      buys,
-      sells,
-      currentBlock,
-      indices,
-    )
+    .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)
     .send();
 }
 
