@@ -479,8 +479,6 @@ async function deployEnvironment(environment) {
     //   })
     // );
 
-    const startTime = 1534154400;   // 10AM UTC, 13 August, 2018
-    const endTime = 1535364000;     // 10AM UTC, 27 August, 2018
     deployed.Competition = await deployContract(
       "competitions/Competition",
       opts,
