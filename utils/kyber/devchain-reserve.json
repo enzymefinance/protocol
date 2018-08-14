@@ -20,9 +20,6 @@
         }
     },
     "validRateDurationBlocks": 10000000,
-    "reserve": "0xc1400758cC253750516eCd0dAc4C4B0E469a90fF",
-    "pricing": "0x54409D8cB061379C97521c3b23a36E9b098c37d7",
-    "network": "0x1F2e33BEc486480a954E0Bab1D6d2E02831e7449",
-    "wrapper": "0x8E7D25b4c9093e01699aDB23B6fD232452f34981",
-    "feeburner": "0x1DF07Ef28347f79D1D32fee0247D9D8390D0B71D"
+    "discountMultiplier": 0.05,
+    "kyberNetworkAddress": "0x0020ee4Be0e2027d76603cB751eE069519bA81A1"
 }

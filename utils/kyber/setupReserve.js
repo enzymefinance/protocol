@@ -14,17 +14,11 @@ const config = environmentConfig[environment];
 let accounts;
 let deployed = {};
 let opts;
-let mlnPrice;
-
-const precisionUnits = (new BigNumber(10).pow(18));
-const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
 const enabledTokens = {};
 
 let deployer;
-let ethToken;
 let mlnToken;
-let eurToken;
 
 async function setupReserve(JsonFile) {
   accounts = await web3.eth.getAccounts();
@@ -37,15 +31,10 @@ async function setupReserve(JsonFile) {
     opts,
     [accounts[0]]
   );
-  deployed.KyberNetwork = await deployContract(
-    "exchange/thirdparty/kyber/KyberNetwork",
-    opts,
-    [accounts[0]]
-  );
   deployed.KyberReserve = await deployContract(
     "exchange/thirdparty/kyber/KyberReserve",
     opts,
-    [deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, accounts[0]]
+    [JsonFile.kyberNetworkAddress, deployed.ConversionRates.options.address, accounts[0]]
   );
 
   console.log('-- Setup Conversion Rates contract --');
@@ -55,7 +44,7 @@ async function setupReserve(JsonFile) {
   await deployed.KyberReserve.methods.enableTrade().send();
 
   console.log('-- Setup tokens in Conversion Rates contract  --');
-  /* eslint-disable no-restricted-syntax, no-await-in-loop */
+  /* eslint-disable no-await-in-loop */
   const tokensInfo = JsonFile.tokens;
   for (const i of Object.keys(tokensInfo)) {
     await deployed.ConversionRates.methods.addToken(tokensInfo[i].address).send();
@@ -74,21 +63,14 @@ async function setupReserve(JsonFile) {
       await enabledTokens[i].methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send({from: accounts[0]});
     }
   }
+
+  // Set contracts and send ether if development environment
+  await deployed.KyberReserve.methods.setContracts(JsonFile.kyberNetworkAddress, deployed.ConversionRates.options.address, 0).send();
+  if (environment === "development") {
+    await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
+  }
 }
-  // Set pricing for Token
 
-async function setupPricing() {
-
-  deployed.ExpectedRate = await deployContract(
-    "exchange/thirdparty/kyber/ExpectedRate",
-    opts,
-    [deployed.KyberNetwork.options.address, accounts[0]]
-  );
-
-  await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
-  await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
-  await updateReservePrices(deployed.ConversionRates);
-}
 
 const fs = require("fs");
 
@@ -96,7 +78,5 @@ const devchainConfigFile = "./utils/kyber/devchain-reserve.json";
 populateDevConfig();
 const json = JSON.parse(fs.readFileSync(devchainConfigFile));
 setupReserve(json).then(function(env) {
-   setupPricing().then(function(as) {
-     updateReservePrices(deployed.ConversionRates);
-   });
+  updateReservePrices(deployed.ConversionRates);
 });

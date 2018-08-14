@@ -1,4 +1,5 @@
 import getPricesFromAPI from "./sources/getPricesFromAPI";
+import getDiscountedPrices from "./sources/getDiscountedPrices";
 import web3 from "../../utils/lib/web3";
 import  {bytesToHex, splitArray} from "./utils";
 
@@ -16,9 +17,11 @@ async function updateReservePrices(ratesContract) {
   const compactBuyArr = [];
   const compactSellArr = [];
   const indices = [];
-  const prices = await getPricesFromAPI(json.tokens);
 
-  /* eslint-disable no-restricted-syntax, no-await-in-loop */
+  let prices = await getPricesFromAPI(json.tokens);
+  prices = getDiscountedPrices(prices, json.discountMultiplier);
+
+  /* eslint-disable no-await-in-loop */
   for (const i of Object.keys(prices)) {
     const currentBlock = await web3.eth.getBlockNumber();
 
@@ -54,12 +57,6 @@ async function updateReservePrices(ratesContract) {
       compactBuyArr.push(buyChangeBps);
       compactSellArr.push(sellChangeBps);
     }
-
-    console.log(`Current buy rate${  i  }: ${  currentBuyRate}`);
-    console.log(currentSellRate);
-    console.log(prices[i]);
-    console.log(buyChangeBps.toString());
-    console.log(sellChangeBps.toString());
   }
 
   const splitCompactBuyArr = splitArray(compactBuyArr, 14);
@@ -69,9 +66,6 @@ async function updateReservePrices(ratesContract) {
     sells.push(bytesToHex(splitCompactSellArr[i]));
     indices.push(i);
   }
-  console.log(splitCompactBuyArr);
-  console.log(buys);
-  console.log(indices);
   const currentBlock = await web3.eth.getBlockNumber();
   await ratesContract.methods
     .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)
