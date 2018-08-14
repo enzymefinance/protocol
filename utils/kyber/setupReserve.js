@@ -1,7 +1,7 @@
 import web3 from "../../utils/lib/web3";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
+import  {bytesToHex} from "./utils";
 import populateDevConfig from "./populateDevConfig";
-import  bytesToHex from "./utils";
 import  updateReservePrices from "./updateReservePrices";
 
 const environmentConfig = require("../../utils/config/environment.js");
@@ -55,6 +55,7 @@ async function setupReserve(JsonFile) {
   await deployed.KyberReserve.methods.enableTrade().send();
 
   console.log('-- Setup tokens in Conversion Rates contract  --');
+  /* eslint-disable no-restricted-syntax, no-await-in-loop */
   const tokensInfo = JsonFile.tokens;
   for (const i of Object.keys(tokensInfo)) {
     await deployed.ConversionRates.methods.addToken(tokensInfo[i].address).send();
