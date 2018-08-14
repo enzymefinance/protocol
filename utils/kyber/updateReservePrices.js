@@ -66,6 +66,7 @@ async function updateReservePrices(ratesContract) {
     sells.push(bytesToHex(splitCompactSellArr[i]));
     indices.push(i);
   }
+
   const currentBlock = await web3.eth.getBlockNumber();
   await ratesContract.methods
     .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)

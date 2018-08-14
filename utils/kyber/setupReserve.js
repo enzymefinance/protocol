@@ -70,13 +70,7 @@ async function setupReserve(JsonFile) {
     await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
   }
 }
+  // Set pricing for Token
 
 
-const fs = require("fs");
-
-const devchainConfigFile = "./utils/kyber/devchain-reserve.json";
-populateDevConfig();
-const json = JSON.parse(fs.readFileSync(devchainConfigFile));
-setupReserve(json).then(function(env) {
-  updateReservePrices(deployed.ConversionRates);
-});
+export default setupReserve;

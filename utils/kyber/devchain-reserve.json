@@ -21,5 +21,7 @@
     },
     "validRateDurationBlocks": 10000000,
     "discountMultiplier": 0.05,
-    "kyberNetworkAddress": "0x0020ee4Be0e2027d76603cB751eE069519bA81A1"
+    "kyberNetworkAddress": "0x0020ee4Be0e2027d76603cB751eE069519bA81A1",
+    "reserveAddress": "",
+    "conversionRatesAddress": ""
 }
