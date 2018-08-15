@@ -17,6 +17,16 @@ contract MaxConcentration is DSMath, Policy {
         return maxConcentration;
     }
 
+    function dummy(address a) public view returns (uint, uint, uint, uint, uint, bool) {
+        uint aux1 = Fund(msg.sender).calcAssetGAV(a);
+        uint aux2 = aux1 * (10 ** uint(18));
+        uint aux3 = Fund(msg.sender).calcGav();
+        uint aux4 = aux2 / aux3;
+        bool aux5 = aux4 <= maxConcentration;
+
+        return (aux1, aux2, aux3, maxConcentration, aux4, aux5);
+    }
+
     // When run as a post-condition, must use "<= maxPositions"
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
         return (Fund(msg.sender).calcAssetGAV(addresses[3])*(10 ** uint(18)))/Fund(msg.sender).calcGav() <= maxConcentration;

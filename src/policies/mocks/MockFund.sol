@@ -3,7 +3,7 @@ pragma solidity ^0.4.21;
 import "../../pricefeeds/CanonicalPriceFeed.sol";
 import "../Manager.sol";
 import "../Policy.sol";
-import "../../risk-management/PriceTolerance.sol";
+import "../../risk-management/MaxConcentration.sol";
 
 contract MockFund is PolicyManager {
     struct Modules {
@@ -43,7 +43,7 @@ contract MockFund is PolicyManager {
     {
         setFundHoldingsLength(_value);
     }
-
+    
     mapping (address => uint) gavs;
 
     function setAssetGav(address _ofAsset, uint _gav) public {
@@ -62,6 +62,10 @@ contract MockFund is PolicyManager {
 
     function calcGav() public view returns (uint) {
         return gav;
+    }
+
+    function testMaxConcetration(address _ofPolicy, address a) public view returns (uint, uint, uint, uint, uint, bool) {
+        return MaxConcentration(_ofPolicy).dummy(a);
     }
 
     function testPolicy(address[5] addresses, uint[3] values) public view 
