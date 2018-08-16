@@ -63,7 +63,7 @@ contract MockFund is PolicyManager {
     function calcGav() public view returns (uint) {
         return gav;
     }
-
+    
     function testPolicy(address[5] addresses, uint[3] values) public view 
         isValidPolicy(addresses, values, 0x0)
     {
