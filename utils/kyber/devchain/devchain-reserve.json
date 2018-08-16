@@ -19,9 +19,10 @@
             "maxTotalImbalance": "180000000000000000000000000"
         }
     },
-    "validRateDurationBlocks": 10000000,
+    "validRateDurationBlocks": 1000000000,
     "discountMultiplier": 0.05,
     "kyberNetworkAddress": "0x0020ee4Be0e2027d76603cB751eE069519bA81A1",
-    "reserveAddress": "",
-    "conversionRatesAddress": ""
+    "reserveAddress": "0x5392545030eF2F587e35D2Bbaf7e18eeCEfF8848",
+    "conversionRatesAddress": "0xeac3F7FA0fe7Be020D69F1B53f744980aA63DEF5",
+    "gasLimit": 8000000
 }

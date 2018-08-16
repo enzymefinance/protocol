@@ -2,13 +2,13 @@ import getPricesFromAPI from "./sources/getPricesFromAPI";
 import getDiscountedPrices from "./sources/getDiscountedPrices";
 import web3 from "../../utils/lib/web3";
 import  {bytesToHex, splitArray} from "./utils";
+import {retrieveContract} from "../../utils/lib/contracts";
 
 const fs = require("fs");
 
-const devchainConfigFile = "./utils/kyber/devchain-reserve.json";
-const json = JSON.parse(fs.readFileSync(devchainConfigFile));
-
-async function updateReservePrices(ratesContract) {
+async function updateReservePrices(configFilePath, account) {
+  const json = JSON.parse(fs.readFileSync(configFilePath));
+  const ratesContract = await retrieveContract("exchange/thirdparty/kyber/ConversionRates", json.conversionRatesAddress);
   const tokens = [];
   const baseBuy = [];
   const baseSell = [];
@@ -18,21 +18,15 @@ async function updateReservePrices(ratesContract) {
   const compactSellArr = [];
   const indices = [];
 
+  // Create accounts
   let prices = await getPricesFromAPI(json.tokens);
   prices = getDiscountedPrices(prices, json.discountMultiplier);
 
   /* eslint-disable no-await-in-loop */
   for (const i of Object.keys(prices)) {
     const currentBlock = await web3.eth.getBlockNumber();
-
-    const currentBuyRate = await ratesContract.methods
-      .getRate(i, currentBlock, true, 100)
-      .call();
     const basicBuyRate = await ratesContract.methods
       .getBasicRate(i, true)
-      .call();
-    const currentSellRate = await ratesContract.methods
-      .getRate(i, currentBlock, false, 100)
       .call();
     const basicSellRate = await ratesContract.methods
       .getBasicRate(i, false)
@@ -66,11 +60,12 @@ async function updateReservePrices(ratesContract) {
     sells.push(bytesToHex(splitCompactSellArr[i]));
     indices.push(i);
   }
-
   const currentBlock = await web3.eth.getBlockNumber();
+  const accounts = await web3.eth.getAccounts();
+
   await ratesContract.methods
     .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)
-    .send();
+    .send({from: accounts[0], gas: 8000000});
 }
 
 export default updateReservePrices;
