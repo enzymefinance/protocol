@@ -23,12 +23,26 @@ async function updateReservePrices(configFilePath, account) {
   const compactSellArr = [];
   const indices = [];
 
+  // Get listed tokens in the reserve
+  const listedTokens = await ratesContract.methods.getListedTokens().call();
+
   // Create accounts
   let prices = await getPricesFromAPI(json.tokens);
   prices = getDiscountedPrices(prices, json.discountMultiplier);
 
   /* eslint-disable no-await-in-loop */
+  let index = 0;
   for (const i of Object.keys(prices)) {
+
+    // Throw error if indexing of tokens is messed up
+    if (listedTokens[index] !== i) {
+      throw new Error("Token order in config file doesn't match order in Conversion Rates contract");
+    }
+
+    const [, isEnabled] = Object.values(await ratesContract.methods.getTokenBasicData(i).call());
+    /* eslint-disable no-continue */
+    if (!isEnabled) continue;
+
     const currentBlock = await web3.eth.getBlockNumber();
     const basicBuyRate = await ratesContract.methods
       .getBasicRate(i, true)
@@ -56,6 +70,17 @@ async function updateReservePrices(configFilePath, account) {
       compactBuyArr.push(buyChangeBps);
       compactSellArr.push(sellChangeBps);
     }
+
+    index += 1;
+    console.log(`Current buy rate${  i  }: ${  await ratesContract.methods
+      .getRate(i, currentBlock, true, 100)
+      .call()}`);
+    console.log(await ratesContract.methods
+      .getRate(i, currentBlock, false, 100)
+      .call());
+    console.log(prices[i]);
+    console.log(buyChangeBps.toString());
+    console.log(sellChangeBps.toString());
   }
 
   const splitCompactBuyArr = splitArray(compactBuyArr, 14);
@@ -70,6 +95,7 @@ async function updateReservePrices(configFilePath, account) {
   await ratesContract.methods
     .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)
     .send(opts);
+
 }
 
 export default updateReservePrices;

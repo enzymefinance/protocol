@@ -1,23 +1,17 @@
 import web3 from "../../utils/lib/web3";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
-import  {bytesToHex} from "./utils";
-import  updateReservePrices from "./updateReservePrices";
 
 const fs = require("fs");
-const environmentConfig = require("../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
 
 const environment = process.env.CHAIN_ENV;
-const config = environmentConfig[environment];
 
 // hoisted variables
 let accounts;
-let deployed = {};
 let opts;
 
+const deployed = {};
 const enabledTokens = {};
-
-let mlnToken;
 
 async function setupReserve(configPath, deployerAccount) {
   const configJson = JSON.parse(fs.readFileSync(configPath));
