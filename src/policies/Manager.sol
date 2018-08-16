@@ -10,6 +10,13 @@ contract PolicyManager {
 
     mapping(bytes4 => Entry) policies;
 
+    function registerBatch(bytes4[] sign, address[] ofPolicies) public {
+        require(sign.length == ofPolicies.length);
+        for (uint i = 0; i < sign.length; ++i) {
+            register(sign[i], ofPolicies[i]);
+        }
+    }
+    
     function register(bytes4 sign, address ofPolicy) public {
         uint position = Policy(ofPolicy).position();
         if (position == 0) {
