@@ -55,14 +55,14 @@ contract PolicyManager {
     }
     
     function preValidate(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view public {
-        validate(sig, policies[sig].pre, addresses, values, identifier);
+        validate(policies[sig].pre, sig, addresses, values, identifier);
     }
 
     function postValidate(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view public {
-        validate(sig, policies[sig].post, addresses, values, identifier);
+        validate(policies[sig].post, sig, addresses, values, identifier);
     }
 
-    function validate(bytes4 sig, Policy[] storage aux, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
+    function validate(Policy[] storage aux, bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
         for(uint i = 0; i < aux.length; ++i) {
             if (aux[i].rule(sig, addresses, values, identifier) == false) {
                 revert();
