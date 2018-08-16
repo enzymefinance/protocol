@@ -297,6 +297,25 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
 
     // EXTERNAL : MANAGING
 
+    function preflightOrder(
+        uint exchangeIndex,
+        bytes4 method,
+        address[5] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) {
+        // PolicyManager prevalidate policies
+        preValidate(
+            method, 
+            [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], 
+            exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], 
+            identifier
+        )
+    }
+    
     /// @notice Universal method for calling exchange functions through adapters
     /// @notice See adapter contracts for parameters needed for each exchange
     /// @param exchangeIndex Index of the exchange in the "exchanges" array
