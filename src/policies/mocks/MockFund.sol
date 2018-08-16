@@ -64,12 +64,8 @@ contract MockFund is PolicyManager {
         return gav;
     }
 
-    function testMaxConcetration(address _ofPolicy, address a) public view returns (uint, uint, uint, uint, uint, bool) {
-        return MaxConcentration(_ofPolicy).dummy(a);
-    }
-
     function testPolicy(address[5] addresses, uint[3] values) public view 
-        isValidPolicy(addresses, values, 0x0) 
+        isValidPolicy(addresses, values, 0x0)
     {
         // dummy
     }
