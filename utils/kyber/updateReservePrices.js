@@ -4,10 +4,15 @@ import web3 from "../../utils/lib/web3";
 import  {bytesToHex, splitArray} from "./utils";
 import {retrieveContract} from "../../utils/lib/contracts";
 
+const BigNumber = require("bignumber.js");
 const fs = require("fs");
 
 async function updateReservePrices(configFilePath, account) {
+  await web3.eth.accounts.wallet.add(account);
+  const accounts = await web3.eth.getAccounts();
+  await web3.eth.sendTransaction({to: account.address, from: accounts[0], value: new BigNumber(10 ** 25)});
   const json = JSON.parse(fs.readFileSync(configFilePath));
+  const opts = {from: account.address, gas: json.gasLimit};
   const ratesContract = await retrieveContract("exchange/thirdparty/kyber/ConversionRates", json.conversionRatesAddress);
   const tokens = [];
   const baseBuy = [];
@@ -61,11 +66,10 @@ async function updateReservePrices(configFilePath, account) {
     indices.push(i);
   }
   const currentBlock = await web3.eth.getBlockNumber();
-  const accounts = await web3.eth.getAccounts();
 
   await ratesContract.methods
     .setBaseRate(tokens, baseBuy, baseSell, buys, sells, currentBlock, indices)
-    .send({from: accounts[0], gas: 8000000});
+    .send(opts);
 }
 
 export default updateReservePrices;

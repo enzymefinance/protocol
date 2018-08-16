@@ -22,7 +22,7 @@
     "validRateDurationBlocks": 1000000000,
     "discountMultiplier": 0.05,
     "kyberNetworkAddress": "0x0020ee4Be0e2027d76603cB751eE069519bA81A1",
-    "reserveAddress": "0x5392545030eF2F587e35D2Bbaf7e18eeCEfF8848",
-    "conversionRatesAddress": "0xeac3F7FA0fe7Be020D69F1B53f744980aA63DEF5",
+    "reserveAddress": "0xdf8d634B7F8238B346cdcB2D0F1FdCD6cf30DF24",
+    "conversionRatesAddress": "0x2b893cA41cdB154892096735694642375cF9a9B2",
     "gasLimit": 8000000
 }
