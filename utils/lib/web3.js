@@ -6,7 +6,7 @@ const config = masterConfig[process.env.CHAIN_ENV];
 let providerUrl = `${config.host}:${config.port}`;
 
 // Prepend http if development node
-if (config.host !== "kovanHosted") providerUrl = `http://${  providerUrl}`;
+if (process.env.CHAIN_ENV !== "kovanHosted") providerUrl = `http://${  providerUrl}`;
 const provider = new Web3.providers.HttpProvider(providerUrl);
 const web3 = new Web3(provider);
 
