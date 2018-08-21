@@ -248,7 +248,7 @@ async function deployEnvironment(environment) {
 //       console.log(`Registering ${assetSymbol}`);
 //       const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
 //       await deployed.CanonicalPriceFeed.instance.registerAsset.postTransaction(
-//         {from: pricefeedUpdaterAddress}, 
+//         {from: pricefeedUpdaterAddress},
 //         [
 //           tokenEntry.address,
 //           tokenEntry.name,
@@ -313,7 +313,7 @@ async function deployEnvironment(environment) {
     //   console.log(`Registered ${assetSymbol}`);
     // }
   } else if (environment === "live") {
-    // const deployer = config.protocol.deployer;
+    const deployer = config.protocol.deployer;
     const pricefeedUpdater = config.protocol.pricefeed.updater;
     opts.from = deployer;
     // const pricefeedUpdaterPassword = '';
@@ -508,12 +508,11 @@ async function deployEnvironment(environment) {
     // then need to whitelist participants
   } else if (environment === "development") {
     [opts.from] = accounts;
-    const mockBytes8 = "0x99ABD417";
     const blockchainTime = await getChainTime();
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-    deployed.EthToken =  await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, blockchainTime]);
-    deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, blockchainTime]);
-    deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [mockBytes, mockBytes8, 18, blockchainTime]);
+    deployed.EthToken =  await deployContract("assets/PreminedAsset", opts, [18]);
+    deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [18]);
+    deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [18]);
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.options.address,
       deployed.EthToken.options.address,
@@ -566,7 +565,6 @@ async function deployEnvironment(environment) {
       () => {}, true
     );
     deployed.FundRanking = await deployContract("FundRanking", opts);
-    const blockchainTime = await getChainTime();
     deployed.Competition = await deployContract(
       "competitions/Competition",
       opts,
