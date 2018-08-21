@@ -508,10 +508,12 @@ async function deployEnvironment(environment) {
     // then need to whitelist participants
   } else if (environment === "development") {
     [opts.from] = accounts;
+    const mockBytes8 = "0x99ABD417";
+    const blockchainTime = await getChainTime();
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
-    deployed.EthToken = await deployContract("assets/PreminedAsset", opts);
-    deployed.MlnToken = await deployContract("assets/PreminedAsset", opts);
-    deployed.EurToken = await deployContract("assets/PreminedAsset", opts);
+    deployed.EthToken =  await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, blockchainTime]);
+    deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [mockBytes, mockBytes8, 18, blockchainTime]);
+    deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [mockBytes, mockBytes8, 18, blockchainTime]);
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.options.address,
       deployed.EthToken.options.address,
