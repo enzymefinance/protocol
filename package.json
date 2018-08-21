@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/smart-contracts",
-  "version": "0.8.0-alpha.27",
+  "version": "0.8.0-paros",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
@@ -28,7 +28,8 @@
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh"
   },
   "files": [
-    "out",
+    "out/**/*.json",
+    "out/**/*.abi",
     "utils/info",
     "utils/config",
     "utils/build",

@@ -1,5 +1,6 @@
 import web3 from "./web3";
 
+
 async function getSignature(signer, contents) {
   return web3.eth.sign(contents, signer);
 }

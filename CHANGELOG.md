@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - add withdrawStake function to StakingPriceFeed
 - introduce delay *after* unstake, needing another call to withdraw stake after delay
 - Competition contract no longer relies on pricefeed / CHF asset price. Whitelist limit is denominated now in Ether.
+- move `ds-*` modules to `dependencies/`
 
 ### Fixed
 
@@ -64,6 +65,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - unnecessary governance functions (everything can be triggered with calldata)
 - fund name tracking in Version
 - StakeBank dependency from OperatorStaking
+- StakeBank.sol contract
 - CHFAsset from deployment
 - Unused Weth9.t.sol
 

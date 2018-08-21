@@ -5,7 +5,7 @@ import "./RiskMgmtInterface.sol";
 /// @title Risk Management Contract
 /// @dev isMakePermitted and isTakePermitted can be extended to define custom risk management logic using order and reference prices
 /// @author Melonport AG <team@melonport.com>
-contract RiskMgmt is RiskMgmtInterface {
+contract NoRiskMgmt is RiskMgmtInterface {
 
     // PUBLIC VIEW METHODS
 

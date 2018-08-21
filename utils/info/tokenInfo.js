@@ -232,6 +232,13 @@ module.exports = {
       url: 'omise.co',
       ipfsHash: '',
     },
+    'NMR-T': {
+      address: '0x3572e2074bE26f9D2a03EbB896256394C215FAd4',
+      name: 'Numeraire',
+      decimals: 18,
+      url: 'https://numer.ai',
+      ipfsHash: ''
+    }
   },
   live: {
     'WETH': {
@@ -283,7 +290,7 @@ module.exports = {
       ipfsHash: '',
     },
     'REP': {
-      address: '0xe94327d07fc17907b4db788e5adf2ed424addff6',
+      address: '0x1985365e9f78359a9B6AD760e32412f4a445E862',
       name: 'Reputation',
       decimals: 18,
       url: 'https://augur.net/',
@@ -368,6 +375,13 @@ module.exports = {
       url: 'https://request.network',
       ipfsHash: '',
     },
+    'NMR': {
+      address: '0x1776e1F26f98b1A5dF9cD347953a26dd3Cb46671',
+      name: 'Numeraire',
+      decimals: 18,
+      url: 'https://numer.ai',
+      ipfsHash: ''
+    },
     'DGX': {
       address: '0x4f3afec4e5a3f2a6a1a411def7d7dfe50ee057bf',
       name: 'Digix Gold Token',
@@ -375,7 +389,6 @@ module.exports = {
       url: 'https://dgx.io/',
       ipfsHash: '',
     },
-    // "NMR": "0x1776e1f26f98b1a5df9cd347953a26dd3cb46671"
     // 'W-GNT': {
     //   address: '0xe0b7927c4af23765cb51314a0e0521a9645f0e2a',
     //   name: 'Wrapped Golem Network Token',
