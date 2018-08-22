@@ -45,7 +45,7 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await deployContract("assets/PreminedAsset", opts);
+  zrxToken = await deployContract("assets/PreminedAsset", opts, [18]);
   deployed.ZeroExTokenTransferProxy = await deployContract(
     "exchange/thirdparty/0x/TokenTransferProxy",
     opts

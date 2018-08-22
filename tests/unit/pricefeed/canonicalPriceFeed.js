@@ -104,7 +104,8 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.mlnToken = await deployContract(
     "assets/PreminedAsset",
-    {from: accounts[0], gas: config.gas}
+    {from: accounts[0], gas: config.gas},
+    [18]
   );
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",

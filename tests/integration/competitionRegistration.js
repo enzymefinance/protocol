@@ -12,8 +12,6 @@ const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const competitionTerms =
-  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 // hoisted variables
 let accounts;
@@ -87,6 +85,7 @@ test.serial(
       competition.options.address,
     ).call());
     const preTotalSupply = new BigNumber(await fund.methods.totalSupply().call());
+    const competitionTerms = competition.methods.TERMS_AND_CONDITIONS().call();
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
     const estimatedMlnReward = await competition.methods.calculatePayout(buyinValue).call();
     const estimatedShares = await competition.methods.getEtherValue(estimatedMlnReward).call();
