@@ -54,7 +54,7 @@ async function deployEnvironment(environment) {
   if (environment === "kovan" || environment === "kovanCompetition") {
     // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
     const deploymentAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
-    const pricefeedUpdaterAddress = "0x35703012d6d353c33ef006c22dfd04a04dd6523a";
+    // const pricefeedUpdaterAddress = "0x35703012d6d353c33ef006c22dfd04a04dd6523a";
     opts.from = deploymentAddress;
     /* eslint-disable global-require */
     /* eslint-disable import/no-unresolved */
@@ -314,14 +314,14 @@ async function deployEnvironment(environment) {
     // }
   } else if (environment === "live") {
     const deployer = config.protocol.deployer;
-    const pricefeedUpdater = config.protocol.pricefeed.updater;
+    // const pricefeedUpdater = config.protocol.pricefeed.updater;
     opts.from = deployer;
     // const pricefeedUpdaterPassword = '';
     // const authority = config.protocol.governance.authorities[0];
     // const authorityPassword = '';
     // opts.from = pricefeedUpdater;
     const mlnAddr = tokenInfo[environment].MLN.address;
-    const ethTokenAddress = tokenInfo[environment]["WETH"].address;
+    const ethTokenAddress = tokenInfo[environment].WETH.address;
 
     // deployed.Governance = await deployContract("system/Governance", {from: deployer}, [
     //   config.protocol.governance.authorities,
