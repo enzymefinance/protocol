@@ -14,6 +14,13 @@ const BigNumber = require("bignumber.js");
 const environment = "development";
 const config = environmentConfig[environment];
 
+/* eslint no-bitwise: ["error", { "allow": ["&"] }] */
+const bytesToHex = (byteArray) => {
+  const strNum =  Array.from(byteArray, (byte) => (`0${  (byte & 0xff).toString(16)}`).slice(-2)).join("");
+  const num = `0x${  strNum}`;
+  return num;
+}
+
 // hoisted variables
 let accounts;
 let deployed = {};
@@ -22,7 +29,7 @@ let mlnPrice;
 
 const minimalRecordResolution = 2;
 const maxPerBlockImbalance = new BigNumber(10 ** 29);
-const validRateDurationInBlocks = 5100;
+const validRateDurationInBlocks = 50;
 const precisionUnits = (new BigNumber(10).pow(18));
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const maxTotalImbalance = maxPerBlockImbalance.mul(12);
@@ -32,9 +39,9 @@ let baseBuyRate1 = [];
 let baseSellRate1 = [];
 
 // compact data.
-const sells = [];
-const buys = [];
-const indices = [];
+const sells = [bytesToHex(0)];
+const buys = [bytesToHex(0)];
+const indices = [0];
 
 let deployer;
 let manager;
@@ -131,10 +138,6 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.setKyberProxy(deployed.KyberNetworkProxy.options.address).send();
   await deployed.KyberNetwork.methods.setEnable(true).send();
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
-
-  // console.log(await deployed.ConversionRates.methods.getRate(mlnToken.options.address, currentBlock, false, new BigNumber(10 ** 25)).call());
-  // console.log(await deployed.KyberReserve.methods.getBalance(mlnToken.options.address).call());
-  // console.log(await deployed.KyberReserve.methods.getConversionRate(ethAddress, mlnToken.options.address, new BigNumber(10 ** 23), currentBlock).call());
 
   // Melon Fund env
   deployed.KyberAdapter = await deployContract(
