@@ -49,6 +49,9 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
+        // Remove invalid isInOpenMakeOrder entry
+        Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
+
         require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
         require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
         require(makerAsset.approve(targetExchange, makerQuantity));

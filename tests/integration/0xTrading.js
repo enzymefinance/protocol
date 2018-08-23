@@ -14,8 +14,6 @@ const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const mockBytes32 = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
-const mockBytes8 = "0x99ABD417";
 
 // hoisted variables
 let accounts;
@@ -47,7 +45,7 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await deployContract("assets/PreminedAsset", opts, [mockBytes32, mockBytes8, 18, 1532427361]);
+  zrxToken = await deployContract("assets/PreminedAsset", opts, [18]);
   deployed.ZeroExTokenTransferProxy = await deployContract(
     "exchange/thirdparty/0x/TokenTransferProxy",
     opts

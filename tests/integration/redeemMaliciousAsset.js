@@ -42,7 +42,7 @@ test.before(async () => {
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  maliciousToken = await deployContract("testing/MaliciousToken", opts);
+  maliciousToken = await deployContract("testing/MaliciousToken", opts, [18]);
   await deployed.MatchingMarket.methods.addTokenPairWhitelist(ethToken.options.address, maliciousToken.options.address).send(
     opts,
   );

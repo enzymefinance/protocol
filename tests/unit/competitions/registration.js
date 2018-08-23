@@ -15,8 +15,6 @@ const BigNumber = require("bignumber.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const competitionTerms =
-  "0xB9C6706EE79792E49C633E9CB95D98E9104FB9B25D1F3D46FCC6519108251992";
 
 const fundName = web3.utils.toHex("Super Fund");
 
@@ -26,6 +24,7 @@ let deployer;
 let manager;
 
 async function registerFund(t, fundAddress, by, value) {
+  const competitionTerms = await t.context.competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(by, competitionTerms);
   await t.context.competition.methods.registerForCompetition(fundAddress, v, r, s).send(
     {
