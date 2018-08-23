@@ -360,6 +360,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     )
         pre_cond(msg.sender == address(this))
     {
+        isInOpenMakeOrder[ofSellAsset] = false;
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }
 
@@ -644,7 +645,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            var (, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
@@ -654,7 +655,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             }
         }
         if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
+            isInOpenMakeOrder[ofAsset] = false;
         }
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
