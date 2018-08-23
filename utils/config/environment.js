@@ -88,7 +88,7 @@ module.exports = {
   },
   kovanHosted: {
     networkId: '42',
-    host: 'https://kovan.melonport.com',
+    host: 'https://kovan.infura.io',
     port: '443',
     gas: 7000000,
     gasPrice: 1000000000000,
