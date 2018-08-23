@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+
 /// @notice Investor Fund interactions
 /// @notice Handles redemptions and requests for investment
 interface Participation {
