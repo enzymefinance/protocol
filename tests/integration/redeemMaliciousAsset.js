@@ -114,7 +114,6 @@ test.serial("fund buys some mlnToken", async t => {
     [deployed.EthToken.options.address]: 10 ** 18,
     [deployed.EurToken.options.address]: 10 ** 18,
   });
-  console.log('allgood');
   await fund.methods.callOnExchange(
     0,
     makeOrderSignature,

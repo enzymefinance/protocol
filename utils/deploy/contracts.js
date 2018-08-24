@@ -4,6 +4,7 @@ import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
+import { makeOrderSignature, takeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
 import web3 from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
@@ -36,17 +37,6 @@ async function deployEnvironment(environment) {
     gas: 8000000,
     gasPrice: config.gasPrice,
   };
-
-  // TODO: put signature functions in a lib and use across all tests/utils
-  const makeOrderSignature = web3.eth.abi.encodeFunctionSignature('makeOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
-  const takeOrderSignature = web3.eth.abi.encodeFunctionSignature('takeOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
-  const cancelOrderSignature = web3.eth.abi.encodeFunctionSignature('cancelOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
 
   const deployed = {};
 
