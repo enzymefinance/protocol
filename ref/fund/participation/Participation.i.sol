@@ -3,7 +3,7 @@ pragma solidity ^0.4.21;
 
 /// @notice Investor Fund interactions
 /// @notice Handles redemptions and requests for investment
-interface Participation {
+interface ParticipationInterface {
     function requestInvestment(
         uint requestedShares,
         uint investmentAmount,
