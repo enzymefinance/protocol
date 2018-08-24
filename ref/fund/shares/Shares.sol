@@ -4,17 +4,53 @@ import "../dependencies/ERC20.sol";
 import "./Shares.i.sol";
 
 
-contract Shares is SharesInterface, ERC20 {
+contract Shares is SharesInterface, StandardToken {
 
     function createFor(address who, uint amount) onlyControllers {
-        totalSupply = add(totalSupply, amount);
-        balances[who] = add(balances[who], amount);
+        _mint(who, amount);
     }
 
     function destroyFor(address who, uint amount) onlyControllers {
-        require(sub(balances[who], amount) >= 0);
-        totalSupply = sub(totalSupply, amount);
-        balances[who] = sub(balances[who], amount);
+        _burn(who, amount);
+    }
+
+    function transfer(address to, uint amount) public returns (bool) {
+        revert();
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint amount
+    )
+        public
+        returns (bool)
+    {
+        revert();
+    }
+
+    function approve(address spender, uint amount) public returns (bool) {
+        revert();
+    }
+
+    function increaseApproval(
+        address spender,
+        uint amount
+    )
+        public
+        returns (bool)
+    {
+        revert();
+    }
+
+    function decreaseApproval(
+        address spender,
+        uint amount
+    )
+        public
+        returns (bool)
+    {
+        revert();
     }
 }
 
