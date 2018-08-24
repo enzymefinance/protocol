@@ -4,7 +4,6 @@ import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
-import api from "../lib/api";
 import web3 from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
@@ -26,12 +25,12 @@ async function deployEnvironment(environment) {
   if (config === undefined) {
     throw new Error(`Deployment for environment ${environment} not defined`);
   } else {
-    const nodeNetId = await api.net.version();
+    const nodeNetId = await web3.eth.getProtocolVersion();
     if(nodeNetId !== config.networkId && config.networkId !== "*") {
       throw new Error(`Network ID of node (${nodeNetId}) did not match ID in config "${environment}" (${config.networkId})`);
     }
   }
-  const accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   const opts = {
     from: accounts[0],
     gas: 8000000,
@@ -39,13 +38,13 @@ async function deployEnvironment(environment) {
   };
 
   // TODO: put signature functions in a lib and use across all tests/utils
-  const makeOrderSignature = api.util.abiSignature('makeOrder', [
+  const makeOrderSignature = web3.eth.abi.encodeFunctionSignature('makeOrder', [
     'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
   ]).slice(0,10);
-  const takeOrderSignature = api.util.abiSignature('takeOrder', [
+  const takeOrderSignature = web3.eth.abi.encodeFunctionSignature('takeOrder', [
     'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
   ]).slice(0,10);
-  const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
+  const cancelOrderSignature = web3.eth.abi.encodeFunctionSignature('cancelOrder', [
     'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
   ]).slice(0,10);
 

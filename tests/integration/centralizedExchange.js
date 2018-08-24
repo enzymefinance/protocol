@@ -1,5 +1,4 @@
 import test from "ava";
-import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
@@ -239,8 +238,7 @@ test.serial("Manager cancels an order from the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
   await fund.methods.callOnExchange(
     0,
-    api.util
-      .abiSignature("makeOrder", [
+    web3.eth.abi.encodeFunctionSignature("makeOrder", [
         "address",
         "address[5]",
         "uint256[8]",

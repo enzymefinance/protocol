@@ -1,6 +1,5 @@
 import test from "ava";
 import web3 from "../../utils/lib/web3";
-import api from "../../utils/lib/api";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
@@ -171,12 +170,12 @@ test.beforeEach(async () => {
 const initialTokenAmount = new BigNumber(10 ** 23);
 test.serial("investor receives initial ethToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
+  const preDeployerEth = new BigNumber(await web3.eth.getBalance(deployer));
   receipt = await ethToken.methods.transfer(investor, initialTokenAmount).send(
     { from: deployer, gasPrice: config.gasPrice }
   );
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
-  const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
+  const postDeployerEth = new BigNumber(await web3.eth.getBalance(deployer));
   const post = await getAllBalances(deployed, accounts, fund);
 
   t.deepEqual(
