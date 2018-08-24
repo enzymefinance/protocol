@@ -20,7 +20,7 @@ test.before(async () => {
 
 let tests = [
     {
-        "name": "Asset gav is higher than the concentration",
+        "name": "Asset gav is higher than the concentration limit %",
         "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 100010000000000000,
@@ -28,7 +28,7 @@ let tests = [
         "result": false
     },
     {
-        "name": "Asset gav is equal to the concentration",
+        "name": "Asset gav is equal to the concentration limit %",
         "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 100000000000000000,
@@ -36,7 +36,7 @@ let tests = [
         "result": true
     },
     {
-        "name": "Asset gav is lower to the concentration",
+        "name": "Asset gav is lower to the concentration limit %",
         "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 90000000000000000,
@@ -44,7 +44,7 @@ let tests = [
         "result": true
     },
     {
-        "name": "Allow gav higher than concentration if its quote asset",
+        "name": "Allow gav higher than concentration limit % if it is the quote asset",
         "concentration": 100000000000000000,
         "asset": mockTwo,
         "asset_gav": 1000000000000000000,
