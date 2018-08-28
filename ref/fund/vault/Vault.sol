@@ -2,10 +2,10 @@ pragma solidity ^0.4.21;
 
 import "./Vault.i.sol";
 import "../dependencies/ERC20.sol";
-import "../dependencies/Owned.sol";
+import "../dependencies/Controlled.sol";
 
 
-/// @notice Custody component
+/// @notice Dumb custody component
 contract Vault is Controlled, VaultInterface {
 
     bool public locked;
@@ -15,23 +15,22 @@ contract Vault is Controlled, VaultInterface {
         _;
     }
 
-    function lock() {
+    function Vault(address[] _controllers) Controlled(_controllers) {}
+
+    function lock() onlyController {
         locked = true;
     }
 
-    function unlock() {
+    function unlock() onlyController {
         locked = false;
     }
 
     function deposit(ERC20 token, uint amount) {
-        token.transfer(address(this), amount);
+        token.transferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(ERC20 token, uint amount) onlyControllers onlyUnlocked {
+    function withdraw(ERC20 token, uint amount) onlyController onlyUnlocked {
         token.transfer(msg.sender, amount);
     }
-
-    // TODO: implement (if needed!)
-    function addAssetToOwnedAssets (address ofAsset);
 }
 

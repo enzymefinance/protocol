@@ -11,8 +11,9 @@ contract Hub {
     address public trading;
     address public policyManager;
     address public feeManager;
-    address public priceSource;
     address public accounting;
+    address public priceSource;
+    address public registrar;
     address public version;
 
     function Hub(
@@ -22,8 +23,9 @@ contract Hub {
         address _trading,
         address _policyManager,
         address _feeManager,
-        address _priceSource,
         address _accounting,
+        address _priceSource,
+        address _registrar,
         address _version
     ) {
         shares = _shares;
@@ -32,8 +34,9 @@ contract Hub {
         trading = _trading;
         policyManager = _policyManager;
         feeManager = _feeManager;
-        priceSource = _priceSource;
         accounting = _accounting;
+        priceSource = _priceSource;
+        registrar = _registrar;
         version = _version;
     }
 }

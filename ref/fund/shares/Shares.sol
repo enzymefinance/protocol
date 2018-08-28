@@ -1,16 +1,17 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/ERC20.sol";
 import "./Shares.i.sol";
+import "../dependencies/ERC20.sol";
+import "../dependencies/Controlled.sol";
 
 
-contract Shares is SharesInterface, StandardToken {
+contract Shares is Controlled, StandardToken, SharesInterface {
 
-    function createFor(address who, uint amount) onlyControllers {
+    function createFor(address who, uint amount) onlyController {
         _mint(who, amount);
     }
 
-    function destroyFor(address who, uint amount) onlyControllers {
+    function destroyFor(address who, uint amount) onlyController {
         _burn(who, amount);
     }
 
