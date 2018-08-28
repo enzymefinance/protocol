@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/smart-contracts",
-  "version": "0.8.0-paros",
+  "version": "0.8.0-kyber.1",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
