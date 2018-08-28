@@ -2,6 +2,7 @@ pragma solidity ^0.4.21;
 
 
 // NB: many functions simplified for now, not accounting for exchange-held assets
+// TODO: remove any of these functions we don't use
 contract Accounting {
     function getFundHoldings() returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
@@ -63,10 +64,12 @@ contract Accounting {
         return gav;
     }
 
+    // TODO: this view function calls a non-view function; adjust accordingly
     function calcUnclaimedFees(uint gav) view returns (uint, uint, uint) {
-        return feeManager.feeTotal(); // TODO: implement this on other side
+        return feeManager.calculateTotalFees(hub);
     }
 
+    // TODO: this view function calls a non-view function; adjust accordingly
     function calcNav(uint gav, uint unclaimedFees) view returns (uint) {
         uint gav = calcGav();
         uint (, , unclaimedFees) = calcUnclaimedFees();

@@ -4,14 +4,24 @@ import "./Fee.sol";
 
 contract FeeManager {
 
-    function register(address fee) public {
-        // implement; need to make a couple decisions first
+    Fee[] public fees;
+
+    function register(address feeAddress) public {
+        fees.push(Fee(fee));
     }
 
-    function batchRegister(address[] fees) public {
-        for (uint i = 0; i < fees.length; i++) {
-            register(fees[i]);
+    function batchRegister(address[] feeAddresses) public {
+        for (uint i = 0; i < feeAddresses.length; i++) {
+            register(feeAddresses[i]);
         }
+    }
+
+    /// @dev May modify state of Fees
+    function calculateTotalFees(address hub) public returns (uint total) {
+        for (uint i = 0; i < fees.length; i++) {
+            total = add(total, fees[i].calculate(hub));
+        }
+        return total;
     }
 }
 
