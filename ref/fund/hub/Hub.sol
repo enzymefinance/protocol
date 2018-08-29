@@ -2,9 +2,11 @@ pragma solidity ^0.4.21;
 
 
 /// @notice Router for communication between components
+/// @notice Has one or more Spokes
 contract Hub {
 
     // TODO: use the contract types instead of generic address when available
+    // TODO: track spokes and add them dynamically when the Fund is created
     address public shares;
     address public vault;
     address public participation;
