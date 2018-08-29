@@ -1,6 +1,8 @@
 pragma solidity ^0.4.21;
 
 
+import "../../dependencies/ERC20.sol";
+
 // NB: many functions simplified for now, not accounting for exchange-held assets
 // TODO: remove any of these functions we don't use
 contract Accounting {
@@ -10,7 +12,7 @@ contract Accounting {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint assetHoldings = uint(AssetInterface(ofAsset).balanceOf(address(this)));
+            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(address(this)));
 
             if (assetHoldings != 0) {
                 _assets[i] = ofAsset;
@@ -29,11 +31,11 @@ contract Accounting {
     /// TODO: is this needed? can we implement in the policy itself?
     function calcAssetGAV(address ofAsset) returns (uint) {
         uint assetHolding = add(
-            uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+            uint(ERC20(ofAsset).balanceOf(this)), // asset base units held by fund
             quantityHeldInCustodyOfExchange(ofAsset)
         );
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-        var (isRecent, assetPrice, assetDecimals) = modules.pricefeed.getPriceInfo(ofAsset);
+        var (isRecent, assetPrice, assetDecimals) = hub.priceSource.getPriceInfo(ofAsset);
         if (!isRecent) {
             revert();
         }
@@ -48,10 +50,10 @@ contract Accounting {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(address(this)))
+                uint(ERC20(ofAsset).balanceOf(address(this)))
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-            var (isRecent, assetPrice, assetDecimals) = pricefeed.getPriceInfo(ofAsset);
+            var (isRecent, assetPrice, assetDecimals) = hub.priceSource.getPriceInfo(ofAsset);
             // NB: should we revert inside this view function, or just calculate it optimistically?
             //     maybe it should be left to consumers to decide whether to use older prices?
             //     or perhaps even source's job not to give untrustworthy prices?

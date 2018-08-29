@@ -1,7 +1,11 @@
 pragma solidity ^0.4.21;
 
 
-contract Participation {
+import "../Hub/Spoke.sol";
+import "../../dependencies/ERC20.sol";
+
+/// @notice Entry and exit point for investors
+contract Participation is Spoke {
 
     struct Request {
         address investmentAsset;
@@ -21,14 +25,14 @@ contract Participation {
         external
         // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
-        // pre_cond(modules.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
+        // pre_cond(hub.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp,
-            atUpdateId: modules.pricefeed.getLastUpdateId()
+            atUpdateId: hub.priceSource.getLastUpdateId() // TODO: can this be abstracted away?
         });
     }
 
@@ -47,14 +51,14 @@ contract Participation {
         // pre_cond(
         //     _totalSupply == 0 ||
         //     (
-        //         now >= add(requests[id].timestamp, modules.pricefeed.getInterval()) &&
-        //         modules.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
+        //         now >= add(requests[id].timestamp, hub.priceSource.getInterval()) &&
+        //         hub.priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
         //     )
         // ) 
     {
         Request request = requests[requestOwner];
         var (isRecent, , ) =
-            modules.pricefeed.getPriceInfo(address(request.requestAsset));
+            hub.priceSource.getPriceInfo(address(request.requestAsset));
         require(isRecent);
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
@@ -62,7 +66,7 @@ contract Participation {
         if(request.investmentAsset == address(QUOTE_ASSET)) {
             costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
         } else {
-            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = modules.pricefeed.getInvertedPriceInfo(request.requestAsset);
+            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = hub.priceSource.getInvertedPriceInfo(request.requestAsset);
             // TODO: is below check needed, given the recency check a few lines above?
             require(isPriceRecent);
             costQuantity = mul(costQuantity, invertedRequestAssetPrice) / 10 ** requestAssetDecimal;
@@ -93,6 +97,7 @@ contract Participation {
 
     // NB: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
+    /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets)
         public
         pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
@@ -113,7 +118,7 @@ contract Participation {
             }
             redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(address(this))),
+                uint(ERC20(ofAsset).balanceOf(address(this))),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -130,20 +135,17 @@ contract Participation {
             }
         }
 
-        // Annihilate shares before external calls to prevent reentrancy
-        annihilateShares(msg.sender, shareQuantity);
+        hub.shares.destroyFor(msg.sender, shareQuantity);
 
-        // Transfer ownershipQuantity of Assets
+        // Transfer owned assets
         for (uint k = 0; k < requestedAssets.length; ++k) {
-            // Failed to send owed ownershipQuantity from fund to participant
             ofAsset = requestedAssets[k];
             if (ownershipQuantities[k] == 0) {
                 continue;
-            } else if (!AssetInterface(ofAsset).transfer(msg.sender, ownershipQuantities[k])) {
+            } else if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k])) {
                 revert();
             }
         }
-        emit Redeemed(msg.sender, now, shareQuantity);
         return true;
     }
 }
