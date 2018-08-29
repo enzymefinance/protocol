@@ -3,6 +3,9 @@ pragma solidity ^0.4.21;
 
 /// @notice Mediation between a Fund and exchanges
 interface TradingInterface {
+
+    function addExchange(address _exchange, address _adapter) external;
+
     function callOnExchange(
         uint exchangeIndex,
         bytes4 method,
