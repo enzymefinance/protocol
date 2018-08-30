@@ -13,11 +13,11 @@ contract Controlled {
 
     function Controlled(address[] _initialControllers) {
         for (uint i = 0; i < _initialControllers.length; i++) {
-            controllers[_initialControllers] = true;
+            controllers[_initialControllers[i]] = true;
         }
     }
 
-    function addControllers(address[] _newController) public onlyController {
+    function addControllers(address[] _newControllers) public onlyController {
         for (uint i = 0; i < _newControllers.length; i++) {
             addController(_newControllers[i]);
         }
