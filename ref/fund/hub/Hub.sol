@@ -5,6 +5,7 @@ pragma solidity ^0.4.21;
 /// @notice Has one or more Spokes
 contract Hub {
 
+    // TODO: ensure component is not overloaded far beyond routing
     // TODO: use the contract types instead of generic address when available
     // TODO: track spokes and add them dynamically when the Fund is created
     address public shares;
@@ -15,10 +16,13 @@ contract Hub {
     address public feeManager;
     address public accounting;
     address public priceSource;
-    address public registrar;
+    address public canonicalRegistrar;
     address public version;
 
-    function Hub(
+    function Hub() {}
+
+    // TODO: make only callable once
+    function setComponents( // or setSpokes(?)
         address _shares,
         address _vault,
         address _participation,
@@ -27,7 +31,7 @@ contract Hub {
         address _feeManager,
         address _accounting,
         address _priceSource,
-        address _registrar,
+        address _canonicalRegistrar,
         address _version
     ) {
         shares = _shares;
@@ -38,7 +42,7 @@ contract Hub {
         feeManager = _feeManager;
         accounting = _accounting;
         priceSource = _priceSource;
-        registrar = _registrar;
+        canonicalRegistrar = _canonicalRegistrar;
         version = _version;
     }
 }
