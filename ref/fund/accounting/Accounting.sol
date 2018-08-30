@@ -6,12 +6,13 @@ import "../trading/Trading.sol";
 import "../fees/FeeManager.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/ERC20.sol";
+import "../../dependencies/Controlled.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
 // NB: many functions simplified for now, not accounting for exchange-held assets
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down
-contract Accounting is DSMath, Spoke {
+contract Accounting is DSMath, Controlled, Spoke {
 
     struct Calculations { // List of internal calculations
         uint gav; // Gross asset value
@@ -25,12 +26,15 @@ contract Accounting is DSMath, Spoke {
     }
 
     address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
+    mapping (address => bool) public isInAssetList; // TODO: same as above
+    address public QUOTE_ASSET;
+
     Trading public trading;
     CanonicalPriceFeed public canonicalPriceFeed;
     FeeManager public feeManager;
     Shares public shares;
 
-    constructor(address _trading) { // TODO: for *all* components; find better way to instantiate related components for each spoke, instead of in constructor (if possible)
+    constructor() { // TODO: for *all* components; find better way to instantiate related components for each spoke, instead of in constructor (if possible)
         trading = Trading(hub.trading());
         canonicalPriceFeed = CanonicalPriceFeed(hub.priceSource());
         feeManager = FeeManager(hub.feeManager());
@@ -74,7 +78,7 @@ contract Accounting is DSMath, Spoke {
         if (!isRecent) {
             revert();
         }
-        return mul(assetHolding, assetPrice) / (10 ** uint256(assetDecimals));
+        return mul(assetHolding, assetPrice) / (10 ** uint(assetDecimals));
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
@@ -143,6 +147,16 @@ contract Accounting is DSMath, Spoke {
         sharePrice = totalSupply > 0 ?
             calcValuePerShare(gav, totalSupplyAccountingForFees) :
             10 ** 18; // TODO: handle other decimals (decide if we will introduce that)
+    }
+
+    function addAssetToOwnedAssets (address ofAsset)
+        public
+    {
+        require(isController(msg.sender) || msg.sender == address(this));
+        if (!isInAssetList[ofAsset]) {
+            ownedAssets.push(ofAsset);
+            isInAssetList[ofAsset] = true;
+        }
     }
 }
 

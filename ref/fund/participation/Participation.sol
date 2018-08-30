@@ -1,11 +1,16 @@
 pragma solidity ^0.4.21;
 
 
-import "../Hub/Spoke.sol";
+import "../hub/Spoke.sol";
+import "../shares/Shares.sol";
+import "../trading/Trading.sol";
+import "../accounting/Accounting.sol";
 import "../../dependencies/ERC20.sol";
+import "../../../src/dependencies/math.sol";
+import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is Spoke {
+contract Participation is Spoke, DSMath {
 
     struct Request {
         address investmentAsset;
@@ -15,15 +20,25 @@ contract Participation is Spoke {
         uint atUpdateId;
     }
 
-    mapping (address => Request) requests;
+    Shares public shares;
+    Trading public trading;
+    Accounting public accounting;
+    CanonicalPriceFeed public canonicalPriceFeed;
+    mapping (address => Request) public requests;
+    bool public isShutDown; // TODO: find suitable place for this (hub?)
+
+    constructor() {
+        shares = Shares(hub.shares());
+        trading = Trading(hub.trading());
+        accounting = Accounting(hub.accounting());
+        canonicalPriceFeed = CanonicalPriceFeed(hub.priceSource());
+    }
 
     function requestInvestment(
         uint requestedShares,
         uint investmentAmount,
         address investmentAsset
-    )
-        external
-        // TODO: implement and use below modifiers
+    ) external // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
         // pre_cond(hub.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
@@ -32,39 +47,40 @@ contract Participation is Spoke {
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp,
-            atUpdateId: hub.priceSource.getLastUpdateId() // TODO: can this be abstracted away?
+            atUpdateId: canonicalPriceFeed.getLastUpdateId() // TODO: can this be abstracted away?
         });
     }
 
     function cancelRequest() external {
         delete requests[msg.sender];
-    };
+    }
 
-    function executeRequest() external {
+    function executeRequest() public {
         executeRequestFor(msg.sender);
     }
 
-    function executeRequestFor(address requestOwner) external 
+    function executeRequestFor(address requestOwner) public 
         // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
         // pre_cond(requests[id].status == RequestStatus.active)
         // pre_cond(
-        //     _totalSupply == 0 ||
+        //     shares.totalSupply() == 0 ||
         //     (
         //         now >= add(requests[id].timestamp, hub.priceSource.getInterval()) &&
         //         hub.priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
         //     )
         // ) 
     {
-        Request request = requests[requestOwner];
-        var (isRecent, , ) =
-            hub.priceSource.getPriceInfo(address(request.requestAsset));
+        Request memory request = requests[requestOwner];
+        bool isRecent;
+        (isRecent, , ) = canonicalPriceFeed.getPriceInfo(address(request.investmentAsset));
         require(isRecent);
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        if(request.investmentAsset == address(QUOTE_ASSET)) {
-            costQuantity = toWholeShareUnit(mul(request.shareQuantity, calcSharePriceAndAllocateFees())); // By definition quoteDecimals == fundDecimals
+        if(request.investmentAsset == address(accounting.QUOTE_ASSET())) {
+            costQuantity = mul(request.shareQuantity, accounting.calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+            // TODO: watch this, in case we change decimals from default 18
         } else {
             var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = hub.priceSource.getInvertedPriceInfo(request.requestAsset);
             // TODO: is below check needed, given the recency check a few lines above?
@@ -76,13 +92,12 @@ contract Participation is Spoke {
             // isInvestAllowed[request.requestAsset] &&
             costQuantity <= request.investmentAmount
         ) {
-            delete requests[requestOwner];  // remove from mapping
+            delete requests[requestOwner];
             require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(this), costQuantity)); // Allocate Value
-            createShares(requestOwner, request.requestedShares);
+            shares.createShares(requestOwner, request.requestedShares);
             // TODO: this should be done somewhere else
-            if (!isInAssetList[request.investmentAsset]) {
-                ownedAssets.push(request.investmentAsset);
-                isInAssetList[request.investmentAsset] = true;
+            if (!accounting.isInAssetList(request.investmentAsset)) {
+                accounting.addAssetToOwnedAssets(request.investmentAsset);
             }
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
@@ -90,9 +105,12 @@ contract Participation is Spoke {
     }
 
     /// @dev "Happy path" (no asset throws & quantity available)
+    /// @notice Redeem all shares
     function redeem() public {
-        uint ownedShares = balances[msg.sender];
-        require(redeemWithContraints(ownedShares, assetList)); //TODO: assetList from another module
+        uint ownedShares = shares.balances(msg.sender);
+        address[] memory assetList;
+        (, assetList) = accounting.getFundHoldings();
+        require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
     }
 
     // NB: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
@@ -100,9 +118,9 @@ contract Participation is Spoke {
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets)
         public
-        pre_cond(balances[msg.sender] >= shareQuantity)  // sender owns enough shares
         returns (bool)
     {
+        require(shares.balances(msg.sender) >= shareQuantity);
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
@@ -110,7 +128,7 @@ contract Participation is Spoke {
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
-            require(isInAssetList[ofAsset]);
+            require(accounting.isInAssetList(ofAsset));
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
@@ -119,18 +137,18 @@ contract Participation is Spoke {
             redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
                 uint(ERC20(ofAsset).balanceOf(address(this))),
-                quantityHeldInCustodyOfExchange(ofAsset)
+                trading.quantityHeldInCustodyOfExchange(ofAsset)
             );
 
             if (assetHoldings == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / _totalSupply;
+            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / shares.totalSupply();
 
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
             if (uint(ERC20(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
                 isShutDown = true; // TODO: external call most likely
-                emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                // emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;
             }
         }

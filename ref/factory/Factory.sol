@@ -1,8 +1,17 @@
 pragma solidity ^0.4.21;
 
 
+import "../fund/accounting/Accounting.sol";
+import "../fund/fees/FeeManager.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/participation/Participation.sol";
+import "../fund/shares/Shares.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/vault/Vault.sol";
+import "../../../src/policies/Manager.sol";
+
 // TODO: integrate with existing infrastructure (version, governance, etc.)
-/// @notice Fund factory
+/// @notice Creates fund components and links them together
 contract Factory {
 
     address public defaultPriceSource;
