@@ -8,8 +8,24 @@ contract Trading is Spoke, TradingInterface {
         address adapter;
     }
 
+    enum UpdateType { make, take, cancel }
+
+    struct Order {
+        address exchangeAddress;
+        bytes32 orderId;
+        UpdateType updateType;
+        address makerAsset;
+        address takerAsset;
+        uint makerQuantity;
+        uint takerQuantity;
+        uint timestamp;
+        uint fillTakerQuantity;
+    }
+
     Exchange[] public exchanges;
-    mapping (address => bool) public exchangeIsRegistered;
+    Order[] public orders;
+    mapping (address => bool) public exchangeIsAdded;
+    mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
 
     function Trading(address[] _exchanges, address[] _adapters) {
         require(_exchanges.length == _adapters.length);
@@ -18,10 +34,11 @@ contract Trading is Spoke, TradingInterface {
         }
     }
 
-    // TODO: who can add exchanges? should they just be set once?
+    // TODO: who can add exchanges? should they just be set at creation?
     function addExchange(address _exchange, address _adapter) internal {
-        require(!exchangeIsRegistered[_exchange]);
-        exchangeIsRegistered[_exchange] = true;
+        require(hub.canonicalRegistrar.exchangeIsRegistered(_exchange));
+        require(!exchangeIsAdded[_exchange]);
+        exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter));
     }
 
@@ -39,7 +56,7 @@ contract Trading is Spoke, TradingInterface {
         // isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
     
     {
-        // require(modules.pricefeed.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
+        require(hub.canonicalRegistrar.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
         address adapter = exchanges[exchangeIndex].adapter;
         address exchange = exchanges[exchangeIndex].exchange;
         require(adapter.delegatecall(
@@ -114,7 +131,12 @@ contract Trading is Spoke, TradingInterface {
             isInOpenMakeOrder[sellAsset] = false;
         }
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
-    
+    }
+
+    function returnToVault(ERC20[] _tokens) public {
+        for (uint i = 0; i < _tokens.length; i++) {
+            _tokens[i].transfer(hub.vault, _tokens[i].balanceOf(this));
+        }
     }
 }
 
