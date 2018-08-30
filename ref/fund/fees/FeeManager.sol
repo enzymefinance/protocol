@@ -1,16 +1,18 @@
 pragma solidity ^0.4.21;
 
 
-import "./Fee.sol";
+import "./Fee.i.sol";
 import "../hub/Spoke.sol";
+import "../shares/Shares.sol";
+import "../../../src/dependencies/math.sol";
 
 /// @notice Manages and allocates fees for a particular fund
-contract FeeManager is Spoke {
+contract FeeManager is Spoke, DSMath {
 
     Fee[] public fees;
 
     function register(address feeAddress) public {
-        fees.push(Fee(fee));
+        fees.push(Fee(feeAddress));
     }
 
     function batchRegister(address[] feeAddresses) public {
@@ -30,7 +32,7 @@ contract FeeManager is Spoke {
     // TODO: check the fee is registered
     function rewardFee(Fee fee) public {
         uint rewardShares = fee.calculate(hub);
-        hub.shares.createFor(hub.manager, rewardShares);
+        Shares(hub.shares()).createFor(hub.manager(), rewardShares);
     }
 }
 

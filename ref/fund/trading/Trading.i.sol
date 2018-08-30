@@ -4,8 +4,6 @@ pragma solidity ^0.4.21;
 /// @notice Mediation between a Fund and exchanges
 interface TradingInterface {
 
-    function addExchange(address _exchange, address _adapter) external;
-
     function callOnExchange(
         uint exchangeIndex,
         bytes4 method,
@@ -27,14 +25,5 @@ interface TradingInterface {
         address ofExchange,
         address ofSellAsset
     );
-
-    function orderUpdateHook(
-        address ofExchange,
-        bytes32 orderId,
-        UpdateType updateType,
-        address[2] orderAddresses,
-        uint[3] orderValues
-    );
-    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint);
 }
 

@@ -1,11 +1,20 @@
 pragma solidity ^0.4.21;
 
 
-contract Trading is Spoke, TradingInterface {
+import "./Trading.i.sol";
+import "../hub/Spoke.sol";
+import "../vault/Vault.sol";
+import "../../dependencies/ERC20.sol";
+import "../../../src/dependencies/math.sol";
+import "../../../src/exchange/GenericExchangeInterface.sol";
+import "../../../src/pricefeeds/CanonicalRegistrar.sol";
+
+contract Trading is DSMath, Spoke, TradingInterface {
 
     struct Exchange {
         address exchange;
         address adapter;
+        bool takesCustody;
     }
 
     enum UpdateType { make, take, cancel }
@@ -22,24 +31,36 @@ contract Trading is Spoke, TradingInterface {
         uint fillTakerQuantity;
     }
 
+    struct OpenMakeOrder {
+        uint id; // Order Id from exchange
+        uint expiresAt; // Timestamp when the order expires
+    }
+
     Exchange[] public exchanges;
     Order[] public orders;
     mapping (address => bool) public exchangeIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
+    mapping (address => bool) public isInOpenMakeOrder;
 
-    function Trading(address[] _exchanges, address[] _adapters) {
+    uint public constant ORDER_LIFESPAN = 1 days;
+    CanonicalRegistrar public canonicalRegistrar;
+    Vault public vault;
+
+    constructor(address[] _exchanges, address[] _adapters, bool[] _takesCustody) {
         require(_exchanges.length == _adapters.length);
         for (uint i = 0; i < _exchanges.length; i++) {
-            addExchange(_exchanges[i], _adapters[i]);
+            addExchange(_exchanges[i], _adapters[i], _takesCustody[i]);
         }
+        canonicalRegistrar = CanonicalRegistrar(hub.canonicalRegistrar());
+        vault = Vault(hub.vault());
     }
 
     // TODO: who can add exchanges? should they just be set at creation?
-    function addExchange(address _exchange, address _adapter) internal {
-        require(hub.canonicalRegistrar.exchangeIsRegistered(_exchange));
+    function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
+        require(canonicalRegistrar.exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange]);
         exchangeIsAdded[_exchange] = true;
-        exchanges.push(Exchange(_exchange, _adapter));
+        exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
 
     function callOnExchange(
@@ -56,7 +77,7 @@ contract Trading is Spoke, TradingInterface {
         // isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
     
     {
-        require(hub.canonicalRegistrar.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
+        require(canonicalRegistrar.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
         address adapter = exchanges[exchangeIndex].adapter;
         address exchange = exchanges[exchangeIndex].exchange;
         require(adapter.delegatecall(
@@ -68,20 +89,18 @@ contract Trading is Spoke, TradingInterface {
         address ofExchange,
         address ofSellAsset,
         uint orderId
-    )
-        pre_cond(msg.sender == address(this))
-    {
+    ) {
+        require(msg.sender == address(this));
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
-        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
     }
 
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
-    )
-        pre_cond(msg.sender == address(this))
-    {
+    ) {
+        require(msg.sender == address(this));
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }
 
@@ -91,9 +110,8 @@ contract Trading is Spoke, TradingInterface {
         UpdateType updateType,
         address[2] orderAddresses,
         uint[3] orderValues
-    )
-        pre_cond(msg.sender == address(this))
-    {
+    ) {
+        require(msg.sender == address(this));
         // only save make/take
         // TODO: change to more generic datastore when that shift is made generally
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
@@ -118,7 +136,9 @@ contract Trading is Spoke, TradingInterface {
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            address sellAsset;
+            uint sellQuantity;
+            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
@@ -135,7 +155,7 @@ contract Trading is Spoke, TradingInterface {
 
     function returnToVault(ERC20[] _tokens) public {
         for (uint i = 0; i < _tokens.length; i++) {
-            _tokens[i].transfer(hub.vault, _tokens[i].balanceOf(this));
+            _tokens[i].transfer(vault, _tokens[i].balanceOf(this));
         }
     }
 }

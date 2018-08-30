@@ -19,8 +19,8 @@ contract Factory {
         address[] _exchanges,
         address[] _defaultAssets
     ) {
-        managersToFunds[msg.sender] = hub;
-        address hub = new Hub();
+        require(managersToFunds[msg.sender] == address(0));
+        address hub = new Hub(msg.sender);
         address shares = new Shares(hub);
         address vault = new Vault(hub);
         address participation = new Participation(hub);
@@ -43,8 +43,8 @@ contract Factory {
             canonicalRegistrar,
             version
         );
-        funds.push(ofFund);
-        managersToFunds[msg.sender] = ofFund;
+        funds.push(hub);
+        managersToFunds[msg.sender] = hub;
     }
 
     // TODO: temporary (testing) setter

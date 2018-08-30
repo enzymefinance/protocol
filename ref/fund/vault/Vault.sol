@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
 import "./Vault.i.sol";
-import "../dependencies/ERC20.sol";
-import "../dependencies/Controlled.sol";
+import "../../dependencies/ERC20.sol";
+import "../../dependencies/Controlled.sol";
 
 
 /// @notice Dumb custody component

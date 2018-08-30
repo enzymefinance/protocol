@@ -7,8 +7,8 @@ import "./Hub.sol";
 contract Spoke {
     Hub public hub;
     
-    function Spoke(address _hub) {
-        hub = _hub;
+    constructor(address _hub) {
+        hub = Hub(_hub);
     }
 }
 

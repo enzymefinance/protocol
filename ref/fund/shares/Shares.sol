@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
 import "./Shares.i.sol";
-import "../dependencies/ERC20.sol";
-import "../dependencies/Controlled.sol";
+import "../../dependencies/StandardToken.sol";
+import "../../dependencies/Controlled.sol";
 
 
 contract Shares is Controlled, StandardToken, SharesInterface {

@@ -18,8 +18,11 @@ contract Hub {
     address public priceSource;
     address public canonicalRegistrar;
     address public version;
+    address public manager;
 
-    function Hub() {}
+    constructor(address _manager) {
+        manager = _manager;
+    }
 
     // TODO: make only callable once
     function setComponents( // or setSpokes(?)
