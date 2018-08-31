@@ -10,8 +10,11 @@ import "../../../src/dependencies/math.sol";
 contract FeeManager is Spoke, DSMath {
 
     Fee[] public fees;
+    mapping (address => bool) public feeIsRegistered;
 
     function register(address feeAddress) public {
+        require(!feeIsRegistered[feeAddress]);
+        feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
     }
 
@@ -21,18 +24,24 @@ contract FeeManager is Spoke, DSMath {
         }
     }
 
-    /// @dev May modify state of Fees
-    function calculateTotalFees() public returns (uint total) {
+    function totalFeeAmount() public view returns (uint total) {
         for (uint i = 0; i < fees.length; i++) {
-            total = add(total, fees[i].calculate(hub));
+            total = add(total, fees[i].amountFor(hub));
         }
         return total;
     }
 
-    // TODO: check the fee is registered
     function rewardFee(Fee fee) public {
-        uint rewardShares = fee.calculate(hub);
+        require(feeIsRegistered[fee]);
+        uint rewardShares = fee.amountFor(hub);
+        fee.updateFor(hub);
         Shares(hub.shares()).createFor(hub.manager(), rewardShares);
+    }
+
+    function rewardAllFees() public {
+        for (uint i = 0; i < fees.length; i++) {
+            rewardFee(fees[i]);
+        }
     }
 }
 

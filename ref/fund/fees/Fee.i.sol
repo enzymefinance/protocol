@@ -1,9 +1,10 @@
 pragma solidity ^0.4.21;
 
 
-/// @dev Fees expose one method "calculate", that maps state to uint
-/// @dev a Fee itself can have state, which it updates during "calculate"
+/// @dev Exposes "amountFor", which maps fund state and fee state to uint
+/// @dev Also exposes "updateFor", which changes fee's internal state
 interface Fee {
-    function calculate(address hub) external returns (uint);
+    function amountFor(address hub) external view returns (uint);
+    function updateFor(address hub) external;
 }
 
