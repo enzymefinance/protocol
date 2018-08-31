@@ -85,8 +85,6 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
   await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
   await deployed.KyberReserve.methods.enableTrade().send();
-  await deployed.KyberReserve.methods.setTokenWallet(mlnToken.options.address, accounts[0]).send();
-  await mlnToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
 
   // Set pricing for Token
   await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
@@ -321,8 +319,6 @@ test.serial("convert mlnToken directly to eurToken", async t => {
   await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
   await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
   await deployed.KyberReserve.methods.approveWithdrawAddress(eurToken.options.address, accounts[0], true).send();
-  await deployed.KyberReserve.methods.setTokenWallet(eurToken.options.address, accounts[0]).send();
-  await eurToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
   await eurToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
   const [eurPrice] =
     Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
