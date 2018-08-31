@@ -22,7 +22,7 @@ contract FixedManagementFee is DSMath, Fee {
     }
 
     function updateFor(address hub) external {
-        lastPayout = block.timestamp;
+        lastPayoutTime = block.timestamp;
     }
 }
 

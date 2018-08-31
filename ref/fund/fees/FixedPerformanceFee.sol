@@ -28,7 +28,7 @@ contract FixedPerformanceFee is DSMath, Fee {
 
     function updateFor(address hub) external {
         if(amount(hub) > 0) {
-            lastPayout = block.timestamp;
+            lastPayoutTime = block.timestamp;
             highWaterMark = currentSharePrice;
         }
     }
