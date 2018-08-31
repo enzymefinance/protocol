@@ -134,6 +134,11 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
+    function quantityBeingTraded(address _asset) returns (uint) {
+        uint quantityHere = ERC20(_asset).balanceOf(this);
+        return add(quantityHeldInCustodyOfExchange(_asset), quantityHere);
+    }
+
     function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
         uint totalSellQuantity;     // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange

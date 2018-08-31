@@ -5,6 +5,7 @@ import "../hub/Spoke.sol";
 import "../trading/Trading.sol";
 import "../fees/FeeManager.sol";
 import "../shares/Shares.sol";
+import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
 import "../../dependencies/Controlled.sol";
 import "../../../src/dependencies/math.sol";
@@ -31,6 +32,7 @@ contract Accounting is DSMath, Controlled, Spoke {
     CanonicalPriceFeed public canonicalPriceFeed;
     FeeManager public feeManager;
     Shares public shares;
+    Vault public vault;
 
     constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {
         // TODO: for *all* components; find better way to instantiate related components for each spoke, instead of in constructor (if possible)
@@ -38,6 +40,7 @@ contract Accounting is DSMath, Controlled, Spoke {
         canonicalPriceFeed = CanonicalPriceFeed(hub.priceSource());
         feeManager = FeeManager(hub.feeManager());
         shares = Shares(hub.shares());
+        vault = Vault(hub.vault());
     }
 
     function getFundHoldings() returns (uint[], address[]) {
@@ -46,11 +49,11 @@ contract Accounting is DSMath, Controlled, Spoke {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint assetHoldings = uint(ERC20(ofAsset).balanceOf(address(this)));
+            uint quantityHeld = assetHoldings(ofAsset);
 
-            if (assetHoldings != 0) {
+            if (quantityHeld != 0) {
                 _assets[i] = ofAsset;
-                _quantities[i] = assetHoldings;
+                _quantities[i] = quantityHeld;
             }
         }
         return (_quantities, _assets);
@@ -65,10 +68,7 @@ contract Accounting is DSMath, Controlled, Spoke {
 
     /// TODO: is this needed? can we implement in the policy itself?
     function calcAssetGAV(address ofAsset) returns (uint) {
-        uint assetHolding = add(
-            uint(ERC20(ofAsset).balanceOf(this)), // asset base units held by fund
-            trading.quantityHeldInCustodyOfExchange(ofAsset)
-        );
+        uint quantityHeld = assetHoldings(ofAsset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
         bool isRecent;
         uint assetPrice;
@@ -77,7 +77,14 @@ contract Accounting is DSMath, Controlled, Spoke {
         if (!isRecent) {
             revert();
         }
-        return mul(assetHolding, assetPrice) / (10 ** uint(assetDecimals));
+        return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
+    }
+
+    function assetHoldings(address _asset) returns (uint) {
+        return add(
+            uint(ERC20(_asset).balanceOf(vault)),
+            trading.quantityBeingTraded(_asset)
+        );
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
@@ -87,11 +94,7 @@ contract Accounting is DSMath, Controlled, Spoke {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(address(this))),
-                0
-                // TODO: add back quantityHeldInCustodyOfExchange
-            );
+            uint quantityHeld = assetHoldings(ofAsset);
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
             bool isRecent;
             uint assetPrice;
@@ -104,7 +107,7 @@ contract Accounting is DSMath, Controlled, Spoke {
                 revert();
             }
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            gav = add(gav, mul(assetHoldings, assetPrice) / (10 ** uint(assetDecimals)));
+            gav = add(gav, mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals)));
         }
         return gav;
     }

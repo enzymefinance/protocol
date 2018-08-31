@@ -116,7 +116,7 @@ contract Participation is Spoke, DSMath {
         require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
     }
 
-    // NB: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
+    // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets)
@@ -138,20 +138,17 @@ contract Participation is Spoke, DSMath {
                 }
             }
             redeemedAssets[i] = ofAsset;
-            uint assetHoldings = add(
-                uint(ERC20(ofAsset).balanceOf(address(this))),
-                trading.quantityHeldInCustodyOfExchange(ofAsset)
-            );
-
-            if (assetHoldings == 0) continue;
+            uint quantityHeld = accounting.assetHoldings(ofAsset);
+            if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / shares.totalSupply();
+            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / shares.totalSupply();
 
+            // TODO: do we want to represent this as an error and shutdown, or do something else? See NB1 scenario above
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
             if (uint(ERC20(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
                 isShutDown = true; // TODO: external call most likely
-                // emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                // emit ErrorMessage("CRITICAL ERR: Not enough quantityHeld for owed ownershipQuantitiy");
                 return false;
             }
         }
