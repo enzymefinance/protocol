@@ -27,7 +27,7 @@ contract Participation is Spoke, DSMath {
     mapping (address => Request) public requests;
     bool public isShutDown; // TODO: find suitable place for this (hub?)
 
-    constructor() {
+    constructor(address _hub) Spoke(_hub) {
         shares = Shares(hub.shares());
         trading = Trading(hub.trading());
         accounting = Accounting(hub.accounting());
@@ -40,7 +40,7 @@ contract Participation is Spoke, DSMath {
         address investmentAsset
     ) external // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
-        // pre_cond(hub.compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
+        // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
@@ -66,8 +66,8 @@ contract Participation is Spoke, DSMath {
         // pre_cond(
         //     shares.totalSupply() == 0 ||
         //     (
-        //         now >= add(requests[id].timestamp, hub.priceSource.getInterval()) &&
-        //         hub.priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
+        //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
+        //         priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
         //     )
         // ) 
     {
@@ -79,22 +79,25 @@ contract Participation is Spoke, DSMath {
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
         if(request.investmentAsset == address(accounting.QUOTE_ASSET())) {
-            costQuantity = mul(request.shareQuantity, accounting.calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+            costQuantity = mul(request.requestedShares, accounting.calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
             // TODO: watch this, in case we change decimals from default 18
         } else {
-            var (isPriceRecent, invertedRequestAssetPrice, requestAssetDecimal) = hub.priceSource.getInvertedPriceInfo(request.requestAsset);
+            bool isPriceRecent;
+            uint invertedInvestmentAssetPrice;
+            uint investmentAssetDecimal;
+            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = canonicalPriceFeed.getInvertedPriceInfo(request.investmentAsset);
             // TODO: is below check needed, given the recency check a few lines above?
             require(isPriceRecent);
-            costQuantity = mul(costQuantity, invertedRequestAssetPrice) / 10 ** requestAssetDecimal;
+            costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
         if (
-            // isInvestAllowed[request.requestAsset] &&
+            // isInvestAllowed[request.investmentAsset] &&
             costQuantity <= request.investmentAmount
         ) {
             delete requests[requestOwner];
             require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(this), costQuantity)); // Allocate Value
-            shares.createShares(requestOwner, request.requestedShares);
+            shares.createFor(requestOwner, request.requestedShares);
             // TODO: this should be done somewhere else
             if (!accounting.isInAssetList(request.investmentAsset)) {
                 accounting.addAssetToOwnedAssets(request.investmentAsset);
@@ -107,7 +110,7 @@ contract Participation is Spoke, DSMath {
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares
     function redeem() public {
-        uint ownedShares = shares.balances(msg.sender);
+        uint ownedShares = shares.balanceOf(msg.sender);
         address[] memory assetList;
         (, assetList) = accounting.getFundHoldings();
         require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
@@ -120,7 +123,7 @@ contract Participation is Spoke, DSMath {
         public
         returns (bool)
     {
-        require(shares.balances(msg.sender) >= shareQuantity);
+        require(shares.balanceOf(msg.sender) >= shareQuantity);
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
@@ -153,7 +156,7 @@ contract Participation is Spoke, DSMath {
             }
         }
 
-        hub.shares.destroyFor(msg.sender, shareQuantity);
+        shares.destroyFor(msg.sender, shareQuantity);
 
         // Transfer owned assets
         for (uint k = 0; k < requestedAssets.length; ++k) {

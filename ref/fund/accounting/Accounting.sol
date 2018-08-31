@@ -14,27 +14,26 @@ import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down
 contract Accounting is DSMath, Controlled, Spoke {
 
-    struct Calculations { // List of internal calculations
-        uint gav; // Gross asset value
-        uint managementFee; // Time based fee
-        uint performanceFee; // Performance based fee measured against QUOTE_ASSET
-        uint unclaimedFees; // Fees not yet allocated to the fund manager
-        uint nav; // Net asset value
-        uint highWaterMark; // A record of best all-time fund performance
-        uint totalSupply; // Total supply of shares
-        uint timestamp; // Time when calculations are performed in seconds
+    struct Calculations {
+        uint gav;
+        uint nav;
+        uint allocatedFees;
+        uint totalSupply;
+        uint timestamp;
     }
 
     address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
     mapping (address => bool) public isInAssetList; // TODO: same as above
     address public QUOTE_ASSET;
+    Calculations public atLastAllocation;
 
     Trading public trading;
     CanonicalPriceFeed public canonicalPriceFeed;
     FeeManager public feeManager;
     Shares public shares;
 
-    constructor() { // TODO: for *all* components; find better way to instantiate related components for each spoke, instead of in constructor (if possible)
+    constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {
+        // TODO: for *all* components; find better way to instantiate related components for each spoke, instead of in constructor (if possible)
         trading = Trading(hub.trading());
         canonicalPriceFeed = CanonicalPriceFeed(hub.priceSource());
         feeManager = FeeManager(hub.feeManager());
@@ -111,8 +110,9 @@ contract Accounting is DSMath, Controlled, Spoke {
     }
 
     // TODO: this view function calls a non-view function; adjust accordingly
+    // TODO: this may be redundant, and does not use its input parameter now
     function calcUnclaimedFees(uint gav) view returns (uint) {
-        return feeManager.calculateTotalFees();
+        return feeManager.totalFeeAmount();
     }
 
     // TODO: this view function calls a non-view function; adjust accordingly
@@ -136,7 +136,7 @@ contract Accounting is DSMath, Controlled, Spoke {
         )
     {
         gav = calcGav();
-        unclaimedFees = feeManager.calculateTotalFees();    //TODO: fix; this is a state-modifying function right now
+        unclaimedFees = feeManager.totalFeeAmount();    //TODO: fix; this is a state-modifying function right now
         nav = calcNav(gav, unclaimedFees);
 
         uint totalSupply = shares.totalSupply();
@@ -149,9 +149,30 @@ contract Accounting is DSMath, Controlled, Spoke {
             10 ** 18; // TODO: handle other decimals (decide if we will introduce that)
     }
 
-    function addAssetToOwnedAssets (address ofAsset)
-        public
-    {
+    // calculates several metrics, updates stored calculation object and rewards fees
+    // TODO: find a better way to do these things without this exact method
+    // TODO: math is off here (need to check fees, when they are calculated, quantity in exchanges and trading module, etc.)
+    function calcSharePriceAndAllocateFees() public returns (uint) {
+        uint gav;
+        uint unclaimedFees;
+        uint feesShareQuantity;
+        uint nav;
+        uint sharePrice;
+        (gav, unclaimedFees, feesShareQuantity, nav, sharePrice) = performCalculations();
+        uint totalSupply = shares.totalSupply();
+        feeManager.rewardAllFees();
+
+        atLastAllocation = Calculations({
+            gav: gav,
+            nav: nav,
+            allocatedFees: unclaimedFees,
+            totalSupply: totalSupply,
+            timestamp: block.timestamp
+        });
+        return sharePrice;
+    }
+
+    function addAssetToOwnedAssets (address ofAsset) public {
         require(isController(msg.sender) || msg.sender == address(this));
         if (!isInAssetList[ofAsset]) {
             ownedAssets.push(ofAsset);

@@ -6,7 +6,7 @@ import "./Hub.sol";
 /// @notice Has one Hub
 contract Spoke {
     Hub public hub;
-    
+
     constructor(address _hub) {
         hub = Hub(_hub);
     }

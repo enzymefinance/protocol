@@ -1,11 +1,14 @@
 pragma solidity ^0.4.21;
 
 import "./Shares.i.sol";
+import "../hub/Spoke.sol";
 import "../../dependencies/StandardToken.sol";
 import "../../dependencies/Controlled.sol";
 
 
-contract Shares is Controlled, StandardToken, SharesInterface {
+contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
+
+    constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {}
 
     function createFor(address who, uint amount) onlyController {
         _mint(who, amount);

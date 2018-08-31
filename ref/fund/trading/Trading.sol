@@ -46,7 +46,12 @@ contract Trading is DSMath, Spoke, TradingInterface {
     CanonicalRegistrar public canonicalRegistrar;
     Vault public vault;
 
-    constructor(address[] _exchanges, address[] _adapters, bool[] _takesCustody) {
+    constructor(
+        address _hub,
+        address[] _exchanges,
+        address[] _adapters,
+        bool[] _takesCustody
+    ) Spoke(_hub) {
         require(_exchanges.length == _adapters.length);
         for (uint i = 0; i < _exchanges.length; i++) {
             addExchange(_exchanges[i], _adapters[i], _takesCustody[i]);

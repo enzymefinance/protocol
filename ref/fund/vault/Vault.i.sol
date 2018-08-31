@@ -5,7 +5,6 @@ pragma solidity ^0.4.21;
 interface VaultInterface {
     function deposit(address token, uint amount);
     function withdraw(address token, uint amount);
-    function addAssetToOwnedAssets (address ofAsset);
     function lockdown();
     function unlock();
 }

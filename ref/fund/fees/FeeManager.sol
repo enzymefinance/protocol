@@ -12,6 +12,8 @@ contract FeeManager is Spoke, DSMath {
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
+    constructor(address _hub) Spoke(_hub) {}
+
     function register(address feeAddress) public {
         require(!feeIsRegistered[feeAddress]);
         feeIsRegistered[feeAddress] = true;
