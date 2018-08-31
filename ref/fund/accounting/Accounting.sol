@@ -136,7 +136,7 @@ contract Accounting is DSMath, Controlled, Spoke {
         )
     {
         gav = calcGav();
-        unclaimedFees = feeManager.totalFeeAmount();    //TODO: fix; this is a state-modifying function right now
+        unclaimedFees = feeManager.totalFeeAmount();
         nav = calcNav(gav, unclaimedFees);
 
         uint totalSupply = shares.totalSupply();
@@ -147,6 +147,12 @@ contract Accounting is DSMath, Controlled, Spoke {
         sharePrice = totalSupply > 0 ?
             calcValuePerShare(gav, totalSupplyAccountingForFees) :
             10 ** 18; // TODO: handle other decimals (decide if we will introduce that)
+    }
+
+    // TODO: delete if possible, or revise implementation
+    function calcSharePrice() view returns (uint sharePrice) {
+        (,,,,sharePrice) = performCalculations();
+        return sharePrice;
     }
 
     // calculates several metrics, updates stored calculation object and rewards fees
