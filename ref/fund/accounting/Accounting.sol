@@ -11,7 +11,7 @@ import "../../dependencies/Controlled.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
-// NB: many functions simplified for now, not accounting for exchange-held assets
+// NB: many functions simplified for now
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down
 contract Accounting is DSMath, Controlled, Spoke {
 
@@ -88,8 +88,7 @@ contract Accounting is DSMath, Controlled, Spoke {
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-    // NB: removed the in-line adding to ownedAssets
-    // NB: simplified for now, not accounting for exchange-held assets
+    // NB: removed the in-line adding to and removing from ownedAssets so taht it can be a view function
     function calcGav() view returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
@@ -162,6 +161,7 @@ contract Accounting is DSMath, Controlled, Spoke {
     // TODO: find a better way to do these things without this exact method
     // TODO: math is off here (need to check fees, when they are calculated, quantity in exchanges and trading module, etc.)
     function calcSharePriceAndAllocateFees() public returns (uint) {
+        updateOwnedAssets();
         uint gav;
         uint unclaimedFees;
         uint feesShareQuantity;
@@ -181,11 +181,34 @@ contract Accounting is DSMath, Controlled, Spoke {
         return sharePrice;
     }
 
-    function addAssetToOwnedAssets (address ofAsset) public {
+    // TODO: maybe run as a "bump" function, every state-changing method call
+    function updateOwnedAssets() public {
+        for (uint i = 0; i < ownedAssets.length; i++) {
+            address ofAsset = ownedAssets[i];
+            // TODO: verify commented condition is redundant and remove if so
+            // (it is always the case when `assetHoldings > 0` is true)
+            // || trading.isInOpenMakeOrder(ofAsset)
+            if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
+                addAssetToOwnedAssets(ofAsset);
+            } else {
+                removeFromOwnedAssets(ofAsset);
+            }
+        }
+    }
+
+    function addAssetToOwnedAssets(address _asset) public {
         require(isController(msg.sender) || msg.sender == address(this));
-        if (!isInAssetList[ofAsset]) {
-            ownedAssets.push(ofAsset);
-            isInAssetList[ofAsset] = true;
+        if (!isInAssetList[_asset]) {
+            ownedAssets.push(_asset);
+            isInAssetList[_asset] = true;
+        }
+    }
+
+    function removeFromOwnedAssets(address _asset) public {
+        require(isController(msg.sender) || msg.sender == address(this));
+        if (isInAssetList[_asset]) {
+            // ownedAssets.remove(ofAsset); // TODO: implement array-amending OR allow ownedAssets to contain assets *previously* but not currently owned (how it exists presently)
+            isInAssetList[_asset] = false;
         }
     }
 }
