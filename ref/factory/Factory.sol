@@ -20,23 +20,27 @@ contract Factory {
     mapping (address => address) public managersToFunds;
 
     function setupFund(
-        string _name,
-        address _quoteAsset,
-        address _compliance,
-        address[] _policies,
-        address[] _fees,
+        // string _name,
+        // address _quoteAsset,
+        // address _compliance,
+        // address[] _policies,
+        // address[] _fees,
         address[] _exchanges,
         address[] _defaultAssets
-    ) {
+    )
+        public
+    {
         require(managersToFunds[msg.sender] == address(0));
-        address hub = new Hub(msg.sender);
-        address shares = new Shares(hub);
-        address vault = new Vault(hub);
+        address[] memory mockAddresses;
+        bool[] memory mockBools;
+        Hub hub = new Hub(msg.sender);
+        address shares = new Shares(hub, mockAddresses);
+        address vault = new Vault(hub, mockAddresses);
         address participation = new Participation(hub);
-        address trading = new Trading(hub);
-        address policyManager = new PolicyManager(hub);
+        address trading = new Trading(hub, mockAddresses, mockAddresses, mockBools);
+        address policyManager = new PolicyManager();
         address feeManager = new FeeManager(hub);
-        address accounting = new Accounting(hub);
+        address accounting = new Accounting(hub, mockAddresses);
         address priceSource = defaultPriceSource;
         address canonicalRegistrar = defaultPriceSource;
         address version = address(0);
@@ -57,11 +61,11 @@ contract Factory {
     }
 
     // TODO: temporary (testing) setter
-    function setPriceSource(address _source) {
+    function setPriceSource(address _source) public {
         defaultPriceSource = _source;
     }
 
-    function getFundById(uint withId) view returns (address) { return funds[withId]; }
-    function getLastFundId() view returns (uint) { return funds.length - 1; }
+    function getFundById(uint withId) public view returns (address) { return funds[withId]; }
+    function getLastFundId() public view returns (uint) { return funds.length - 1; }
 }
 
