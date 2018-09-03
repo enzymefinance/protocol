@@ -186,7 +186,7 @@ contract Accounting is DSMath, Controlled, Spoke {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
             // TODO: verify commented condition is redundant and remove if so
-            // (it is always the case when `assetHoldings > 0` is true)
+            // (i.e. it is always the case when `assetHoldings > 0` is true)
             // || trading.isInOpenMakeOrder(ofAsset)
             if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
                 addAssetToOwnedAssets(ofAsset);
@@ -199,16 +199,23 @@ contract Accounting is DSMath, Controlled, Spoke {
     function addAssetToOwnedAssets(address _asset) public {
         require(isController(msg.sender) || msg.sender == address(this));
         if (!isInAssetList[_asset]) {
-            ownedAssets.push(_asset);
             isInAssetList[_asset] = true;
+            ownedAssets.push(_asset);
         }
     }
 
+    // TODO: ownedAssets needs upper limit to length due to iteration here and elsewhere
     function removeFromOwnedAssets(address _asset) public {
         require(isController(msg.sender) || msg.sender == address(this));
         if (isInAssetList[_asset]) {
-            // ownedAssets.remove(ofAsset); // TODO: implement array-amending OR allow ownedAssets to contain assets *previously* but not currently owned (how it exists presently)
             isInAssetList[_asset] = false;
+            for (uint i; i < ownedAssets.length; i++) {
+                if (ownedAssets[i] == _asset) {
+                    ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
+                    ownedAssets.length--;
+                    break;
+                }
+            }
         }
     }
 }
