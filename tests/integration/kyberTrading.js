@@ -230,7 +230,7 @@ test.skip("test", async t => {
 });
 */
 
-test.serial("take order with ethToken as takerAsset", async t => {
+test.serial("swap ethToken for mlnToken without minimum destAmount", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const srcAmount = new  BigNumber(10 ** 17);
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, srcAmount).call()).map(e => new BigNumber(e));
@@ -257,7 +257,7 @@ test.serial("take order with ethToken as takerAsset", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("take order with mlnToken as takerAsset", async t => {
+test.serial("swap mlnToken for ethToken without mimimum destAmount", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const srcAmount = new  BigNumber(10 ** 17);
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, srcAmount).call()).map(e => new BigNumber(e));
@@ -285,7 +285,7 @@ test.serial("take order with mlnToken as takerAsset", async t => {
 });
 
 // minPrice is basically set if srcAmount is non-zero (Otherwise it's just executes at market price)
-test.serial("make order with specific order price (minRate)", async t => {
+test.serial("swap mlnToken for ethToken with specific order price (minRate)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const srcAmount = new  BigNumber(10 ** 17);
   const destAmount = srcAmount.mul(mlnPrice).div(precisionUnits);
@@ -313,7 +313,7 @@ test.serial("make order with specific order price (minRate)", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("convert mlnToken directly to eurToken", async t => {
+test.serial("swap mlnToken directly to eurToken without minimum destAmount", async t => {
   // Setup eurToken in Kyber
   await deployed.ConversionRates.methods.addToken(eurToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
@@ -359,7 +359,7 @@ test.serial("convert mlnToken directly to eurToken", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("make order fails if minPrice is not satisfied", async t => {
+test.serial("swapTokens fails if minPrice is not satisfied", async t => {
   const srcAmount = new  BigNumber(10 ** 17);
   const destAmount = srcAmount.mul(mlnPrice * 2).div(precisionUnits);
   await t.throws(fund.methods.callOnExchange(
@@ -376,7 +376,7 @@ test.serial("make order fails if minPrice is not satisfied", async t => {
   ));
 });
 
-test.serial("risk management prevents conversion in the case of bad kyber network price", async t => {
+test.serial("risk management prevents swap in the case of bad kyber network price", async t => {
   // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
   baseBuyRate1 = [mlnPrice * 2];
   baseSellRate1 = [precisionUnits.mul(precisionUnits).div(baseBuyRate1).toFixed(0)];
