@@ -76,25 +76,25 @@ contract FundFactory {
         temporarySettings.defaultAssets = _defaultAssets;
         temporarySettings.takesCustody = _takesCustody;
         Hub hub = new Hub(msg.sender);
-        address shares = sharesFactory.createInstance(hub, temporarySettings.defaultAssets);
-        address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
-        address participation = participationFactory.createInstance(hub);
-        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
-        // address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
-        address policyManager = address(0);
-        address feeManager = feeManagerFactory.createInstance(hub);
         address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
+        address feeManager = feeManagerFactory.createInstance(hub);
+        address participation = participationFactory.createInstance(hub);
+        address policyManager = address(0);
+        // address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
+        address shares = sharesFactory.createInstance(hub, temporarySettings.defaultAssets);
+        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
+        address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
         address priceSource = defaultPriceSource;
         address canonicalRegistrar = defaultPriceSource;
         address version = address(0);
         hub.setComponents(
-            shares,
-            vault,
-            participation,
-            trading,
-            policyManager,
-            feeManager,
             accounting,
+            feeManager,
+            participation,
+            policyManager,
+            shares,
+            trading,
+            vault,
             priceSource,
             canonicalRegistrar,
             version

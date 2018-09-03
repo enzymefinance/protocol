@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
+
 import "./Shares.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/StandardToken.sol";
 import "../../dependencies/Controlled.sol";
-
 
 contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
 

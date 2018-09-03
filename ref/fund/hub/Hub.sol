@@ -6,15 +6,15 @@ pragma solidity ^0.4.21;
 contract Hub {
 
     // TODO: ensure component is not overloaded far beyond routing
-    // TODO: use the contract types instead of generic address when available
+    // TODO: use the contract types instead of generic address (if possible to avoid circular imports)
     // TODO: track spokes and add them dynamically when the Fund is created
-    address public shares;
-    address public vault;
-    address public participation;
-    address public trading;
-    address public policyManager;
-    address public feeManager;
     address public accounting;
+    address public feeManager;
+    address public participation;
+    address public policyManager;
+    address public shares;
+    address public trading;
+    address public vault;
     address public priceSource;
     address public canonicalRegistrar;
     address public version;
@@ -26,24 +26,24 @@ contract Hub {
 
     // TODO: make only callable once
     function setComponents( // or setSpokes(?)
-        address _shares,
-        address _vault,
-        address _participation,
-        address _trading,
-        address _policyManager,
-        address _feeManager,
         address _accounting,
+        address _feeManager,
+        address _participation,
+        address _policyManager,
+        address _shares,
+        address _trading,
+        address _vault,
         address _priceSource,
         address _canonicalRegistrar,
         address _version
     ) {
-        shares = _shares;
-        vault = _vault;
-        participation = _participation;
-        trading = _trading;
-        policyManager = _policyManager;
-        feeManager = _feeManager;
         accounting = _accounting;
+        feeManager = _feeManager;
+        participation = _participation;
+        policyManager = _policyManager;
+        shares = _shares;
+        trading = _trading;
+        vault = _vault;
         priceSource = _priceSource;
         canonicalRegistrar = _canonicalRegistrar;
         version = _version;

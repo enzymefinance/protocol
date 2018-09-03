@@ -3,7 +3,6 @@ pragma solidity ^0.4.21;
 
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
-import "../trading/Trading.sol";
 import "../accounting/Accounting.sol";
 import "../../dependencies/ERC20.sol";
 import "../../../src/dependencies/math.sol";
@@ -20,19 +19,10 @@ contract Participation is Spoke, DSMath {
         uint atUpdateId;
     }
 
-    Shares public shares;
-    Trading public trading;
-    Accounting public accounting;
-    CanonicalPriceFeed public canonicalPriceFeed;
     mapping (address => Request) public requests;
     bool public isShutDown; // TODO: find suitable place for this (hub?)
 
-    constructor(address _hub) Spoke(_hub) {
-        shares = Shares(hub.shares());
-        trading = Trading(hub.trading());
-        accounting = Accounting(hub.accounting());
-        canonicalPriceFeed = CanonicalPriceFeed(hub.priceSource());
-    }
+    constructor(address _hub) Spoke(_hub) {}
 
     function requestInvestment(
         uint requestedShares,
@@ -47,7 +37,7 @@ contract Participation is Spoke, DSMath {
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp,
-            atUpdateId: canonicalPriceFeed.getLastUpdateId() // TODO: can this be abstracted away?
+            atUpdateId: CanonicalPriceFeed(hub.priceSource()).getLastUpdateId() // TODO: can this be abstracted away?
         });
     }
 
@@ -64,7 +54,7 @@ contract Participation is Spoke, DSMath {
         // pre_cond(!isShutDown)
         // pre_cond(requests[id].status == RequestStatus.active)
         // pre_cond(
-        //     shares.totalSupply() == 0 ||
+        //     Shares(hub.shares()).totalSupply() == 0 ||
         //     (
         //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
         //         priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
@@ -73,19 +63,19 @@ contract Participation is Spoke, DSMath {
     {
         Request memory request = requests[requestOwner];
         bool isRecent;
-        (isRecent, , ) = canonicalPriceFeed.getPriceInfo(address(request.investmentAsset));
+        (isRecent, , ) = CanonicalPriceFeed(hub.priceSource()).getPriceInfo(address(request.investmentAsset));
         require(isRecent);
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        if(request.investmentAsset == address(accounting.QUOTE_ASSET())) {
-            costQuantity = mul(request.requestedShares, accounting.calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+        if(request.investmentAsset == address(Accounting(hub.accounting()).QUOTE_ASSET())) {
+            costQuantity = mul(request.requestedShares, Accounting(hub.accounting()).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
             // TODO: watch this, in case we change decimals from default 18
         } else {
             bool isPriceRecent;
             uint invertedInvestmentAssetPrice;
             uint investmentAssetDecimal;
-            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = canonicalPriceFeed.getInvertedPriceInfo(request.investmentAsset);
+            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(hub.priceSource()).getInvertedPriceInfo(request.investmentAsset);
             // TODO: is below check needed, given the recency check a few lines above?
             require(isPriceRecent);
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
@@ -97,10 +87,10 @@ contract Participation is Spoke, DSMath {
         ) {
             delete requests[requestOwner];
             require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(this), costQuantity)); // Allocate Value
-            shares.createFor(requestOwner, request.requestedShares);
+            Shares(hub.shares()).createFor(requestOwner, request.requestedShares);
             // TODO: this should be done somewhere else
-            if (!accounting.isInAssetList(request.investmentAsset)) {
-                accounting.addAssetToOwnedAssets(request.investmentAsset);
+            if (!Accounting(hub.accounting()).isInAssetList(request.investmentAsset)) {
+                Accounting(hub.accounting()).addAssetToOwnedAssets(request.investmentAsset);
             }
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
@@ -110,9 +100,9 @@ contract Participation is Spoke, DSMath {
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares
     function redeem() public {
-        uint ownedShares = shares.balanceOf(msg.sender);
+        uint ownedShares = Shares(hub.shares()).balanceOf(msg.sender);
         address[] memory assetList;
-        (, assetList) = accounting.getFundHoldings();
+        (, assetList) = Accounting(hub.accounting()).getFundHoldings();
         require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
     }
 
@@ -123,7 +113,7 @@ contract Participation is Spoke, DSMath {
         public
         returns (bool)
     {
-        require(shares.balanceOf(msg.sender) >= shareQuantity);
+        require(Shares(hub.shares()).balanceOf(msg.sender) >= shareQuantity);
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
@@ -131,18 +121,18 @@ contract Participation is Spoke, DSMath {
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
-            require(accounting.isInAssetList(ofAsset));
+            require(Accounting(hub.accounting()).isInAssetList(ofAsset));
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
                 }
             }
             redeemedAssets[i] = ofAsset;
-            uint quantityHeld = accounting.assetHoldings(ofAsset);
+            uint quantityHeld = Accounting(hub.accounting()).assetHoldings(ofAsset);
             if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / shares.totalSupply();
+            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / Shares(hub.shares()).totalSupply();
 
             // TODO: do we want to represent this as an error and shutdown, or do something else? See NB1 scenario above
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
@@ -153,7 +143,7 @@ contract Participation is Spoke, DSMath {
             }
         }
 
-        shares.destroyFor(msg.sender, shareQuantity);
+        Shares(hub.shares()).destroyFor(msg.sender, shareQuantity);
 
         // Transfer owned assets
         for (uint k = 0; k < requestedAssets.length; ++k) {
