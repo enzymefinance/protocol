@@ -20,11 +20,12 @@ contract Hub {
     address public version;
     address public manager;
 
+    bool public spokesSet;
+
     constructor(address _manager) {
         manager = _manager;
     }
 
-    // TODO: make only callable once
     function setComponents( // or setSpokes(?)
         address _accounting,
         address _feeManager,
@@ -37,6 +38,8 @@ contract Hub {
         address _canonicalRegistrar,
         address _version
     ) {
+        require(!spokesSet);
+        spokesSet = true;
         accounting = _accounting;
         feeManager = _feeManager;
         participation = _participation;
@@ -49,3 +52,4 @@ contract Hub {
         version = _version;
     }
 }
+
