@@ -32,31 +32,43 @@ contract FundFactory {
 
     address[] public funds;
     mapping (address => address) public managersToFunds;
-    address[] mockAddresses;
-    bool[] mockBools;
+    // address[] mockAddresses;
+    // bool[] mockBools;
+    struct FundSettings {
+        address[] exchanges;
+        address[] adapters;
+        address[] defaultAssets;
+        bool[] takesCustody;
+    }
+    FundSettings temporarySettings;
 
     function setupFund(
         // string _name,
         // address _quoteAsset,
         // address _compliance,
         // address[] _policies,
-        // address[] _fees,
+        address[] _fees,
         address[] _exchanges,
-        address[] _defaultAssets
+        address[] _adapters,
+        address[] _defaultAssets,
+        bool[] _takesCustody
     )
         public
     {
         require(managersToFunds[msg.sender] == address(0));
+        temporarySettings.exchanges = _exchanges;
+        temporarySettings.adapters = _adapters;
+        temporarySettings.defaultAssets = _defaultAssets;
+        temporarySettings.takesCustody = _takesCustody;
         Hub hub = new Hub(msg.sender);
-        address shares = sharesFactory.createInstance(hub, mockAddresses);
-        address vault = vaultFactory.createInstance(hub, mockAddresses);
+        address shares = sharesFactory.createInstance(hub, temporarySettings.defaultAssets);
+        address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
         address participation = participationFactory.createInstance(hub);
-        // address participation = createParticipation(hub);
-        address trading = tradingFactory.createInstance(hub, mockAddresses, mockAddresses, mockBools);
+        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         // address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
         address policyManager = address(0);
         address feeManager = feeManagerFactory.createInstance(hub);
-        address accounting = accountingFactory.createInstance(hub, mockAddresses);
+        address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
         address priceSource = defaultPriceSource;
         address canonicalRegistrar = defaultPriceSource;
         address version = address(0);
@@ -74,11 +86,8 @@ contract FundFactory {
         );
         funds.push(hub);
         managersToFunds[msg.sender] = hub;
+        delete temporarySettings;
     }
-
-    // function createParticipation(address _hub) returns (address) {
-    //     return participationFactory.createInstance(_hub);
-    // }
 
     // TODO: temporary (testing) setters (remove when done testing)
     function setPriceSource(address _source) public {
