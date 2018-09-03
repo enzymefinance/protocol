@@ -14,22 +14,19 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     // NON-CONSTANT METHODS
 
-    // Responsibilities of takeOrder are:
+    // Responsibilities of swapTokens are:
     // - check price recent
     // - check risk management passes
     // - approve funds to be traded (if necessary)
-    // - make order on the exchange
-    // - check order was made (if possible)
+    // - perform swap order on the exchange
     // - place asset in ownedAssets if not already tracked
-    /// @notice Makes an order on the selected exchange
-    /// @dev These orders are not expected to settle immediately
-    /// @dev srcToken == takerAsset, destToken = makerAsset
+    /// @notice Swaps srcAmount of srcToken for destAmount of destToken
     /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderValues [0] Maker token quantity
-    /// @param orderValues [1] Taker token quantity
-    function takeOrder(
+    /// @param orderAddresses [2] Src token
+    /// @param orderAddresses [3] Dest token
+    /// @param orderValues [0] Src token amount
+    /// @param orderValues [1] Dest token amount
+    function swapTokens(
         address targetExchange,
         address[5] orderAddresses,
         uint[8] orderValues,
@@ -43,54 +40,67 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         require(!Fund(address(this)).isShutDown());
 
         address nativeAsset = Fund(address(this)).NATIVE_ASSET();
-        address takerAsset = orderAddresses[2];
-        address makerAsset = orderAddresses[3];
-        uint takerQuantity = orderValues[0];
-        uint makerQuantity = orderValues[1];
+        address srcToken = orderAddresses[2];
+        address destToken = orderAddresses[3];
+        uint srcQuantity = orderValues[0];
+        uint destQuantity = orderValues[1];
         uint minRate = 0;
         uint actualReceiveQuantity;
 
-        // If makerQuantity is non-zero, set a minimum rate for the trade
-        if (makerQuantity != 0) {
+        // If destQuantity is non-zero, set a minimum rate for the trade
+        if (destQuantity != 0) {
             minRate = calcMinRate(
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
+                srcToken,
+                destToken,
+                srcQuantity,
+                destQuantity
             );
         }
 
         // Call different functions based on type of assets supplied
-        if (takerAsset == nativeAsset) {
-            actualReceiveQuantity = swapNativeAssetToToken(targetExchange, nativeAsset, takerQuantity, makerAsset, minRate);
+        if (srcToken == nativeAsset) {
+            actualReceiveQuantity = swapNativeAssetToToken(targetExchange, nativeAsset, srcQuantity, destToken, minRate);
         }
-        else if (makerAsset == nativeAsset) {
-            actualReceiveQuantity = swapTokenToNativeAsset(targetExchange, takerAsset, takerQuantity, nativeAsset, minRate);
+        else if (destToken == nativeAsset) {
+            actualReceiveQuantity = swapTokenToNativeAsset(targetExchange, srcToken, srcQuantity, nativeAsset, minRate);
         }
         else {
-            actualReceiveQuantity = swapTokenToToken(targetExchange, takerAsset, takerQuantity, makerAsset, minRate);
+            actualReceiveQuantity = swapTokenToToken(targetExchange, srcToken, srcQuantity, destToken, minRate);
         }
 
         // Apply risk management (Post-trade basis)
-        require(takeOrderPermitted(takerQuantity, takerAsset, actualReceiveQuantity, makerAsset));
+        require(takeOrderPermitted(srcQuantity, srcToken, actualReceiveQuantity, destToken));
         require(
-            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).isInAssetList(destToken) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        // Add taker asset to fund's owned asset list if not already exists and update order hook
-        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        // Add dest token to fund's owned asset list if not already exists and update order hook
+        Fund(address(this)).addAssetToOwnedAssets(destToken);
         Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),
             Fund.UpdateType.take,
-            [address(makerAsset), address(takerAsset)],
-            [actualReceiveQuantity, takerQuantity, takerQuantity]
+            [address(destToken), address(srcToken)],
+            [actualReceiveQuantity, srcQuantity, srcQuantity]
         );
     }
 
     /// @dev Dummy function; not implemented on exchange
     function makeOrder(
+        address targetExchange,
+        address[5] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) {
+        revert();
+    }
+
+    /// @dev Dummy function; not implemented on exchange
+    function takeOrder(
         address targetExchange,
         address[5] orderAddresses,
         uint[8] orderValues,
@@ -133,9 +143,9 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
-    /// @param nativeAsset Native asset address as maker asset
+    /// @param nativeAsset Native asset address as src token
     /// @param srcQuantity Quantity of native asset supplied
-    /// @param destToken Address of taker asset
+    /// @param destToken Address of dest token
     /// @param minRate Minimum rate supplied to the Kyber proxy
     /// @return receivedAmount Actual quantity of destToken received from the exchange
     function swapNativeAssetToToken(
@@ -158,9 +168,9 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
-    /// @param srcToken Address of maker asset
-    /// @param srcQuantity Quantity of maker asset supplied
-    /// @param nativeAsset Native asset address as taker asset
+    /// @param srcToken Address of src token
+    /// @param srcQuantity Quantity of src token supplied
+    /// @param nativeAsset Native asset address as src token
     /// @param minRate Minimum rate supplied to the Kyber proxy
     /// @return receivedAmount Actual quantity of destToken received from the exchange
     function swapTokenToNativeAsset(
@@ -184,9 +194,9 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
-    /// @param srcToken Address of maker asset
-    /// @param srcQuantity Quantity of maker asset supplied
-    /// @param destToken Address of taker asset
+    /// @param srcToken Address of src token
+    /// @param srcQuantity Quantity of src token supplied
+    /// @param destToken Address of dest token
     /// @param minRate Minimum rate supplied to the Kyber proxy
     /// @return receivedAmount Actual quantity of destToken received from the exchange
     function swapTokenToToken(
@@ -206,15 +216,15 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     }
 
     /// @dev Calculate min rate to be supplied to the network based on provided order parameters
-    /// @param makerAsset Address of maker asset
-    /// @param takerAsset Address of taker asset
-    /// @param makerQuantity Quantity of maker asset supplied
-    /// @return takerQuantity Quantity of taker asset expected in return
+    /// @param srcToken Address of src token
+    /// @param destToken Address of dest token
+    /// @param srcQuantity Quantity of src token
+    /// @return destQuantity Quantity of dest token expected in return
     function calcMinRate(
-        address takerAsset,
-        address makerAsset,
-        uint takerQuantity,
-        uint makerQuantity
+        address srcToken,
+        address destToken,
+        uint srcQuantity,
+        uint destQuantity
     )
         internal
         view
@@ -222,81 +232,80 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     {
         var (pricefeed, , ,) = Fund(address(this)).modules();
         minRate = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            takerQuantity,
-            makerQuantity
+            srcToken,
+            destToken,
+            srcQuantity,
+            destQuantity
         );
     }
 
     /// @dev Pre trade execution risk management check for minRate
     /// @param minPrice minPrice parameter to be supplied to Kyber proxy
-    /// @param takerAsset Address of maker asset
-    /// @param makerAsset Address of taker asset
+    /// @param srcToken Address of src token
+    /// @param destToken Address of dest token
     function isMinPricePermitted(
         uint minPrice,
-        uint takerQuantity,
-        address takerAsset,
-        address makerAsset
+        uint srcQuantity,
+        address srcToken,
+        address destToken
     )
         internal
         view
         returns (bool)
     {
-        require(takerAsset != address(this) && makerAsset != address(this));
+        require(srcToken != address(this) && destToken != address(this));
         var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        require(pricefeed.existsPriceOnAssetPair(srcToken, destToken));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(srcToken, destToken);
         require(isRecent);
-        uint makerQuantity = mul(minPrice, takerQuantity) / 10 ** pricefeed.getDecimals(makerAsset);
+        uint destQuantity = mul(minPrice, srcQuantity) / 10 ** pricefeed.getDecimals(destToken);
         return(
             riskmgmt.isTakePermitted(
                 minPrice,
                 referencePrice,
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
+                srcToken,
+                destToken,
+                srcQuantity,
+                destQuantity
             )
         );
     }
 
     /// @dev needed to avoid stack too deep error
-    /// @param takerQuantity Quantity of maker asset supplied
-    /// @param takerAsset Address of maker asset
-    /// @return makerQuantity Quantity of taker asset expected in return
-    /// @param makerAsset Address of taker asset
+    /// @param srcQuantity Quantity of src token supplied
+    /// @param srcToken Address of src token
+    /// @return destQuantity Quantity of dest token expected in return
+    /// @param destToken Address of dest token
     function takeOrderPermitted(
-        uint takerQuantity,
-        address takerAsset,
-        uint makerQuantity,
-        address makerAsset
+        uint srcQuantity,
+        address srcToken,
+        uint destQuantity,
+        address destToken
     )
         internal
         view
         returns (bool)
     {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        require(makerAsset != takerAsset);
-        // require(fillTakerQuantity <= maxTakerQuantity);
+        require(srcToken != address(this) && destToken != address(this));
+        require(destToken != srcToken);
         var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        require(pricefeed.existsPriceOnAssetPair(srcToken, destToken));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(srcToken, destToken);
         require(isRecent);
         uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            takerQuantity,
-            makerQuantity
+            srcToken,
+            destToken,
+            srcQuantity,
+            destQuantity
         );
         return(
             riskmgmt.isTakePermitted(
                 orderPrice,
                 referencePrice,
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
+                srcToken,
+                destToken,
+                srcQuantity,
+                destQuantity
             )
         );
     }

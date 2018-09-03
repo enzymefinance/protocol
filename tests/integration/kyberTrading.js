@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters} from "../../utils/lib/signing";
-import { takeOrderSignature } from "../../utils/lib/data";
+import { swapTokensSignature } from "../../utils/lib/data";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -150,7 +150,7 @@ test.before(async () => {
       deployed.KyberNetworkProxy.options.address,
       deployed.KyberAdapter.options.address,
       true,
-      [takeOrderSignature],
+      [swapTokensSignature],
     ],
   );
   const [r, s, v] = await getTermsSignatureParameters(manager);
@@ -236,7 +236,7 @@ test.serial("take order with ethToken as takerAsset", async t => {
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, takerQuantity).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    takeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
     [takerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -263,7 +263,7 @@ test.serial("take order with mlnToken as takerAsset", async t => {
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, takerQuantity).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    takeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
     [takerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -292,7 +292,7 @@ test.serial("make order with specific order price (minRate)", async t => {
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
     [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -336,7 +336,7 @@ test.serial("convert mlnToken directly to eurToken", async t => {
   const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, eurToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, eurToken.options.address, "0x0"],
     [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -364,7 +364,7 @@ test.serial("make order fails if minPrice is not satisfied", async t => {
   const takerQuantity = makerQuantity.mul(mlnPrice * 2).div(precisionUnits);
   await t.throws(fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
     [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -385,7 +385,7 @@ test.serial("risk management prevents conversion in the case of bad kyber networ
   const makerQuantity = new  BigNumber(10 ** 17);
   await t.throws(fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
     [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
