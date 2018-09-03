@@ -32,8 +32,7 @@ contract FundFactory {
 
     address[] public funds;
     mapping (address => address) public managersToFunds;
-    // address[] mockAddresses;
-    // bool[] mockBools;
+
     struct FundSettings {
         address[] exchanges;
         address[] adapters;
@@ -41,6 +40,22 @@ contract FundFactory {
         bool[] takesCustody;
     }
     FundSettings temporarySettings;
+
+    constructor(
+        AccountingFactory _accountingFactory,
+        FeeManagerFactory _feeManagerFactory,
+        ParticipationFactory _participationFactory,
+        SharesFactory _sharesFactory,
+        TradingFactory _tradingFactory,
+        VaultFactory _vaultFactory
+    ) {
+        accountingFactory = _accountingFactory;
+        feeManagerFactory = _feeManagerFactory;
+        participationFactory = _participationFactory;
+        sharesFactory = _sharesFactory;
+        tradingFactory = _tradingFactory;
+        vaultFactory = _vaultFactory;
+    }
 
     function setupFund(
         // string _name,
@@ -87,32 +102,6 @@ contract FundFactory {
         funds.push(hub);
         managersToFunds[msg.sender] = hub;
         delete temporarySettings;
-    }
-
-    // TODO: temporary (testing) setters (remove when done testing)
-    function setPriceSource(address _source) public {
-        defaultPriceSource = _source;
-    }
-    function setAccountingFactory(address _factory) public {
-        accountingFactory = AccountingFactory(_factory);
-    }
-    function setSharesFactory(address _factory) public {
-        sharesFactory = SharesFactory(_factory);
-    }
-    // function setPolicyManagerFactory(address _factory) public {
-    //     policyManagerFactory = PolicyManagerFactory(_factory);
-    // }
-    function setFeeManagerFactory(address _factory) public {
-        feeManagerFactory = FeeManagerFactory(_factory);
-    }
-    function setTradingFactory(address _factory) public {
-        tradingFactory = TradingFactory(_factory);
-    }
-    function setVaultFactory(address _factory) public {
-        vaultFactory = VaultFactory(_factory);
-    }
-    function setParticipationFactory(address _factory) public {
-        participationFactory = ParticipationFactory(_factory);
     }
 
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }
