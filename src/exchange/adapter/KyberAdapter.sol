@@ -21,6 +21,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     // - perform swap order on the exchange
     // - place asset in ownedAssets if not already tracked
     /// @notice Swaps srcAmount of srcToken for destAmount of destToken
+    /// @dev Variable naming to be close to Kyber's naming
     /// @param targetExchange Address of the exchange
     /// @param orderAddresses [2] Src token
     /// @param orderAddresses [3] Dest token
@@ -42,34 +43,34 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         address nativeAsset = Fund(address(this)).NATIVE_ASSET();
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
-        uint srcQuantity = orderValues[0];
-        uint destQuantity = orderValues[1];
+        uint srcAmount = orderValues[0];
+        uint destAmount = orderValues[1];
         uint minRate = 0;
-        uint actualReceiveQuantity;
+        uint actualReceiveAmount;
 
-        // If destQuantity is non-zero, set a minimum rate for the trade
-        if (destQuantity != 0) {
+        // If destAmount is non-zero, set a minimum rate for the trade
+        if (destAmount != 0) {
             minRate = calcMinRate(
                 srcToken,
                 destToken,
-                srcQuantity,
-                destQuantity
+                srcAmount,
+                destAmount
             );
         }
 
         // Call different functions based on type of assets supplied
         if (srcToken == nativeAsset) {
-            actualReceiveQuantity = swapNativeAssetToToken(targetExchange, nativeAsset, srcQuantity, destToken, minRate);
+            actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
         }
         else if (destToken == nativeAsset) {
-            actualReceiveQuantity = swapTokenToNativeAsset(targetExchange, srcToken, srcQuantity, nativeAsset, minRate);
+            actualReceiveAmount = swapTokenToNativeAsset(targetExchange, srcToken, srcAmount, nativeAsset, minRate);
         }
         else {
-            actualReceiveQuantity = swapTokenToToken(targetExchange, srcToken, srcQuantity, destToken, minRate);
+            actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, minRate);
         }
 
         // Apply risk management (Post-trade basis)
-        require(takeOrderPermitted(srcQuantity, srcToken, actualReceiveQuantity, destToken));
+        require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
         require(
             Fund(address(this)).isInAssetList(destToken) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
@@ -80,9 +81,9 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),
-            Fund.UpdateType.take,
+            Fund.UpdateType.swap,
             [address(destToken), address(srcToken)],
-            [actualReceiveQuantity, srcQuantity, srcQuantity]
+            [actualReceiveAmount, srcAmount, srcAmount]
         );
     }
 
@@ -144,14 +145,14 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
     /// @param nativeAsset Native asset address as src token
-    /// @param srcQuantity Quantity of native asset supplied
+    /// @param srcAmount Amount of native asset supplied
     /// @param destToken Address of dest token
     /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual quantity of destToken received from the exchange
+    /// @return receivedAmount Actual amount of destToken received from the exchange
     function swapNativeAssetToToken(
         address targetExchange,
         address nativeAsset,
-        uint srcQuantity,
+        uint srcAmount,
         address destToken,
         uint minRate
     )
@@ -159,34 +160,34 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         returns (uint receivedAmount)
     {
         // Convert WETH to ETH
-        WETH9(nativeAsset).withdraw(srcQuantity);
+        WETH9(nativeAsset).withdraw(srcAmount);
 
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(ETH_TOKEN_ADDRESS), ERC20(destToken), srcQuantity);
-        require(isMinPricePermitted(minRate, srcQuantity, nativeAsset, destToken));
-        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcQuantity)(ERC20(destToken), minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(ETH_TOKEN_ADDRESS), ERC20(destToken), srcAmount);
+        require(isMinPricePermitted(minRate, srcAmount, nativeAsset, destToken));
+        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20(destToken), minRate);
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
     /// @param srcToken Address of src token
-    /// @param srcQuantity Quantity of src token supplied
+    /// @param srcAmount Amount of src token supplied
     /// @param nativeAsset Native asset address as src token
     /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual quantity of destToken received from the exchange
+    /// @return receivedAmount Actual amount of destToken received from the exchange
     function swapTokenToNativeAsset(
         address targetExchange,
         address srcToken,
-        uint srcQuantity,
+        uint srcAmount,
         address nativeAsset,
         uint minRate
     )
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(ETH_TOKEN_ADDRESS), srcQuantity);
-        require(isMinPricePermitted(minRate, srcQuantity, srcToken, nativeAsset));
-        ERC20(srcToken).approve(targetExchange, srcQuantity);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20(srcToken), srcQuantity, minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(ETH_TOKEN_ADDRESS), srcAmount);
+        require(isMinPricePermitted(minRate, srcAmount, srcToken, nativeAsset));
+        ERC20(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20(srcToken), srcAmount, minRate);
 
         // Convert ETH to WETH
         WETH9(nativeAsset).deposit.value(receivedAmount)();
@@ -195,36 +196,36 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
     /// @param srcToken Address of src token
-    /// @param srcQuantity Quantity of src token supplied
+    /// @param srcAmount Amount of src token supplied
     /// @param destToken Address of dest token
     /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual quantity of destToken received from the exchange
+    /// @return receivedAmount Actual amount of destToken received from the exchange
     function swapTokenToToken(
         address targetExchange,
         address srcToken,
-        uint srcQuantity,
+        uint srcAmount,
         address destToken,
         uint minRate
     )
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(destToken), srcQuantity);
-        //require(isMinPricePermitted(minRate, srcQuantity, srcToken, destToken));
-        ERC20(srcToken).approve(targetExchange, srcQuantity);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(srcToken), srcQuantity, ERC20(destToken), minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(destToken), srcAmount);
+        //require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
+        ERC20(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(srcToken), srcAmount, ERC20(destToken), minRate);
     }
 
     /// @dev Calculate min rate to be supplied to the network based on provided order parameters
     /// @param srcToken Address of src token
     /// @param destToken Address of dest token
-    /// @param srcQuantity Quantity of src token
-    /// @return destQuantity Quantity of dest token expected in return
+    /// @param srcAmount Amount of src token
+    /// @return destAmount Amount of dest token expected in return
     function calcMinRate(
         address srcToken,
         address destToken,
-        uint srcQuantity,
-        uint destQuantity
+        uint srcAmount,
+        uint destAmount
     )
         internal
         view
@@ -234,8 +235,8 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         minRate = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,
-            srcQuantity,
-            destQuantity
+            srcAmount,
+            destAmount
         );
     }
 
@@ -245,7 +246,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @param destToken Address of dest token
     function isMinPricePermitted(
         uint minPrice,
-        uint srcQuantity,
+        uint srcAmount,
         address srcToken,
         address destToken
     )
@@ -258,28 +259,28 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         require(pricefeed.existsPriceOnAssetPair(srcToken, destToken));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(srcToken, destToken);
         require(isRecent);
-        uint destQuantity = mul(minPrice, srcQuantity) / 10 ** pricefeed.getDecimals(destToken);
+        uint destAmount = mul(minPrice, srcAmount) / 10 ** pricefeed.getDecimals(destToken);
         return(
             riskmgmt.isTakePermitted(
                 minPrice,
                 referencePrice,
                 srcToken,
                 destToken,
-                srcQuantity,
-                destQuantity
+                srcAmount,
+                destAmount
             )
         );
     }
 
     /// @dev needed to avoid stack too deep error
-    /// @param srcQuantity Quantity of src token supplied
+    /// @param srcAmount Amount of src token supplied
     /// @param srcToken Address of src token
-    /// @return destQuantity Quantity of dest token expected in return
+    /// @return destAmount Amount of dest token expected in return
     /// @param destToken Address of dest token
-    function takeOrderPermitted(
-        uint srcQuantity,
+    function swapPermitted(
+        uint srcAmount,
         address srcToken,
-        uint destQuantity,
+        uint destAmount,
         address destToken
     )
         internal
@@ -295,8 +296,8 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         uint orderPrice = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,
-            srcQuantity,
-            destQuantity
+            srcAmount,
+            destAmount
         );
         return(
             riskmgmt.isTakePermitted(
@@ -304,8 +305,8 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
                 referencePrice,
                 srcToken,
                 destToken,
-                srcQuantity,
-                destQuantity
+                srcAmount,
+                destAmount
             )
         );
     }

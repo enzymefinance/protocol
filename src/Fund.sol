@@ -36,7 +36,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint timestamp; // Time when calculations are performed in seconds
     }
 
-    enum UpdateType { make, take, cancel }
+    enum UpdateType { make, take, cancel, swap }
     enum RequestStatus { active, cancelled, executed }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
@@ -63,7 +63,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     struct Order { // Describes an order event (make or take order)
         address exchangeAddress; // address of the exchange this order is on
         bytes32 orderId; // Id as returned from exchange
-        UpdateType updateType; // Enum: make, take (cancel should be ignored)
+        UpdateType updateType; // Enum: make, take, swap (cancel should be ignored)
         address makerAsset; // Order maker's asset
         address takerAsset; // Order taker's asset
         uint makerQuantity; // Quantity of makerAsset to be traded
@@ -377,7 +377,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(msg.sender == address(this))
     {
         // only save make/take
-        if (updateType == UpdateType.make || updateType == UpdateType.take) {
+        if (updateType == UpdateType.make || updateType == UpdateType.take || updateType == UpdateType.swap) {
             orders.push(Order({
                 exchangeAddress: ofExchange,
                 orderId: orderId,
