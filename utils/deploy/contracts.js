@@ -10,6 +10,7 @@ import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
 // import verifyDeployment from "./verify";
+import {toBytes32, toBytes8} from "../lib/data";
 
 const BigNumber = require("bignumber.js");
 
@@ -52,9 +53,9 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "kovan" || environment === "kovanCompetition") {
-    // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
     const deploymentAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
     const pricefeedUpdaterAddress = "0x35703012d6d353c33ef006c22dfd04a04dd6523a";
+    // const pricefeedUpdaterAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
     opts.from = deploymentAddress;
     /* eslint-disable global-require */
     /* eslint-disable import/no-unresolved */
@@ -63,11 +64,12 @@ async function deployEnvironment(environment) {
 
     // set up governance and tokens
     deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
+    // deployed.Governance = await retrieveContract("system/Governance", previous.Governance);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
+    // deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
 //     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed);
 //     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
 //     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter);
@@ -75,28 +77,28 @@ async function deployEnvironment(environment) {
 //     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange);
 //     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter);
 
-    // // set up pricefeeds
-    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-    //   mlnAddr,
-    //   ethTokenAddress,
-    //   web3.utils.padLeft(web3.utils.toHex('Eth token'), 34),
-    //   web3.utils.padLeft(web3.utils.toHex('WETH-T'), 34),
-    //   18,
-    //   web3.utils.padLeft(web3.utils.toHex('ethereum.org'), 34),
-    //   mockBytes,
-    //   [mockAddress, mockAddress],
-    //   [],
-    //   [],
-    //   [
-    //     config.protocol.pricefeed.interval,
-    //     config.protocol.pricefeed.validity
-    //   ], [
-    //     config.protocol.staking.minimumAmount,
-    //     config.protocol.staking.numOperators,
-    //     config.protocol.staking.unstakeDelay
-    //   ],
-    //   deployed.Governance.options.address
-    // ], () => {}, true);
+    // set up pricefeeds
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+      mlnAddr,
+      ethTokenAddress,
+      toBytes32("Eth token"),
+      toBytes8("WETH-T"),
+      18,
+      "ethereum.org",
+      mockBytes,
+      [mockAddress, mockAddress],
+      [],
+      [],
+      [
+        config.protocol.pricefeed.interval,
+        config.protocol.pricefeed.validity
+      ], [
+        config.protocol.staking.minimumAmount,
+        config.protocol.staking.numOperators,
+        config.protocol.staking.unstakeDelay
+      ],
+      pricefeedUpdaterAddress
+    ], () => {}, true);
 
     // below not needed right now (TODO: remove in cleanup if still here)
     // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
@@ -173,6 +175,7 @@ async function deployEnvironment(environment) {
     // deployed.FundRanking = await deployContract("FundRanking", opts);
     deployed.FundRanking = await retrieveContract("FundRanking", previous.FundRanking);
 
+    // deployed.Version = await retrieveContract("version/Version", previous.Version);
     // Deploy Version
     deployed.Version = await deployContract(
       "version/Version",
@@ -183,6 +186,10 @@ async function deployEnvironment(environment) {
       ],
       () => {}, true
     );
+
+    // add Version to Governance tracking
+    console.log('Adding version to governance')
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
 
     // const blockchainTime = await getChainTime();
     // deployed.Competition = await deployContract(
@@ -218,31 +225,25 @@ async function deployEnvironment(environment) {
     //   deployed.Competition.options.address, new BigNumber(10 ** 22),
     // ).send(opts);
 
-    // add Version to Governance tracking
-    console.log('Adding version to governance')
-    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
-
     // // whitelist exchanges
     // await deployed.CanonicalPriceFeed.methods.registerExchange(
+    //   deployed.MatchingMarket.options.address,
+    //   deployed.MatchingMarketAdapter.options.address,
+    //   true,
     //   [
-    //     deployed.MatchingMarket.address,
-    //     deployed.MatchingMarketAdapter.address,
-    //     true,
-    //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
-    //     ]
+    //     makeOrderSignature,
+    //     takeOrderSignature,
+    //     cancelOrderSignature
     //   ]
     // ).send({from: pricefeedUpdaterAddress, gas: 6000000});
     // console.log('Registered MatchingMarket');
 
     // await deployed.CanonicalPriceFeed.methods.registerExchange(
-    //   deployed.ZeroExExchange.address,
-    //   deployed.ZeroExV1Adapter.address,
+    //   deployed.ZeroExExchange.options.address,
+    //   deployed.ZeroExV1Adapter.options.address,
     //   false,
     //   [ takeOrderSignature ]
-    // ).send({from: pricefeedUpdaterAddress});
+    // ).send({from: pricefeedUpdaterAddress, gas: 6000000});
     // console.log('Registered ZeroEx');
 
     // // register assets
@@ -250,18 +251,16 @@ async function deployEnvironment(environment) {
     //   console.log(`Registering ${assetSymbol}`);
     //   const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
     //   await deployed.CanonicalPriceFeed.methods.registerAsset(
-    //     [
-    //       tokenEntry.address,
-    //       tokenEntry.name,
-    //       assetSymbol,
-    //       tokenEntry.decimals,
-    //       tokenEntry.url,
-    //       mockBytes,
-    //       [mockAddress, mockAddress],
-    //       [],
-    //       []
-    //     ]
-    //   ).send({from: pricefeedUpdaterAddress});
+    //     tokenEntry.address,
+    //     toBytes32(tokenEntry.name),
+    //     toBytes8(assetSymbol),
+    //     tokenEntry.decimals,
+    //     tokenEntry.url,
+    //     mockBytes,
+    //     [mockAddress, mockAddress],
+    //     [],
+    //     []
+    //   ).send({from: pricefeedUpdaterAddress, gas: 6000000});
     //   console.log(`Registered ${assetSymbol}`);
     // }
 
