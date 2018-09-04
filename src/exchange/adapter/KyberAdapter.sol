@@ -211,7 +211,7 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
         returns (uint receivedAmount)
     {
         if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(destToken), srcAmount);
-        //require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
+        require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
         ERC20(srcToken).approve(targetExchange, srcAmount);
         receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(srcToken), srcAmount, ERC20(destToken), minRate);
     }
