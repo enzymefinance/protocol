@@ -3,9 +3,9 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract, retrieveContract} from "../lib/contracts";
+import { deployContract, retrieveContract } from "../lib/contracts";
 import { makeOrderSignature, takeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
-import web3 from "../lib/web3";
+import web3, { resetProvider } from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
@@ -14,6 +14,7 @@ import createStakingFeed from "../lib/createStakingFeed";
 const BigNumber = require("bignumber.js");
 
 // Constants and mocks
+const kovanHostedNode = "https://kovan.infura.io:443";
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -26,7 +27,16 @@ async function deployEnvironment(environment) {
   if (config === undefined) {
     throw new Error(`Deployment for environment ${environment} not defined`);
   } else {
-    const nodeNetId = Number(await web3.eth.net.getId());
+    // Switch to kovan hosted node if local is not available
+    let nodeNetId;
+    try {
+      nodeNetId = Number(await web3.eth.net.getId());
+    }
+    catch (e) {
+      if (environment === "kovan") await resetProvider(web3, kovanHostedNode);
+      nodeNetId = Number(await web3.eth.net.getId());
+    }
+    // Check network ids
     if(nodeNetId !== Number(config.networkId) && config.networkId !== "*") {
       throw new Error(`Network ID of node (${nodeNetId}) did not match ID in config "${environment}" (${config.networkId})`);
     }
