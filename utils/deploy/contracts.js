@@ -115,6 +115,8 @@ async function deployEnvironment(environment) {
     // // set up exchanges and adapters
     // deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
     // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+    deployed.KyberNetwork = "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA";
+    // deployed.KyberAdapter = await deployContract("exchange/adapter/KyberAdapter", opts);
 
     // const quoteSymbol = "WETH-T";
     // const pairsToWhitelist = [];
@@ -248,7 +250,7 @@ async function deployEnvironment(environment) {
     //   await deployed.CanonicalPriceFeed.methods.registerAsset(
     //     tokenEntry.address,
     //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
-    //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 10),
+    //     web3.utils.padLeft(web3.utils.toHex(assetSymbol), 10),
     //     tokenEntry.decimals,
     //     tokenEntry.url,
     //     mockBytes,
@@ -295,7 +297,7 @@ async function deployEnvironment(environment) {
     //   await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
     //     tokenEntry.address,
     //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
-    //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 10),
+    //     web3.utils.padLeft(web3.utils.toHex(assetSymbol), 10),
     //     tokenEntry.decimals,
     //     tokenEntry.url,
     //     mockBytes,
