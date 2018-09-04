@@ -79,10 +79,10 @@ async function deployEnvironment(environment) {
     // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
     //   mlnAddr,
     //   ethTokenAddress,
-    //   'Eth Token',
-    //   'WETH-T',
+    //   web3.utils.padLeft(web3.utils.toHex('Eth token'), 34),
+    //   web3.utils.padLeft(web3.utils.toHex('WETH-T'), 34),
     //   18,
-    //   'ethereum.org',
+    //   web3.utils.padLeft(web3.utils.toHex('ethereum.org'), 34),
     //   mockBytes,
     //   [mockAddress, mockAddress],
     //   [],
@@ -184,87 +184,86 @@ async function deployEnvironment(environment) {
       () => {}, true
     );
 
-    const blockchainTime = await getChainTime();
-    deployed.Competition = await deployContract(
-      "competitions/Competition",
-      opts,
-      [
-        mlnAddr, deployed.Version.address, deploymentAddress,
-        blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
-      ]
-    );
-    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(
-      opts,
-      [10 ** 25, [deploymentAddress, "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]
-    );
-    if (environment === "kovanCompetition") {
-      await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.options.address]);
-    } else if (environment === "kovan") {
-      deployed.TestCompetition = await deployContract(
-        "competitions/TestCompetition",
-        opts,
-        [
-          mlnAddr, deployed.Version.address, deploymentAddress,
-          blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
-        ]
-      );
-    }
-    await mlnToken.instance.transfer.postTransaction(opts,
-      [deployed.Competition.options.address, 10 ** 22],
-    );
+    // const blockchainTime = await getChainTime();
+    // deployed.Competition = await deployContract(
+    //   "competitions/Competition",
+    //   opts,
+    //   [
+    //     mlnAddr, deployed.Version.address, deploymentAddress,
+    //     blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
+    //   ]
+    // );
+    // await deployed.Competition.methods.batchAddToWhitelist(
+    //   new BigNumber(10 ** 25), [deploymentAddress, "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]
+    // ).send(opts);
+
+    // console.log('Added to whitelist')
+
+    // if (environment === "kovanCompetition") {
+    //   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(
+    //     deployed.Competition.options.address
+    //   ).send(opts);
+    // } else if (environment === "kovan") {
+    //   deployed.TestCompetition = await deployContract(
+    //     "competitions/TestCompetition",
+    //     opts,
+    //     [
+    //       mlnAddr, deployed.Version.address, deploymentAddress,
+    //       blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
+    //     ]
+    //   );
+    // }
+    // console.log('Transferring mln to competition')
+    // await mlnToken.methods.transfer(
+    //   deployed.Competition.options.address, new BigNumber(10 ** 22),
+    // ).send(opts);
 
     // add Version to Governance tracking
+    console.log('Adding version to governance')
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
 
-//     // whitelist exchanges
-//     await deployed.CanonicalPriceFeed.instance.registerExchange.postTransaction(
-//       {from: pricefeedUpdaterAddress},
-//       [
-//         deployed.MatchingMarket.address,
-//         deployed.MatchingMarketAdapter.address,
-//         true,
-//         [
-//           makeOrderSignature,
-//           takeOrderSignature,
-//           cancelOrderSignature
-//         ]
-//       ]
-//     );
-//     console.log('Registered MatchingMarket');
+    // // whitelist exchanges
+    // await deployed.CanonicalPriceFeed.methods.registerExchange(
+    //   [
+    //     deployed.MatchingMarket.address,
+    //     deployed.MatchingMarketAdapter.address,
+    //     true,
+    //     [
+    //       makeOrderSignature,
+    //       takeOrderSignature,
+    //       cancelOrderSignature
+    //     ]
+    //   ]
+    // ).send({from: pricefeedUpdaterAddress, gas: 6000000});
+    // console.log('Registered MatchingMarket');
 
-//     await deployed.CanonicalPriceFeed.instance.registerExchange.postTransaction(
-//       {from: pricefeedUpdaterAddress},
-//       [
-//         deployed.ZeroExExchange.address,
-//         deployed.ZeroExV1Adapter.address,
-//         false,
-//         [ takeOrderSignature ]
-//       ]
-//     );
-//     console.log('Registered ZeroEx');
+    // await deployed.CanonicalPriceFeed.methods.registerExchange(
+    //   deployed.ZeroExExchange.address,
+    //   deployed.ZeroExV1Adapter.address,
+    //   false,
+    //   [ takeOrderSignature ]
+    // ).send({from: pricefeedUpdaterAddress});
+    // console.log('Registered ZeroEx');
 
-//     // register assets
-//     for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
-//       console.log(`Registering ${assetSymbol}`);
-//       const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
-//       await deployed.CanonicalPriceFeed.instance.registerAsset.postTransaction(
-//         {from: pricefeedUpdaterAddress},
-//         [
-//           tokenEntry.address,
-//           tokenEntry.name,
-//           assetSymbol,
-//           tokenEntry.decimals,
-//           tokenEntry.url,
-//           mockBytes,
-//           [mockAddress, mockAddress],
-//           [],
-//           []
-//         ]
-//       );
-//       console.log(`Registered ${assetSymbol}`);
-//     }
-
-
+    // // register assets
+    // for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+    //   console.log(`Registering ${assetSymbol}`);
+    //   const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
+    //   await deployed.CanonicalPriceFeed.methods.registerAsset(
+    //     [
+    //       tokenEntry.address,
+    //       tokenEntry.name,
+    //       assetSymbol,
+    //       tokenEntry.decimals,
+    //       tokenEntry.url,
+    //       mockBytes,
+    //       [mockAddress, mockAddress],
+    //       [],
+    //       []
+    //     ]
+    //   ).send({from: pricefeedUpdaterAddress});
+    //   console.log(`Registered ${assetSymbol}`);
+    // }
 
     // // whitelist exchanges
     // await governanceAction(
@@ -504,7 +503,7 @@ async function deployEnvironment(environment) {
         config.protocol.competition.maxRegistrants
       ]
     );
-    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    await deployed.CompetitionCompliance.methods.changeCompetitionAddress(deployed.Competition.address).send(opts);
     // then need to whitelist participants
   } else if (environment === "development") {
     [opts.from] = accounts;

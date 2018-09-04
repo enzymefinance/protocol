@@ -47,7 +47,7 @@ module.exports = {
     protocol: {
       pricefeed: {
         interval: 60,
-        validity: 60,
+        validity: 120,
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
