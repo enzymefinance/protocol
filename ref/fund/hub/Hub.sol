@@ -5,6 +5,7 @@ pragma solidity ^0.4.21;
 /// @notice Has one or more Spokes
 contract Hub {
 
+    // TODO: make this more generic, and make fund "head" contract a derivative of this
     // TODO: ensure component is not overloaded far beyond routing
     // TODO: use the contract types instead of generic address (if possible to avoid circular imports)
     // TODO: track spokes and add them dynamically when the Fund is created

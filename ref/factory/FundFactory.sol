@@ -38,6 +38,7 @@ contract FundFactory {
         address[] adapters;
         address[] defaultAssets;
         bool[] takesCustody;
+        address priceSource;
     }
     FundSettings temporarySettings;
 
@@ -62,11 +63,12 @@ contract FundFactory {
         // address _quoteAsset,
         // address _compliance,
         // address[] _policies,
-        address[] _fees,
+        // address[] _fees,
         address[] _exchanges,
         address[] _adapters,
         address[] _defaultAssets,
-        bool[] _takesCustody
+        bool[] _takesCustody,
+        address _priceSource
     )
         public
     {
@@ -75,6 +77,7 @@ contract FundFactory {
         temporarySettings.adapters = _adapters;
         temporarySettings.defaultAssets = _defaultAssets;
         temporarySettings.takesCustody = _takesCustody;
+        temporarySettings.priceSource = _priceSource;
         Hub hub = new Hub(msg.sender);
         address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
         address feeManager = feeManagerFactory.createInstance(hub);
@@ -84,9 +87,9 @@ contract FundFactory {
         address shares = sharesFactory.createInstance(hub, temporarySettings.defaultAssets);
         address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
-        address priceSource = defaultPriceSource;
-        address canonicalRegistrar = defaultPriceSource;
-        address version = address(0);
+        // address priceSource = defaultPriceSource;
+        // address canonicalRegistrar = defaultPriceSource;
+        // address version = address(0);
         hub.setComponents(
             accounting,
             feeManager,
@@ -95,9 +98,9 @@ contract FundFactory {
             shares,
             trading,
             vault,
-            priceSource,
-            canonicalRegistrar,
-            version
+            temporarySettings.priceSource,
+            temporarySettings.priceSource,
+            address(0)
         );
         funds.push(hub);
         managersToFunds[msg.sender] = hub;

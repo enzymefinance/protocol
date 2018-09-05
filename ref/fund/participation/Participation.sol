@@ -37,7 +37,7 @@ contract Participation is Spoke, DSMath {
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp,
-            atUpdateId: CanonicalPriceFeed(hub.priceSource()).getLastUpdateId() // TODO: can this be abstracted away?
+            atUpdateId: CanonicalPriceFeed(hub.priceSource()).updateId() // TODO: can this be abstracted away?
         });
     }
 
@@ -52,12 +52,11 @@ contract Participation is Spoke, DSMath {
     function executeRequestFor(address requestOwner) public 
         // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
-        // pre_cond(requests[id].status == RequestStatus.active)
         // pre_cond(
         //     Shares(hub.shares()).totalSupply() == 0 ||
         //     (
         //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
-        //         priceSource.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
+        //         priceSource.updateId() >= add(requests[id].atUpdateId, 2)
         //     )
         // ) 
     {
