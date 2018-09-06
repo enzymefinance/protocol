@@ -28,7 +28,15 @@ contract Accounting is DSMath, Controlled, Spoke {
     address public QUOTE_ASSET;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {}
+    constructor(address _hub, address[] _controllers, address[] _defaultAssets)
+        Spoke(_hub)
+        Controlled(_controllers)
+    {
+        for (uint i = 0; i < _defaultAssets.length; i++) {
+            _addAssetToOwnedAssets(_defaultAssets[i]);
+        }
+        QUOTE_ASSET = _defaultAssets[0]; // TODO: clean this up; maybe another parameter, or document and leave this convention intact
+    }
 
     function getFundHoldings() returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
@@ -185,6 +193,12 @@ contract Accounting is DSMath, Controlled, Spoke {
 
     function addAssetToOwnedAssets(address _asset) public {
         require(isController(msg.sender) || msg.sender == address(this));
+        _addAssetToOwnedAssets(_asset);
+    }
+
+    // needed for constructor to be able to call
+    // TODO: consider redesign of this approach
+    function _addAssetToOwnedAssets(address _asset) internal {
         if (!isInAssetList[_asset]) {
             isInAssetList[_asset] = true;
             ownedAssets.push(_asset);

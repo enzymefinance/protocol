@@ -4,6 +4,7 @@ pragma solidity ^0.4.21;
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
+import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
@@ -67,10 +68,10 @@ contract Participation is Spoke, DSMath {
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        if(request.investmentAsset == address(Accounting(hub.accounting()).QUOTE_ASSET())) {
-            costQuantity = mul(request.requestedShares, Accounting(hub.accounting()).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
-            // TODO: watch this, in case we change decimals from default 18
-        } else {
+        costQuantity = mul(request.requestedShares, Accounting(hub.accounting()).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+        // TODO: maybe allocate fees in a separate step (to come later)
+        // TODO: watch this, in case we change decimals from default 18
+        if(request.investmentAsset != address(Accounting(hub.accounting()).QUOTE_ASSET())) {
             bool isPriceRecent;
             uint invertedInvestmentAssetPrice;
             uint investmentAssetDecimal;
@@ -85,9 +86,9 @@ contract Participation is Spoke, DSMath {
             costQuantity <= request.investmentAmount
         ) {
             delete requests[requestOwner];
-            require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(this), costQuantity)); // Allocate Value
+            require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(hub.vault()), costQuantity)); // Allocate Value
             Shares(hub.shares()).createFor(requestOwner, request.requestedShares);
-            // TODO: this should be done somewhere else
+            // // TODO: this should be done somewhere else
             if (!Accounting(hub.accounting()).isInAssetList(request.investmentAsset)) {
                 Accounting(hub.accounting()).addAssetToOwnedAssets(request.investmentAsset);
             }
@@ -112,7 +113,10 @@ contract Participation is Spoke, DSMath {
         public
         returns (bool)
     {
-        require(Shares(hub.shares()).balanceOf(msg.sender) >= shareQuantity);
+        Accounting accounting = Accounting(hub.accounting());
+        Shares shares = Shares(hub.shares());
+        Vault vault = Vault(hub.vault());
+        require(shares.balanceOf(msg.sender) >= shareQuantity);
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
@@ -120,37 +124,38 @@ contract Participation is Spoke, DSMath {
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
-            require(Accounting(hub.accounting()).isInAssetList(ofAsset));
+            require(accounting.isInAssetList(ofAsset));
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
                 }
             }
             redeemedAssets[i] = ofAsset;
-            uint quantityHeld = Accounting(hub.accounting()).assetHoldings(ofAsset);
+            uint quantityHeld = accounting.assetHoldings(ofAsset);
             if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / Shares(hub.shares()).totalSupply();
+            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / shares.totalSupply();
 
             // TODO: do we want to represent this as an error and shutdown, or do something else? See NB1 scenario above
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            if (uint(ERC20(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
+            if (uint(ERC20(ofAsset).balanceOf(address(vault))) < ownershipQuantities[i]) {
                 isShutDown = true; // TODO: external call most likely
                 // emit ErrorMessage("CRITICAL ERR: Not enough quantityHeld for owed ownershipQuantitiy");
                 return false;
             }
         }
 
-        Shares(hub.shares()).destroyFor(msg.sender, shareQuantity);
+        shares.destroyFor(msg.sender, shareQuantity);
 
         // Transfer owned assets
         for (uint k = 0; k < requestedAssets.length; ++k) {
             ofAsset = requestedAssets[k];
             if (ownershipQuantities[k] == 0) {
                 continue;
-            } else if (!ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k])) {
-                revert();
+            } else {
+                vault.withdraw(ofAsset, ownershipQuantities[k]);
+                require(ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]));
             }
         }
         return true;

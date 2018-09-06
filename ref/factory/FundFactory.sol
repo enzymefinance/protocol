@@ -39,6 +39,9 @@ contract FundFactory {
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
+        address[] accountingControllers;
+        address[] sharesControllers;
+        address[] vaultControllers;
     }
     FundSettings temporarySettings;
 
@@ -79,13 +82,16 @@ contract FundFactory {
         temporarySettings.takesCustody = _takesCustody;
         temporarySettings.priceSource = _priceSource;
         Hub hub = new Hub(msg.sender);
-        address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
         address feeManager = feeManagerFactory.createInstance(hub);
         address participation = participationFactory.createInstance(hub);
-        address policyManager = address(0);
+        temporarySettings.accountingControllers = [participation];
+        address accounting = accountingFactory.createInstance(hub, temporarySettings.accountingControllers, temporarySettings.defaultAssets);
+        // address policyManager = address(0);
         // address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
-        address shares = sharesFactory.createInstance(hub, temporarySettings.defaultAssets);
+        temporarySettings.sharesControllers = [participation, feeManager];
+        address shares = sharesFactory.createInstance(hub, temporarySettings.sharesControllers);
         address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
+        // temporarySettings.vaultControllers = [participation, trading];
         address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
         // address priceSource = defaultPriceSource;
         // address canonicalRegistrar = defaultPriceSource;
@@ -94,7 +100,7 @@ contract FundFactory {
             accounting,
             feeManager,
             participation,
-            policyManager,
+            address(0),
             shares,
             trading,
             vault,
