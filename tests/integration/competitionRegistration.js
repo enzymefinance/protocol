@@ -1,5 +1,4 @@
 import test from "ava";
-import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
@@ -25,7 +24,7 @@ let deployed;
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
   version = await deployed.Version;
   competition = await deployed.Competition;

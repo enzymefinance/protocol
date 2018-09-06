@@ -2,11 +2,9 @@ import Web3 from "web3";
 import * as masterConfig from "../config/environment";
 
 const config = masterConfig[process.env.CHAIN_ENV];
-
-let providerUrl = `${config.host}:${config.port}`;
+const providerUrl = `http://${config.host}:${config.port}`;
 
 // Prepend http if development node
-if (process.env.CHAIN_ENV !== "kovanHosted") providerUrl = `http://${  providerUrl}`;
 const provider = new Web3.providers.HttpProvider(providerUrl);
 const web3 = new Web3(provider);
 
@@ -25,5 +23,10 @@ web3.extend({
     },
   ],
 });
+
+export async function resetProvider(web3Object, newProviderUrl) {
+  const newProvider = new Web3.providers.HttpProvider(newProviderUrl);
+  return web3.setProvider(newProvider);
+}
 
 export default web3;

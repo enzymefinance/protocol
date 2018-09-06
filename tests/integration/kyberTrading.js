@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters} from "../../utils/lib/signing";
-import { makeOrderSignature } from "../../utils/lib/data";
+import { swapTokensSignature } from "../../utils/lib/data";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -85,8 +85,6 @@ test.before(async () => {
   await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
   await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
   await deployed.KyberReserve.methods.enableTrade().send();
-  await deployed.KyberReserve.methods.setTokenWallet(mlnToken.options.address, accounts[0]).send();
-  await mlnToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
 
   // Set pricing for Token
   await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
@@ -152,7 +150,7 @@ test.before(async () => {
       deployed.KyberNetworkProxy.options.address,
       deployed.KyberAdapter.options.address,
       true,
-      [makeOrderSignature],
+      [swapTokensSignature],
     ],
   );
   const [r, s, v] = await getTermsSignatureParameters(manager);
@@ -232,15 +230,15 @@ test.skip("test", async t => {
 });
 */
 
-test.serial("make order with ethToken as makerAsset", async t => {
+test.serial("swap ethToken for mlnToken without minimum destAmount", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const makerQuantity = new  BigNumber(10 ** 17);
-  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
+  const srcAmount = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(ethAddress, mlnToken.options.address, srcAmount).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
-    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    [srcAmount, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -248,9 +246,9 @@ test.serial("make order with ethToken as makerAsset", async t => {
   ).send(
     { from: manager, gas: config.gas }
   );
-  const expectedMln = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const expectedMln = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
   const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.sub(makerQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.sub(srcAmount));
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(expectedMln));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -259,15 +257,15 @@ test.serial("make order with ethToken as makerAsset", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("make order with mlnToken as makerAsset", async t => {
+test.serial("swap mlnToken for ethToken without mimimum destAmount", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const makerQuantity = new  BigNumber(10 ** 17);
-  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
+  const srcAmount = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, srcAmount).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
-    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    [srcAmount, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -275,9 +273,9 @@ test.serial("make order with mlnToken as makerAsset", async t => {
   ).send(
     { from: manager, gas: config.gas }
   );
-  const expectedEthToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const expectedEthToken = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
   const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -286,17 +284,17 @@ test.serial("make order with mlnToken as makerAsset", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-// minPrice is basically set if takerQuantity is non-zero (Otherwise it's just executes at market price)
-test.serial("make order with specific order price (minRate)", async t => {
+// minPrice is basically set if srcAmount is non-zero (Otherwise it's just executes at market price)
+test.serial("swap mlnToken for ethToken with specific order price (minRate)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const makerQuantity = new  BigNumber(10 ** 17);
-  const takerQuantity = makerQuantity.mul(mlnPrice).div(precisionUnits);
-  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, makerQuantity).call()).map(e => new BigNumber(e));
+  const srcAmount = new  BigNumber(10 ** 17);
+  const destAmount = srcAmount.mul(mlnPrice).div(precisionUnits);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, ethAddress, srcAmount).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
-    [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+    [srcAmount, destAmount, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -304,9 +302,9 @@ test.serial("make order with specific order price (minRate)", async t => {
   ).send(
     { from: manager, gas: config.gas }
   );
-  const expectedEthToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const expectedEthToken = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
   const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
@@ -315,14 +313,12 @@ test.serial("make order with specific order price (minRate)", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("convert mlnToken directly to eurToken", async t => {
+test.serial("swap mlnToken directly to eurToken without minimum destAmount", async t => {
   // Setup eurToken in Kyber
   await deployed.ConversionRates.methods.addToken(eurToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
   await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
   await deployed.KyberReserve.methods.approveWithdrawAddress(eurToken.options.address, accounts[0], true).send();
-  await deployed.KyberReserve.methods.setTokenWallet(eurToken.options.address, accounts[0]).send();
-  await eurToken.methods.approve(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
   await eurToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
   const [eurPrice] =
     Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
@@ -336,13 +332,13 @@ test.serial("convert mlnToken directly to eurToken", async t => {
 
   const fundPreEur = new BigNumber(await eurToken.methods.balanceOf(fund.options.address).call());
   const pre = await getAllBalances(deployed, accounts, fund);
-  const makerQuantity = new  BigNumber(10 ** 17);
-  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, eurToken.options.address, makerQuantity).call()).map(e => new BigNumber(e));
+  const srcAmount = new  BigNumber(10 ** 17);
+  const [, bestRate] = Object.values(await deployed.KyberNetwork.methods.findBestRate(mlnToken.options.address, eurToken.options.address, srcAmount).call()).map(e => new BigNumber(e));
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, eurToken.options.address, "0x0"],
-    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    [srcAmount, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -350,10 +346,10 @@ test.serial("convert mlnToken directly to eurToken", async t => {
   ).send(
     { from: manager, gas: config.gas }
   );
-  const expectedEurToken = makerQuantity.mul(bestRate).div(new BigNumber(10 ** 18));
+  const expectedEurToken = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
   const fundPostEur = new BigNumber(await eurToken.methods.balanceOf(fund.options.address).call());
   const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(makerQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
   t.deepEqual(fundPostEur, fundPreEur.add(expectedEurToken));
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
@@ -363,14 +359,14 @@ test.serial("convert mlnToken directly to eurToken", async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
 });
 
-test.serial("make order fails if minPrice is not satisfied", async t => {
-  const makerQuantity = new  BigNumber(10 ** 17);
-  const takerQuantity = makerQuantity.mul(mlnPrice * 2).div(precisionUnits);
+test.serial("swapTokens fails if minPrice is not satisfied", async t => {
+  const srcAmount = new  BigNumber(10 ** 17);
+  const destAmount = srcAmount.mul(mlnPrice * 2).div(precisionUnits);
   await t.throws(fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
-    [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+    [srcAmount, destAmount, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),
@@ -380,18 +376,18 @@ test.serial("make order fails if minPrice is not satisfied", async t => {
   ));
 });
 
-test.serial("risk management prevents conversion in the case of bad kyber network price", async t => {
+test.serial("risk management prevents swap in the case of bad kyber network price", async t => {
   // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
   baseBuyRate1 = [mlnPrice * 2];
   baseSellRate1 = [precisionUnits.mul(precisionUnits).div(baseBuyRate1).toFixed(0)];
   const currentBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
-  const makerQuantity = new  BigNumber(10 ** 17);
+  const srcAmount = new  BigNumber(10 ** 17);
   await t.throws(fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
+    swapTokensSignature,
     ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
-    [makerQuantity, 0, 0, 0, 0, 0, 0, 0],
+    [srcAmount, 0, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
     0,
     web3.utils.padLeft('0x0', 64),

@@ -47,7 +47,7 @@ module.exports = {
     protocol: {
       pricefeed: {
         interval: 60,
-        validity: 60,
+        validity: 120,
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
@@ -71,35 +71,11 @@ module.exports = {
     protocol: {
       pricefeed: {
         interval: 60,
-        validity: 60,
+        validity: 120,
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
           'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'NMR-T', 'DGX-T',
-          'BAT-T', 'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
-        ],
-      },
-      staking: {
-        minimumAmount: 1000000000,
-        numOperators: 5,
-        unstakeDelay: 60 * 60 * 24 * 7 // one week
-      }
-    },
-  },
-  kovanHosted: {
-    networkId: '42',
-    host: 'https://kovan.infura.io',
-    port: '443',
-    gas: 7000000,
-    gasPrice: 1000000000000,
-    protocol: {
-      pricefeed: {
-        interval: 60,
-        validity: 60,
-        preEpochUpdatePeriod: 30,
-        minimumUpdates: 1,
-        assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T',
           'BAT-T', 'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },

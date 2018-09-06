@@ -3,9 +3,9 @@ import * as pkgInfo from "../../package.json";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
-import {deployContract, retrieveContract} from "../lib/contracts";
-import api from "../lib/api";
-import web3 from "../lib/web3";
+import { deployContract, retrieveContract } from "../lib/contracts";
+import { makeOrderSignature, takeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
+import web3, { resetProvider } from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
@@ -14,6 +14,7 @@ import createStakingFeed from "../lib/createStakingFeed";
 const BigNumber = require("bignumber.js");
 
 // Constants and mocks
+const kovanHostedNode = "https://kovan.infura.io:443";
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
@@ -26,35 +27,33 @@ async function deployEnvironment(environment) {
   if (config === undefined) {
     throw new Error(`Deployment for environment ${environment} not defined`);
   } else {
-    const nodeNetId = await api.net.version();
-    if(nodeNetId !== config.networkId && config.networkId !== "*") {
+    // Switch to kovan hosted node if local is not available
+    let nodeNetId;
+    try {
+      nodeNetId = Number(await web3.eth.net.getId());
+    }
+    catch (e) {
+      if (environment === "kovan") await resetProvider(web3, kovanHostedNode);
+      nodeNetId = Number(await web3.eth.net.getId());
+    }
+    // Check network ids
+    if(nodeNetId !== Number(config.networkId) && config.networkId !== "*") {
       throw new Error(`Network ID of node (${nodeNetId}) did not match ID in config "${environment}" (${config.networkId})`);
     }
   }
-  const accounts = await api.eth.accounts();
+  const accounts = await web3.eth.getAccounts();
   const opts = {
     from: accounts[0],
     gas: 8000000,
     gasPrice: config.gasPrice,
   };
 
-  // TODO: put signature functions in a lib and use across all tests/utils
-  const makeOrderSignature = api.util.abiSignature('makeOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
-  const takeOrderSignature = api.util.abiSignature('takeOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
-  const cancelOrderSignature = api.util.abiSignature('cancelOrder', [
-    'address', 'address[5]', 'uint256[8]', 'bytes32', 'uint8', 'bytes32', 'bytes32'
-  ]).slice(0,10);
-
   const deployed = {};
 
   if (environment === "kovan" || environment === "kovanCompetition") {
     // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
     const deploymentAddress = "0x00360d2b7d240ec0643b6d819ba81a09e40e5bcd";
-    // const pricefeedUpdaterAddress = "0x35703012d6d353c33ef006c22dfd04a04dd6523a";
+    const pricefeedUpdaterAddress = "0x35703012d6d353c33ef006c22dfd04a04dd6523a";
     opts.from = deploymentAddress;
     /* eslint-disable global-require */
     /* eslint-disable import/no-unresolved */
@@ -62,7 +61,8 @@ async function deployEnvironment(environment) {
     const commonEnvironment = "kovan";
 
     // set up governance and tokens
-    deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
+    // deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
+    deployed.Governance = await retrieveContract("system/Governance", previous.Governance);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
@@ -79,8 +79,8 @@ async function deployEnvironment(environment) {
     // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
     //   mlnAddr,
     //   ethTokenAddress,
-    //   'Eth Token',
-    //   'WETH-T',
+    //   web3.utils.padLeft(web3.utils.toHex('Eth Token'), 34),
+    //   web3.utils.padLeft(web3.utils.toHex('WETH-T'), 10),
     //   18,
     //   'ethereum.org',
     //   mockBytes,
@@ -95,7 +95,8 @@ async function deployEnvironment(environment) {
     //     config.protocol.staking.numOperators,
     //     config.protocol.staking.unstakeDelay
     //   ],
-    //   deployed.Governance.options.address
+    //   pricefeedUpdaterAddress
+    //   // deployed.Governance.options.address
     // ], () => {}, true);
 
     // below not needed right now (TODO: remove in cleanup if still here)
@@ -114,6 +115,8 @@ async function deployEnvironment(environment) {
     // // set up exchanges and adapters
     // deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
     // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
+    deployed.KyberNetwork = "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA";
+    // deployed.KyberAdapter = await deployContract("exchange/adapter/KyberAdapter", opts);
 
     // const quoteSymbol = "WETH-T";
     // const pairsToWhitelist = [];
@@ -183,88 +186,82 @@ async function deployEnvironment(environment) {
       ],
       () => {}, true
     );
+    // deployed.Version = await retrieveContract("version/Version", previous.Version);
 
     const blockchainTime = await getChainTime();
-    deployed.Competition = await deployContract(
-      "competitions/Competition",
-      opts,
-      [
-        mlnAddr, deployed.Version.address, deploymentAddress,
-        blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
-      ]
-    );
-    await deployed.Competition.instance.batchAddToWhitelist.postTransaction(
-      opts,
-      [10 ** 25, [deploymentAddress, "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]
-    );
-    if (environment === "kovanCompetition") {
-      await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.options.address]);
-    } else if (environment === "kovan") {
-      deployed.TestCompetition = await deployContract(
-        "competitions/TestCompetition",
-        opts,
-        [
-          mlnAddr, deployed.Version.address, deploymentAddress,
-          blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
-        ]
-      );
-    }
-    await mlnToken.instance.transfer.postTransaction(opts,
-      [deployed.Competition.options.address, 10 ** 22],
-    );
+    // deployed.Competition = await deployContract(
+    //   "competitions/Competition",
+    //   opts,
+    //   [
+    //     mlnAddr, deployed.Version.address, deploymentAddress,
+    //     blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
+    //   ]
+    // );
+    // await deployed.Competition.instance.batchAddToWhitelist.postTransaction(
+    //   opts,
+    //   [10 ** 25, [deploymentAddress, "0xa80b5f4103c8d027b2ba88be9ed9bb009bf3d46f"]]
+    // );
+    // if (environment === "kovanCompetition") {
+    //   await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.options.address]);
+    // } else if (environment === "kovan") {
+    //   deployed.TestCompetition = await deployContract(
+    //     "competitions/TestCompetition",
+    //     opts,
+    //     [
+    //       mlnAddr, deployed.Version.address, deploymentAddress,
+    //       blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
+    //     ]
+    //   );
+    // }
+    // await mlnToken.instance.transfer.postTransaction(opts,
+    //   [deployed.Competition.options.address, 10 ** 22],
+    // );
 
     // add Version to Governance tracking
     await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
 
-//     // whitelist exchanges
-//     await deployed.CanonicalPriceFeed.instance.registerExchange.postTransaction(
-//       {from: pricefeedUpdaterAddress},
-//       [
-//         deployed.MatchingMarket.address,
-//         deployed.MatchingMarketAdapter.address,
-//         true,
-//         [
-//           makeOrderSignature,
-//           takeOrderSignature,
-//           cancelOrderSignature
-//         ]
-//       ]
-//     );
-//     console.log('Registered MatchingMarket');
+    // // whitelist exchanges
+    // await deployed.CanonicalPriceFeed.methods.registerExchange(
+    //   deployed.MatchingMarket.options.address,
+    //   deployed.MatchingMarketAdapter.options.address,
+    //   true,
+    //   [
+    //     makeOrderSignature,
+    //     takeOrderSignature,
+    //     cancelOrderSignature
+    //   ]
+    // ).send({from: pricefeedUpdaterAddress, gas: 6000000});
+    // console.log('Registered MatchingMarket');
 
-//     await deployed.CanonicalPriceFeed.instance.registerExchange.postTransaction(
-//       {from: pricefeedUpdaterAddress},
-//       [
-//         deployed.ZeroExExchange.address,
-//         deployed.ZeroExV1Adapter.address,
-//         false,
-//         [ takeOrderSignature ]
-//       ]
-//     );
-//     console.log('Registered ZeroEx');
+    // await deployed.CanonicalPriceFeed.methods.registerExchange(
+    //   deployed.ZeroExExchange.options.address,
+    //   deployed.ZeroExV1Adapter.options.address,
+    //   false,
+    //   [ takeOrderSignature ]
+    // ).send(
+    //   {from: pricefeedUpdaterAddress, gas: 6000000}
+    // );
+    // console.log('Registered ZeroEx');
 
-//     // register assets
-//     for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
-//       console.log(`Registering ${assetSymbol}`);
-//       const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
-//       await deployed.CanonicalPriceFeed.instance.registerAsset.postTransaction(
-//         {from: pricefeedUpdaterAddress},
-//         [
-//           tokenEntry.address,
-//           tokenEntry.name,
-//           assetSymbol,
-//           tokenEntry.decimals,
-//           tokenEntry.url,
-//           mockBytes,
-//           [mockAddress, mockAddress],
-//           [],
-//           []
-//         ]
-//       );
-//       console.log(`Registered ${assetSymbol}`);
-//     }
-
-
+    // // register assets
+    // for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
+    //   console.log(`Registering ${assetSymbol}`);
+    //   const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
+    //   await deployed.CanonicalPriceFeed.methods.registerAsset(
+    //     tokenEntry.address,
+    //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
+    //     web3.utils.padLeft(web3.utils.toHex(assetSymbol), 10),
+    //     tokenEntry.decimals,
+    //     tokenEntry.url,
+    //     mockBytes,
+    //     [mockAddress, mockAddress],
+    //     [],
+    //     []
+    //   ).send(
+    //     {from: pricefeedUpdaterAddress, gas: 6000000}
+    //   );
+    //   console.log(`Registered ${assetSymbol}`);
+    // }
 
     // // whitelist exchanges
     // await governanceAction(
@@ -285,10 +282,8 @@ async function deployEnvironment(environment) {
     // await governanceAction(
     //  opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     //   [
-    //     "0x90fe2af704b34e0224bf2299c838e04d4dcf1364",
-    //     "0x33A844A83cb7407C74C15fC862dEacCeC8B4EeF6",
-    //     // deployed.ZeroExExchange.options.address,
-    //     // deployed.ZeroExV1Adapter.options.address,
+    //     deployed.ZeroExExchange.options.address,
+    //     deployed.ZeroExV1Adapter.options.address,
     //     false,
     //     [ takeOrderSignature ]
     //   ]
@@ -300,9 +295,9 @@ async function deployEnvironment(environment) {
     //   console.log(`Registering ${assetSymbol}`);
     //   const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
     //   await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
-    //     tokenEntry.options.address,
-    //     tokenEntry.name,
-    //     assetSymbol,
+    //     tokenEntry.address,
+    //     web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
+    //     web3.utils.padLeft(web3.utils.toHex(assetSymbol), 10),
     //     tokenEntry.decimals,
     //     tokenEntry.url,
     //     mockBytes,
