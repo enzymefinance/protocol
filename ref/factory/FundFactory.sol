@@ -1,13 +1,6 @@
 pragma solidity ^0.4.21;
 
 
-import "./AccountingFactory.sol";
-import "./SharesFactory.sol";
-import "./ParticipationFactory.sol";
-import "./SharesFactory.sol";
-import "./FeeManagerFactory.sol";
-import "./TradingFactory.sol";
-import "./VaultFactory.sol";
 import "../fund/accounting/Accounting.sol";
 import "../fund/fees/FeeManager.sol";
 import "../fund/hub/Hub.sol";

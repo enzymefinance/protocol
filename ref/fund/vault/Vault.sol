@@ -1,10 +1,11 @@
 pragma solidity ^0.4.21;
 
+
 import "./Vault.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/ERC20.sol";
 import "../../dependencies/Controlled.sol";
-
+import "../../factory/Factory.i.sol";
 
 /// @notice Dumb custody component
 contract Vault is Controlled, Spoke, VaultInterface {
@@ -32,6 +33,12 @@ contract Vault is Controlled, Spoke, VaultInterface {
 
     function withdraw(address token, uint amount) onlyController onlyUnlocked {
         ERC20(token).transfer(msg.sender, amount);
+    }
+}
+
+contract VaultFactory is FactoryInterface {
+    function createInstance(address _hub, address[] _controllers) public returns (address) {
+        return new Vault(_hub, _controllers);
     }
 }
 

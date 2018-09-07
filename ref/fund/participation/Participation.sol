@@ -6,6 +6,7 @@ import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
+import "../../factory/Factory.i.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
@@ -159,6 +160,12 @@ contract Participation is Spoke, DSMath {
             }
         }
         return true;
+    }
+}
+
+contract ParticipationFactory is FactoryInterface {
+    function createInstance(address _hub) public returns (address) {
+        return new Participation(_hub);
     }
 }
 

@@ -5,6 +5,7 @@ import "./Shares.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/StandardToken.sol";
 import "../../dependencies/Controlled.sol";
+import "../../factory/Factory.i.sol";
 
 contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
 
@@ -55,6 +56,12 @@ contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
         returns (bool)
     {
         revert();
+    }
+}
+
+contract SharesFactory is FactoryInterface {
+    function createInstance(address _hub, address[] _controllers) public returns (address) {
+        return new Shares(_hub, _controllers);
     }
 }
 

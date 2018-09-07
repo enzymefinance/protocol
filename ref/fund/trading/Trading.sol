@@ -5,6 +5,7 @@ import "./Trading.i.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
+import "../../factory/Factory.i.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/exchange/GenericExchangeInterface.sol";
 import "../../../src/pricefeeds/CanonicalRegistrar.sol";
@@ -163,6 +164,12 @@ contract Trading is DSMath, Spoke, TradingInterface {
         for (uint i = 0; i < _tokens.length; i++) {
             _tokens[i].transfer(Vault(hub.vault()), _tokens[i].balanceOf(this));
         }
+    }
+}
+
+contract TradingFactory is FactoryInterface {
+    function createInstance(address _hub, address[] _exchanges, address[] _adapters, bool[] _takesCustody) public returns (address) {
+        return new Trading(_hub, _exchanges, _adapters, _takesCustody);
     }
 }
 

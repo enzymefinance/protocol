@@ -8,6 +8,7 @@ import "../shares/Shares.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
 import "../../dependencies/Controlled.sol";
+import "../../factory/Factory.i.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
@@ -218,6 +219,12 @@ contract Accounting is DSMath, Controlled, Spoke {
                 }
             }
         }
+    }
+}
+
+contract AccountingFactory is FactoryInterface {
+    function createInstance(address _hub, address[] _controllers, address[] _defaultAssets) public returns (address) {
+        return new Accounting(_hub, _controllers, _defaultAssets);
     }
 }
 
