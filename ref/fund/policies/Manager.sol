@@ -1,14 +1,18 @@
 pragma solidity ^0.4.21;
 
 import "./Policy.sol";
+import "../hub/Spoke.sol";
+import "../../factory/Factory.i.sol";
 
-contract PolicyManager {
+contract PolicyManager is Spoke {
     struct Entry {
         Policy[] pre;
         Policy[] post;
     }
 
     mapping(bytes4 => Entry) policies;
+
+    constructor(address _hub) Spoke(_hub) {}
 
     function registerBatch(bytes4[] sign, address[] ofPolicies) public {
         require(sign.length == ofPolicies.length);
@@ -68,5 +72,11 @@ contract PolicyManager {
                 revert();
             }
         }
+    }
+}
+
+contract PolicyManagerInterface is FactoryInterface {
+    function createInstance(address _hub) public returns (address) {
+        return new PolicyManager(_hub);
     }
 }

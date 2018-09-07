@@ -5,10 +5,10 @@ import "../fund/accounting/Accounting.sol";
 import "../fund/fees/FeeManager.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/participation/Participation.sol";
+import "../fund/policies/Manager.sol";
 import "../fund/shares/Shares.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
-import "../../../src/policies/Manager.sol";
 
 // TODO: integrate with existing infrastructure (version, governance, etc.)
 /// @notice Creates fund components and links them together
@@ -18,7 +18,7 @@ contract FundFactory {
     AccountingFactory public accountingFactory;
     FeeManagerFactory public feeManagerFactory;
     ParticipationFactory public participationFactory;
-    // PolicyManagerFactory public policyManagerFactory;
+    PolicyManagerFactory public policyManagerFactory;
     SharesFactory public sharesFactory;
     TradingFactory public tradingFactory;
     VaultFactory public vaultFactory;
@@ -79,21 +79,18 @@ contract FundFactory {
         address participation = participationFactory.createInstance(hub);
         temporarySettings.accountingControllers = [participation];
         address accounting = accountingFactory.createInstance(hub, temporarySettings.accountingControllers, temporarySettings.defaultAssets);
-        // address policyManager = address(0);
-        // address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
+        address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
         temporarySettings.sharesControllers = [participation, feeManager];
         address shares = sharesFactory.createInstance(hub, temporarySettings.sharesControllers);
         address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
-        // temporarySettings.vaultControllers = [participation, trading];
-        address vault = vaultFactory.createInstance(hub, temporarySettings.defaultAssets);
-        // address priceSource = defaultPriceSource;
-        // address canonicalRegistrar = defaultPriceSource;
+        temporarySettings.vaultControllers = [participation, trading];
+        address vault = vaultFactory.createInstance(hub, temporarySettings.vaultControllers);
         // address version = address(0);
         hub.setComponents(
             accounting,
             feeManager,
             participation,
-            address(0),
+            policyManager,
             shares,
             trading,
             vault,
@@ -101,9 +98,9 @@ contract FundFactory {
             temporarySettings.priceSource,
             address(0)
         );
+        delete temporarySettings;
         funds.push(hub);
         managersToFunds[msg.sender] = hub;
-        delete temporarySettings;
     }
 
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }
