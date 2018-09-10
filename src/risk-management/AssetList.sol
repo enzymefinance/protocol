@@ -3,6 +3,7 @@ pragma solidity ^0.4.21;
 import "../dependencies/Owned.sol";
 
 // Generic AssetList
+// should this inherit from Policy?
 contract AssetList is Owned {
 
     mapping(address => bool)  private list;
@@ -18,28 +19,37 @@ contract AssetList is Owned {
 
     // TODO modifier "isRemovable"
 
-    // Constructor, set max size of listed
+    // Constructor, set max size of list
     // cap = 0 => unlimited
     function AssetList(uint _cap) public {
         require(_cap != 1);
         cap = _cap;
     }
-    
+
     function register(address _asset) external pre_cond(isOwner()) {
+      //list may not be frozen
       require(!isFrozen());
+      //asset may not already exist in list
       require(!exists(_asset));
-      require(cap != 0 && mirror.length < cap);
-      
+      //
+      //require(cap != 0 && mirror.length < cap);
+      require(cap == 0 || mirror.length < cap);
       list[_asset] = true;
       mirror.push(_asset);
+      //freeze if the non-zero cap is reached
+      if (cap != 0 && mirror.length == cap) {
+        frozen = true;
+      }
     }
-    
+
     function exists(address _asset) public view returns (bool) {
       return list[_asset];
     }
 
     //Permanently freezes the list members
     function freeze() external pre_cond(isOwner()) {
+        require(mirror.length > 0);
+        require(mirror.length < cap);
         if (!frozen) {
           frozen = true;
         }
