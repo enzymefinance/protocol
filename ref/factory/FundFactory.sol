@@ -44,7 +44,8 @@ contract FundFactory {
         ParticipationFactory _participationFactory,
         SharesFactory _sharesFactory,
         TradingFactory _tradingFactory,
-        VaultFactory _vaultFactory
+        VaultFactory _vaultFactory,
+        PolicyManagerFactory _policyManagerFactory
     ) {
         accountingFactory = _accountingFactory;
         feeManagerFactory = _feeManagerFactory;
@@ -52,6 +53,7 @@ contract FundFactory {
         sharesFactory = _sharesFactory;
         tradingFactory = _tradingFactory;
         vaultFactory = _vaultFactory;
+        policyManagerFactory = _policyManagerFactory;
     }
 
     function setupFund(
@@ -79,12 +81,12 @@ contract FundFactory {
         address participation = participationFactory.createInstance(hub);
         temporarySettings.accountingControllers = [participation];
         address accounting = accountingFactory.createInstance(hub, temporarySettings.accountingControllers, temporarySettings.defaultAssets);
-        address policyManager = policyManagerFactory.createInstance(hub, mockAddresses);
         temporarySettings.sharesControllers = [participation, feeManager];
         address shares = sharesFactory.createInstance(hub, temporarySettings.sharesControllers);
         address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         temporarySettings.vaultControllers = [participation, trading];
         address vault = vaultFactory.createInstance(hub, temporarySettings.vaultControllers);
+        address policyManager = policyManagerFactory.createInstance(hub);
         // address version = address(0);
         hub.setComponents(
             accounting,

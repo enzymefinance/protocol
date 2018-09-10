@@ -75,8 +75,9 @@ contract PolicyManager is Spoke {
     }
 }
 
-contract PolicyManagerInterface is FactoryInterface {
+contract PolicyManagerFactory is FactoryInterface {
     function createInstance(address _hub) public returns (address) {
         return new PolicyManager(_hub);
     }
 }
+
