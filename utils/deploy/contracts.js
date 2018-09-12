@@ -63,13 +63,13 @@ async function deployEnvironment(environment) {
     const commonEnvironment = "kovan";
 
     // set up governance and tokens
-    deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
-    // deployed.Governance = await retrieveContract("system/Governance", previous.Governance);
+    // deployed.Governance = await deployContract("system/Governance", opts, [[deploymentAddress], 1, yearInSeconds]);
+    deployed.Governance = await retrieveContract("system/Governance", previous.Governance);
     const mlnAddr = tokenInfo[commonEnvironment]["MLN-T"].address;
     const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    // deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
+    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
 //     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed);
 //     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
 //     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter);
@@ -77,28 +77,28 @@ async function deployEnvironment(environment) {
 //     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange);
 //     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter);
 
-    // set up pricefeeds
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-      mlnAddr,
-      ethTokenAddress,
-      toBytes32("Eth token"),
-      toBytes8("WETH-T"),
-      18,
-      "ethereum.org",
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-      [
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity
-      ], [
-        config.protocol.staking.minimumAmount,
-        config.protocol.staking.numOperators,
-        config.protocol.staking.unstakeDelay
-      ],
-      pricefeedUpdaterAddress
-    ], () => {}, true);
+    // // set up pricefeeds
+    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
+    //   mlnAddr,
+    //   ethTokenAddress,
+    //   toBytes32("Eth token"),
+    //   toBytes8("WETH-T"),
+    //   18,
+    //   "ethereum.org",
+    //   mockBytes,
+    //   [mockAddress, mockAddress],
+    //   [],
+    //   [],
+    //   [
+    //     config.protocol.pricefeed.interval,
+    //     config.protocol.pricefeed.validity
+    //   ], [
+    //     config.protocol.staking.minimumAmount,
+    //     config.protocol.staking.numOperators,
+    //     config.protocol.staking.unstakeDelay
+    //   ],
+    //   pricefeedUpdaterAddress
+    // ], () => {}, true);
 
     // below not needed right now (TODO: remove in cleanup if still here)
     // deployed.StakingPriceFeed = await createStakingFeed(opts, deployed.CanonicalPriceFeed);
@@ -166,9 +166,9 @@ async function deployEnvironment(environment) {
 
     let complianceAddress;
     if (environment === "kovan") {
-      complianceAddress = deployed.OnlyManagerCompetition.address;
+      complianceAddress = deployed.OnlyManagerCompetition.options.address;
     } else if (environment === "kovanCompetition") {
-      complianceAddress = deployed.CompetitionCompliance.address;
+      complianceAddress = deployed.CompetitionCompliance.options.address;
     }
 
     // // Fund ranking deployment
