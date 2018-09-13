@@ -18,6 +18,10 @@ const cancelOrderSignature = abiEncode("cancelOrder", [
   "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
 ]);
 
+const swapTokensSignature = abiEncode("swapTokens", [
+  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+]);
+
 function toBytes32(input) {
   return toBytesN(input, 32);
 }
@@ -36,10 +40,10 @@ function toBytesN(input, numBytes) {
 }
 
 export {
-  abiEncode,
   makeOrderSignature,
   takeOrderSignature,
   cancelOrderSignature,
+  swapTokensSignature,
   toBytes32,
   toBytes8
 };

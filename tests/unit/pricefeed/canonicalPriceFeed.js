@@ -20,7 +20,7 @@ const mockEthAddress = newMockAddress();
 const mockEurAddress = newMockAddress();
 const mockIpfs = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
 const mockBytes32 = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
-const mockBytes4 = "0x12345678"
+const mockBytes4 = "0x12345678";
 const mockBreakIn = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
 const mockBreakOut = "0xc6Eb2A235627Ac97EAbc6452F98Ce296a1EF3984";
 const eurDecimals = 12; // For different decimal test
@@ -104,7 +104,8 @@ test.before(async () => {
 test.beforeEach(async t => {
   t.context.mlnToken = await deployContract(
     "assets/PreminedAsset",
-    {from: accounts[0], gas: config.gas}
+    {from: accounts[0], gas: config.gas},
+    [18]
   );
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
