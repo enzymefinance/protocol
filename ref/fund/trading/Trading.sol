@@ -52,6 +52,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bool[] _takesCustody
     ) Spoke(_hub) {
         require(_exchanges.length == _adapters.length);
+        require(_exchanges.length == _takesCustody.length);
         for (uint i = 0; i < _exchanges.length; i++) {
             addExchange(_exchanges[i], _adapters[i], _takesCustody[i]);
         }
@@ -59,7 +60,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     // TODO: who can add exchanges? should they just be set at creation?
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
-        require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeIsRegistered(_exchange));
+        // require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange]);
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
@@ -79,7 +80,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         // isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
     
     {
-        require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
+        // require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
         address adapter = exchanges[exchangeIndex].adapter;
         address exchange = exchanges[exchangeIndex].exchange;
         require(adapter.delegatecall(

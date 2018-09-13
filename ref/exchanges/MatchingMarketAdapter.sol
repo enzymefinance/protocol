@@ -4,6 +4,8 @@ pragma solidity ^0.4.21;
 import "./MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
+import "../fund/vault/Vault.sol";
+import "../fund/accounting/Accounting.sol";
 import "../../src/dependencies/math.sol";
 
 // TODO: re-enable all checks when routing sorted, and adding assets to lists
@@ -41,9 +43,9 @@ contract MatchingMarketAdapter is DSMath {
         bytes32 r,
         bytes32 s
     ) {
-        // require(Fund(address(this)).owner() == msg.sender);
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender);
         // require(!Fund(address(this)).isShutDown());
-        Trading trading = Trading(address(this));
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
@@ -51,25 +53,27 @@ contract MatchingMarketAdapter is DSMath {
         uint takerQuantity = orderValues[1];
 
         // require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
-        // require(makerAsset.approve(targetExchange, makerQuantity));
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(makerAsset, makerQuantity);
+        require(makerAsset.approve(targetExchange, makerQuantity));
 
-        // uint orderId = MatchingMarket(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
+        uint orderId = MatchingMarket(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
 
-        // require(orderId != 0);   // defines success in MatchingMarket
+        require(orderId != 0);   // defines success in MatchingMarket
         // require(
-        //     Fund(address(this)).isInAssetList(takerAsset) ||
+        //     Accounting(hub.accounting()).isInAssetList(takerAsset)
         //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         // );
 
-        // trading.addOpenMakeOrder(targetExchange, makerAsset, orderId);
-        // trading.addAssetToOwnedAssets(takerAsset);
-        // trading.orderUpdateHook(
-        //     targetExchange,
-        //     bytes32(orderId),
-        //     Trading.UpdateType.make,
-        //     [address(makerAsset), address(takerAsset)],
-        //     [makerQuantity, takerQuantity, uint(0)]
-        // );
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
+        Trading(address(this)).orderUpdateHook(
+            targetExchange,
+            bytes32(orderId),
+            Trading.UpdateType.make,
+            [address(makerAsset), address(takerAsset)],
+            [makerQuantity, takerQuantity, uint(0)]
+        );
     }
 
     // Responsibilities of takeOrder are:

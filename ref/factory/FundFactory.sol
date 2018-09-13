@@ -77,13 +77,13 @@ contract FundFactory {
         temporarySettings.takesCustody = _takesCustody;
         temporarySettings.priceSource = _priceSource;
         Hub hub = new Hub(msg.sender);
+        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         address feeManager = feeManagerFactory.createInstance(hub);
         address participation = participationFactory.createInstance(hub);
-        temporarySettings.accountingControllers = [participation];
+        temporarySettings.accountingControllers = [participation, trading];
         address accounting = accountingFactory.createInstance(hub, temporarySettings.accountingControllers, temporarySettings.defaultAssets);
         temporarySettings.sharesControllers = [participation, feeManager];
         address shares = sharesFactory.createInstance(hub, temporarySettings.sharesControllers);
-        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         temporarySettings.vaultControllers = [participation, trading];
         address vault = vaultFactory.createInstance(hub, temporarySettings.vaultControllers);
         address policyManager = policyManagerFactory.createInstance(hub);
