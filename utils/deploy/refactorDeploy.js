@@ -3,6 +3,7 @@ import * as path from "path";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
+import {makeOrderSignature, takeOrderSignature, cancelOrderSignature} from "../lib/data";
 import web3 from "../lib/web3";
 
 const BigNumber = require("bignumber.js");
@@ -12,7 +13,12 @@ const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 
-async function tempDeploy(contractPath, options, constructorArgs) {
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+async function tempDeploy(contractPath, optsIn, constructorArgs) {
+  const options = clone(optsIn);
   const outPath = path.join(__dirname, '..', '..', 'out');
   const abiPath = path.resolve(outPath, contractPath);
   const binPath = path.resolve(outPath, contractPath);
@@ -43,6 +49,17 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "development") {
+    const quoteAsset = await tempDeploy("dependencies/PreminedToken", opts);
+    const secondAsset = await tempDeploy("dependencies/PreminedToken", opts);
+    const testingPriceFeed = await tempDeploy("prices/TestingPriceFeed", opts, [
+      quoteAsset.options.address, 18
+    ]);
+    const matchingMarket = await tempDeploy("exchanges/MatchingMarket", opts, [99999999999]);
+    // const newOpts = Object.assign({}, opts);
+    const ccreceipt = await matchingMarket.methods.addTokenPairWhitelist(
+      quoteAsset.options.address, secondAsset.options.address
+    ).send(clone(opts));
+    const matchingMarketAdapter = await tempDeploy("exchanges/MatchingMarketAdapter", opts);
     const accountingFactory = await tempDeploy("factory/AccountingFactory", opts);
     const feeManagerFactory = await tempDeploy("factory/FeeManagerFactory", opts);
     const participationFactory = await tempDeploy("factory/ParticipationFactory", opts);
@@ -59,14 +76,8 @@ async function deployEnvironment(environment) {
       vaultFactory.options.address,
       policyManagerFactory.options.address
     ]);
-    const quoteAsset = await tempDeploy("dependencies/PreminedToken", opts);
-    console.log(quoteAsset.options.address)
-    const testingPriceFeed = await tempDeploy("prices/TestingPriceFeed", opts, [
-      quoteAsset.options.address, 18
-    ]);
-
     await fundFactory.methods.setupFund(
-      [], [], [quoteAsset.options.address], [], testingPriceFeed.options.address
+      [matchingMarket.options.address], [matchingMarketAdapter.options.address], [quoteAsset.options.address, secondAsset.options.address], [false], testingPriceFeed.options.address
     ).send(opts);
     const hubAddress = await fundFactory.methods.getFundById(0).call();
     console.log(`Hub address: ${hubAddress}`);
@@ -74,6 +85,9 @@ async function deployEnvironment(environment) {
     const sharesAddress = await hub.methods.shares().call();
     console.log(`Shares: ${sharesAddress}`);
     const shares = await tempRetrieve("fund/shares/Shares", sharesAddress);
+    const tradingAddress = await hub.methods.trading().call();
+    console.log(`Trading: ${tradingAddress}`);
+    const trading = await tempRetrieve("fund/trading/Trading", tradingAddress);
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
 
@@ -81,6 +95,7 @@ async function deployEnvironment(environment) {
     console.log(`Participation: ${participationAddress}`);
     const participation = await tempRetrieve("fund/participation/Participation", participationAddress);
 
+    // invest & redeem
     const amt = 10**18;
     await quoteAsset.methods.approve(participation.options.address, amt).send(opts);
     await participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
@@ -90,6 +105,27 @@ async function deployEnvironment(environment) {
     await participation.methods.redeem().send(opts);
     supply = await shares.methods.totalSupply().call();
     console.log(`Supply after redeem: ${supply}`);
+
+    // invest and open order
+    await quoteAsset.methods.approve(participation.options.address, amt).send(opts);
+    await participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
+    await participation.methods.executeRequest().send(opts);
+    const exchange1 = await trading.methods.exchanges(0).call();
+    console.log(`Exchange: ${exchange1.exchange}`);
+    const trade1 = {
+      sellQuantity: new BigNumber(10 ** 18),
+      buyQuantity: new BigNumber(10 ** 18),
+    };
+    await trading.methods.callOnExchange(
+      0,
+      makeOrderSignature,
+      ["0x0", "0x0", quoteAsset.options.address, secondAsset.options.address, "0x0"],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+      web3.utils.padLeft('0x0', 64),
+      0,
+      web3.utils.padLeft('0x0', 64),
+      web3.utils.padLeft('0x0', 64),
+    ).send(opts);
   }
   return deployed;
 }
