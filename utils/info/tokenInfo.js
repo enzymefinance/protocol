@@ -136,7 +136,7 @@ module.exports = {
     },
     'ZRX-T': {
       address: '0x0A3610a0E87cEDDEE6b81b62b462c7a0fD450E2a',
-      name: 'ZRX Protocol Token',
+      name: 'ZeroX Protocol Token',
       decimals: 18,
       url: 'https://0xproject.com/',
       ipfsHash: '',
@@ -328,7 +328,7 @@ module.exports = {
     },
     'ZRX': {
       address: '0xe41d2489571d322189246dafa5ebde1f4699f498',
-      name: '0x Token',
+      name: 'ZeroX Token',
       decimals: 18,
       url: '0xproject.com',
       ipfsHash: '',
