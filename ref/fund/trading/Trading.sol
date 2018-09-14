@@ -4,6 +4,7 @@ pragma solidity ^0.4.21;
 import "./Trading.i.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
+import "../policies/Manager.sol";
 import "../../dependencies/ERC20.sol";
 import "../../factory/Factory.i.sol";
 import "../../../src/dependencies/math.sol";
@@ -77,15 +78,15 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bytes32 s
     )
         external
-        // isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
-    
     {
+        PolicyManager(hub.policyManager()).preValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         // require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
         address adapter = exchanges[exchangeIndex].adapter;
         address exchange = exchanges[exchangeIndex].exchange;
         require(adapter.delegatecall(
             method, exchange, orderAddresses, orderValues, identifier, v, r, s
         ));
+        PolicyManager(hub.policyManager()).postValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
     function addOpenMakeOrder(

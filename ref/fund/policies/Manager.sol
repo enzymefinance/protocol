@@ -4,6 +4,7 @@ import "./Policy.sol";
 import "../hub/Spoke.sol";
 import "../../factory/Factory.i.sol";
 
+// TODO: permissioning
 contract PolicyManager is Spoke {
     struct Entry {
         Policy[] pre;
