@@ -9,12 +9,17 @@ import "../Fund.sol";
 contract MaxConcentration is DSMath, Policy {
     uint256 private maxConcentration;
 
-    // _maxConcentration: 100000000000000000 equals to 10% of Fund Value
+    enum Conditionality { pre, post }
+
+
+    // _maxConcentration: 10 equals to 10% of Fund Value
     function MaxConcentration(uint256 _maxConcentration) public {
-        maxConcentration = _maxConcentration;
+        require(_maxConcentration <= 100);
+        require(_maxConcentration > 0);
+        maxConcentration = _maxConcentration ** uint256(17);
     }
 
-    function getMaxConcentration() public view returns (uint256) {
+    function getMaxConcentration() external view returns (uint256) {
         return maxConcentration;
     }
 
@@ -22,7 +27,7 @@ contract MaxConcentration is DSMath, Policy {
         var (pricefeed, ,) = Fund(msg.sender).getModules();
         return CanonicalPriceFeed(pricefeed).getQuoteAsset();
     }
-    
+
     // When run as a post-condition, must use "<= maxPositions"
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
         // Max concentration is only checked for assets different from the quote token (WETH)
@@ -33,7 +38,10 @@ contract MaxConcentration is DSMath, Policy {
         return (Fund(msg.sender).calcAssetGAV(addresses[3]) * (10 ** uint(18))) / Fund(msg.sender).calcGav() <= maxConcentration;
     }
 
+    //asset concentration is a post-condition check
     function position() external view returns (uint) {
-        return 1;
+
+        //POST-condition
+        return uint(Conditionality.post);
     }
 }

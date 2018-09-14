@@ -1,7 +1,7 @@
 
 import test from "ava";
-
 import web3 from "../../../utils/lib/web3";
+import Api from '@parity/api';
 import { deployContract } from "../../../utils/lib/contracts";
 
 let opts;
@@ -21,7 +21,7 @@ test.before(async () => {
 let tests = [
     {
         "name": "Asset gav is higher than the concentration limit %",
-        "concentration": 100000000000000000,
+        "concentration": 10,
         "asset": mockOne,
         "asset_gav": 100010000000000000,
         "total_gav": 1000000000000000000,
@@ -29,7 +29,7 @@ let tests = [
     },
     {
         "name": "Asset gav is equal to the concentration limit %",
-        "concentration": 100000000000000000,
+        "concentration": 10,
         "asset": mockOne,
         "asset_gav": 100000000000000000,
         "total_gav": 1000000000000000000,
@@ -37,7 +37,7 @@ let tests = [
     },
     {
         "name": "Asset gav is lower to the concentration limit %",
-        "concentration": 100000000000000000,
+        "concentration": 10,
         "asset": mockOne,
         "asset_gav": 90000000000000000,
         "total_gav": 1000000000000000000,
@@ -45,7 +45,8 @@ let tests = [
     },
     {
         "name": "Allow gav higher than concentration limit % if it is the quote asset",
-        "concentration": 100000000000000000,
+        //"concentration": 100000000000000000,
+        "concentration": 10,
         "asset": mockTwo,
         "asset_gav": 1000000000000000000,
         "total_gav": 1000000000000000000,
@@ -53,13 +54,14 @@ let tests = [
     },
 ]
 
-let testPolicy = '0xd7fb3e27'; // testPolicy(address[5],uint256[3])
+//let testPolicy1 = '0xd7fb3e27'; // testPolicy(address[5],uint256[3])
+let testPolicy = Api.util.sha3('testPolicy(address[5],uint256[3])').substring(0, 10);
 
 for (const indx in tests) {
     const {concentration, asset, asset_gav, total_gav, result, name} = tests[indx];
 
     test(name, async t => {
-        const maxConcentration = await deployContract('risk-management/MaxConcentration', opts, [concentration])
+        const maxConcentration = await deployContract('risk-management/MaxConcentration', opts, [concentration]);
         let mockFund = await deployContract('policies/mocks/MockFund', opts);
 
         // Set a mock pricefeed
@@ -81,3 +83,34 @@ for (const indx in tests) {
         }
     });
 }
+
+test('Testing getMaxConcentraton...', async t => {
+
+    var concentration = 10;
+
+    const maxConcentrationPolicy = await deployContract('risk-management/MaxConcentration', opts, [concentration])
+
+    //Example: 10% => 0.10 => 100,000,000,000,000,000 => 17 0's when working with 18 decimals => 10^17
+    t.is(Number(await maxConcentrationPolicy.methods.getMaxConcentration().call()), concentration**17);
+
+});
+
+test('Testing maxConcentraton construction; > 100% ...', async t => {
+
+    var concentration = 101;
+
+    //expect policy construction to fail
+    await t.throws(deployContract('risk-management/MaxConcentration', opts, [concentration]));
+
+});
+
+test('Testing maxConcentraton construction; < 0% ...', async t => {
+
+    var concentration = -10;
+
+    //expect policy construction to fail
+    await t.throws(deployContract('risk-management/MaxConcentration', opts, [concentration]));
+
+});
+
+//getQuoteToken() covered by rule() execution

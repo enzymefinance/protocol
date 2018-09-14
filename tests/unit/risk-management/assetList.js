@@ -9,11 +9,16 @@ import { deployContract } from "../../../utils/lib/contracts";
 let opts;
 
 const mockOne = "0x1111111111111111111111111111111111111111";
-const mockTwo = "0x2222222222222222222222222222222222222222"; 
-const mockThree = "0x3333333333333333333333333333333333333333"; 
+const mockTwo = "0x2222222222222222222222222222222222222222";
+const mockThree = "0x3333333333333333333333333333333333333333";
+const mockFour =  "0x4444444444444444444444444444444444444444";
 
-async function createAssetList(maxItems=10) {
-    return deployContract('risk-management/AssetList', opts, [maxItems]);
+var assetArray = [mockOne, mockTwo, mockThree];
+
+var assetArrayDup = [mockOne, mockTwo, mockTwo, mockThree];
+
+async function createAssetList(_assetArray) {
+    return deployContract('risk-management/AssetList', opts, [_assetArray]);
 }
 
 test.before(async () => {
@@ -22,29 +27,53 @@ test.before(async () => {
     opts = {from: deployer, gas: 8000000}
 });
 
-test('Insert', async t => {
+test('Testing List Creation...', async t => {
 
-    let list = await createAssetList(2);
-    await t.notThrows(list.methods.register(mockOne).send());
-    t.deepEqual(await list.methods.getList().call(), [mockOne])
+    let list = await createAssetList(assetArray);
 
-    t.true(await list.methods.exists(mockOne).call())
-    t.false(await list.methods.exists(mockTwo).call())
+    t.deepEqual(await list.methods.getMembers().call(), [mockOne, mockTwo, mockThree]);
 
-    // Fails to register again mockOne
-    await t.throws(list.methods.register(mockOne).send());
-
-    await t.notThrows(list.methods.register(mockTwo).send());
-    t.deepEqual(await list.methods.getList().call(), [mockOne, mockTwo]);
-
-    // Fails to register more than 3 assets
-    await t.throws(list.methods.register(mockThree).send());
 })
 
-test('Freeze', async t => {
-    let list = await createAssetList(2);
-    await t.notThrows(list.methods.register(mockOne).send());
+test('Testing List Creation with duplicate entry...', async t => {
 
-    await list.methods.freeze().send();
-    await t.throws(list.methods.register(mockTwo).send());
+    let list = await createAssetList(assetArrayDup);
+
+    t.deepEqual(await list.methods.getMembers().call(), assetArray);
+    t.notDeepEqual(await list.methods.getMembers().call(), assetArrayDup);
+    t.is(Number(await list.methods.getMemberCount().call()), assetArray.length);
+
+})
+
+test('Testing isMember()...', async t => {
+
+    let list = await createAssetList(assetArray);
+
+    //mockOne is member, should return true
+    t.true(await list.methods.isMember(mockOne).call());
+    //mockFour is not a member, should return false
+    t.false(await list.methods.isMember(mockFour).call());
+
+})
+
+test('Testing getMemberCount()...', async t => {
+
+    let list = await createAssetList(assetArray);
+
+    //should return same number of members as the len of initial asset array
+    t.is(Number(await list.methods.getMemberCount().call()), assetArray.length);
+
+})
+
+test('Testing getMembers()...', async t => {
+
+    let list = await createAssetList(assetArray);
+
+    //should be not equal to these ad hoc arrays
+    t.notDeepEqual(await list.methods.getMembers().call(), [mockOne, mockTwo, mockThree, mockFour])
+    t.notDeepEqual(await list.methods.getMembers().call(), [mockOne, mockTwo, mockFour])
+
+    //should be equal to the initialization asset array
+    t.deepEqual(await list.methods.getMembers().call(), assetArray);
+
 })
