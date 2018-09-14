@@ -333,8 +333,8 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
             var (isRecentBase, referencePriceBase, decimalBase) = getPriceInfo(ofBase);
             var (isRecentQuote, referencePriceQuote, decimalQuote) = getPriceInfo(ofQuote);
             isRecent = isRecentBase && isRecentQuote;
-            referencePrice = mul(referencePriceBase, 10 ** 18) / referencePriceQuote;
-            decimal = 18;
+            referencePrice = mul(referencePriceBase, decimalQuote) / referencePriceQuote;
+            decimal = decimalQuote;
         }
     }
 
