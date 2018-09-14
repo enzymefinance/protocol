@@ -3,7 +3,7 @@ import * as path from "path";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
-import {makeOrderSignature, takeOrderSignature, cancelOrderSignature} from "../lib/data";
+import {makeOrderSignature, takeOrderSignature, cancelOrderSignature, toBytes8, toBytes32} from "../lib/data";
 import web3 from "../lib/web3";
 
 const BigNumber = require("bignumber.js");
@@ -36,6 +36,25 @@ async function tempRetrieve(contractPath, address) {
   const abiPath = path.resolve(outPath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
   return new web3.eth.Contract(abi, address);
+}
+
+async function getFundComponents(hubAddress) {
+  const components = {};
+  components.hub = await tempRetrieve("fund/hub/Hub", hubAddress);
+  const participationAddress = await components.hub.methods.participation().call();
+  const sharesAddress = await components.hub.methods.shares().call();
+  const tradingAddress = await components.hub.methods.trading().call();
+  const policyManagerAddress = await components.hub.methods.policyManager().call();
+  components.participation = await tempRetrieve("fund/participation/Participation", participationAddress);
+  components.shares = await tempRetrieve("fund/shares/Shares", sharesAddress);
+  components.trading = await tempRetrieve("fund/trading/Trading", tradingAddress);
+  components.policyManager = await tempRetrieve("fund/policies/PolicyManager", policyManagerAddress);
+  console.log(`Hub: ${hubAddress}`);
+  console.log(`Participation: ${participationAddress}`);
+  console.log(`Trading: ${tradingAddress}`);
+  console.log(`Shares: ${sharesAddress}`);
+  console.log(`PolicyManager: ${policyManagerAddress}`);
+  return components;
 }
 
 async function deployEnvironment(environment) {
@@ -80,43 +99,33 @@ async function deployEnvironment(environment) {
       [matchingMarket.options.address], [matchingMarketAdapter.options.address], [quoteAsset.options.address, secondAsset.options.address], [false], testingPriceFeed.options.address
     ).send(opts);
     const hubAddress = await fundFactory.methods.getFundById(0).call();
-    console.log(`Hub address: ${hubAddress}`);
-    const hub = await tempRetrieve("fund/hub/Hub", hubAddress);
-    const sharesAddress = await hub.methods.shares().call();
-    console.log(`Shares: ${sharesAddress}`);
-    const shares = await tempRetrieve("fund/shares/Shares", sharesAddress);
-    const tradingAddress = await hub.methods.trading().call();
-    console.log(`Trading: ${tradingAddress}`);
-    const trading = await tempRetrieve("fund/trading/Trading", tradingAddress);
+    const fund = await getFundComponents(hubAddress);
+
+    fund.policyManager.methods.register().send(Object(opts))
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
-
-    const participationAddress = await hub.methods.participation().call();
-    console.log(`Participation: ${participationAddress}`);
-    const participation = await tempRetrieve("fund/participation/Participation", participationAddress);
-
     // invest & redeem
     const amt = 10**18;
-    await quoteAsset.methods.approve(participation.options.address, amt).send(opts);
-    await participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
-    await participation.methods.executeRequest().send(opts);
-    let supply = await shares.methods.totalSupply().call();
+    await quoteAsset.methods.approve(fund.participation.options.address, amt).send(opts);
+    await fund.participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
+    await fund.participation.methods.executeRequest().send(opts);
+    let supply = await fund.shares.methods.totalSupply().call();
     console.log(`Supply after invest: ${supply}`);
-    await participation.methods.redeem().send(opts);
-    supply = await shares.methods.totalSupply().call();
+    await fund.participation.methods.redeem().send(opts);
+    supply = await fund.shares.methods.totalSupply().call();
     console.log(`Supply after redeem: ${supply}`);
 
     // invest and open order
-    await quoteAsset.methods.approve(participation.options.address, amt).send(opts);
-    await participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
-    await participation.methods.executeRequest().send(opts);
-    const exchange1 = await trading.methods.exchanges(0).call();
+    await quoteAsset.methods.approve(fund.participation.options.address, amt).send(opts);
+    await fund.participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
+    await fund.participation.methods.executeRequest().send(opts);
+    const exchange1 = await fund.trading.methods.exchanges(0).call();
     console.log(`Exchange: ${exchange1.exchange}`);
     const trade1 = {
       sellQuantity: new BigNumber(10 ** 18),
       buyQuantity: new BigNumber(10 ** 18),
     };
-    await trading.methods.callOnExchange(
+    await fund.trading.methods.callOnExchange(
       0,
       makeOrderSignature,
       ["0x0", "0x0", quoteAsset.options.address, secondAsset.options.address, "0x0"],
@@ -125,7 +134,43 @@ async function deployEnvironment(environment) {
       0,
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
-    ).send(opts);
+    ).send(clone(opts));
+    console.log(`Amount on exchange: ${await quoteAsset.methods.balanceOf(matchingMarket.options.address).call()}`);
+    console.log(`Amount in trading module: ${await quoteAsset.methods.balanceOf(fund.trading.options.address).call()}`);
+    const orderId = 1;
+    await fund.trading.methods.callOnExchange(
+      0,
+      cancelOrderSignature,
+      ["0x0", "0x0", quoteAsset.options.address, secondAsset.options.address, "0x0"],
+      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+      toBytes32(1),
+      0,
+      toBytes32(0),
+      toBytes32(0)
+    ).send(clone(opts));
+    console.log(`Amount on exchange: ${await quoteAsset.methods.balanceOf(matchingMarket.options.address).call()}`);
+    console.log(`Amount in trading module: ${await quoteAsset.methods.balanceOf(fund.trading.options.address).call()}`);
+
+    console.log(await secondAsset.methods.balanceOf(accounts[0]).call())
+    await secondAsset.methods.approve(matchingMarket.options.address, trade1.sellQuantity).send(opts);
+    await matchingMarket.methods.make(
+      secondAsset.options.address, quoteAsset.options.address,
+      trade1.sellQuantity, trade1.buyQuantity
+    ).send(clone(opts));
+    console.log('order made by account');
+    await fund.trading.methods.callOnExchange(
+      0,
+      takeOrderSignature,
+      ["0x0", "0x0", quoteAsset.options.address, secondAsset.options.address, "0x0"],
+      [0, 0, 0, 0, 0, 0, trade1.buyQuantity, 0],
+      toBytes32(2),
+      0,
+      toBytes32(0),
+      toBytes32(0)
+    ).send(clone(opts));
+    console.log('order taken by fund');
+    console.log(`Quote asset in trading module: ${await quoteAsset.methods.balanceOf(fund.trading.options.address).call()}`);
+    console.log(`Secondary asset in trading module: ${await secondAsset.methods.balanceOf(fund.trading.options.address).call()}`);
   }
   return deployed;
 }
