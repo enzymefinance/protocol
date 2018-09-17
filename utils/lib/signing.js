@@ -10,7 +10,7 @@ async function getSignatureParameters(signer, contents) {
   sig = sig.substr(2,);
   const r = `0x${sig.substr(0, 64)}`;
   const s = `0x${sig.substr(64, 64)}`;
-  const v = parseInt(sig.substr(128, 2), 16);
+  const v = parseInt(sig.substr(128, 2), 16) + 27;
   return [r, s, v];
 }
 
