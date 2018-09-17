@@ -21,7 +21,7 @@ test.before(async () => {
 let tests = [
     {
         "name": "Asset gav is higher than the concentration limit %",
-        "concentration": 10,
+        "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 100010000000000000,
         "total_gav": 1000000000000000000,
@@ -29,7 +29,7 @@ let tests = [
     },
     {
         "name": "Asset gav is equal to the concentration limit %",
-        "concentration": 10,
+        "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 100000000000000000,
         "total_gav": 1000000000000000000,
@@ -37,7 +37,7 @@ let tests = [
     },
     {
         "name": "Asset gav is lower to the concentration limit %",
-        "concentration": 10,
+        "concentration": 100000000000000000,
         "asset": mockOne,
         "asset_gav": 90000000000000000,
         "total_gav": 1000000000000000000,
@@ -46,7 +46,7 @@ let tests = [
     {
         "name": "Allow gav higher than concentration limit % if it is the quote asset",
         //"concentration": 100000000000000000,
-        "concentration": 10,
+        "concentration": 100000000000000000,
         "asset": mockTwo,
         "asset_gav": 1000000000000000000,
         "total_gav": 1000000000000000000,
@@ -86,31 +86,20 @@ for (const indx in tests) {
 
 test('Testing getMaxConcentraton...', async t => {
 
-    var concentration = 10;
+    var concentration = 100000000000000000;
 
     const maxConcentrationPolicy = await deployContract('risk-management/MaxConcentration', opts, [concentration])
 
     //Example: 10% => 0.10 => 100,000,000,000,000,000 => 17 0's when working with 18 decimals => 10^17
-    t.is(Number(await maxConcentrationPolicy.methods.getMaxConcentration().call()), concentration**17);
+    t.is(Number(await maxConcentrationPolicy.methods.getMaxConcentration().call()), concentration);
 
 });
 
 test('Testing maxConcentraton construction; > 100% ...', async t => {
 
-    var concentration = 101;
+    var concentration = 1010000000000000000;
 
     //expect policy construction to fail
     await t.throws(deployContract('risk-management/MaxConcentration', opts, [concentration]));
 
 });
-
-test('Testing maxConcentraton construction; < 0% ...', async t => {
-
-    var concentration = -10;
-
-    //expect policy construction to fail
-    await t.throws(deployContract('risk-management/MaxConcentration', opts, [concentration]));
-
-});
-
-//getQuoteToken() covered by rule() execution

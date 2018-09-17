@@ -12,11 +12,11 @@ contract MaxConcentration is DSMath, Policy {
     enum Conditionality { pre, post }
 
 
-    // _maxConcentration: 10 equals to 10% of Fund Value
+    // _maxConcentration: 100000000000000000 equals to 10% of Fund Value
     function MaxConcentration(uint256 _maxConcentration) public {
-        require(_maxConcentration <= 100);
-        require(_maxConcentration > 0);
-        maxConcentration = _maxConcentration ** uint256(17);
+        //must be 100% or less
+        require(_maxConcentration <= 1000000000000000000);
+        maxConcentration = _maxConcentration;
     }
 
     function getMaxConcentration() external view returns (uint256) {
