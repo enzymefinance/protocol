@@ -275,9 +275,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns (bool isRecent, uint price, uint assetDecimals)
     {
-        isRecent = hasRecentPrice(ofAsset);
-        (price, ) = getPrice(ofAsset);
-        assetDecimals = getDecimals(ofAsset);
+        return getReferencePriceInfo(ofAsset, QUOTE_ASSET);
     }
 
     /**
@@ -295,47 +293,36 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns (bool isRecent, uint invertedPrice, uint assetDecimals)
     {
-        uint inputPrice;
-        // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
-
-        // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
-        uint quoteDecimals = getDecimals(QUOTE_ASSET);
-
-        return (
-            isRecent,
-            mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
-            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
-        );
+        return getReferencePriceInfo(QUOTE_ASSET, ofAsset);
     }
 
     /**
     @notice Gets reference price of an asset pair
     @dev One of the address is equal to quote asset
     @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
-    @param ofBase Address of base asset
-    @param ofQuote Address of quote asset
+    @param _baseAsset Address of base asset
+    @param _quoteAsset Address of quote asset
     @return {
         "isRecent": "Whether the price is fresh, given VALIDITY interval",
         "referencePrice": "Reference price",
-        "decimal": "Decimal places for this asset"
+        "decimals": "Decimal places for this asset"
     }
     */
-    function getReferencePriceInfo(address ofBase, address ofQuote)
+    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
         view
-        returns (bool isRecent, uint referencePrice, uint decimal)
+        returns (bool isRecent, uint referencePrice, uint decimals)
     {
-        if (getQuoteAsset() == ofQuote) {
-            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
-        } else if (getQuoteAsset() == ofBase) {
-            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
-        } else {
-            var (isRecentBase, referencePriceBase, decimalBase) = getPriceInfo(ofBase);
-            var (isRecentQuote, referencePriceQuote, decimalQuote) = getPriceInfo(ofQuote);
-            isRecent = isRecentBase && isRecentQuote;
-            referencePrice = mul(referencePriceBase, 10 ** uint(decimalQuote)) / referencePriceQuote;
-            decimal = decimalQuote;
-        }
+        uint basePrice;
+        uint quotePrice;
+        (basePrice, ) = getPrice(_baseAsset);
+        uint decimalBase = getDecimals(_baseAsset);
+        bool isRecentBase = hasRecentPrice(_baseAsset);
+        (quotePrice, ) = getPrice(_quoteAsset);
+        uint decimalQuote = getDecimals(_quoteAsset);
+        bool isRecentQuote = hasRecentPrice(_quoteAsset);
+        isRecent = isRecentBase && isRecentQuote;
+        referencePrice = mul(basePrice, 10 ** uint(decimalQuote)) / quotePrice;
+        decimals = decimalQuote;
     }
 
     /// @notice Gets price of Order
