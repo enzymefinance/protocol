@@ -96,7 +96,7 @@ contract Version is DBC, Owned, VersionInterface {
             NATIVE_ASSET,
             0,
             0,
-            COMPLIANCE,
+            ofCompliance,
             ofRiskMgmt,
             CANONICAL_PRICEFEED,
             ofExchanges,
