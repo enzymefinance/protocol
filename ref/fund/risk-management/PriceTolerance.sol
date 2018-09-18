@@ -1,24 +1,22 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/math.sol";
-import "../pricefeeds/CanonicalPriceFeed.sol";
+import "../hub/Hub.sol";
 import "../policies/Policy.sol";
-import "../Fund.sol";
-import "../exchange/adapter/MatchingMarketAdapter.sol";
+import "../../exchanges/MatchingMarketAdapter.sol";
+import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
+import "../../../src/dependencies/math.sol";
 
 contract PriceTolerance is DSMath, Policy {
-    uint256 tolerance;
+    uint tolerance;
 
-    // makeOrderSignature
-    bytes4 constant public MAKE_ORDER = 0x570bc25f;
-    // takeOrderSignature
-    bytes4 constant public TAKE_ORDER = 0xf97f8e17;
-    
+    bytes4 constant public MAKE_ORDER = 0x570bc25f; // makeOrderSignature
+    bytes4 constant public TAKE_ORDER = 0xf97f8e17; // takeOrderSignature
+
     // _tolerance: 10 equals to 10% of tolerance
     function PriceTolerance(uint256 _tolerance) public {
         tolerance = _tolerance ** uint256(17);
     }
-    
+
     function takeOasisDex(address ofExchange, bytes32 identifier, uint fillTakerQuantity) view returns (bool) {
         var (
             maxMakerQuantity,
@@ -29,7 +27,7 @@ contract PriceTolerance is DSMath, Policy {
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        var (pricefeed,,) = Fund(address(msg.sender)).modules();
+        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
         var (, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
         uint orderPrice = pricefeed.getOrderPriceInfo(
@@ -41,12 +39,12 @@ contract PriceTolerance is DSMath, Policy {
 
         return orderPrice >= sub(referencePrice, wmul(tolerance, referencePrice));
     }
-    
+
     function takeGenericOrder(address makerAsset, address takerAsset, uint[3] values) view returns (bool) {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
 
-        var (pricefeed,,) = Fund(address(msg.sender)).modules();
+        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
         var (, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
         uint orderPrice = pricefeed.getOrderPriceInfo(
@@ -66,9 +64,9 @@ contract PriceTolerance is DSMath, Policy {
             return takeOasisDex(addresses[4], identifier, values[2]);
         }
     }
-    
+
     function makeOrder(address[5] addresses, uint[3] values, bytes32 identifier) public view returns (bool) {
-        var (pricefeed, ,) = Fund(msg.sender).getModules();
+        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
 
         var (,ratio,)   = CanonicalPriceFeed(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
         uint _value     = CanonicalPriceFeed(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
