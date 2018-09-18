@@ -75,9 +75,10 @@ async function deployEnvironment(environment) {
     ]);
     const matchingMarket = await tempDeploy("exchanges/MatchingMarket", opts, [99999999999]);
     // const newOpts = Object.assign({}, opts);
-    const ccreceipt = await matchingMarket.methods.addTokenPairWhitelist(
+    await matchingMarket.methods.addTokenPairWhitelist(
       quoteAsset.options.address, secondAsset.options.address
     ).send(clone(opts));
+    const priceTolerance = await tempDeploy('fund/risk-management/PriceTolerance', opts, [10])
     const matchingMarketAdapter = await tempDeploy("exchanges/MatchingMarketAdapter", opts);
     const accountingFactory = await tempDeploy("factory/AccountingFactory", opts);
     const feeManagerFactory = await tempDeploy("factory/FeeManagerFactory", opts);
@@ -101,7 +102,8 @@ async function deployEnvironment(environment) {
     const hubAddress = await fundFactory.methods.getFundById(0).call();
     const fund = await getFundComponents(hubAddress);
 
-    fund.policyManager.methods.register().send(Object(opts))
+    fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send(Object(opts))
+    fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send(Object(opts))
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
     // invest & redeem
