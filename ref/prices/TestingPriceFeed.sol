@@ -93,5 +93,30 @@ contract TestingPriceFeed is DSMath {
             setDecimals(_assets[i], _decimals[i]);
         }
     }
+
+    function getReferencePriceInfo(address ofBase, address ofQuote)
+        view
+        returns (bool isRecent, uint referencePrice, uint decimal)
+    {
+        if (QUOTE_ASSET == ofQuote) {
+            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
+        } else if (QUOTE_ASSET == ofBase) {
+            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
+        } else {
+            revert();
+        }
+    }
+
+    function getOrderPriceInfo(
+        address sellAsset,
+        address buyAsset,
+        uint sellQuantity,
+        uint buyQuantity
+    )
+        view
+        returns (uint orderPrice)
+    {
+        return mul(buyQuantity, 10 ** assetsToDecimals[sellAsset]) / sellQuantity;
+    }
 }
 
