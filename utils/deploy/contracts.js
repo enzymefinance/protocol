@@ -168,9 +168,9 @@ async function deployEnvironment(environment) {
 
     let complianceAddress;
     if (environment === "kovan") {
-      complianceAddress = deployed.OnlyManagerCompetition.address;
+      complianceAddress = deployed.OnlyManagerCompetition.options.address;
     } else if (environment === "kovanCompetition") {
-      complianceAddress = deployed.CompetitionCompliance.address;
+      complianceAddress = deployed.CompetitionCompliance.options.address;
     }
 
     // // Fund ranking deployment
@@ -178,23 +178,23 @@ async function deployEnvironment(environment) {
     deployed.FundRanking = await retrieveContract("FundRanking", previous.FundRanking);
 
     // Deploy Version
-    // deployed.Version = await deployContract(
-    //   "version/Version",
-    //   opts,
-    //   [
-    //     pkgInfo.version, deployed.Governance.options.address, mlnAddr,
-    //     ethTokenAddress, deployed.CanonicalPriceFeed.options.address, complianceAddress
-    //   ],
-    //   () => {}, true
-    // );
-    deployed.Version = await retrieveContract("version/Version", previous.Version);
+    deployed.Version = await deployContract(
+      "version/Version",
+      opts,
+      [
+        pkgInfo.version, deployed.Governance.options.address, mlnAddr,
+        ethTokenAddress, deployed.CanonicalPriceFeed.options.address, deployed.NoCompliance.options.address
+      ],
+      () => {}, true
+    );
+    // deployed.Version = await retrieveContract("version/Version", previous.Version);
 
     // const blockchainTime = await getChainTime();
     // deployed.Competition = await deployContract(
     //   "competitions/Competition",
     //   opts,
     //   [
-    //     mlnAddr, deployed.Version.address, deploymentAddress,
+    //     mlnAddr, deployed.Version.options.address, deploymentAddress,
     //     blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
     //   ]
     // );
@@ -209,7 +209,7 @@ async function deployEnvironment(environment) {
     //     "competitions/TestCompetition",
     //     opts,
     //     [
-    //       mlnAddr, deployed.Version.address, deploymentAddress,
+    //       mlnAddr, deployed.Version.options.address, deploymentAddress,
     //       blockchainTime, blockchainTime + 8640000, 38 * 10 ** 18, 15 * 10 ** 18, 1000
     //     ]
     //   );
@@ -219,46 +219,55 @@ async function deployEnvironment(environment) {
     // );
 
     // add Version to Governance tracking
-    // await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
-    // console.log('Registered in governance');
+    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
+    console.log('Registered in governance');
 
     // whitelist exchanges
-    await deployed.CanonicalPriceFeed.methods.registerExchange(
-      deployed.MatchingMarket.options.address,
-      deployed.MatchingMarketAdapter.options.address,
-      true,
-      [
-        makeOrderSignature,
-        takeOrderSignature,
-        cancelOrderSignature
-      ]
-    ).send({from: pricefeedUpdaterAddress, gas: 6000000});
-    console.log('Registered MatchingMarket');
+    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.MatchingMarket.options.address)) {
+      await deployed.CanonicalPriceFeed.methods.registerExchange(
+        deployed.MatchingMarket.options.address,
+        deployed.MatchingMarketAdapter.options.address,
+        true,
+        [
+          makeOrderSignature,
+          takeOrderSignature,
+          cancelOrderSignature
+        ]
+      ).send({from: pricefeedUpdaterAddress, gas: 6000000});
+      console.log('Registered MatchingMarket');
+    }
 
-    await deployed.CanonicalPriceFeed.methods.registerExchange(
-      deployed.ZeroExExchange.options.address,
-      deployed.ZeroExV1Adapter.options.address,
-      false,
-      [ takeOrderSignature ]
-    ).send(
-      {from: pricefeedUpdaterAddress, gas: 6000000}
-    );
-    console.log('Registered ZeroEx');
+    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.ZeroExExchange.options.address)) {
+      await deployed.CanonicalPriceFeed.methods.registerExchange(
+        deployed.ZeroExExchange.options.address,
+        deployed.ZeroExV1Adapter.options.address,
+        false,
+        [ takeOrderSignature ]
+      ).send(
+        {from: pricefeedUpdaterAddress, gas: 6000000}
+      );
+      console.log('Registered ZeroEx');
+    }
 
-    await deployed.CanonicalPriceFeed.methods.registerExchange(
-      deployed.KyberNetworkProxy.options.address,
-      deployed.KyberAdapter.options.address,
-      false,
-      [ swapTokensSignature ]
-    ).send(
-      {from: pricefeedUpdaterAddress, gas: 6000000}
-    );
-    console.log('Registered Kyber');
+    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.KyberNetworkProxy.options.address)) {
+      await deployed.CanonicalPriceFeed.methods.registerExchange(
+        deployed.KyberNetworkProxy.options.address,
+        deployed.KyberAdapter.options.address,
+        false,
+        [ swapTokensSignature ]
+      ).send(
+        {from: pricefeedUpdaterAddress, gas: 6000000}
+      );
+      console.log('Registered Kyber');
+    }
 
     // register assets
     for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
-      console.log(`Registering ${assetSymbol}`);
       const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
+      if(await deployed.CanonicalPriceFeed.methods.assetIsRegistered(tokenEntry.address).call()) {
+        continue;
+      }
+      console.log(`Registering ${assetSymbol}`);
       await deployed.CanonicalPriceFeed.methods.registerAsset(
         tokenEntry.address,
         web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
@@ -394,8 +403,8 @@ async function deployEnvironment(environment) {
       "version/Version",
       {from: deployer, gas: 6900000, gasPrice: 4000000000},
       [
-        pkgInfo.version, deployed.Governance.address, mlnAddr, ethTokenAddress,
-        deployed.CanonicalPriceFeed.address, deployed.CompetitionCompliance.address
+        pkgInfo.version, deployed.Governance.options.address, mlnAddr, ethTokenAddress,
+        deployed.CanonicalPriceFeed.options.address, deployed.CompetitionCompliance.options.address
       ], () => {}, true
     );
     // deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
@@ -405,7 +414,7 @@ async function deployEnvironment(environment) {
     // add Version to Governance tracking
     // NB: be sure that relevant authority account is unlocked
     // console.log('Adding version to Governance tracking');
-    // await governanceAction({from: authority}, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.address]);
+    // await governanceAction({from: authority}, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
     // NB: this is not needed when using third-party exchanges
     // // whitelist exchanges
     // // TODO: make sure that authority account is unlocked for this section
@@ -446,7 +455,7 @@ async function deployEnvironment(environment) {
     //   opts,
     //   [
     //     "0x12459c951127e0c374ff9105dda097662a027093",
-    //     deployed.ZeroExV1Adapter.address,
+    //     deployed.ZeroExV1Adapter.options.address,
     //     false,
     //     [
     //       takeOrderSignature,
@@ -505,13 +514,13 @@ async function deployEnvironment(environment) {
       "competitions/Competition",
       opts,
       [
-        mlnAddr, deployed.Version.address, config.protocol.competition.custodian,
+        mlnAddr, deployed.Version.options.address, config.protocol.competition.custodian,
         config.protocol.competition.startTime, config.protocol.competition.endTime,
         config.protocol.competition.mlnPerEth, config.protocol.competition.totalMaxBuyin,
         config.protocol.competition.maxRegistrants
       ]
     );
-    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.address]);
+    await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(opts, [deployed.Competition.options.address]);
     // then need to whitelist participants
   } else if (environment === "development") {
     [opts.from] = accounts;
