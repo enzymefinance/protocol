@@ -4,11 +4,10 @@ pragma solidity ^0.4.21;
 import "./Vault.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/ERC20.sol";
-import "../../dependencies/Controlled.sol";
 import "../../factory/Factory.i.sol";
 
 /// @notice Dumb custody component
-contract Vault is Controlled, Spoke, VaultInterface {
+contract Vault is Spoke, VaultInterface {
 
     bool public locked;
 
@@ -17,28 +16,29 @@ contract Vault is Controlled, Spoke, VaultInterface {
         _;
     }
 
-    constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {}
+    constructor(address _hub) Spoke(_hub) {}
 
-    function lockdown() onlyController {
+    function lockdown() auth {
         locked = true;
     }
 
-    function unlock() onlyController {
+    function unlock() auth {
         locked = false;
     }
 
-    function deposit(address token, uint amount) {
+    // TODO: evaluate whether we need this function, or can just deposit as normal
+    function deposit(address token, uint amount) auth {
         ERC20(token).transferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(address token, uint amount) onlyController onlyUnlocked {
+    function withdraw(address token, uint amount) onlyUnlocked auth {
         ERC20(token).transfer(msg.sender, amount);
     }
 }
 
 contract VaultFactory is FactoryInterface {
-    function createInstance(address _hub, address[] _controllers) public returns (address) {
-        return new Vault(_hub, _controllers);
+    function createInstance(address _hub) public returns (address) {
+        return new Vault(_hub);
     }
 }
 

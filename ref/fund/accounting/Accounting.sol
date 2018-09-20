@@ -7,14 +7,13 @@ import "../fees/FeeManager.sol";
 import "../shares/Shares.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
-import "../../dependencies/Controlled.sol";
 import "../../factory/Factory.i.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
 // NB: many functions simplified for now
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down
-contract Accounting is DSMath, Controlled, Spoke {
+contract Accounting is DSMath, Spoke {
 
     struct Calculations {
         uint gav;
@@ -29,9 +28,8 @@ contract Accounting is DSMath, Controlled, Spoke {
     address public QUOTE_ASSET;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address[] _controllers, address[] _defaultAssets)
+    constructor(address _hub, address[] _defaultAssets)
         Spoke(_hub)
-        Controlled(_controllers)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
             _addAssetToOwnedAssets(_defaultAssets[i]);
@@ -185,20 +183,23 @@ contract Accounting is DSMath, Controlled, Spoke {
             // (i.e. it is always the case when `assetHoldings > 0` is true)
             // || Trading(hub.trading()).isInOpenMakeOrder(ofAsset)
             if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
-                addAssetToOwnedAssets(ofAsset);
+                _addAssetToOwnedAssets(ofAsset);
             } else {
-                removeFromOwnedAssets(ofAsset);
+                _removeFromOwnedAssets(ofAsset);
             }
         }
     }
 
-    function addAssetToOwnedAssets(address _asset) public {
-        require(isController(msg.sender) || msg.sender == address(this));
+    function addAssetToOwnedAssets(address _asset) public auth {
         _addAssetToOwnedAssets(_asset);
     }
 
+    function removeFromOwnedAssets(address _asset) public auth {
+        _removeFromOwnedAssets(_asset);
+    }
+
     // needed for constructor to be able to call
-    // TODO: consider redesign of this approach
+    // TODO: consider redesign of this approach; does it work now that we've introduced auth?
     function _addAssetToOwnedAssets(address _asset) internal {
         if (!isInAssetList[_asset]) {
             isInAssetList[_asset] = true;
@@ -206,9 +207,8 @@ contract Accounting is DSMath, Controlled, Spoke {
         }
     }
 
-    // TODO: ownedAssets needs upper limit to length due to iteration here and elsewhere
-    function removeFromOwnedAssets(address _asset) public {
-        require(isController(msg.sender) || msg.sender == address(this));
+    // TODO: ownedAssets length needs upper limit due to iteration here and elsewhere
+    function _removeFromOwnedAssets(address _asset) internal {
         if (isInAssetList[_asset]) {
             isInAssetList[_asset] = false;
             for (uint i; i < ownedAssets.length; i++) {
@@ -223,8 +223,8 @@ contract Accounting is DSMath, Controlled, Spoke {
 }
 
 contract AccountingFactory is FactoryInterface {
-    function createInstance(address _hub, address[] _controllers, address[] _defaultAssets) public returns (address) {
-        return new Accounting(_hub, _controllers, _defaultAssets);
+    function createInstance(address _hub, address[] _defaultAssets) public returns (address) {
+        return new Accounting(_hub, _defaultAssets);
     }
 }
 

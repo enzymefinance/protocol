@@ -1,14 +1,16 @@
 pragma solidity ^0.4.21;
 
 
+import "../../dependencies/guard.sol";
+
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
-contract Hub {
+contract Hub is DSGuard {
 
+    // TODO: ACL may be better someplace else; evaluate this
     // TODO: make this more generic, and make fund "head" contract a derivative of this
     // TODO: ensure component is not overloaded far beyond routing
     // TODO: use the contract types instead of generic address (if possible to avoid circular imports)
-    // TODO: track spokes and add them dynamically when the Fund is created
     address public accounting;
     address public feeManager;
     address public participation;
@@ -40,7 +42,6 @@ contract Hub {
         address _version
     ) {
         require(!spokesSet);
-        spokesSet = true;
         accounting = _accounting;
         feeManager = _feeManager;
         participation = _participation;
@@ -51,6 +52,21 @@ contract Hub {
         priceSource = _priceSource;
         canonicalRegistrar = _canonicalRegistrar;
         version = _version;
+        spokesSet = true;
+    }
+
+    // TODO: decide how to handle `owner`; should any of the components have an owner? if not then we need to remove owner after everything is initialized.
+    function setPermissions() {
+        require(spokesSet);
+        permit(participation, vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(trading, vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(participation, shares, bytes4(keccak256('createFor(address,uint256)')));
+        permit(participation, shares, bytes4(keccak256('destroyFor(address,uint256)')));
+        permit(feeManager, shares, bytes4(keccak256('createFor(address,uint256)')));
+        permit(participation, accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(participation, accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(trading, accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(trading, accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
     }
 }
 

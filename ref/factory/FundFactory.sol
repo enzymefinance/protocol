@@ -32,9 +32,6 @@ contract FundFactory {
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
-        address[] accountingControllers;
-        address[] sharesControllers;
-        address[] vaultControllers;
     }
     FundSettings temporarySettings;
 
@@ -80,12 +77,9 @@ contract FundFactory {
         address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
         address feeManager = feeManagerFactory.createInstance(hub);
         address participation = participationFactory.createInstance(hub);
-        temporarySettings.accountingControllers = [participation, trading];
-        address accounting = accountingFactory.createInstance(hub, temporarySettings.accountingControllers, temporarySettings.defaultAssets);
-        temporarySettings.sharesControllers = [participation, feeManager];
-        address shares = sharesFactory.createInstance(hub, temporarySettings.sharesControllers);
-        temporarySettings.vaultControllers = [participation, trading];
-        address vault = vaultFactory.createInstance(hub, temporarySettings.vaultControllers);
+        address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
+        address shares = sharesFactory.createInstance(hub);
+        address vault = vaultFactory.createInstance(hub);
         address policyManager = policyManagerFactory.createInstance(hub);
         // address version = address(0);
         hub.setComponents(
@@ -100,6 +94,7 @@ contract FundFactory {
             temporarySettings.priceSource,
             address(0)
         );
+        hub.setPermissions();
         delete temporarySettings;
         funds.push(hub);
         managersToFunds[msg.sender] = hub;

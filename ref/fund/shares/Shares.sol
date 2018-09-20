@@ -4,18 +4,17 @@ pragma solidity ^0.4.21;
 import "./Shares.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/StandardToken.sol";
-import "../../dependencies/Controlled.sol";
 import "../../factory/Factory.i.sol";
 
-contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
+contract Shares is Spoke, StandardToken, SharesInterface {
 
-    constructor(address _hub, address[] _controllers) Spoke(_hub) Controlled(_controllers) {}
+    constructor(address _hub) Spoke(_hub) {}
 
-    function createFor(address who, uint amount) onlyController {
+    function createFor(address who, uint amount) auth {
         _mint(who, amount);
     }
 
-    function destroyFor(address who, uint amount) onlyController {
+    function destroyFor(address who, uint amount) auth {
         _burn(who, amount);
     }
 
@@ -60,8 +59,8 @@ contract Shares is Spoke, Controlled, StandardToken, SharesInterface {
 }
 
 contract SharesFactory is FactoryInterface {
-    function createInstance(address _hub, address[] _controllers) public returns (address) {
-        return new Shares(_hub, _controllers);
+    function createInstance(address _hub) public returns (address) {
+        return new Shares(_hub);
     }
 }
 

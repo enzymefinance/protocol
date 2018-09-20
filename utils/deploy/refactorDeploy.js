@@ -106,10 +106,12 @@ async function deployEnvironment(environment) {
     fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send(Object(opts))
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
+    await testingPriceFeed.methods.update([secondAsset.options.address],[10**18]).send(opts);
     // invest & redeem
     const amt = 10**18;
     await quoteAsset.methods.approve(fund.participation.options.address, amt).send(opts);
     await fund.participation.methods.requestInvestment(amt, amt, quoteAsset.options.address).send(opts);
+    console.log('Investment requested');
     await fund.participation.methods.executeRequest().send(opts);
     let supply = await fund.shares.methods.totalSupply().call();
     console.log(`Supply after invest: ${supply}`);
