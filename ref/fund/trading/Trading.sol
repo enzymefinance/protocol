@@ -61,7 +61,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     // TODO: who can add exchanges? should they just be set at creation?
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
-        // require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeIsRegistered(_exchange));
+        // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange]);
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
@@ -79,14 +79,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
     )
         external
     {
-        PolicyManager(hub.policyManager()).preValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        // require(CanonicalRegistrar(hub.canonicalRegistrar()).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
+        PolicyManager(routes.policyManager).preValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
         address adapter = exchanges[exchangeIndex].adapter;
         address exchange = exchanges[exchangeIndex].exchange;
         require(adapter.delegatecall(
             method, exchange, orderAddresses, orderValues, identifier, v, r, s
         ));
-        PolicyManager(hub.policyManager()).postValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        PolicyManager(routes.policyManager).postValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
     function addOpenMakeOrder(
@@ -164,7 +164,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     function returnToVault(ERC20[] _tokens) public {
         for (uint i = 0; i < _tokens.length; i++) {
-            _tokens[i].transfer(Vault(hub.vault()), _tokens[i].balanceOf(this));
+            _tokens[i].transfer(Vault(routes.vault), _tokens[i].balanceOf(this));
         }
     }
 }

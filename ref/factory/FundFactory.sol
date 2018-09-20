@@ -82,19 +82,20 @@ contract FundFactory {
         address vault = vaultFactory.createInstance(hub);
         address policyManager = policyManagerFactory.createInstance(hub);
         // address version = address(0);
-        hub.setComponents(
-            accounting,
-            feeManager,
-            participation,
-            policyManager,
-            shares,
-            trading,
-            vault,
-            temporarySettings.priceSource,
-            temporarySettings.priceSource,
-            address(0)
-        );
-        hub.setPermissions();
+        // hub.setSpokes([
+        //     accounting,
+        //     feeManager,
+        //     participation,
+        //     policyManager,
+        //     shares,
+        //     trading,
+        //     vault,
+        //     temporarySettings.priceSource,
+        //     temporarySettings.priceSource,
+        //     address(0)
+        // ]);
+        // hub.setRouting();
+        // hub.setPermissions();
         delete temporarySettings;
         funds.push(hub);
         managersToFunds[msg.sender] = hub;

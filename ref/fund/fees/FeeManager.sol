@@ -38,7 +38,7 @@ contract FeeManager is Spoke, DSMath {
         require(feeIsRegistered[fee]);
         uint rewardShares = fee.amountFor(hub);
         fee.updateFor(hub);
-        Shares(hub.shares()).createFor(hub.manager(), rewardShares);
+        Shares(routes.shares).createFor(hub.manager(), rewardShares);
     }
 
     function rewardAllFees() public {

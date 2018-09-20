@@ -67,7 +67,7 @@ contract Accounting is DSMath, Spoke {
         bool isRecent;
         uint assetPrice;
         uint assetDecimals;
-        (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(hub.priceSource()).getPriceInfo(ofAsset);
+        (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
         if (!isRecent) {
             revert();
         }
@@ -76,8 +76,8 @@ contract Accounting is DSMath, Spoke {
 
     function assetHoldings(address _asset) returns (uint) {
         return add(
-            uint(ERC20(_asset).balanceOf(Vault(hub.vault()))),
-            Trading(hub.trading()).quantityBeingTraded(_asset)
+            uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
+            Trading(routes.trading).quantityBeingTraded(_asset)
         );
     }
 
@@ -92,7 +92,7 @@ contract Accounting is DSMath, Spoke {
             bool isRecent;
             uint assetPrice;
             uint assetDecimals;
-            (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(hub.priceSource()).getPriceInfo(ofAsset);
+            (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
             // NB: should we revert inside this view function, or just calculate it optimistically?
             //     maybe it should be left to consumers to decide whether to use older prices?
             //     or perhaps even source's job not to give untrustworthy prices?
@@ -108,7 +108,7 @@ contract Accounting is DSMath, Spoke {
     // TODO: this view function calls a non-view function; adjust accordingly
     // TODO: this may be redundant, and does not use its input parameter now
     function calcUnclaimedFees(uint gav) view returns (uint) {
-        return FeeManager(hub.feeManager()).totalFeeAmount();
+        return FeeManager(routes.feeManager).totalFeeAmount();
     }
 
     // TODO: this view function calls a non-view function; adjust accordingly
@@ -132,10 +132,10 @@ contract Accounting is DSMath, Spoke {
         )
     {
         gav = calcGav();
-        unclaimedFees = FeeManager(hub.feeManager()).totalFeeAmount();
+        unclaimedFees = FeeManager(routes.feeManager).totalFeeAmount();
         nav = calcNav(gav, unclaimedFees);
 
-        uint totalSupply = Shares(hub.shares()).totalSupply();
+        uint totalSupply = Shares(routes.shares).totalSupply();
         // The value of unclaimedFees measured in shares of this fund at current value
         feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
@@ -162,8 +162,8 @@ contract Accounting is DSMath, Spoke {
         uint nav;
         uint sharePrice;
         (gav, unclaimedFees, feesShareQuantity, nav, sharePrice) = performCalculations();
-        uint totalSupply = Shares(hub.shares()).totalSupply();
-        FeeManager(hub.feeManager()).rewardAllFees();
+        uint totalSupply = Shares(routes.shares).totalSupply();
+        FeeManager(routes.feeManager).rewardAllFees();
 
         atLastAllocation = Calculations({
             gav: gav,
@@ -181,7 +181,7 @@ contract Accounting is DSMath, Spoke {
             address ofAsset = ownedAssets[i];
             // TODO: verify commented condition is redundant and remove if so
             // (i.e. it is always the case when `assetHoldings > 0` is true)
-            // || Trading(hub.trading()).isInOpenMakeOrder(ofAsset)
+            // || Trading(routes.trading).isInOpenMakeOrder(ofAsset)
             if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
                 _addAssetToOwnedAssets(ofAsset);
             } else {
