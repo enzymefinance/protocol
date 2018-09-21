@@ -41,6 +41,7 @@ contract FundFactory {
     mapping (address => address) public managersToHubs;
     mapping (address => Components) public managersToComponents;
     mapping (address => Settings) public managersToSettings;
+    mapping (address => uint8) public stepFor;
 
     struct Settings {
         address[] exchanges;
@@ -48,6 +49,12 @@ contract FundFactory {
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
+    }
+
+    modifier step(uint8 n) {
+        require(stepFor[msg.sender] == n - 1);
+        _;
+        stepFor[msg.sender] = n;
     }
 
     constructor(
@@ -68,7 +75,6 @@ contract FundFactory {
         policyManagerFactory = _policyManagerFactory;
     }
 
-    // TODO: ensure correct order of functions
     // TODO: improve naming
     function createComponents(
         // string _name,
@@ -81,8 +87,7 @@ contract FundFactory {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) public {
-        require(managersToHubs[msg.sender] == address(0));
+    ) public step(1) {
         managersToHubs[msg.sender] = new Hub(msg.sender);
         managersToSettings[msg.sender] = Settings(
             _exchanges,
@@ -97,10 +102,8 @@ contract FundFactory {
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
     }
 
-    // TODO: ensure correct order of functions
     // TODO: improve naming
-    function continueCreation() {
-        require(managersToHubs[msg.sender] != address(0));
+    function continueCreation() public step(2) {
         Hub hub = Hub(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].trading = tradingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].exchanges, managersToSettings[msg.sender].adapters, managersToSettings[msg.sender].takesCustody);
@@ -109,9 +112,8 @@ contract FundFactory {
         managersToComponents[msg.sender].registrar = managersToSettings[msg.sender].priceSource;
     }
 
-    // TODO: ensure correct order of functions
     // TODO: improve naming
-    function setupFund() public {
+    function setupFund() public step(3) {
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         hub.setSpokes([
