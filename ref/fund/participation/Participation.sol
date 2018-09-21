@@ -6,7 +6,7 @@ import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
@@ -39,7 +39,7 @@ contract Participation is Spoke, DSMath {
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp,
-            atUpdateId: CanonicalPriceFeed(hub.priceSource()).updateId() // TODO: can this be abstracted away?
+            atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
     }
 
@@ -55,7 +55,7 @@ contract Participation is Spoke, DSMath {
         // TODO: implement and use below modifiers
         // pre_cond(!isShutDown)
         // pre_cond(
-        //     Shares(hub.shares()).totalSupply() == 0 ||
+        //     Shares(routes.shares).totalSupply() == 0 ||
         //     (
         //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
         //         priceSource.updateId() >= add(requests[id].atUpdateId, 2)
@@ -64,19 +64,19 @@ contract Participation is Spoke, DSMath {
     {
         Request memory request = requests[requestOwner];
         bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(hub.priceSource()).getPriceInfo(address(request.investmentAsset));
+        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
         require(isRecent);
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        costQuantity = mul(request.requestedShares, Accounting(hub.accounting()).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
         // TODO: maybe allocate fees in a separate step (to come later)
         // TODO: watch this, in case we change decimals from default 18
-        if(request.investmentAsset != address(Accounting(hub.accounting()).QUOTE_ASSET())) {
+        if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
             bool isPriceRecent;
             uint invertedInvestmentAssetPrice;
             uint investmentAssetDecimal;
-            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(hub.priceSource()).getInvertedPriceInfo(request.investmentAsset);
+            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
             // TODO: is below check needed, given the recency check a few lines above?
             require(isPriceRecent);
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
@@ -87,11 +87,11 @@ contract Participation is Spoke, DSMath {
             costQuantity <= request.investmentAmount
         ) {
             delete requests[requestOwner];
-            require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(hub.vault()), costQuantity)); // Allocate Value
-            Shares(hub.shares()).createFor(requestOwner, request.requestedShares);
+            require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(routes.vault), costQuantity)); // Allocate Value
+            Shares(routes.shares).createFor(requestOwner, request.requestedShares);
             // // TODO: this should be done somewhere else
-            if (!Accounting(hub.accounting()).isInAssetList(request.investmentAsset)) {
-                Accounting(hub.accounting()).addAssetToOwnedAssets(request.investmentAsset);
+            if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
+                Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
             }
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
@@ -101,9 +101,9 @@ contract Participation is Spoke, DSMath {
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares
     function redeem() public {
-        uint ownedShares = Shares(hub.shares()).balanceOf(msg.sender);
+        uint ownedShares = Shares(routes.shares).balanceOf(msg.sender);
         address[] memory assetList;
-        (, assetList) = Accounting(hub.accounting()).getFundHoldings();
+        (, assetList) = Accounting(routes.accounting).getFundHoldings();
         require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
     }
 
@@ -114,9 +114,9 @@ contract Participation is Spoke, DSMath {
         public
         returns (bool)
     {
-        Accounting accounting = Accounting(hub.accounting());
-        Shares shares = Shares(hub.shares());
-        Vault vault = Vault(hub.vault());
+        Accounting accounting = Accounting(routes.accounting);
+        Shares shares = Shares(routes.shares);
+        Vault vault = Vault(routes.vault);
         require(shares.balanceOf(msg.sender) >= shareQuantity);
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
@@ -163,9 +163,11 @@ contract Participation is Spoke, DSMath {
     }
 }
 
-contract ParticipationFactory is FactoryInterface {
+contract ParticipationFactory is Factory {
     function createInstance(address _hub) public returns (address) {
-        return new Participation(_hub);
+        address participation = new Participation(_hub);
+        childExists[participation] = true;
+        return participation;
     }
 }
 

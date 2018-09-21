@@ -25,7 +25,6 @@ contract Hub is DSGuard {
         address version;
     }
     Settings public settings;
-    address[10] public spokes;
     address public manager;
     bool public spokesSet;
     bool public routingSet;
@@ -47,7 +46,6 @@ contract Hub is DSGuard {
         settings.priceSource = _spokes[7];
         settings.canonicalRegistrar = _spokes[8];
         settings.version = _spokes[9];
-        spokes = _spokes;
         spokesSet = true;
     }
 
@@ -55,6 +53,19 @@ contract Hub is DSGuard {
         require(spokesSet);
         require(!routingSet);
         require(!permissionsSet);
+        address[10] memory spokes = [
+            settings.accounting, settings.feeManager, settings.participation,
+            settings.policyManager, settings.shares, settings.trading,
+            settings.vault, settings.priceSource, settings.canonicalRegistrar,
+            settings.version
+        ];
+        Spoke(settings.accounting).initialize(spokes);
+        Spoke(settings.feeManager).initialize(spokes);
+        Spoke(settings.participation).initialize(spokes);
+        Spoke(settings.policyManager).initialize(spokes);
+        Spoke(settings.shares).initialize(spokes);
+        Spoke(settings.trading).initialize(spokes);
+        Spoke(settings.vault).initialize(spokes);
         routingSet = true;
     }
 
@@ -75,14 +86,17 @@ contract Hub is DSGuard {
         permissionsSet = true;
     }
 
-    function getSpokes() view returns (address[10]) {
-        return spokes;
-    }
+    // function getSettings() view returns (Settings) {
+    //     return settings;
+    // }
 
-    // TODO: these are used in the adapters and fee contracts; there must be a better way than using nominal functions like this
+    // TODO: there must be a better way than having these nominal functions
     function vault() view returns (address) { return settings.vault; }
     function accounting() view returns (address) { return settings.accounting; }
     function priceSource() view returns (address) { return settings.priceSource; }
+    function participation() view returns (address) { return settings.participation; }
+    function trading() view returns (address) { return settings.trading; }
     function shares() view returns (address) { return settings.shares; }
+    function policyManager() view returns (address) { return settings.policyManager; }
 }
 

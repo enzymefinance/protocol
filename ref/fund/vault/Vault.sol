@@ -4,7 +4,7 @@ pragma solidity ^0.4.21;
 import "./Vault.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/ERC20.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 
 /// @notice Dumb custody component
 contract Vault is Spoke, VaultInterface {
@@ -36,9 +36,11 @@ contract Vault is Spoke, VaultInterface {
     }
 }
 
-contract VaultFactory is FactoryInterface {
+contract VaultFactory is Factory {
     function createInstance(address _hub) public returns (address) {
-        return new Vault(_hub);
+        address vault = new Vault(_hub);
+        childExists[vault] = true;
+        return vault;
     }
 }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.4.21;
 import "./Shares.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/StandardToken.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 
 contract Shares is Spoke, StandardToken, SharesInterface {
 
@@ -58,9 +58,11 @@ contract Shares is Spoke, StandardToken, SharesInterface {
     }
 }
 
-contract SharesFactory is FactoryInterface {
+contract SharesFactory is Factory {
     function createInstance(address _hub) public returns (address) {
-        return new Shares(_hub);
+        address shares = new Shares(_hub);
+        childExists[shares] = true;
+        return shares;
     }
 }
 

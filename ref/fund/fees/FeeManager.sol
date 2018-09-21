@@ -4,7 +4,7 @@ pragma solidity ^0.4.21;
 import "./Fee.i.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 import "../../../src/dependencies/math.sol";
 
 /// @notice Manages and allocates fees for a particular fund
@@ -48,9 +48,11 @@ contract FeeManager is Spoke, DSMath {
     }
 }
 
-contract FeeManagerFactory is FactoryInterface {
+contract FeeManagerFactory is Factory {
     function createInstance(address _hub) public returns (address) {
-        return new FeeManager(_hub);
+        address feeManager = new FeeManager(_hub);
+        childExists[feeManager] = true;
+        return feeManager;
     }
 }
 

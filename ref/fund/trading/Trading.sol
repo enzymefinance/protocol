@@ -6,7 +6,7 @@ import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/Manager.sol";
 import "../../dependencies/ERC20.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/exchange/GenericExchangeInterface.sol";
 import "../../../src/pricefeeds/CanonicalRegistrar.sol";
@@ -169,9 +169,11 @@ contract Trading is DSMath, Spoke, TradingInterface {
     }
 }
 
-contract TradingFactory is FactoryInterface {
+contract TradingFactory is Factory {
     function createInstance(address _hub, address[] _exchanges, address[] _adapters, bool[] _takesCustody) public returns (address) {
-        return new Trading(_hub, _exchanges, _adapters, _takesCustody);
+        address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody);
+        childExists[trading] = true;
+        return trading;
     }
 }
 

@@ -96,14 +96,19 @@ async function deployEnvironment(environment) {
       vaultFactory.options.address,
       policyManagerFactory.options.address
     ]);
-    await fundFactory.methods.setupFund(
+    await fundFactory.methods.createComponents(
       [matchingMarket.options.address], [matchingMarketAdapter.options.address], [quoteAsset.options.address, secondAsset.options.address], [false], testingPriceFeed.options.address
     ).send(opts);
+    await fundFactory.methods.continueCreation().send(opts);
+    console.log('Components created');
+    await fundFactory.methods.setupFund().send(opts);
+    console.log('Fund set up');
     const hubAddress = await fundFactory.methods.getFundById(0).call();
     const fund = await getFundComponents(hubAddress);
 
     fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send(Object(opts))
     fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send(Object(opts))
+    console.log('Policies registered');
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
     await testingPriceFeed.methods.update([secondAsset.options.address],[10**18]).send(opts);

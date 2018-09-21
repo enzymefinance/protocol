@@ -7,7 +7,7 @@ import "../fees/FeeManager.sol";
 import "../shares/Shares.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
-import "../../factory/Factory.i.sol";
+import "../../factory/Factory.sol";
 import "../../../src/dependencies/math.sol";
 import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
 
@@ -222,9 +222,11 @@ contract Accounting is DSMath, Spoke {
     }
 }
 
-contract AccountingFactory is FactoryInterface {
+contract AccountingFactory is Factory {
     function createInstance(address _hub, address[] _defaultAssets) public returns (address) {
-        return new Accounting(_hub, _defaultAssets);
+        address accounting = new Accounting(_hub, _defaultAssets);
+        childExists[accounting] = true;
+        return accounting;
     }
 }
 

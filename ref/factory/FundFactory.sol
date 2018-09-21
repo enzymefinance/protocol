@@ -11,6 +11,7 @@ import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 
 // TODO: integrate with existing infrastructure (version, governance, etc.)
+// TODO: inherit from Factory
 /// @notice Creates fund components and links them together
 contract FundFactory {
 
@@ -23,17 +24,31 @@ contract FundFactory {
     TradingFactory public tradingFactory;
     VaultFactory public vaultFactory;
 
-    address[] public funds;
-    mapping (address => address) public managersToFunds;
+    struct Components {
+        address accounting;
+        address feeManager;
+        address participation;
+        address policyManager;
+        address shares;
+        address trading;
+        address vault;
+        address priceSource;
+        address registrar;
+        address version;
+    }
 
-    struct FundSettings {
+    address[] public funds;
+    mapping (address => address) public managersToHubs;
+    mapping (address => Components) public managersToComponents;
+    mapping (address => Settings) public managersToSettings;
+
+    struct Settings {
         address[] exchanges;
         address[] adapters;
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
     }
-    FundSettings temporarySettings;
 
     constructor(
         AccountingFactory _accountingFactory,
@@ -53,7 +68,9 @@ contract FundFactory {
         policyManagerFactory = _policyManagerFactory;
     }
 
-    function setupFund(
+    // TODO: ensure correct order of functions
+    // TODO: improve naming
+    function createComponents(
         // string _name,
         // address _quoteAsset,
         // address _compliance,
@@ -64,41 +81,54 @@ contract FundFactory {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    )
-        public
-    {
-        require(managersToFunds[msg.sender] == address(0));
-        temporarySettings.exchanges = _exchanges;
-        temporarySettings.adapters = _adapters;
-        temporarySettings.defaultAssets = _defaultAssets;
-        temporarySettings.takesCustody = _takesCustody;
-        temporarySettings.priceSource = _priceSource;
-        Hub hub = new Hub(msg.sender);
-        address trading = tradingFactory.createInstance(hub, temporarySettings.exchanges, temporarySettings.adapters, temporarySettings.takesCustody);
-        address feeManager = feeManagerFactory.createInstance(hub);
-        address participation = participationFactory.createInstance(hub);
-        address accounting = accountingFactory.createInstance(hub, temporarySettings.defaultAssets);
-        address shares = sharesFactory.createInstance(hub);
-        address vault = vaultFactory.createInstance(hub);
-        address policyManager = policyManagerFactory.createInstance(hub);
-        // address version = address(0);
-        // hub.setSpokes([
-        //     accounting,
-        //     feeManager,
-        //     participation,
-        //     policyManager,
-        //     shares,
-        //     trading,
-        //     vault,
-        //     temporarySettings.priceSource,
-        //     temporarySettings.priceSource,
-        //     address(0)
-        // ]);
-        // hub.setRouting();
-        // hub.setPermissions();
-        delete temporarySettings;
+    ) public {
+        require(managersToHubs[msg.sender] == address(0));
+        managersToHubs[msg.sender] = new Hub(msg.sender);
+        managersToSettings[msg.sender] = Settings(
+            _exchanges,
+            _adapters,
+            _defaultAssets,
+            _takesCustody,
+            _priceSource
+        );
+        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
+        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
+    }
+
+    // TODO: ensure correct order of functions
+    // TODO: improve naming
+    function continueCreation() {
+        require(managersToHubs[msg.sender] != address(0));
+        Hub hub = Hub(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].trading = tradingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].exchanges, managersToSettings[msg.sender].adapters, managersToSettings[msg.sender].takesCustody);
+        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]); 
+        managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
+        managersToComponents[msg.sender].registrar = managersToSettings[msg.sender].priceSource;
+    }
+
+    // TODO: ensure correct order of functions
+    // TODO: improve naming
+    function setupFund() public {
+        Components components = managersToComponents[msg.sender];
+        Hub hub = Hub(managersToHubs[msg.sender]);
+        hub.setSpokes([
+            components.accounting,
+            components.feeManager,
+            components.participation,
+            components.policyManager,
+            components.shares,
+            components.trading,
+            components.vault,
+            components.priceSource,
+            components.registrar,
+            components.version
+        ]);
+        hub.setRouting();
+        hub.setPermissions();
         funds.push(hub);
-        managersToFunds[msg.sender] = hub;
     }
 
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }
