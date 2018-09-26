@@ -41,11 +41,11 @@ test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
-  deployed = await deployEnvironment(environment);
-  ethToken = deployed.EthToken;
-  mlnToken = deployed.MlnToken;
-  eurToken = deployed.EurToken;
-  await setupKyberDevEnv(deployed, accounts, opts);
+  const preKyberDeployed = await deployEnvironment(environment);
+  ethToken = preKyberDeployed.EthToken;
+  mlnToken = preKyberDeployed.MlnToken;
+  eurToken = preKyberDeployed.EurToken;
+  deployed = await setupKyberDevEnv(preKyberDeployed, accounts, opts);
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.Version.methods.setupFund(
     web3.utils.toHex("Suisse Fund"),

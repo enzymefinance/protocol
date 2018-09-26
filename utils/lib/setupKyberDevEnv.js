@@ -13,30 +13,29 @@ function bytesToHex(byteArray) {
     return num;
 }
 
-async function setupKyberDevEnv(deployed, accounts, opts) { 
+async function setupKyberDevEnv(preKyberDeployed, accounts, opts) { 
  // Setup Kyber env
   
  const minimalRecordResolution = 2;
  const maxPerBlockImbalance = new BigNumber(10 ** 29);
  const validRateDurationInBlocks = 50;
  const precisionUnits = (new BigNumber(10).pow(18));
- const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
  const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
  // base buy and sell rates (prices)
- let baseBuyRate1 = [];
- let baseSellRate1 = [];
+ const baseBuyRate1 = [];
+ const baseSellRate1 = [];
 
  // compact data.
  const sells = [bytesToHex(0)];
  const buys = [bytesToHex(0)];
  const indices = [0];
+ const deployed = {...preKyberDeployed};
  deployed.ConversionRates = await deployContract(
   "exchange/thirdparty/kyber/ConversionRates",
   opts,
   [accounts[0]]
   );
-  const ethToken = deployed.EthToken;
   const mlnToken = deployed.MlnToken;
   const eurToken = deployed.EurToken;
   deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
@@ -110,6 +109,7 @@ async function setupKyberDevEnv(deployed, accounts, opts) {
   await deployed.KyberNetwork.methods.setEnable(true).send();
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
 
+  // Add Eur Token
   await deployed.ConversionRates.methods.addToken(eurToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
   await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
@@ -118,8 +118,8 @@ async function setupKyberDevEnv(deployed, accounts, opts) {
   const [eurPrice] =
     Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
   const ethersPerEurToken = eurPrice;
-  const eurTokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
-  await deployed.ConversionRates.methods.setBaseRate([eurToken.options.address], [eurTokensPerEther], [eurTokensPerEther], buys, sells, currentBlock, indices).send();
+  const eurTokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerEurToken).toFixed(0);
+  await deployed.ConversionRates.methods.setBaseRate([eurToken.options.address], [eurTokensPerEther], [ethersPerEurToken], buys, sells, currentBlock, indices).send();
   await deployed.ConversionRates.methods.setQtyStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
   await deployed.ConversionRates.methods.setImbalanceStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
   await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, eurToken.options.address, true, true, true).send();
@@ -140,6 +140,7 @@ async function setupKyberDevEnv(deployed, accounts, opts) {
       [swapTokensSignature],
     ],
   );
+  return deployed;
 }
 
 export { bytesToHex, setupKyberDevEnv };
