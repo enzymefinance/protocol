@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
 
-import "../fund/policies/Policy.sol";
-import "../../src/dependencies/auth.sol";
+import "../policies/Policy.sol";
+import "../../../src/dependencies/auth.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change thigns)
 contract Whitelist is Policy, DSAuth {
