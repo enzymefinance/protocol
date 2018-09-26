@@ -4,9 +4,8 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters} from "../../utils/lib/signing";
 import { swapTokensSignature } from "../../utils/lib/data";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
-import {deployContract, retrieveContract} from "../../utils/lib/contracts";
-import governanceAction from "../../utils/lib/governanceAction";
+import { setupKyberDevEnv, bytesToHex } from "../../utils/lib/setupKyberDevEnv";
+import { retrieveContract } from "../../utils/lib/contracts";
 
 const environmentConfig = require("../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
@@ -14,33 +13,20 @@ const BigNumber = require("bignumber.js");
 const environment = "development";
 const config = environmentConfig[environment];
 
-/* eslint no-bitwise: ["error", { "allow": ["&"] }] */
-const bytesToHex = (byteArray) => {
-  const strNum =  Array.from(byteArray, (byte) => (`0${  (byte & 0xff).toString(16)}`).slice(-2)).join("");
-  const num = `0x${  strNum}`;
-  return num;
-}
-
 // hoisted variables
 let accounts;
 let deployed = {};
 let opts;
 let mlnPrice;
-
-const minimalRecordResolution = 2;
-const maxPerBlockImbalance = new BigNumber(10 ** 29);
-const validRateDurationInBlocks = 50;
+;
 const precisionUnits = (new BigNumber(10).pow(18));
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
 // base buy and sell rates (prices)
 let baseBuyRate1 = [];
 let baseSellRate1 = [];
 
 // compact data.
-const sells = [bytesToHex(0)];
-const buys = [bytesToHex(0)];
 const indices = [0];
 
 let deployer;
@@ -56,103 +42,10 @@ test.before(async () => {
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
   deployed = await deployEnvironment(environment);
-
-  // Setup Kyber env
-  deployed.ConversionRates = await deployContract(
-    "exchange/thirdparty/kyber/ConversionRates",
-    opts,
-    [accounts[0]]
-  );
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
   eurToken = deployed.EurToken;
-  deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
-  await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
-  await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
-  await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
-  await deployed.ConversionRates.methods.enableTokenTrade(mlnToken.options.address).send();
-  deployed.KyberNetwork = await deployContract(
-    "exchange/thirdparty/kyber/KyberNetwork",
-    opts,
-    [accounts[0]]
-  );
-  deployed.KyberReserve = await deployContract(
-    "exchange/thirdparty/kyber/KyberReserve",
-    opts,
-    [deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, accounts[0]]
-  );
-  await deployed.ConversionRates.methods.setReserveAddress(deployed.KyberReserve.options.address).send();
-  await deployed.KyberNetwork.methods.addReserve(deployed.KyberReserve.options.address, true).send();
-  await deployed.KyberReserve.methods.approveWithdrawAddress(mlnToken.options.address, accounts[0], true).send();
-  await deployed.KyberReserve.methods.enableTrade().send();
-
-  // Set pricing for Token
-  await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
-  await updateCanonicalPriceFeed(deployed);
-  [mlnPrice] =
-    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
-  const ethersPerToken = mlnPrice;
-  const tokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
-  baseBuyRate1.push(tokensPerEther);
-  baseSellRate1.push(ethersPerToken);
-  const currentBlock = await web3.eth.getBlockNumber();
-  await deployed.ConversionRates.methods.addOperator(accounts[0]).send();
-  await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
-  await deployed.ConversionRates.methods.setQtyStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
-  await deployed.ConversionRates.methods.setImbalanceStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
-
-  deployed.KyberWhiteList = await deployContract(
-    "exchange/thirdparty/kyber/KyberWhitelist",
-    opts,
-    [accounts[0], deployed.KGTToken.options.address]
-  );
-  await deployed.KyberWhiteList.methods.addOperator(accounts[0]).send();
-  await deployed.KyberWhiteList.methods.setCategoryCap(0, new BigNumber(10 ** 28)).send();
-  await deployed.KyberWhiteList.methods.setSgdToEthRate(30000).send();
-
-  deployed.FeeBurner = await deployContract(
-    "exchange/thirdparty/kyber/FeeBurner",
-    opts,
-    [accounts[0], mlnToken.options.address, deployed.KyberNetwork.options.address]
-  );
-  deployed.ExpectedRate = await deployContract(
-    "exchange/thirdparty/kyber/ExpectedRate",
-    opts,
-    [deployed.KyberNetwork.options.address, accounts[0]]
-  );
-
-  deployed.KyberNetworkProxy = await deployContract(
-    "exchange/thirdparty/kyber/KyberNetworkProxy",
-    opts,
-    [accounts[0]]
-  );
-
-  await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});
-  await deployed.KyberReserve.methods.setContracts(deployed.KyberNetwork.options.address, deployed.ConversionRates.options.address, 0).send();
-  await deployed.KyberNetworkProxy.methods.setKyberNetworkContract(deployed.KyberNetwork.options.address).send();
-  await deployed.KyberNetwork.methods.setWhiteList(deployed.KyberWhiteList.options.address).send();
-  await deployed.KyberNetwork.methods.setExpectedRate(deployed.ExpectedRate.options.address).send();
-  await deployed.KyberNetwork.methods.setFeeBurner(deployed.FeeBurner.options.address).send();
-  await deployed.KyberNetwork.methods.setKyberProxy(deployed.KyberNetworkProxy.options.address).send();
-  await deployed.KyberNetwork.methods.setEnable(true).send();
-  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, mlnToken.options.address, true, true, true).send();
-
-  // Melon Fund env
-  deployed.KyberAdapter = await deployContract(
-    "exchange/adapter/KyberAdapter", opts
-  );
-  await governanceAction(
-    { from: accounts[0] },
-    deployed.Governance,
-    deployed.CanonicalPriceFeed,
-    "registerExchange",
-    [
-      deployed.KyberNetworkProxy.options.address,
-      deployed.KyberAdapter.options.address,
-      true,
-      [swapTokensSignature],
-    ],
-  );
+  await setupKyberDevEnv(deployed, accounts, opts);
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.Version.methods.setupFund(
     web3.utils.toHex("Suisse Fund"),
@@ -175,6 +68,8 @@ test.before(async () => {
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
+  [mlnPrice] =
+    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
 });
 
 const initialTokenAmount = new BigNumber(10 ** 20);
@@ -315,20 +210,6 @@ test.serial("swap mlnToken for ethToken with specific order price (minRate)", as
 
 test.serial("swap mlnToken directly to eurToken without minimum destAmount", async t => {
   // Setup eurToken in Kyber
-  await deployed.ConversionRates.methods.addToken(eurToken.options.address).send();
-  await deployed.ConversionRates.methods.setTokenControlInfo(eurToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
-  await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
-  await deployed.KyberReserve.methods.approveWithdrawAddress(eurToken.options.address, accounts[0], true).send();
-  await eurToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
-  const [eurPrice] =
-    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
-  const ethersPerToken = eurPrice;
-  const tokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
-  const currentBlock = await web3.eth.getBlockNumber();
-  await deployed.ConversionRates.methods.setBaseRate([eurToken.options.address], [tokensPerEther], [tokensPerEther], buys, sells, currentBlock, indices).send();
-  await deployed.ConversionRates.methods.setQtyStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
-  await deployed.ConversionRates.methods.setImbalanceStepFunction(eurToken.options.address, [0], [0], [0], [0]).send();
-  await deployed.KyberNetwork.methods.listPairForReserve(deployed.KyberReserve.options.address, eurToken.options.address, true, true, true).send();
 
   const fundPreEur = new BigNumber(await eurToken.methods.balanceOf(fund.options.address).call());
   const pre = await getAllBalances(deployed, accounts, fund);
@@ -381,7 +262,7 @@ test.serial("risk management prevents swap in the case of bad kyber network pric
   baseBuyRate1 = [mlnPrice * 2];
   baseSellRate1 = [precisionUnits.mul(precisionUnits).div(baseBuyRate1).toFixed(0)];
   const currentBlock = await web3.eth.getBlockNumber();
-  await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, buys, sells, currentBlock, indices).send();
+  await deployed.ConversionRates.methods.setBaseRate([mlnToken.options.address], baseBuyRate1, baseSellRate1, [bytesToHex(0)], [bytesToHex(0)], currentBlock, indices).send();
   const srcAmount = new  BigNumber(10 ** 17);
   await t.throws(fund.methods.callOnExchange(
     0,
