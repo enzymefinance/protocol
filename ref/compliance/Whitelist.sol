@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+
 import "../fund/policies/Policy.sol";
 import "../../src/dependencies/auth.sol";
 
