@@ -2,9 +2,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import web3 from './web3';
 
-// Contract name regex for new flat directory hierarchy of compiled contracts
-const cNameRegex = new RegExp('[^/]+$');
 const outPath = path.join(__dirname, '..', '..', 'out');
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
 
 /**
  * Deploy a contract, and get back an instance.
@@ -15,18 +17,13 @@ const outPath = path.join(__dirname, '..', '..', 'out');
  * @returns {Object} - Instance of the deployed contract
  */
 async function deployContract(contractPath, optsIn = {}, constructorArgs = []) {
-  const [contractName] = cNameRegex.exec(contractPath);
-  const options = Object.assign({}, optsIn); // clone object value instead of reference
-  const options2 = Object.assign({}, options); // clone object value instead of reference
-  const abiPath = path.resolve(outPath, 'abi', contractName);
-  const binPath = path.resolve(outPath, 'bin', contractName);
+  const abiPath = path.resolve(outPath, contractPath);
+  const binPath = path.resolve(outPath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
   const bytecode = fs.readFileSync(`${binPath}.bin`, 'utf8');
-  const contract = new web3.eth.Contract(abi, options);
+  const contract = new web3.eth.Contract(abi, clone(optsIn));
   const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
-  // console.log(deployTx)
-  // console.log(await deployTx.estimateGas())
-  const deployedContract = await deployTx.send(options2);
+  const deployedContract = await deployTx.send(clone(optsIn));
   if(process.env.CHAIN_ENV !== 'development')
     console.log(`Deployed ${contractPath}\nat ${deployedContract.options.address}\n`);
   return deployedContract;
@@ -42,8 +39,7 @@ async function retrieveContract(contractPath, address) {
   if(address === undefined || parseInt(address, 16) === 0) {
     throw new Error('Address is undefined or 0x0');
   }
-  const [contractName] = cNameRegex.exec(contractPath);
-  const abiPath = path.resolve(outPath, 'abi', contractName);
+  const abiPath = path.resolve(outPath, contractPath);
   const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
   return new web3.eth.Contract(abi, address);
 }

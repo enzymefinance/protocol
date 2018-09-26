@@ -17,43 +17,33 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-async function tempDeploy(contractPath, optsIn, constructorArgs) {
-  const options = clone(optsIn);
-  const outPath = path.join(__dirname, '..', '..', 'out');
-  const abiPath = path.resolve(outPath, contractPath);
-  const binPath = path.resolve(outPath, contractPath);
-  const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
-  const bytecode = fs.readFileSync(`${binPath}.bin`, 'utf8');
-  const contract = new web3.eth.Contract(abi, options);
-  const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
-  const deployedContract = await deployTx.send(options);
-  console.log(`Deployed ${contractPath}\nat ${deployedContract.options.address}\n`);
-  return deployedContract;
-}
-
-async function tempRetrieve(contractPath, address) {
-  const outPath = path.join(__dirname, '..', '..', 'out');
-  const abiPath = path.resolve(outPath, contractPath);
-  const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
-  return new web3.eth.Contract(abi, address);
-}
-
 async function getFundComponents(hubAddress) {
-  const components = {};
-  components.hub = await tempRetrieve("fund/hub/Hub", hubAddress);
+  let components = {};
+  components.hub = await retrieveContract("fund/hub/Hub", hubAddress);
   const participationAddress = await components.hub.methods.participation().call();
   const sharesAddress = await components.hub.methods.shares().call();
   const tradingAddress = await components.hub.methods.trading().call();
   const policyManagerAddress = await components.hub.methods.policyManager().call();
-  components.participation = await tempRetrieve("fund/participation/Participation", participationAddress);
-  components.shares = await tempRetrieve("fund/shares/Shares", sharesAddress);
-  components.trading = await tempRetrieve("fund/trading/Trading", tradingAddress);
-  components.policyManager = await tempRetrieve("fund/policies/PolicyManager", policyManagerAddress);
+  components.participation = await retrieveContract("fund/participation/Participation", participationAddress);
+  components.shares = await retrieveContract("fund/shares/Shares", sharesAddress);
+  components.trading = await retrieveContract("fund/trading/Trading", tradingAddress);
+  components.policyManager = await retrieveContract("fund/policies/PolicyManager", policyManagerAddress);
   console.log(`Hub: ${hubAddress}`);
   console.log(`Participation: ${participationAddress}`);
   console.log(`Trading: ${tradingAddress}`);
   console.log(`Shares: ${sharesAddress}`);
   console.log(`PolicyManager: ${policyManagerAddress}`);
+  const routes = await components.hub.methods.settings().call();
+  components = Object.assign(components, {
+    accounting: await retrieveContract("fund/accounting/Accounting", routes.accounting),
+    feeManager: await retrieveContract("fund/fees/FeeManager", routes.feeManager),
+    participation: await retrieveContract("fund/participation/Participation", routes.participation),
+    policyManager: await retrieveContract("fund/policies/PolicyManager", routes.policyManager),
+    shares: await retrieveContract("fund/shares/Shares", routes.shares),
+    trading: await retrieveContract("fund/trading/Trading", routes.trading),
+    vault: await retrieveContract("fund/vault/Vault", routes.vault),
+  });
+
   return components;
 }
 
@@ -68,26 +58,26 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "development") {
-    const quoteAsset = await tempDeploy("dependencies/PreminedToken", opts);
-    const secondAsset = await tempDeploy("dependencies/PreminedToken", opts);
-    const testingPriceFeed = await tempDeploy("prices/TestingPriceFeed", opts, [
+    const quoteAsset = await deployContract("dependencies/PreminedToken", opts);
+    const secondAsset = await deployContract("dependencies/PreminedToken", opts);
+    const testingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [
       quoteAsset.options.address, 18
     ]);
-    const matchingMarket = await tempDeploy("exchanges/MatchingMarket", opts, [99999999999]);
+    const matchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
     // const newOpts = Object.assign({}, opts);
     await matchingMarket.methods.addTokenPairWhitelist(
       quoteAsset.options.address, secondAsset.options.address
     ).send(clone(opts));
-    const priceTolerance = await tempDeploy('fund/risk-management/PriceTolerance', opts, [10])
-    const matchingMarketAdapter = await tempDeploy("exchanges/MatchingMarketAdapter", opts);
-    const accountingFactory = await tempDeploy("factory/AccountingFactory", opts);
-    const feeManagerFactory = await tempDeploy("factory/FeeManagerFactory", opts);
-    const participationFactory = await tempDeploy("factory/ParticipationFactory", opts);
-    const sharesFactory = await tempDeploy("factory/SharesFactory", opts);
-    const tradingFactory = await tempDeploy("factory/TradingFactory", opts);
-    const vaultFactory = await tempDeploy("factory/VaultFactory", opts);
-    const policyManagerFactory = await tempDeploy("factory/PolicyManagerFactory", opts);
-    const fundFactory = await tempDeploy("factory/FundFactory", opts, [
+    const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', opts, [10])
+    const matchingMarketAdapter = await deployContract("exchanges/MatchingMarketAdapter", opts);
+    const accountingFactory = await deployContract("factory/AccountingFactory", opts);
+    const feeManagerFactory = await deployContract("factory/FeeManagerFactory", opts);
+    const participationFactory = await deployContract("factory/ParticipationFactory", opts);
+    const sharesFactory = await deployContract("factory/SharesFactory", opts);
+    const tradingFactory = await deployContract("factory/TradingFactory", opts);
+    const vaultFactory = await deployContract("factory/VaultFactory", opts);
+    const policyManagerFactory = await deployContract("factory/PolicyManagerFactory", opts);
+    const fundFactory = await deployContract("factory/FundFactory", opts, [
       accountingFactory.options.address,
       feeManagerFactory.options.address,
       participationFactory.options.address,

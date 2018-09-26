@@ -52,7 +52,6 @@ contract Hub is DSGuard {
     function setRouting() {
         require(spokesSet);
         require(!routingSet);
-        require(!permissionsSet);
         address[10] memory spokes = [
             settings.accounting, settings.feeManager, settings.participation,
             settings.policyManager, settings.shares, settings.trading,

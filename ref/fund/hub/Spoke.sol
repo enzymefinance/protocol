@@ -27,6 +27,7 @@ contract Spoke is DSAuth {
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
+        // TODO: remove "owner" authority?
     }
 
     function initialize(address[10] _spokes) {
