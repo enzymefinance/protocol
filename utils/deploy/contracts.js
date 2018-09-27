@@ -535,8 +535,8 @@ async function deployEnvironment(environment) {
       opts,
       [accounts[0]]
     );
-    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
-      deployed.MlnToken.options.address,
+    deployed.CanonicalPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
+      deployed.KyberNetwork.options.address,
       deployed.EthToken.options.address,
       web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
       web3.utils.padLeft(web3.utils.toHex('ETH-T'), 34),
@@ -546,28 +546,19 @@ async function deployEnvironment(environment) {
       [mockAddress, mockAddress],
       [],
       [],
-      [
-        config.protocol.pricefeed.interval,
-        config.protocol.pricefeed.validity
-      ],
-      [
-        config.protocol.staking.minimumAmount,
-        config.protocol.staking.numOperators,
-        config.protocol.staking.unstakeDelay
-      ],
+      config.protocol.pricefeed.interval,
       deployed.Governance.options.address
     ]);
-    deployed.StakingPriceFeed = await createStakingFeed({...opts}, deployed.CanonicalPriceFeed);
-    await deployed.MlnToken.methods.approve(
-      deployed.StakingPriceFeed.options.address,
-      config.protocol.staking.minimumAmount
-    ).send(
-      {...opts}
-    );
-    await deployed.StakingPriceFeed.methods.depositStake(config.protocol.staking.minimumAmount, web3.utils.asciiToHex("")).send(
-      {...opts}
-    );
-
+    // deployed.StakingPriceFeed = await createStakingFeed({...opts}, deployed.CanonicalPriceFeed);
+    // await deployed.MlnToken.methods.approve(
+    //   deployed.StakingPriceFeed.options.address,
+    //   config.protocol.staking.minimumAmount
+    // ).send(
+    //   {...opts}
+    // );
+    // await deployed.StakingPriceFeed.methods.depositStake(config.protocol.staking.minimumAmount, web3.utils.asciiToHex("")).send(
+    //   {...opts}
+    // );
     deployed.SimpleMarket = await deployContract("exchange/thirdparty/SimpleMarket", opts);
     deployed.SimpleAdapter = await deployContract("exchange/adapter/SimpleAdapter", opts);
     deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]);
@@ -641,6 +632,7 @@ async function deployEnvironment(environment) {
       [],
       []
     ]);
+
     await governanceAction(opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset', [
       deployed.EurToken.options.address,
       web3.utils.padLeft(web3.utils.toHex('Euro token'), 34),

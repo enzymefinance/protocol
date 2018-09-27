@@ -70,7 +70,7 @@ test.before(async () => {
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
   await updateKyberPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  // await updateCanonicalPriceFeed(deployed);
   [mlnPrice] =
     Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
 });
