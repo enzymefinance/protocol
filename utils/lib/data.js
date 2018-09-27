@@ -45,5 +45,6 @@ export {
   cancelOrderSignature,
   swapTokensSignature,
   toBytes32,
-  toBytes8
+  toBytes8,
+  abiEncode
 };

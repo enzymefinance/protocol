@@ -62,6 +62,7 @@ contract Participation is Spoke, DSMath {
         //     )
         // ) 
     {
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [msg.sender, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
         Request memory request = requests[requestOwner];
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));

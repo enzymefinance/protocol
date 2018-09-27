@@ -3,7 +3,7 @@ import * as path from "path";
 import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
-import {makeOrderSignature, takeOrderSignature, cancelOrderSignature, toBytes8, toBytes32} from "../lib/data";
+import {makeOrderSignature, takeOrderSignature, cancelOrderSignature, toBytes8, toBytes32, abiEncode} from "../lib/data";
 import web3 from "../lib/web3";
 
 const BigNumber = require("bignumber.js");
@@ -69,6 +69,7 @@ async function deployEnvironment(environment) {
       quoteAsset.options.address, secondAsset.options.address
     ).send(clone(opts));
     const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', opts, [10])
+    const whitelist = await deployContract('fund/compliance/Whitelist', opts, [[accounts[0]]])
     const matchingMarketAdapter = await deployContract("exchanges/MatchingMarketAdapter", opts);
     const accountingFactory = await deployContract("factory/AccountingFactory", opts);
     const feeManagerFactory = await deployContract("factory/FeeManagerFactory", opts);
@@ -98,6 +99,7 @@ async function deployEnvironment(environment) {
 
     fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send(Object(opts))
     fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send(Object(opts))
+    fund.policyManager.methods.register(abiEncode("executeRequestFor", ["address"]), whitelist.options.address).send(Object(opts))
     console.log('Policies registered');
 
     await testingPriceFeed.methods.update([quoteAsset.options.address],[10**18]).send(opts);
