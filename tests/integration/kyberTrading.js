@@ -6,6 +6,7 @@ import { getTermsSignatureParameters} from "../../utils/lib/signing";
 import { swapTokensSignature } from "../../utils/lib/data";
 import { setupKyberDevEnv, bytesToHex } from "../../utils/lib/setupKyberDevEnv";
 import { retrieveContract } from "../../utils/lib/contracts";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
@@ -68,6 +69,7 @@ test.before(async () => {
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
+  await updateKyberPriceFeed(deployed);
   [mlnPrice] =
     Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
 });

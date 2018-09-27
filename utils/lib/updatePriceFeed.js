@@ -110,4 +110,60 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 
-export { updatePriceFeed, updateCanonicalPriceFeed };
+// Kyber related price updates
+
+function toHexString(byteArray) {
+  /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
+  return Array.from(byteArray, (byte) => (`0${  (byte & 0xff).toString(16)}`).slice(-2)).join("");
+}
+
+function bytesToHex(byteArray) {
+  const strNum = toHexString(byteArray);
+  const num = `0x${  strNum}`;
+  return num;
+}
+
+function splitArray(arr, length) {
+  const groups = arr
+    .map((e, i) => i % length === 0 ? arr.slice(i, i + length) : null)
+    .filter((e) => e);
+  return groups;
+}
+
+async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
+  let prices;
+  const tokens = [];
+  const compactBuyArr = [];
+  const compactSellArr = [];
+  const baseBuys = [];
+  const baseSells = [];
+  const buys = [];
+  const sells = [];
+  const indices = [];
+
+  const currentBlock = await web3.eth.getBlockNumber();
+  if(Object.keys(inputPrices).length === 0) {
+    prices = await getConvertedPrices(deployed, quoteSymbol);
+  } else {
+    prices = inputPrices;
+  }
+  
+  for (const key of Object.keys(prices)) {
+    /* eslint-disable no-continue */
+    if (key === deployed.EthToken.options.address) continue;
+    tokens.push(key);
+    baseBuys.push(new BigNumber(10 ** 36).div(prices[key]).toFixed(0));
+    baseSells.push(prices[key]);
+  }
+  
+  const splitCompactBuyArr = splitArray(compactBuyArr, 14);
+  const splitCompactSellArr = splitArray(compactSellArr, 14);
+  for (let i = 0; i < splitCompactBuyArr.length; i += 1) {
+    buys.push(bytesToHex(splitCompactBuyArr[i]));
+    sells.push(bytesToHex(splitCompactSellArr[i]));
+    indices.push(i);
+  }
+  await deployed.ConversionRates.methods.setBaseRate(tokens, baseBuys, baseSells, buys, sells, currentBlock, indices).send();
+}
+
+export { updatePriceFeed, updateCanonicalPriceFeed, updateKyberPriceFeed };

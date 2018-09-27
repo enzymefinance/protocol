@@ -185,7 +185,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
 
     /// @dev from MakerDao medianizer contract
     function medianize(uint[] unsorted)
-        view
+        view 
         returns (uint)
     {
         uint numValidEntries;
