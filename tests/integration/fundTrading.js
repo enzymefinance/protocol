@@ -5,7 +5,7 @@ import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import governanceAction from "../../utils/lib/governanceAction";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import {
   makeOrderSignature,
   takeOrderSignature,
@@ -121,7 +121,7 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   runningGasTotal = new BigNumber(0);
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
 
   const [
     ,
@@ -218,8 +218,8 @@ exchangeIndexes.forEach(i => {
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-      await updateCanonicalPriceFeed(deployed);
-      await updateCanonicalPriceFeed(deployed);
+      await updateKyberPriceFeed(deployed);
+      await updateKyberPriceFeed(deployed);
 
       const totalSupply = await fund.methods.totalSupply().call();
       const requestId = await fund.methods.getLastRequestId().call();
@@ -280,7 +280,7 @@ exchangeIndexes.forEach(i => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const exchangePreMln = new BigNumber(await mlnToken.methods.balanceOf(exchanges[i].options.address).call());
     const exchangePreEthToken = new BigNumber(await ethToken.methods.balanceOf(exchanges[i].options.address).call());
-    await updateCanonicalPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
     receipt = await fund.methods.callOnExchange(
       i,
       makeOrderSignature,
@@ -764,13 +764,13 @@ test.serial(`Allows investment in native asset`, async t => {
     { from: investor, gasPrice: config.gasPrice, gas: config.gas }
   );
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   receipt = await fund.methods.requestInvestment(giveQuantity, wantedShareQuantity, ethToken.options.address).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
   );
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  await updateCanonicalPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const requestId = await fund.methods.getLastRequestId().call();
   receipt = await fund.methods.executeRequest(requestId).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -797,7 +797,7 @@ test.serial(`Allows investment in native asset`, async t => {
 
 // Fees
 test.serial("converts fees and manager receives them", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const preManagerShares = new BigNumber(await fund.methods.balanceOf(manager).call());
   const totalSupply = new BigNumber(await fund.methods.totalSupply().call());

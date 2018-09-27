@@ -12,32 +12,44 @@ function bytesToHex(byteArray) {
     return num;
 }
 
-async function setupKyberDevEnv(preKyberDeployed, accounts, opts) { 
- // Setup Kyber env
+async function setupKyberDevEnv(preKyberDeployed, accounts) { 
   
- const minimalRecordResolution = 2;
- const maxPerBlockImbalance = new BigNumber(10 ** 29);
- const validRateDurationInBlocks = 50;
- const precisionUnits = (new BigNumber(10).pow(18));
- const maxTotalImbalance = maxPerBlockImbalance.mul(12);
+  // Setup Kyber env
+  const opts = {
+    from: accounts[0],
+    gas: 8000000,
+    gasPrice: 10,
+  };
 
- // base buy and sell rates (prices)
- const baseBuyRate1 = [];
- const baseSellRate1 = [];
+  const minimalRecordResolution = 2;
+  const maxPerBlockImbalance = new BigNumber(10 ** 29);
+  const validRateDurationInBlocks = 50;
+  const precisionUnits = (new BigNumber(10).pow(18));
+  const maxTotalImbalance = maxPerBlockImbalance.mul(12);
 
- // compact data.
- const sells = [bytesToHex(0)];
- const buys = [bytesToHex(0)];
- const indices = [0];
- const deployed = {...preKyberDeployed};
- deployed.ConversionRates = await deployContract(
-  "exchange/thirdparty/kyber/ConversionRates",
-  opts,
-  [accounts[0]]
+  // base buy and sell rates (prices)
+  const baseBuyRate1 = [];
+  const baseSellRate1 = [];
+
+  // compact data.
+  const sells = [bytesToHex(0)];
+  const buys = [bytesToHex(0)];
+  const indices = [0];
+  const deployed = {...preKyberDeployed};
+
+  deployed.ConversionRates = await deployContract(
+    "exchange/thirdparty/kyber/ConversionRates",
+    opts,
+    [accounts[0]]
   );
   const mlnToken = deployed.MlnToken;
   const eurToken = deployed.EurToken;
   deployed.KGTToken = await deployContract("exchange/thirdparty/kyber/TestToken", opts, ["KGT", "KGT", 18]);
+  deployed.KyberNetwork = await deployContract(
+    "exchange/thirdparty/kyber/KyberNetwork",
+    opts,
+    [accounts[0]]
+  );
   await deployed.ConversionRates.methods.setValidRateDurationInBlocks(validRateDurationInBlocks).send();
   await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
@@ -83,12 +95,6 @@ async function setupKyberDevEnv(preKyberDeployed, accounts, opts) {
     "exchange/thirdparty/kyber/ExpectedRate",
     opts,
     [deployed.KyberNetwork.options.address, accounts[0]]
-  );
-
-  deployed.KyberNetworkProxy = await deployContract(
-    "exchange/thirdparty/kyber/KyberNetworkProxy",
-    opts,
-    [accounts[0]]
   );
 
   await web3.eth.sendTransaction({to: deployed.KyberReserve.options.address, from: accounts[0], value: new BigNumber(10 ** 25)});

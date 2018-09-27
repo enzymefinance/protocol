@@ -4,7 +4,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters} from "../../utils/lib/signing";
 import { swapTokensSignature } from "../../utils/lib/data";
-import { setupKyberDevEnv, bytesToHex } from "../../utils/lib/setupKyberDevEnv";
+import { bytesToHex } from "../../utils/lib/setupKyberDevEnv";
 import { retrieveContract } from "../../utils/lib/contracts";
 import { updateKyberPriceFeed, updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 
@@ -42,11 +42,10 @@ test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
-  const preKyberDeployed = await deployEnvironment(environment);
-  ethToken = preKyberDeployed.EthToken;
-  mlnToken = preKyberDeployed.MlnToken;
-  eurToken = preKyberDeployed.EurToken;
-  deployed = await setupKyberDevEnv(preKyberDeployed, accounts, opts);
+  deployed = await deployEnvironment(environment);
+  ethToken = deployed.EthToken;
+  mlnToken = deployed.MlnToken;
+  eurToken = deployed.EurToken;
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.Version.methods.setupFund(
     web3.utils.toHex("Suisse Fund"),
@@ -260,7 +259,7 @@ test.serial("swapTokens fails if minPrice is not satisfied", async t => {
   ));
 });
 
-test.serial("risk management prevents swap in the case of bad kyber network price", async t => {
+test.skip("risk management prevents swap in the case of bad kyber network price", async t => {
   // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
   baseBuyRate1 = [mlnPrice * 2];
   baseSellRate1 = [precisionUnits.mul(precisionUnits).div(baseBuyRate1).toFixed(0)];

@@ -2,12 +2,14 @@ pragma solidity ^0.4.21;
 
 import "./CanonicalRegistrar.sol";
 import "./SimplePriceFeed.sol";
+import "../exchange/thirdparty/kyber/KyberNetworkProxy.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
+/// @notice TODO: Take care of asset decimals, this doesn't handle that yet
 contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
@@ -15,6 +17,8 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     uint public INTERVAL;
     address public KYBER_NETWORK;
     address public QUOTE_ASSET;
+
+    address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     // METHODS
 
@@ -78,8 +82,8 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         view
         returns (uint price, uint timestamp)
     {
-        Data data = assetsToPrices[ofAsset];
-        return (data.price, data.timestamp);
+        ( , price, ) =  getReferencePriceInfo(ofAsset, QUOTE_ASSET);
+        timestamp = now;
     }
 
 
@@ -91,8 +95,9 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         pre_cond(assetIsRegistered(ofAsset))
         returns (bool isRecent)
     {
-        var ( , timestamp) = getPrice(ofAsset);
-        return (sub(now, timestamp) <= VALIDITY);
+        if (ofAsset == QUOTE_ASSET) return true;
+        var (price,) = getPrice(ofAsset);
+        return price != 0;
     }
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
@@ -151,17 +156,15 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         view
         returns (bool isRecent, uint referencePrice, uint decimals)
     {
-        uint basePrice;
-        uint quotePrice;
-        (basePrice, ) = getPrice(_baseAsset);
-        uint decimalBase = getDecimals(_baseAsset);
-        bool isRecentBase = hasRecentPrice(_baseAsset);
-        (quotePrice, ) = getPrice(_quoteAsset);
-        uint decimalQuote = getDecimals(_quoteAsset);
-        bool isRecentQuote = hasRecentPrice(_quoteAsset);
-        isRecent = isRecentBase && isRecentQuote;
-        referencePrice = mul(basePrice, 10 ** uint(decimalQuote)) / quotePrice;
-        decimals = decimalQuote;
+        if (_baseAsset == QUOTE_ASSET) {
+            _baseAsset = ETH_TOKEN_ADDRESS;
+        }
+        if (_quoteAsset == QUOTE_ASSET) {
+            _quoteAsset = ETH_TOKEN_ADDRESS;
+        }
+        isRecent = true;
+        (referencePrice,) = KyberNetworkProxy(KYBER_NETWORK).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 1);
+        decimals = getDecimals(_quoteAsset);
     }
 
     /// @notice Gets price of Order

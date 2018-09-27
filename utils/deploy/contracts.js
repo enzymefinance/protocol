@@ -4,11 +4,13 @@ import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 // import * as exchangeInfo from "../info/exchangeInfo";
 import { deployContract, retrieveContract } from "../lib/contracts";
+import { setupKyberDevEnv } from "../../utils/lib/setupKyberDevEnv";
 import { makeOrderSignature, takeOrderSignature, cancelOrderSignature, swapTokensSignature } from "../../utils/lib/data";
 import web3, { resetProvider } from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
+
 // import verifyDeployment from "./verify";
 
 const BigNumber = require("bignumber.js");
@@ -530,13 +532,13 @@ async function deployEnvironment(environment) {
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [18]);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [18]);
     await deployed.EthToken.methods.deposit().send({from: accounts[0], value: new BigNumber(10 ** 26)});
-    deployed.KyberNetwork = await deployContract(
-      "exchange/thirdparty/kyber/KyberNetwork",
+    deployed.KyberNetworkProxy = await deployContract(
+      "exchange/thirdparty/kyber/KyberNetworkProxy",
       opts,
       [accounts[0]]
     );
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
-      deployed.KyberNetwork.options.address,
+      deployed.KyberNetworkProxy.options.address,
       deployed.EthToken.options.address,
       web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
       web3.utils.padLeft(web3.utils.toHex('ETH-T'), 34),
@@ -646,7 +648,8 @@ async function deployEnvironment(environment) {
     ]);
   }
   // await verifyDeployment(deployed);
-  return deployed;  // return instances of contracts we just deployed
+  const enhancedDeployed = await setupKyberDevEnv(deployed, accounts, opts);
+  return enhancedDeployed;  // return instances of contracts we just deployed
 }
 
 // takes `deployed` object as defined above, and environment to write to
