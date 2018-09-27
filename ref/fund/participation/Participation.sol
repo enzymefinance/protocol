@@ -22,7 +22,6 @@ contract Participation is Spoke, DSMath {
     }
 
     mapping (address => Request) public requests;
-    bool public isShutDown; // TODO: find suitable place for this (hub?)
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -31,9 +30,9 @@ contract Participation is Spoke, DSMath {
         uint investmentAmount,
         address investmentAsset
     ) external // TODO: implement and use below modifiers
-        // pre_cond(!isShutDown)
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
+        require(!hub.isShutDown());
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -53,7 +52,6 @@ contract Participation is Spoke, DSMath {
 
     function executeRequestFor(address requestOwner) public 
         // TODO: implement and use below modifiers
-        // pre_cond(!isShutDown)
         // pre_cond(
         //     Shares(routes.shares).totalSupply() == 0 ||
         //     (
@@ -62,7 +60,8 @@ contract Participation is Spoke, DSMath {
         //     )
         // ) 
     {
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [msg.sender, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
+        require(!hub.isShutDown());
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
         Request memory request = requests[requestOwner];
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
@@ -141,11 +140,11 @@ contract Participation is Spoke, DSMath {
 
             // TODO: do we want to represent this as an error and shutdown, or do something else? See NB1 scenario above
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            if (uint(ERC20(ofAsset).balanceOf(address(vault))) < ownershipQuantities[i]) {
-                isShutDown = true; // TODO: external call most likely
-                // emit ErrorMessage("CRITICAL ERR: Not enough quantityHeld for owed ownershipQuantitiy");
-                return false;
-            }
+            // if (uint(ERC20(ofAsset).balanceOf(address(vault))) < ownershipQuantities[i]) {
+            //     isShutDown = true; // TODO: external call most likely
+            //     // emit ErrorMessage("CRITICAL ERR: Not enough quantityHeld for owed ownershipQuantitiy");
+            //     return false;
+            // }
         }
 
         shares.destroyFor(msg.sender, shareQuantity);

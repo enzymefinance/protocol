@@ -58,6 +58,7 @@ async function deployEnvironment(environment) {
   const deployed = {};
 
   if (environment === "development") {
+    console.log(`Deployer: ${accounts[0]}`);
     const quoteAsset = await deployContract("dependencies/PreminedToken", opts);
     const secondAsset = await deployContract("dependencies/PreminedToken", opts);
     const testingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [

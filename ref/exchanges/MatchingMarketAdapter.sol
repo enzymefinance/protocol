@@ -45,14 +45,13 @@ contract MatchingMarketAdapter is DSMath {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender);
-        // require(!Fund(address(this)).isShutDown());
+        require(!hub.isShutDown());
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        // require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         require(makerAsset.approve(targetExchange, makerQuantity));
@@ -101,8 +100,8 @@ contract MatchingMarketAdapter is DSMath {
         bytes32 r,
         bytes32 s
     ) {
-        // require(Fund(address(this)).owner() == msg.sender);
-        // require(!Fund(address(this)).isShutDown());
+        // require(Fund(address(this)).manager() == msg.sender);
+        require(!Hub(Trading(address(this)).hub()).isShutDown());
         address pricefeed = Hub(Trading(address(this)).hub()).priceSource();
         uint fillTakerQuantity = orderValues[6];
         var (
@@ -154,10 +153,11 @@ contract MatchingMarketAdapter is DSMath {
         bytes32 s
     )
     {
-        // require(Fund(address(this)).owner() == msg.sender ||
-        //         Fund(address(this)).isShutDown()          ||
-        //         Fund(address(this)).orderExpired(targetExchange, orderAddresses[2])
-        // );
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender ||    // TODO: check that this makes sense (manager)
+                hub.isShutDown()          //||
+                // hub.orderExpired(targetExchange, orderAddresses[2])
+        );
         require(uint(identifier) != 0);
 
         var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));

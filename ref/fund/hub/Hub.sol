@@ -26,6 +26,7 @@ contract Hub is DSGuard {
     }
     Settings public settings;
     address public manager;
+    bool public isShutDown;
     bool public spokesSet;
     bool public routingSet;
     bool public permissionsSet;
