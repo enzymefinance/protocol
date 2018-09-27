@@ -19,6 +19,36 @@ const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 const yearInSeconds = 60 * 60 * 24 * 365;
 
+
+async function getFundComponents(hubAddress) {
+  let components = {};
+  components.hub = await retrieveContract("fund/hub/Hub", hubAddress);
+  const participationAddress = await components.hub.methods.participation().call();
+  const sharesAddress = await components.hub.methods.shares().call();
+  const tradingAddress = await components.hub.methods.trading().call();
+  const policyManagerAddress = await components.hub.methods.policyManager().call();
+  components.participation = await retrieveContract("fund/participation/Participation", participationAddress);
+  components.shares = await retrieveContract("fund/shares/Shares", sharesAddress);
+  components.trading = await retrieveContract("fund/trading/Trading", tradingAddress);
+  components.policyManager = await retrieveContract("fund/policies/PolicyManager", policyManagerAddress);
+  console.log(`Hub: ${hubAddress}`);
+  console.log(`Participation: ${participationAddress}`);
+  console.log(`Trading: ${tradingAddress}`);
+  console.log(`Shares: ${sharesAddress}`);
+  console.log(`PolicyManager: ${policyManagerAddress}`);
+  const routes = await components.hub.methods.settings().call();
+  components = Object.assign(components, {
+    accounting: await retrieveContract("fund/accounting/Accounting", routes.accounting),
+    feeManager: await retrieveContract("fund/fees/FeeManager", routes.feeManager),
+    participation: await retrieveContract("fund/participation/Participation", routes.participation),
+    policyManager: await retrieveContract("fund/policies/PolicyManager", routes.policyManager),
+    shares: await retrieveContract("fund/shares/Shares", routes.shares),
+    trading: await retrieveContract("fund/trading/Trading", routes.trading),
+    vault: await retrieveContract("fund/vault/Vault", routes.vault),
+  });
+  return components;
+}
+
 // TODO: make clearer the separation between deployments in different environments
 // TODO: make JSdoc style documentation tags here
 async function deployEnvironment(environment) {
@@ -412,6 +442,50 @@ async function deployEnvironment(environment) {
     //   ]
     // );
   } else if (environment === "development") {
+    console.log(`Deployer: ${accounts[0]}`);
+    deployed.EthToken = await deployContract("assets/PreminedToken", opts);
+    deployed.MlnToken = await deployContract("assets/PreminedToken", opts);
+    deployed.EurToken = await deployContract("assets/PreminedToken", opts);
+    deployed.TestingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [
+      deployed.EthToken.options.address, 18
+    ]);
+    deployed.MatchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
+    deployed.MatchingMarket.methods.addTokenPairWhitelist(
+      deployed.EthToken.options.address, deployed.MlnToken.options.address
+    ).send(clone(opts));
+    deployed.PriceTolerance = await deployContract('fund/risk-management/PriceTolerance', opts, [10])
+    deployed.Whitelist = await deployContract('fund/compliance/Whitelist', opts, [[accounts[0]]])
+    deployed.MatchingMarketAdapter = await deployContract("exchanges/MatchingMarketAdapter", opts);
+    deployed.AccountingFactory = await deployContract("factory/AccountingFactory", opts);
+    deployed.FeeManagerFactory = await deployContract("factory/FeeManagerFactory", opts);
+    deployed.ParticipationFactory = await deployContract("factory/ParticipationFactory", opts);
+    deployed.SharesFactory = await deployContract("factory/SharesFactory", opts);
+    deployed.TradingFactory = await deployContract("factory/TradingFactory", opts);
+    deployed.VaultFactory = await deployContract("factory/VaultFactory", opts);
+    deployed.PolicyManagerFactory = await deployContract("factory/PolicyManagerFactory", opts);
+    deployed.FundFactory = await deployContract("factory/FundFactory", opts, [
+      deployed.AccountingFactory.options.address,
+      deployed.FeeManagerFactory.options.address,
+      deployed.ParticipationFactory.options.address,
+      deployed.SharesFactory.options.address,
+      deployed.TradingFactory.options.address,
+      deployed.VaultFactory.options.address,
+      deployed.PolicyManagerFactory.options.address
+    ]);
+    await deployed.FundFactory.methods.createComponents(
+      [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+    ).send(opts);
+    await deployed.FundFactory.methods.continueCreation().send(opts);
+    console.log('Components created');
+    await deployed.FundFactory.methods.setupFund().send(opts);
+    console.log('Fund set up');
+    const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
+    deployed.fund = await getFundComponents(hubAddress);
+
+    deployed.fund.policyManager.methods.register(makeOrderSignature, deployed.PriceTolerance.options.address).send(Object(opts))
+    deployed.fund.policyManager.methods.register(takeOrderSignature, deployed.PriceTolerance.options.address).send(Object(opts))
+    deployed.fund.policyManager.methods.register(abiEncode("executeRequestFor", ["address"]), deployed.Whitelist.options.address).send(Object(opts))
+  } else if (environment === "development-old") {
     [opts.from] = accounts;
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
     deployed.EthToken = await deployContract("assets/PreminedAsset", opts);

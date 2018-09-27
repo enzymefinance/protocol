@@ -55,19 +55,31 @@ const fundName = web3.utils.asciiToHex("MelonPortfolio");
 test.serial("can set up new fund", async t => {
   const preManagerEth = new BigNumber(await web3.eth.getBalance(manager));
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  receipt = await version.methods.setupFund(
-    fundName, // name
-    ethToken.options.address, // base asset
-    config.protocol.fund.managementFee,
-    config.protocol.fund.performanceFee,
-    deployed.NoCompliance.options.address,
-    deployed.RMMakeOrders.options.address,
-    [deployed.MatchingMarket.options.address],
-    [mlnToken.options.address],
-    v,
-    r,
-    s,
-  ).send({ from: manager, gas: config.gas, gasPrice });
+  // receipt = await version.methods.setupFund(
+  //   fundName, // name
+  //   ethToken.options.address, // base asset
+  //   config.protocol.fund.managementFee,
+  //   config.protocol.fund.performanceFee,
+  //   deployed.NoCompliance.options.address,
+  //   deployed.RMMakeOrders.options.address,
+  //   [deployed.MatchingMarket.options.address],
+  //   [mlnToken.options.address],
+  //   v,
+  //   r,
+  //   s,
+  // ).send({ from: manager, gas: config.gas, gasPrice });
+
+  await deployed.FundFactory.methods.createComponents(
+    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+  ).send(opts);
+  await deployed.FundFactory.methods.continueCreation().send(opts);
+  console.log('Components created');
+  await deployed.FundFactory.methods.setupFund().send(opts);
+  console.log('Fund set up');
+  const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
+  fund = await getFundComponents(hubAddress);
+
+
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
   const timestamp = (await web3.eth.getBlock(receipt.blockNumber)).timestamp;
   atLastUnclaimedFeeAllocation = new Date(timestamp).valueOf();
