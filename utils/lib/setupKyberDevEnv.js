@@ -1,4 +1,3 @@
-import { updateCanonicalPriceFeed } from "./updatePriceFeed";
 import { deployContract } from "./contracts";
 import governanceAction from "./governanceAction";
 import web3 from "./web3";
@@ -43,11 +42,6 @@ async function setupKyberDevEnv(preKyberDeployed, accounts, opts) {
   await deployed.ConversionRates.methods.addToken(mlnToken.options.address).send();
   await deployed.ConversionRates.methods.setTokenControlInfo(mlnToken.options.address, minimalRecordResolution, maxPerBlockImbalance, maxTotalImbalance).send();
   await deployed.ConversionRates.methods.enableTokenTrade(mlnToken.options.address).send();
-  deployed.KyberNetwork = await deployContract(
-    "exchange/thirdparty/kyber/KyberNetwork",
-    opts,
-    [accounts[0]]
-  );
   deployed.KyberReserve = await deployContract(
     "exchange/thirdparty/kyber/KyberReserve",
     opts,
@@ -60,9 +54,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts, opts) {
 
   // Set pricing for Token
   await mlnToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
-  await updateCanonicalPriceFeed(deployed);
-  const [mlnPrice] =
-    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(mlnToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
+  const mlnPrice = new BigNumber(10 ** 18); // Arbritrary for now
   const ethersPerToken = mlnPrice;
   const tokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerToken).toFixed(0);
   baseBuyRate1.push(tokensPerEther);
@@ -115,8 +107,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts, opts) {
   await deployed.ConversionRates.methods.enableTokenTrade(eurToken.options.address).send();
   await deployed.KyberReserve.methods.approveWithdrawAddress(eurToken.options.address, accounts[0], true).send();
   await eurToken.methods.transfer(deployed.KyberReserve.options.address, new BigNumber(10 ** 26)).send();
-  const [eurPrice] =
-    Object.values(await deployed.CanonicalPriceFeed.methods.getPrice(eurToken.options.address).call()).map(e => new BigNumber(e).toFixed(0));
+  const eurPrice = new BigNumber(10 ** 18); // Arbritrary for now
   const ethersPerEurToken = eurPrice;
   const eurTokensPerEther = precisionUnits.mul(precisionUnits).div(ethersPerEurToken).toFixed(0);
   await deployed.ConversionRates.methods.setBaseRate([eurToken.options.address], [eurTokensPerEther], [ethersPerEurToken], buys, sells, currentBlock, indices).send();

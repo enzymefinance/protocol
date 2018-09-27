@@ -529,7 +529,12 @@ async function deployEnvironment(environment) {
     deployed.EthToken =  await deployContract("assets/WETH9", opts);
     deployed.MlnToken = await deployContract("assets/PreminedAsset", opts, [18]);
     deployed.EurToken = await deployContract("assets/PreminedAsset", opts,  [18]);
-    deployed.EthToken.methods.deposit().send({from: accounts[0], value: new BigNumber(10 ** 26)});
+    await deployed.EthToken.methods.deposit().send({from: accounts[0], value: new BigNumber(10 ** 26)});
+    deployed.KyberNetwork = await deployContract(
+      "exchange/thirdparty/kyber/KyberNetwork",
+      opts,
+      [accounts[0]]
+    );
     deployed.CanonicalPriceFeed = await deployContract("pricefeeds/CanonicalPriceFeed", opts, [
       deployed.MlnToken.options.address,
       deployed.EthToken.options.address,
