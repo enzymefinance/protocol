@@ -6,7 +6,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -91,7 +91,7 @@ test.serial("can set up new fund", async t => {
 });
 
 test.serial("initial calculations", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const [
     gav,
     managementFee,
@@ -224,8 +224,8 @@ test.serial("allows request and execution on the first investment", async t => {
 
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
   const investorPreShares = new BigNumber(await fund.methods.balanceOf(investor).call());
-  await updateCanonicalPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const requestedSharesTotalValue = await calculateOfferValue(firstTest.wantedShares);
   const offerRemainder = firstTest.offeredValue.minus(requestedSharesTotalValue);
   const requestId = await fund.methods.getLastRequestId().call();
@@ -324,8 +324,8 @@ subsequentTests.forEach(testInstance => {
     "executing invest request transfers shares to investor, and remainder of investment offer to investor",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updateCanonicalPriceFeed(deployed);
-      await updateCanonicalPriceFeed(deployed);
+      await updateKyberPriceFeed(deployed);
+      await updateKyberPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = new BigNumber(await fund.methods.balanceOf(investor).call());
       const requestId = await fund.methods.getLastRequestId().call();

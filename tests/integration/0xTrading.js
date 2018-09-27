@@ -4,7 +4,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import {getSignatureParameters, getTermsSignatureParameters} from "../../utils/lib/signing";
-import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
+import {updateKyberPriceFeed} from "../../utils/lib/updatePriceFeed";
 import {deployContract, retrieveContract} from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
 import { takeOrderSignature } from "../../utils/lib/data";
@@ -97,7 +97,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const [, referencePrice] = Object.values(await pricefeed.methods.getReferencePriceInfo(mlnToken.options.address, ethToken.options.address).call());
   const sellQuantity1 = new BigNumber(10 ** 19);
   trade1 = {

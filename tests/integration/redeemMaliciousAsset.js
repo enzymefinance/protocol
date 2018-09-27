@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import governanceAction from "../../utils/lib/governanceAction";
 import { makeOrderSignature } from "../../utils/lib/data";
 
@@ -84,7 +84,7 @@ test.before(async () => {
 });
 
 test.serial("initial investment with ETH", async t => {
-  await updateCanonicalPriceFeed(deployed, {
+  await updateKyberPriceFeed(deployed, {
     [deployed.MlnToken.options.address]: 10 ** 18,
     [maliciousToken.options.address]: 10 ** 18,
     [deployed.EthToken.options.address]: 10 ** 18,
@@ -108,7 +108,7 @@ test.serial("initial investment with ETH", async t => {
 });
 
 test.serial("fund buys some mlnToken", async t => {
-  await updateCanonicalPriceFeed(deployed, {
+  await updateKyberPriceFeed(deployed, {
     [deployed.MlnToken.options.address]: 10 ** 18,
     [maliciousToken.options.address]: 10 ** 18,
     [deployed.EthToken.options.address]: 10 ** 18,

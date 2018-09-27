@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
 import { makeOrderSignature } from "../../utils/lib/data";
@@ -94,8 +94,8 @@ test.before(async () => {
   await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
   );
-  await updateCanonicalPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const requestId = await fund.methods.getLastRequestId().call();
   await fund.methods.executeRequest(requestId).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -103,7 +103,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
 
   const [
     ,
@@ -123,7 +123,7 @@ test.serial(
   "Manager makes an order through simple exchange adapter (with approve)",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await updateCanonicalPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
     await fund.methods.callOnExchange(
       0,
       makeOrderSignature,

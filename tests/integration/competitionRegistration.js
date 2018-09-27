@@ -4,7 +4,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters, getSignatureParameters } from "../../utils/lib/signing";
 import { retrieveContract } from "../../utils/lib/contracts";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -78,7 +78,7 @@ test.serial(
   "Competition registration takes input value of Ether from the registrant and transfers to custodian, deposits corresponding reward amount of MLN into their fund",
   async t => {
     const buyinValue = new BigNumber(0.78 * 10 ** 21);
-    await updateCanonicalPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
     const pre = await getAllBalances(deployed, accounts, fund);
     const preCompetitionMln = new BigNumber(await mlnToken.methods.balanceOf(
       competition.options.address,

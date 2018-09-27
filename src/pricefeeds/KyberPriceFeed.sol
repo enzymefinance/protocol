@@ -15,7 +15,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     // FIELDS
     uint public VALIDITY;
     uint public INTERVAL;
-    address public KYBER_NETWORK;
+    address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
@@ -26,7 +26,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
     function KyberPriceFeed(
-        address ofKyberNetwork,
+        address ofKyberNetworkProxy,
         address ofQuoteAsset,
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
@@ -52,7 +52,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             quoteAssetStandards,
             quoteAssetFunctionSignatures
         );
-        KYBER_NETWORK = ofKyberNetwork;
+        KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         QUOTE_ASSET = ofQuoteAsset;
         INTERVAL = ofInterval;
         setOwner(ofGovernance);
@@ -163,7 +163,8 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
             _quoteAsset = ETH_TOKEN_ADDRESS;
         }
         isRecent = true;
-        (referencePrice,) = KyberNetworkProxy(KYBER_NETWORK).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 1);
+        // 10 ** 10 some random value for now TODO
+        (referencePrice,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 10 ** 10);
         decimals = getDecimals(_quoteAsset);
     }
 

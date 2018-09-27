@@ -5,7 +5,7 @@ import {
   getSignatureParameters,
 } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import getChainTime from "../../utils/lib/getChainTime";
 import deployEnvironment from "../../utils/deploy/contracts";
@@ -99,7 +99,7 @@ test.before(async () => {
 });
 
 test.serial("Registration leads to entry of the fund", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   const competitionTerms = await competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
   await competition.methods.registerForCompetition(fund.options.address, v, r, s).send(

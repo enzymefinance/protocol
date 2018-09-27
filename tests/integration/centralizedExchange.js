@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import { makeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -83,7 +83,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
 
   const [
     ,
@@ -145,8 +145,8 @@ test.serial(
     await fund.methods.requestInvestment(offeredValue, wantedShares, ethToken.options.address).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
     );
-    await updateCanonicalPriceFeed(deployed);
-    await updateCanonicalPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
     const requestId = await fund.methods.getLastRequestId().call();
     await fund.methods.executeRequest(requestId).send(
       { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -173,7 +173,7 @@ test.serial(
   "Manager makes an order through centralized exchange adapter",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    await updateCanonicalPriceFeed(deployed);
+    await updateKyberPriceFeed(deployed);
     await fund.methods.callOnExchange(
       0,
       makeOrderSignature,
@@ -235,7 +235,7 @@ test.serial("Manager settles an order on the exchange interface", async t => {
 });
 
 test.serial("Manager cancels an order from the fund", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   await fund.methods.callOnExchange(
     0,
     makeOrderSignature,
