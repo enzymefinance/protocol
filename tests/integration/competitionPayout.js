@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import {
   getTermsSignatureParameters,
   getSignatureParameters,
@@ -16,9 +16,7 @@ const environmentConfig = require("../../utils/config/environment.js");
 const environment = "development";
 const config = environmentConfig[environment];
 const buyinValue = new BigNumber(0.5 * 10 ** 19);
-const competitionDuration = 15; // Duration in seconds
-const competitionTerms =
-  "0x1A46B45CC849E26BB3159298C3C218EF300D015ED3E23495E77F0E529CE9F69E";
+const competitionDuration = 13; // Duration in seconds
 
 let accounts;
 let deployer;
@@ -34,7 +32,7 @@ const sleep = s => new Promise(resolve => setTimeout(resolve, s * 1000));
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   competitionCompliance = await deployContract(
@@ -46,12 +44,12 @@ test.before(async () => {
     "version/Version",
     Object.assign(opts, { gas: 6800000 }),
     [
-      1,
-      deployed.Governance.address,
-      deployed.MlnToken.address,
-      deployed.EthToken.address,
-      deployed.CanonicalPriceFeed.address,
-      competitionCompliance.address,
+      "1",
+      deployed.Governance.options.address,
+      deployed.MlnToken.options.address,
+      deployed.EthToken.options.address,
+      deployed.CanonicalPriceFeed.options.address,
+      competitionCompliance.options.address,
     ],
     () => {},
     true,
@@ -63,72 +61,57 @@ test.before(async () => {
     "competitions/Competition",
     Object.assign(opts, { gas: 6800000 }),
     [
-      deployed.MlnToken.address,
-      deployed.EurToken.address,
-      version.address,
+      deployed.MlnToken.options.address,
+      version.options.address,
       accounts[5],
       blockchainTime,
       blockchainTime + competitionDuration,
-      22 * 10 ** 18,
-      10 ** 23,
-      10,
+      new BigNumber(22 * 10 ** 18),
+      new BigNumber(10 ** 23),
+      10
     ],
     () => {},
     true,
   );
-  await competitionCompliance.instance.changeCompetitionAddress.postTransaction(
-    opts,
-    [competition.address],
-  );
-  await competition.instance.batchAddToWhitelist.postTransaction(opts, [
-    10 ** 23,
-    [manager],
-  ]);
+  await competitionCompliance.methods.changeCompetitionAddress(competition.options.address).send(opts);
+  await competition.methods.batchAddToWhitelist(new BigNumber(10 ** 23), [manager]).send(opts);
 
   // Fund setup by manager
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      "Suisse Fund",
-      deployed.MlnToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [deployed.MlnToken.address],
-      v,
-      r,
-      s,
-    ],
-  );
-  const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
+  await version.methods.setupFund(
+    web3.utils.toHex("Suisse Fund"),
+    deployed.MlnToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.MatchingMarket.options.address],
+    [deployed.MlnToken.options.address],
+    v,
+    r,
+    s,
+  ).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
+  const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
 
   // Send some MLN to competition contract
-  await deployed.MlnToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [competition.address, 10 ** 24, ""],
-  );
+  await deployed.MlnToken.methods.transfer(competition.options.address, new BigNumber(10 ** 24)).send({ from: deployer, gasPrice: config.gasPrice });
 });
 
 test.serial("Registration leads to entry of the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
+  const competitionTerms = await competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
-  await competition.instance.registerForCompetition.postTransaction(
+  await competition.methods.registerForCompetition(fund.options.address, v, r, s).send(
     {
       from: manager,
       gas: config.gas,
       gasPrice: config.gasPrice,
       value: buyinValue,
-    },
-    [fund.address, v, r, s],
+    }
   );
-  const registrantFund = await competition.instance.getRegistrantFund.call({}, [
-    manager,
-  ]);
-  t.is(registrantFund, fund.address);
+  const registrantFund = await competition.methods.getRegistrantFund(manager).call();
+  t.is(registrantFund, fund.options.address);
 });
 
 test.serial(
@@ -136,36 +119,26 @@ test.serial(
   async t => {
     // Shares of the registrant fund
     const pre = await getAllBalances(deployed, accounts, fund);
-    const managerPreShares = await fund.instance.balanceOf.call({}, [manager]);
-    const competitionPreShares = await fund.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
-    const fundPreSupply = await fund.instance.totalSupply.call({}, []);
-    const timeTillEnd = await competition.instance.getTimeTillEnd.call({}, []);
+    const managerPreShares = new BigNumber(await fund.methods.balanceOf(manager).call());
+    const competitionPreShares = new BigNumber(await fund.methods.balanceOf(competition.options.address).call());
+    const fundPreSupply = await fund.methods.totalSupply().call();
+    const timeTillEnd = await competition.methods.getTimeTillEnd().call();
     await sleep(Number(timeTillEnd) + 2);
     // Random transaction to mine block
-    await api.eth.sendTransaction();
-    await competition.instance.claimReward.postTransaction(
-      {
-        from: manager,
-        gas: config.gas,
-        gasPrice: config.gasPrice,
-      },
-      [],
-    );
+    await competition.methods.claimReward().send({
+      from: manager,
+      gas: config.gas,
+      gasPrice: config.gasPrice,
+    });
     // let gasUsed = (await api.eth.getTransactionReceipt(txId)).gasUsed;
     const post = await getAllBalances(deployed, accounts, fund);
-    const bonusRate = await competition.instance.bonusRate.call({}, []);
-    const expectedShares = buyinValue.mul(bonusRate).div(10 ** 18);
-    const managerPostShares = await fund.instance.balanceOf.call({}, [manager]);
-    const competitionPostShares = await fund.instance.balanceOf.call({}, [
-      competition.address,
-    ]);
-    const fundPostSupply = await fund.instance.totalSupply.call({}, []);
-    t.deepEqual(managerPostShares, managerPreShares.add(expectedShares));
+    const managerPostShares = new BigNumber(await fund.methods.balanceOf(manager).call());
+    const competitionPostShares = new BigNumber(await fund.methods.balanceOf(competition.options.address).call());
+    const fundPostSupply = await fund.methods.totalSupply().call();
+    t.deepEqual(managerPostShares, managerPreShares.add(fundPreSupply));
     t.deepEqual(
       competitionPostShares,
-      competitionPreShares.sub(expectedShares),
+      competitionPreShares.sub(fundPreSupply),
     );
     t.deepEqual(fundPostSupply, fundPreSupply);
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);

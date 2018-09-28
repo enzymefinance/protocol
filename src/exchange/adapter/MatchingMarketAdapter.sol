@@ -4,7 +4,7 @@ import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/MatchingMarket.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
-import "ds-math/math.sol";
+import "../../dependencies/math.sol";
 
 
 /// @title MatchingMarketAdapter Contract
@@ -13,6 +13,8 @@ import "ds-math/math.sol";
 contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
+
+    //  PUBLIC METHODS
 
     // Responsibilities of makeOrder are:
     // - check sender
@@ -39,14 +41,18 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
+        // Remove invalid isInOpenMakeOrder entry
+        Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
+
+        require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
         require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
         require(makerAsset.approve(targetExchange, makerQuantity));
 
@@ -54,13 +60,13 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         require(orderId != 0);   // defines success in MatchingMarket
         require(
-            Fund(this).isInAssetList(takerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(takerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addOpenMakeOrder(targetExchange, makerAsset, orderId);
-        Fund(this).addAssetToOwnedAssets(takerAsset);
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        Fund(address(this)).addAssetToOwnedAssets(takerAsset);
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(orderId),
             Fund.UpdateType.make,
@@ -94,9 +100,9 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
-        var (pricefeed,,) = Fund(this).modules();
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
+        var (pricefeed,,) = Fund(address(this)).modules();
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -115,12 +121,12 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         require(takerAsset.approve(targetExchange, fillTakerQuantity));
         require(MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity));
         require(
-            Fund(this).isInAssetList(makerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addAssetToOwnedAssets(makerAsset);
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.take,
@@ -146,9 +152,9 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     )
-        pre_cond(Fund(this).owner() == msg.sender ||
-                 Fund(this).isShutDown()          ||
-                 Fund(this).orderExpired(targetExchange, orderAddresses[2])
+        pre_cond(Fund(address(this)).owner() == msg.sender ||
+                 Fund(address(this)).isShutDown()          ||
+                 Fund(address(this)).orderExpired(targetExchange, orderAddresses[2])
         )
     {
         require(uint(identifier) != 0);
@@ -157,20 +163,49 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         require(address(makerAsset) == orderAddresses[2]); // ensure we are checking correct asset
 
-        Fund(this).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+        Fund(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.cancel,
-            [address(0x0), address(0x0)],
+            [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
         );
     }
 
     // VIEW METHODS
+
+    // TODO: delete this function if possible
+    function getLastOrderId(address targetExchange)
+        view
+        returns (uint)
+    {
+        return MatchingMarket(targetExchange).last_offer_id();
+    }
+
+    // TODO: delete this function if possible
+    function getOrder(address targetExchange, uint id)
+        view
+        returns (address, address, uint, uint)
+    {
+        var (
+            sellQuantity,
+            sellAsset,
+            buyQuantity,
+            buyAsset
+        ) = MatchingMarket(targetExchange).getOffer(id);
+        return (
+            address(sellAsset),
+            address(buyAsset),
+            sellQuantity,
+            buyQuantity
+        );
+    }
+
+    //  INTERNAL METHODS
 
     /// @dev needed to avoid stack too deep error
     function makeOrderPermitted(
@@ -181,10 +216,10 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     )
         internal
         view
-        returns (bool) 
+        returns (bool)
     {
         require(takerAsset != address(this) && makerAsset != address(this));
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
         require(isRecent);
@@ -217,7 +252,7 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
         view
         returns (bool)
     {
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
         require(isRecent);
         uint orderPrice = pricefeed.getOrderPriceInfo(
@@ -235,33 +270,6 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
                 takerQuantity,
                 makerQuantity
             )
-        );
-    }
-
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        return MatchingMarket(targetExchange).last_offer_id();
-    }
-
-    // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
-        view
-        returns (address, address, uint, uint)
-    {
-        var (
-            sellQuantity,
-            sellAsset,
-            buyQuantity,
-            buyAsset
-        ) = MatchingMarket(targetExchange).getOffer(id);
-        return (
-            address(sellAsset),
-            address(buyAsset),
-            sellQuantity,
-            buyQuantity
         );
     }
 }

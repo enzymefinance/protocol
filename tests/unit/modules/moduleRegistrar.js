@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import {deployContract} from "../../../utils/lib/contracts";
 import deployEnvironment from "../../../utils/deploy/contracts";
 
@@ -26,15 +26,15 @@ const mockCommitHash = "0x892ba2d26d1a1dcca471a4d2babeff8efda0c3da";
 
 test.before(async () => {
   await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, operator, voter] = accounts;
   opts = { from: deployer, gas: config.gas };
 });
 
 test.beforeEach(async t => {
   t.context.simpleCertifier = await deployContract("modules/SimpleCertifier", opts);
-  t.context.moduleRegistrar = await deployContract("modules/ModuleRegistrar", opts, [t.context.simpleCertifier.address]);
-  await t.context.moduleRegistrar.instance.register.postTransaction({ from: operator, gas: config.gas}, [
+  t.context.moduleRegistrar = await deployContract("modules/ModuleRegistrar", opts, [t.context.simpleCertifier.options.address]);
+  await t.context.moduleRegistrar.methods.register(
     registeredModule,
     mockName,
     11,
@@ -42,17 +42,12 @@ test.beforeEach(async t => {
     mockIpfsHash,
     mockAccountRepo,
     mockCommitHash
-  ]);
+  ).send({ from: operator, gas: config.gas});
 });
 
 test("Operator can register a module", async t => {
-  const moduleOperated = await t.context.moduleRegistrar.instance.creatorOperatesModules.call(
-    {},
-    [operator],
-  );
-  const result = await t.context.moduleRegistrar.instance.information.call({}, [
-    moduleOperated,
-  ]);
+  const moduleOperated = await t.context.moduleRegistrar.methods.creatorOperatesModules(operator).call();
+  const result = await t.context.moduleRegistrar.methods.information(moduleOperated).call();
   const [
     name,
     moduleClass,
@@ -73,20 +68,16 @@ test("Operator can register a module", async t => {
   t.is(url, mockUrl);
   t.is(ipfsHash, mockIpfsHash);
   t.is(accountRepo, mockAccountRepo);
-  t.is(api.util.bytesToHex(commitHash), mockCommitHash);
+  t.is(web3.utils.bytesToHex(commitHash), mockCommitHash);
   t.is(Number(sumOfRating), 0);
   t.is(Number(numberOfVoters), 0);
   t.true(exists);
 });
 
 test("Voting updates rating and no of voters correctly", async t => {
-  await t.context.simpleCertifier.instance.certify.postTransaction({ from: deployer, gas: config.gas}, [voter]);
-  await t.context.moduleRegistrar.instance.vote.postTransaction({ from: voter, gas: config.gas},
-    [registeredModule, 5],
-  );
-  const result = await t.context.moduleRegistrar.instance.information.call({}, [
-    registeredModule,
-  ]);
+  await t.context.simpleCertifier.methods.certify(voter).send({ from: deployer, gas: config.gas});
+  await t.context.moduleRegistrar.methods.vote(registeredModule, 5).send({ from: voter, gas: config.gas});
+  const result = await t.context.moduleRegistrar.methods.information(registeredModule).call();
   const [ , , , , , , , sumOfRating, numberOfVoters, ] = Object.values(result);
 
   t.is(Number(sumOfRating), 5);
@@ -94,16 +85,9 @@ test("Voting updates rating and no of voters correctly", async t => {
 });
 
 test("Operator removes a module", async t => {
-  await t.context.moduleRegistrar.instance.remove.postTransaction({ from: operator, gas: config.gas},
-    [registeredModule],
-  );
-  const result = await t.context.moduleRegistrar.instance.information.call({}, [
-    registeredModule,
-  ]);
-  const moduleOperated = await t.context.moduleRegistrar.instance.creatorOperatesModules.call(
-    {},
-    [operator],
-  );
+  await t.context.moduleRegistrar.methods.remove(registeredModule).send({ from: operator, gas: config.gas});
+  const result = await t.context.moduleRegistrar.methods.information(registeredModule).call();
+  const moduleOperated = await t.context.moduleRegistrar.methods.creatorOperatesModules(operator).call();
   const [ , , , , , , , , , exists] = Object.values(result);
 
   t.is(moduleOperated, "0x0000000000000000000000000000000000000000");

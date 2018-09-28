@@ -4,7 +4,7 @@ import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/0x/Exchange.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
-import "ds-math/math.sol";
+import "../../dependencies/math.sol";
 
 
 /// @title ZeroExV1Adapter Contract
@@ -13,6 +13,8 @@ import "ds-math/math.sol";
 contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
 
     //  METHODS
+
+    //  PUBLIC METHODS
 
     /// @notice Make order not implemented for smart contracts in this exchange version
     function makeOrder(
@@ -65,8 +67,8 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         bytes32 r,
         bytes32 s
     ) {
-        require(Fund(this).owner() == msg.sender);
-        require(!Fund(this).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
 
         Token makerAsset = Token(orderAddresses[2]);
         Token takerAsset = Token(orderAddresses[3]);
@@ -80,12 +82,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
         require(filledAmount == fillTakerQuantity);
         require(
-            Fund(this).isInAssetList(makerAsset) ||
-            Fund(this).getOwnedAssetsLength() < Fund(this).MAX_FUND_ASSETS()
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(this).addAssetToOwnedAssets(makerAsset);
-        Fund(this).orderUpdateHook(
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        Fund(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Fund.UpdateType.take,
@@ -106,6 +108,24 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
     ) {
         revert();
     }
+
+    // TODO: delete this function if possible
+    function getLastOrderId(address targetExchange)
+        view
+        returns (uint)
+    {
+        revert();
+    }
+
+    // TODO: delete this function if possible
+    function getOrder(address targetExchange, uint id)
+        view
+        returns (address, address, uint, uint)
+    {
+        revert();
+    }
+
+    // INTERNAL METHODS
 
     /// @dev needed to avoid stack too deep error
     function executeFill(
@@ -129,7 +149,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         return Exchange(targetExchange).fillOrder(
             orderAddresses,
             [
-                orderValues[0], orderValues[1], orderValues[2], 
+                orderValues[0], orderValues[1], orderValues[2],
                 orderValues[3], orderValues[4], orderValues[5]
             ],
             fillTakerQuantity,
@@ -138,7 +158,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
             r,
             s
         );
-     }
+    }
 
     // VIEW METHODS
 
@@ -156,7 +176,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
         require(takerAsset != address(this) && makerAsset != address(this));
         require(address(makerAsset) != address(takerAsset));
         // require(fillTakerQuantity <= maxTakerQuantity);
-        var (pricefeed, , riskmgmt) = Fund(this).modules();
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
         require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
         require(isRecent);
@@ -177,21 +197,4 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC {
             )
         );
     }
-
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        revert();
-    }
-
-    // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
-        view
-        returns (address, address, uint, uint)
-    {
-        revert();
-    }
 }
-

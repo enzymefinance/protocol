@@ -9,3 +9,7 @@ scripts/*
 docs/*
 coverage/*
 utils/build/*
+
+# ignore WIP
+utils/deploy/contracts/*
+tests/unit/modules/*

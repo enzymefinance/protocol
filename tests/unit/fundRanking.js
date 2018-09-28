@@ -1,5 +1,5 @@
 import test from "ava";
-import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import {getTermsSignatureParameters} from "../../utils/lib/signing";
 import {updateCanonicalPriceFeed} from "../../utils/lib/updatePriceFeed";
@@ -16,24 +16,11 @@ let version;
 let manager;
 let deployer;
 
-const fundNames = ["Fund Name 1", "Fund Name 2"];
-
-// To convert bytes to string
-function bytesToString(bytes){
-  let result = "";
-  for(let i = 0; i < bytes.length; i += 1){
-    const convertedChar = (String.fromCharCode(bytes[i]));
-    if (convertedChar === "\u0000") {
-      break;
-    }
-    result+= convertedChar;
-  }
-  return result;
-}
+const fundNames = [web3.utils.padLeft(web3.utils.toHex('Fund Name 1'), 34), web3.utils.padLeft(web3.utils.toHex('Fund Name 2'), 34),];
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager] = accounts;
   version = deployed.Version;
   fundRanking = deployed.FundRanking;
@@ -42,55 +29,48 @@ test.before(async () => {
 test.beforeEach(async () => {
   // Fund Setup 1
   let [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      fundNames[0], // name of the fund
-      deployed.MlnToken.address, // reference asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [],
-      v,
-      r,
-      s,
-    ],
-  );
+  await version.methods.setupFund(
+    fundNames[0], // name of the fund
+    deployed.MlnToken.options.address, // reference asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.MatchingMarket.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
 
   // Fund Setup 2
   [r, s, v] = await getTermsSignatureParameters(deployer);
-  await version.instance.setupFund.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      fundNames[1], // name of the fund
-      deployed.MlnToken.address, // reference asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [],
-      v,
-      r,
-      s,
-    ],
-  );
+  await version.methods.setupFund(
+    fundNames[1], // name of the fund
+    deployed.MlnToken.options.address, // reference asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.MatchingMarket.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
   await updateCanonicalPriceFeed(deployed);
 });
 
 // test to check getFundDetails() method
 test('get address, shareprice, time and name of all funds in a version', async (t) => {
-  accounts = await api.eth.accounts();
-  const fundDetails = await fundRanking.instance.getFundDetails.call({}, [version.address]);
+  const fundDetails = await fundRanking.methods.getFundDetails(version.options.address).call();
   const fundAddresses = [];
-  fundAddresses[0] = await version.instance.getFundById.call({}, [0]);
-  fundAddresses[1] = await version.instance.getFundById.call({}, [1]);
+  fundAddresses[0] = await version.methods.getFundById(0).call();
+  fundAddresses[1] = await version.methods.getFundById(1).call();
   fundNames.forEach((name, i) => {
-    t.is(fundDetails[0][i]._value, fundAddresses[i]);
-    t.not(Number(fundDetails[1][i]._value), 0);
-    t.not(Number(fundDetails[2][i]._value), 0);
-    t.is(bytesToString(fundDetails[3][i]._value), name);
+    t.is(fundDetails[0][i], fundAddresses[i]);
+    t.not(Number(fundDetails[1][i]), 0);
+    t.not(Number(fundDetails[2][i]), 0);
+    t.is(fundDetails[3][i].substr(0, name.length), name);
   });
 });

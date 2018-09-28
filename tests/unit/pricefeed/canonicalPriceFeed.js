@@ -1,7 +1,7 @@
 import test from "ava";
-import api from "../../../utils/lib/api";
+import web3 from "../../../utils/lib/web3";
 import { deployContract } from "../../../utils/lib/contracts";
-import deployEnvironment from "../../../utils/deploy/contracts";
+import { newMockAddress } from "../../../utils/lib/mocks";
 import createStakingFeed from "../../../utils/lib/createStakingFeed";
 
 const environmentConfig = require("../../../utils/config/environment.js");
@@ -12,87 +12,75 @@ const config = environmentConfig[environment];
 BigNumber.config({ DECIMAL_PLACES: 18 });
 
 // hoisted variables
-let eurToken;
-let ethToken;
-let mlnToken;
 let accounts;
-let opts;
-let deployed;
 
 // mock data
-const mockBtcAddress = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
+const mockBtcAddress = newMockAddress();
+const mockEthAddress = newMockAddress();
+const mockEurAddress = newMockAddress();
 const mockIpfs = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG";
-const mockBytes =
-  "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockBytes32 = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
+const mockBytes4 = "0x12345678";
 const mockBreakIn = "0x0360E6384FEa0791e18151c531fe70da23c55fa2";
 const mockBreakOut = "0xc6Eb2A235627Ac97EAbc6452F98Ce296a1EF3984";
-const eurName = "Euro Token";
-const eurSymbol = "EUR-T";
 const eurDecimals = 12; // For different decimal test
-const eurUrl = "europa.eu";
 const ethDecimals = 18;
 const mlnDecimals = 18;
 const btcDecimals = 8;
 const defaultMlnPrice = 10 ** 18;
 
 // helper functions
-function registerEur(pricefeed) {
-  return pricefeed.instance.registerAsset.postTransaction(opts, [
-    eurToken.address,
-    eurName,
-    eurSymbol,
+function registerEur(context) {
+  return context.canonicalPriceFeed.methods.registerAsset(
+    mockEurAddress,
+    web3.utils.padLeft(web3.utils.toHex('Euro Token'), 34),
+    web3.utils.padLeft(web3.utils.toHex('EUR-T'), 34),
     eurDecimals,
-    eurUrl,
+    "europa.eu",
     mockIpfs,
     [mockBreakIn, mockBreakOut],
     [],
     []
-  ]);
+  ).send({from: accounts[0]});
 }
 
-function registerEth(pricefeed) {
-  return pricefeed.instance.registerAsset.postTransaction(opts, [
-    ethToken.address,
-    "Ethereum",
-    "ETH",
+function registerEth(context) {
+  return context.canonicalPriceFeed.methods.registerAsset(
+    mockEthAddress,
+    web3.utils.padLeft(web3.utils.toHex('Ethereum'), 34),
+    web3.utils.padLeft(web3.utils.toHex('ETH'), 34),
     ethDecimals,
     "ethereum.org",
     mockIpfs,
     [mockBreakIn, mockBreakOut],
     [],
     []
-  ]);
+  ).send({from: accounts[0]});
 }
 
-function registerBtc(pricefeed) {
-  return pricefeed.instance.registerAsset.postTransaction(opts, [
+function registerBtc(context) {
+  return context.canonicalPriceFeed.methods.registerAsset(
     mockBtcAddress,
-    "Bitcoin",
-    "BTC",
+    web3.utils.padLeft(web3.utils.toHex('Bitcoin'), 34),
+    web3.utils.padLeft(web3.utils.toHex('BTC'), 34),
     btcDecimals,
     "bitcoin.org",
     mockIpfs,
     [mockBreakIn, mockBreakOut],
     [],
     []
-  ]);
+  ).send({from: accounts[0]});
 }
 
-function bytesToAscii(byteArray) {
-  while(byteArray[byteArray.length-1] === 0) {
-    byteArray.pop();    // strip zeros from end of array
-  }
-  return api.util.hexToAscii(api.util.bytesToHex(byteArray));
+// hex to ascii string, stripping extra zereoes in case of fixed length bytes
+function hexToAsciiStrip(hexString) {
+  return web3.utils.hexToAscii(hexString.replace(/0+$/, ""));
 }
 
 async function createPriceFeedAndStake(context) {
-  const stakingFeed = await createStakingFeed(opts, context.canonicalPriceFeed);
-  await mlnToken.instance.approve.postTransaction(
-    {from: accounts[0]}, [stakingFeed.address, config.protocol.staking.minimumAmount]
-  );
-  await stakingFeed.instance.depositStake.postTransaction(
-    {from: accounts[0]}, [config.protocol.staking.minimumAmount, ""]
-  );
+  const stakingFeed = await createStakingFeed({from: accounts[0], gas: 6000000}, context.canonicalPriceFeed);
+  await context.mlnToken.methods.approve(stakingFeed.options.address, config.protocol.staking.minimumAmount).send({from: accounts[0]});
+  await stakingFeed.methods.depositStake(config.protocol.staking.minimumAmount, "0x00").send({from: accounts[0], gas: 6500000});
   context.pricefeeds.push(stakingFeed);
 }
 
@@ -109,46 +97,27 @@ function medianize(pricesArray) {
   return prices[(len - 1) / 2];
 }
 
-// get unix timestamp for a tx
-async function txidToTimestamp(txid) {
-  const receipt = await api.eth.getTransactionReceipt(txid);
-  const timestamp = (await api.eth.getBlockByHash(receipt.blockHash)).timestamp;
-  return Math.round(new Date(timestamp).getTime()/1000);
-}
-
-async function mineSeconds(seconds) {
-  for (let i = 0; i < seconds; i++) {
-    await sleep(1000);
-    await api.eth.sendTransaction();
-  }
-}
-
-// TODO: remove this in future (when parity devchain implements fast-forwarding blockchain time)
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 test.before(async () => {
-  deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
-  opts = { from: accounts[0], gas: config.gas };
-  ethToken = await deployed.EthToken;
-  eurToken = await deployed.EurToken;
-  mlnToken = await deployed.MlnToken;
+  accounts = await web3.eth.getAccounts();
 });
 
 test.beforeEach(async t => {
+  t.context.mlnToken = await deployContract(
+    "assets/PreminedAsset",
+    {from: accounts[0], gas: config.gas},
+    [18]
+  );
   t.context.canonicalPriceFeed = await deployContract(
     "pricefeeds/CanonicalPriceFeed",
-    { from: accounts[0], gas: 6900000 },
+    {from: accounts[0], gas: config.gas},
     [
-      mlnToken.address,
-      mlnToken.address,
-      "Melon Token",
-      "MLN-T",
+      t.context.mlnToken.options.address,
+      t.context.mlnToken.options.address,
+      web3.utils.padLeft(web3.utils.toHex('MLN token'), 34),
+      web3.utils.padLeft(web3.utils.toHex('MLN-T'), 34),
       mlnDecimals,
-      "melonport.com",
-      mockBytes,
+      web3.utils.padLeft(web3.utils.toHex("melonport.com"), 34),
+      mockBytes32,
       [mockBreakIn, mockBreakOut],
       [],
       [],
@@ -168,137 +137,132 @@ test.beforeEach(async t => {
 });
 
 test("can register assets, as well as update and remove them", async t => {
-  await registerEur(t.context.canonicalPriceFeed);
-  await registerEth(t.context.canonicalPriceFeed);
-  const eurRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [eurToken.address]);
-  const ethRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [ethToken.address]);
-  const mlnRegistered = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [mlnToken.address]);
-  let registeredAssets = await t.context.canonicalPriceFeed.instance.getRegisteredAssets.call();
-  registeredAssets = registeredAssets.map(e => e._value);
+  await registerEth(t.context);
+  await registerEur(t.context);
+  const eurRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(mockEurAddress).call();
+  const ethRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(mockEthAddress).call();
+  const mlnRegistered = await t.context.canonicalPriceFeed.methods.assetIsRegistered(t.context.mlnToken.options.address).call();
+  const registeredAssets = await t.context.canonicalPriceFeed.methods.getRegisteredAssets().call();
   const allInRegistry =
-    registeredAssets.includes(eurToken.address) &&
-    registeredAssets.includes(ethToken.address) &&
-    registeredAssets.includes(mlnToken.address)
+    registeredAssets.includes(mockEurAddress) &&
+    registeredAssets.includes(mockEthAddress) &&
+    registeredAssets.includes(t.context.mlnToken.options.address)
 
   t.true(eurRegistered);
   t.true(ethRegistered);
   t.true(mlnRegistered); // MLN registered by default
   t.true(allInRegistry);
 
-  await t.context.canonicalPriceFeed.instance.updateAsset.postTransaction(opts, [
-    eurToken.address,
-    'New name',
-    'NEW',
+  await t.context.canonicalPriceFeed.methods.updateAsset(
+    mockEurAddress,
+    web3.utils.asciiToHex('New name'),
+    web3.utils.asciiToHex('NEW'),
     12,
-    eurUrl,
+    web3.utils.asciiToHex("europa.eu"),
     mockIpfs,
     [mockBreakIn, mockBreakOut],
     [],
     []
-  ]);
-  const updatedInfo = await t.context.canonicalPriceFeed.instance.assetInformation.call({}, [eurToken.address]);
+  ).send({from: accounts[0]});
+  const updatedInfo = await t.context.canonicalPriceFeed.methods.assetInformation(mockEurAddress).call();
 
-  t.is(bytesToAscii(updatedInfo[1]), "New name");
-  t.is(bytesToAscii(updatedInfo[2]), "NEW");
+  t.is(hexToAsciiStrip(updatedInfo[1]), "New name");
+  t.is(hexToAsciiStrip(updatedInfo[2]), "NEW");
   t.is(Number(updatedInfo[3]), 12);
 
-  await t.context.canonicalPriceFeed.instance.removeAsset.postTransaction(opts, [
-    eurToken.address, 1
-  ]);
-  const eurRegisteredPostRemoval = await t.context.canonicalPriceFeed.instance.assetIsRegistered.call({}, [eurToken.address]);
+  await t.context.canonicalPriceFeed.methods.removeAsset(mockEurAddress, 2).send({from: accounts[0]});
+  const eurRegisteredPostRemoval = await t.context.canonicalPriceFeed.methods.assetIsRegistered(mockEurAddress).call();
 
   t.false(eurRegisteredPostRemoval);
 });
 
 test("can register exchanges, as well as update and remove them", async t => {
-  const mockBytes4 = "0x12345678"
-  const txid = await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
-    deployed.MatchingMarket.address,
-    deployed.MatchingMarketAdapter.address,
+  const mockExchange1 = newMockAddress();
+  const mockAdapter1 = newMockAddress();
+  const mockExchange2 = newMockAddress();
+  const mockAdapter2 = newMockAddress();
+  await t.context.canonicalPriceFeed.methods.registerExchange(
+    mockExchange1,
+    mockAdapter1,
     true,
     [mockBytes4]
-  ]);
-  await t.context.canonicalPriceFeed.instance.registerExchange.postTransaction(opts, [
-    deployed.SimpleMarket.address,
-    deployed.SimpleAdapter.address,
+  ).send({from: accounts[0]});
+  await t.context.canonicalPriceFeed.methods.registerExchange(
+    mockExchange2,
+    mockAdapter2,
     false,
     [mockBytes4]
-  ]);
+  ).send({from: accounts[0]});
 
-  const matchingMarketRegistered = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.MatchingMarket.address]);
-  const simpleMarketRegistered = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.SimpleMarket.address]);
-  let registeredExchanges = await t.context.canonicalPriceFeed.instance.getRegisteredExchanges.call();
-  registeredExchanges = registeredExchanges.map(e => e._value);
+  const matchingMarketRegistered = await t.context.canonicalPriceFeed.methods.exchangeIsRegistered(mockExchange1).call();
+  const simpleMarketRegistered = await t.context.canonicalPriceFeed.methods.exchangeIsRegistered(mockExchange2).call();
+  const registeredExchanges = await t.context.canonicalPriceFeed.methods.getRegisteredExchanges().call();
   const allExchangesInRegistry =
-    registeredExchanges.includes(deployed.MatchingMarket.address) &&
-    registeredExchanges.includes(deployed.SimpleMarket.address)
+    registeredExchanges.includes(mockExchange1) &&
+    registeredExchanges.includes(mockExchange2)
 
   t.true(matchingMarketRegistered);
   t.true(simpleMarketRegistered);
   t.true(allExchangesInRegistry);
 
-  await t.context.canonicalPriceFeed.instance.updateExchange.postTransaction(opts, [
-    deployed.MatchingMarket.address,
-    deployed.SimpleAdapter.address,
+  await t.context.canonicalPriceFeed.methods.updateExchange(
+    mockExchange1,
+    mockAdapter2,
     false,
     []
-  ]);
-  const updatedInfo = await t.context.canonicalPriceFeed.instance.exchangeInformation.call({}, [deployed.MatchingMarket.address]);
-  const functionAllowedPostUpdate = await t.context.canonicalPriceFeed.instance.exchangeMethodIsAllowed.call({}, [deployed.MatchingMarket.address, mockBytes4]);
+  ).send({from: accounts[0]});
+  const updatedInfo = await t.context.canonicalPriceFeed.methods.exchangeInformation(mockExchange1).call();
+  const functionAllowedPostUpdate = await t.context.canonicalPriceFeed.methods.exchangeMethodIsAllowed(mockExchange1, mockBytes4).call();
 
-  t.is(updatedInfo[1], deployed.SimpleAdapter.address);
+  t.is(updatedInfo[1], mockAdapter2);
   t.false(updatedInfo[2]);
   t.false(functionAllowedPostUpdate);
 
-  await t.context.canonicalPriceFeed.instance.removeExchange.postTransaction(opts, [
-    deployed.MatchingMarket.address, 0
-  ]);
-  const matchingMarketRegisteredPostRemoval = await t.context.canonicalPriceFeed.instance.exchangeIsRegistered.call({}, [deployed.MatchingMarket.address]);
+  await t.context.canonicalPriceFeed.methods.removeExchange(
+    mockExchange1, 0
+  ).send({from: accounts[0]});
+  const matchingMarketRegisteredPostRemoval = await t.context.canonicalPriceFeed.methods.exchangeIsRegistered(mockExchange1).call();
 
   t.false(matchingMarketRegisteredPostRemoval);
 });
 
 test("staked pricefeed gets price accounted for, but does not count when unstaked", async t => {
   await createPriceFeedAndStake(t.context);
-  await registerEur(t.context.canonicalPriceFeed);
+  await registerEur(t.context);
   const firstPrice = 150000000;
-  const secondPrice = 20000000000;
-  await t.context.pricefeeds[0].instance.update.postTransaction(
-    { from: accounts[0]},
-    [[mlnToken.address, eurToken.address], [defaultMlnPrice, firstPrice]]
-  );
-  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
-  const isOperatorWhileStaked = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [t.context.pricefeeds[0].address]
-  );
-  const [subfeedPriceStaked, ] = await t.context.pricefeeds[0].instance.getPrice.call(
-    {from: accounts[0]}, [eurToken.address]
-  );
-  const [canonicalPriceStaked, ] = await t.context.canonicalPriceFeed.instance.getPrice.call(
-    {from: accounts[0]}, [eurToken.address]
-  );
+  await t.context.pricefeeds[0].methods.update(
+    [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, firstPrice]
+  ).send({from: accounts[0], gas: 6000000});
+  await web3.evm.increaseTime(1);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, mockEurAddress]).send({from: accounts[0], gas: 6000000});
+  const isOperatorWhileStaked = await t.context.canonicalPriceFeed.methods.isOperator(
+    t.context.pricefeeds[0].options.address
+  ).call();
+  const [subfeedPriceStaked, ] = Object.values(await t.context.pricefeeds[0].methods.getPrice(
+    mockEurAddress
+  ).call());
+  const [canonicalPriceStaked, ] = Object.values(await t.context.canonicalPriceFeed.methods.getPrice(
+    mockEurAddress
+  ).call());
 
   t.true(isOperatorWhileStaked);
   t.is(firstPrice, Number(subfeedPriceStaked));
   t.is(firstPrice, Number(canonicalPriceStaked));
-
-  await t.context.pricefeeds[0].instance.withdrawStake.postTransaction(
-    {from: accounts[0]}, [config.protocol.staking.minimumAmount, ""]
-  );
-  const isOperatorAfterUnstaked = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [t.context.pricefeeds[0].address]
-  );
-  await t.context.pricefeeds[0].instance.update.postTransaction(
-    { from: accounts[0]},
-    [[mlnToken.address, eurToken.address], [defaultMlnPrice, firstPrice]]
-  );    // tx expected to fail, since no longer an operator. This means no price is updated.
-  const [subfeedPriceUnstaked, ] = await t.context.pricefeeds[0].instance.getPrice.call(
-    {from: accounts[0]}, [eurToken.address]
-  );
-  const [canonicalPriceUnstaked, ] = await t.context.canonicalPriceFeed.instance.getPrice.call(
-    {from: accounts[0]}, [eurToken.address]
-  );
-
+  await t.context.pricefeeds[0].methods.unstake(
+    config.protocol.staking.minimumAmount, "0x00"
+  ).send({from: accounts[0], gas: 6000000});
+  const isOperatorAfterUnstaked = await t.context.canonicalPriceFeed.methods.isOperator(
+    t.context.pricefeeds[0].options.address
+  ).call();
+  await t.context.pricefeeds[0].methods.update(
+    [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, firstPrice]
+  ).send({from: accounts[0], gas: 6000000}); // tx expected to fail, since no longer an operator. This means no price is updated.
+  const [subfeedPriceUnstaked, ] = Object.values(await t.context.pricefeeds[0].methods.getPrice(
+    mockEurAddress
+  ).call());
+  const [canonicalPriceUnstaked, ] = Object.values(await t.context.canonicalPriceFeed.methods.getPrice(
+    mockEurAddress
+  ).call());
   t.false(isOperatorAfterUnstaked);
   t.is(firstPrice, Number(subfeedPriceUnstaked));
   t.is(firstPrice, Number(canonicalPriceUnstaked));
@@ -306,30 +270,27 @@ test("staked pricefeed gets price accounted for, but does not count when unstake
 
 test("subfeed returns price correctly", async t => {
   await createPriceFeedAndStake(t.context);
-  await registerEur(t.context.canonicalPriceFeed);
-  await registerEth(t.context.canonicalPriceFeed);
-  await registerBtc(t.context.canonicalPriceFeed);
+  await registerEur(t.context);
+  await registerEth(t.context);
+  await registerBtc(t.context);
   const inputPriceEur = 150000000;
   const inputPriceEth = 2905;
   const inputPriceBtc = 12000000000;
-  await t.context.pricefeeds[0].instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [
-      [mlnToken.address, eurToken.address, ethToken.address, mockBtcAddress],
-      [defaultMlnPrice, inputPriceEur, inputPriceEth, inputPriceBtc],
-    ]
-  );
+  await t.context.pricefeeds[0].methods.update(
+    [t.context.mlnToken.options.address, mockEurAddress, mockEthAddress, mockBtcAddress],
+    [defaultMlnPrice, inputPriceEur, inputPriceEth, inputPriceBtc],
+  ).send({from: accounts[0], gas: 6000000});
   const [eurPrice, ] = Object.values(
-    await t.context.pricefeeds[0].instance.getPrice.call({}, [eurToken.address]),
+    await t.context.pricefeeds[0].methods.getPrice(mockEurAddress).call()
   );
   const [ethPrice, ] = Object.values(
-    await t.context.pricefeeds[0].instance.getPrice.call({}, [ethToken.address]),
+    await t.context.pricefeeds[0].methods.getPrice(mockEthAddress).call()
   );
   const [btcPrice, ] = Object.values(
-    await t.context.pricefeeds[0].instance.getPrice.call({}, [mockBtcAddress]),
+    await t.context.pricefeeds[0].methods.getPrice(mockBtcAddress).call()
   );
   const [mlnPrice, ] = Object.values(
-    await t.context.pricefeeds[0].instance.getPrice.call({}, [mlnToken.address]),
+    await t.context.pricefeeds[0].methods.getPrice(t.context.mlnToken.options.address).call()
   );
 
   t.is(inputPriceEur, Number(eurPrice));
@@ -343,22 +304,21 @@ test("update price for even number of pricefeeds", async t => {
   await createPriceFeedAndStake(t.context);
   await createPriceFeedAndStake(t.context);
   const prices = [new BigNumber(10 ** 20), new BigNumber(2 * 10 ** 20)];
-  await registerEur(t.context.canonicalPriceFeed);
+  await registerEur(t.context);
   for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
-    await t.context.pricefeeds[i].instance.update.postTransaction(
-      { from: accounts[0], gas: 6000000 },
-      [[mlnToken.address, eurToken.address], [defaultMlnPrice, prices[i]]],
-    );
+    await t.context.pricefeeds[i].methods.update(
+      [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, prices[i]],
+    ).send({from: accounts[0], gas: 6000000});
   }
-  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
-  let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, mockEurAddress]).send({from: accounts[0], gas: 6000000});
+  let ownedFeeds = await t.context.canonicalPriceFeed.methods.getPriceFeedsByOwner(accounts[0]).call();
   const [price, ] = Object.values(
-    await t.context.canonicalPriceFeed.instance.getPrice.call({}, [
-      eurToken.address
-    ]),
+    await t.context.canonicalPriceFeed.methods.getPrice(
+      mockEurAddress
+    ).call()
   );
-  ownedFeeds = ownedFeeds.map(e => e._value).sort();
-  const feedAddresses = t.context.pricefeeds.map(e => e.address).sort();
+  ownedFeeds = ownedFeeds.sort();
+  const feedAddresses = t.context.pricefeeds.map(e => e.options.address).sort();
 
   t.is(Number(price), Number(medianize(prices)));
   t.deepEqual(ownedFeeds, feedAddresses);
@@ -373,24 +333,21 @@ test("update price for odd number of pricefeeds", async t => {
     new BigNumber(2 * 10 ** 20),
     new BigNumber(4 * 10 ** 20),
   ];
-  await registerEur(t.context.canonicalPriceFeed);
+  await registerEur(t.context);
   for (let i = 0; i < t.context.pricefeeds.length; i += 1) {
-    await t.context.pricefeeds[i].instance.update.postTransaction(
-      { from: accounts[0], gas: 6000000 },
-      [[mlnToken.address, eurToken.address], [defaultMlnPrice, prices[i]]],
-    );
+    await t.context.pricefeeds[i].methods.update(
+      [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, prices[i]],
+    ).send({from: accounts[0], gas: 6000000});
   }
-  await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
-  let ownedFeeds = await t.context.canonicalPriceFeed.instance.getPriceFeedsByOwner.call({}, [accounts[0]]);
+  await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, mockEurAddress]).send({from: accounts[0], gas: 6000000});
+  let ownedFeeds = await t.context.canonicalPriceFeed.methods.getPriceFeedsByOwner(accounts[0]).call();
   const [, price] = Object.values(
-    await t.context.canonicalPriceFeed.instance.getPriceInfo.call({}, [
-      eurToken.address,
-    ]),
+    await t.context.canonicalPriceFeed.methods.getPriceInfo(mockEurAddress).call()
   );
-  ownedFeeds = ownedFeeds.map(e => e._value).sort();
-  const feedAddresses = t.context.pricefeeds.map(e => e.address).sort();
+  ownedFeeds = ownedFeeds.sort();
+  const feedAddresses = t.context.pricefeeds.map(e => e.options.address).sort();
 
-  t.deepEqual(price, medianize(prices));
+  t.deepEqual(new BigNumber(price), medianize(prices));
   t.deepEqual(ownedFeeds, feedAddresses);
 });
 
@@ -399,7 +356,7 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
   await createPriceFeedAndStake(t.context);
   await createPriceFeedAndStake(t.context);
   await createPriceFeedAndStake(t.context);
-  await registerEur(t.context.canonicalPriceFeed);
+  await registerEur(t.context);
 
   const priceScenarios = [
     [
@@ -444,51 +401,51 @@ test("canonical feed gets price when minimum number of feeds updated, but not al
   /* eslint no-restricted-syntax: ["error", "for"] */
   for (const prices of priceScenarios) {
     for (const [i, price] of prices.entries()) { // will only update to length of `prices`
-      await t.context.pricefeeds[i].instance.update.postTransaction(
-        { from: accounts[0] }, [[mlnToken.address, eurToken.address], [defaultMlnPrice, price]],
-      );
+      await t.context.pricefeeds[i].methods.update(
+        [t.context.mlnToken.options.address, mockEurAddress], [defaultMlnPrice, price]
+      ).send({from: accounts[0], gas: 6000000});
+      await web3.evm.increaseTime(1);
     }
-    await t.context.canonicalPriceFeed.instance.collectAndUpdate.postTransaction(opts, [[mlnToken.address, eurToken.address]]);
-    const operators = (await t.context.canonicalPriceFeed.instance.getOperators.call()).map(e => e._value);
-    const [canonicalPrice, ] = await t.context.canonicalPriceFeed.instance.getPrice.call({}, [eurToken.address]);
+    await t.context.canonicalPriceFeed.methods.collectAndUpdate([t.context.mlnToken.options.address, mockEurAddress]).send({from: accounts[0], gas: 6000000});
+    const operators = (await t.context.canonicalPriceFeed.methods.getOperators().call());
+    const [canonicalPrice, ] = Object.values(await t.context.canonicalPriceFeed.methods.getPrice(mockEurAddress).call());
 
     t.is(Number(canonicalPrice), Number(medianize(prices)));
-    t.deepEqual(operators.sort(), t.context.pricefeeds.map(e => e.address).sort());
+    t.deepEqual(operators.sort(), t.context.pricefeeds.map(e => e.options.address).sort());
   }
 });
 
 // Governance assumed to be accounts[0]
 test("governance cannot manually force a price update", async t => {
-  await registerEur(t.context.canonicalPriceFeed);
-  const preUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
-  await t.context.canonicalPriceFeed.instance.update.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [[eurToken.address], [50000]]
+  await registerEur(t.context);
+  const preUpdateId = Number(await t.context.canonicalPriceFeed.methods.updateId().call());
+
+  await t.throws(
+    t.context.canonicalPriceFeed.methods.update(
+      [mockEurAddress, t.context.mlnToken.options.address],
+      [50000, 10000]
+    ).send({from: accounts[0], gas: 6000000})
   );
-  const postUpdateId = Number(await t.context.canonicalPriceFeed.instance.updateId.call());
+
+  const postUpdateId = Number(await t.context.canonicalPriceFeed.methods.updateId().call());
 
   t.is(preUpdateId, postUpdateId)
 });
 
 test("governance can burn stake of an operator", async t => {
   await createPriceFeedAndStake(t.context);
-  const stakingFeedAddress = t.context.pricefeeds[0].address;
-  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [stakingFeedAddress, config.protocol.staking.minimumAmount, ""]
-  );
-  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
+  const stakingFeedAddress = t.context.pricefeeds[0].options.address;
+  const isOperatorBefore = await t.context.canonicalPriceFeed.methods.isOperator(stakingFeedAddress).call();
+  const stakedAmountBefore = await t.context.canonicalPriceFeed.methods.totalStakedFor(stakingFeedAddress).call();
+  await t.context.canonicalPriceFeed.methods.burnStake(
+    stakingFeedAddress
+  ).send({from: accounts[0]});
+  const isOperatorAfter = await t.context.canonicalPriceFeed.methods.isOperator(
+    stakingFeedAddress
+  ).call();
+  const stakedAmountAfter = await t.context.canonicalPriceFeed.methods.totalStakedFor(
+    stakingFeedAddress
+  ).call();
   t.is(Number(stakedAmountBefore), config.protocol.staking.minimumAmount)
   t.is(Number(stakedAmountAfter), 0)
   t.true(isOperatorBefore);
@@ -497,70 +454,17 @@ test("governance can burn stake of an operator", async t => {
 
 test("only governance is allowed to call burnStake", async t => {
   await createPriceFeedAndStake(t.context);
-  const stakingFeedAddress = t.context.pricefeeds[0].address;
-  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [t.context.pricefeeds[0].address]
-  );
-  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[1], gas: 6000000 },
-    [stakingFeedAddress, config.protocol.staking.minimumAmount, ""]
-  );
-  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
+  const stakingFeedAddress = t.context.pricefeeds[0].options.address;
+  const isOperatorBefore = await t.context.canonicalPriceFeed.methods.isOperator(t.context.pricefeeds[0].options.address).call();
+  const stakedAmountBefore = await t.context.canonicalPriceFeed.methods.totalStakedFor(stakingFeedAddress).call();
+  await t.throws(t.context.canonicalPriceFeed.methods.burnStake(
+    stakingFeedAddress
+  ).send({from: accounts[1], gas: 6000000}));
+  const isOperatorAfter = await t.context.canonicalPriceFeed.methods.isOperator(
+    stakingFeedAddress
+  ).call();
+  const stakedAmountAfter = await t.context.canonicalPriceFeed.methods.totalStakedFor(stakingFeedAddress).call();
   t.deepEqual(stakedAmountAfter, stakedAmountBefore);
   t.true(isOperatorBefore);
   t.true(isOperatorAfter);
-});
-
-test("cannot burn stake lower than minimum stake unless it becomes zero", async t => {
-  await createPriceFeedAndStake(t.context);
-  // Stake additional amount
-  const additionalStake = 100;
-  const stakingFeedAddress = t.context.pricefeeds[0].address;
-  await mlnToken.instance.approve.postTransaction(
-    {from: accounts[0]}, [stakingFeedAddress, additionalStake]
-  );
-  await t.context.pricefeeds[0].instance.depositStake.postTransaction(
-    {from: accounts[0]}, [additionalStake, ""]
-  );
-  const isOperatorBefore = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountBefore = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [stakingFeedAddress, additionalStake + 1, ""]
-  );
-  const isOperatorAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  t.deepEqual(stakedAmountAfter, stakedAmountBefore);
-  t.true(isOperatorBefore);
-  t.true(isOperatorAfter);
-
-  // Works if stake is burnt equal or greater than minimum stake
-  await t.context.canonicalPriceFeed.instance.burnStake.postTransaction(
-    { from: accounts[0], gas: 6000000 },
-    [stakingFeedAddress, additionalStake, ""]
-  );
-  const isOperatorFurtherAfter = await t.context.canonicalPriceFeed.instance.isOperator.call(
-    {}, [stakingFeedAddress]
-  );
-  const stakedAmountFurtherAfter = await t.context.canonicalPriceFeed.instance.totalStakedFor.call(
-    {}, [stakingFeedAddress]
-  );
-  t.true(isOperatorFurtherAfter);
-  t.is(Number(stakedAmountFurtherAfter), config.protocol.staking.minimumAmount);
 });

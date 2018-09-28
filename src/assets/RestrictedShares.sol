@@ -1,11 +1,13 @@
 pragma solidity ^0.4.21;
 
 import "../assets/Shares.sol";
+import "../assets/ERC223ReceivingContract.sol";
+import "../assets/ERC223Interface.sol";
 
 /// @title Restricted Shares Contract to prevent secondary trading of shares.
 /// @author Melonport AG <team@melonport.com>
 /// @notice Fund
-contract RestrictedShares is Shares {
+contract RestrictedShares is ERC223Interface, Shares {
 
     // CONSTRUCTOR
 
@@ -52,7 +54,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, empty);
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -69,8 +71,7 @@ contract RestrictedShares is Shares {
         returns (bool success)
     {
         require(msg.sender == address(this) || _to == address(this));
-        
-        bytes memory empty;
+
         uint codeLength;
 
         assembly {
@@ -87,7 +88,7 @@ contract RestrictedShares is Shares {
             ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
             receiver.tokenFallback(msg.sender, _value, _data);
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -98,7 +99,7 @@ contract RestrictedShares is Shares {
     /// @return Returns success of function call.
     function approve(address _spender, uint _value) public returns (bool) {
         require(msg.sender == address(this));
-        require(_spender != 0x0);
+        require(_spender != address(0));
 
         // To change the approve amount you first have to reduce the addresses`
         // allowance to zero by calling `approve(_spender, 0)` if it is not
@@ -107,7 +108,7 @@ contract RestrictedShares is Shares {
         require(_value == 0 || allowed[msg.sender][_spender] == 0);
 
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 

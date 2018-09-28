@@ -1,7 +1,6 @@
 pragma solidity ^0.4.21;
 
 import "./assets/Shares.sol";
-import "./assets/ERC223ReceivingContract.sol";
 import "./dependencies/DBC.sol";
 import "./dependencies/Owned.sol";
 import "./compliance/ComplianceInterface.sol";
@@ -9,13 +8,12 @@ import "./pricefeeds/CanonicalPriceFeed.sol";
 import "./riskmgmt/RiskMgmtInterface.sol";
 import "./exchange/GenericExchangeInterface.sol";
 import "./FundInterface.sol";
-import "ds-weth/weth9.sol";
-import "ds-math/math.sol";
+import "./dependencies/math.sol";
 
 /// @title Melon Fund Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Simple Melon Fund
-contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContract {
+contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     event OrderUpdated(address exchange, bytes32 orderId, UpdateType updateType);
 
@@ -38,13 +36,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         uint timestamp; // Time when calculations are performed in seconds
     }
 
-    enum UpdateType { make, take, cancel }
+    enum UpdateType { make, take, cancel, swap }
     enum RequestStatus { active, cancelled, executed }
-    enum RequestType { invest, redeem, tokenFallbackRedeem }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
         RequestStatus status; // Enum: active, cancelled, executed; Status of request
-        RequestType requestType; // Enum: invest, redeem, tokenFallbackRedeem
         address requestAsset; // Address of the asset being requested
         uint shareQuantity; // Quantity of Melon fund shares
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
@@ -67,7 +63,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     struct Order { // Describes an order event (make or take order)
         address exchangeAddress; // address of the exchange this order is on
         bytes32 orderId; // Id as returned from exchange
-        UpdateType updateType; // Enum: make, take (cancel should be ignored)
+        UpdateType updateType; // Enum: make, take, swap (cancel should be ignored)
         address makerAsset; // Order maker's asset
         address takerAsset; // Order taker's asset
         uint makerQuantity; // Quantity of makerAsset to be traded
@@ -82,10 +78,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     uint public constant MAX_FUND_ASSETS = 20; // Max ownable assets by the fund supported by gas limits
     uint public constant ORDER_EXPIRATION_TIME = 86400; // Make order expiration time (1 day)
     // Constructor fields
-    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
-    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public MANAGEMENT_FEE_RATE; // Fee rate in QUOTE_ASSET per managed seconds in WAD
+    uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
+    Asset public NATIVE_ASSET; // NATIVE asset as ERC20 contract
     // Methods fields
     Modules public modules; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
@@ -95,7 +92,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     bool public isShutDown; // Security feature, if yes than investing, managing, allocateUnclaimedFees gets blocked
     Request[] public requests; // All the requests this fund received from participants
     mapping (address => bool) public isInvestAllowed; // If false, fund rejects investments from the key asset
-    mapping (address => bool) public isRedeemAllowed; // If false, fund rejects redemptions in the key asset
     address[] public ownedAssets; // List of all assets owned by the fund or for which the fund has open make orders
     mapping (address => bool) public isInAssetList; // Mapping from asset to whether the asset exists in ownedAssets
     mapping (address => bool) public isInOpenMakeOrder; // Mapping from asset to whether the asset is in a open make order as buy asset
@@ -106,19 +102,20 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     /// @dev Should only be called via Version.setupFund(..)
     /// @param withName human-readable descriptive name (not necessarily unique)
-    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest/redeem using this single asset
+    /// @param ofQuoteAsset Asset against which mgmt and performance fee is measured against and which can be used to invest using this single asset
     /// @param ofManagementFee A time based fee expressed, given in a number which is divided by 1 WAD
     /// @param ofPerformanceFee A time performance based fee, performance relative to ofQuoteAsset, given in a number which is divided by 1 WAD
     /// @param ofCompliance Address of compliance module
     /// @param ofRiskMgmt Address of risk management module
     /// @param ofPriceFeed Address of price feed module
     /// @param ofExchanges Addresses of exchange on which this fund can trade
-    /// @param ofDefaultAssets Addresses of assets to enable invest/redeem for (quote asset is already enabled)
+    /// @param ofDefaultAssets Addresses of assets to enable invest for (quote asset is already enabled)
     /// @return Deployed Fund with manager set as ofManager
     function Fund(
         address ofManager,
         bytes32 withName,
         address ofQuoteAsset,
+        address ofNativeAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
@@ -132,7 +129,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         require(ofManagementFee < 10 ** 18); // Require management fee to be less than 100 percent
         require(ofPerformanceFee < 10 ** 18); // Require performance fee to be less than 100 percent
         isInvestAllowed[ofQuoteAsset] = true;
-        isRedeemAllowed[ofQuoteAsset] = true;
         owner = ofManager;
         MANAGEMENT_FEE_RATE = ofManagementFee; // 1 percent is expressed as 0.01 * 10 ** 18
         PERFORMANCE_FEE_RATE = ofPerformanceFee; // 1 percent is expressed as 0.01 * 10 ** 18
@@ -151,6 +147,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             }));
         }
         QUOTE_ASSET = Asset(ofQuoteAsset);
+        NATIVE_ASSET = Asset(ofNativeAsset);
         // Quote Asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;
@@ -158,7 +155,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         for (uint j = 0; j < ofDefaultAssets.length; j++) {
             require(modules.pricefeed.assetIsRegistered(ofDefaultAssets[j]));
             isInvestAllowed[ofDefaultAssets[j]] = true;
-            isRedeemAllowed[ofDefaultAssets[j]] = true;
         }
         atLastUnclaimedFeeAllocation = Calculations({
             gav: 0,
@@ -183,6 +179,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         pre_cond(isOwner())
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
+            require(modules.pricefeed.assetIsRegistered(ofAssets[i]));
             isInvestAllowed[ofAssets[i]] = true;
         }
     }
@@ -195,28 +192,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     {
         for (uint i = 0; i < ofAssets.length; ++i) {
             isInvestAllowed[ofAssets[i]] = false;
-        }
-    }
-
-    /// @notice Enable redemption in specified assets
-    /// @param ofAssets Array of assets to enable redemption in
-    function enableRedemption(address[] ofAssets)
-        external
-        pre_cond(isOwner())
-    {
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            isRedeemAllowed[ofAssets[i]] = true;
-        }
-    }
-
-    /// @notice Disable redemption in specified assets
-    /// @param ofAssets Array of assets to disable redemption in
-    function disableRedemption(address[] ofAssets)
-        external
-        pre_cond(isOwner())
-    {
-        for (uint i = 0; i < ofAssets.length; ++i) {
-            isRedeemAllowed[ofAssets[i]] = false;
         }
     }
 
@@ -242,7 +217,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         requests.push(Request({
             participant: msg.sender,
             status: RequestStatus.active,
-            requestType: RequestType.invest,
             requestAsset: investmentAsset,
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
@@ -250,36 +224,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             timestamp: now,
             atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
-        RequestUpdated(getLastRequestId());
-    }
 
-    /// @notice Give shares of this fund to receive melon tokens
-    /// @dev Recommended to give some leeway in prices to account for possibly slightly changing prices
-    /// @param shareQuantity Quantity of shares times 10 ** 18 offered to redeem
-    /// @param receiveQuantity Quantity of Melon token times 10 ** 18 requested to receive for shareQuantity
-    /// @param redemptionAsset Address of asset to redeem in
-    function requestRedemption(
-        uint shareQuantity,
-        uint receiveQuantity,
-        address redemptionAsset
-      )
-        external
-        pre_cond(!isShutDown)
-        pre_cond(isRedeemAllowed[redemptionAsset]) // Redemption using the redemptionAsset has not been deactivated by Manager
-        pre_cond(modules.compliance.isRedemptionPermitted(msg.sender, shareQuantity, receiveQuantity)) // Compliance Module: Redemption permitted
-    {
-        requests.push(Request({
-            participant: msg.sender,
-            status: RequestStatus.active,
-            requestType: RequestType.redeem,
-            requestAsset: redemptionAsset,
-            shareQuantity: shareQuantity,
-            giveQuantity: shareQuantity,
-            receiveQuantity: receiveQuantity,
-            timestamp: now,
-            atUpdateId: modules.pricefeed.getLastUpdateId()
-        }));
-        RequestUpdated(getLastRequestId());
+        emit RequestUpdated(getLastRequestId());
     }
 
     /// @notice Executes active investment and redemption requests, in a way that minimises information advantages of investor
@@ -290,7 +236,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(requests[id].requestType != RequestType.redeem || requests[id].shareQuantity <= balances[requests[id].participant]) // request owner does not own enough shares
         pre_cond(
             _totalSupply == 0 ||
             (
@@ -301,7 +246,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
     {
         Request request = requests[id];
-        var (isRecent, requestAssetPrice, ) =
+        var (isRecent, , ) =
             modules.pricefeed.getPriceInfo(address(request.requestAsset));
         require(isRecent);
 
@@ -317,32 +262,15 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
 
         if (
             isInvestAllowed[request.requestAsset] &&
-            request.requestType == RequestType.invest &&
             costQuantity <= request.giveQuantity
         ) {
             request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transferFrom(request.participant, this, costQuantity)); // Allocate Value
+            require(AssetInterface(request.requestAsset).transferFrom(request.participant, address(this), costQuantity)); // Allocate Value
             createShares(request.participant, request.shareQuantity); // Accounting
             if (!isInAssetList[request.requestAsset]) {
                 ownedAssets.push(request.requestAsset);
                 isInAssetList[request.requestAsset] = true;
             }
-        } else if (
-            isRedeemAllowed[request.requestAsset] &&
-            request.requestType == RequestType.redeem &&
-            request.receiveQuantity <= costQuantity
-        ) {
-            request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
-            annihilateShares(request.participant, request.shareQuantity); // Accounting
-        } else if (
-            isRedeemAllowed[request.requestAsset] &&
-            request.requestType == RequestType.tokenFallbackRedeem &&
-            request.receiveQuantity <= costQuantity
-        ) {
-            request.status = RequestStatus.executed;
-            assert(AssetInterface(request.requestAsset).transfer(request.participant, costQuantity)); // Return value
-            annihilateShares(this, request.shareQuantity); // Accounting
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
@@ -404,13 +332,17 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     )
         external
     {
-        require(modules.pricefeed.exchangeMethodIsAllowed(
-            exchanges[exchangeIndex].exchange, method
-        ));
-        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(
-            method, exchanges[exchangeIndex].exchange,
-            orderAddresses, orderValues, identifier, v, r, s
-        ));
+        require(
+            modules.pricefeed.exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange, method
+            )
+        );
+        require(
+            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
+                method, exchanges[exchangeIndex].exchange,
+                orderAddresses, orderValues, identifier, v, r, s
+            )
+        );
     }
 
     function addOpenMakeOrder(
@@ -431,6 +363,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     )
         pre_cond(msg.sender == address(this))
     {
+        isInOpenMakeOrder[ofSellAsset] = false;
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }
 
@@ -444,7 +377,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         pre_cond(msg.sender == address(this))
     {
         // only save make/take
-        if (updateType == UpdateType.make || updateType == UpdateType.take) {
+        if (updateType == UpdateType.make || updateType == UpdateType.take || updateType == UpdateType.swap) {
             orders.push(Order({
                 exchangeAddress: ofExchange,
                 orderId: orderId,
@@ -461,41 +394,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     }
 
     // PUBLIC METHODS
-
-    // PUBLIC METHODS : ERC223
-
-    /// @dev Standard ERC223 function that handles incoming token transfers.
-    /// @dev This type of redemption can be seen as a "market order", where price is calculated at execution time
-    /// @param ofSender  Token sender address.
-    /// @param tokenAmount Amount of tokens sent.
-    /// @param metadata  Transaction metadata.
-    function tokenFallback(
-        address ofSender,
-        uint tokenAmount,
-        bytes metadata
-    ) {
-        if (msg.sender != address(this)) {
-            // when ofSender is a recognized exchange, receive tokens, otherwise revert
-            for (uint i; i < exchanges.length; i++) {
-                if (exchanges[i].exchange == ofSender) return; // receive tokens and do nothing
-            }
-            revert();
-        } else {    // otherwise, make a redemption request
-            requests.push(Request({
-                participant: ofSender,
-                status: RequestStatus.active,
-                requestType: RequestType.tokenFallbackRedeem,
-                requestAsset: address(QUOTE_ASSET), // redeem in QUOTE_ASSET
-                shareQuantity: tokenAmount,
-                giveQuantity: tokenAmount,              // shares being sent
-                receiveQuantity: 0,          // value of the shares at request time
-                timestamp: now,
-                atUpdateId: modules.pricefeed.getLastUpdateId()
-            }));
-            RequestUpdated(getLastRequestId());
-        }
-    }
-
 
     // PUBLIC METHODS : ACCOUNTING
 
@@ -514,7 +412,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             address ofAsset = tempOwnedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)), // asset base units held by fund
+                uint(AssetInterface(ofAsset).balanceOf(address(this))), // asset base units held by fund
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -532,7 +430,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
                 isInAssetList[ofAsset] = false; // Remove from ownedAssets if asset holdings are zero
             }
         }
-        PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
+        emit PortfolioContent(tempOwnedAssets, allAssetHoldings, allAssetPrices);
     }
 
     /// @notice Add an asset to the list that this fund owns
@@ -637,7 +535,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         // The value of unclaimedFees measured in shares of this fund at current value
         feesShareQuantity = (gav == 0) ? 0 : mul(_totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-         uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
+        uint totalSupplyAccountingForFees = add(_totalSupply, feesShareQuantity);
         sharePrice = _totalSupply > 0 ? calcValuePerShare(gav, totalSupplyAccountingForFees) : toSmallestShareUnit(1); // Handle potential division through zero by defining a default value
     }
 
@@ -670,8 +568,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             timestamp: now
         });
 
-        FeesConverted(now, feesShareQuantity, unclaimedFees);
-        CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
+        emit FeesConverted(now, feesShareQuantity, unclaimedFees);
+        emit CalculationUpdate(now, managementFee, performanceFee, nav, sharePrice, _totalSupply);
 
         return sharePrice;
     }
@@ -681,7 +579,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
     /// @notice Redeems by allocating an ownership percentage only of requestedAssets to the participant
     /// @dev This works, but with loops, so only up to a certain number of assets (right now the max is 4)
     /// @dev Independent of running price feed! Note: if requestedAssets != ownedAssets then participant misses out on some owned value
-    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for individual assets
+    /// @param shareQuantity Number of shares owned by the participant, which the participant would like to redeem for a slice of assets
     /// @param requestedAssets List of addresses that consitute a subset of ownedAssets.
     /// @return Whether all assets sent to shareholder or not
     function emergencyRedeem(uint shareQuantity, address[] requestedAssets)
@@ -696,6 +594,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
         // Check whether enough assets held by fund
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            require(isInAssetList[ofAsset]);
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 if (ofAsset == redeemedAssets[j]) {
                     revert();
@@ -703,7 +602,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             }
             redeemedAssets[i] = ofAsset;
             uint assetHoldings = add(
-                uint(AssetInterface(ofAsset).balanceOf(this)),
+                uint(AssetInterface(ofAsset).balanceOf(address(this))),
                 quantityHeldInCustodyOfExchange(ofAsset)
             );
 
@@ -713,9 +612,9 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             ownershipQuantities[i] = mul(assetHoldings, shareQuantity) / _totalSupply;
 
             // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            if (uint(AssetInterface(ofAsset).balanceOf(this)) < ownershipQuantities[i]) {
+            if (uint(AssetInterface(ofAsset).balanceOf(address(this))) < ownershipQuantities[i]) {
                 isShutDown = true;
-                ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
+                emit ErrorMessage("CRITICAL ERR: Not enough assetHoldings for owed ownershipQuantitiy");
                 return false;
             }
         }
@@ -733,9 +632,11 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
                 revert();
             }
         }
-        Redeemed(msg.sender, now, shareQuantity);
+        emit Redeemed(msg.sender, now, shareQuantity);
         return true;
     }
+
+    function() public payable { }
 
     // PUBLIC : FEES
 
@@ -749,17 +650,17 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface, ERC223ReceivingContr
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            var (, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
-            if (exchanges[i].takesCustody) {
+            if (!exchanges[i].takesCustody) {
                 totalSellQuantityInApprove += sellQuantity;
             }
         }
         if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
+            isInOpenMakeOrder[ofAsset] = false;
         }
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }

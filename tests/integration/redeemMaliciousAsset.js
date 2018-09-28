@@ -1,10 +1,11 @@
 import test from "ava";
-import api from "../../utils/lib/api";
+import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import governanceAction from "../../utils/lib/governanceAction";
+import { makeOrderSignature } from "../../utils/lib/data";
 
 const environmentConfig = require("../../utils/config/environment.js");
 
@@ -33,119 +34,74 @@ const wantedShares = 500000;
 const sellQuantity = 1000;
 const buyQuantity = 1000;
 
-// define order signatures
-const makeOrderSignature = api.util
-  .abiSignature("makeOrder", [
-    "address",
-    "address[5]",
-    "uint256[8]",
-    "bytes32",
-    "uint8",
-    "bytes32",
-    "bytes32",
-  ])
-  .slice(0, 10);
-
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await api.eth.accounts();
+  accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   opts = { from: deployer, gas: config.gas, gasPrice: config.gasPrice };
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  maliciousToken = await deployContract("testing/MaliciousToken", { from: deployer });
-  await deployed.MatchingMarket.instance.addTokenPairWhitelist.postTransaction(
-    { from: deployer }, [ethToken.address, maliciousToken.address]
+  maliciousToken = await deployContract("testing/MaliciousToken", opts, [18]);
+  await deployed.MatchingMarket.methods.addTokenPairWhitelist(ethToken.options.address, maliciousToken.options.address).send(
+    opts,
   );
-  await governanceAction(
-    { from: deployer }, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
-    [
-      deployed.MatchingMarket.address,
-      deployed.MatchingMarketAdapter.address,
-      true,
-      [ makeOrderSignature ]
-    ]
-  );
+
   await governanceAction(
     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerAsset',
     [
-      maliciousToken.address, 'MaliciousToken', 'MAL', 18, '',
+      maliciousToken.options.address, web3.utils.toHex('MaliciousToken'), web3.utils.toHex('MAL'), 18, '',
       mockBytes, [mockAddress, mockAddress], [], []
     ]
   );
-  await governanceAction(
-    opts,
-    deployed.Governance,
-    deployed.CanonicalPriceFeed,
-    "registerAsset",
-    [
-      maliciousToken.address,
-      "MaliciousToken",
-      "MAL",
-      18,
-      "",
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-    ],
-  );
-
   // give investor some Eth to use
-  await ethToken.instance.transfer.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [investor, initialEth, ""],
+  await ethToken.methods.transfer(investor, initialEth).send(
+    opts
   );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.instance.setupFund.postTransaction(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice },
-    [
-      "Fund", // same name as before
-      ethToken.address, // base asset
-      config.protocol.fund.managementFee,
-      config.protocol.fund.performanceFee,
-      deployed.NoCompliance.address,
-      deployed.RMMakeOrders.address,
-      [deployed.MatchingMarket.address],
-      [],
-      v,
-      r,
-      s,
-    ],
+  await version.methods.setupFund(
+    web3.utils.toHex("Fund"), // same name as before
+    ethToken.options.address, // base asset
+    config.protocol.fund.managementFee,
+    config.protocol.fund.performanceFee,
+    deployed.NoCompliance.options.address,
+    deployed.RMMakeOrders.options.address,
+    [deployed.MatchingMarket.options.address],
+    [],
+    v,
+    r,
+    s,
+  ).send(
+    { from: manager, gas: config.gas, gasPrice: config.gasPrice }
   );
-  const fundAddress = await version.instance.managerToFunds.call({}, [manager]);
+  const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
   // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.instance.changeCompetitionAddress.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [investor],
+  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
 });
 
 test.serial("initial investment with ETH", async t => {
   await updateCanonicalPriceFeed(deployed, {
-    [deployed.MlnToken.address]: 10 ** 18,
-    [maliciousToken.address]: 10 ** 18,
-    [deployed.EthToken.address]: 10 ** 18,
-    [deployed.EurToken.address]: 10 ** 18,
+    [deployed.MlnToken.options.address]: 10 ** 18,
+    [maliciousToken.options.address]: 10 ** 18,
+    [deployed.EthToken.options.address]: 10 ** 18,
+    [deployed.EurToken.options.address]: 10 ** 18,
   });
-  await ethToken.instance.approve.postTransaction(
-    { from: investor, gasPrice: config.gasPrice, gas: config.gas },
-    [fund.address, offeredEth],
+  await ethToken.methods.approve(fund.options.address, offeredEth).send(
+    { from: investor, gasPrice: config.gasPrice, gas: config.gas }
   );
-  await fund.instance.requestInvestment.postTransaction(
-    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [offeredEth, wantedShares, ethToken.address],
+  await fund.methods.requestInvestment(offeredEth, wantedShares, ethToken.options.address).send(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice }
   );
-  const requestId = await fund.instance.getLastRequestId.call({}, []);
-  await fund.instance.executeRequest.postTransaction(
-    { from: investor, gas: config.gas, gasPrice: config.gasPrice },
-    [requestId],
+  const requestId = await fund.methods.getLastRequestId().call();
+  await fund.methods.executeRequest(requestId).send(
+    { from: investor, gas: config.gas, gasPrice: config.gasPrice }
   );
   const ownedShares = Number(
-    await fund.instance.balanceOf.call({}, [investor]),
+    await fund.methods.balanceOf(investor).call(),
   );
 
   t.deepEqual(ownedShares, wantedShares);
@@ -153,151 +109,89 @@ test.serial("initial investment with ETH", async t => {
 
 test.serial("fund buys some mlnToken", async t => {
   await updateCanonicalPriceFeed(deployed, {
-    [deployed.MlnToken.address]: 10 ** 18,
-    [maliciousToken.address]: 10 ** 18,
-    [deployed.EthToken.address]: 10 ** 18,
-    [deployed.EurToken.address]: 10 ** 18,
+    [deployed.MlnToken.options.address]: 10 ** 18,
+    [maliciousToken.options.address]: 10 ** 18,
+    [deployed.EthToken.options.address]: 10 ** 18,
+    [deployed.EurToken.options.address]: 10 ** 18,
   });
-  await fund.instance.callOnExchange.postTransaction(
-    { from: manager, gas: config.gas },
-    [
-      0,
-      makeOrderSignature,
-      ["0x0", "0x0", ethToken.address, mlnToken.address, "0x0"],
-      [sellQuantity, buyQuantity, 0, 0, 0, 0],
-      "0x0",
-      0,
-      "0x0",
-      "0x0",
-    ],
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+    [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
   );
-  const orderId = await deployed.MatchingMarket.instance.last_offer_id.call(
-    {},
-    [],
-  );
-  await mlnToken.instance.approve.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [deployed.MatchingMarket.address, buyQuantity],
+  const orderId = await deployed.MatchingMarket.methods.last_offer_id().call();
+  await mlnToken.methods.approve(deployed.MatchingMarket.options.address, buyQuantity).send(
+    { from: deployer, gasPrice: config.gasPrice }
   );
 
   // third party takes order
-  await deployed.MatchingMarket.instance.buy.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [orderId, sellQuantity],
+  await deployed.MatchingMarket.methods.buy(orderId, sellQuantity).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
 
   const mlnBalance = Number(
-    await mlnToken.instance.balanceOf.call({}, [fund.address]),
+    await mlnToken.methods.balanceOf(fund.options.address).call(),
   );
 
   t.is(mlnBalance, buyQuantity);
 });
 
 test.serial("fund buys some MaliciousToken", async t => {
-  await fund.instance.callOnExchange.postTransaction(
-    { from: manager, gas: config.gas },
-    [
-      0,
-      makeOrderSignature,
-      ["0x0", "0x0", ethToken.address, maliciousToken.address, "0x0"],
-      [sellQuantity, buyQuantity, 0, 0, 0, 0],
-      "0x0",
-      0,
-      "0x0",
-      "0x0",
-    ],
+  await fund.methods.callOnExchange(
+    0,
+    makeOrderSignature,
+    ["0x0", "0x0", ethToken.options.address, maliciousToken.options.address, "0x0"],
+    [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
+    web3.utils.padLeft('0x0', 64),
+    0,
+    web3.utils.padLeft('0x0', 64),
+    web3.utils.padLeft('0x0', 64),
+  ).send(
+    { from: manager, gas: config.gas }
   );
-  const orderId = await deployed.MatchingMarket.instance.last_offer_id.call(
-    {},
-    [],
-  );
-  await maliciousToken.instance.approve.postTransaction(
-    { from: deployer, gasPrice: config.gasPrice },
-    [deployed.MatchingMarket.address, buyQuantity + 100],
+  const orderId = await deployed.MatchingMarket.methods.last_offer_id().call();
+  await maliciousToken.methods.approve(deployed.MatchingMarket.options.address, buyQuantity + 100).send(
+    { from: deployer, gasPrice: config.gasPrice }
   );
 
   // third party takes order
-  await deployed.MatchingMarket.instance.buy.postTransaction(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice },
-    [orderId, sellQuantity],
+  await deployed.MatchingMarket.methods.buy(orderId, sellQuantity).send(
+    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
 
   const maliciousBalance = Number(
-    await maliciousToken.instance.balanceOf.call({}, [fund.address]),
+    await maliciousToken.methods.balanceOf(fund.options.address).call(),
   );
 
   t.is(maliciousBalance, buyQuantity);
 });
 
 test.serial("MaliciousToken becomes malicious", async t => {
-  await maliciousToken.instance.startThrowing.postTransaction({}, []);
+  await maliciousToken.methods.startThrowing().send();
 
-  const isThrowing = await maliciousToken.instance.isThrowing.call({}, []);
+  const isThrowing = await maliciousToken.methods.isThrowing().call();
   t.true(isThrowing);
 });
 
 test.serial("Cannot pass asset multiple times in emergencyRedeem", async t => {
-  const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
-  const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [investor]);
-  const preEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call(
-    {},
-    [investor],
-  );
-  await fund.instance.emergencyRedeem.postTransaction(
-    { from: investor, gas: 6000000 },
-    [
-      preShareQuantity,
-      [mlnToken.address, mlnToken.address, deployed.EthToken.address],
-    ],
-  );
-  const postShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
-  const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [
-    investor,
-  ]);
-  const postEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call(
-    {},
-    [investor],
-  );
+  const preShareQuantity = await fund.methods.balanceOf(investor).call();
+  const preMlnQuantity = await mlnToken.methods.balanceOf(investor).call();
+  const preEthTokenQuantity = await deployed.EthToken.methods.balanceOf(investor).call();
+  await t.throws(fund.methods.emergencyRedeem(preShareQuantity, [mlnToken.options.address, mlnToken.options.address, deployed.EthToken.options.address]).send(
+    { from: investor, gas: 6000000 }
+  ));
+  const postShareQuantity = await fund.methods.balanceOf(investor).call();
+  const postMlnQuantity = await mlnToken.methods.balanceOf(investor).call();
+  const postEthTokenQuantity = await deployed.EthToken.methods.balanceOf(investor).call();
 
   t.is(Number(preShareQuantity), Number(postShareQuantity));
   t.is(Number(preMlnQuantity), Number(postMlnQuantity));
   t.is(Number(preEthTokenQuantity), Number(postEthTokenQuantity));
 });
-
-test.serial(
-  "Other assets can be redeemed, when MaliciousToken is throwing",
-  async t => {
-    const preShareQuantity = await fund.instance.balanceOf.call({}, [investor]);
-    const preMlnQuantity = await mlnToken.instance.balanceOf.call({}, [
-      investor,
-    ]);
-    const preEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call(
-      {},
-      [investor],
-    );
-    await fund.instance.emergencyRedeem.postTransaction(
-      { from: investor, gas: 6000000 },
-      [preShareQuantity, [mlnToken.address, ethToken.address]],
-    );
-    const postShareQuantity = await fund.instance.balanceOf.call({}, [
-      investor,
-    ]);
-    const postMlnQuantity = await mlnToken.instance.balanceOf.call({}, [
-      investor,
-    ]);
-    const postEthTokenQuantity = await deployed.EthToken.instance.balanceOf.call(
-      {},
-      [investor],
-    );
-
-    t.is(Number(postShareQuantity), 0);
-    t.is(
-      Number(postMlnQuantity),
-      Number(preMlnQuantity) + buyQuantity,
-    );
-    t.is(
-      Number(postEthTokenQuantity),
-      Number(preEthTokenQuantity) + (offeredEth - sellQuantity - sellQuantity),
-    );
-  },
-);

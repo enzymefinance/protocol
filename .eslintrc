@@ -41,5 +41,8 @@
     "no-underscore-dangle": [
       "warn"
     ],
+    "no-restricted-syntax":
+      ["error", "ForInStatement", "LabeledStatement", "WithStatement"
+    ],
   }
 }
