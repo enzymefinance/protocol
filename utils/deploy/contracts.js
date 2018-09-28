@@ -70,6 +70,19 @@ async function deployEnvironment(environment) {
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
     deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
+    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
+    //   deployed.KyberNetworkProxy.options.address,
+    //   deployed.EthToken.options.address,
+    //   web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+    //   web3.utils.padLeft(web3.utils.toHex('ETH-T'), 34),
+    //   18,
+    //   'ethereum.org',
+    //   mockBytes,
+    //   [mockAddress, mockAddress],
+    //   [],
+    //   [],
+    //   deployed.Governance.options.address
+    // ]);
 //     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed);
 //     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
 //     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter);
