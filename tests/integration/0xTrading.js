@@ -106,6 +106,7 @@ test.beforeEach(async () => {
   };
 });
 
+
 const initialTokenAmount = new BigNumber(10 ** 22);
 test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);

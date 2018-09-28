@@ -6,7 +6,7 @@ import { getTermsSignatureParameters} from "../../utils/lib/signing";
 import { swapTokensSignature } from "../../utils/lib/data";
 import { bytesToHex } from "../../utils/lib/setupKyberDevEnv";
 import { retrieveContract } from "../../utils/lib/contracts";
-import { updateKyberPriceFeed, updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const environmentConfig = require("../../utils/config/environment.js");
 const BigNumber = require("bignumber.js");
@@ -17,9 +17,7 @@ const config = environmentConfig[environment];
 // hoisted variables
 let accounts;
 let deployed = {};
-let opts;
 let mlnPrice;
-;
 const precisionUnits = (new BigNumber(10).pow(18));
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
@@ -41,7 +39,6 @@ let eurToken;
 test.before(async () => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
-  opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
   deployed = await deployEnvironment(environment);
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;

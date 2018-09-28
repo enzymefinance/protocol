@@ -141,7 +141,6 @@ async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'E
   const sells = [];
   const indices = [];
 
-  const currentBlock = await web3.eth.getBlockNumber();
   if(Object.keys(inputPrices).length === 0) {
     prices = await getConvertedPrices(deployed, quoteSymbol);
   } else {
@@ -154,6 +153,8 @@ async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'E
     tokens.push(key);
     baseBuys.push(new BigNumber(10 ** 36).div(prices[key]).toFixed(0));
     baseSells.push(prices[key]);
+    compactBuyArr.push(0);
+    compactSellArr.push(0);
   }
   
   const splitCompactBuyArr = splitArray(compactBuyArr, 14);
@@ -163,6 +164,7 @@ async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'E
     sells.push(bytesToHex(splitCompactSellArr[i]));
     indices.push(i);
   }
+  const currentBlock = await web3.eth.getBlockNumber();
   await deployed.ConversionRates.methods.setBaseRate(tokens, baseBuys, baseSells, buys, sells, currentBlock, indices).send();
 }
 
