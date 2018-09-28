@@ -87,7 +87,6 @@ test.serial("initial investment with ETH", async t => {
   await updateKyberPriceFeed(deployed, {
     [deployed.MlnToken.options.address]: 10 ** 18,
     [maliciousToken.options.address]: 10 ** 18,
-    [deployed.EthToken.options.address]: 10 ** 18,
     [deployed.EurToken.options.address]: 10 ** 18,
   });
   await ethToken.methods.approve(fund.options.address, offeredEth).send(

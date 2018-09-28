@@ -219,8 +219,6 @@ exchangeIndexes.forEach(i => {
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       await updateKyberPriceFeed(deployed);
-      await updateKyberPriceFeed(deployed);
-
       const totalSupply = await fund.methods.totalSupply().call();
       const requestId = await fund.methods.getLastRequestId().call();
       receipt = await fund.methods.executeRequest(requestId).send(

@@ -130,6 +130,7 @@ function splitArray(arr, length) {
   return groups;
 }
 
+// TODO: Doesn't handle decimals yet (correctly), works fine in dev because all assets are 18 decimals
 async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
   const tokens = [];

@@ -13,7 +13,6 @@ import "../exchange/thirdparty/kyber/KyberNetworkProxy.sol";
 contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
-    uint public VALIDITY;
     uint public INTERVAL;
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
@@ -64,8 +63,6 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
     function getInterval() view returns (uint) { return INTERVAL; }
-    function getValidity() view returns (uint) { return VALIDITY; }
-    function getLastUpdateId() view returns (uint) { return updateId; }
 
     // PRICES
 
@@ -82,7 +79,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         view
         returns (uint price, uint timestamp)
     {
-        ( , price, ) =  getReferencePriceInfo(ofAsset, QUOTE_ASSET);
+        (, price, ) =  getReferencePriceInfo(ofAsset, QUOTE_ASSET);
         timestamp = now;
     }
 
@@ -96,7 +93,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         returns (bool isRecent)
     {
         if (ofAsset == QUOTE_ASSET) return true;
-        var (price,) = getPrice(ofAsset);
+        var (price, ) = getPrice(ofAsset);
         return price != 0;
     }
 
@@ -156,16 +153,12 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         view
         returns (bool isRecent, uint referencePrice, uint decimals)
     {
-        if (_baseAsset == QUOTE_ASSET) {
-            _baseAsset = ETH_TOKEN_ADDRESS;
-        }
-        if (_quoteAsset == QUOTE_ASSET) {
-            _quoteAsset = ETH_TOKEN_ADDRESS;
-        }
-        isRecent = true;
-        // 10 ** 10 some random value for now TODO
-        (referencePrice,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 10 ** 10);
         decimals = getDecimals(_quoteAsset);
+        isRecent = true;
+        if (_baseAsset == QUOTE_ASSET) _baseAsset = ETH_TOKEN_ADDRESS;
+        if (_quoteAsset == QUOTE_ASSET) _quoteAsset = ETH_TOKEN_ADDRESS;
+        // 10 ** 10 some random value for now TODO
+        (referencePrice, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 10 ** 10);
     }
 
     /// @notice Gets price of Order

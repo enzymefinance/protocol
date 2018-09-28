@@ -46,7 +46,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint giveQuantity; // Quantity in Melon asset to give to Melon fund to receive shareQuantity
         uint receiveQuantity; // Quantity in Melon asset to receive from Melon fund for given shareQuantity
         uint timestamp;     // Time of request creation in seconds
-        uint atUpdateId;    // Pricefeed updateId when this request was created
+        // uint atUpdateId;    // Pricefeed updateId when this request was created
     }
 
     struct Exchange {
@@ -221,8 +221,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             shareQuantity: shareQuantity,
             giveQuantity: giveQuantity,
             receiveQuantity: shareQuantity,
-            timestamp: now,
-            atUpdateId: modules.pricefeed.getLastUpdateId()
+            timestamp: now
+            // atUpdateId: modules.pricefeed.getLastUpdateId()
         }));
 
         emit RequestUpdated(getLastRequestId());
@@ -236,13 +236,14 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         external
         pre_cond(!isShutDown)
         pre_cond(requests[id].status == RequestStatus.active)
-        pre_cond(
-            _totalSupply == 0 ||
-            (
-                now >= add(requests[id].timestamp, modules.pricefeed.getInterval()) &&
-                modules.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
-            )
-        )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first investment)
+        // Condition no longer required as Kyber pricefewed is being used
+        // pre_cond(
+        //     _totalSupply == 0 ||
+        //     (
+        //         now >= add(requests[id].timestamp, modules.pricefeed.getInterval()) &&
+        //         modules.pricefeed.getLastUpdateId() >= add(requests[id].atUpdateId, 2)
+        //     )
+        // )   // PriceFeed Module: Wait at least one interval time and two updates before continuing (unless it is the first investment)
 
     {
         Request request = requests[id];
