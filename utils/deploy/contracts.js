@@ -84,7 +84,7 @@ async function deployEnvironment(environment) {
     //   [mockAddress, mockAddress],
     //   [],
     //   [],
-    //   deployed.Governance.options.address
+    //   pricefeedUpdaterAddress
     // ]);
 //     deployed.StakingPriceFeed = await retrieveContract("pricefeeds/StakingPriceFeed", previous.StakingPriceFeed);
 //     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
@@ -232,9 +232,9 @@ async function deployEnvironment(environment) {
     //   [deployed.Competition.options.address, 10 ** 22],
     // );
 
-    // add Version to Governance tracking
-    await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
-    console.log('Registered in governance');
+    // // add Version to Governance tracking
+    // await governanceAction(opts, deployed.Governance, deployed.Governance, 'addVersion', [deployed.Version.options.address]);
+    // console.log('Registered in governance');
 
     // whitelist exchanges
     if(!await deployed.KyberPriceFeed.methods.exchangeIsRegistered(deployed.MatchingMarket.options.address)) {
