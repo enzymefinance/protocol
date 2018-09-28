@@ -69,10 +69,13 @@ async function deployEnvironment(environment) {
     const ethTokenAddress = tokenInfo[commonEnvironment]["WETH-T"].address;
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
-    deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
-    // deployed.CanonicalPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
+    // deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
+    deployed.KyberNetworkProxy = await retrieveContract("exchange/thirdparty/kyber/KyberNetworkProxy", "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df");
+    deployed.KyberAdapter = await retrieveContract("exchange/adapter/KyberAdapter", "0xb101f0D07Aee56363FbBdeC630c142BC7A917e49");
+    deployed.KyberPriceFeed = await retrieveContract("pricefeeds/KyberPriceFeed", previous.KyberPriceFeed);
+    // deployed.KyberPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
     //   deployed.KyberNetworkProxy.options.address,
-    //   deployed.EthToken.options.address,
+    //   ethTokenAddress,
     //   web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
     //   web3.utils.padLeft(web3.utils.toHex('ETH-T'), 34),
     //   18,
@@ -130,9 +133,6 @@ async function deployEnvironment(environment) {
     // // set up exchanges and adapters
     // deployed.MatchingMarket = await deployContract("exchange/thirdparty/MatchingMarket", opts, [154630446100]); // number is expiration date for market
     // deployed.MatchingMarketAdapter = await deployContract("exchange/adapter/MatchingMarketAdapter", opts);
-    deployed.KyberNetworkProxy = await retrieveContract("exchange/thirdparty/kyber/KyberNetworkProxy", "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df");
-    deployed.KyberAdapter = await retrieveContract("exchange/adapter/KyberAdapter", "0xb101f0D07Aee56363FbBdeC630c142BC7A917e49");
-    // deployed.KyberAdapter = await deployContract("exchange/adapter/KyberAdapter", opts);
 
     // const quoteSymbol = "WETH-T";
     // const pairsToWhitelist = [];
@@ -150,7 +150,6 @@ async function deployEnvironment(environment) {
 
     deployed.MatchingMarket = await retrieveContract("exchange/thirdparty/MatchingMarket", previous.MatchingMarket);
     deployed.MatchingMarketAdapter = await retrieveContract("exchange/adapter/MatchingMarketAdapter", previous.MatchingMarketAdapter);
-
     deployed.ZeroExTokenTransferProxy = await retrieveContract("exchange/thirdparty/0x/TokenTransferProxy", previous.ZeroExTokenTransferProxy);
     deployed.ZeroExExchange = await retrieveContract("exchange/thirdparty/0x/Exchange", previous.ZeroExExchange)
     deployed.ZeroExV1Adapter = await retrieveContract("exchange/adapter/ZeroExV1Adapter", previous.ZeroExV1Adapter)
@@ -192,17 +191,17 @@ async function deployEnvironment(environment) {
     // deployed.FundRanking = await deployContract("FundRanking", opts);
     deployed.FundRanking = await retrieveContract("FundRanking", previous.FundRanking);
 
-    // Deploy Version
-    deployed.Version = await deployContract(
-      "version/Version",
-      opts,
-      [
-        pkgInfo.version, deployed.Governance.options.address, mlnAddr,
-        ethTokenAddress, deployed.CanonicalPriceFeed.options.address, deployed.NoCompliance.options.address
-      ],
-      () => {}, true
-    );
-    // deployed.Version = await retrieveContract("version/Version", previous.Version);
+    // // Deploy Version
+    // deployed.Version = await deployContract(
+    //   "version/Version",
+    //   opts,
+    //   [
+    //     pkgInfo.version, deployed.Governance.options.address, mlnAddr,
+    //     ethTokenAddress, deployed.KyberPriceFeed.options.address, deployed.NoCompliance.options.address
+    //   ],
+    //   () => {}, true
+    // );
+    deployed.Version = await retrieveContract("version/Version", previous.Version);
 
     // const blockchainTime = await getChainTime();
     // deployed.Competition = await deployContract(
@@ -238,8 +237,8 @@ async function deployEnvironment(environment) {
     console.log('Registered in governance');
 
     // whitelist exchanges
-    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.MatchingMarket.options.address)) {
-      await deployed.CanonicalPriceFeed.methods.registerExchange(
+    if(!await deployed.KyberPriceFeed.methods.exchangeIsRegistered(deployed.MatchingMarket.options.address)) {
+      await deployed.KyberPriceFeed.methods.registerExchange(
         deployed.MatchingMarket.options.address,
         deployed.MatchingMarketAdapter.options.address,
         true,
@@ -252,8 +251,8 @@ async function deployEnvironment(environment) {
       console.log('Registered MatchingMarket');
     }
 
-    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.ZeroExExchange.options.address)) {
-      await deployed.CanonicalPriceFeed.methods.registerExchange(
+    if(!await deployed.KyberPriceFeed.methods.exchangeIsRegistered(deployed.ZeroExExchange.options.address)) {
+      await deployed.KyberPriceFeed.methods.registerExchange(
         deployed.ZeroExExchange.options.address,
         deployed.ZeroExV1Adapter.options.address,
         false,
@@ -264,8 +263,8 @@ async function deployEnvironment(environment) {
       console.log('Registered ZeroEx');
     }
 
-    if(!await deployed.CanonicalPriceFeed.methods.exchangeIsRegistered(deployed.KyberNetworkProxy.options.address)) {
-      await deployed.CanonicalPriceFeed.methods.registerExchange(
+    if(!await deployed.KyberPriceFeed.methods.exchangeIsRegistered(deployed.KyberNetworkProxy.options.address)) {
+      await deployed.KyberPriceFeed.methods.registerExchange(
         deployed.KyberNetworkProxy.options.address,
         deployed.KyberAdapter.options.address,
         false,
@@ -279,11 +278,11 @@ async function deployEnvironment(environment) {
     // register assets
     for (const assetSymbol of config.protocol.pricefeed.assetsToRegister) {
       const tokenEntry = tokenInfo[commonEnvironment][assetSymbol];
-      if(await deployed.CanonicalPriceFeed.methods.assetIsRegistered(tokenEntry.address).call()) {
+      if(await deployed.KyberPriceFeed.methods.assetIsRegistered(tokenEntry.address).call()) {
         continue;
       }
       console.log(`Registering ${assetSymbol}`);
-      await deployed.CanonicalPriceFeed.methods.registerAsset(
+      await deployed.KyberPriceFeed.methods.registerAsset(
         tokenEntry.address,
         web3.utils.padLeft(web3.utils.toHex(tokenEntry.name), 34),
         web3.utils.padLeft(web3.utils.toHex(assetSymbol), 10),
