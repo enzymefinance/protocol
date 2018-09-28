@@ -17,6 +17,7 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     address public QUOTE_ASSET;
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    uint public constant KYBER_PRECISION = 18;
 
     // METHODS
 
@@ -154,7 +155,8 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         if (_baseAsset == QUOTE_ASSET) _baseAsset = ETH_TOKEN_ADDRESS;
         if (_quoteAsset == QUOTE_ASSET) _quoteAsset = ETH_TOKEN_ADDRESS;
         // 10 ** 10 some random value for now TODO
-        (referencePrice, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 10 ** 10);
+        var (referencePriceFromKyber, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20(_baseAsset), ERC20(_quoteAsset), 10 ** 10);
+        referencePrice = mul(referencePriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;
     }
 
     /// @notice Gets price of Order
