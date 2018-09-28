@@ -548,7 +548,6 @@ async function deployEnvironment(environment) {
       [mockAddress, mockAddress],
       [],
       [],
-      config.protocol.pricefeed.interval,
       deployed.Governance.options.address
     ]);
     // deployed.StakingPriceFeed = await createStakingFeed({...opts}, deployed.CanonicalPriceFeed);

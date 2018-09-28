@@ -13,7 +13,6 @@ import "../exchange/thirdparty/kyber/KyberNetworkProxy.sol";
 contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
 
     // FIELDS
-    uint public INTERVAL;
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
 
@@ -35,7 +34,6 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         address[2] quoteAssetBreakInBreakOut,
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
-        uint ofInterval,
         address ofGovernance
     )        
         SimplePriceFeed(address(this), ofQuoteAsset, address(0))
@@ -53,7 +51,6 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
         );
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         QUOTE_ASSET = ofQuoteAsset;
-        INTERVAL = ofInterval;
         setOwner(ofGovernance);
     }
 
@@ -62,7 +59,6 @@ contract KyberPriceFeed is SimplePriceFeed, CanonicalRegistrar {
     // FEED INFORMATION
 
     function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
-    function getInterval() view returns (uint) { return INTERVAL; }
 
     // PRICES
 
