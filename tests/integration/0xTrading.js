@@ -1,5 +1,12 @@
 import test from "ava";
-import { ZeroEx } from '0x.js';
+import {
+  Web3ProviderEngine,
+  assetDataUtils,
+  Order,
+  orderHashUtils,
+  signatureUtils,
+  SignerType
+} from '0x.js';
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
@@ -21,6 +28,8 @@ let deployer;
 let ethToken;
 let mlnToken;
 let zrxToken;
+let zeroExExchange;
+let erc20ProxyAddress;
 let fund;
 let investor;
 let manager;
@@ -33,8 +42,9 @@ let signedOrder;
 let opts;
 
 // mock data
-const offeredValue = new BigNumber(10 ** 20);
-const wantedShares = new BigNumber(10 ** 20);
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+const offeredValue = new BigNumber(10 ** 19);
+const wantedShares = new BigNumber(10 ** 19);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -45,27 +55,20 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await deployContract("assets/PreminedAsset", opts, [18]);
-  deployed.ZeroExTokenTransferProxy = await deployContract(
-    "exchange/thirdparty/0x/TokenTransferProxy",
-    opts
-  );
-  deployed.ZeroExExchange = await deployContract(
-    "exchange/thirdparty/0x/Exchange",
-    opts,
-    [ zrxToken.options.address, deployed.ZeroExTokenTransferProxy.options.address ]
-  );
+  zrxToken = await retrieveContract("assets/Asset", "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c")
+  zeroExExchange = "0x48bacb9266a570d521063ef5dd96e61686dbe788";
+  erc20ProxyAddress = "0x1dc4c1cefef38a777b15aa20260a54e584b16c48";
   deployed.ZeroExV1Adapter = await deployContract(
     "exchange/adapter/ZeroExV1Adapter",
     opts
   );
-  await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress( deployed.ZeroExExchange.options.address ).send(
-    opts,
-  );
+  // await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress( deployed.ZeroExExchange.options.address ).send(
+  //   opts,
+  // );
   await governanceAction(
     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
-      deployed.ZeroExExchange.options.address,
+      zeroExExchange,
       deployed.ZeroExV1Adapter.options.address,
       false,
       [ takeOrderSignature ]
@@ -80,7 +83,7 @@ test.before(async () => {
     config.protocol.fund.performanceFee,
     deployed.NoCompliance.options.address,
     deployed.RMMakeOrders.options.address,
-    [deployed.ZeroExExchange.options.address],
+    [zeroExExchange],
     [],
     v,
     r,
@@ -106,7 +109,7 @@ test.beforeEach(async () => {
   };
 });
 
-const initialTokenAmount = new BigNumber(10 ** 22);
+const initialTokenAmount = new BigNumber(10 ** 19);
 test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await ethToken.methods.transfer(investor, initialTokenAmount).send(
@@ -167,31 +170,28 @@ test.serial(
 test.serial("third party makes and validates an off-chain order", async t => {
   const makerAddress = deployer.toLowerCase();
   order = {
-      maker: makerAddress,
-      taker: ZeroEx.NULL_ADDRESS,
-      feeRecipient: ZeroEx.NULL_ADDRESS,
-      makerTokenAddress: mlnToken.options.address.toLowerCase(),
-      takerTokenAddress: ethToken.options.address.toLowerCase(),
-      exchangeContractAddress: deployed.ZeroExExchange.options.address.toLowerCase(),
-      salt: new BigNumber(555),
+      exchangeAddress: zeroExExchange.toLowerCase(),
+      expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+      feeRecipientAddress: NULL_ADDRESS,
+      makerAddress,
+      makerAssetAmount: new BigNumber(trade1.sellQuantity),
+      makerAssetData: assetDataUtils.encodeERC20AssetData(mlnToken.options.address.toLowerCase()),
       makerFee: new BigNumber(0),
-      takerFee: new BigNumber(1000),
-      makerTokenAmount: new BigNumber(trade1.sellQuantity),
-      takerTokenAmount: new BigNumber(trade1.buyQuantity),
-      expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
+      salt: new BigNumber(555),
+      senderAddress: NULL_ADDRESS,
+      takerAddress: NULL_ADDRESS,
+      takerAssetAmount: new BigNumber(trade1.buyQuantity),
+      takerAssetData: assetDataUtils.encodeERC20AssetData(ethToken.options.address.toLowerCase()),
+      takerFee: new BigNumber(0)
   };
-  await mlnToken.methods.approve(deployed.ZeroExTokenTransferProxy.options.address, trade1.sellQuantity).send(
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  const signature = await signatureUtils.ecSignOrderHashAsync(web3.currentProvider, orderHashHex, deployer, SignerType.Default)
+  
+  await mlnToken.methods.approve(erc20ProxyAddress, trade1.sellQuantity).send(
     {from: deployer},
-
   );
-  const orderHash = ZeroEx.getOrderHashHex(order);
-  const [r, s, v] = await getSignatureParameters(makerAddress, orderHash)
-  const ecSignature = { v, r, s };
-  signedOrder = {
-      ...order,
-      ecSignature
-  };
-  const signatureValid = await ZeroEx.isValidSignature(orderHash, ecSignature, makerAddress);
+
+  const signatureValid = await signatureUtils.isValidSignatureAsync(web3.currentProvider, orderHashHex, signature, makerAddress);
 
   t.true(signatureValid);
 });

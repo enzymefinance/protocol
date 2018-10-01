@@ -11,7 +11,7 @@
     "lint:solium": "solium --dir .",
     "lint:eslint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
-    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000",
+    "devchain": "unzip -o ./utils/devchain-snapshot/0x-snapshot.zip -d ./utils/devchain-snapshot && ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000 --db ./utils/devchain-snapshot/0x_ganache_snapshot -m 'concert load couple harbor equip island argue ramp clarify fence smart topic'",
     "test": "npm run test:ava",
     "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
@@ -77,7 +77,7 @@
     "solium": "^1.1.0"
   },
   "dependencies": {
-    "0x.js": "^0.35.0",
+    "0x.js": "^1.0.7",
     "@0xproject/sol-compiler": "^0.5.2",
     "bignumber.js": "^4.1.0",
     "ethereumjs-testrpc": "^4.1.3",
