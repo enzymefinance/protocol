@@ -325,7 +325,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         uint[8] orderValues,
         bytes32 identifier,
         bytes makerAssetData,
-        bytes takerAssetData
+        bytes takerAssetData,
+        bytes signature
     )
         external
     {
@@ -337,7 +338,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(
             exchanges[exchangeIndex].exchangeAdapter.delegatecall(
                 method, exchanges[exchangeIndex].exchange,
-                orderAddresses, orderValues, identifier, makerAssetData, takerAssetData
+                orderAddresses, orderValues, identifier, makerAssetData, takerAssetData, signature
             )
         );
     }
