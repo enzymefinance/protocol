@@ -6,7 +6,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -33,16 +33,55 @@ let pricefeed;
 let deployed;
 let atLastUnclaimedFeeAllocation;
 let receipt;
+let opts;
+
+async function getFundComponents(hubAddress) {
+  let components = {};
+  components.hub = await retrieveContract("fund/hub/Hub", hubAddress);
+  const participationAddress = await components.hub.methods.participation().call();
+  const sharesAddress = await components.hub.methods.shares().call();
+  const tradingAddress = await components.hub.methods.trading().call();
+  const policyManagerAddress = await components.hub.methods.policyManager().call();
+  components.participation = await retrieveContract("fund/participation/Participation", participationAddress);
+  components.shares = await retrieveContract("fund/shares/Shares", sharesAddress);
+  components.trading = await retrieveContract("fund/trading/Trading", tradingAddress);
+  components.policyManager = await retrieveContract("fund/policies/PolicyManager", policyManagerAddress);
+  console.log(`Hub: ${hubAddress}`);
+  console.log(`Participation: ${participationAddress}`);
+  console.log(`Trading: ${tradingAddress}`);
+  console.log(`Shares: ${sharesAddress}`);
+  console.log(`PolicyManager: ${policyManagerAddress}`);
+  const routes = await components.hub.methods.settings().call();
+  console.log(`Accounting: ${routes.accounting}`);
+  components = Object.assign(components, {
+    accounting: await retrieveContract("fund/accounting/Accounting", routes.accounting),
+    feeManager: await retrieveContract("fund/fees/FeeManager", routes.feeManager),
+    participation: await retrieveContract("fund/participation/Participation", routes.participation),
+    policyManager: await retrieveContract("fund/policies/PolicyManager", routes.policyManager),
+    shares: await retrieveContract("fund/shares/Shares", routes.shares),
+    trading: await retrieveContract("fund/trading/Trading", routes.trading),
+    vault: await retrieveContract("fund/vault/Vault", routes.vault),
+  });
+  return components;
+}
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   version = deployed.Version;
-  pricefeed = await deployed.CanonicalPriceFeed;
+  pricefeed = await deployed.TestingPriceFeed;
   mlnToken = deployed.MlnToken;
   ethToken = deployed.EthToken;
   gasPrice = config.gasPrice;
+  opts = {
+    from: manager,
+    gas: 8000000,
+    gasPrice: config.gasPrice
+  };
+  console.log(`Investor: ${investor}`);
+  console.log(`Manager: ${manager}`);
+  console.log(`Pricefeed: ${pricefeed.options.address}`);
 });
 
 test.beforeEach(() => {
@@ -55,68 +94,40 @@ const fundName = web3.utils.asciiToHex("MelonPortfolio");
 test.serial("can set up new fund", async t => {
   const preManagerEth = new BigNumber(await web3.eth.getBalance(manager));
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  // receipt = await version.methods.setupFund(
-  //   fundName, // name
-  //   ethToken.options.address, // base asset
-  //   config.protocol.fund.managementFee,
-  //   config.protocol.fund.performanceFee,
-  //   deployed.NoCompliance.options.address,
-  //   deployed.RMMakeOrders.options.address,
-  //   [deployed.MatchingMarket.options.address],
-  //   [mlnToken.options.address],
-  //   v,
-  //   r,
-  //   s,
-  // ).send({ from: manager, gas: config.gas, gasPrice });
-
-  await deployed.FundFactory.methods.createComponents(
-    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+  receipt = await deployed.FundFactory.methods.createComponents(
+    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.MlnToken.options.address, deployed.EthToken.options.address], [false], deployed.TestingPriceFeed.options.address
   ).send(opts);
-  await deployed.FundFactory.methods.continueCreation().send(opts);
-  console.log('Components created');
-  await deployed.FundFactory.methods.setupFund().send(opts);
-  console.log('Fund set up');
-  const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
+  runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
+  receipt = await deployed.FundFactory.methods.continueCreation().send(opts);
+  runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
+  receipt = await deployed.FundFactory.methods.setupFund().send(opts);
+  runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
+  const fundId = await deployed.FundFactory.methods.getLastFundId().call();
+  const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
 
-
-  runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
   const timestamp = (await web3.eth.getBlock(receipt.blockNumber)).timestamp;
   atLastUnclaimedFeeAllocation = new Date(timestamp).valueOf();
-
-  const fundId = await version.methods.getLastFundId().call();
-  const fundAddress = await version.methods.getFundById(fundId).call();
-  fund = await retrieveContract("Fund", fundAddress);
   const postManagerEth = new BigNumber(await web3.eth.getBalance(manager));
-
-  // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(
-    investor
-  ).send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
 
   t.deepEqual(
     postManagerEth,
     preManagerEth.minus(runningGasTotal.times(config.gasPrice)),
   );
   t.deepEqual(Number(fundId), 0);
-  // t.deepEqual(postManagerEth, preManagerEth.minus(runningGasTotal.times(gasPrice)));
 });
 
 test.serial("initial calculations", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
   const [
     gav,
-    managementFee,
-    performanceFee,
     unclaimedFees,
     feesShareQuantity,
     nav,
     sharePrice,
-  ] = Object.values(await fund.methods.performCalculations().call());
+  ] = Object.values(await fund.accounting.methods.performCalculations().call());
 
   t.deepEqual(Number(gav), 0);
-  t.deepEqual(Number(managementFee), 0);
-  t.deepEqual(Number(performanceFee), 0);
   t.deepEqual(Number(unclaimedFees), 0);
   t.deepEqual(Number(feesShareQuantity), 0);
   t.deepEqual(Number(nav), 0);
@@ -170,7 +181,7 @@ test.serial.skip('direct transfer of a token to the Fund is rejected', async t =
 
 // TODO: this one may be more suitable to a unit test
 // TODO: remove skip when we re-introduce fund name tracking
-test.serial(
+test.skip.serial(
   "a new fund with a name used before cannot be created",
   async t => {
     const [r, s, v] = await getTermsSignatureParameters(deployer);
@@ -209,50 +220,50 @@ const subsequentTests = [
 ];
 
 async function calculateOfferValue(wantedShares) {
-  const {
-    invertedPrice,
-    assetDecimals
-  } = await pricefeed.methods.getInvertedPriceInfo(mlnToken.options.address).call();
-  const sharePrice = new BigNumber(await fund.methods.calcSharePriceAndAllocateFees().call());
-  const sharesWorth = new BigNumber(await fund.methods.toWholeShareUnit(sharePrice.mul(wantedShares)).call());
-  return new BigNumber(Math.floor(sharesWorth.mul(invertedPrice).div(10 ** assetDecimals)));
+  const price = await pricefeed.methods.getPrice(deployed.MlnToken.options.address).call();
+  console.log(`Price of asset: ${price}`);
+  const mlnBaseUnitsPerEth = new BigNumber(invertedPrice).times(10**assetDecimals);
+  const sharePrice = new BigNumber(await fund.accounting.methods.calcSharePriceAndAllocateFees().call());
+  const sharesWorth = new BigNumber(sharePrice.mul(wantedShares) / 10**18);
+  return new BigNumber(Math.floor(sharesWorth.mul(mlnBaseUnitsPerEth).div(10 ** assetDecimals)));
 }
 
 test.serial("allows request and execution on the first investment", async t => {
   let investorGasTotal = new BigNumber(0);
   const pre = await getAllBalances(deployed, accounts, fund);
-  const fundPreAllowance = new BigNumber(await mlnToken.methods.allowance(investor, fund.options.address).call());
+  const fundPreAllowance = new BigNumber(await deployed.MlnToken.methods.allowance(investor, fund.participation.options.address).call());
   const offerValue = await calculateOfferValue(firstTest.wantedShares);
+  console.log(`Offer value: ${offerValue}`);
   // Offer additional value than market price to avoid price fluctation failures
   firstTest.offeredValue = new BigNumber(Math.floor(offerValue.mul(101)));
-  receipt = await mlnToken.methods.approve(
-    fund.options.address, firstTest.offeredValue
+  console.log(firstTest)
+  console.log(`MlnToken: ${deployed.MlnToken.options.address}`)
+  receipt = await deployed.MlnToken.methods.approve(
+    fund.participation.options.address, firstTest.offeredValue
   ).send({ from: investor, gasPrice: config.gasPrice });
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  const fundPostAllowance = new BigNumber(await mlnToken.methods.allowance(investor, fund.options.address).call());
-  receipt = await fund.methods.requestInvestment(
-    firstTest.offeredValue, firstTest.wantedShares, mlnToken.options.address
+  const fundPostAllowance = new BigNumber(await deployed.MlnToken.methods.allowance(investor, fund.participation.options.address).call());
+  receipt = await fund.participation.methods.requestInvestment(
+    firstTest.offeredValue, firstTest.wantedShares, deployed.MlnToken.options.address
   ).send({ from: investor, gas: config.gas, gasPrice: config.gasPrice });
 
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  const investorPreShares = new BigNumber(await fund.methods.balanceOf(investor).call());
-  await updateCanonicalPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  const investorPreShares = new BigNumber(await fund.shares.methods.balanceOf(investor).call());
+  await updateTestingPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
   const requestedSharesTotalValue = await calculateOfferValue(firstTest.wantedShares);
   const offerRemainder = firstTest.offeredValue.minus(requestedSharesTotalValue);
-  const requestId = await fund.methods.getLastRequestId().call();
-  receipt = await fund.methods.executeRequest(
-    requestId,
-  ).send({ from: investor, gas: config.gas, gasPrice: config.gasPrice });
+  receipt = await fund.participation.methods.executeRequest().send({ from: investor, gas: config.gas, gasPrice: config.gasPrice });
+  console.log(receipt)
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  const investorPostShares = new BigNumber(await fund.methods.balanceOf(investor).call());
+  const investorPostShares = new BigNumber(await fund.shares.methods.balanceOf(investor).call());
   // reduce leftover allowance of investor to zero
-  receipt = await mlnToken.methods.approve(
-    fund.options.address, 0
+  receipt = await deployed.MlnToken.methods.approve(
+    fund.participation.options.address, 0
   ).send({from: investor, gasPrice: config.gasPrice});
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
   const remainingApprovedMln = Number(
-    await mlnToken.methods.allowance(investor, fund.options.address).call(),
+    await mlnToken.methods.allowance(investor, fund.participation.options.address).call(),
   );
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(remainingApprovedMln, 0);
@@ -301,7 +312,7 @@ subsequentTests.forEach(testInstance => {
       testInstance.offeredValue = new BigNumber(Math.floor(offerValue.mul(1.1)));
       const inputAllowance = testInstance.offeredValue;
       const fundPreAllowance = new BigNumber(await mlnToken.methods.allowance(investor, fund.options.address).call());
-      receipt = await mlnToken.methods.approve(
+      receipt = await deployed.MlnToken.methods.approve(
         fund.options.address, inputAllowance
       ).send({from: investor, gasPrice: config.gasPrice});
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
@@ -336,8 +347,8 @@ subsequentTests.forEach(testInstance => {
     "executing invest request transfers shares to investor, and remainder of investment offer to investor",
     async t => {
       let investorGasTotal = new BigNumber(0);
-      await updateCanonicalPriceFeed(deployed);
-      await updateCanonicalPriceFeed(deployed);
+      await updateTestingPriceFeed(deployed);
+      await updateTestingPriceFeed(deployed);
       const pre = await getAllBalances(deployed, accounts, fund);
       const investorPreShares = new BigNumber(await fund.methods.balanceOf(investor).call());
       const requestId = await fund.methods.getLastRequestId().call();
