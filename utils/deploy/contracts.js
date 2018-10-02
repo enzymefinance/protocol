@@ -70,8 +70,8 @@ async function deployEnvironment(environment) {
     const mlnToken = await retrieveContract("assets/Asset", mlnAddr);
 
     // deployed.CanonicalPriceFeed = await retrieveContract("pricefeeds/CanonicalPriceFeed", previous.CanonicalPriceFeed);
-    deployed.KyberNetworkProxy = await retrieveContract("exchange/thirdparty/kyber/KyberNetworkProxy", "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df");
-    deployed.KyberAdapter = await retrieveContract("exchange/adapter/KyberAdapter", "0xb101f0D07Aee56363FbBdeC630c142BC7A917e49");
+    deployed.KyberNetworkProxy = await retrieveContract("exchange/thirdparty/kyber/KyberNetworkProxy", pr4evious.KyberNetworkProxy);
+    deployed.KyberAdapter = await retrieveContract("exchange/adapter/KyberAdapter", previous.KyberAdapter);
     deployed.KyberPriceFeed = await retrieveContract("pricefeeds/KyberPriceFeed", previous.KyberPriceFeed);
     // deployed.KyberPriceFeed = await deployContract("pricefeeds/KyberPriceFeed", opts, [
     //   deployed.KyberNetworkProxy.options.address,
