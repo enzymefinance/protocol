@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/smart-contracts",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "description": "Technology Regulated Investment Funds",
   "directories": {
     "test": "tests"
