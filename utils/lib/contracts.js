@@ -1,12 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import {clone} from './misc';
 import web3 from './web3';
 
 const outPath = path.join(__dirname, '..', '..', 'out');
-
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
 
 /**
  * Deploy a contract, and get back an instance.

@@ -79,8 +79,24 @@ async function getConvertedPrices(deployed, fromSymbol) {
 }
 
 /**
- * Deploy a contract, and get back an instance.
- * NB: Deprecating this functrion when we get rid of regular (non-canonical) pricefeed
+ * @param {Object} deployed - Object of deployed contracts from deployment script
+ * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
+ */
+async function updateTestingPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
+  let prices;
+  const accounts = await web3.eth.getAccounts();
+  if(Object.keys(inputPrices).length === 0) {
+    prices = await getConvertedPrices(deployed, quoteSymbol);
+  } else {
+    prices = inputPrices;
+  }
+  console.log(`Prices: ${JSON.stringify(prices, null, '  ')}`);
+  await deployed.TestingPriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
+    { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice }
+  );
+}
+
+/**
  * @param {Object} deployed - Object of deployed contracts from deployment script
  * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
  */
@@ -98,8 +114,6 @@ async function updatePriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') 
 }
 
 /**
- * Deploy a contract, and get back an instance.
- * NB: Deprecating this functrion when we get rid of regular (non-canonical) pricefeed
  * @param {Object} deployed - Object of deployed contracts from deployment script
  * @param {Object} inputPrices - Optional object of asset addresses (keys) and prices (values)
  * @param {string} quoteSymbol - Symbol for quote asset
@@ -109,14 +123,6 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   const accounts = await web3.eth.getAccounts();
   if(Object.keys(inputPrices).length === 0) {
     prices = await getConvertedPrices(deployed, quoteSymbol);
-
-    //console.log("-- prices --")
-    //console.log(prices)
-
-    //Object.keys(prices).map(i => {
-    //  console.log(`+ ${i}: ${prices[i].toString()}`)
-    //})
-
   } else {
     prices = inputPrices;
   }
@@ -128,4 +134,4 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 
-export { updatePriceFeed, updateCanonicalPriceFeed };
+export { updatePriceFeed, updateCanonicalPriceFeed, updateTestingPriceFeed };

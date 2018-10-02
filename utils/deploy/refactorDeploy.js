@@ -4,6 +4,7 @@ import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
 import {makeOrderSignature, takeOrderSignature, cancelOrderSignature, toBytes8, toBytes32, abiEncode} from "../lib/data";
+import {clone} from "../lib/misc";
 import web3 from "../lib/web3";
 
 const BigNumber = require("bignumber.js");
@@ -12,10 +13,6 @@ const BigNumber = require("bignumber.js");
 const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
-
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
 
 async function getFundComponents(hubAddress) {
   let components = {};

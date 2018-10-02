@@ -9,6 +9,8 @@ import web3 from "../lib/web3";
 import governanceAction from "../lib/governanceAction";
 import getChainTime from "../../utils/lib/getChainTime";
 import createStakingFeed from "../lib/createStakingFeed";
+import {clone} from "../lib/misc";
+import {abiEncode} from "../lib/data";
 // import verifyDeployment from "./verify";
 
 const BigNumber = require("bignumber.js");
@@ -443,9 +445,9 @@ async function deployEnvironment(environment) {
     // );
   } else if (environment === "development") {
     console.log(`Deployer: ${accounts[0]}`);
-    deployed.EthToken = await deployContract("assets/PreminedToken", opts);
-    deployed.MlnToken = await deployContract("assets/PreminedToken", opts);
-    deployed.EurToken = await deployContract("assets/PreminedToken", opts);
+    deployed.EthToken = await deployContract("dependencies/PreminedToken", opts);
+    deployed.MlnToken = await deployContract("dependencies/PreminedToken", opts);
+    deployed.EurToken = await deployContract("dependencies/PreminedToken", opts);
     deployed.TestingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [
       deployed.EthToken.options.address, 18
     ]);
@@ -472,19 +474,6 @@ async function deployEnvironment(environment) {
       deployed.VaultFactory.options.address,
       deployed.PolicyManagerFactory.options.address
     ]);
-    await deployed.FundFactory.methods.createComponents(
-      [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
-    ).send(opts);
-    await deployed.FundFactory.methods.continueCreation().send(opts);
-    console.log('Components created');
-    await deployed.FundFactory.methods.setupFund().send(opts);
-    console.log('Fund set up');
-    const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
-    deployed.fund = await getFundComponents(hubAddress);
-
-    deployed.fund.policyManager.methods.register(makeOrderSignature, deployed.PriceTolerance.options.address).send(Object(opts))
-    deployed.fund.policyManager.methods.register(takeOrderSignature, deployed.PriceTolerance.options.address).send(Object(opts))
-    deployed.fund.policyManager.methods.register(abiEncode("executeRequestFor", ["address"]), deployed.Whitelist.options.address).send(Object(opts))
   } else if (environment === "development-old") {
     [opts.from] = accounts;
     deployed.Governance = await deployContract("system/Governance", opts, [[accounts[0]], 1, 100000]);
