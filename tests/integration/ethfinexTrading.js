@@ -46,19 +46,19 @@ test.before(async () => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  deployed.EthFinexExchange = await deployContract(
+  deployed.EthfinexExchange = await deployContract(
     "exchange/thirdparty/ethfinex/ExchangeEfx",
     opts,
   );
-  deployed.EthFinexAdapter = await deployContract(
+  deployed.EthfinexAdapter = await deployContract(
     "exchange/adapter/EfxExchangeAdapter",
     opts
   );
   await governanceAction(
     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
-      deployed.EthFinexExchange.options.address,
-      deployed.EthFinexAdapter.options.address,
+      deployed.EthfinexExchange.options.address,
+      deployed.EthfinexAdapter.options.address,
       false,
       [ takeOrderSignature ]
     ]
@@ -72,7 +72,7 @@ test.before(async () => {
     config.protocol.fund.performanceFee,
     deployed.NoCompliance.options.address,
     deployed.RMMakeOrders.options.address,
-    [deployed.EthFinexExchange.options.address],
+    [deployed.EthfinexExchange.options.address],
     [],
     v,
     r,
@@ -82,8 +82,8 @@ test.before(async () => {
   );
   const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
-  tokenProxyAddress = await deployed.EthFinexExchange.methods.TOKEN_TRANSFER_PROXY_CONTRACT().call();
-  exchangeFee = await deployed.EthFinexExchange.methods.ETHFINEX_FEE().call();
+  tokenProxyAddress = await deployed.EthfinexExchange.methods.TOKEN_TRANSFER_PROXY_CONTRACT().call();
+  exchangeFee = await deployed.EthfinexExchange.methods.ETHFINEX_FEE().call();
 
   // Change competition address to investor just for testing purpose so it allows invest / redeem
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
@@ -164,7 +164,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
       feeRecipient: ZeroEx.NULL_ADDRESS,
       makerTokenAddress: mlnToken.options.address.toLowerCase(),
       takerTokenAddress: ethToken.options.address.toLowerCase(),
-      exchangeContractAddress: deployed.EthFinexExchange.options.address.toLowerCase(),
+      exchangeContractAddress: deployed.EthfinexExchange.options.address.toLowerCase(),
       salt: new BigNumber(555),
       makerFee: new BigNumber(0),
       takerFee: new BigNumber(1000),
