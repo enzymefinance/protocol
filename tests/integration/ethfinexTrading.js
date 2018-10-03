@@ -20,11 +20,12 @@ let accounts;
 let deployer;
 let ethToken;
 let mlnToken;
-let zrxToken;
 let fund;
 let investor;
 let manager;
 let pricefeed;
+let tokenProxyAddress;
+let exchangeFee;
 let trade1;
 let version;
 let deployed;
@@ -81,6 +82,9 @@ test.before(async () => {
   );
   const fundAddress = await version.methods.managerToFunds(manager).call();
   fund = await retrieveContract("Fund", fundAddress);
+  tokenProxyAddress = await deployed.EthFinexExchange.methods.TOKEN_TRANSFER_PROXY_CONTRACT().call();
+  exchangeFee = await deployed.EthFinexExchange.methods.ETHFINEX_FEE().call();
+
   // Change competition address to investor just for testing purpose so it allows invest / redeem
   await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
     opts
@@ -168,7 +172,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
       takerTokenAmount: new BigNumber(trade1.buyQuantity),
       expirationUnixTimestampSec: new BigNumber(Date.now() + 3600000)
   };
-  await mlnToken.methods.approve(deployed.EthFinexExchange.options.address, trade1.sellQuantity).send(
+  await mlnToken.methods.approve(tokenProxyAddress, trade1.sellQuantity).send(
     {from: deployer},
 
   );
@@ -199,19 +203,20 @@ test.serial("manager takes order through 0x adapter", async t => {
   );
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
+  const makerReceiveQuantityAfterFee = trade1.buyQuantity.minus(trade1.buyQuantity.div(exchangeFee));
 
   t.is(Number(heldInExchange), 0);
   t.deepEqual(
     post.deployer.MlnToken,
     pre.deployer.MlnToken.minus(trade1.sellQuantity),
   );
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(trade1.buyQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(makerReceiveQuantityAfterFee));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
-  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.plus(trade1.buyQuantity));
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.plus(makerReceiveQuantityAfterFee));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });

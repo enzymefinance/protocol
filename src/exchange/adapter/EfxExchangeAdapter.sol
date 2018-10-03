@@ -80,7 +80,7 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         require(takerAsset.approve(ExchangeEfx(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
-        require(filledAmount == fillTakerQuantity);
+        //require(filledAmount == fillTakerQuantity);
         require(
             Fund(address(this)).isInAssetList(makerAsset) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
@@ -153,7 +153,7 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
                 orderValues[3], orderValues[4], orderValues[5]
             ],
             fillTakerQuantity,
-            false,
+            true,
             v,
             r,
             s
