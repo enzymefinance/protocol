@@ -318,6 +318,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param identifier Order identifier
     /// @param makerAssetData Encoded data specific to makerAsset.
     /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of order maker.
     function callOnExchange(
         uint exchangeIndex,
         bytes4 method,

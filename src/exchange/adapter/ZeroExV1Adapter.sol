@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/0x/Exchange.sol";
@@ -19,12 +20,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @notice Make order not implemented for smart contracts in this exchange version
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[4] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         revert();
     }
@@ -58,6 +59,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @param identifier Order identifier
     /// @param makerAssetData Encoded data specific to makerAsset.
     /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of the order.
     function takeOrder(
         address targetExchange,
         address[4] orderAddresses,
@@ -77,35 +79,11 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         uint fillTakerQuantity = orderValues[6];
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        LibOrder.Order memory order = LibOrder.Order({
-            makerAddress: orderAddresses[0],
-            takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[2],
-            senderAddress: orderAddresses[3],
-            makerAssetAmount: orderValues[0],
-            takerAssetAmount: orderValues[1],
-            makerFee: orderValues[2],
-            takerFee: orderValues[3],
-            expirationTimeSeconds: orderValues[4],
-            salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
-        });
-
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
-
-        bytes4 assetProxyId;
-        assembly {
-            assetProxyId := and(mload(
-                add(takerAssetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
-        }
-        address assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
-
-        require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
-        LibFillResults.FillResults memory fillResults = executeFill(targetExchange, order, fillTakerQuantity, signature);
-        require(fillResults.takerAssetFilledAmount == fillTakerQuantity);
+        
+        approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
+        uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
+        require(takerAssetFilledAmount == fillTakerQuantity);
         require(
             Fund(address(this)).isInAssetList(makerAsset) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
@@ -124,12 +102,12 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @notice Cancel is not implemented on exchange for smart contracts
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[4] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         revert();
     }
@@ -152,15 +130,36 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     // INTERNAL METHODS
 
+
+    /// @notice needed to avoid stack too deep error
+    function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
+        view
+        returns (address)
+    {
+        bytes4 assetProxyId;
+        assembly {
+            assetProxyId := and(mload(
+                add(takerAssetData, 32)),
+                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+            )
+        }
+        address assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
+
+        require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
+    }
+
     /// @dev needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
-        LibOrder.Order memory order,
+        address[4] orderAddresses,
+        uint[8] orderValues,
+        bytes makerAssetData,
+        bytes takerAssetData,
         uint256 takerAssetFillAmount,
         bytes signature
     )
         internal
-        returns (LibFillResults.FillResults)
+        returns (uint)
     {
         // uint takerFee = orderValues[3];
         // TODO: Disable for now
@@ -168,12 +167,29 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
         //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
         // }
+        
+        LibOrder.Order memory order = LibOrder.Order({
+            makerAddress: orderAddresses[0],
+            takerAddress: orderAddresses[1],
+            feeRecipientAddress: orderAddresses[2],
+            senderAddress: orderAddresses[3],
+            makerAssetAmount: orderValues[0],
+            takerAssetAmount: orderValues[1],
+            makerFee: orderValues[2],
+            takerFee: orderValues[3],
+            expirationTimeSeconds: orderValues[4],
+            salt: orderValues[5],
+            makerAssetData: makerAssetData,
+            takerAssetData: takerAssetData
+        });
 
-        return Exchange(targetExchange).fillOrder(
+        LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,
             signature
         );
+
+        return fillResults.takerAssetFilledAmount;
     }
 
     // VIEW METHODS

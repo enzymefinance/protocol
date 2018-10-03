@@ -38,7 +38,7 @@ let trade1;
 let version;
 let deployed;
 let order;
-let signedOrder;
+let orderSignature;
 let opts;
 
 // mock data
@@ -62,9 +62,6 @@ test.before(async () => {
     "exchange/adapter/ZeroExV1Adapter",
     opts
   );
-  // await deployed.ZeroExTokenTransferProxy.methods.addAuthorizedAddress( deployed.ZeroExExchange.options.address ).send(
-  //   opts,
-  // );
   await governanceAction(
     opts, deployed.Governance, deployed.CanonicalPriceFeed, 'registerExchange',
     [
@@ -102,7 +99,7 @@ test.before(async () => {
 test.beforeEach(async () => {
   await updateCanonicalPriceFeed(deployed);
   const [, referencePrice] = Object.values(await pricefeed.methods.getReferencePriceInfo(mlnToken.options.address, ethToken.options.address).call());
-  const sellQuantity1 = new BigNumber(10 ** 19);
+  const sellQuantity1 = new BigNumber(10 ** 18);
   trade1 = {
     sellQuantity: sellQuantity1,
     buyQuantity: new BigNumber(referencePrice).dividedBy(new BigNumber(10 ** 18)).times(sellQuantity1),
@@ -171,44 +168,45 @@ test.serial("third party makes and validates an off-chain order", async t => {
   const makerAddress = deployer.toLowerCase();
   order = {
       exchangeAddress: zeroExExchange.toLowerCase(),
-      expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
-      feeRecipientAddress: NULL_ADDRESS,
       makerAddress,
-      makerAssetAmount: new BigNumber(trade1.sellQuantity),
-      makerAssetData: assetDataUtils.encodeERC20AssetData(mlnToken.options.address.toLowerCase()),
-      makerFee: new BigNumber(0),
-      salt: new BigNumber(555),
-      senderAddress: NULL_ADDRESS,
       takerAddress: NULL_ADDRESS,
+      senderAddress: NULL_ADDRESS,
+      feeRecipientAddress: NULL_ADDRESS,
+      expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+      salt: new BigNumber(555),
+      makerAssetAmount: new BigNumber(trade1.sellQuantity),
       takerAssetAmount: new BigNumber(trade1.buyQuantity),
+      makerAssetData: assetDataUtils.encodeERC20AssetData(mlnToken.options.address.toLowerCase()),
       takerAssetData: assetDataUtils.encodeERC20AssetData(ethToken.options.address.toLowerCase()),
+      makerFee: new BigNumber(0),
       takerFee: new BigNumber(0)
   };
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
-  const signature = await signatureUtils.ecSignOrderHashAsync(web3.currentProvider, orderHashHex, deployer, SignerType.Default)
+  orderSignature = await signatureUtils.ecSignOrderHashAsync(web3.currentProvider, orderHashHex, deployer, SignerType.Default)
   
   await mlnToken.methods.approve(erc20ProxyAddress, trade1.sellQuantity).send(
     {from: deployer},
   );
 
-  const signatureValid = await signatureUtils.isValidSignatureAsync(web3.currentProvider, orderHashHex, signature, makerAddress);
+  const signatureValid = await signatureUtils.isValidSignatureAsync(web3.currentProvider, orderHashHex, orderSignature, makerAddress);
 
   t.true(signatureValid);
 });
 
 test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  await fund.methods.callOnExchange(
+  const tx = await fund.methods.callOnExchange(
     0, takeOrderSignature,
-    [deployer, ZeroEx.NULL_ADDRESS, mlnToken.options.address, ethToken.options.address, ZeroEx.NULL_ADDRESS],
+    [deployer, NULL_ADDRESS, NULL_ADDRESS, manager],
     [
-      trade1.sellQuantity, trade1.buyQuantity, new BigNumber(0), order.takerFee,
-      order.expirationUnixTimestampSec, order.salt, trade1.buyQuantity, 0
+      order.makerAssetAmount, order.takerAssetAmount, order.makerFee, order.takerFee,
+      order.expirationTimeSeconds, order.salt, trade1.buyQuantity, 0
     ],
-    web3.utils.padLeft('0x0', 64), signedOrder.ecSignature.v, signedOrder.ecSignature.r, signedOrder.ecSignature.s
+    web3.utils.padLeft('0x0', 64), order.makerAssetData, order.takerAssetData, orderSignature
   ).send(
     {from: manager, gas: config.gas}
   );
+  console.log(tx);
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.methods.quantityHeldInCustodyOfExchange(ethToken.options.address).call();
 

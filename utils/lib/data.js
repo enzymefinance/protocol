@@ -7,11 +7,11 @@ function abiEncode(name, argTypes=[]) {
 }
 
 const makeOrderSignature = abiEncode("makeOrder", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+  "address", "address[4]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
 const takeOrderSignature = abiEncode("takeOrder", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+  "address", "address[4]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
 const cancelOrderSignature = abiEncode("cancelOrder", [
