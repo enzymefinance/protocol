@@ -82,6 +82,7 @@ contract TestingPriceFeed is DSMath {
         );
     }
 
+    // NB: not permissioned; anyone can change this in a test
     function setDecimals(address _asset, uint _decimal) {
         assetsToDecimals[_asset] = _decimal;
     }

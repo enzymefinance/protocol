@@ -82,6 +82,7 @@ contract Participation is Spoke, DSMath {
             require(isPriceRecent);
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
+        if (costQuantity == 0) return;
 
         if (
             // isInvestAllowed[request.investmentAsset] &&

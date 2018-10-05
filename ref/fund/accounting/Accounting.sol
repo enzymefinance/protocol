@@ -118,7 +118,7 @@ contract Accounting is DSMath, Spoke {
 
     function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
         require(numShares > 0);
-        return (totalValue * 10 ** 18) / numShares;    // TODO: handle other decimals (decide if we will introduce that)
+        return (totalValue * 10 **18) / numShares;    // TODO: handle other decimals (decide if we will introduce that)
     }
 
     function performCalculations()
