@@ -1,0 +1,4 @@
+- Use solcjs to compile?
+- Create own file (workflow) to compile all contracts with solcjs? --> At some point
+- Commit ABI files? To github? To npm? (I think ABI files to both) --> As discussed with Sebastian: Deploy to NPM, but not to github, make a CI workflow to build and compare ABI files
+- Commit BIN? --> Nope, also not to NPM
