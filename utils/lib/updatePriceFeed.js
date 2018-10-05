@@ -40,10 +40,6 @@ async function getConvertedPrices(deployed, fromSymbol) {
   }
   const queryResult = await requestWithRetries(options, 3);
   
-  //console.log("-- query --")
-  //console.log(options.uri)
-  //console.log(queryResult)
-  
   if(queryResult[fromSymbol] !== 1) {
     throw new Error(`API call returned incorrect price for ${fromSymbol}`);
   } else if(Object.values(queryResult).indexOf(0) !== -1) {
@@ -67,10 +63,6 @@ async function getConvertedPrices(deployed, fromSymbol) {
   const convertedEur = new BigNumber(inverseEur).div(10 ** (eurDecimals - quoteDecimals)).times(10 ** eurDecimals);
   const convertedMln = new BigNumber(inverseMln).div(10 ** (mlnDecimals - quoteDecimals)).times(10 ** mlnDecimals);
   
-  //console.log(`ETH: ${convertedEth.toString()}. ${inverseEth.toString()}. ${ethDecimals}`)
-  //console.log(`EUR: ${convertedEur.toString()}. ${inverseEur.toString()}. ${eurDecimals}`)
-  //console.log(`MLN: ${convertedMln.toString()}. ${inverseMln.toString()}. ${mlnDecimals}`)
-
   return {
     [deployed.EurToken.options.address]: convertedEur,
     [deployed.EthToken.options.address]: convertedEth,
@@ -90,7 +82,6 @@ async function updateTestingPriceFeed(deployed, inputPrices = {}, quoteSymbol = 
   } else {
     prices = inputPrices;
   }
-  console.log(`Prices: ${JSON.stringify(prices, null, '  ')}`);
   await deployed.TestingPriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice }
   );

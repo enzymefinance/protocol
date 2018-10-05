@@ -451,6 +451,13 @@ async function deployEnvironment(environment) {
     deployed.TestingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [
       deployed.EthToken.options.address, 18
     ]);
+    await deployed.TestingPriceFeed.methods.setDecimals(
+      deployed.MlnToken.options.address, 18
+    ).send(clone(opts));
+    await deployed.TestingPriceFeed.methods.setDecimals(
+      deployed.EurToken.options.address, 18
+    ).send(clone(opts));
+    deployed.MatchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
     deployed.MatchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
     deployed.MatchingMarket.methods.addTokenPairWhitelist(
       deployed.EthToken.options.address, deployed.MlnToken.options.address
