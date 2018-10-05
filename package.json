@@ -7,12 +7,12 @@
   },
   "scripts": {
     "start": "babel-node utils/main.js",
-    "lint": "npm run lint:eslint && npm run lint:solium",
+    "lint": "yarn run lint:eslint && yarn run lint:solium",
     "lint:solium": "solium --dir .",
     "lint:eslint": "eslint .",
     "oyente": "oyente -s src/Fund.sol",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
-    "test": "npm run test:ava",
+    "test": "yarn run test:ava",
     "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
     "compile": "SOLC_FLAGS='--optimize --optimize-runs=0' DAPP_SRC=src/contracts dapp build",
@@ -24,7 +24,7 @@
     "docs:build": "doxity build",
     "babel-build": "babel utils/lib/ --out-dir utils/build",
     "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
-    "prepublishOnly": "npm run babel-build && npm run append-json",
+    "prepublishOnly": "yarn run babel-build && yarn run append-json",
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh"
   },
   "files": [

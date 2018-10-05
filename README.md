@@ -21,16 +21,18 @@ This repository contains a reference implementation of the Melon protocol writte
 
 ## Get started
 
+### Prerequisites
+
+- Yarn
+
 ### Installation
 
 ```sh
 # Clone this repository
-git clone git@github.com:melonproject/smart-contracts.git
-cd smart-contracts
+git clone git@github.com:melonproject/protocol.git
+cd protocol
 # Install dependencies
-npm install
-# Generate bytecode and abi of smart-contracts
-npm run compile
+yarn install
 ```
 
 ### Deployment and testing
@@ -38,12 +40,14 @@ npm run compile
 After installation, go to the above `protocol` directory, open a terminal and:
 
 ```sh
+# Generate bytecode and abi of smart-contracts
+yarn compile
 # Launch parity dev chain:
-npm run devchain
+yarn devchain
 # Open a second terminal and deploy the contracts to the development network:
-npm run deploy
+yarn deploy
 # Run the tests using
-npm test
+yarn test
 ```
 
 ### Kovan Deployment
@@ -64,15 +68,19 @@ parity \
 # Open a second terminal and deploy the contracts:
 npm run deploy:kovan
 ```
+
 ## Troubleshooting
 
 #### Permission denied (publickey) when cloning the repo
+
 Try cloning using `git clone https://github.com/melonproject/smart-contracts.git`
 
 #### Spec json is invalid when running Parity Devchain
+
 Update your Parity installation to the latest version or try changing `"instantSeal": null` to `"instantSeal": { "params": {} }` in chainGenesis.json
 
 #### Stuck at deploy step
+
 Deploying contracts may stuck indefinitely in case your parity node is not unlocked for some reason. Locked node requires you to enter password for each transaciton manually.
 
 ## Contributing
