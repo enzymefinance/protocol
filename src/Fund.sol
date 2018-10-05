@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./assets/Shares.sol";
 import "./dependencies/DBC.sol";
@@ -305,8 +306,10 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     /// @param method Signature of the adapter method to call (as per ABI spec)
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] feeRecipientAddress
-    /// @param orderAddresses [3] senderAddress
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
     /// @param orderValues [0] makerAssetAmount
     /// @param orderValues [1] takerAssetAmount
     /// @param orderValues [2] Maker fee
@@ -322,7 +325,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     function callOnExchange(
         uint exchangeIndex,
         bytes4 method,
-        address[4] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
         bytes makerAssetData,

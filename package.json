@@ -84,7 +84,7 @@
     "ganache-cli": "^6.1.4",
     "mkdirp": "^0.5.1",
     "request-promise": "^4.2.2",
-    "truffle-workflow-compile": "^1.0.6",
+    "truffle-workflow-compile": "^2.0.0-beta.1",
     "web3": "^1.0.0-beta.34"
   },
   "ava": {

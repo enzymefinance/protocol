@@ -20,7 +20,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @notice Make order not implemented for smart contracts in this exchange version
     function makeOrder(
         address targetExchange,
-        address[4] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
         bytes makerAssetData,
@@ -46,8 +46,10 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @param targetExchange Address of the exchange
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] feeRecipientAddress
-    /// @param orderAddresses [3] senderAddress
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
     /// @param orderValues [0] makerAssetAmount
     /// @param orderValues [1] takerAssetAmount
     /// @param orderValues [2] Maker fee
@@ -62,7 +64,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @param signature Signature of the order.
     function takeOrder(
         address targetExchange,
-        address[4] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
         bytes makerAssetData,
@@ -72,8 +74,8 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
+        address makerAsset = orderAddresses[3];
+        address takerAsset = orderAddresses[4];
         uint maxMakerQuantity = orderValues[0];
         uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
@@ -83,26 +85,26 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
         uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
-        require(takerAssetFilledAmount == fillTakerQuantity);
-        require(
-            Fund(address(this)).isInAssetList(makerAsset) ||
-            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        );
+        // require(takerAssetFilledAmount == fillTakerQuantity);
+        // require(
+        //     Fund(address(this)).isInAssetList(makerAsset) ||
+        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        // );
 
-        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
-        Fund(address(this)).orderUpdateHook(
-            targetExchange,
-            bytes32(identifier),
-            Fund.UpdateType.take,
-            [makerAsset, takerAsset],
-            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
-        );
+        // Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        // Fund(address(this)).orderUpdateHook(
+        //     targetExchange,
+        //     bytes32(identifier),
+        //     Fund.UpdateType.take,
+        //     [makerAsset, takerAsset],
+        //     [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+        // );
     }
 
     /// @notice Cancel is not implemented on exchange for smart contracts
     function cancelOrder(
         address targetExchange,
-        address[4] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
         bytes makerAssetData,
@@ -151,7 +153,7 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @dev needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
-        address[4] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes makerAssetData,
         bytes takerAssetData,

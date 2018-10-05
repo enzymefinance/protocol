@@ -197,7 +197,7 @@ test.serial("manager takes order through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const tx = await fund.methods.callOnExchange(
     0, takeOrderSignature,
-    [deployer, NULL_ADDRESS, NULL_ADDRESS, manager],
+    [deployer, NULL_ADDRESS, NULL_ADDRESS, mlnToken.options.address, ethToken.options.address, manager],
     [
       order.makerAssetAmount, order.takerAssetAmount, order.makerFee, order.takerFee,
       order.expirationTimeSeconds, order.salt, trade1.buyQuantity, 0
