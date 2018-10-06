@@ -214,6 +214,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     function getName(address ofAsset) view returns (bytes32) { return assetInformation[ofAsset].name; }
     function getSymbol(address ofAsset) view returns (bytes8) { return assetInformation[ofAsset].symbol; }
     function getDecimals(address ofAsset) view returns (uint) { return assetInformation[ofAsset].decimals; }
+    function getAssetBreakIn(address ofAsset) view returns (address) { return assetInformation[ofAsset].breakIn; }
     function assetIsRegistered(address ofAsset) view returns (bool) { return assetInformation[ofAsset].exists; }
     function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(
