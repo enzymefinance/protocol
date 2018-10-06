@@ -71,27 +71,21 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
-        Token makerAsset = Token(orderAddresses[2]);
-        Token takerAsset = Token(orderAddresses[3]);
+        Token makerAsset = Token(WrapperLockInterface(orderAddresses[2]).originalToken());
+        Token takerAsset = Token(WrapperLockInterface(orderAddresses[3]).originalToken());
 
         uint maxMakerQuantity = orderValues[0];
         uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
+        // Deposit taker wrapper token
+        depositWrapperToken(address(takerAsset), orderAddresses[3], fillTakerQuantity);
 
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
-
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        address takerProxy = pricefeed.getAssetBreakIn(takerAsset);
-        address makerProxy = pricefeed.getAssetBreakIn(makerAsset);
-        Token(takerAsset).approve(takerProxy, fillTakerQuantity);
-        WrapperLockInterface(takerProxy).deposit(fillTakerQuantity, 1);
-
-        // require(takerAsset.approve(ExchangeEfx(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
-        // Some random values to fullfill the condition
-        WrapperLockInterface(takerProxy).withdraw(fillMakerQuantity, 0, bytes32(0), bytes32(0), 0);
+        
+        WrapperLockInterface(orderAddresses[2]).withdraw(fillMakerQuantity, 0, bytes32(0), bytes32(0), 0);
         require(filledAmount == fillTakerQuantity);
         require(
             Fund(address(this)).isInAssetList(makerAsset) ||
@@ -138,6 +132,18 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
     }
 
     // INTERNAL METHODS
+
+    /// @dev needed to avoid stack too deep error
+    function depositWrapperToken(
+        address takerAsset,
+        address takerAssetWrapper,
+        uint fillTakerQuantity
+    )
+        internal
+    {
+        Token(takerAsset).approve(takerAssetWrapper, fillTakerQuantity);
+        WrapperLockInterface(takerAssetWrapper).deposit(fillTakerQuantity, 1);
+    }
 
     /// @dev needed to avoid stack too deep error
     function executeFill(

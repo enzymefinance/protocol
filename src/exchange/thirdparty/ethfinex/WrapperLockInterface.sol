@@ -9,6 +9,7 @@ pragma solidity ^0.4.21;
 */
 
 contract WrapperLockInterface {
+    function originalToken() public returns (address);
     function deposit(uint _value, uint _forTime) public returns (bool success);
     function withdraw(uint _value, uint8 v, bytes32 r, bytes32 s, uint signatureValidUntilBlock) public;
 }
