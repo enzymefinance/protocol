@@ -72,6 +72,11 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         Token makerAsset = Token(orderAddresses[2]);
         Token takerAsset = Token(orderAddresses[3]);
+
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
+        address takerProxy = pricefeed.assetInformation(takerAsset).breakInBreakOut[0];
+        address makerProxy = pricefeed.assetInformation(makerAsset).breakInBreakOut[0];
+        
         uint maxMakerQuantity = orderValues[0];
         uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
