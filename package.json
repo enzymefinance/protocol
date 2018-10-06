@@ -94,6 +94,7 @@
       "tests/integration/competitionRegistration.js",
       "tests/integration/competitionPayout.js",
       "tests/integration/centralizedExchange.js",
+      "tests/integration/ethfinexTrading.js",
       "tests/integration/simpleMarketWithApprove.js",
       "tests/integration/redeemMaliciousAsset.js",
       "tests/integration/kyberTrading.js",

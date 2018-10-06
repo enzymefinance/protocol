@@ -90,6 +90,8 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
 
         // require(takerAsset.approve(ExchangeEfx(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
+        // Some random values to fullfill the condition
+        WrapperLockInterface(takerProxy).withdraw(fillMakerQuantity, 0, bytes32(0), bytes32(0), 0);
         require(filledAmount == fillTakerQuantity);
         require(
             Fund(address(this)).isInAssetList(makerAsset) ||
