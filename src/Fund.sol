@@ -342,7 +342,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(
             exchanges[exchangeIndex].exchangeAdapter.delegatecall(
                 method, exchanges[exchangeIndex].exchange,
-                orderAddresses, orderValues, identifier, makerAssetData, takerAssetData, signature
+                orderAddresses, orderValues, identifier, abi.encode(makerAssetData), abi.encode(takerAssetData), abi.encode(signature)
             )
         );
     }

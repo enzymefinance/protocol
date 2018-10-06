@@ -85,20 +85,20 @@ contract ZeroExV1Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
         uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
-        // require(takerAssetFilledAmount == fillTakerQuantity);
-        // require(
-        //     Fund(address(this)).isInAssetList(makerAsset) ||
-        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        // );
+        require(takerAssetFilledAmount == fillTakerQuantity);
+        require(
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        );
 
-        // Fund(address(this)).addAssetToOwnedAssets(makerAsset);
-        // Fund(address(this)).orderUpdateHook(
-        //     targetExchange,
-        //     bytes32(identifier),
-        //     Fund.UpdateType.take,
-        //     [makerAsset, takerAsset],
-        //     [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
-        // );
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        Fund(address(this)).orderUpdateHook(
+            targetExchange,
+            bytes32(identifier),
+            Fund.UpdateType.take,
+            [makerAsset, takerAsset],
+            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+        );
     }
 
     /// @notice Cancel is not implemented on exchange for smart contracts
