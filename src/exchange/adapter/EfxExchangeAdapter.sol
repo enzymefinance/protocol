@@ -2,6 +2,7 @@ pragma solidity ^0.4.21;
 
 import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/ethfinex/ExchangeEfx.sol";
+import "../thirdparty/ethfinex/WrapperLock.sol";
 import "../../Fund.sol";
 import "../../dependencies/DBC.sol";
 import "../../dependencies/math.sol";
@@ -73,17 +74,21 @@ contract EfxExchangeAdapter is ExchangeAdapterInterface, DSMath, DBC {
         Token makerAsset = Token(orderAddresses[2]);
         Token takerAsset = Token(orderAddresses[3]);
 
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        address takerProxy = pricefeed.assetInformation(takerAsset).breakInBreakOut[0];
-        address makerProxy = pricefeed.assetInformation(makerAsset).breakInBreakOut[0];
-        
         uint maxMakerQuantity = orderValues[0];
         uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
+
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
-        require(takerAsset.approve(ExchangeEfx(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
+        
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
+        address takerProxy = pricefeed.assetInformation(takerAsset).breakInBreakOut[0];
+        address makerProxy = pricefeed.assetInformation(makerAsset).breakInBreakOut[0];
+        Token(takerAsset).approve(takerProxy, fillTakerQuantity);
+        WrapperLock(takerProxy).deposit(fillTakerQuantity, 1);
+
+        // require(takerAsset.approve(ExchangeEfx(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), fillTakerQuantity));
         uint filledAmount = executeFill(targetExchange, orderAddresses, orderValues, fillTakerQuantity, v, r, s);
         require(filledAmount == fillTakerQuantity);
         require(
