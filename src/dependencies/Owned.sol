@@ -1,21 +1,24 @@
 pragma solidity ^0.4.21;
 
-import "./DBC.sol";
 
-contract Owned is DBC {
-
-    // FIELDS
+contract Owned {
 
     address public owner;
 
-    // NON-CONSTANT METHODS
+    modifier onlyOwner {
+        require(isOwner(msg.sender));
+        _;
+    }
 
-    function Owned() { owner = msg.sender; }
+    function Owned() {
+        owner = msg.sender;
+    }
 
-    function changeOwner(address ofNewOwner) pre_cond(isOwner()) { owner = ofNewOwner; }
+    function changeOwner(address _newOwner) public onlyOwner {
+        owner = _newOwner;
+    }
 
-    // PRE, POST, INVARIANT CONDITIONS
-
-    function isOwner() internal returns (bool) { return msg.sender == owner; }
-
+    function isOwner(address _address) public view returns (bool) {
+        return _address == owner;
+    }
 }
