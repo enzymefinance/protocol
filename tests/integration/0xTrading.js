@@ -17,7 +17,7 @@ import {
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
-import { takeOrderSignature } from "../../utils/lib/data";
+import { takeOrderSignatureString, takeOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -223,11 +223,12 @@ test.serial("third party makes and validates an off-chain order", async t => {
 });
 
 test.serial("manager takes order through 0x adapter", async t => {
+  console.log(takeOrderSignatureString);
   const pre = await getAllBalances(deployed, accounts, fund);
   const tx = await fund.methods
     .callOnExchange(
       0,
-      takeOrderSignature,
+      takeOrderSignatureString,
       [
         deployer,
         NULL_ADDRESS,

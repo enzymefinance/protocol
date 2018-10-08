@@ -1,24 +1,25 @@
 import web3 from "./web3";
 
 function abiEncode(name, argTypes=[]) {
-  return web3.eth.abi.encodeFunctionSignature(
-    `${name}(${argTypes.join(",")})`
-  );
+  const signatureString = `${name}(${argTypes.join(",")})`;
+  return [web3.eth.abi.encodeFunctionSignature(
+    signatureString
+  ), signatureString];
 }
 
-const makeOrderSignature = abiEncode("makeOrder", [
+const [makeOrderSignature, makeOrderSignatureString] = abiEncode("makeOrder", [
   "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
-const takeOrderSignature = abiEncode("takeOrder", [
+const [takeOrderSignature, takeOrderSignatureString] = abiEncode("takeOrder", [
   "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
-const cancelOrderSignature = abiEncode("cancelOrder", [
+const [cancelOrderSignature, cancelOrderSignatureString] = abiEncode("cancelOrder", [
   "address", "address[6]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
 ]);
 
-const swapTokensSignature = abiEncode("swapTokens", [
+const [swapTokensSignature, swapTokensSignatureString] = abiEncode("swapTokens", [
   "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
 ]);
 
@@ -41,9 +42,13 @@ function toBytesN(input, numBytes) {
 
 export {
   makeOrderSignature,
+  makeOrderSignatureString,
   takeOrderSignature,
+  takeOrderSignatureString,
   cancelOrderSignature,
+  cancelOrderSignatureString,
   swapTokensSignature,
+  swapTokensSignatureString,
   toBytes32,
   toBytes8
 };

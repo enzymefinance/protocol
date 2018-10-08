@@ -300,53 +300,6 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     // EXTERNAL : MANAGING
 
-    /// @notice Universal method for calling exchange functions through adapters
-    /// @notice See adapter contracts for parameters needed for each exchange
-    /// @param exchangeIndex Index of the exchange in the "exchanges" array
-    /// @param method Signature of the adapter method to call (as per ABI spec)
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] feeRecipientAddress
-    /// @param orderAddresses [5] senderAddress
-    /// @param orderValues [0] makerAssetAmount
-    /// @param orderValues [1] takerAssetAmount
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] expirationTimeSeconds
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
-    /// @param signature Signature of order maker.
-    function callOnExchange(
-        uint exchangeIndex,
-        bytes4 method,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    )
-        external
-    {
-        require(
-            modules.pricefeed.exchangeMethodIsAllowed(
-                exchanges[exchangeIndex].exchange, method
-            )
-        );
-        require(
-            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
-                method, exchanges[exchangeIndex].exchange,
-                orderAddresses, orderValues, identifier, abi.encode(makerAssetData), abi.encode(takerAssetData), abi.encode(signature)
-            )
-        );
-    }
-
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
@@ -396,6 +349,60 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     // PUBLIC METHODS
+
+    /// @notice Universal method for calling exchange functions through adapters
+    /// @notice See adapter contracts for parameters needed for each exchange
+    /// @param exchangeIndex Index of the exchange in the "exchanges" array
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [1] Order taker
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
+    /// @param orderValues [0] makerAssetAmount
+    /// @param orderValues [1] takerAssetAmount
+    /// @param orderValues [2] Maker fee
+    /// @param orderValues [3] Taker fee
+    /// @param orderValues [4] expirationTimeSeconds
+    /// @param orderValues [5] Salt/nonce
+    /// @param orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param orderValues [7] Dexy signature mode
+    /// @param identifier Order identifier
+    /// @param makerAssetData Encoded data specific to makerAsset.
+    /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of order maker.
+    function callOnExchange(
+        uint exchangeIndex,
+        string methodSignature,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    )
+        public
+    {
+        require(
+            modules.pricefeed.exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
+            )
+        );
+        require(
+            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
+                abi.encodeWithSignature(
+                    methodSignature,
+                    exchanges[exchangeIndex].exchange,
+                    orderAddresses,
+                    orderValues, 
+                    identifier, 
+                    makerAssetData,
+                    takerAssetData,
+                    signature
+                )
+            )
+        );
+    }
 
     // PUBLIC METHODS : ACCOUNTING
 
