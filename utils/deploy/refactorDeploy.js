@@ -14,36 +14,6 @@ const addressBookFile = "./addressBook.json";
 const mockBytes = "0x86b5eed81db5f691c36cc83eb58cb5205bd2090bf3763a19f0c5bf2f074dd84b";
 const mockAddress = "0x083c41ea13af6c2d5aaddf6e73142eb9a7b00183";
 
-async function getFundComponents(hubAddress) {
-  let components = {};
-  components.hub = await retrieveContract("fund/hub/Hub", hubAddress);
-  const participationAddress = await components.hub.methods.participation().call();
-  const sharesAddress = await components.hub.methods.shares().call();
-  const tradingAddress = await components.hub.methods.trading().call();
-  const policyManagerAddress = await components.hub.methods.policyManager().call();
-  components.participation = await retrieveContract("fund/participation/Participation", participationAddress);
-  components.shares = await retrieveContract("fund/shares/Shares", sharesAddress);
-  components.trading = await retrieveContract("fund/trading/Trading", tradingAddress);
-  components.policyManager = await retrieveContract("fund/policies/PolicyManager", policyManagerAddress);
-  console.log(`Hub: ${hubAddress}`);
-  console.log(`Participation: ${participationAddress}`);
-  console.log(`Trading: ${tradingAddress}`);
-  console.log(`Shares: ${sharesAddress}`);
-  console.log(`PolicyManager: ${policyManagerAddress}`);
-  const routes = await components.hub.methods.settings().call();
-  components = Object.assign(components, {
-    accounting: await retrieveContract("fund/accounting/Accounting", routes.accounting),
-    feeManager: await retrieveContract("fund/fees/FeeManager", routes.feeManager),
-    participation: await retrieveContract("fund/participation/Participation", routes.participation),
-    policyManager: await retrieveContract("fund/policies/PolicyManager", routes.policyManager),
-    shares: await retrieveContract("fund/shares/Shares", routes.shares),
-    trading: await retrieveContract("fund/trading/Trading", routes.trading),
-    vault: await retrieveContract("fund/vault/Vault", routes.vault),
-  });
-
-  return components;
-}
-
 async function deployEnvironment(environment) {
   const config = masterConfig[environment];
   const accounts = await web3.eth.getAccounts();
