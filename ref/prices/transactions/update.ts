@@ -3,7 +3,9 @@ import { Price, price } from "@melonproject/token-math";
 import ensureAccountAddress from "~/utils/environment/ensureAccountAddress";
 import getGlobalEnvironment from "~/utils/environment/getGlobalEnvironment";
 import { ensureAddress } from "~/utils/checks/isAddress";
+import ensure from "~/utils/guards/ensure";
 
+import getPrices from "../calls/getPrices";
 import getContract from "../utils/getContract";
 
 const guards = async (contractAddress, prices, environment) => {
@@ -19,6 +21,7 @@ const prepare = async (contractAddress, prices, environment) => {
     prices.map(p => p.base.address),
     prices.map(price.toAtomic)
   );
+  console.log(prices, prices.map(price.toAtomic));
   return transaction;
 };
 
@@ -31,7 +34,14 @@ export const send = async (transaction, environment) => {
 };
 
 // TODO: Real postprocessing
-export const postProcess = async (receipt, prices) => prices;
+export const postProcess = async (contractAddress, prices, receipt) => {
+  const updatedPrices = await getPrices(
+    contractAddress,
+    prices.map(p => p.base)
+  );
+  ensure(price.isEqual(updatedPrices[0], prices[0]), "Price did not update", { should: prices[0], is: updatedPrices[0] });
+  return updatedPrices;
+};
 
 const update = async (
   contractAddress: string,
@@ -41,7 +51,7 @@ const update = async (
   await guards(contractAddress, prices, environment);
   const transaction = await prepare(contractAddress, prices, environment);
   const receipt = await send(transaction, environment);
-  const result = postProcess(receipt, prices);
+  const result = postProcess(contractAddress, prices, receipt);
   return result;
 };
 
