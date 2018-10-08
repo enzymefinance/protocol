@@ -26,10 +26,18 @@ beforeAll(async () => {
 });
 
 test("update", async () => {
-  const receipt = await update(
+  const newPrice = price.getPrice(
+    quantity.createQuantity(
+      shared.mlnToken,
+      token.appendDecimals(shared.mlnToken, 1)
+    ),
     quantity.createQuantity(
       shared.quoteToken,
-      token.appendDecimals(shared.quoteToken, 1)
+      token.appendDecimals(shared.quoteToken, 0.34)
     )
   );
+
+  const receipt = await update(shared.address, [newPrice]);
+
+  expect(price.isEqual(receipt[0], newPrice)).toBe(true);
 });
