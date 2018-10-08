@@ -64,8 +64,8 @@ test.before(async () => {
   );
   zeroExExchange = "0x48bacb9266a570d521063ef5dd96e61686dbe788";
   erc20ProxyAddress = "0x1dc4c1cefef38a777b15aa20260a54e584b16c48";
-  deployed.ZeroExV1Adapter = await deployContract(
-    "exchange/adapter/ZeroExV1Adapter",
+  deployed.ZeroExV2Adapter = await deployContract(
+    "exchange/adapter/ZeroExV2Adapter",
     opts
   );
   await governanceAction(
@@ -75,7 +75,7 @@ test.before(async () => {
     "registerExchange",
     [
       zeroExExchange,
-      deployed.ZeroExV1Adapter.options.address,
+      deployed.ZeroExV2Adapter.options.address,
       false,
       [takeOrderSignature]
     ]
