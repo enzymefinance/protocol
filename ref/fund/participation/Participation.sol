@@ -101,12 +101,17 @@ contract Participation is Spoke, DSMath {
     }
 
     /// @dev "Happy path" (no asset throws & quantity available)
-    /// @notice Redeem all shares
+    /// @notice Redeem all shares and across all assets
     function redeem() public {
         uint ownedShares = Shares(routes.shares).balanceOf(msg.sender);
+        redeemQuantity(ownedShares);
+    }
+
+    /// @notice Redeem shareQuantity across all assets
+    function redeemQuantity(uint shareQuantity) public {
         address[] memory assetList;
         (, assetList) = Accounting(routes.accounting).getFundHoldings();
-        require(redeemWithConstraints(ownedShares, assetList)); //TODO: assetList from another module
+        require(redeemWithConstraints(shareQuantity, assetList)); //TODO: assetList from another module
     }
 
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
