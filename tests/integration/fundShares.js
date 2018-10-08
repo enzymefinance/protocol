@@ -5,6 +5,7 @@ import { retrieveContract } from "../../utils/lib/contracts";
 import deployEnvironment from "../../utils/deploy/contracts";
 import calcSharePriceAndAllocateFees from "../../utils/lib/calcSharePriceAndAllocateFees";
 import getAllBalances from "../../utils/lib/getAllBalances";
+import getFundComponents from "../../utils/lib/getFundComponents";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 
@@ -34,42 +35,6 @@ let deployed;
 let atLastUnclaimedFeeAllocation;
 let receipt;
 let opts;
-
-async function getFundComponents(hubAddress) {
-  let components = {};
-  components.hub = await retrieveContract("fund/hub/Hub", hubAddress);
-  const participationAddress = await components.hub.methods.participation().call();
-  const sharesAddress = await components.hub.methods.shares().call();
-  const tradingAddress = await components.hub.methods.trading().call();
-  const policyManagerAddress = await components.hub.methods.policyManager().call();
-  components.participation = await retrieveContract("fund/participation/Participation", participationAddress);
-  components.shares = await retrieveContract("fund/shares/Shares", sharesAddress);
-  components.trading = await retrieveContract("fund/trading/Trading", tradingAddress);
-  components.policyManager = await retrieveContract("fund/policies/PolicyManager", policyManagerAddress);
-  const routes = await components.hub.methods.settings().call();
-  components = Object.assign(components, {
-    accounting: await retrieveContract("fund/accounting/Accounting", routes.accounting),
-    feeManager: await retrieveContract("fund/fees/FeeManager", routes.feeManager),
-    participation: await retrieveContract("fund/participation/Participation", routes.participation),
-    policyManager: await retrieveContract("fund/policies/PolicyManager", routes.policyManager),
-    shares: await retrieveContract("fund/shares/Shares", routes.shares),
-    trading: await retrieveContract("fund/trading/Trading", routes.trading),
-    vault: await retrieveContract("fund/vault/Vault", routes.vault),
-  });
-
-  console.log(`Hub: ${hubAddress}`);
-  console.log(`Participation: ${participationAddress}`);
-  console.log(`Trading: ${tradingAddress}`);
-  console.log(`Shares: ${sharesAddress}`);
-  console.log(`PolicyManager: ${policyManagerAddress}`);
-  console.log(`Accounting: ${routes.accounting}`);
-  console.log(`MlnToken: ${deployed.MlnToken.options.address}`)
-  console.log(`Investor: ${investor}`);
-  console.log(`Manager: ${manager}`);
-  console.log(`Pricefeed: ${pricefeed.options.address}`);
-
-  return components;
-}
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -108,6 +73,10 @@ test.serial("can set up new fund", async t => {
   const fundId = await deployed.FundFactory.methods.getLastFundId().call();
   const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
+  console.log(`MlnToken: ${deployed.MlnToken.options.address}`)
+  console.log(`Investor: ${investor}`);
+  console.log(`Manager: ${manager}`);
+  console.log(`Pricefeed: ${pricefeed.options.address}`);
 
   const timestamp = (await web3.eth.getBlock(receipt.blockNumber)).timestamp;
   atLastUnclaimedFeeAllocation = new Date(timestamp).valueOf();
@@ -413,6 +382,9 @@ subsequentTests.forEach(testInstance => {
       Object.values(await pricefeed.methods.getPriceInfo(mlnToken.options.address).call()).map(e => new BigNumber(e));
     const additionalValueInEther = Math.floor(testInstance.offeredValue.minus(offerRemainder).mul(mlnPrice).div(10 ** mlnDecimals));
 
+    console.log(`PreGav: ${preGav}`);
+    console.log(`PostGav: ${postGav}`);
+    console.log(`Additional: ${additionalValueInEther}`);
     t.deepEqual(
       postGav,
       preGav.add(additionalValueInEther),
@@ -470,7 +442,7 @@ testArray.forEach(shares => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const investorPreShares = new BigNumber(await fund.shares.methods.balanceOf(investor).call());
     const mlnHoldings = await fund.accounting.methods.assetHoldings(deployed.MlnToken.options.address).call();
-    receipt = await fund.participation.methods.redeem().send({from: investor, gas: config.gas, gasPrice: config.gasPrice});
+    receipt = await fund.participation.methods.redeemQuantity(shares).send({from: investor, gas: config.gas, gasPrice: config.gasPrice});
     runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
     const post = await getAllBalances(deployed, accounts, fund);
     const investorPostShares = new BigNumber(await fund.shares.methods.balanceOf(investor).call());
@@ -478,6 +450,9 @@ testArray.forEach(shares => {
     console.log(`Mln holdings: ${mlnHoldings.toString()}`);
     console.log(`Pre investor Mln: ${pre.investor.MlnToken.toString()}`);
     console.log(`Post investor Mln: ${post.investor.MlnToken.toString()}`);
+    console.log(`Shares: ${shares}`);
+    console.log(`InvestorPreShares: ${investorPreShares}`);
+    console.log(`InvestorPostShares: ${investorPostShares}`);
     t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken.add(mlnHoldings));
     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
     t.deepEqual(

@@ -6,6 +6,7 @@ import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import governanceAction from "../../utils/lib/governanceAction";
+import getFundComponents from "../../utils/lib/getFundComponents";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import {
   makeOrderSignature,
@@ -34,6 +35,7 @@ let pricefeed;
 let receipt;
 let runningGasTotal;
 let exchanges;
+let matchingMarket2;
 let trade1;
 let trade2;
 let trade3;
@@ -55,66 +57,40 @@ test.before(async t => {
   pricefeed = await deployed.CanonicalPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  // TODO: do we really need to deploy the matchingmarket here again?
-  deployed.MatchingMarket = await deployContract(
-    "exchange/thirdparty/MatchingMarket",
-    { from: deployer, gas: config.gas },
-    [9999999999],
-  );
-  deployed.MatchingMarketAdapter = await deployContract(
-    "exchange/adapter/MatchingMarketAdapter",
-    { from: deployer, gas: config.gas },
-    [deployed.MatchingMarket.options.address],
-  );
-  exchanges = [deployed.SimpleMarket, deployed.MatchingMarket];
-  await governanceAction(
-    { from: deployer },
-    deployed.Governance,
-    deployed.CanonicalPriceFeed,
-    "registerExchange",
-    [
-      deployed.SimpleMarket.options.address,
-      deployed.MatchingMarketAdapter.options.address,
-      true,
-      [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
-    ],
-  );
-  await governanceAction(
-    { from: deployer },
-    deployed.Governance,
-    deployed.CanonicalPriceFeed,
-    "registerExchange",
-    [
-      deployed.MatchingMarket.options.address,
-      deployed.MatchingMarketAdapter.options.address,
-      true,
-      [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
-    ],
-  );
+  // matchingMarket2 = await deployContract(
+  //   "exchanges/MatchingMarket",
+  //   { from: deployer, gas: config.gas },
+  //   [9999999999],
+  // );
+  exchanges = [deployed.MatchingMarket]; //, matchingMarket2];
+  // await governanceAction(
+  //   { from: deployer },
+  //   deployed.Governance,
+  //   deployed.CanonicalPriceFeed,
+  //   "registerExchange",
+  //   [
+  //     deployed.MatchingMarket.options.address,
+  //     deployed.MatchingMarketAdapter.options.address,
+  //     true,
+  //     [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
+  //   ],
+  // );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await version.methods.setupFund(
-    await web3.utils.toHex("Test fund"), // name
-    deployed.EthToken.options.address, // reference asset
-    config.protocol.fund.managementFee,
-    config.protocol.fund.performanceFee,
-    deployed.NoCompliance.options.address,
-    deployed.RMMakeOrders.options.address,
-    [deployed.SimpleMarket.options.address, deployed.MatchingMarket.options.address],
-    [],
-    v,
-    r,
-    s,
-  ).send(
-    { from: manager, gas: config.gas, gasPrice: config.gasPrice }
-  );
-  const fundAddress = await version.methods.managerToFunds(manager).call();
-  fund = await retrieveContract("Fund", fundAddress);
+  await deployed.FundFactory.methods.createComponents(
+    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.MlnToken.options.address, deployed.EthToken.options.address], [false], deployed.TestingPriceFeed.options.address
+  ).send(opts);
+  await deployed.FundFactory.methods.continueCreation().send(opts);
+  console.log('Components created');
+  await deployed.FundFactory.methods.setupFund().send(opts);
+  console.log('Fund set up');
+  const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
+  const fund = await getFundComponents(hubAddress);
 
   // Register price tolerance policy
   const priceTolerance = await deployContract('risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
-  await t.notThrows(fund.methods.register(makeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
-  await t.notThrows(fund.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
+  await t.notThrows(fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
+  await t.notThrows(fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
   
   await deployed.MatchingMarket.methods.addTokenPairWhitelist(mlnToken.options.address, ethToken.options.address).send(
     { from: deployer, gasPrice: config.gasPrice }
@@ -221,18 +197,15 @@ exchangeIndexes.forEach(i => {
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-      receipt = await fund.methods.requestInvestment(boostedOffer, wantedShares, ethToken.options.address).send(
+      receipt = await fund.participation.methods.requestInvestment(wantedShares, boostedOffer, ethToken.options.address).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       await updateCanonicalPriceFeed(deployed);
       await updateCanonicalPriceFeed(deployed);
 
-      const totalSupply = await fund.methods.totalSupply().call();
-      const requestId = await fund.methods.getLastRequestId().call();
-      receipt = await fund.methods.executeRequest(requestId).send(
-        { from: investor, gas: config.gas, gasPrice: config.gasPrice }
-      );
+      const totalSupply = await fund.shares.methods.totalSupply().call();
+      receipt = await fund.participation.methods.executeRequest().send({from: investor});
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       // set approved token back to zero
       receipt = await ethToken.methods.approve(fund.options.address, 0).send(
