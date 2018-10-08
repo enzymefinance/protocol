@@ -15,7 +15,7 @@
     "test": "npm run test:ava",
     "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
-    "compile": "SOLC_FLAGS='--optimize --optimize-runs=0' DAPP_SRC=ref dapp build",
+    "compile": "SOLC_FLAGS='--optimize --optimize-runs=0' DAPP_SRC=src/contracts dapp build",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
     "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
