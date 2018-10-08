@@ -3,8 +3,8 @@ pragma solidity ^0.4.21;
 import "../hub/Hub.sol";
 import "../policies/Policy.sol";
 import "../../exchanges/MatchingMarketAdapter.sol";
-import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
-import "../../../src/dependencies/math.sol";
+import "../../prices/CanonicalPriceFeed.sol";
+import "../../dependencies/math.sol";
 
 contract PriceTolerance is DSMath, Policy {
     uint tolerance;

@@ -5,7 +5,7 @@ import "./Fee.i.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
-import "../../../src/dependencies/math.sol";
+import "../../dependencies/math.sol";
 
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is Spoke, DSMath {

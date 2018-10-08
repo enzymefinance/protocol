@@ -15,11 +15,11 @@ import "./SafeMath.sol";
 contract StandardToken is ERC20 {
   using SafeMath for uint256;
 
-  mapping (address => uint256) private balances;
+  mapping (address => uint256) balances;
 
-  mapping (address => mapping (address => uint256)) private allowed;
+  mapping (address => mapping (address => uint256)) allowed;
 
-  uint256 private totalSupply_;
+  uint256 totalSupply_;
 
   /**
   * @dev Total number of tokens in existence

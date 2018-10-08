@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "../../src/dependencies/thing.sol";
+import "../dependencies/thing.sol";
 import "../dependencies/ERC20.sol";
 
 contract EventfulMarket {

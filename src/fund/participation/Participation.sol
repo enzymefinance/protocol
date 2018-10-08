@@ -7,8 +7,8 @@ import "../accounting/Accounting.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
 import "../../factory/Factory.sol";
-import "../../../src/dependencies/math.sol";
-import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
+import "../../dependencies/math.sol";
+import "../../prices/CanonicalPriceFeed.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is Spoke, DSMath {

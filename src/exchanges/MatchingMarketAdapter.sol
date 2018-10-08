@@ -6,7 +6,7 @@ import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
-import "../../src/dependencies/math.sol";
+import "../dependencies/math.sol";
 
 // TODO: re-enable all checks when routing sorted, and adding assets to lists
 /// @title MatchingMarketAdapter Contract

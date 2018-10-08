@@ -7,9 +7,9 @@ import "../vault/Vault.sol";
 import "../policies/Manager.sol";
 import "../../dependencies/ERC20.sol";
 import "../../factory/Factory.sol";
-import "../../../src/dependencies/math.sol";
-import "../../../src/exchange/GenericExchangeInterface.sol";
-import "../../../src/pricefeeds/CanonicalRegistrar.sol";
+import "../../dependencies/math.sol";
+import "../../exchanges/GenericExchangeInterface.sol";
+import "../../prices/CanonicalRegistrar.sol";
 
 contract Trading is DSMath, Spoke, TradingInterface {
 

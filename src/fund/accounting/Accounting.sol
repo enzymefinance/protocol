@@ -8,8 +8,8 @@ import "../shares/Shares.sol";
 import "../vault/Vault.sol";
 import "../../dependencies/ERC20.sol";
 import "../../factory/Factory.sol";
-import "../../../src/dependencies/math.sol";
-import "../../../src/pricefeeds/CanonicalPriceFeed.sol";
+import "../../dependencies/math.sol";
+import "../../prices/CanonicalPriceFeed.sol";
 
 // NB: many functions simplified for now
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down

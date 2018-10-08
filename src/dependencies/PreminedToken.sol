@@ -1,13 +1,13 @@
 pragma solidity ^0.4.21;
 
 
-import "../../src/assets/Asset.sol";
+import "./StandardToken.sol";
 
-contract PreminedToken is Asset {
+contract PreminedToken is StandardToken {
     constructor() {
         uint preminedAmount = 10**30;
-        _totalSupply = preminedAmount;
-        balances[msg.sender] = _totalSupply;
+        totalSupply_ = preminedAmount;
+        balances[msg.sender] = totalSupply_;
     }
 }
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 
-import "../../src/dependencies/math.sol";
+import "../dependencies/math.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
