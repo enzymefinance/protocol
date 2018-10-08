@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "es2015",
+    "lib": ["esnext"],
+    "sourceMap": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "outDir": "./build",
+    "paths": {
+      "~/*": ["ref/*"],
+      "@melonproject/token-math": ["node_modules/@melonproject/token-math/src"]
+    }
+  },
+  "files": ["typings.d.ts"],
+  "include": [
+    "ref/**/*",
+    "tests/**/*.ts",
+    "node_modules/@melonproject/token-math/src/bigInteger/bigint.d.ts"
+  ]
+}

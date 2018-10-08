@@ -26,9 +26,9 @@
     "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
     "prepublishOnly": "yarn run babel-build && yarn run append-json",
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh",
-    "----": "REM The scripts below were added during melon.js integration. Maybe they are superfluous or make thers superfluous",
+    "----": "REM The scripts below were added during melon.js integration. Maybe they are superfluous or make others superfluous",
     "solcjs:compile": "solcjs ref/**/*.sol --abi --bin -o out",
-    "solc:compile": "solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out ref/factory/FundFactory.sol"
+    "solc:compile": "solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out ref/prices/TestingPriceFeed.sol"
   },
   "files": [
     "out",
@@ -57,6 +57,7 @@
   "homepage": "https://github.com/melonproject/protocol#readme",
   "devDependencies": {
     "@digix/doxity": "^0.5.2",
+    "@types/jest": "^23.3.3",
     "ava": "^0.25.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
@@ -75,20 +76,32 @@
     "eslint-plugin-jsx-a11y": "^6.0.3",
     "eslint-plugin-react": "^7.5.1",
     "flow-bin": "^0.63.1",
+    "jest": "^23.6.0",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.1.0"
+    "solium": "^1.1.0",
+    "ts-jest": "^23.10.4",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.1.1"
   },
   "dependencies": {
     "0x.js": "^0.35.0",
     "@0xproject/sol-compiler": "^0.5.2",
+    "@melonproject/token-math": "^0.0.1-alpha.4",
     "@parity/api": "^2.1.20",
     "bignumber.js": "^4.1.0",
+    "debug": "^4.0.1",
+    "dotenv": "^6.0.0",
     "ethereumjs-testrpc": "^4.1.3",
+    "find-up": "^3.0.0",
     "ganache-cli": "^6.1.4",
+    "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
     "solc": "^0.4.25",
     "truffle-workflow-compile": "^1.0.6",
-    "web3": "1.0.0-beta.34"
+    "web3": "^1.0.0-beta.34",
+    "web3-eth": "^1.0.0-beta.36",
+    "web3-utils": "^1.0.0-beta.36",
+    "yup": "^0.26.6"
   },
   "ava": {
     "files": [
