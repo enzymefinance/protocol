@@ -39,10 +39,12 @@ export const postProcess = async (contractAddress, prices, receipt) => {
     contractAddress,
     prices.map(p => p.base)
   );
+
   ensure(Price.isEqual(updatedPrices[0], prices[0]), "Price did not update", {
     should: prices[0],
     is: updatedPrices[0]
   });
+
   return updatedPrices;
 };
 
