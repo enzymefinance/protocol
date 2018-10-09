@@ -222,8 +222,9 @@ test.serial("third party makes and validates an off-chain order", async t => {
   t.true(signatureValid);
 });
 
-test.serial("manager takes order through 0x adapter", async t => {
+test.serial("manager takes order (half the total quantity) through 0x adapter", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
+  const fillQuantity = trade1.buyQuantity.div(2);
   await fund.methods
     .callOnExchange(
       0,
@@ -233,7 +234,7 @@ test.serial("manager takes order through 0x adapter", async t => {
         NULL_ADDRESS,
         mlnToken.options.address,
         ethToken.options.address,
-        NULL_ADDRESS,
+        order.feeRecipientAddress,
         NULL_ADDRESS
       ],
       [
@@ -243,7 +244,7 @@ test.serial("manager takes order through 0x adapter", async t => {
         order.takerFee,
         order.expirationTimeSeconds,
         order.salt,
-        trade1.buyQuantity,
+        fillQuantity,
         0
       ],
       web3.utils.padLeft("0x0", 64),
@@ -260,18 +261,118 @@ test.serial("manager takes order through 0x adapter", async t => {
   t.is(Number(heldInExchange), 0);
   t.deepEqual(
     post.deployer.MlnToken,
-    pre.deployer.MlnToken.minus(trade1.sellQuantity)
+    pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2))
   );
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(trade1.buyQuantity));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity.div(2)));
   t.deepEqual(
     post.deployer.EthToken,
-    pre.deployer.EthToken.plus(trade1.buyQuantity)
+    pre.deployer.EthToken.plus(fillQuantity)
+  );
+  t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
+test.serial("third party makes another order with taker fees", async t => {
+  const makerAddress = deployer.toLowerCase();
+  const takerFee = new BigNumber(10 ** 17);
+  order = {
+    exchangeAddress: zeroExExchange.toLowerCase(),
+    makerAddress,
+    takerAddress: NULL_ADDRESS,
+    senderAddress: NULL_ADDRESS,
+    feeRecipientAddress: investor.toLowerCase(),
+    expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+    salt: new BigNumber(555),
+    makerAssetAmount: new BigNumber(trade1.sellQuantity),
+    takerAssetAmount: new BigNumber(trade1.buyQuantity),
+    makerAssetData: assetDataUtils.encodeERC20AssetData(
+      mlnToken.options.address.toLowerCase()
+    ),
+    takerAssetData: assetDataUtils.encodeERC20AssetData(
+      ethToken.options.address.toLowerCase()
+    ),
+    makerFee: new BigNumber(0),
+    takerFee
+  };
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  orderSignature = await signatureUtils.ecSignOrderHashAsync(
+    web3.currentProvider,
+    orderHashHex,
+    deployer,
+    SignerType.Default
+  );
+
+  await mlnToken.methods
+    .approve(erc20ProxyAddress, trade1.sellQuantity)
+    .send({ from: deployer });
+
+  const signatureValid = await signatureUtils.isValidSignatureAsync(
+    web3.currentProvider,
+    orderHashHex,
+    orderSignature,
+    makerAddress
+  );
+
+  t.true(signatureValid);
+});
+
+test.serial("fund with enough ZRX takes the above order", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const fillQuantity = trade1.buyQuantity.div(2);
+  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20).send();
+  await fund.methods
+    .callOnExchange(
+      0,
+      takeOrderSignatureString,
+      [
+        deployer,
+        NULL_ADDRESS,
+        mlnToken.options.address,
+        ethToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        order.salt,
+        fillQuantity,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: manager, gas: config.gas });
+  const post = await getAllBalances(deployed, accounts, fund);
+  const heldInExchange = await fund.methods
+    .quantityHeldInCustodyOfExchange(ethToken.options.address)
+    .call();
+
+  t.is(Number(heldInExchange), 0);
+  t.deepEqual(
+    post.deployer.MlnToken,
+    pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2))
+  );
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity.div(2)));
+  t.deepEqual(
+    post.deployer.EthToken,
+    pre.deployer.EthToken.plus(fillQuantity)
   );
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
