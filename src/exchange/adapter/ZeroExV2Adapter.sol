@@ -156,8 +156,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     {
         uint takerFee = orderValues[3];
         if (takerFee > 0) {
-            //Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
-            //require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
+            address zrxProxy = getAssetProxy(targetExchange, Exchange(targetExchange).ZRX_ASSET_DATA);
+            require(Asset(zrxProxy).approve(zrxProxy, takerFee));
         }
         uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
         
