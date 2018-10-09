@@ -11,7 +11,7 @@ import "../../dependencies/math.sol";
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
+contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbiEncoder {
 
     //  METHODS
 
@@ -84,21 +84,21 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
-        uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
-        require(takerAssetFilledAmount == fillTakerQuantity);
-        require(
-            Fund(address(this)).isInAssetList(makerAsset) ||
-            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        );
+        uint takerAssetFilledAmount = constructAndExecuteFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
+        // require(takerAssetFilledAmount == fillTakerQuantity);
+        // require(
+        //     Fund(address(this)).isInAssetList(makerAsset) ||
+        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        // );
 
-        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
-        Fund(address(this)).orderUpdateHook(
-            targetExchange,
-            bytes32(identifier),
-            Fund.UpdateType.take,
-            [makerAsset, takerAsset],
-            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
-        );
+        // Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        // Fund(address(this)).orderUpdateHook(
+        //     targetExchange,
+        //     bytes32(identifier),
+        //     Fund.UpdateType.take,
+        //     [makerAsset, takerAsset],
+        //     [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+        // );
     }
 
     /// @notice Cancel is not implemented on exchange for smart contracts
@@ -151,7 +151,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     }
 
     /// @dev needed to avoid stack too deep error
-    function executeFill(
+    function constructAndExecuteFill(
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
@@ -169,6 +169,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
         //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
         // }
+        LibFillResults.FillResults memory fillResults;
         
         LibOrder.Order memory order = LibOrder.Order({
             makerAddress: orderAddresses[0],
@@ -185,13 +186,56 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             takerAssetData: takerAssetData
         });
 
-        LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
+        // ABI encode calldata for `fillOrder`
+        bytes memory fillOrderCalldata = abiEncodeFillOrder(
             order,
             takerAssetFillAmount,
             signature
         );
 
+        // Call `fillOrder` and handle any exceptions gracefully
+        fillResults = executeFill(targetExchange, fillOrderCalldata);
         return fillResults.takerAssetFilledAmount;
+    }
+    
+    /// @dev needed to avoid stack too deep error
+    function executeFill(
+        address targetExchange,
+        bytes fillOrderCalldata
+    )
+        internal
+        returns (LibFillResults.FillResults memory fillResults)
+    {
+        // uint takerFee = orderValues[3];
+        // TODO: Disable for now
+        // if (takerFee > 0) {
+        //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
+        //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
+        // }
+        
+        // Call `fillOrder` and handle any exceptions gracefully
+        bool success;
+        assembly {
+            success := call(
+                gas,                                // forward all gas
+                targetExchange,                     // call address of Exchange contract
+                0,                                  // transfer 0 wei
+                add(fillOrderCalldata, 32),         // pointer to start of input (skip array length in first 32 bytes)
+                mload(fillOrderCalldata),           // length of input
+                fillOrderCalldata,                  // write output over input
+                128                                 // output size is 128 bytes
+            )
+            if success {
+                mstore(fillResults, mload(fillOrderCalldata))
+                mstore(add(fillResults, 32), mload(add(fillOrderCalldata, 32)))
+                mstore(add(fillResults, 64), mload(add(fillOrderCalldata, 64)))
+                mstore(add(fillResults, 96), mload(add(fillOrderCalldata, 96)))
+            }
+        }
+
+        require(success);
+        // fillResults values will be 0 by default if call was unsuccessful
+        // return 1;
     }
 
     // VIEW METHODS
