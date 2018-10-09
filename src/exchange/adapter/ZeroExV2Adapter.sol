@@ -135,18 +135,9 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     /// @notice needed to avoid stack too deep error
     function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
-        view
-        returns (address)
+        internal
     {
-        bytes4 assetProxyId;
-        assembly {
-            assetProxyId := and(mload(
-                add(takerAssetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
-        }
-        address assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
-
+        address assetProxy = getAssetProxy(targetExchange, takerAssetData);
         require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
     }
 
@@ -163,12 +154,11 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         internal
         returns (uint)
     {
-        // uint takerFee = orderValues[3];
-        // TODO: Disable for now
-        // if (takerFee > 0) {
-        //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
-        //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
-        // }
+        uint takerFee = orderValues[3];
+        if (takerFee > 0) {
+            //Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
+            //require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
+        }
         uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
         
         LibOrder.Order memory order = LibOrder.Order({
@@ -235,4 +225,20 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             )
         );
     }
+
+    function getAssetProxy(address targetExchange, bytes assetData)
+        internal
+        view
+        returns (address assetProxy)
+    {
+        bytes4 assetProxyId;
+        assembly {
+            assetProxyId := and(mload(
+                add(assetData, 32)),
+                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+            )
+        }
+        assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
+    }
+
 }
