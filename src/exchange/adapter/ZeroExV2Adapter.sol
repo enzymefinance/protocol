@@ -169,7 +169,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
         //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
         // }
-                
+        uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
+        
         LibOrder.Order memory order = LibOrder.Order({
             makerAddress: orderAddresses[0],
             takerAddress: orderAddresses[1],
@@ -190,6 +191,9 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             takerAssetFillAmount,
             signature
         );
+
+        uint postMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
+        require(postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount));
 
         return fillResults.takerAssetFilledAmount;
     }
