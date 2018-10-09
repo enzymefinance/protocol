@@ -10,13 +10,13 @@
     "declaration": true,
     "outDir": "./build",
     "paths": {
-      "~/*": ["ref/*"],
+      "~/*": ["src/*"],
       "@melonproject/token-math": ["node_modules/@melonproject/token-math/src"]
     }
   },
   "files": ["typings.d.ts"],
   "include": [
-    "ref/**/*",
+    "src/**/*",
     "tests/**/*.ts",
     "node_modules/@melonproject/token-math/src/bigInteger/bigint.d.ts"
   ]

@@ -6,6 +6,6 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "bin"],
   globalSetup: "./tests/setup.js",
   moduleNameMapper: {
-    "~/(.*)": "<rootDir>/ref/$1"
+    "~/(.*)": "<rootDir>/src/$1"
   }
 };
