@@ -11,7 +11,7 @@ import "../../dependencies/math.sol";
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbiEncoder {
+contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     //  METHODS
 
@@ -74,8 +74,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbi
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
-        address makerAsset = orderAddresses[3];
-        address takerAsset = orderAddresses[4];
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
         uint maxMakerQuantity = orderValues[0];
         uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
@@ -84,21 +84,21 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbi
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
-        uint takerAssetFilledAmount = constructAndExecuteFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
-        // require(takerAssetFilledAmount == fillTakerQuantity);
-        // require(
-        //     Fund(address(this)).isInAssetList(makerAsset) ||
-        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        // );
+        uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
+        require(takerAssetFilledAmount == fillTakerQuantity);
+        require(
+            Fund(address(this)).isInAssetList(makerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        );
 
-        // Fund(address(this)).addAssetToOwnedAssets(makerAsset);
-        // Fund(address(this)).orderUpdateHook(
-        //     targetExchange,
-        //     bytes32(identifier),
-        //     Fund.UpdateType.take,
-        //     [makerAsset, takerAsset],
-        //     [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
-        // );
+        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
+        Fund(address(this)).orderUpdateHook(
+            targetExchange,
+            bytes32(identifier),
+            Fund.UpdateType.take,
+            [makerAsset, takerAsset],
+            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+        );
     }
 
     /// @notice Cancel is not implemented on exchange for smart contracts
@@ -151,7 +151,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbi
     }
 
     /// @dev needed to avoid stack too deep error
-    function constructAndExecuteFill(
+    function executeFill(
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
@@ -169,13 +169,12 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbi
         //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
         //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
         // }
-        LibFillResults.FillResults memory fillResults;
-        
+                
         LibOrder.Order memory order = LibOrder.Order({
             makerAddress: orderAddresses[0],
             takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[2],
-            senderAddress: orderAddresses[3],
+            feeRecipientAddress: orderAddresses[4],
+            senderAddress: orderAddresses[5],
             makerAssetAmount: orderValues[0],
             takerAssetAmount: orderValues[1],
             makerFee: orderValues[2],
@@ -186,56 +185,13 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset, LibAbi
             takerAssetData: takerAssetData
         });
 
-        // ABI encode calldata for `fillOrder`
-        bytes memory fillOrderCalldata = abiEncodeFillOrder(
+        LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,
             signature
         );
 
-        // Call `fillOrder` and handle any exceptions gracefully
-        fillResults = executeFill(targetExchange, fillOrderCalldata);
         return fillResults.takerAssetFilledAmount;
-    }
-    
-    /// @dev needed to avoid stack too deep error
-    function executeFill(
-        address targetExchange,
-        bytes fillOrderCalldata
-    )
-        internal
-        returns (LibFillResults.FillResults memory fillResults)
-    {
-        // uint takerFee = orderValues[3];
-        // TODO: Disable for now
-        // if (takerFee > 0) {
-        //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
-        //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
-        // }
-        
-        // Call `fillOrder` and handle any exceptions gracefully
-        bool success;
-        assembly {
-            success := call(
-                gas,                                // forward all gas
-                targetExchange,                     // call address of Exchange contract
-                0,                                  // transfer 0 wei
-                add(fillOrderCalldata, 32),         // pointer to start of input (skip array length in first 32 bytes)
-                mload(fillOrderCalldata),           // length of input
-                fillOrderCalldata,                  // write output over input
-                128                                 // output size is 128 bytes
-            )
-            if success {
-                mstore(fillResults, mload(fillOrderCalldata))
-                mstore(add(fillResults, 32), mload(add(fillOrderCalldata, 32)))
-                mstore(add(fillResults, 64), mload(add(fillOrderCalldata, 64)))
-                mstore(add(fillResults, 96), mload(add(fillOrderCalldata, 96)))
-            }
-        }
-
-        require(success);
-        // fillResults values will be 0 by default if call was unsuccessful
-        // return 1;
     }
 
     // VIEW METHODS

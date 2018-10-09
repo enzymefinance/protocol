@@ -223,19 +223,18 @@ test.serial("third party makes and validates an off-chain order", async t => {
 });
 
 test.serial("manager takes order through 0x adapter", async t => {
-  console.log(takeOrderSignatureString);
   const pre = await getAllBalances(deployed, accounts, fund);
-  const tx = await fund.methods
+  await fund.methods
     .callOnExchange(
       0,
       takeOrderSignatureString,
       [
         deployer,
         NULL_ADDRESS,
-        NULL_ADDRESS,
         mlnToken.options.address,
         ethToken.options.address,
-        manager
+        NULL_ADDRESS,
+        NULL_ADDRESS
       ],
       [
         order.makerAssetAmount,
@@ -253,7 +252,6 @@ test.serial("manager takes order through 0x adapter", async t => {
       orderSignature
     )
     .send({ from: manager, gas: config.gas });
-  console.log(tx);
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.methods
     .quantityHeldInCustodyOfExchange(ethToken.options.address)
