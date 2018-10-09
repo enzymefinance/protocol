@@ -1,13 +1,11 @@
-import initGlobalEnvironment from "~/utils/environment/initGlobalEnvironment";
+import initTestEnvironment from "~/utils/environment/initTestEnvironment";
 
 import deploy from "./deploy";
 
 const shared: any = {};
 
 beforeAll(async () => {
-  initGlobalEnvironment({
-    wallet: { address: "0x92b9eF5F9AA18823381AEb80EFfc5103Bc103f10" }
-  });
+  await initTestEnvironment();
   shared.quoteToken = {
     symbol: "ETH",
     address: "0xf9Df6AEc03A59503AD596B9AB68b77dc2937F69D",

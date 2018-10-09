@@ -9,7 +9,7 @@ type ConstructorArg = number | string | [number | string];
 
 const deploy = async (
   pathToSolidityFile: string,
-  args: ConstructorArg[] = [], 
+  args: ConstructorArg[] = [],
   environment = getGlobalEnvironment()
 ) => {
   // debug("Deploying: ", pathToSolidityFile);
@@ -32,12 +32,12 @@ const deploy = async (
   const instance = await contract
     .deploy({
       data: bin,
-      arguments: args,
+      arguments: args
     })
     .send({
       gas: 3000000,
       gasPrice: "2000000000",
-      from: "0x92b9eF5F9AA18823381AEb80EFfc5103Bc103f10"
+      from: environment.wallet.address
     });
   // .on('error', (error) => console.error('Error deploying', pathToSolidityFile, error))
   // .on('transactionHash', (txHash) => console.log('onTxHash', txHash))
