@@ -1,8 +1,8 @@
-import { Token } from "@melonproject/token-math";
+import { IToken } from "@melonproject/token-math";
 
 import getContract from "../utils/getContract";
 
-const getQuoteToken = async (contractAddress: string): Promise<Token> => {
+const getQuoteToken = async (contractAddress: string): Promise<IToken> => {
   const contract = await getContract(contractAddress);
   const result = await contract.methods.QUOTE_ASSET().call();
 

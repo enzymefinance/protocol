@@ -27,8 +27,8 @@
     "prepublishOnly": "yarn run babel-build && yarn run append-json",
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh",
     "----": "REM The scripts below were added during melon.js integration. Maybe they are superfluous or make others superfluous",
-    "solcjs:compile": "solcjs ref/**/*.sol --abi --bin -o out",
-    "solc:compile": "solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out ref/prices/TestingPriceFeed.sol"
+    "solcjs:compile": "solcjs ./src/**/*.sol --abi --bin -o out",
+    "solc:compile": "solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out src/contracts/prices/TestingPriceFeed.sol"
   },
   "files": [
     "out",

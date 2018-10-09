@@ -1,9 +1,9 @@
-import { Token } from "@melonproject/token-math";
+import { IToken } from "@melonproject/token-math";
 
 import { default as deployContract } from "~/utils/deploy";
 import { ensureAddress } from "~/utils/checks/isAddress";
 
-const deploy = async (quoteToken: Token) => {
+const deploy = async (quoteToken: IToken) => {
   ensureAddress(quoteToken.address);
 
   const address = await deployContract("./ref/prices/TestingPriceFeed.sol", [
