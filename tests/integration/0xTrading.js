@@ -1,8 +1,6 @@
 import test from "ava";
 import {
-  Web3ProviderEngine,
   assetDataUtils,
-  Order,
   orderHashUtils,
   signatureUtils,
   SignerType
@@ -11,7 +9,6 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import {
-  getSignatureParameters,
   getTermsSignatureParameters
 } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
@@ -324,7 +321,7 @@ test.serial("third party makes another order with taker fees", async t => {
 test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
-  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20).send();
+  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send();
   await fund.methods
     .callOnExchange(
       0,
