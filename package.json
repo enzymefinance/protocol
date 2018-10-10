@@ -27,7 +27,8 @@
     "prepublishOnly": "yarn run babel-build && yarn run append-json",
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh",
     "----": "REM The scripts below were added during melon.js integration. Maybe they are superfluous or make others superfluous",
-    "solcjs:compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts"
+    "solcjs:compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
+    "test:verbose": "TERM=dumb yarn jest"
   },
   "files": [
     "out",

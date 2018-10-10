@@ -3,6 +3,6 @@ require("dotenv").config({
 });
 
 // Once loaded it runs faster
-require("ganache-cli");
+// require("ganache-cli");
 
 module.exports = async globalConfig => {};
