@@ -30,6 +30,7 @@ const findImports = (missingPath: string) => {
   };
 };
 
+// Not used at the moment
 const compile = (pathToSol: string) => {
   debug("Compiling ...", pathToSol);
 
@@ -74,9 +75,15 @@ const writeFiles = (compileOutput, contract) => {
 
   const parsedPath = path.parse(sourceName);
   const targetDir = path.join(process.cwd(), "out", parsedPath.dir);
-  const targetBasePath = path.join(targetDir, parsedPath.name);
+  const targetBasePath = path.join(targetDir, contractName);
 
   mkdirp.sync(targetDir);
+
+  if (fs.existsSync(`${targetBasePath}.abi`)) {
+    throw new Error(
+      `Contract name duplication detected: ${targetBasePath}.abi. Please make sure that every contract is uniquely named inside the same directory.`
+    );
+  }
 
   fs.writeFileSync(`${targetBasePath}.bin`, compileOutput.bytecode);
   fs.writeFileSync(
@@ -110,10 +117,7 @@ const compileAll = (query = "src/contracts/**/*.sol") => {
   rimraf.sync("out");
   mkdirp.sync("out");
 
-  fs.writeFileSync(
-    "out/compilerResult.json",
-    JSON.stringify(output, null, 2)
-  );
+  fs.writeFileSync("out/compilerResult.json", JSON.stringify(output, null, 2));
 
   if (output.errors.length > 0) {
     fs.writeFileSync("out/compilerErrors.txt", output.errors.join("\n\n"));
@@ -125,5 +129,6 @@ const compileAll = (query = "src/contracts/**/*.sol") => {
 };
 
 if (require.main === module) {
+  // compile("exchanges/MatchingMarket.sol");
   compileAll();
 }
