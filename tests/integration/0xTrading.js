@@ -374,8 +374,8 @@ test.serial("fund with enough ZRX takes the above order", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial("Check if make order works", async t => {
-  const makerAddress = manager.toLowerCase();
+test.serial("Make order through the fund", async t => {
+  const makerAddress = fund.options.address.toLowerCase();
   order = {
     exchangeAddress: zeroExExchange.toLowerCase(),
     makerAddress,

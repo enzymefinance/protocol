@@ -40,11 +40,12 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, makerQuantity);
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+        Exchange(targetExchange).preSign(orderInfo.orderHash, msg.sender, signature);
 
         require(
             Exchange(targetExchange).isValidSignature(
                 orderInfo.orderHash,
-                order.makerAddress,
+                msg.sender,
                 signature
             ),
             "INVALID_ORDER_SIGNATURE"
