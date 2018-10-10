@@ -321,7 +321,7 @@ test.serial("third party makes another order with taker fees", async t => {
 test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
-  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send();
+  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
   await fund.methods
     .callOnExchange(
       0,
@@ -374,10 +374,15 @@ test.serial("fund with enough ZRX takes the above order", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
+<<<<<<< HEAD
 
 test.serial("Check if make order works", async t => {
   const fillQuantity = trade1.buyQuantity.div(2);
   zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send();
+=======
+test.serial("Check if make order works", async t => {
+  const fillQuantity = trade1.buyQuantity.div(2);
+>>>>>>> 99faa594424aeaa9dd293801796bf2a5914ac985
   await fund.methods
     .callOnExchange(
       0,
@@ -406,4 +411,8 @@ test.serial("Check if make order works", async t => {
       orderSignature
     )
     .send({ from: manager, gas: config.gas });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 99faa594424aeaa9dd293801796bf2a5914ac985

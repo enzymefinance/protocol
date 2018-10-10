@@ -17,7 +17,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     //  PUBLIC METHODS
 
-    /// @notice Make order not implemented for smart contracts in this exchange version
+    /// @notice Make order by pre-approving signatures
     function makeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -27,7 +27,28 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
+
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
+        uint maxMakerQuantity = orderValues[0];
+        uint maxTakerQuantity = orderValues[1];
+
+        require(makeOrderPermitted(maxMakerQuantity, makerAsset, maxTakerQuantity, takerAsset));
+
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+
+        require(
+            Exchange(targetExchange).isValidSignature(
+                orderInfo.orderHash,
+                order.makerAddress,
+                signature
+            ),
+            "INVALID_ORDER_SIGNATURE"
+         );
+        //revert();
     }
 
     // Responsibilities of takeOrder are:
@@ -135,18 +156,9 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     /// @notice needed to avoid stack too deep error
     function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
-        view
-        returns (address)
+        internal
     {
-        bytes4 assetProxyId;
-        assembly {
-            assetProxyId := and(mload(
-                add(takerAssetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
-        }
-        address assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
-
+        address assetProxy = getAssetProxy(targetExchange, takerAssetData);
         require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
     }
 
@@ -163,29 +175,15 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         internal
         returns (uint)
     {
-        // uint takerFee = orderValues[3];
-        // TODO: Disable for now
-        // if (takerFee > 0) {
-        //     Token zeroExToken = Token(Exchange(targetExchange).ZRX_TOKEN_CONTRACT());
-        //     require(zeroExToken.approve(Exchange(targetExchange).TOKEN_TRANSFER_PROXY_CONTRACT(), takerFee));
-        // }
+        uint takerFee = orderValues[3];
+        if (takerFee > 0) {
+            bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
+            address zrxProxy = getAssetProxy(targetExchange, assetData);
+            require(Asset(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
+        }
         uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
         
-        LibOrder.Order memory order = LibOrder.Order({
-            makerAddress: orderAddresses[0],
-            takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[4],
-            senderAddress: orderAddresses[5],
-            makerAssetAmount: orderValues[0],
-            takerAssetAmount: orderValues[1],
-            makerFee: orderValues[2],
-            takerFee: orderValues[3],
-            expirationTimeSeconds: orderValues[4],
-            salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
-        });
-
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,
@@ -235,4 +233,90 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             )
         );
     }
+
+    /// @dev needed to avoid stack too deep error
+    function makeOrderPermitted(
+        uint makerQuantity,
+        address makerAsset,
+        uint takerQuantity,
+        address takerAsset
+    )
+        internal
+        view
+        returns (bool)
+    {
+        require(takerAsset != address(this) && makerAsset != address(this));
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
+        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
+        require(isRecent);
+        uint orderPrice = pricefeed.getOrderPriceInfo(
+            makerAsset,
+            takerAsset,
+            makerQuantity,
+            takerQuantity
+        );
+        return(
+            riskmgmt.isMakePermitted(
+                orderPrice,
+                referencePrice,
+                makerAsset,
+                takerAsset,
+                makerQuantity,
+                takerQuantity
+            )
+        );
+    }
+
+    function constructOrderStruct(
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes makerAssetData,
+        bytes takerAssetData
+    )
+        internal
+        view
+        returns (LibOrder.Order memory order)
+    {
+        order = LibOrder.Order({
+            makerAddress: orderAddresses[0],
+            takerAddress: orderAddresses[1],
+            feeRecipientAddress: orderAddresses[4],
+            senderAddress: orderAddresses[5],
+            makerAssetAmount: orderValues[0],
+            takerAssetAmount: orderValues[1],
+            makerFee: orderValues[2],
+            takerFee: orderValues[3],
+            expirationTimeSeconds: orderValues[4],
+            salt: orderValues[5],
+            makerAssetData: makerAssetData,
+            takerAssetData: takerAssetData
+        });
+    }
+
+    function getAssetProxy(address targetExchange, bytes assetData)
+        internal
+        view
+        returns (address assetProxy)
+    {
+        bytes4 assetProxyId;
+        assembly {
+            assetProxyId := and(mload(
+                add(assetData, 32)),
+                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+            )
+        }
+        assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
+    }
+
+    function getAssetAddress(bytes assetData)
+        internal
+        view
+        returns (address assetAddress)
+    {
+        assembly {
+            assetAddress := mload(add(assetData, 36))
+        }
+    }
+
 }
