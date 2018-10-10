@@ -459,6 +459,7 @@ async function deployEnvironment(environment) {
     ).send(clone(opts));
     deployed.MatchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
     deployed.MatchingMarket = await deployContract("exchanges/MatchingMarket", opts, [99999999999]);
+    await deployed.MatchingMarket.methods.setMatchingEnabled(false).send(clone(opts));
     deployed.MatchingMarket.methods.addTokenPairWhitelist(
       deployed.EthToken.options.address, deployed.MlnToken.options.address
     ).send(clone(opts));

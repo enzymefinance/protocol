@@ -5,13 +5,11 @@ import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import governanceAction from "../../utils/lib/governanceAction";
 import getFundComponents from "../../utils/lib/getFundComponents";
-import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 import {
   makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature
+  takeOrderSignature, cancelOrderSignature
 } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
@@ -35,7 +33,6 @@ let pricefeed;
 let receipt;
 let runningGasTotal;
 let exchanges;
-let matchingMarket2;
 let trade1;
 let trade2;
 let trade3;
@@ -54,57 +51,30 @@ test.before(async t => {
   gasPrice = config.gasPrice;
   [deployer, manager, investor] = accounts;
   version = await deployed.Version;
-  pricefeed = await deployed.CanonicalPriceFeed;
+  pricefeed = await deployed.TestingPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  // matchingMarket2 = await deployContract(
-  //   "exchanges/MatchingMarket",
-  //   { from: deployer, gas: config.gas },
-  //   [9999999999],
-  // );
   exchanges = [deployed.MatchingMarket]; //, matchingMarket2];
-  // await governanceAction(
-  //   { from: deployer },
-  //   deployed.Governance,
-  //   deployed.CanonicalPriceFeed,
-  //   "registerExchange",
-  //   [
-  //     deployed.MatchingMarket.options.address,
-  //     deployed.MatchingMarketAdapter.options.address,
-  //     true,
-  //     [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
-  //   ],
-  // );
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
-    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.MlnToken.options.address, deployed.EthToken.options.address], [false], deployed.TestingPriceFeed.options.address
-  ).send(opts);
-  await deployed.FundFactory.methods.continueCreation().send(opts);
-  console.log('Components created');
-  await deployed.FundFactory.methods.setupFund().send(opts);
-  console.log('Fund set up');
-  const hubAddress = await deployed.FundFactory.methods.getFundById(0).call();
-  const fund = await getFundComponents(hubAddress);
+    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+  ).send({from: manager, gasPrice: config.gasPrice});
+  await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
+  await deployed.FundFactory.methods.setupFund().send({from: manager, gasPrice: config.gasPrice});
+  const fundId = await deployed.FundFactory.methods.getLastFundId().call();
+  const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
+  fund = await getFundComponents(hubAddress);
 
   // Register price tolerance policy
-  const priceTolerance = await deployContract('risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
+  const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
   await t.notThrows(fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
   await t.notThrows(fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
-  
-  await deployed.MatchingMarket.methods.addTokenPairWhitelist(mlnToken.options.address, ethToken.options.address).send(
-    { from: deployer, gasPrice: config.gasPrice }
-  );
-  await deployed.MatchingMarket.methods.setMatchingEnabled(false).send({from: deployer});
-  // Change competition address to investor just for testing purpose so it allows invest / redeem
-  await deployed.CompetitionCompliance.methods.changeCompetitionAddress(investor).send(
-    { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
-  );
 });
 
 test.beforeEach(async () => {
   runningGasTotal = new BigNumber(0);
-  await updateCanonicalPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
 
   const [
     ,
@@ -193,7 +163,7 @@ exchangeIndexes.forEach(i => {
         { from: deployer, gasPrice: config.gasPrice }
       );
       const pre = await getAllBalances(deployed, accounts, fund);
-      receipt = await ethToken.methods.approve(fund.options.address, boostedOffer).send(
+      receipt = await ethToken.methods.approve(fund.participation.options.address, boostedOffer).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
@@ -201,20 +171,23 @@ exchangeIndexes.forEach(i => {
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-      await updateCanonicalPriceFeed(deployed);
-      await updateCanonicalPriceFeed(deployed);
+      await updateTestingPriceFeed(deployed);
+      await updateTestingPriceFeed(deployed);
+
+      // TODO: remove this line after debug
+      Object.keys(deployed).forEach(k => console.log(`${k}: ${deployed[k].options.address}`));
 
       const totalSupply = await fund.shares.methods.totalSupply().call();
-      receipt = await fund.participation.methods.executeRequest().send({from: investor});
+      receipt = await fund.participation.methods.executeRequest().send({from: investor, gas: 6000000, gasPrice: config.gasPrice});
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       // set approved token back to zero
-      receipt = await ethToken.methods.approve(fund.options.address, 0).send(
+      receipt = await ethToken.methods.approve(fund.participation.options.address, 0).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       const post = await getAllBalances(deployed, accounts, fund);
       const [gav, , , unclaimedFees, ,] = Object.values(
-        await fund.methods.atLastUnclaimedFeeAllocation().call(),
+        await fund.accounting.methods.atLastAllocation().call(),
       ).map(e => new BigNumber(e));
       const feesShareQuantity = parseInt(
         unclaimedFees
@@ -260,8 +233,8 @@ exchangeIndexes.forEach(i => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const exchangePreMln = new BigNumber(await mlnToken.methods.balanceOf(exchanges[i].options.address).call());
     const exchangePreEthToken = new BigNumber(await ethToken.methods.balanceOf(exchanges[i].options.address).call());
-    await updateCanonicalPriceFeed(deployed);
-    receipt = await fund.methods.callOnExchange(
+    await updateTestingPriceFeed(deployed);
+    receipt = await fund.trading.methods.callOnExchange(
       i,
       makeOrderSignature,
       ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
@@ -673,7 +646,7 @@ redemptions.forEach((redemption, index) => {
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-      const remainingApprovedEthToken = await ethToken.methods.allowance(investor, fund.options.address).call();
+      const remainingApprovedEthToken = await ethToken.methods.allowance(investor, fund.participation.options.address).call();
       const investorPostShares = new BigNumber(await fund.methods.balanceOf(
         investor,
       ).call());
@@ -740,17 +713,17 @@ test.serial(`Allows investment in native asset`, async t => {
       .times(new BigNumber(1.2)) // For price fluctuations
       .floor(),
   );
-  receipt = await ethToken.methods.approve(fund.options.address, giveQuantity).send(
+  receipt = await ethToken.methods.approve(fund.participation.options.address, giveQuantity).send(
     { from: investor, gasPrice: config.gasPrice, gas: config.gas }
   );
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
   receipt = await fund.methods.requestInvestment(giveQuantity, wantedShareQuantity, ethToken.options.address).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
   );
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
-  await updateCanonicalPriceFeed(deployed);
-  await updateCanonicalPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
   const requestId = await fund.methods.getLastRequestId().call();
   receipt = await fund.methods.executeRequest(requestId).send(
     { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -777,7 +750,7 @@ test.serial(`Allows investment in native asset`, async t => {
 
 // Fees
 test.serial("converts fees and manager receives them", async t => {
-  await updateCanonicalPriceFeed(deployed);
+  await updateTestingPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
   const preManagerShares = new BigNumber(await fund.methods.balanceOf(manager).call());
   const totalSupply = new BigNumber(await fund.methods.totalSupply().call());
@@ -785,7 +758,7 @@ test.serial("converts fees and manager receives them", async t => {
     { from: manager, gas: config.gas, gasPrice: config.gasPrice }
   );
   const [gav, , , unclaimedFees, ,] = Object.values(
-    await fund.methods.atLastUnclaimedFeeAllocation().call(),
+    await fund.methods.atLastAllocation().call(),
   );
   const shareQuantity = Math.floor(
     Number(totalSupply.mul(unclaimedFees).div(gav)),
@@ -857,7 +830,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
 // shutdown fund
 test.serial("manager can shut down a fund", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  receipt = await version.methods.shutDownFund(fund.options.address).send(
+  receipt = await version.methods.shutDownFund(fund.participation.options.address).send(
     { from: manager, gasPrice: config.gasPrice }
   );
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);

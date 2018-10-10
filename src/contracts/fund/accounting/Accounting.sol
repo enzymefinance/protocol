@@ -164,7 +164,6 @@ contract Accounting is DSMath, Spoke {
         (gav, unclaimedFees, feesShareQuantity, nav, sharePrice) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
-
         atLastAllocation = Calculations({
             gav: gav,
             nav: nav,

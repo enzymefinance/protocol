@@ -4,6 +4,7 @@ import * as masterConfig from "../config/environment";
 import * as tokenInfo from "../info/tokenInfo";
 import {deployContract, retrieveContract} from "../lib/contracts";
 import {makeOrderSignature, takeOrderSignature, cancelOrderSignature, toBytes8, toBytes32, abiEncode} from "../lib/data";
+import getFundComponents from "../lib/getFundComponents";
 import {clone} from "../lib/misc";
 import web3 from "../lib/web3";
 
