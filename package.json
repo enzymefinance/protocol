@@ -15,7 +15,6 @@
     "test": "yarn run test:ava",
     "test:ava": "CHAIN_ENV=development ava --serial --verbose",
     "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
-    "compile": "SOLC_FLAGS='--optimize --optimize-runs=0' DAPP_SRC=src/contracts dapp build",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
     "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
@@ -27,7 +26,7 @@
     "prepublishOnly": "yarn run babel-build && yarn run append-json",
     "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh",
     "----": "REM The scripts below were added during melon.js integration. Maybe they are superfluous or make others superfluous",
-    "solcjs:compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
+    "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
     "test:verbose": "TERM=dumb yarn jest",
     "refactor:deploy": "CHAIN_ENV=development babel-node utils/deploy/refactorDeploy.js"
   },

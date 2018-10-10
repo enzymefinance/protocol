@@ -466,13 +466,13 @@ async function deployEnvironment(environment) {
     deployed.PriceTolerance = await deployContract('fund/risk-management/PriceTolerance', opts, [10])
     deployed.Whitelist = await deployContract('fund/compliance/Whitelist', opts, [[accounts[0]]])
     deployed.MatchingMarketAdapter = await deployContract("exchanges/MatchingMarketAdapter", opts);
-    deployed.AccountingFactory = await deployContract("factory/AccountingFactory", opts);
-    deployed.FeeManagerFactory = await deployContract("factory/FeeManagerFactory", opts);
-    deployed.ParticipationFactory = await deployContract("factory/ParticipationFactory", opts);
-    deployed.SharesFactory = await deployContract("factory/SharesFactory", opts);
-    deployed.TradingFactory = await deployContract("factory/TradingFactory", opts);
-    deployed.VaultFactory = await deployContract("factory/VaultFactory", opts);
-    deployed.PolicyManagerFactory = await deployContract("factory/PolicyManagerFactory", opts);
+    deployed.AccountingFactory = await deployContract("fund/accounting/AccountingFactory", opts);
+    deployed.FeeManagerFactory = await deployContract("fund/fees/FeeManagerFactory", opts);
+    deployed.ParticipationFactory = await deployContract("fund/participation/ParticipationFactory", opts);
+    deployed.SharesFactory = await deployContract("fund/shares/SharesFactory", opts);
+    deployed.TradingFactory = await deployContract("fund/trading/TradingFactory", opts);
+    deployed.VaultFactory = await deployContract("fund/vault/VaultFactory", opts);
+    deployed.PolicyManagerFactory = await deployContract("fund/policies/PolicyManagerFactory", opts);
     deployed.FundFactory = await deployContract("factory/FundFactory", opts, [
       deployed.AccountingFactory.options.address,
       deployed.FeeManagerFactory.options.address,
