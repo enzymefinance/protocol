@@ -1,6 +1,6 @@
 import { IToken } from "@melonproject/token-math";
 
-import { default as deployContract } from "~/utils/deploy";
+import { default as deployContract } from "~/utils/solidity/deploy";
 import { ensureAddress } from "~/utils/checks/isAddress";
 
 const deploy = async (quoteToken: IToken) => {
@@ -10,6 +10,7 @@ const deploy = async (quoteToken: IToken) => {
     quoteToken.address,
     quoteToken.decimals
   ]);
+
   return address;
 };
 

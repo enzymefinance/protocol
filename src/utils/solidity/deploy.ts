@@ -12,7 +12,7 @@ const deploy = async (
   args: ConstructorArg[] = [],
   environment = getGlobalEnvironment()
 ) => {
-  // debug("Deploying: ", pathToSolidityFile);
+  debug("Deploying: ", pathToSolidityFile);
 
   const parsed = path.parse(pathToSolidityFile);
 
