@@ -321,6 +321,7 @@ test.serial("third party makes another order with taker fees", async t => {
 test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
+  console.log(await deployed.ZeroExV2Adapter.methods.getZrx(zeroExExchange).call());
   zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
   await fund.methods
     .callOnExchange(
