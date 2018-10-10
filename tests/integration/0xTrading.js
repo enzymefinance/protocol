@@ -59,7 +59,10 @@ test.before(async () => {
     "assets/Asset",
     "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
   );
-  zeroExExchange = "0x48bacb9266a570d521063ef5dd96e61686dbe788";
+  zeroExExchange = await retrieveContract(
+    "exchange/thirdparty/0x/MixinExchangeCore",
+    "0x48bacb9266a570d521063ef5dd96e61686dbe788"
+  );
   erc20ProxyAddress = "0x1dc4c1cefef38a777b15aa20260a54e584b16c48";
   deployed.ZeroExV2Adapter = await deployContract(
     "exchange/adapter/ZeroExV2Adapter",
@@ -71,7 +74,7 @@ test.before(async () => {
     deployed.CanonicalPriceFeed,
     "registerExchange",
     [
-      zeroExExchange,
+      zeroExExchange.options.address,
       deployed.ZeroExV2Adapter.options.address,
       false,
       [makeOrderSignature, takeOrderSignature]
@@ -87,7 +90,7 @@ test.before(async () => {
       config.protocol.fund.performanceFee,
       deployed.NoCompliance.options.address,
       deployed.RMMakeOrders.options.address,
-      [zeroExExchange],
+      [zeroExExchange.options.address],
       [],
       v,
       r,
@@ -179,7 +182,7 @@ test.serial(
 test.serial("third party makes and validates an off-chain order", async t => {
   const makerAddress = deployer.toLowerCase();
   order = {
-    exchangeAddress: zeroExExchange.toLowerCase(),
+    exchangeAddress: zeroExExchange.options.address.toLowerCase(),
     makerAddress,
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
@@ -278,7 +281,7 @@ test.serial("third party makes another order with taker fees", async t => {
   const makerAddress = deployer.toLowerCase();
   const takerFee = new BigNumber(10 ** 17);
   order = {
-    exchangeAddress: zeroExExchange.toLowerCase(),
+    exchangeAddress: zeroExExchange.options.address.toLowerCase(),
     makerAddress,
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
@@ -377,7 +380,7 @@ test.serial("fund with enough ZRX takes the above order", async t => {
 test.serial("Make order through the fund", async t => {
   const makerAddress = fund.options.address.toLowerCase();
   order = {
-    exchangeAddress: zeroExExchange.toLowerCase(),
+    exchangeAddress: zeroExExchange.options.address.toLowerCase(),
     makerAddress,
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
@@ -432,4 +435,38 @@ test.serial("Make order through the fund", async t => {
     .send({ from: manager, gas: config.gas });
   const makerAssetAllowance = new BigNumber(await mlnToken.methods.allowance(fund.options.address, erc20ProxyAddress).call());
   t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
+});
+
+test.serial("Third party fund takes the order made by the fund", async t => {
+  const pre = await getAllBalances(deployed, accounts, fund);
+  ethToken.methods.approve(erc20ProxyAddress, order.takerAssetAmount).send(opts);
+  await zeroExExchange.methods
+    .fillOrder(
+      order,
+      order.makerAssetAmount,
+      orderSignature
+    )
+    .send({ from: deployer, gas: config.gas });
+  const post = await getAllBalances(deployed, accounts, fund);
+  const heldInExchange = await fund.methods
+    .quantityHeldInCustodyOfExchange(ethToken.options.address)
+    .call();
+
+  t.is(Number(heldInExchange), 0);
+  t.deepEqual(
+    post.deployer.MlnToken,
+    pre.deployer.MlnToken.plus(trade1.sellQuantity)
+  );
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.buyQuantity));
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
+  t.deepEqual(
+    post.deployer.EthToken,
+    pre.deployer.EthToken.minus(trade1.buyQuantity)
+  );
+  t.deepEqual(post.fund.ether, pre.fund.ether);
 });
