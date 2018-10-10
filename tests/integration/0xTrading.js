@@ -14,7 +14,7 @@ import {
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
-import { takeOrderSignatureString, takeOrderSignature } from "../../utils/lib/data";
+import { takeOrderSignatureString, takeOrderSignature, makeOrderSignatureString, makeOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -74,7 +74,7 @@ test.before(async () => {
       zeroExExchange,
       deployed.ZeroExV2Adapter.options.address,
       false,
-      [takeOrderSignature]
+      [makeOrderSignature, takeOrderSignature]
     ]
   );
 
@@ -372,4 +372,38 @@ test.serial("fund with enough ZRX takes the above order", async t => {
     pre.deployer.EthToken.plus(fillQuantity)
   );
   t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
+
+test.serial("Check if make order works", async t => {
+  const fillQuantity = trade1.buyQuantity.div(2);
+  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send();
+  await fund.methods
+    .callOnExchange(
+      0,
+      makeOrderSignatureString,
+      [
+        deployer,
+        NULL_ADDRESS,
+        mlnToken.options.address,
+        ethToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        order.salt,
+        fillQuantity,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: manager, gas: config.gas });
 });
