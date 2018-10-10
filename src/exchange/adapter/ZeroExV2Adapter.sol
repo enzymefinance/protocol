@@ -32,11 +32,12 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
-        uint maxMakerQuantity = orderValues[0];
-        uint maxTakerQuantity = orderValues[1];
+        uint makerQuantity = orderValues[0];
+        uint takerQuantity = orderValues[1];
 
-        require(makeOrderPermitted(maxMakerQuantity, makerAsset, maxTakerQuantity, takerAsset));
+        require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
 
+        approveMakerAsset(targetExchange, makerAsset, makerAssetData, makerQuantity);
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
 
@@ -48,7 +49,6 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             ),
             "INVALID_ORDER_SIGNATURE"
          );
-        //revert();
     }
 
     // Responsibilities of takeOrder are:
@@ -160,6 +160,14 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     {
         address assetProxy = getAssetProxy(targetExchange, takerAssetData);
         require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
+    }
+
+    /// @notice needed to avoid stack too deep error
+    function approveMakerAsset(address targetExchange, address makerAsset, bytes makerAssetData, uint makerQuantity)
+        internal
+    {
+        address assetProxy = getAssetProxy(targetExchange, makerAssetData);
+        require(Asset(makerAsset).approve(assetProxy, makerQuantity));
     }
 
     /// @dev needed to avoid stack too deep error
@@ -318,5 +326,4 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             assetAddress := mload(add(assetData, 36))
         }
     }
-
 }

@@ -374,21 +374,40 @@ test.serial("fund with enough ZRX takes the above order", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-<<<<<<< HEAD
-
 test.serial("Check if make order works", async t => {
-  const fillQuantity = trade1.buyQuantity.div(2);
-  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send();
-=======
-test.serial("Check if make order works", async t => {
-  const fillQuantity = trade1.buyQuantity.div(2);
->>>>>>> 99faa594424aeaa9dd293801796bf2a5914ac985
+  const makerAddress = manager.toLowerCase();
+  order = {
+    exchangeAddress: zeroExExchange.toLowerCase(),
+    makerAddress,
+    takerAddress: NULL_ADDRESS,
+    senderAddress: NULL_ADDRESS,
+    feeRecipientAddress: NULL_ADDRESS,
+    expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+    salt: new BigNumber(555),
+    makerAssetAmount: new BigNumber(trade1.sellQuantity),
+    takerAssetAmount: new BigNumber(trade1.buyQuantity),
+    makerAssetData: assetDataUtils.encodeERC20AssetData(
+      mlnToken.options.address.toLowerCase()
+    ),
+    takerAssetData: assetDataUtils.encodeERC20AssetData(
+      ethToken.options.address.toLowerCase()
+    ),
+    makerFee: new BigNumber(0),
+    takerFee: new BigNumber(0)
+  };
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  orderSignature = await signatureUtils.ecSignOrderHashAsync(
+    web3.currentProvider,
+    orderHashHex,
+    manager,
+    SignerType.Default
+  );
   await fund.methods
     .callOnExchange(
       0,
       makeOrderSignatureString,
       [
-        deployer,
+        makerAddress,
         NULL_ADDRESS,
         mlnToken.options.address,
         ethToken.options.address,
@@ -402,7 +421,7 @@ test.serial("Check if make order works", async t => {
         order.takerFee,
         order.expirationTimeSeconds,
         order.salt,
-        fillQuantity,
+        0,
         0
       ],
       web3.utils.padLeft("0x0", 64),
@@ -411,8 +430,6 @@ test.serial("Check if make order works", async t => {
       orderSignature
     )
     .send({ from: manager, gas: config.gas });
-<<<<<<< HEAD
+  const makerAssetAllowance = new BigNumber(await mlnToken.methods.allowance(fund.options.address, erc20ProxyAddress).call());
+  t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
 });
-=======
-});
->>>>>>> 99faa594424aeaa9dd293801796bf2a5914ac985
