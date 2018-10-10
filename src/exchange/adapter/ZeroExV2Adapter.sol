@@ -162,21 +162,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         }
         uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
         
-        LibOrder.Order memory order = LibOrder.Order({
-            makerAddress: orderAddresses[0],
-            takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[4],
-            senderAddress: orderAddresses[5],
-            makerAssetAmount: orderValues[0],
-            takerAssetAmount: orderValues[1],
-            makerFee: orderValues[2],
-            takerFee: orderValues[3],
-            expirationTimeSeconds: orderValues[4],
-            salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
-        });
-
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,
@@ -225,6 +211,32 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
                 makerQuantity
             )
         );
+    }
+
+    function constructOrderStruct(
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes makerAssetData,
+        bytes takerAssetData
+    )
+        internal
+        view
+        returns (LibOrder.Order memory order)
+    {
+        order = LibOrder.Order({
+            makerAddress: orderAddresses[0],
+            takerAddress: orderAddresses[1],
+            feeRecipientAddress: orderAddresses[4],
+            senderAddress: orderAddresses[5],
+            makerAssetAmount: orderValues[0],
+            takerAssetAmount: orderValues[1],
+            makerFee: orderValues[2],
+            takerFee: orderValues[3],
+            expirationTimeSeconds: orderValues[4],
+            salt: orderValues[5],
+            makerAssetData: makerAssetData,
+            takerAssetData: takerAssetData
+        });
     }
 
     function getAssetProxy(address targetExchange, bytes assetData)
