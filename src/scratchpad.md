@@ -17,6 +17,8 @@
 - What is a PriceSource? Shouldnt it be named PriceSource.i.sol? Is PriceFeed an implementation of PriceSource?
 - It helps to reimplement the whole logic in a functional way to have a different view on everything. (My Opinion)
 - Talk about Token or Asset or AssetToken?
+- What's the difference between /utils/deploy/contracts.js and /utils/deploy/refactorDeploy.js ?
+- Can we have a rule: Every .sol file contains only one contract?
 
 # Design goals:
 
