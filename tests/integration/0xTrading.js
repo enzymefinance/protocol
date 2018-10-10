@@ -3,6 +3,7 @@ import {
   assetDataUtils,
   orderHashUtils,
   signatureUtils,
+  ContractWrappers,
   SignerType
 } from "0x.js";
 import web3 from "../../utils/lib/web3";
@@ -440,6 +441,19 @@ test.serial("Make order through the fund", async t => {
 test.serial("Third party fund takes the order made by the fund", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   ethToken.methods.approve(erc20ProxyAddress, order.takerAssetAmount).send(opts);
+  const signedOrder = Object.assign({signature: orderSignature}, order);
+  const contractsConfig = {
+    blockPollingIntervalMs: 1000,
+    erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
+    erc721ProxyContractAddress: "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401",
+    exchangeContractAddress: "0x48bacb9266a570d521063ef5dd96e61686dbe788",
+    forwarderContractAddress: "0xb69e673309512a9d726f87304c6984054f87a93b",
+    gasPrice: config.gasPrice,
+    networkId: contractsConfig.,
+    zrxContractAddress: "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
+  }
+  const contractsWrapper = ContractWrappers(web3.currentProvider, contractsConfig);
+  //await contractWrappers.exchange.fillOrderAsync(signedOrder, takerAssetAmount, taker)
   await zeroExExchange.methods
     .fillOrder(
       order,

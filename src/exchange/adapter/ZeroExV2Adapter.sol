@@ -36,12 +36,14 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         uint takerQuantity = orderValues[1];
 
         require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
+        Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
+        require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
 
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, makerQuantity);
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         Exchange(targetExchange).preSign(orderInfo.orderHash, msg.sender, signature);
-
+        
         require(
             Exchange(targetExchange).isValidSignature(
                 orderInfo.orderHash,
@@ -50,6 +52,20 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             ),
             "INVALID_ORDER_SIGNATURE"
          );
+        require(
+            Fund(address(this)).isInAssetList(takerAsset) ||
+            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        );
+
+        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Fund(address(this)).addAssetToOwnedAssets(takerAsset);
+        Fund(address(this)).orderUpdateHook(
+            targetExchange,
+            orderInfo.orderHash,
+            Fund.UpdateType.make,
+            [address(makerAsset), address(takerAsset)],
+            [makerQuantity, takerQuantity, uint(0)]
+        );
     }
 
     // Responsibilities of takeOrder are:
