@@ -17,7 +17,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
     //  PUBLIC METHODS
 
-    /// @notice Make order not implemented for smart contracts in this exchange version
+    /// @notice Make order by pre-approving signatures
     function makeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -27,7 +27,28 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
+
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
+        uint maxMakerQuantity = orderValues[0];
+        uint maxTakerQuantity = orderValues[1];
+
+        require(makeOrderPermitted(maxMakerQuantity, makerAsset, maxTakerQuantity, takerAsset));
+
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+
+        require(
+            Exchange(targetExchange).isValidSignature(
+                orderInfo.orderHash,
+                order.makerAddress,
+                signature
+            ),
+            "INVALID_ORDER_SIGNATURE"
+         );
+        //revert();
     }
 
     // Responsibilities of takeOrder are:
@@ -209,6 +230,40 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
                 makerAsset,
                 takerQuantity,
                 makerQuantity
+            )
+        );
+    }
+
+    /// @dev needed to avoid stack too deep error
+    function makeOrderPermitted(
+        uint makerQuantity,
+        address makerAsset,
+        uint takerQuantity,
+        address takerAsset
+    )
+        internal
+        view
+        returns (bool)
+    {
+        require(takerAsset != address(this) && makerAsset != address(this));
+        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
+        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
+        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
+        require(isRecent);
+        uint orderPrice = pricefeed.getOrderPriceInfo(
+            makerAsset,
+            takerAsset,
+            makerQuantity,
+            takerQuantity
+        );
+        return(
+            riskmgmt.isMakePermitted(
+                orderPrice,
+                referencePrice,
+                makerAsset,
+                takerAsset,
+                makerQuantity,
+                takerQuantity
             )
         );
     }
