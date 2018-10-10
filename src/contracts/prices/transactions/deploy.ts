@@ -6,7 +6,7 @@ import { ensureAddress } from "~/utils/checks/isAddress";
 const deploy = async (quoteToken: IToken) => {
   ensureAddress(quoteToken.address);
 
-  const address = await deployContract("./ref/prices/TestingPriceFeed.sol", [
+  const address = await deployContract("prices/TestingPriceFeed.sol", [
     quoteToken.address,
     quoteToken.decimals
   ]);

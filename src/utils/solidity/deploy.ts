@@ -17,11 +17,12 @@ const deploy = async (
   const parsed = path.parse(pathToSolidityFile);
 
   const rawABI = fs.readFileSync(
-    path.join(process.cwd(), "out", `${parsed.name}.abi`),
+    path.join(process.cwd(), "out", parsed.dir, `${parsed.name}.abi`),
     { encoding: "utf-8" }
   );
+
   const bin = fs.readFileSync(
-    path.join(process.cwd(), "out", `${parsed.name}.bin`),
+    path.join(process.cwd(), "out", parsed.dir, `${parsed.name}.bin`),
     { encoding: "utf-8" }
   );
 

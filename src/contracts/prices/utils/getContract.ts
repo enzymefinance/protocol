@@ -7,7 +7,7 @@ import getGlobalEnvironment from "~/utils/environment/getGlobalEnvironment";
 
 const getContract = (address: string, environment = getGlobalEnvironment()) => {
   const rawABI = fs.readFileSync(
-    path.join(process.cwd(), "out", `TestingPriceFeed.abi`),
+    path.join(process.cwd(), "out", "prices", "TestingPriceFeed.abi"),
     { encoding: "utf-8" }
   );
   const ABI = JSON.parse(rawABI);
