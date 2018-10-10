@@ -86,7 +86,7 @@
   "dependencies": {
     "0x.js": "^0.35.0",
     "@0xproject/sol-compiler": "^0.5.2",
-    "@melonproject/token-math": "^0.0.2",
+    "@melonproject/token-math": "^0.0.3",
     "@parity/api": "^2.1.20",
     "bignumber.js": "^4.1.0",
     "debug": "^4.0.1",
