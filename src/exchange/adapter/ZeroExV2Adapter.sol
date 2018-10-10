@@ -141,10 +141,6 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
     }
 
-    function getZrx(address targetExchange) public returns (address) {
-        return getAssetAddress(Exchange(targetExchange).ZRX_ASSET_DATA());
-    }
-
     /// @dev needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
@@ -160,8 +156,9 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     {
         uint takerFee = orderValues[3];
         if (takerFee > 0) {
-            address zrxProxy = getAssetProxy(targetExchange, Exchange(targetExchange).ZRX_ASSET_DATA());
-            require(Asset(zrxProxy).approve(zrxProxy, takerFee));
+            bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
+            address zrxProxy = getAssetProxy(targetExchange, assetData);
+            require(Asset(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
         }
         uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
         
