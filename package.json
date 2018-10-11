@@ -33,7 +33,7 @@
     "lint:tslint": "tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
-    "format:sol": "prettier --write src/**/*.sol"
+    "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix"
   },
   "files": [
     "out",
