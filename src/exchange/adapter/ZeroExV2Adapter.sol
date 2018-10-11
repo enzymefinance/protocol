@@ -30,17 +30,15 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
-        uint makerQuantity = orderValues[0];
-        uint takerQuantity = orderValues[1];
 
-        require(makeOrderPermitted(makerQuantity, makerAsset, takerQuantity, takerAsset));
+        require(makeOrderPermitted(order.makerAssetAmount, makerAsset, order.takerAssetAmount, takerAsset));
         Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
         require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
 
-        approveMakerAsset(targetExchange, makerAsset, makerAssetData, makerQuantity);
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         Exchange(targetExchange).preSign(orderInfo.orderHash, msg.sender, signature);
         
@@ -64,7 +62,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             orderInfo.orderHash,
             Fund.UpdateType.make,
             [address(makerAsset), address(takerAsset)],
-            [makerQuantity, takerQuantity, uint(0)]
+            [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
     }
 
@@ -112,17 +110,18 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
 
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
-        uint maxMakerQuantity = orderValues[0];
-        uint maxTakerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
-        uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
+        uint fillMakerQuantity = mul(fillTakerQuantity, order.makerAssetAmount) / order.takerAssetAmount;
 
         require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
-        uint takerAssetFilledAmount = executeFill(targetExchange, orderAddresses, orderValues, makerAssetData, takerAssetData, fillTakerQuantity, signature);
+        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+        uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
+
         require(takerAssetFilledAmount == fillTakerQuantity);
         require(
             Fund(address(this)).isInAssetList(makerAsset) ||
@@ -135,7 +134,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             orderInfo.orderHash,
             Fund.UpdateType.take,
             [makerAsset, takerAsset],
-            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+            [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
         );
     }
 
@@ -154,6 +153,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
         address makerAsset = orderAddresses[2];
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         Exchange(targetExchange).cancelOrder(order);
 
         // Set the approval back to 0
@@ -206,32 +206,30 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     /// @dev needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes makerAssetData,
-        bytes takerAssetData,
+        LibOrder.Order memory order,
         uint256 takerAssetFillAmount,
         bytes signature
     )
         internal
         returns (uint)
     {
-        uint takerFee = orderValues[3];
+        uint takerFee = order.takerFee;
         if (takerFee > 0) {
             bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
             address zrxProxy = getAssetProxy(targetExchange, assetData);
             require(Asset(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
         }
-        uint preMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
+
+        address makerAsset = getAssetAddress(order.makerAssetData);
+        uint preMakerAssetBalance = Asset(makerAsset).balanceOf(this);
         
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,
             signature
         );
 
-        uint postMakerAssetBalance = Asset(orderAddresses[2]).balanceOf(this);
+        uint postMakerAssetBalance = Asset(makerAsset).balanceOf(this);
         require(postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount));
 
         return fillResults.takerAssetFilledAmount;
