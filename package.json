@@ -31,7 +31,9 @@
     "test:verbose": "TERM=dumb yarn jest",
     "refactor:deploy": "CHAIN_ENV=development babel-node utils/deploy/refactorDeploy.js",
     "lint:tslint": "tslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts"
+    "lint:prettier": "yarn prettier --list-different src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "format:sol": "prettier --write src/**/*.sol"
   },
   "files": [
     "out",
@@ -86,6 +88,7 @@
     "mkdirp": "^0.5.1",
     "prettier": "^1.14.3",
     "prettier-eslint": "^8.2.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.5",
     "solium": "^1.1.0",
     "ts-jest": "^23.10.4",
     "ts-node": "^7.0.1",
