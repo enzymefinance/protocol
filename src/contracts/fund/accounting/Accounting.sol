@@ -6,7 +6,7 @@ import "../trading/Trading.sol";
 import "../fees/FeeManager.sol";
 import "../shares/Shares.sol";
 import "../vault/Vault.sol";
-import "../../dependencies/ERC20.sol";
+import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";

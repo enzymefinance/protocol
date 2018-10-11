@@ -5,7 +5,7 @@ import "./Trading.i.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/Manager.sol";
-import "../../dependencies/ERC20.sol";
+import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../exchanges/GenericExchangeInterface.sol";

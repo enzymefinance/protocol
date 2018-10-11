@@ -3,7 +3,7 @@ pragma solidity ^0.4.21;
 
 import "./Vault.i.sol";
 import "../hub/Spoke.sol";
-import "../../dependencies/ERC20.sol";
+import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 
 /// @notice Dumb custody component
