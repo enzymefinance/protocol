@@ -9,13 +9,16 @@ import {
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
-import {
-  getTermsSignatureParameters
-} from "../../utils/lib/signing";
+import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
-import { takeOrderSignatureString, takeOrderSignature, makeOrderSignatureString, makeOrderSignature } from "../../utils/lib/data";
+import {
+  takeOrderSignatureString,
+  takeOrderSignature,
+  makeOrderSignatureString,
+  makeOrderSignature
+} from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -223,60 +226,66 @@ test.serial("third party makes and validates an off-chain order", async t => {
   t.true(signatureValid);
 });
 
-test.serial("manager takes order (half the total quantity) through 0x adapter", async t => {
-  const pre = await getAllBalances(deployed, accounts, fund);
-  const fillQuantity = trade1.buyQuantity.div(2);
-  await fund.methods
-    .callOnExchange(
-      0,
-      takeOrderSignatureString,
-      [
-        deployer,
-        NULL_ADDRESS,
-        mlnToken.options.address,
-        ethToken.options.address,
-        order.feeRecipientAddress,
-        NULL_ADDRESS
-      ],
-      [
-        order.makerAssetAmount,
-        order.takerAssetAmount,
-        order.makerFee,
-        order.takerFee,
-        order.expirationTimeSeconds,
-        order.salt,
-        fillQuantity,
-        0
-      ],
-      web3.utils.padLeft("0x0", 64),
-      order.makerAssetData,
-      order.takerAssetData,
-      orderSignature
-    )
-    .send({ from: manager, gas: config.gas });
-  const post = await getAllBalances(deployed, accounts, fund);
-  const heldInExchange = await fund.methods
-    .quantityHeldInCustodyOfExchange(ethToken.options.address)
-    .call();
+test.serial(
+  "manager takes order (half the total quantity) through 0x adapter",
+  async t => {
+    const pre = await getAllBalances(deployed, accounts, fund);
+    const fillQuantity = trade1.buyQuantity.div(2);
+    await fund.methods
+      .callOnExchange(
+        0,
+        takeOrderSignatureString,
+        [
+          deployer,
+          NULL_ADDRESS,
+          mlnToken.options.address,
+          ethToken.options.address,
+          order.feeRecipientAddress,
+          NULL_ADDRESS
+        ],
+        [
+          order.makerAssetAmount,
+          order.takerAssetAmount,
+          order.makerFee,
+          order.takerFee,
+          order.expirationTimeSeconds,
+          order.salt,
+          fillQuantity,
+          0
+        ],
+        web3.utils.padLeft("0x0", 64),
+        order.makerAssetData,
+        order.takerAssetData,
+        orderSignature
+      )
+      .send({ from: manager, gas: config.gas });
+    const post = await getAllBalances(deployed, accounts, fund);
+    const heldInExchange = await fund.methods
+      .quantityHeldInCustodyOfExchange(ethToken.options.address)
+      .call();
 
-  t.is(Number(heldInExchange), 0);
-  t.deepEqual(
-    post.deployer.MlnToken,
-    pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2))
-  );
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
-  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-  t.deepEqual(post.investor.ether, pre.investor.ether);
-  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity.div(2)));
-  t.deepEqual(
-    post.deployer.EthToken,
-    pre.deployer.EthToken.plus(fillQuantity)
-  );
-  t.deepEqual(post.fund.ether, pre.fund.ether);
-});
+    t.is(Number(heldInExchange), 0);
+    t.deepEqual(
+      post.deployer.MlnToken,
+      pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2))
+    );
+    t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
+    t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+    t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+    t.deepEqual(post.investor.ether, pre.investor.ether);
+    t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+    t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+    t.deepEqual(
+      post.fund.MlnToken,
+      pre.fund.MlnToken.add(trade1.sellQuantity.div(2))
+    );
+    t.deepEqual(
+      post.deployer.EthToken,
+      pre.deployer.EthToken.plus(fillQuantity)
+    );
+    t.deepEqual(post.fund.ether, pre.fund.ether);
+  }
+);
 
 test.serial("third party makes another order with taker fees", async t => {
   const makerAddress = deployer.toLowerCase();
@@ -325,7 +334,9 @@ test.serial("third party makes another order with taker fees", async t => {
 test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
-  zrxToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
+  zrxToken.methods
+    .transfer(fund.options.address, new BigNumber(10 ** 20))
+    .send(opts);
   await fund.methods
     .callOnExchange(
       0,
@@ -370,11 +381,11 @@ test.serial("fund with enough ZRX takes the above order", async t => {
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(trade1.sellQuantity.div(2)));
   t.deepEqual(
-    post.deployer.EthToken,
-    pre.deployer.EthToken.plus(fillQuantity)
+    post.fund.MlnToken,
+    pre.fund.MlnToken.add(trade1.sellQuantity.div(2))
   );
+  t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken.plus(fillQuantity));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
@@ -434,14 +445,20 @@ test.serial("Make order through the fund", async t => {
       orderSignature
     )
     .send({ from: manager, gas: config.gas });
-  const makerAssetAllowance = new BigNumber(await mlnToken.methods.allowance(fund.options.address, erc20ProxyAddress).call());
+  const makerAssetAllowance = new BigNumber(
+    await mlnToken.methods
+      .allowance(fund.options.address, erc20ProxyAddress)
+      .call()
+  );
   t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
 });
 
 test.serial("Third party fund takes the order made by the fund", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  ethToken.methods.approve(erc20ProxyAddress, order.takerAssetAmount).send(opts);
-  const signedOrder = Object.assign({signature: orderSignature}, order);
+  ethToken.methods
+    .approve(erc20ProxyAddress, order.takerAssetAmount)
+    .send(opts);
+  const signedOrder = Object.assign({ signature: orderSignature }, order);
   const contractsConfig = {
     erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
     erc721ProxyContractAddress: "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401",
@@ -449,9 +466,16 @@ test.serial("Third party fund takes the order made by the fund", async t => {
     forwarderContractAddress: "0xb69e673309512a9d726f87304c6984054f87a93b",
     networkId: 100,
     zrxContractAddress: "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
-  }
-  const contractsWrapper = new ContractWrappers(web3.currentProvider, contractsConfig);
-  await contractsWrapper.exchange.fillOrKillOrderAsync(signedOrder, new BigNumber(trade1.buyQuantity), deployer.toLowerCase());
+  };
+  const contractsWrapper = new ContractWrappers(
+    web3.currentProvider,
+    contractsConfig
+  );
+  await contractsWrapper.exchange.fillOrKillOrderAsync(
+    signedOrder,
+    new BigNumber(trade1.buyQuantity),
+    deployer.toLowerCase()
+  );
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(
     post.deployer.MlnToken,
