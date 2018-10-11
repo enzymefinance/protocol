@@ -27,6 +27,7 @@
     "----": "REM The scripts below were added/changed during melon.js integration. Maybe they are superfluous or make others superfluous",
     "test": "yarn lint && yarn run test:ava",
     "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
+    "deploy:typescript": "DEBUG=melon:protocol:* yarn ts-node src/utils/deploySystem.ts",
     "test:verbose": "TERM=dumb yarn jest",
     "refactor:deploy": "CHAIN_ENV=development babel-node utils/deploy/refactorDeploy.js",
     "lint:tslint": "tslint src/**/*.ts",
