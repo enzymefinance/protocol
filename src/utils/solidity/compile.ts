@@ -36,13 +36,7 @@ const compile = (pathToSol: string) => {
 
   const parsed = path.parse(pathToSol);
 
-  const absolutePathToSol = path.join(
-    process.cwd(),
-    'src/contracts',
-    pathToSol,
-  );
-
-  const source = fs.readFileSync(absolutePathToSol, { encoding: 'utf-8' });
+  const source = fs.readFileSync(pathToSol, { encoding: 'utf-8' });
 
   const input = {
     sources: {
@@ -54,7 +48,7 @@ const compile = (pathToSol: string) => {
 
   debug('Compiled', pathToSol);
 
-  output.errors.forEach(debug);
+  if (output.errors) output.errors.forEach(debug);
 
   const targetDir = path.join(process.cwd(), 'out', parsed.dir);
   const targetPath = path.join(targetDir, `${parsed.name}.json`);
@@ -129,6 +123,16 @@ const compileAll = (query = 'src/contracts/**/*.sol') => {
 };
 
 if (require.main === module) {
-  // compile("exchanges/MatchingMarket.sol");
-  compileAll();
+  const contract = process.argv[2];
+
+  if (contract) {
+    debug('Compiling only one contract', contract);
+    compile(contract);
+  } else {
+    debug('Compiling all contracts.');
+    console.log(
+      'If you want to compile just one, call `yarn compile src/contracts/path/to/contract.sol`',
+    );
+    compileAll();
+  }
 }

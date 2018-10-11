@@ -19,6 +19,8 @@
 - Talk about Token or Asset or AssetToken?
 - What's the difference between /utils/deploy/contracts.js and /utils/deploy/refactorDeploy.js ?
 - Can we have a rule: Every .sol file contains only one contract?
+- Can we remove PreminedToken and add constructor args to StandardToken?
+- Name interfaces BlaInterface (Explicit)
 
 # Design goals:
 
@@ -27,7 +29,6 @@
 # TODOs:
 
 - [ ] Remove babel, flow, eslint, ...
-
 
 solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out src/contracts/exchanges/MatchingMarket.sol
 
