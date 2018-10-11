@@ -132,14 +132,14 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         Fund(address(this)).addAssetToOwnedAssets(makerAsset);
         Fund(address(this)).orderUpdateHook(
             targetExchange,
-            bytes32(identifier),
+            orderInfo.orderHash,
             Fund.UpdateType.take,
             [makerAsset, takerAsset],
             [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
         );
     }
 
-    /// @notice Cancel is not implemented on exchange for smart contracts
+    /// @notice Cancel the 0x make order
     function cancelOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -149,7 +149,23 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        require(Fund(address(this)).owner() == msg.sender);
+        require(!Fund(address(this)).isShutDown());
+
+        address makerAsset = orderAddresses[2];
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        Exchange(targetExchange).cancelOrder(order);
+
+        // Set the approval back to 0
+        approveMakerAsset(targetExchange, makerAsset, makerAssetData, 0);
+        Fund(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        Fund(address(this)).orderUpdateHook(
+            targetExchange,
+            orderInfo.orderHash,
+            Fund.UpdateType.cancel,
+            [address(0), address(0)],
+            [uint(0), uint(0), uint(0)]
+        );
     }
 
     // TODO: delete this function if possible
