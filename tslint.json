@@ -1,0 +1,9 @@
+{
+  "extends": ["tslint-config-airbnb", "tslint-config-prettier"],
+  "rules": {
+    "interface-name": false,
+    "max-line-length": [true, 80],
+    "no-implicit-dependencies": [false],
+    "object-literal-sort-keys": [true]
+  }
+}
