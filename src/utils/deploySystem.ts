@@ -13,6 +13,7 @@ import {
 import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
+import { deployAccountingFactory } from '~/contracts/fund/accounting';
 
 /**
  * Deploys all contracts and checks their health
@@ -30,7 +31,8 @@ const deploySystem = async () => {
   const whitelistAddress = await deployWhitelist([
     globalEnvironment.wallet.address,
   ]);
-  const deployMatchingMarketAdapterAddress = await deployMatchingMarketAdapter();
+  const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
+  const accountingFactoryAddress = await deployAccountingFactory();
 };
 
 if (require.main === module) {
