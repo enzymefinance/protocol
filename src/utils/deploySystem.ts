@@ -16,6 +16,7 @@ import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees';
 import { deployParticipationFactory } from '~/contracts/fund/participation';
+import { deploySharesFactory } from '~/contracts/fund/shares';
 
 /**
  * Deploys all contracts and checks their health
@@ -37,6 +38,7 @@ const deploySystem = async () => {
   const accountingFactoryAddress = await deployAccountingFactory();
   const feeManagerFactoryAddress = await deployFeeManagerFactory();
   const participationFactoryAddress = await deployParticipationFactory();
+  const sharesFactoryAddress = await deploySharesFactory();
 };
 
 if (require.main === module) {
