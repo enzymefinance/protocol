@@ -14,6 +14,8 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
+import { deployFeeManagerFactory } from '~/contracts/fund/fees';
+import { deployParticipationFactory } from '~/contracts/fund/participation';
 
 /**
  * Deploys all contracts and checks their health
@@ -33,6 +35,8 @@ const deploySystem = async () => {
   ]);
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
+  const feeManagerFactoryAddress = await deployFeeManagerFactory();
+  const participationFactoryAddress = await deployParticipationFactory();
 };
 
 if (require.main === module) {
