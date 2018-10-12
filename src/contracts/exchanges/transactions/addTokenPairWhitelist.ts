@@ -17,6 +17,7 @@ export const guards = async (
   { quoteToken, baseToken },
   environment,
 ) => {
+  console.log(isToken, Token);
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
     `Token ${log(quoteToken)} is invalid`,
@@ -33,13 +34,16 @@ export const prepare = async (
 ) => {
   const contract = getContract(contractAddress);
   const transaction = contract.methods.addTokenPairWhitelist(
-    quoteToken,
-    baseToken,
+    quoteToken.address,
+    baseToken.address,
   );
   return transaction;
 };
 
-export const send = async (transaction, environment) => {
+export const send = async (
+  transaction,
+  environment = getGlobalEnvironment(),
+) => {
   const receipt = await transaction.send({
     from: environment.wallet.address,
   });
