@@ -2,9 +2,9 @@ import Environment from '~/utils/environment/Environment';
 
 import { default as deployContract } from '~/utils/solidity/deploy';
 
-const deployVaultFactory = async (environment?: Environment) => {
+const deployPolicyManagerFactory = async (environment?: Environment) => {
   const address = await deployContract(
-    'fund/vault/VaultFactory.sol',
+    'fund/policies/PolicyManagerFactory.sol',
     null,
     environment,
   );
@@ -12,4 +12,4 @@ const deployVaultFactory = async (environment?: Environment) => {
   return address;
 };
 
-export default deployVaultFactory;
+export default deployPolicyManagerFactory;

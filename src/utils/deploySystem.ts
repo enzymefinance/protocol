@@ -9,8 +9,8 @@ import { deploy as deployPriceFeed } from '~/contracts/prices';
 import {
   deployMatchingMarket,
   deployMatchingMarketAdapter,
+  addTokenPairWhitelist,
 } from '~/contracts/exchanges';
-import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
@@ -18,7 +18,9 @@ import { deployFeeManagerFactory } from '~/contracts/fund/fees';
 import { deployParticipationFactory } from '~/contracts/fund/participation';
 import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
-import { deployVaultFactory } from '~/contracts/vault/trading';
+import { deployVaultFactory } from '~/contracts/fund/vault';
+import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
+
 /**
  * Deploys all contracts and checks their health
  */
@@ -42,6 +44,7 @@ const deploySystem = async () => {
   const sharesFactoryAddress = await deploySharesFactory();
   const tradingFactoryAddress = await deployTradingFactory();
   const vaultFactoryAddress = await deployVaultFactory();
+  const policyManagerFactoryAddress = await deployPolicyManagerFactory();
 };
 
 if (require.main === module) {
