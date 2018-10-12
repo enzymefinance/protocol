@@ -20,7 +20,7 @@ import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
 import { deployVaultFactory } from '~/contracts/fund/vault';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
-import { deployFundFactory } from '~/contracts/factory';
+import { deployFundFactory, createComponents } from '~/contracts/factory';
 
 /**
  * Deploys all contracts and checks their health
@@ -33,11 +33,14 @@ const deploySystem = async () => {
   const baseToken = await getToken(baseTokenAddress);
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
+
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
+
   const priceToleranceAddress = await deployPriceTolerance(10);
   const whitelistAddress = await deployWhitelist([
     globalEnvironment.wallet.address,
   ]);
+
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
   const feeManagerFactoryAddress = await deployFeeManagerFactory();
@@ -55,6 +58,24 @@ const deploySystem = async () => {
     tradingFactoryAddress,
     vaultFactoryAddress,
     policyManagerFactoryAddress,
+  });
+
+  const exchangeConfigs = [
+    {
+      address: matchingMarketAddress,
+      adapterAddress: matchingMarketAdapterAddress,
+      takesCustody: false,
+    },
+  ];
+
+  const defaultTokens = [quoteToken, baseToken];
+
+  const priceSource = priceFeedAddress;
+
+  await createComponents(fundFactoryAddress, {
+    exchangeConfigs,
+    defaultTokens,
+    priceSource,
   });
 };
 
