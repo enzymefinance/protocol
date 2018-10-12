@@ -21,6 +21,7 @@
 - Can we have a rule: Every .sol file contains only one contract?
 - Can we remove PreminedToken and add constructor args to StandardToken?
 - Name interfaces BlaInterface (Explicit)
+- Adapters: Example matching market. If the adapter had the address in the constructor, we could only have one deploy that does both.
 
 # Design goals:
 

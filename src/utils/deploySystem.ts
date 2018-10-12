@@ -6,7 +6,10 @@ import {
   getToken,
 } from '~/contracts/dependencies/token';
 import { deploy as deployPriceFeed } from '~/contracts/prices';
-import { deploy as deployMatchingMarket } from '~/contracts/exchanges';
+import {
+  deployMatchingMarket,
+  deployMatchingMarketAdapter,
+} from '~/contracts/exchanges';
 import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
@@ -27,6 +30,7 @@ const deploySystem = async () => {
   const whitelistAddress = await deployWhitelist([
     globalEnvironment.wallet.address,
   ]);
+  const deployMatchingMarketAdapterAddress = await deployMatchingMarketAdapter();
 };
 
 if (require.main === module) {
