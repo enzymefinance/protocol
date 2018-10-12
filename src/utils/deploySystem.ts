@@ -18,7 +18,7 @@ import { deployFeeManagerFactory } from '~/contracts/fund/fees';
 import { deployParticipationFactory } from '~/contracts/fund/participation';
 import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
-
+import { deployVaultFactory } from '~/contracts/vault/trading';
 /**
  * Deploys all contracts and checks their health
  */
@@ -41,6 +41,7 @@ const deploySystem = async () => {
   const participationFactoryAddress = await deployParticipationFactory();
   const sharesFactoryAddress = await deploySharesFactory();
   const tradingFactoryAddress = await deployTradingFactory();
+  const vaultFactoryAddress = await deployVaultFactory();
 };
 
 if (require.main === module) {
