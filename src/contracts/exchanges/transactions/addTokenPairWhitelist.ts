@@ -17,7 +17,6 @@ export const guards = async (
   { quoteToken, baseToken },
   environment,
 ) => {
-  console.log(isToken, Token);
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
     `Token ${log(quoteToken)} is invalid`,
