@@ -2,6 +2,7 @@ import { IToken } from '@melonproject/token-math';
 
 import { Address } from '~/utils/types';
 import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import prepareTransaction from '~/utils/solidity/prepareTransaction';
 
 import getContract from '../utils/getContract';
 // import ensure from '~/utils/guards/ensure';
@@ -25,6 +26,7 @@ export const guards = async (contractAddress: string, params, environment) => {
 export const prepare = async (
   contractAddress: string,
   { exchangeConfigs, defaultTokens, priceSource },
+  environment,
 ) => {
   const contract = getContract(contractAddress);
 
@@ -35,14 +37,6 @@ export const prepare = async (
   const takesCustody = exchangeConfigs.map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
 
-  console.log(
-    exchangeAddresses,
-    adapterAddresses,
-    defaultTokenAddresses,
-    takesCustody,
-    priceSource.toString(),
-  );
-
   const transaction = contract.methods.createComponents(
     exchangeAddresses,
     adapterAddresses,
@@ -50,17 +44,17 @@ export const prepare = async (
     takesCustody,
     priceSource.toString(),
   );
+  transaction.name = 'createComponents';
 
-  return transaction;
+  const prepared = await prepareTransaction(transaction, environment);
+
+  return prepared;
 };
 
-export const send = async (
-  transaction,
-  environment = getGlobalEnvironment(),
-) => {
+export const send = async (prepared, environment = getGlobalEnvironment()) => {
   console.log(environment.wallet.address);
 
-  const receipt = await transaction
+  const receipt = await prepared.transaction
     .send({
       from: environment.wallet.address,
     })
@@ -86,12 +80,16 @@ const createComponents = async (
     { exchangeConfigs, defaultTokens, priceSource },
     environment,
   );
-  const transaction = await prepare(contractAddress, {
-    exchangeConfigs,
-    defaultTokens,
-    priceSource,
-  });
-  const receipt = await send(transaction, environment);
+  const prepared = await prepare(
+    contractAddress,
+    {
+      exchangeConfigs,
+      defaultTokens,
+      priceSource,
+    },
+    environment,
+  );
+  const receipt = await send(prepared, environment);
   const result = validateReceipt(receipt, {
     exchangeConfigs,
     defaultTokens,
