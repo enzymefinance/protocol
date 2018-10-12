@@ -10,7 +10,7 @@ import { default as Environment, Options } from './Environment';
 const debug = getDebug(__filename);
 
 const defaultOptions: Options = {
-  gasLimit: '3000000',
+  gasLimit: '8000000',
   gasPrice: '2000000000',
 };
 

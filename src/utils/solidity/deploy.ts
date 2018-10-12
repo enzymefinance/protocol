@@ -5,7 +5,7 @@ import { BigInteger } from '@melonproject/token-math';
 import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
 import getWeb3Options from '~/utils/environment/getWeb3Options';
 
-const toBI = BigInteger.toBI;
+const { toBI, greaterThan } = BigInteger;
 const debug = require('~/utils/getDebug').default(__filename);
 
 type ConstructorArg = number | string | [number | string];
@@ -43,12 +43,7 @@ const deploy = async (
     from: environment.wallet.address,
   });
 
-  if (
-    BigInteger.greaterThan(
-      toBI(gasEstimation),
-      toBI(environment.options.gasLimit),
-    )
-  ) {
+  if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
     throw new Error(
       `Estimated gas consumption (${gasEstimation}) is higher than the provided gas limit: ${
         environment.options.gasLimit

@@ -6,17 +6,19 @@ import {
 } from '~/contracts/dependencies/token';
 import { deploy as deployPriceFeed } from '~/contracts/prices';
 import { deploy as deployMatchingMarket } from '~/contracts/exchanges';
+import { addTokenPairWhitelist } from '~/contracts/exchanges';
 
 /**
  * Deploys all contracts and checks their health
  */
 const deploySystem = async () => {
-  const quoteAssetAddress = await deployToken('DAI');
-  const secondAssetAddress = await deployToken('MLN');
-  const quoteAsset = await getToken(quoteAssetAddress);
-  const secondAsset = await getToken(secondAssetAddress);
-  const priceFeedAddress = await deployPriceFeed(quoteAsset);
+  const quoteTokenAddress = await deployToken('DAI');
+  const baseTokenAddress = await deployToken('MLN');
+  const quoteToken = await getToken(quoteTokenAddress);
+  const baseToken = await getToken(baseTokenAddress);
+  const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
+  await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 };
 
 if (require.main === module) {

@@ -9,7 +9,7 @@ const debug = getDebug(__filename);
  * Possibility to add a `message` and some `data` to trace.
  * @throws {EnsureError}
  */
-const ensure = (condition: boolean, message: string, data: any): void => {
+const ensure = (condition: boolean, message: string, data?: any): void => {
   if (condition !== true) {
     debug('EnsureError', { message, data });
 
