@@ -5,9 +5,14 @@ import { string } from 'yup';
 import getDebug from '~/utils/getDebug';
 
 import tracks from '../constants/tracks';
-import Environment from './Environment';
+import { default as Environment, Options } from './Environment';
 
 const debug = getDebug(__filename);
+
+const defaultOptions: Options = {
+  gasLimit: '3000000',
+  gasPrice: '2000000000',
+};
 
 const checkIpc = endpoint => {
   const fs = require('fs');
@@ -52,10 +57,12 @@ const constructEnvironment = ({
   provider = undefined,
   wallet = undefined,
   track = tracks.DEMO,
+  options = defaultOptions,
 }): Environment => ({
   eth: new Eth(provider || constructProvider(jsonRpcEndpoint)),
   track,
   wallet,
+  options,
 });
 
 export default constructEnvironment;

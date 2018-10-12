@@ -2,7 +2,7 @@
 
 <img src = "https://github.com/melonproject/branding/blob/master/melon/03_M_logo.jpg" width = "25%" align="right">
 
-[![Gitter chat](https://img.shields.io/gitter/room/melonproject/protocol.js.svg?style=flat-square&colorB=46bc99)](https://gitter.im/melonproject/general "Gitter chat")
+[![Gitter chat](https://img.shields.io/gitter/room/melonproject/protocol.js.svg?style=flat-square&colorB=46bc99)](https://gitter.im/melonproject/general 'Gitter chat')
 [![Build Status](https://img.shields.io/travis/melonproject/protocol/master.svg?style=flat-square)](https://travis-ci.org/melonproject/protocol)
 [![Solidity version](https://img.shields.io/badge/solidity-0.4.19-brightgreen.svg?style=flat-square&colorB=C99D66)](https://github.com/ethereum/solidity/releases/tag/v0.4.19)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
@@ -35,6 +35,17 @@ cd protocol
 yarn install
 ```
 
+_Recommended but not necessary_:
+Create a .env file. You could either get inspired in [.env.example](.env.example) or just use this:
+
+```env
+JSON_RPC_ENDPOINT = ws://localhost:8545
+DEBUG=melon:protocol:*
+CHAIN_ENV=development
+```
+
+If you don't set `JSON_RPC_ENDPOINT`, the test will load ganache in-memory which works but is much slower.
+
 ### Deployment and testing
 
 After installation, go to the above `protocol` directory, open a terminal and:
@@ -45,10 +56,12 @@ yarn compile
 # Launch parity dev chain:
 yarn devchain
 # Open a second terminal and deploy the contracts to the development network:
-yarn deploy
+yarn deploy (Not working yet)
 # Run the tests using
-yarn test
+yarn test (Not working yet)
 ```
+
+### Alternatives
 
 ### Kovan Deployment
 

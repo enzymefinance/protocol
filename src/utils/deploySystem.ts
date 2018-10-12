@@ -23,6 +23,7 @@ if (require.main === module) {
   // compile("exchanges/MatchingMarket.sol");
   initTestEnvironment().then(async () => {
     await deploySystem();
+    process.exit();
   });
 }
 
