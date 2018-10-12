@@ -8,11 +8,12 @@ import getWeb3Options from '~/utils/environment/getWeb3Options';
 const { toBI, greaterThan } = BigInteger;
 const debug = require('~/utils/getDebug').default(__filename);
 
-type ConstructorArg = number | string | [number | string];
+type ConstructorArg = number | string;
+type ConstructorArgs = ConstructorArg | ConstructorArg[];
 
 const deploy = async (
   pathToSolidityFile: string,
-  args: ConstructorArg[] = [],
+  args: ConstructorArgs[] = [],
   environment = getGlobalEnvironment(),
 ) => {
   debug('Deploying: ', pathToSolidityFile);
