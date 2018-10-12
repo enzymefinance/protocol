@@ -35,6 +35,13 @@ contract Hub is DSGuard {
         manager = _manager;
     }
 
+    // TODO: extend this ability to the version (if version shut down and we still need this)
+    function shutDownFund() public {
+        require(msg.sender == manager);
+        isShutDown = true;
+    }
+
+    // TODO: add permissioning for sender
     function setSpokes(address[10] _spokes) {
         require(!spokesSet);
         settings.accounting = _spokes[0];
@@ -50,6 +57,7 @@ contract Hub is DSGuard {
         spokesSet = true;
     }
 
+    // TODO: add permissioning for sender
     function setRouting() {
         require(spokesSet);
         require(!routingSet);
@@ -69,6 +77,7 @@ contract Hub is DSGuard {
         routingSet = true;
     }
 
+    // TODO: add permissioning for sender
     // TODO: decide how to handle `owner`; should any of the components have an owner? if not then we need to remove owner after everything is initialized.
     function setPermissions() {
         require(spokesSet);
