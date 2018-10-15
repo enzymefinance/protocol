@@ -52,11 +52,12 @@ export const prepare = async (
 };
 
 export const send = async (prepared, environment = getGlobalEnvironment()) => {
-  console.log(environment.wallet.address);
+  console.log('WHOAMI?', environment.wallet.address);
 
   const receipt = await prepared.transaction
     .send({
       from: environment.wallet.address,
+      gas: 8000000,
     })
     .on('error', (err, a, b) => console.log(err, a, b));
 
