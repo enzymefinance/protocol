@@ -9,8 +9,6 @@ const prepareTransaction = async (
   transaction,
   environment = getGlobalEnvironment(),
 ) => {
-  console.log(transaction.name);
-
   const encoded = transaction.encodeABI();
   const gasEstimation = await transaction.estimateGas({
     from: environment.wallet.address,
