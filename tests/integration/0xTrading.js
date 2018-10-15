@@ -192,7 +192,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -297,7 +297,7 @@ test.serial("third party makes another order with taker fees", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: investor.toLowerCase(),
-    expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -397,7 +397,7 @@ test.serial("Make order through the fund", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Date.now() + 3600000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -509,24 +509,6 @@ test.serial("Third party fund takes the order made by the fund", async t => {
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
   const postTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
   const postTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
-  // const signedOrder = Object.assign({ signature: orderSignature }, order);
-  // const contractsConfig = {
-  //   erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
-  //   erc721ProxyContractAddress: "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401",
-  //   exchangeContractAddress: "0x48bacb9266a570d521063ef5dd96e61686dbe788",
-  //   forwarderContractAddress: "0xb69e673309512a9d726f87304c6984054f87a93b",
-  //   networkId: 100,
-  //   zrxContractAddress: "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
-  // };
-  // const contractsWrapper = new ContractWrappers(
-  //   web3.currentProvider,
-  //   contractsConfig
-  // );
-  // await contractsWrapper.exchange.fillOrKillOrderAsync(
-  //   signedOrder,
-  //   new BigNumber(trade1.buyQuantity),
-  //   deployer.toLowerCase()
-  // );
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.buyQuantity));
   t.deepEqual(postTPFundEthToken, preTPFundEthToken.minus(trade1.buyQuantity));

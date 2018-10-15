@@ -34,6 +34,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
 
+        // Order parameter checks
+        require(orderValues[4] >= now && orderValues[4] <= add(now, 1 days));
         require(makeOrderPermitted(order.makerAssetAmount, makerAsset, order.takerAssetAmount, takerAsset));
         Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
         require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
