@@ -454,6 +454,37 @@ test.serial("Make order through the fund", async t => {
   t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
 });
 
+test.serial("Fund cannot make multiple orders for same asset unless fulfilled", async t => {
+  await t.throws(fund.methods
+    .callOnExchange(
+      0,
+      makeOrderSignatureString,
+      [
+        fund.options.address.toLowerCase(),
+        NULL_ADDRESS,
+        mlnToken.options.address,
+        ethToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        new BigNumber(559),
+        0,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: manager, gas: config.gas }));
+});
+
 test.serial("Third party fund takes the order made by the fund", async t => {
   const [r, s, v] = await getTermsSignatureParameters(deployer);
   await version.methods
