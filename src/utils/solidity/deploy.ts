@@ -16,7 +16,7 @@ const deploy = async (
   args: ConstructorArgs[] = [],
   environment = getGlobalEnvironment(),
 ) => {
-  debug('Deploying: ', pathToSolidityFile);
+  debug('Deploying: ', pathToSolidityFile, args);
 
   const parsed = path.parse(pathToSolidityFile);
 
@@ -65,6 +65,7 @@ const deploy = async (
       debug('confirmation', cn, r.transactionHash),
     );
 
+  debug('Deployed: ', pathToSolidityFile, instance.options.address);
   return instance.options.address;
 };
 
