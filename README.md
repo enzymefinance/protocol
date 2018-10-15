@@ -2,7 +2,7 @@
 
 <img src = "https://github.com/melonproject/branding/blob/master/melon/03_M_logo.jpg" width = "25%" align="right">
 
-[![Gitter chat](https://img.shields.io/gitter/room/melonproject/protocol.js.svg?style=flat-square&colorB=46bc99)](https://gitter.im/melonproject/general "Gitter chat")
+[![Gitter chat](https://img.shields.io/gitter/room/melonproject/protocol.js.svg?style=flat-square&colorB=46bc99)](https://gitter.im/melonproject/general 'Gitter chat')
 [![Build Status](https://img.shields.io/travis/melonproject/protocol/master.svg?style=flat-square)](https://travis-ci.org/melonproject/protocol)
 [![Solidity version](https://img.shields.io/badge/solidity-0.4.19-brightgreen.svg?style=flat-square&colorB=C99D66)](https://github.com/ethereum/solidity/releases/tag/v0.4.19)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
@@ -21,30 +21,47 @@ This repository contains a reference implementation of the Melon protocol writte
 
 ## Get started
 
+### Prerequisites
+
+- Yarn
+
 ### Installation
 
 ```sh
 # Clone this repository
-git clone git@github.com:melonproject/smart-contracts.git
-cd smart-contracts
+git clone git@github.com:melonproject/protocol.git
+cd protocol
 # Install dependencies
-npm install
-# Generate bytecode and abi of smart-contracts
-npm run compile
+yarn install
 ```
+
+_Recommended but not necessary_:
+Create a .env file. You could either get inspired in [.env.example](.env.example) or just use this:
+
+```env
+JSON_RPC_ENDPOINT = ws://localhost:8545
+DEBUG=melon:protocol:*
+CHAIN_ENV=development
+```
+
+If you don't set `JSON_RPC_ENDPOINT`, the test will load ganache in-memory which works but is much slower.
 
 ### Deployment and testing
 
 After installation, go to the above `protocol` directory, open a terminal and:
 
 ```sh
+# Generate bytecode and abi of smart-contracts
+yarn compile
 # Launch parity dev chain:
-npm run devchain
+yarn devchain
 # Open a second terminal and deploy the contracts to the development network:
-npm run deploy
+yarn deploy (Not working yet)
 # Run the tests using
-npm test
+yarn test (Not working yet)
 ```
+
+### Alternatives
 
 ### Kovan Deployment
 
@@ -64,15 +81,19 @@ parity \
 # Open a second terminal and deploy the contracts:
 npm run deploy:kovan
 ```
+
 ## Troubleshooting
 
 #### Permission denied (publickey) when cloning the repo
+
 Try cloning using `git clone https://github.com/melonproject/smart-contracts.git`
 
 #### Spec json is invalid when running Parity Devchain
+
 Update your Parity installation to the latest version or try changing `"instantSeal": null` to `"instantSeal": { "params": {} }` in chainGenesis.json
 
 #### Stuck at deploy step
+
 Deploying contracts may stuck indefinitely in case your parity node is not unlocked for some reason. Locked node requires you to enter password for each transaciton manually.
 
 ## Contributing

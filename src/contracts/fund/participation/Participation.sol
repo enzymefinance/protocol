@@ -5,7 +5,7 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
 import "../vault/Vault.sol";
-import "../../dependencies/ERC20.sol";
+import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";

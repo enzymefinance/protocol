@@ -6,7 +6,7 @@ pragma solidity ^0.4.21;
  * @dev see https://github.com/ethereum/EIPs/issues/20
  * Altered from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a466e76d26c394b1faa6e2797aefe34668566392/contracts/token/ERC20/ERC20.sol
  */
-contract ERC20 {
+interface ERC20 {
   function totalSupply() public view returns (uint256);
 
   function balanceOf(address _who) public view returns (uint256);

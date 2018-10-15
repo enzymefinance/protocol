@@ -4,6 +4,10 @@ npm-debug.log
 *.orig
 *.swp
 
+yarn-error.log
+
+.env
+
 # manual backup files
 *.bak
 

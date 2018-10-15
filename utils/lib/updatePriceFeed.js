@@ -82,7 +82,7 @@ async function updateTestingPriceFeed(deployed, inputPrices = {}, quoteSymbol = 
   } else {
     prices = inputPrices;
   }
-  await deployed.TestingPriceFeed.methods.update(Object.keys(prices), Object.values(prices)).send(
+  await deployed.TestingPriceFeed.methods.update(Object.keys(prices), Object.values(prices).map(e => e.toString())).send(
     { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice }
   );
 }

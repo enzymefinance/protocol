@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "../dependencies/thing.sol";
-import "../dependencies/ERC20.sol";
+import "../dependencies/token/ERC20.i.sol";
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
