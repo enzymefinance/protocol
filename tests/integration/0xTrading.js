@@ -473,12 +473,12 @@ test.serial("Third party fund takes the order made by the fund", async t => {
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
   const thirdpartyFundAddress = await version.methods.managerToFunds(deployer).call();
   const thirdpartyFund = await retrieveContract("Fund", thirdpartyFundAddress);
-  const pre = await getAllBalances(deployed, accounts, fund);
-  const preTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
-  const preTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
   await ethToken.methods
     .transfer(thirdpartyFund.options.address, order.takerAssetAmount)
     .send(opts);
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const preTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
+  const preTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
   await thirdpartyFund.methods
     .callOnExchange(
       0,
