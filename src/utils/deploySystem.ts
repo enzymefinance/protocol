@@ -20,7 +20,12 @@ import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
 import { deployVaultFactory } from '~/contracts/fund/vault';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
-import { deployFundFactory, createComponents } from '~/contracts/factory';
+import {
+  deployFundFactory,
+  createComponents,
+  continueCreation,
+  setupFund,
+} from '~/contracts/factory';
 
 /**
  * Deploys all contracts and checks their health
@@ -77,6 +82,9 @@ const deploySystem = async () => {
     defaultTokens,
     priceSource,
   });
+
+  await continueCreation(fundFactoryAddress);
+  await setupFund(fundFactoryAddress);
 };
 
 if (require.main === module) {

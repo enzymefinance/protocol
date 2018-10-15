@@ -117,18 +117,6 @@ async function deployEnvironment(environment) {
       testingPriceFeed.options.address,
     );
 
-    console.log(
-      'createComponents',
-      [
-        [matchingMarket.options.address],
-        [matchingMarketAdapter.options.address],
-        [quoteAsset.options.address, secondAsset.options.address],
-        [false],
-        testingPriceFeed.options.address,
-      ],
-      createComponentsTx.encodeABI(),
-    );
-
     await createComponentsTx.send(opts);
     await fundFactory.methods.continueCreation().send(opts);
     console.log('Components created');
