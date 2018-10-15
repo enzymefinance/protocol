@@ -445,9 +445,9 @@ async function deployEnvironment(environment) {
     // );
   } else if (environment === "development") {
     console.log(`Deployer: ${accounts[0]}`);
-    deployed.EthToken = await deployContract("dependencies/PreminedToken", opts);
-    deployed.MlnToken = await deployContract("dependencies/PreminedToken", opts);
-    deployed.EurToken = await deployContract("dependencies/PreminedToken", opts);
+    deployed.EthToken = await deployContract("dependencies/token/PreminedToken", opts, ["ETH-T", 18, "Ether token"]);
+    deployed.MlnToken = await deployContract("dependencies/token/PreminedToken", opts, ["MLN-T", 18, "Mln token"]);
+    deployed.EurToken = await deployContract("dependencies/token/PreminedToken", opts, ["EUR-T", 18, "Euro token"]);
     deployed.TestingPriceFeed = await deployContract("prices/TestingPriceFeed", opts, [
       deployed.EthToken.options.address, 18
     ]);
