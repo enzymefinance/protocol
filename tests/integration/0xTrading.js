@@ -417,10 +417,7 @@ test.serial("Make order through the fund", async t => {
     manager,
     SignerType.Default
   );
-  console.log(orderSignature);
   orderSignature = orderSignature.substring(0, orderSignature.length-1) + '6';
-  console.log(orderSignature);
-
   await fund.methods
     .callOnExchange(
       0,
@@ -458,7 +455,6 @@ test.serial("Make order through the fund", async t => {
 });
 
 test.serial("Third party fund takes the order made by the fund", async t => {
-  const pre = await getAllBalances(deployed, accounts, fund);
   const [r, s, v] = await getTermsSignatureParameters(deployer);
   await version.methods
     .setupFund(
@@ -475,14 +471,14 @@ test.serial("Third party fund takes the order made by the fund", async t => {
       s
     )
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
-  const fundAddress = await version.methods.managerToFunds(deployer).call();
-  const thirdpartyFund = await retrieveContract("Fund", fundAddress);
+  const thirdpartyFundAddress = await version.methods.managerToFunds(deployer).call();
+  const thirdpartyFund = await retrieveContract("Fund", thirdpartyFundAddress);
+  const pre = await getAllBalances(deployed, accounts, fund);
+  const preTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
+  const preTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
   await ethToken.methods
     .transfer(thirdpartyFund.options.address, order.takerAssetAmount)
     .send(opts);
-  console.log('so far good');
-  const orderHashHex = orderHashUtils.getOrderHashHex(order);
-  console.log(await zeroExExchange.methods.isValidSignature(orderHashHex, fund.options.address.toLowerCase(), orderSignature).call());
   await thirdpartyFund.methods
     .callOnExchange(
       0,
@@ -511,6 +507,8 @@ test.serial("Third party fund takes the order made by the fund", async t => {
       orderSignature
     )
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
+  const postTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
+  const postTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
   // const signedOrder = Object.assign({ signature: orderSignature }, order);
   // const contractsConfig = {
   //   erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
@@ -530,20 +528,14 @@ test.serial("Third party fund takes the order made by the fund", async t => {
   //   deployer.toLowerCase()
   // );
   const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(
-    post.deployer.MlnToken,
-    pre.deployer.MlnToken.plus(trade1.sellQuantity)
-  );
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.buyQuantity));
+  t.deepEqual(postTPFundEthToken, preTPFundEthToken.minus(trade1.buyQuantity));
   t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
   t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
-  t.deepEqual(
-    post.deployer.EthToken,
-    pre.deployer.EthToken.minus(trade1.buyQuantity)
-  );
+  t.deepEqual(postTPFundMln, preTPFundMln.plus(trade1.sellQuantity));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
