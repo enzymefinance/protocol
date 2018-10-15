@@ -84,7 +84,7 @@ const deploySystem = async () => {
   });
 
   await continueCreation(fundFactoryAddress);
-  await setupFund(fundFactoryAddress);
+  const hubAddress = await setupFund(fundFactoryAddress);
 };
 
 if (require.main === module) {

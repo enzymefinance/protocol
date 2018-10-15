@@ -1,4 +1,5 @@
 import isAddress from './checks/isAddress';
+import * as Web3Utils from 'web3-utils';
 
 /**
  * Dummy classes to achieve typesafety.
@@ -11,6 +12,6 @@ export class Address extends String {
       throw new TypeError(`Invalid address ${address}`);
     }
 
-    super(address);
+    super(Web3Utils.toChecksumAddress(address));
   }
 }

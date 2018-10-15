@@ -9,6 +9,7 @@
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
     "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
     "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
+    "deploy:refactor": "CHAIN_ENV=development babel-node utils/deploy/refactorDeploy.js",
     "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
     "format": "prettier --write src/**/*.ts",
     "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
@@ -18,7 +19,6 @@
     "lint:solium": "solium --dir .",
     "lint": "yarn lint:eslint && yarn lint:tslint && yarn lint:prettier && yarn lint:solium",
     "oyente": "oyente -s src/Fund.sol",
-    "refactor:deploy": "CHAIN_ENV=development babel-node utils/deploy/refactorDeploy.js",
     "test:verbose": "TERM=dumb yarn jest",
     "test": "yarn lint && test:verbose"
   },
