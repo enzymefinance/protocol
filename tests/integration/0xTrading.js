@@ -192,7 +192,9 @@ test.serial("third party makes and validates an off-chain order", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
+      80000
+    ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -297,7 +299,9 @@ test.serial("third party makes another order with taker fees", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: investor.toLowerCase(),
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
+      80000
+    ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -397,7 +401,9 @@ test.serial("Make order through the fund", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(80000),
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
+      80000
+    ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
     takerAssetAmount: new BigNumber(trade1.buyQuantity),
@@ -417,7 +423,7 @@ test.serial("Make order through the fund", async t => {
     manager,
     SignerType.Default
   );
-  orderSignature = orderSignature.substring(0, orderSignature.length-1) + '6';
+  orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
   await fund.methods
     .callOnExchange(
       0,
@@ -440,7 +446,7 @@ test.serial("Make order through the fund", async t => {
         0,
         0
       ],
-      web3.utils.padLeft("0x0", 64),
+      web3.utils.padLeft("a0x0", 64),
       order.makerAssetData,
       order.takerAssetData,
       orderSignature
@@ -454,36 +460,41 @@ test.serial("Make order through the fund", async t => {
   t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
 });
 
-test.serial("Fund cannot make multiple orders for same asset unless fulfilled", async t => {
-  await t.throws(fund.methods
-    .callOnExchange(
-      0,
-      makeOrderSignatureString,
-      [
-        fund.options.address.toLowerCase(),
-        NULL_ADDRESS,
-        mlnToken.options.address,
-        ethToken.options.address,
-        order.feeRecipientAddress,
-        NULL_ADDRESS
-      ],
-      [
-        order.makerAssetAmount,
-        order.takerAssetAmount,
-        order.makerFee,
-        order.takerFee,
-        order.expirationTimeSeconds,
-        new BigNumber(559),
-        0,
-        0
-      ],
-      web3.utils.padLeft("0x0", 64),
-      order.makerAssetData,
-      order.takerAssetData,
-      orderSignature
-    )
-    .send({ from: manager, gas: config.gas }));
-});
+test.serial(
+  "Fund cannot make multiple orders for same asset unless fulfilled",
+  async t => {
+    await t.throws(
+      fund.methods
+        .callOnExchange(
+          0,
+          makeOrderSignatureString,
+          [
+            fund.options.address.toLowerCase(),
+            NULL_ADDRESS,
+            mlnToken.options.address,
+            ethToken.options.address,
+            order.feeRecipientAddress,
+            NULL_ADDRESS
+          ],
+          [
+            order.makerAssetAmount,
+            order.takerAssetAmount,
+            order.makerFee,
+            order.takerFee,
+            order.expirationTimeSeconds,
+            new BigNumber(559),
+            0,
+            0
+          ],
+          web3.utils.padLeft("0x0", 64),
+          order.makerAssetData,
+          order.takerAssetData,
+          orderSignature
+        )
+        .send({ from: manager, gas: config.gas })
+    );
+  }
+);
 
 test.serial("Third party fund takes the order made by the fund", async t => {
   const [r, s, v] = await getTermsSignatureParameters(deployer);
@@ -502,14 +513,20 @@ test.serial("Third party fund takes the order made by the fund", async t => {
       s
     )
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
-  const thirdpartyFundAddress = await version.methods.managerToFunds(deployer).call();
+  const thirdpartyFundAddress = await version.methods
+    .managerToFunds(deployer)
+    .call();
   const thirdpartyFund = await retrieveContract("Fund", thirdpartyFundAddress);
   await ethToken.methods
     .transfer(thirdpartyFund.options.address, order.takerAssetAmount)
     .send(opts);
   const pre = await getAllBalances(deployed, accounts, fund);
-  const preTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
-  const preTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
+  const preTPFundMln = new BigNumber(
+    await mlnToken.methods.balanceOf(thirdpartyFundAddress).call()
+  );
+  const preTPFundEthToken = new BigNumber(
+    await ethToken.methods.balanceOf(thirdpartyFundAddress).call()
+  );
   await thirdpartyFund.methods
     .callOnExchange(
       0,
@@ -538,8 +555,12 @@ test.serial("Third party fund takes the order made by the fund", async t => {
       orderSignature
     )
     .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
-  const postTPFundMln = new BigNumber(await mlnToken.methods.balanceOf(thirdpartyFundAddress).call());
-  const postTPFundEthToken = new BigNumber(await ethToken.methods.balanceOf(thirdpartyFundAddress).call());
+  const postTPFundMln = new BigNumber(
+    await mlnToken.methods.balanceOf(thirdpartyFundAddress).call()
+  );
+  const postTPFundEthToken = new BigNumber(
+    await ethToken.methods.balanceOf(thirdpartyFundAddress).call()
+  );
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.buyQuantity));
   t.deepEqual(postTPFundEthToken, preTPFundEthToken.minus(trade1.buyQuantity));
