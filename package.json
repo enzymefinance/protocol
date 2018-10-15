@@ -20,7 +20,8 @@
     "lint": "yarn lint:eslint && yarn lint:tslint && yarn lint:prettier && yarn lint:solium",
     "oyente": "oyente -s src/Fund.sol",
     "test:verbose": "TERM=dumb yarn jest",
-    "test": "yarn lint && test:verbose"
+    "test:integration:legacy": "CHAIN_ENV=development ava tests/integration/fundTrading.js",
+    "test": "yarn lint && yarn test:verbose && yarn test:integration:legacy"
   },
   "files": [
     "out",
