@@ -4,7 +4,8 @@ import {
   orderHashUtils,
   signatureUtils,
   ContractWrappers,
-  SignerType
+  SignerType,
+  SignatureType
 } from "0x.js";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
@@ -64,7 +65,7 @@ test.before(async () => {
     "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
   );
   zeroExExchange = await retrieveContract(
-    "exchange/thirdparty/0x/MixinExchangeCore",
+    "exchange/thirdparty/0x/Exchange",
     "0x48bacb9266a570d521063ef5dd96e61686dbe788"
   );
   erc20ProxyAddress = "0x1dc4c1cefef38a777b15aa20260a54e584b16c48";
@@ -316,7 +317,6 @@ test.serial("third party makes another order with taker fees", async t => {
     deployer,
     SignerType.Default
   );
-
   await mlnToken.methods
     .approve(erc20ProxyAddress, trade1.sellQuantity)
     .send({ from: deployer });
@@ -417,6 +417,10 @@ test.serial("Make order through the fund", async t => {
     manager,
     SignerType.Default
   );
+  console.log(orderSignature);
+  orderSignature = orderSignature.substring(0, orderSignature.length-1) + '6';
+  console.log(orderSignature);
+
   await fund.methods
     .callOnExchange(
       0,
@@ -455,27 +459,76 @@ test.serial("Make order through the fund", async t => {
 
 test.serial("Third party fund takes the order made by the fund", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  ethToken.methods
-    .approve(erc20ProxyAddress, order.takerAssetAmount)
+  const [r, s, v] = await getTermsSignatureParameters(deployer);
+  await version.methods
+    .setupFund(
+      web3.utils.toHex("Deployer Fund"),
+      deployed.EthToken.options.address, // base asset
+      config.protocol.fund.managementFee,
+      config.protocol.fund.performanceFee,
+      deployed.NoCompliance.options.address,
+      deployed.RMMakeOrders.options.address,
+      [zeroExExchange.options.address],
+      [],
+      v,
+      r,
+      s
+    )
+    .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
+  const fundAddress = await version.methods.managerToFunds(deployer).call();
+  const thirdpartyFund = await retrieveContract("Fund", fundAddress);
+  await ethToken.methods
+    .transfer(thirdpartyFund.options.address, order.takerAssetAmount)
     .send(opts);
-  const signedOrder = Object.assign({ signature: orderSignature }, order);
-  const contractsConfig = {
-    erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
-    erc721ProxyContractAddress: "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401",
-    exchangeContractAddress: "0x48bacb9266a570d521063ef5dd96e61686dbe788",
-    forwarderContractAddress: "0xb69e673309512a9d726f87304c6984054f87a93b",
-    networkId: 100,
-    zrxContractAddress: "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
-  };
-  const contractsWrapper = new ContractWrappers(
-    web3.currentProvider,
-    contractsConfig
-  );
-  await contractsWrapper.exchange.fillOrKillOrderAsync(
-    signedOrder,
-    new BigNumber(trade1.buyQuantity),
-    deployer.toLowerCase()
-  );
+  console.log('so far good');
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  console.log(await zeroExExchange.methods.isValidSignature(orderHashHex, fund.options.address.toLowerCase(), orderSignature).call());
+  await thirdpartyFund.methods
+    .callOnExchange(
+      0,
+      takeOrderSignatureString,
+      [
+        fund.options.address.toLowerCase(),
+        NULL_ADDRESS,
+        mlnToken.options.address,
+        ethToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        order.salt,
+        order.takerAssetAmount,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: deployer, gas: config.gas, gasPrice: config.gasPrice });
+  // const signedOrder = Object.assign({ signature: orderSignature }, order);
+  // const contractsConfig = {
+  //   erc20ProxyContractAddress: "0x1dc4c1cefef38a777b15aa20260a54e584b16c48",
+  //   erc721ProxyContractAddress: "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401",
+  //   exchangeContractAddress: "0x48bacb9266a570d521063ef5dd96e61686dbe788",
+  //   forwarderContractAddress: "0xb69e673309512a9d726f87304c6984054f87a93b",
+  //   networkId: 100,
+  //   zrxContractAddress: "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
+  // };
+  // const contractsWrapper = new ContractWrappers(
+  //   web3.currentProvider,
+  //   contractsConfig
+  // );
+  // await contractsWrapper.exchange.fillOrKillOrderAsync(
+  //   signedOrder,
+  //   new BigNumber(trade1.buyQuantity),
+  //   deployer.toLowerCase()
+  // );
   const post = await getAllBalances(deployed, accounts, fund);
   t.deepEqual(
     post.deployer.MlnToken,
