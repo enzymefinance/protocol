@@ -3,7 +3,15 @@ import Environment from '~/utils/environment/Environment';
 
 import { default as deployContract } from '~/utils/solidity/deploy';
 
-import { FundComponentAddresses } from '~/contracts/fund/types';
+interface FundComponentAddresses {
+  accountingFactoryAddress: Address;
+  feeManagerFactoryAddress: Address;
+  participationFactoryAddress: Address;
+  sharesFactoryAddress: Address;
+  tradingFactoryAddress: Address;
+  vaultFactoryAddress: Address;
+  policyManagerFactoryAddress: Address;
+}
 
 const deployFundFactory = async (
   addresses: FundComponentAddresses,

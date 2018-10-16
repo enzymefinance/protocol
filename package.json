@@ -17,7 +17,7 @@
     "lint:tslint": "tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir .",
-    "lint": "yarn lint:eslint && yarn lint:tslint && yarn lint:prettier && yarn lint:solium",
+    "lint": "yarn lint:tslint && yarn lint:prettier && yarn lint:solium",
     "oyente": "oyente -s src/Fund.sol",
     "test:verbose": "TERM=dumb yarn jest",
     "test:integration:legacy": "CHAIN_ENV=development ava tests/integration/fundTrading.js",
@@ -99,6 +99,7 @@
     "solc": "^0.4.25",
     "web3": "^1.0.0-beta.34",
     "web3-eth": "^1.0.0-beta.36",
+    "web3-eth-abi": "^1.0.0-beta.36",
     "web3-utils": "^1.0.0-beta.36",
     "yup": "^0.26.6"
   },

@@ -41,4 +41,4 @@ const exec = async () => {
   }
 };
 
-exec(); //.finally(process.exit);
+exec(); // .finally(process.exit);
