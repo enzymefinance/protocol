@@ -26,6 +26,7 @@ import {
   continueCreation,
   setupFund,
 } from '~/contracts/factory';
+import { getSettings } from '~/contracts/fund/hub';
 
 /**
  * Deploys all contracts and checks their health
@@ -66,6 +67,7 @@ const deploySystem = async () => {
     policyManagerFactoryAddress,
   });
 
+  // From here on it is already integration testing
   const exchangeConfigs = [
     {
       address: matchingMarketAddress,
@@ -86,6 +88,7 @@ const deploySystem = async () => {
 
   await continueCreation(fundFactoryAddress);
   const hubAddress = await setupFund(fundFactoryAddress);
+  const settings = await getSettings(hubAddress);
 };
 
 if (require.main === module) {
