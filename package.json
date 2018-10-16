@@ -50,6 +50,7 @@
   "homepage": "https://github.com/melonproject/protocol#readme",
   "devDependencies": {
     "0x.js": "^0.35.0",
+    "@types/glob": "^7.1.1",
     "@types/jest": "^23.3.3",
     "ava": "^0.25.0",
     "babel-cli": "^6.26.0",
@@ -73,6 +74,7 @@
     "jest": "^23.6.0",
     "lint-staged": "^7.3.0",
     "mkdirp": "^0.5.1",
+    "parcel-bundler": "^1.10.3",
     "prettier": "^1.14.3",
     "prettier-eslint": "^8.2.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.5",
