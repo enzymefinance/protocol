@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log
 *.orig
 *.swp
+build
 
 yarn-error.log
 
@@ -19,6 +20,7 @@ out/
 
 # ignore transpiled code
 utils/build
+build
 
 # ignore development addressBook
 addressBook.json

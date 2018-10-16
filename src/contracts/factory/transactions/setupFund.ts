@@ -1,5 +1,6 @@
 import prepareTransaction from '~/utils/solidity/prepareTransaction';
 import sendTransaction from '~/utils/solidity/sendTransaction';
+import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
 
 import getContract from '../utils/getContract';
 import ensure from '~/utils/guards/ensure';
@@ -16,7 +17,11 @@ export const prepare = async (contractAddress: string, environment) => {
   return prepared;
 };
 
-export const postProcess = async (receipt, contractAddress, environment) => {
+export const postProcess = async (
+  receipt,
+  contractAddress,
+  environment = getGlobalEnvironment(),
+) => {
   const contract = getContract(contractAddress, environment);
   const hubAddress = await contract.methods
     .managersToHubs(environment.wallet.address)

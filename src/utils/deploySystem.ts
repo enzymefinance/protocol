@@ -42,6 +42,7 @@ const deploySystem = async () => {
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
   const priceToleranceAddress = await deployPriceTolerance(10);
+
   const whitelistAddress = await deployWhitelist([
     globalEnvironment.wallet.address,
   ]);
