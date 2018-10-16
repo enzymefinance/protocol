@@ -88,6 +88,7 @@ const deploySystem = async () => {
 
   await continueCreation(fundFactoryAddress);
   const hubAddress = await setupFund(fundFactoryAddress);
+
   const settings = await getSettings(hubAddress);
 };
 

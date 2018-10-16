@@ -23,7 +23,7 @@ const getSettings = async (
 ): Promise<Settings> => {
   const hubContract = await getHubContract(hubAddress, environment);
 
-  const settings = await hubContract.settings.call();
+  const settings = await hubContract.methods.settings().call();
 
   const components = {
     accountingAddress: new Address(settings.accounting),
