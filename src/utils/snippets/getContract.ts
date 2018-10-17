@@ -5,7 +5,10 @@ import * as R from 'ramda';
 
 import { getGlobalEnvironment } from '~/utils/environment';
 
-const getContract = (address: string, environment = getGlobalEnvironment()) => {
+export const getContractAnew = (
+  address: string,
+  environment = getGlobalEnvironment(),
+) => {
   const rawABI = fs.readFileSync(
     path.join(process.cwd(), 'out', 'TODO', 'TODO', 'TODO.abi'),
     { encoding: 'utf-8' },
@@ -15,4 +18,4 @@ const getContract = (address: string, environment = getGlobalEnvironment()) => {
   return contract;
 };
 
-export default R.memoize(getContract);
+export const getContract = R.memoize(getContractAnew);
