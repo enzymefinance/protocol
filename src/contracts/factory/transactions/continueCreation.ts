@@ -3,9 +3,7 @@ import { prepareTransaction, sendTransaction } from '~/utils/solidity';
 import { getContract } from '..';
 // import ensure from '~/utils/guards';
 
-const guards = async (contractAddress: string, environment) => {
-  // continueCreation
-};
+export const guards = async (contractAddress: string, environment) => {};
 
 const prepare = async (contractAddress: string, environment) => {
   const contract = getContract(contractAddress);
