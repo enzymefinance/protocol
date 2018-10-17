@@ -10,7 +10,8 @@
     "declaration": true,
     "outDir": "./build",
     "paths": {
-      "~/*": ["src/*"]
+      "~/*": ["src/*"],
+      "@melonproject/token-math": ["node_modules/@melonproject/token-math/src"]
     }
   },
   "files": ["typings.d.ts"],

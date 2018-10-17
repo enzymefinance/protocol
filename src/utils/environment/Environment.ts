@@ -12,7 +12,7 @@ export interface Options {
   readonly gasPrice: string;
 }
 
-export default interface Environment {
+export interface Environment {
   readonly confirmer?: Function;
   readonly eth: Eth;
   readonly track: string;

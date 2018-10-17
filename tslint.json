@@ -4,6 +4,8 @@
     "interface-name": false,
     "max-line-length": [true, 80],
     "no-implicit-dependencies": [false],
-    "object-literal-sort-keys": [true]
+    "object-literal-sort-keys": [true],
+    "no-default-export": true,
+    "object-shorthand-properties-first": false
   }
 }

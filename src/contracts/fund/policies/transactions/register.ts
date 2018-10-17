@@ -1,12 +1,8 @@
 import { Address } from '~/utils/types';
-
-import getFunctionSignature from '~/utils/abi/getFunctionSignature';
-import prepareTransaction from '~/utils/solidity/prepareTransaction';
-import sendTransaction from '~/utils/solidity/sendTransaction';
-
+import { getFunctionSignature } from '~/utils/abi';
+import { prepareTransaction, sendTransaction } from '~/utils/solidity';
 import { getGenericExchangeInterfaceABI } from '~/contracts/exchanges';
-
-import getPolicyManagerContract from '../utils/getPolicyManagerContract';
+import { getPolicyManagerContract } from '../utils/getPolicyManagerContract';
 
 const genericExchangeInterfaceABI = getGenericExchangeInterfaceABI();
 
@@ -14,6 +10,7 @@ export enum PolicedMethods {
   makeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'makeOrder'),
   takeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
   // TODO: Add more here
+  // tslint:disable-next-line:max-line-length
   // executeRequest = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
 }
 
@@ -42,7 +39,7 @@ export const validateReceipt = receipt => {
   return true;
 };
 
-const register = async (
+export const register = async (
   contractAddress: Address,
   { method, policy }: RegisterArgs,
   environment?,
@@ -57,5 +54,3 @@ const register = async (
   const result = validateReceipt(receipt);
   return result;
 };
-
-export default register;

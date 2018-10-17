@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import * as R from 'ramda';
 
-const getAbi = (abiPath: string) => {
+export const getAbiAnew = (abiPath: string) => {
   const rawABI = fs.readFileSync(path.join(process.cwd(), 'out', abiPath), {
     encoding: 'utf-8',
   });
@@ -11,4 +11,4 @@ const getAbi = (abiPath: string) => {
   return ABI;
 };
 
-export default R.memoize(getAbi);
+export const getAbi = R.memoize(getAbiAnew);

@@ -1,9 +1,6 @@
-import constructEnvironment from './constructEnvironment';
-import setGlobalEnvironment from './setGlobalEnvironment';
+import { constructEnvironment, setGlobalEnvironment } from './';
 
-const initGlobalEnvironment = (args = {}): void => {
+export const initGlobalEnvironment = (args = {}): void => {
   const environment = constructEnvironment(args);
   setGlobalEnvironment(environment);
 };
-
-export default initGlobalEnvironment;

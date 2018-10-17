@@ -1,6 +1,4 @@
-import getABI from '~/utils/abi/getABI';
+import { getAbi } from '~/utils/abi';
 
-const getGenericExchangeInterfaceABI = () =>
-  getABI('exchanges/GenericExchangeInterface.abi');
-
-export default getGenericExchangeInterfaceABI;
+export const getGenericExchangeInterfaceABI = () =>
+  getAbi('exchanges/GenericExchangeInterface.abi');

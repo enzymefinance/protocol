@@ -1,33 +1,31 @@
-language: 8
+language: node_js
 sudo: required
 compiler:
-- gcc
-- clang
+  - gcc
+  - clang
 os:
-- linux
+  - linux
 env:
-- CXX=g++-4.8
+  - CXX=g++-4.8
+node_js:
+  - '10.9'
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
+      - ubuntu-toolchain-r-test
     packages:
-    - gcc-4.8
-    - g++-4.8
-    - clang
+      - gcc-4.8
+      - g++-4.8
+      - clang
 cache:
   directories:
     - node_modules
 install:
-# - ./utils/travis/install.sh
-- npm install
+  - yarn install
 script:
-- npm run compile &> compile.log || cat compile.log
-- npm run 
-- npm run devchain > ganache.log &
-- sleep 20
-- npm run test
-# - npm run oyente
-- npm run lint
+  - yarn compile &> compile.log || cat compile.log
+  - yarn devchain > ganache.log &
+  - sleep 20
+  - yarn test
 after_script:
-- cat ganache.log
+  - cat ganache.log

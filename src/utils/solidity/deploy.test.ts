@@ -1,9 +1,11 @@
-import Environment from '~/utils/environment/Environment';
-import initTestEnvironment from '~/utils/environment/initTestEnvironment';
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import {
+  initTestEnvironment,
+  Environment,
+  getGlobalEnvironment,
+} from '~/utils/environment';
 
-import isAddress from '../checks/isAddress';
-import deploy from './deploy';
+import { isAddress } from '../checks';
+import { deploy } from './deploy';
 
 beforeAll(async () => {
   await initTestEnvironment();

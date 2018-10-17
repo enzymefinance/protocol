@@ -1,27 +1,29 @@
-// import * as Ganache from "ganache-cli";
-
-import constructEnvironment from './constructEnvironment';
-import setGlobalEnvironment from './setGlobalEnvironment';
-import getGlobalEnvironment from './getGlobalEnvironment';
+import {
+  constructEnvironment,
+  setGlobalEnvironment,
+  getGlobalEnvironment,
+} from './';
 
 const debug = require('~/utils/getDebug').default(__filename);
 
 const getGanache = () => {
   debug('Setting ganache up');
+  // tslint:disable-next-line:variable-name
   const Ganache = require('ganache-cli');
   const provider = Ganache.provider();
   debug('Setup ganache finished');
   return provider;
 };
 
-const initTestEnvironment = async () => {
+export const initTestEnvironment = async () => {
   if (getGlobalEnvironment().eth) {
     debug('Environment already initialized.');
     return;
   }
 
   const environment = constructEnvironment({
-    // Pass in Ganache.provider but only if process.env.JSON_RPC_ENDPOINT is not set
+    // Pass in Ganache.provider but only if
+    // process.env.JSON_RPC_ENDPOINT is not set
     provider: !process.env.JSON_RPC_ENDPOINT && getGanache(),
   });
   const accounts = await environment.eth.getAccounts();
@@ -31,5 +33,3 @@ const initTestEnvironment = async () => {
   };
   setGlobalEnvironment(enhancedEnvironment);
 };
-
-export default initTestEnvironment;

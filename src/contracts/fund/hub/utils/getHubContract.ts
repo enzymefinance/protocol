@@ -5,9 +5,9 @@ import * as R from 'ramda';
 
 import { Address } from '~/utils/types';
 
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment';
 
-const getHubContract = (
+export const getHubContractAnew = (
   address: Address,
   environment = getGlobalEnvironment(),
 ) => {
@@ -20,4 +20,4 @@ const getHubContract = (
   return contract;
 };
 
-export default R.memoize(getHubContract);
+export const getHubContract = R.memoize(getHubContractAnew);

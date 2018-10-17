@@ -1,5 +1,4 @@
-import getABI from '~/utils/abi/getABI';
+import { getAbi } from '~/utils/abi';
 
-const getPolicyManagerABI = () => getABI('fund/policies/PolicyManager.abi');
-
-export default getPolicyManagerABI;
+export const getPolicyManagerABI = () =>
+  getAbi('fund/policies/PolicyManager.abi');

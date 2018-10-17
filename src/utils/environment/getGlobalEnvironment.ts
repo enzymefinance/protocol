@@ -1,7 +1,7 @@
-import Environment from './Environment';
+import { Environment } from './';
 import { globalEnvironment } from './setGlobalEnvironment';
 
 // To ensure the global env is not changed accidentally, we return a copy here
-const getGlobalEnvironment = (): Environment => ({ ...globalEnvironment });
-
-export default getGlobalEnvironment;
+export const getGlobalEnvironment = (): Environment => ({
+  ...globalEnvironment,
+});

@@ -1,22 +1,20 @@
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
-import getTokenContract from '../utils/getContract';
+import { getGlobalEnvironment } from '~/utils/environment';
+import { getContract } from '..';
 
-const getInfo = async (
+export const getInfo = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const contract = getTokenContract(contractAddress, environment);
+  const contract = getContract(contractAddress, environment);
   const symbol = await contract.methods.symbol().call();
   const name = await contract.methods.name().call();
   const decimals = parseInt(await contract.methods.decimals().call(), 10);
   const totalSupply = parseInt(await contract.methods.totalSupply().call(), 10);
 
   return {
-    symbol,
-    name,
     decimals,
+    name,
+    symbol,
     totalSupply,
   };
 };
-
-export default getInfo;

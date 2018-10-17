@@ -1,11 +1,11 @@
 import { BigInteger } from '@melonproject/token-math';
 
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const debug = require('~/utils/getDebug').default(__filename);
 const { toBI, greaterThan } = BigInteger;
 
-const prepareTransaction = async (
+export const prepareTransaction = async (
   transaction,
   environment = getGlobalEnvironment(),
 ) => {
@@ -24,20 +24,21 @@ const prepareTransaction = async (
 
   if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
     throw new Error(
-      `Estimated gas consumption (${gasEstimation}) is higher than the provided gas limit: ${
-        environment.options.gasLimit
-      }`,
+      [
+        `Estimated gas consumption (${gasEstimation})`,
+        `is higher than the provided gas limit: ${
+          environment.options.gasLimit
+        }`,
+      ].join(' '),
     );
   }
 
   const prepared = {
-    transaction,
-    name: transaction.name,
     encoded,
     gasEstimation,
+    name: transaction.name,
+    transaction,
   };
 
   return prepared;
 };
-
-export default prepareTransaction;

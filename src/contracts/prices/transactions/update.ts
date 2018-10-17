@@ -1,12 +1,13 @@
-import { Price, IPrice } from "@melonproject/token-math";
+import { Price, IPrice } from '@melonproject/token-math';
 
-import ensureAccountAddress from "~/utils/environment/ensureAccountAddress";
-import getGlobalEnvironment from "~/utils/environment/getGlobalEnvironment";
-import { ensureAddress } from "~/utils/checks/isAddress";
-import ensure from "~/utils/guards/ensure";
+import {
+  ensureAccountAddress,
+  getGlobalEnvironment,
+} from '~/utils/environment';
+import { ensureAddress } from '~/utils/checks/isAddress';
+import { ensure } from '~/utils/guards';
 
-import getPrices from "../calls/getPrices";
-import getContract from "../utils/getContract";
+import { getPrices, getContract } from '..';
 
 const guards = async (contractAddress, prices, environment) => {
   ensureAddress(contractAddress);
@@ -19,39 +20,39 @@ const prepare = async (contractAddress, prices, environment) => {
   const contract = getContract(contractAddress, environment);
   const transaction = contract.methods.update(
     prices.map(p => p.base.address),
-    prices.map(Price.toAtomic)
+    prices.map(Price.toAtomic),
   );
 
   return transaction;
 };
 
-export const send = async (transaction, environment) => {
+const send = async (transaction, environment) => {
   const receipt = await transaction.send({
-    from: environment.wallet.address
+    from: environment.wallet.address,
   });
 
   return receipt;
 };
 
 // TODO: Real postprocessing
-export const postProcess = async (contractAddress, prices, receipt) => {
+const postProcess = async (contractAddress, prices, receipt) => {
   const updatedPrices = await getPrices(
     contractAddress,
-    prices.map(p => p.base)
+    prices.map(p => p.base),
   );
 
-  ensure(Price.isEqual(updatedPrices[0], prices[0]), "Price did not update", {
+  ensure(Price.isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
     should: prices[0],
-    is: updatedPrices[0]
+    is: updatedPrices[0],
   });
 
   return updatedPrices;
 };
 
-const update = async (
+export const update = async (
   contractAddress: string,
   prices: IPrice[],
-  environment = getGlobalEnvironment()
+  environment = getGlobalEnvironment(),
 ): Promise<IPrice[]> => {
   await guards(contractAddress, prices, environment);
   const transaction = await prepare(contractAddress, prices, environment);
@@ -59,5 +60,3 @@ const update = async (
   const result = postProcess(contractAddress, prices, receipt);
   return result;
 };
-
-export default update;

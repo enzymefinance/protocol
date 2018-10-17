@@ -1,15 +1,13 @@
-import ensure from '~/utils/guards/ensure';
+import { ensure } from '~/utils/guards';
 
-import Environment from './Environment';
+import { Environment } from './Environment';
 
 export const hasAccountAddress = (environment: Environment): boolean =>
   !!environment.wallet && !!environment.wallet.address;
 
-const ensureAccountAddress = (environment: Environment) =>
+export const ensureAccountAddress = (environment: Environment) =>
   ensure(
     !!hasAccountAddress(environment),
     "No address found in environment to identify: 'environment.wallet.address'",
     environment,
   );
-
-export default ensureAccountAddress;
