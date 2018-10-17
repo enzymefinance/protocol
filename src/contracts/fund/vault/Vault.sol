@@ -40,6 +40,7 @@ contract VaultFactory is Factory {
     function createInstance(address _hub) public returns (address) {
         address vault = new Vault(_hub);
         childExists[vault] = true;
+        InstanceCreated(vault);
         return vault;
     }
 }
