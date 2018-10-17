@@ -1,8 +1,10 @@
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
-import ensureAccountAddress from '~/utils/environment/ensureAccountAddress';
-import getTokenContract from '../utils/getContract';
-import balanceOf from '../calls/balanceOf';
-import ensure from '~/utils/guards/ensure';
+import {
+  getGlobalEnvironment,
+  ensureAccountAddress,
+} from '~/utils/environment';
+import { getContract, balanceOf } from '..';
+
+// import ensure from '~/utils/guards/ensure';
 
 export const guards = async (
   contractAddress: string,
@@ -20,7 +22,7 @@ export const guards = async (
 };
 
 export const prepare = async (contractAddress: string, { to, tokens }) => {
-  const contract = getTokenContract(contractAddress);
+  const contract = getContract(contractAddress);
   const transaction = contract.methods.transfer(to, tokens);
   return transaction;
 };
@@ -37,7 +39,7 @@ export const validateReceipt = (receipt, { to, tokens }) => {
   return true;
 };
 
-const transfer = async (
+export const transfer = async (
   contractAddress: string,
   { to, tokens },
   environment = getGlobalEnvironment(),
@@ -48,5 +50,3 @@ const transfer = async (
   const result = validateReceipt(receipt, { to, tokens });
   return result;
 };
-
-export default transfer;

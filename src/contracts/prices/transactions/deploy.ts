@@ -1,10 +1,10 @@
 import { IToken } from '@melonproject/token-math';
 
-import Environment from '~/utils/environment/Environment';
-import { default as deployContract } from '~/utils/solidity/deploy';
-import { ensureAddress } from '~/utils/checks/isAddress';
+import { Environment } from '~/utils/environment';
+import { deploy as deployContract } from '~/utils/solidity';
+import { ensureAddress } from '~/utils/checks';
 
-const deploy = async (quoteToken: IToken, environment?: Environment) => {
+export const deploy = async (quoteToken: IToken, environment?: Environment) => {
   ensureAddress(quoteToken.address);
 
   const address = await deployContract(
@@ -15,5 +15,3 @@ const deploy = async (quoteToken: IToken, environment?: Environment) => {
 
   return address;
 };
-
-export default deploy;

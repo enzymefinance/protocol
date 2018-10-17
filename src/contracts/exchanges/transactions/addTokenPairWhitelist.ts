@@ -1,9 +1,9 @@
 import { Token, IToken } from '@melonproject/token-math';
 
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment';
+import { ensure } from '~/utils/guards';
 
-import getContract from '../utils/getContract';
-import ensure from '~/utils/guards/ensure';
+import { getContract } from '..';
 
 const { isToken, hasAddress, log } = Token;
 
@@ -55,7 +55,7 @@ export const validateReceipt = (receipt, params) => {
   return true;
 };
 
-const addTokenPairWhitelist = async (
+export const addTokenPairWhitelist = async (
   contractAddress: string,
   params: IAddTokenPairWhitelist,
   environment?,
@@ -66,5 +66,3 @@ const addTokenPairWhitelist = async (
   const result = validateReceipt(receipt, params);
   return result;
 };
-
-export default addTokenPairWhitelist;

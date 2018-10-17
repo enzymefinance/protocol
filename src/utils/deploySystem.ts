@@ -1,5 +1,4 @@
-import initTestEnvironment from '~/utils/environment/initTestEnvironment';
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
 import {
   deploy as deployToken,
@@ -11,6 +10,7 @@ import {
   deployMatchingMarketAdapter,
   addTokenPairWhitelist,
 } from '~/contracts/exchanges';
+// tslint:disable-next-line:max-line-length
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
@@ -35,7 +35,7 @@ import { getSettings } from '~/contracts/fund/hub';
 /**
  * Deploys all contracts and checks their health
  */
-const deploySystem = async () => {
+export const deploySystem = async () => {
   const globalEnvironment = getGlobalEnvironment();
   const quoteTokenAddress = await deployToken('DAI');
   const baseTokenAddress = await deployToken('MLN');
@@ -111,5 +111,3 @@ if (require.main === module) {
     process.exit();
   });
 }
-
-export default deploySystem;

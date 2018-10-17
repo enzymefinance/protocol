@@ -1,10 +1,10 @@
 import * as R from 'ramda';
 
 import { Address } from '~/utils/types';
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
-import getPolicyManagerABI from './getPolicyManagerABI';
+import { getGlobalEnvironment } from '~/utils/environment/getGlobalEnvironment';
+import { getPolicyManagerABI } from './getPolicyManagerABI';
 
-const getPolicyManagerContract = (
+export const getPolicyManagerContractAnew = (
   address: Address,
   environment = getGlobalEnvironment(),
 ) => {
@@ -13,4 +13,4 @@ const getPolicyManagerContract = (
   return contract;
 };
 
-export default R.memoize(getPolicyManagerContract);
+export const getPolicyManagerContract = R.memoize(getPolicyManagerContractAnew);

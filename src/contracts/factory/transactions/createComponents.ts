@@ -1,10 +1,9 @@
 import { IToken } from '@melonproject/token-math';
 
 import { Address } from '~/utils/types';
-import prepareTransaction from '~/utils/solidity/prepareTransaction';
-import sendTransaction from '~/utils/solidity/sendTransaction';
+import { prepareTransaction, sendTransaction } from '~/utils/solidity';
 
-import getContract from '../utils/getContract';
+import { getContract } from '..';
 // import ensure from '~/utils/guards/ensure';
 
 interface ExchangeConfig {
@@ -19,11 +18,11 @@ interface CreateComponentArgs {
   priceSource: Address;
 }
 
-export const guards = async (contractAddress: string, params, environment) => {
+const guards = async (contractAddress: string, params, environment) => {
   // createComponents
 };
 
-export const prepare = async (
+const prepare = async (
   contractAddress: string,
   { exchangeConfigs, defaultTokens, priceSource },
   environment,
@@ -51,11 +50,11 @@ export const prepare = async (
   return prepared;
 };
 
-export const validateReceipt = (receipt, params) => {
+const validateReceipt = (receipt, params) => {
   return true;
 };
 
-const createComponents = async (
+export const createComponents = async (
   contractAddress: string,
   // Test if named params are better for VS Code autocompletion --> Works
   { exchangeConfigs, defaultTokens, priceSource }: CreateComponentArgs,
@@ -69,19 +68,17 @@ const createComponents = async (
   const prepared = await prepare(
     contractAddress,
     {
-      exchangeConfigs,
       defaultTokens,
+      exchangeConfigs,
       priceSource,
     },
     environment,
   );
   const receipt = await sendTransaction(prepared, environment);
   const result = validateReceipt(receipt, {
-    exchangeConfigs,
     defaultTokens,
+    exchangeConfigs,
     priceSource,
   });
   return result;
 };
-
-export default createComponents;

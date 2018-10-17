@@ -75,6 +75,7 @@ const writeFiles = (compileOutput, contract) => {
 
   if (fs.existsSync(`${targetBasePath}.abi`)) {
     throw new Error(
+      // tslint:disable-next-line:max-line-length
       `Contract name duplication detected: ${targetBasePath}.abi. Please make sure that every contract is uniquely named inside the same directory.`,
     );
   }
@@ -131,6 +132,7 @@ if (require.main === module) {
   } else {
     debug('Compiling all contracts.');
     console.log(
+      // tslint:disable-next-line:max-line-length
       'If you want to compile just one, call `yarn compile src/contracts/path/to/contract.sol`',
     );
     compileAll();

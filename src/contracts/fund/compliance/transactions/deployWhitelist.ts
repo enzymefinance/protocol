@@ -1,9 +1,9 @@
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment';
 import { Address } from '~/utils/types';
 
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
-const deployWhitelist = async (
+export const deployWhitelist = async (
   preapproved: [Address],
   environment?: Environment,
 ) => {
@@ -17,5 +17,3 @@ const deployWhitelist = async (
 
   return address;
 };
-
-export default deployWhitelist;

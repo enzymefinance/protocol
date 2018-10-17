@@ -1,8 +1,8 @@
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment/Environment';
 
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity';
 
-const deployMatchingMarket = async (
+export const deployMatchingMarket = async (
   closeTime: number = 99999999999,
   environment?: Environment,
 ) => {
@@ -14,5 +14,3 @@ const deployMatchingMarket = async (
 
   return address;
 };
-
-export default deployMatchingMarket;

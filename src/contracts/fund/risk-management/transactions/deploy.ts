@@ -1,8 +1,11 @@
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment';
 
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity';
 
-const deploy = async (tolerancePercent: number, environment?: Environment) => {
+export const deploy = async (
+  tolerancePercent: number,
+  environment?: Environment,
+) => {
   const address = await deployContract(
     'fund/risk-management/PriceTolerance.sol',
     [tolerancePercent],
@@ -11,5 +14,3 @@ const deploy = async (tolerancePercent: number, environment?: Environment) => {
 
   return address;
 };
-
-export default deploy;

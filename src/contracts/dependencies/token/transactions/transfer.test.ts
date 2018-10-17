@@ -1,8 +1,7 @@
-import initTestEnvironment from '~/utils/environment/initTestEnvironment';
-import constructEnvironment from '~/utils/environment/constructEnvironment';
+import { initTestEnvironment, constructEnvironment } from '~/utils/environment';
 
-import deploy from './deploy';
-import transfer from './transfer';
+import { deploy } from '..';
+import { transfer } from './transfer';
 
 const shared: any = {};
 

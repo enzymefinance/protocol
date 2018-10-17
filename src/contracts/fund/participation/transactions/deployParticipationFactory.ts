@@ -1,8 +1,8 @@
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment';
 
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity';
 
-const deployParticipationFactory = async (environment?: Environment) => {
+export const deployParticipationFactory = async (environment?: Environment) => {
   const address = await deployContract(
     'fund/participation/ParticipationFactory.sol',
     null,
@@ -11,5 +11,3 @@ const deployParticipationFactory = async (environment?: Environment) => {
 
   return address;
 };
-
-export default deployParticipationFactory;

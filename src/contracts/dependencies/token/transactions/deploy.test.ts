@@ -1,8 +1,6 @@
-import initTestEnvironment from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/utils/environment';
 
-import deploy from './deploy';
-
-const shared: any = {};
+import { deploy } from './deploy';
 
 beforeAll(async () => {
   await initTestEnvironment();

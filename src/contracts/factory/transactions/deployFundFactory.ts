@@ -1,7 +1,7 @@
 import { Address } from '~/utils/types';
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment';
 
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity';
 
 interface FundComponentAddresses {
   accountingFactoryAddress: Address;
@@ -13,7 +13,7 @@ interface FundComponentAddresses {
   policyManagerFactoryAddress: Address;
 }
 
-const deployFundFactory = async (
+export const deployFundFactory = async (
   addresses: FundComponentAddresses,
   environment?: Environment,
 ) => {
@@ -47,5 +47,3 @@ const deployFundFactory = async (
 
   return address;
 };
-
-export default deployFundFactory;

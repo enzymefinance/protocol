@@ -1,7 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment';
 import { randomAddress } from '~/utils/helpers';
-import { deployFundFactory } from '../';
-import managersToHubs from './managersToHubs';
+import { deployFundFactory, managersToHubs } from '../';
 
 const shared: any = {};
 
@@ -11,10 +10,10 @@ beforeAll(async () => {
     accountingFactoryAddress: randomAddress(),
     feeManagerFactoryAddress: randomAddress(),
     participationFactoryAddress: randomAddress(),
+    policyManagerFactoryAddress: randomAddress(),
     sharesFactoryAddress: randomAddress(),
     tradingFactoryAddress: randomAddress(),
     vaultFactoryAddress: randomAddress(),
-    policyManagerFactoryAddress: randomAddress(),
   });
 });
 

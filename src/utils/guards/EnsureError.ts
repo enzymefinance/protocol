@@ -1,4 +1,5 @@
-function EnsureError(message, data) {
+// tslint:disable-next-line:function-name
+export function EnsureError(message, data) {
   this.name = 'EnsureError';
   this.message = message || 'Ensure failed';
   this.data = data;
@@ -6,5 +7,3 @@ function EnsureError(message, data) {
 }
 EnsureError.prototype = Object.create(Error.prototype);
 EnsureError.prototype.constructor = EnsureError;
-
-export default EnsureError;

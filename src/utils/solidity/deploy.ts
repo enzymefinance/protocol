@@ -2,8 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BigInteger } from '@melonproject/token-math';
 
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
-import getWeb3Options from '~/utils/environment/getWeb3Options';
+import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
 
 const { toBI, greaterThan } = BigInteger;
 const debug = require('~/utils/getDebug').default(__filename);
@@ -11,7 +10,7 @@ const debug = require('~/utils/getDebug').default(__filename);
 type ConstructorArg = number | string;
 type ConstructorArgs = ConstructorArg | ConstructorArg[];
 
-const deploy = async (
+export const deploy = async (
   pathToSolidityFile: string,
   args: ConstructorArgs[] = [],
   environment = getGlobalEnvironment(),
@@ -34,8 +33,8 @@ const deploy = async (
 
   const contract = new environment.eth.Contract(parsedABI);
   const transaction = contract.deploy({
-    data: bin,
     arguments: args,
+    data: bin,
   });
 
   const options = getWeb3Options(environment);
@@ -46,9 +45,12 @@ const deploy = async (
 
   if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
     throw new Error(
-      `Estimated gas consumption (${gasEstimation}) is higher than the provided gas limit: ${
-        environment.options.gasLimit
-      }`,
+      [
+        `Estimated gas consumption (${gasEstimation})`,
+        `is higher than the provided gas limit: ${
+          environment.options.gasLimit
+        }`,
+      ].join(' '),
     );
   }
 
@@ -68,5 +70,3 @@ const deploy = async (
   debug('Deployed: ', pathToSolidityFile, instance.options.address);
   return instance.options.address;
 };
-
-export default deploy;

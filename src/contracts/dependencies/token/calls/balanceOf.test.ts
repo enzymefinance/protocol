@@ -1,10 +1,8 @@
 import { Quantity } from '@melonproject/token-math';
 
-import initTestEnvironment from '~/utils/environment/initTestEnvironment';
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
-import deploy from '../transactions/deploy';
-import balanceOf from './balanceOf';
+import { deploy, balanceOf } from '..';
 
 const shared: any = {};
 
@@ -22,9 +20,9 @@ test('balanceOf', async () => {
 
   const expected = Quantity.createQuantity(
     {
-      symbol: 'FIXED',
-      decimals: 18,
       address: shared.address,
+      decimals: 18,
+      symbol: 'FIXED',
     },
     '1000000000000000000000000',
   );

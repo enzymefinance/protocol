@@ -1,17 +1,19 @@
-import { IToken } from "@melonproject/token-math";
+import { IToken } from '@melonproject/token-math';
 
-import getContract from "../utils/getContract";
+import { Environment } from '~/utils/environment';
+import { getContract } from '..';
 
-const getQuoteToken = async (contractAddress: string): Promise<IToken> => {
-  const contract = await getContract(contractAddress);
+export const getQuoteToken = async (
+  contractAddress: string,
+  environment?: Environment,
+): Promise<IToken> => {
+  const contract = await getContract(contractAddress, environment);
   const result = await contract.methods.QUOTE_ASSET().call();
 
   // TODO: Lookup symbol / decimals
   return {
     address: result,
-    symbol: "ETH",
-    decimals: 18
+    decimals: 18,
+    symbol: 'ETH',
   };
 };
-
-export default getQuoteToken;

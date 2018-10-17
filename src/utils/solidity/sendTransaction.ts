@@ -1,8 +1,8 @@
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const debug = require('~/utils/getDebug').default(__filename);
 
-const sendTransaction = async (
+export const sendTransaction = async (
   prepared,
   environment = getGlobalEnvironment(),
 ) => {
@@ -20,5 +20,3 @@ const sendTransaction = async (
 
   return receipt;
 };
-
-export default sendTransaction;

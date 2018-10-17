@@ -4,8 +4,8 @@ import { string } from 'yup';
 
 import getDebug from '~/utils/getDebug';
 
-import tracks from '../constants/tracks';
-import { default as Environment, Options } from './Environment';
+import { tracks } from '../constants/tracks';
+import { Environment, Options } from './Environment';
 
 const debug = getDebug(__filename);
 
@@ -22,7 +22,10 @@ const checkIpc = endpoint => {
     return true;
   } catch (e) {
     throw new Error(
-      `Can not construct provider from endpoint: ${endpoint}. HTTP, WS and IPC failed`,
+      [
+        `Can not construct provider from endpoint: ${endpoint}`,
+        'HTTP, WS and IPC failed',
+      ].join(''),
     );
   }
 };
@@ -36,12 +39,15 @@ const selectProvider = R.cond([
   [checkIpc, endpoint => new Eth.providers.IpcProvider(endpoint)],
 ]);
 
-const constructProvider = JsonRpcEndpoint => {
-  const endpoint = JsonRpcEndpoint || process.env.JSON_RPC_ENDPOINT;
+const constructProvider = jsonRpcEndpoint => {
+  const endpoint = jsonRpcEndpoint || process.env.JSON_RPC_ENDPOINT;
 
   string()
     .url(
-      `Invalid JSON RPC endpoint url: ${endpoint}. Check your .env file or provide it explicitely`,
+      [
+        `Invalid JSON RPC endpoint url: ${endpoint}.`,
+        `Check your .env file or provide it explicitely`,
+      ].join(''),
     )
     .isValid(endpoint);
 
@@ -52,7 +58,7 @@ const constructProvider = JsonRpcEndpoint => {
   return provider;
 };
 
-const constructEnvironment = ({
+export const constructEnvironment = ({
   jsonRpcEndpoint = undefined,
   provider = undefined,
   wallet = undefined,
@@ -60,9 +66,8 @@ const constructEnvironment = ({
   options = defaultOptions,
 }): Environment => ({
   eth: new Eth(provider || constructProvider(jsonRpcEndpoint)),
+  // tslint:disable-next-line:object-shorthand-properties-first
+  options,
   track,
   wallet,
-  options,
 });
-
-export default constructEnvironment;

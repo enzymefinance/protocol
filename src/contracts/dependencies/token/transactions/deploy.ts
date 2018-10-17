@@ -1,4 +1,4 @@
-import Environment from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment';
 import { default as deployContract } from '~/utils/solidity/deploy';
 
 export const deploy = async (
