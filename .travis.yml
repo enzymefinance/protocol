@@ -1,4 +1,4 @@
-language: 8
+language: node_js
 sudo: required
 compiler:
   - gcc
