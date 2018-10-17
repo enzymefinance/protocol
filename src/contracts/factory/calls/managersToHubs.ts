@@ -1,7 +1,7 @@
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment } from '~/utils/environment';
 import { isAddress, isEmptyAddress } from '~/utils/checks';
-import getContract from '../utils/getContract';
+import { getContract } from '../utils/getContract';
 
 export const managersToHubs = async (
   contractAddress: Address,

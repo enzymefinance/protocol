@@ -1,8 +1,6 @@
-import prepareTransaction from '~/utils/solidity/prepareTransaction';
-import sendTransaction from '~/utils/solidity/sendTransaction';
+import { prepareTransaction, sendTransaction } from '~/utils/solidity';
 
-// import getContract from '../utils/getContract';
-import ensure from '~/utils/guards/ensure';
+// import { ensure } from '~/utils/guards';
 
 export const guards = async (contractAddress: string, environment) => {
   // TODO
@@ -20,12 +18,14 @@ export const validateReceipt = receipt => {
   return true;
 };
 
-const TODO_transactionName = async (contractAddress: string, environment?) => {
+// tslint:disable-next-line:variable-name
+export const TODO_transactionName = async (
+  contractAddress: string,
+  environment?,
+) => {
   await guards(contractAddress, environment);
   const transaction = await prepare(contractAddress, environment);
   const receipt = await sendTransaction(transaction, environment);
   const result = validateReceipt(receipt);
   return result;
 };
-
-export default TODO_transactionName;

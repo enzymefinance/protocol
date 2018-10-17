@@ -1,4 +1,4 @@
-import isAddress from './checks/isAddress';
+import { isAddress } from './checks';
 import * as Web3Utils from 'web3-utils';
 
 /**

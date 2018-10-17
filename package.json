@@ -18,11 +18,12 @@
     "lint:tslint": "tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir .",
-    "lint": "yarn lint:tslint && yarn lint:prettier && yarn lint:solium",
+    "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",
     "test:verbose": "TERM=dumb yarn jest",
     "test:integration:legacy": "CHAIN_ENV=development ava tests/integration/fundTrading.js",
-    "test": "yarn lint && yarn test:verbose && yarn test:integration:legacy && yarn tsc"
+    "test": "yarn lint && yarn test:verbose && yarn test:integration:legacy && yarn tsc",
+    "test:TOFIX": "yarn lint:solium"
   },
   "files": [
     "out",

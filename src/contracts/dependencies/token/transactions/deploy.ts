@@ -1,5 +1,5 @@
 import { Environment } from '~/utils/environment';
-import { default as deployContract } from '~/utils/solidity/deploy';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deploy = async (
   symbol: string = 'FIXED',

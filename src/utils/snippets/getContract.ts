@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import * as R from 'ramda';
 
-import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const getContract = (address: string, environment = getGlobalEnvironment()) => {
   const rawABI = fs.readFileSync(

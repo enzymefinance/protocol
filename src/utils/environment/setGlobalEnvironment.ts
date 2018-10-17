@@ -8,5 +8,5 @@ export const setGlobalEnvironment = (environment: Environment) => {
       'Overwriting the global environment can lead unpredictable outcomes',
     );
   }
-  globalEnvironment = { ...environment };
+  globalEnvironment = Object.freeze({ ...environment });
 };
