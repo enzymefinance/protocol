@@ -1,7 +1,10 @@
 import debug from 'debug';
 import * as path from 'path';
 
-const getDebug = moduleFile => {
+// Use it like this:
+// const debug = require('~/utils/getDebug').default(__filename);
+
+export const getDebug = moduleFile => {
   const root = path.join(__filename, '../..');
   const relative = path.relative(root, moduleFile);
   const extension = path.extname(relative);
@@ -12,4 +15,5 @@ const getDebug = moduleFile => {
   return debug(moduleName);
 };
 
+// tslint:disable-next-line
 export default getDebug;

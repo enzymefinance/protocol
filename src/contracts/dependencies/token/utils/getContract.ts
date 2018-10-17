@@ -6,7 +6,6 @@ import * as R from 'ramda';
 import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
 
 const getContract = (address: string, environment = getGlobalEnvironment()) => {
-  // TODO: Use ERC20 Interface ABI --> Needs to be extended with symbol, decimals first
   const rawABI = fs.readFileSync(
     path.join(
       process.cwd(),

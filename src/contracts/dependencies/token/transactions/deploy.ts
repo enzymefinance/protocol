@@ -1,7 +1,7 @@
 import Environment from '~/utils/environment/Environment';
 import { default as deployContract } from '~/utils/solidity/deploy';
 
-const deploy = async (
+export const deploy = async (
   symbol: string = 'FIXED',
   decimals: number = 18,
   name: string = 'Premined Token',
@@ -15,5 +15,3 @@ const deploy = async (
 
   return address;
 };
-
-export default deploy;

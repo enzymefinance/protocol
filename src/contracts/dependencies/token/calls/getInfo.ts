@@ -1,7 +1,7 @@
 import getGlobalEnvironment from '~/utils/environment/getGlobalEnvironment';
-import getTokenContract from '../utils/getContract';
+import getContract from '../utils/getContract';
 
-const getInfo = async (
+export const getInfo = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
@@ -18,5 +18,3 @@ const getInfo = async (
     totalSupply,
   };
 };
-
-export default getInfo;

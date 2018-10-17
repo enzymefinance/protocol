@@ -4,6 +4,7 @@
   "description": "Technology Regulated and Operated Investment Funds",
   "scripts": {
     "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
+    "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
     "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
