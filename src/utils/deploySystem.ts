@@ -19,13 +19,18 @@ import { deployParticipationFactory } from '~/contracts/fund/participation';
 import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
 import { deployVaultFactory } from '~/contracts/fund/vault';
-import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
+import {
+  deployPolicyManagerFactory,
+  register,
+  PolicedMethods,
+} from '~/contracts/fund/policies';
 import {
   deployFundFactory,
   createComponents,
   continueCreation,
   setupFund,
 } from '~/contracts/factory';
+import { getSettings } from '~/contracts/fund/hub';
 
 /**
  * Deploys all contracts and checks their health
@@ -42,6 +47,7 @@ const deploySystem = async () => {
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
   const priceToleranceAddress = await deployPriceTolerance(10);
+
   const whitelistAddress = await deployWhitelist([
     globalEnvironment.wallet.address,
   ]);
@@ -59,16 +65,17 @@ const deploySystem = async () => {
     accountingFactoryAddress,
     feeManagerFactoryAddress,
     participationFactoryAddress,
+    policyManagerFactoryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
-    policyManagerFactoryAddress,
   });
 
+  // From here on it is already integration testing
   const exchangeConfigs = [
     {
-      address: matchingMarketAddress,
       adapterAddress: matchingMarketAdapterAddress,
+      address: matchingMarketAddress,
       takesCustody: false,
     },
   ];
@@ -78,13 +85,23 @@ const deploySystem = async () => {
   const priceSource = priceFeedAddress;
 
   await createComponents(fundFactoryAddress, {
-    exchangeConfigs,
     defaultTokens,
+    exchangeConfigs,
     priceSource,
   });
 
   await continueCreation(fundFactoryAddress);
   const hubAddress = await setupFund(fundFactoryAddress);
+
+  const settings = await getSettings(hubAddress);
+  await register(settings.policyManagerAddress, {
+    method: PolicedMethods.makeOrder,
+    policy: priceToleranceAddress,
+  });
+  await register(settings.policyManagerAddress, {
+    method: PolicedMethods.takeOrder,
+    policy: priceToleranceAddress,
+  });
 };
 
 if (require.main === module) {

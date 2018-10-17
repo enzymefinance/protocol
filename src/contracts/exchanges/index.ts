@@ -7,3 +7,6 @@ export {
 export {
   default as addTokenPairWhitelist,
 } from './transactions/addTokenPairWhitelist';
+export {
+  default as getGenericExchangeInterfaceABI,
+} from './utils/getGenericExchangeInterfaceABI';

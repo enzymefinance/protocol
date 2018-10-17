@@ -5,7 +5,6 @@ import * as Web3Utils from 'web3-utils';
  * Dummy classes to achieve typesafety.
  * DO NOT ADD METHODS
  */
-
 export class Address extends String {
   constructor(address: string) {
     if (!isAddress(address)) {
@@ -15,3 +14,5 @@ export class Address extends String {
     super(Web3Utils.toChecksumAddress(address));
   }
 }
+
+export class ContractAddress extends Address {}
