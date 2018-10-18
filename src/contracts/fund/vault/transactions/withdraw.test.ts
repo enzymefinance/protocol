@@ -1,12 +1,11 @@
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import * as path from 'path';
-import deploy from '~/utils/solidity/deploy';
-import { deploy as deployToken } from '~/contracts/dependencies/token';
-import { default as getTokenContract } from '~/contracts/dependencies/token/utils/getContract';
-import deployVaultFactory from './deployVaultFactory';
-import createVaultInstance from './createVaultInstance';
-import getVaultContract from '../utils/getVaultContract';
-import withdraw from './withdraw';
+import { deploy } from '~/utils/solidity/deploy';
+import {
+  deploy as deployToken,
+  getContract as getTokenContract,
+} from '~/contracts/dependencies/token';
+import { createVaultInstance, deployVaultFactory, getVaultContract } from '..';
 import { randomAddress } from '~/utils/helpers';
 import { emptyAddress } from '~/utils/constants';
 

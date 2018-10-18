@@ -1,10 +1,10 @@
-import prepareTransaction from '~/utils/solidity/prepareTransaction';
-import sendTransaction from '~/utils/solidity/sendTransaction';
+import { prepareTransaction } from '~/utils/solidity/prepareTransaction';
+import { sendTransaction } from '~/utils/solidity/sendTransaction';
 import { Address } from '~/utils/types';
-import ensure from '~/utils/guards/ensure';
+import { ensure } from '~/utils/guards/ensure';
 import { sha3 } from 'web3-utils';
 
-import getFactoryContract from '../utils/getFactoryContract';
+import { getFactoryContract } from '../utils/getFactoryContract';
 
 interface CreateInstanceArgs {
   hubAddress: Address;
@@ -33,7 +33,7 @@ export const validateReceipt = async (receipt: any) => {
   return vaultAddress;
 };
 
-const createVaultInstance = async (
+export const createVaultInstance = async (
   contractAddress: string,
   params: CreateInstanceArgs,
   environment?,
@@ -44,5 +44,3 @@ const createVaultInstance = async (
   const result = await validateReceipt(receipt);
   return result;
 };
-
-export default createVaultInstance;
