@@ -1,3 +1,4 @@
+import { Price, Quantity, Token } from '@melonproject/token-math';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
 import {
@@ -31,13 +32,14 @@ import {
   setupFund,
 } from '~/contracts/factory';
 import { getSettings } from '~/contracts/fund/hub';
+import { update } from '~/contracts/prices';
 
 /**
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async () => {
   const globalEnvironment = getGlobalEnvironment();
-  const quoteTokenAddress = await deployToken('DAI');
+  const quoteTokenAddress = await deployToken('ETH');
   const baseTokenAddress = await deployToken('MLN');
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
@@ -102,6 +104,13 @@ export const deploySystem = async () => {
     method: PolicedMethods.takeOrder,
     policy: priceToleranceAddress,
   });
+
+  const newPrice = Price.getPrice(
+    Quantity.createQuantity(baseToken, Token.appendDecimals(baseToken, 1)),
+    Quantity.createQuantity(quoteToken, Token.appendDecimals(quoteToken, 0.34)),
+  );
+
+  await update(priceFeedAddress, [newPrice]);
 };
 
 if (require.main === module) {
