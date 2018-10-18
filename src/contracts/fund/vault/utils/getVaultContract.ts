@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-
 import * as R from 'ramda';
 
 import { getGlobalEnvironment } from '~/utils/environment/getGlobalEnvironment';

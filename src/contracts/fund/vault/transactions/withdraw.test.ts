@@ -1,6 +1,6 @@
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import * as path from 'path';
-import { deploy } from '~/utils/solidity/deploy';
+import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
+import { deploy, getContract, ContractPath } from '~/utils/solidity';
 import {
   deploy as deployToken,
   getContract as getTokenContract,
@@ -28,7 +28,7 @@ beforeEach(async () => {
     { hubAddress: shared.authAddress },
     shared.env,
   );
-  shared.vault = getVaultContract(vaultAddress);
+  shared.vault = getContract(ContractPath.Vault, vaultAddress);
 });
 
 test('withdraw token that is not present', async () => {
