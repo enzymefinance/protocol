@@ -1,11 +1,13 @@
 import { Price, Quantity, Token } from '@melonproject/token-math';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
+import { Address } from '~/utils/types';
 
 import {
   deploy as deployToken,
   getToken,
+  approve,
 } from '~/contracts/dependencies/token';
-import { deploy as deployPriceFeed } from '~/contracts/prices';
+import { deploy as deployPriceFeed, update } from '~/contracts/prices';
 import {
   deployMatchingMarket,
   deployMatchingMarketAdapter,
@@ -32,13 +34,13 @@ import {
   setupFund,
 } from '~/contracts/factory';
 import { getSettings } from '~/contracts/fund/hub';
-import { update } from '~/contracts/prices';
 
 /**
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async () => {
   const globalEnvironment = getGlobalEnvironment();
+  const accounts = await globalEnvironment.eth.getAccounts();
   const quoteTokenAddress = await deployToken('ETH');
   const baseTokenAddress = await deployToken('MLN');
   const quoteToken = await getToken(quoteTokenAddress);
@@ -111,6 +113,11 @@ export const deploySystem = async () => {
   );
 
   await update(priceFeedAddress, [newPrice]);
+
+  await approve(
+    Quantity.createQuantity(baseToken, Token.appendDecimals(baseToken, 1)),
+    new Address(accounts[1]),
+  );
 };
 
 if (require.main === module) {
