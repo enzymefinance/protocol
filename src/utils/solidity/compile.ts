@@ -104,23 +104,46 @@ const compileAll = (query = 'src/contracts/**/*.sol') => {
   const sources = R.mergeAll(unmerged);
   const output = solc.compile({ sources }, 1, findImports);
 
-  output.errors.forEach(error => process.stderr.write(error)); // debug);
+  const messages = output.errors;
+  const errors = [];
+  const warnings = [];
+  messages.forEach(msg => {
+    if (msg.match(/^(.*:[0-9]*:[0-9]* )?Warning: /)) {
+      warnings.push(msg);
+    } else {
+      errors.push(msg);
+    }
+    process.stderr.write(msg);
+  });
 
   debug('Writing compilation results');
 
-  // Delete and recreate /out
+  // Delete and recreate out/
   rimraf.sync('out');
   mkdirp.sync('out');
 
-  fs.writeFileSync('out/compilerResult.json', JSON.stringify(output, null, 2));
+  fs.writeFileSync(
+    path.join('out', 'compilerResult.json'),
+    JSON.stringify(output, null, 2),
+  );
 
-  if (output.errors.length > 0) {
-    fs.writeFileSync('out/compilerErrors.txt', output.errors.join('\n\n'));
+  if (messages.length > 0) {
+    fs.writeFileSync(
+      path.join('out', 'compilerMessages.txt'),
+      output.errors.join('\n\n'),
+    );
   }
 
   R.forEachObjIndexed(writeFiles, output.contracts);
 
-  debug('Finished');
+  if (errors.length > 0) {
+    debug('Finished with errors');
+    process.stderr.write(errors.join('\n\n'));
+    process.exit(1);
+  } else {
+    debug('Finished');
+    process.exit(0);
+  }
 };
 
 if (require.main === module) {
