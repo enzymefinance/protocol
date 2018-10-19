@@ -55,7 +55,7 @@ test.before(async t => {
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
-    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+    'Test Fund', [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
   ).send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.setupFund().send({from: manager, gasPrice: config.gasPrice});
@@ -568,6 +568,9 @@ test.serial("manager makes an order and cancels it", async t => {
   const exchangePreEthToken = Number(
     await mlnToken.methods.balanceOf(exchanges[0].options.address).call(),
   );
+  // updateOwnedAssets needed to remove the existing make order from list
+  receipt = await fund.accounting.methods.updateOwnedAssets().send({from: manager, gasPrice: config.gasPrice});
+  runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
   receipt = await fund.trading.methods.callOnExchange(
     0,
     makeOrderSignature,
@@ -630,10 +633,10 @@ redemptions.forEach((redemption, index) => {
       ).call());
       const preTotalShares = new BigNumber(await fund.shares.methods.totalSupply().call());
       const pre = await getAllBalances(deployed, accounts, fund);
-      const mlnInCustody = new BigNumber(await fund.trading.methods.quantityHeldInCustodyOfExchange(
+      const mlnInCustody = new BigNumber(await fund.trading.methods.updateAndGetQuantityHeldInExchange(
         deployed.MlnToken.options.address,
       ).call());
-      const ethTokenInCustody = new BigNumber(await fund.trading.methods.quantityHeldInCustodyOfExchange(
+      const ethTokenInCustody = new BigNumber(await fund.trading.methods.updateAndGetQuantityHeldInExchange(
         deployed.EthToken.options.address,
       ).call());
       const expectedMlnRedemption = new BigNumber(pre.fund.MlnToken).add(mlnInCustody).mul(redemption.amount).dividedToIntegerBy(preTotalShares);

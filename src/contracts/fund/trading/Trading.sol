@@ -46,6 +46,11 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     uint public constant ORDER_LIFESPAN = 1 days;
 
+    modifier delegateInternal() {
+        require(msg.sender == address(this));
+        _;
+    }
+
     constructor(
         address _hub,
         address[] _exchanges,
@@ -93,8 +98,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address ofExchange,
         address ofSellAsset,
         uint orderId
-    ) {
-        require(msg.sender == address(this));
+    ) delegateInternal {
+        require(!isInOpenMakeOrder[ofSellAsset]);
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
@@ -103,8 +108,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
-    ) {
-        require(msg.sender == address(this));
+    ) delegateInternal {
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }
 
@@ -114,8 +118,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         UpdateType updateType,
         address[2] orderAddresses,
         uint[3] orderValues
-    ) {
-        require(msg.sender == address(this));
+    ) delegateInternal {
         // only save make/take
         // TODO: change to more generic datastore when that shift is made generally
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
@@ -133,13 +136,13 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
-    function quantityBeingTraded(address _asset) returns (uint) {
+    function updateAndGetQuantityBeingTraded(address _asset) returns (uint) {
         uint quantityHere = ERC20(_asset).balanceOf(this);
-        return add(quantityHeldInCustodyOfExchange(_asset), quantityHere);
+        return add(updateAndGetQuantityHeldInExchange(_asset), quantityHere);
     }
 
-    function quantityHeldInCustodyOfExchange(address ofAsset) returns (uint) {
-        uint totalSellQuantity;     // quantity in custody across exchanges
+    function updateAndGetQuantityHeldInExchange(address ofAsset) returns (uint) {
+        uint totalSellQuantity; // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
@@ -157,7 +160,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             }
         }
         if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
+            isInOpenMakeOrder[ofAsset] = false;
         }
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }

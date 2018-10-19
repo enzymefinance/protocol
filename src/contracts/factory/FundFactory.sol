@@ -44,8 +44,10 @@ contract FundFactory {
     mapping (address => uint8) public stepFor;
 
     struct Settings {
+        string name;
         address[] exchanges;
         address[] adapters;
+        address quoteAsset;
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
@@ -77,26 +79,28 @@ contract FundFactory {
 
     // TODO: improve naming
     function createComponents(
-        // string _name,
-        // address _quoteAsset,
+        string _name,
         // address _compliance,
         // address[] _policies,
         // address[] _fees,
         address[] _exchanges,
         address[] _adapters,
+        address _quoteAsset,
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
     ) public step(1) {
-        managersToHubs[msg.sender] = new Hub(msg.sender);
+        managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
+            _name,
             _exchanges,
             _adapters,
+            _quoteAsset,
             _defaultAssets,
             _takesCustody,
             _priceSource
         );
-        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
+        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);

@@ -26,15 +26,19 @@ contract Accounting is DSMath, Spoke {
     address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
     mapping (address => bool) public isInAssetList; // TODO: same as above
     address public QUOTE_ASSET;
+    uint public DEFAULT_SHARE_PRICE;
+    uint public SHARES_DECIMALS;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address[] _defaultAssets)
+    constructor(address _hub, address _quoteAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
             _addAssetToOwnedAssets(_defaultAssets[i]);
         }
-        QUOTE_ASSET = _defaultAssets[0]; // TODO: clean this up; maybe another parameter, or document and leave this convention intact
+        QUOTE_ASSET = _quoteAsset;
+        SHARES_DECIMALS = 18;
+        DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
     function getFundHoldings() returns (uint[], address[]) {
@@ -74,16 +78,16 @@ contract Accounting is DSMath, Spoke {
         return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
     }
 
-    function assetHoldings(address _asset) returns (uint) {
+    function assetHoldings(address _asset) public returns (uint) {
         return add(
             uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
-            Trading(routes.trading).quantityBeingTraded(_asset)
+            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
         );
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
     // NB: removed the in-line adding to and removing from ownedAssets so taht it can be a view function
-    function calcGav() view returns (uint gav) {
+    function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
@@ -112,13 +116,13 @@ contract Accounting is DSMath, Spoke {
     }
 
     // TODO: this view function calls a non-view function; adjust accordingly
-    function calcNav(uint gav, uint unclaimedFees) view returns (uint) {
+    function calcNav(uint gav, uint unclaimedFees) pure returns (uint) {
         return sub(gav, unclaimedFees);
     }
 
     function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
         require(numShares > 0);
-        return (totalValue * 10 **18) / numShares;    // TODO: handle other decimals (decide if we will introduce that)
+        return (totalValue * 10 ** SHARES_DECIMALS) / numShares;
     }
 
     function performCalculations()
@@ -132,7 +136,7 @@ contract Accounting is DSMath, Spoke {
         )
     {
         gav = calcGav();
-        unclaimedFees = FeeManager(routes.feeManager).totalFeeAmount();
+        unclaimedFees = calcUnclaimedFees(gav);
         nav = calcNav(gav, unclaimedFees);
 
         uint totalSupply = Shares(routes.shares).totalSupply();
@@ -142,7 +146,7 @@ contract Accounting is DSMath, Spoke {
         uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
         sharePrice = totalSupply > 0 ?
             calcValuePerShare(gav, totalSupplyAccountingForFees) :
-            10 ** 18; // TODO: handle other decimals (decide if we will introduce that)
+            DEFAULT_SHARE_PRICE;
     }
 
     // TODO: delete if possible, or revise implementation
@@ -174,7 +178,7 @@ contract Accounting is DSMath, Spoke {
         return sharePrice;
     }
 
-    // TODO: maybe run as a "bump" function, every state-changing method call
+    // TODO: maybe run as a "bump" or "stub" function, every state-changing method call
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
@@ -222,8 +226,8 @@ contract Accounting is DSMath, Spoke {
 }
 
 contract AccountingFactory is Factory {
-    function createInstance(address _hub, address[] _defaultAssets) public returns (address) {
-        address accounting = new Accounting(_hub, _defaultAssets);
+    function createInstance(address _hub, address _quoteAsset, address[] _defaultAssets) public returns (address) {
+        address accounting = new Accounting(_hub, _quoteAsset, _defaultAssets);
         childExists[accounting] = true;
         return accounting;
     }

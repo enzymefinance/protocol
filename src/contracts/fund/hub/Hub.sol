@@ -26,13 +26,15 @@ contract Hub is DSGuard {
     }
     Settings public settings;
     address public manager;
+    string public name;
     bool public isShutDown;
     bool public spokesSet;
     bool public routingSet;
     bool public permissionsSet;
 
-    constructor(address _manager) {
+    constructor(address _manager, string _name) {
         manager = _manager;
+        name = _name;
     }
 
     // TODO: extend this ability to the version (if version shut down and we still need this)
