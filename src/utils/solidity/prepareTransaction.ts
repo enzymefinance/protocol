@@ -5,10 +5,17 @@ import { getGlobalEnvironment } from '~/utils/environment';
 const debug = require('~/utils/getDebug').default(__filename);
 const { toBI, greaterThan } = BigInteger;
 
+export interface PreparedTransaction {
+  encoded: string;
+  gasEstimation: number;
+  name: string;
+  transaction: any;
+}
+
 export const prepareTransaction = async (
   transaction,
   environment = getGlobalEnvironment(),
-) => {
+): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
   const gasEstimation = await transaction.estimateGas({
     from: environment.wallet.address,

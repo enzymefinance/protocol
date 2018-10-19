@@ -883,12 +883,13 @@
     pretty-ms "^0.2.1"
     text-table "^0.2.0"
 
-"@melonproject/token-math@^0.0.5":
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.5.tgz#c788c8be74fb221874393e7bcc210bc5c9e3e694"
-  integrity sha512-xNuA7drMHoBvm6c3poJPHIP30u3uICJdWTb5Dn1SqsFhs2Qs7TYypzM6Jwt+uqua/FVD/3M0/SXzg17HpOTSWQ==
+"@melonproject/token-math@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.7.tgz#a7195cad30aaebfb9975eb43d9c712a3b2e6f97b"
+  integrity sha512-xkAn0GFzk0W8Mkd9wGkyx5hlklBfu9VslOAewG3wqTHXFWLsqQy2dxTpuioio3uSkDxAHG9qmA62arKfvQ3swg==
   dependencies:
     bn.js "^4.11.8"
+    web3-utils "^1.0.0-beta.36"
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"

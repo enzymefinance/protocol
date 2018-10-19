@@ -13,5 +13,4 @@ export const constants = require('constants');
 export const environment = require('environment');
 export const guards = require('guards');
 export const helpers = require('helpers');
-export const snippets = require('snippets');
 export const solidity = require('solidity');

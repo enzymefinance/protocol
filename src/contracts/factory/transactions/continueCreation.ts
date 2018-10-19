@@ -1,33 +1,6 @@
-import {
-  Contract,
-  getContract,
-  prepareTransaction,
-  sendTransaction,
-} from '~/utils/solidity';
-// import ensure from '~/utils/guards';
+import { Contract, transactionFactory } from '~/utils/solidity';
 
-export const guards = async (contractAddress: string, environment) => {};
-
-const prepare = async (contractAddress: string, environment) => {
-  const contract = getContract(Contract.FundFactory, contractAddress);
-  const transaction = contract.methods.continueCreation();
-  transaction.name = 'continueCreation';
-
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
-
-const validateReceipt = receipt => {
-  return true;
-};
-
-export const continueCreation = async (
-  contractAddress: string,
-  environment?,
-) => {
-  await guards(contractAddress, environment);
-  const transaction = await prepare(contractAddress, environment);
-  const receipt = await sendTransaction(transaction, environment);
-  const result = validateReceipt(receipt);
-  return result;
-};
+export const continueCreation = transactionFactory(
+  'continueCreation',
+  Contract.FundFactory,
+);

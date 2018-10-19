@@ -1,8 +1,13 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as R from 'ramda';
+import * as Eth from 'web3-eth';
 import { Address } from '~/utils/types';
-import { getGlobalEnvironment } from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment, Environment } from '~/utils/environment';
+
+export type GetContractFunction = (
+  relativePath: Contract,
+  address: Address,
+  environment?: Environment,
+) => typeof Eth.Contract;
 
 export enum Contract {
   Accounting = 'fund/accounting/Accounting',
@@ -20,19 +25,16 @@ export enum Contract {
   Vault = 'fund/vault/Vault',
 }
 
-export const getContract = R.memoizeWith(
-  R.identity,
+export const getContract: GetContractFunction = R.memoizeWith(
+  // TODO: Make this work with separate environments
+  (relativePath, address, environment) => `${relativePath}${address}`,
   (
     relativePath: Contract,
     address: Address,
     environment = getGlobalEnvironment(),
   ) => {
-    const rawABI = fs.readFileSync(
-      path.join(process.cwd(), 'out', `${relativePath}.abi`),
-      { encoding: 'utf-8' },
-    );
-    const ABI = JSON.parse(rawABI);
-    const contract = new environment.eth.Contract(ABI, address);
+    const abi = require(`~/../out/${relativePath}.abi.json`);
+    const contract = new environment.eth.Contract(abi, address);
     return contract;
   },
 );

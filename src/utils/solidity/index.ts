@@ -6,3 +6,4 @@ export * from './deploy';
 export * from './getContract';
 export * from './prepareTransaction';
 export * from './sendTransaction';
+export * from './transactionFactory';

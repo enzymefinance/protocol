@@ -3,9 +3,8 @@ import { IToken } from '@melonproject/token-math';
 import { Address } from '~/utils/types';
 import {
   Contract,
-  getContract,
-  prepareTransaction,
-  sendTransaction,
+  transactionFactory,
+  EnhancedExecute,
 } from '~/utils/solidity';
 
 // import ensure from '~/utils/guards/ensure';
@@ -16,7 +15,7 @@ interface ExchangeConfig {
   takesCustody: boolean;
 }
 
-interface CreateComponentArgs {
+interface CreateComponentsArgs {
   fundName: string;
   exchangeConfigs: ExchangeConfig[];
   quoteToken: IToken;
@@ -24,17 +23,18 @@ interface CreateComponentArgs {
   priceSource: Address;
 }
 
-const guards = async (contractAddress: string, params, environment) => {
+interface CreateComponentsResult {
+  success: boolean;
+}
+
+const guard = async (contractAddress: string, params, environment) => {
   // createComponents
 };
 
-const prepare = async (
-  contractAddress: string,
+const prepareArgs = async (
   { fundName, exchangeConfigs, quoteToken, defaultTokens, priceSource },
-  environment,
+  contractAddress,
 ) => {
-  const contract = getContract(Contract.FundFactory, contractAddress);
-
   const exchangeAddresses = exchangeConfigs.map(e => e.address.toString());
   const adapterAddresses = exchangeConfigs.map(e =>
     e.adapterAddress.toString(),
@@ -43,7 +43,7 @@ const prepare = async (
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
 
-  const transaction = contract.methods.createComponents(
+  const args = [
     fundName,
     exchangeAddresses,
     adapterAddresses,
@@ -51,53 +51,22 @@ const prepare = async (
     defaultTokenAddresses,
     takesCustody,
     priceSource.toString(),
-  );
-  transaction.name = 'createComponents';
+  ];
 
-  const prepared = await prepareTransaction(transaction, environment);
-
-  return prepared;
+  return args;
 };
 
-const validateReceipt = (receipt, params) => {
-  return true;
+const postProcess = async (receipt, params) => {
+  return { success: true };
 };
 
-export const createComponents = async (
-  contractAddress: string,
-  // Test if named params are better for VS Code autocompletion --> Works
-  {
-    fundName,
-    exchangeConfigs,
-    quoteToken,
-    defaultTokens,
-    priceSource,
-  }: CreateComponentArgs,
-  environment?,
-) => {
-  await guards(
-    contractAddress,
-    { exchangeConfigs, defaultTokens, priceSource },
-    environment,
-  );
-  const prepared = await prepare(
-    contractAddress,
-    {
-      defaultTokens,
-      exchangeConfigs,
-      fundName,
-      priceSource,
-      quoteToken,
-    },
-    environment,
-  );
-  const receipt = await sendTransaction(prepared, environment);
-  const result = validateReceipt(receipt, {
-    defaultTokens,
-    exchangeConfigs,
-    fundName,
-    priceSource,
-    quoteToken,
-  });
-  return result;
-};
+export const createComponents: EnhancedExecute<
+  CreateComponentsArgs,
+  CreateComponentsResult
+> = transactionFactory(
+  'createComponents',
+  Contract.FundFactory,
+  guard,
+  prepareArgs,
+  postProcess,
+);

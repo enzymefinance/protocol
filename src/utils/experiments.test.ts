@@ -29,3 +29,11 @@ test('TypeScript function argument interpolation', () => {
   // This gives type errors
   // superFn("asdf")
 });
+
+type FN = <T>(a: T) => T;
+
+test('Generics', () => {
+  const fn: FN = <T>(a: T) => a;
+
+  const b = fn('asdf');
+});

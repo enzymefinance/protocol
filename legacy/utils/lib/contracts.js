@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import {clone} from './misc';
+import { clone } from './misc';
 import web3 from './web3';
 
-const outPath = path.join(__dirname, '..', '..', 'out');
+const outPath = path.join(process.cwd(), 'out');
 
 /**
  * Deploy a contract, and get back an instance.
@@ -19,10 +19,15 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = []) {
   const abi = JSON.parse(fs.readFileSync(`${abiPath}.abi`, 'utf8'));
   const bytecode = fs.readFileSync(`${binPath}.bin`, 'utf8');
   const contract = new web3.eth.Contract(abi, clone(optsIn));
-  const deployTx = await contract.deploy({data: bytecode, arguments: constructorArgs});
+  const deployTx = await contract.deploy({
+    data: bytecode,
+    arguments: constructorArgs,
+  });
   const deployedContract = await deployTx.send(clone(optsIn));
-  if(process.env.CHAIN_ENV !== 'development')
-    console.log(`Deployed ${contractPath}\nat ${deployedContract.options.address}\n`);
+  if (process.env.CHAIN_ENV !== 'development')
+    console.log(
+      `Deployed ${contractPath}\nat ${deployedContract.options.address}\n`,
+    );
   return deployedContract;
 }
 
@@ -33,7 +38,7 @@ async function deployContract(contractPath, optsIn = {}, constructorArgs = []) {
  * @returns {Object} - Instance of the deployed contract
  */
 async function retrieveContract(contractPath, address) {
-  if(address === undefined || parseInt(address, 16) === 0) {
+  if (address === undefined || parseInt(address, 16) === 0) {
     throw new Error('Address is undefined or 0x0');
   }
   const abiPath = path.resolve(outPath, contractPath);
@@ -41,4 +46,4 @@ async function retrieveContract(contractPath, address) {
   return new web3.eth.Contract(abi, address);
 }
 
-export { deployContract, retrieveContract }
+export { deployContract, retrieveContract };
