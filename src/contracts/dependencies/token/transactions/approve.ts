@@ -1,11 +1,14 @@
 import { IQuantity } from '@melonproject/token-math';
 
 import { Address } from '~/utils/types';
-import { prepareTransaction, sendTransaction } from '~/utils/solidity';
+import {
+  prepareTransaction,
+  sendTransaction,
+  getContract,
+  Contract,
+} from '~/utils/solidity';
 import { isAddress } from '~/utils/checks';
 import { ensure } from '~/utils/guards';
-
-import { getContract } from '..';
 
 const guards = async (howMuch, spender, environment) => {
   ensure(
@@ -21,7 +24,7 @@ const guards = async (howMuch, spender, environment) => {
 };
 
 const prepare = async (howMuch, spender, environment) => {
-  const contract = getContract(howMuch.address);
+  const contract = getContract(Contract.PreminedToken, howMuch.address);
   const transaction = contract.methods.approve(
     spender.toString(),
     howMuch.quantity.toString(),
