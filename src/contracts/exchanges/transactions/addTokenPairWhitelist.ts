@@ -3,7 +3,7 @@ import { Token, IToken } from '@melonproject/token-math';
 import { getGlobalEnvironment } from '~/utils/environment';
 import { ensure } from '~/utils/guards';
 
-import { getContract } from '..';
+import { getContract, Contract } from '~/utils/solidity';
 
 const { isToken, hasAddress, log } = Token;
 
@@ -31,7 +31,7 @@ export const prepare = async (
   contractAddress: string,
   { quoteToken, baseToken },
 ) => {
-  const contract = getContract(contractAddress);
+  const contract = getContract(Contract.MatchingMarket, contractAddress);
   const transaction = contract.methods.addTokenPairWhitelist(
     quoteToken.address,
     baseToken.address,

@@ -6,4 +6,3 @@ export * from './transactions/continueCreation';
 export * from './transactions/createComponents';
 export * from './transactions/deployFundFactory';
 export * from './transactions/setupFund';
-export * from './utils/getContract';

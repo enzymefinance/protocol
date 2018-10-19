@@ -2,7 +2,8 @@ import {
   getGlobalEnvironment,
   ensureAccountAddress,
 } from '~/utils/environment';
-import { getContract, balanceOf } from '..';
+import { balanceOf } from '..';
+import { Contract, getContract } from '~/utils/solidity';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -22,7 +23,7 @@ export const guards = async (
 };
 
 export const prepare = async (contractAddress: string, { to, tokens }) => {
-  const contract = getContract(contractAddress);
+  const contract = getContract(Contract.PreminedToken, contractAddress);
   const transaction = contract.methods.transfer(to, tokens);
   return transaction;
 };

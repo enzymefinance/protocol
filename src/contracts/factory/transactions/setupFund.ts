@@ -1,15 +1,21 @@
-import { prepareTransaction, sendTransaction } from '~/utils/solidity';
+import {
+  prepareTransaction,
+  sendTransaction,
+  Contract,
+  getContract,
+} from '~/utils/solidity';
 import { getGlobalEnvironment } from '~/utils/environment';
-
-import { getContract } from '..';
-// import ensure from '~/utils/guards/ensure';
 
 const guards = async (contractAddress: string, environment) => {
   // TODO
 };
 
 const prepare = async (contractAddress: string, environment) => {
-  const contract = getContract(contractAddress, environment);
+  const contract = getContract(
+    Contract.FundFactory,
+    contractAddress,
+    environment,
+  );
   const transaction = contract.methods.setupFund();
   transaction.name = 'setupFund';
   const prepared = await prepareTransaction(transaction, environment);
@@ -21,7 +27,11 @@ const postProcess = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const contract = getContract(contractAddress, environment);
+  const contract = getContract(
+    Contract.FundFactory,
+    contractAddress,
+    environment,
+  );
   const hubAddress = await contract.methods
     .managersToHubs(environment.wallet.address)
     .call();

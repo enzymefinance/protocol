@@ -1,11 +1,15 @@
 import { getGlobalEnvironment } from '~/utils/environment';
-import { getContract } from '..';
+import { Contract, getContract } from '~/utils/solidity';
 
 export const getInfo = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const contract = getContract(contractAddress, environment);
+  const contract = getContract(
+    Contract.PreminedToken,
+    contractAddress,
+    environment,
+  );
   const symbol = await contract.methods.symbol().call();
   const name = await contract.methods.name().call();
   const decimals = parseInt(await contract.methods.decimals().call(), 10);

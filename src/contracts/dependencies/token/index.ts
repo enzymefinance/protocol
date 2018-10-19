@@ -6,4 +6,3 @@ export * from './calls/getInfo';
 export * from './calls/getToken';
 export * from './transactions/deploy';
 export * from './transactions/transfer';
-export * from './utils/getContract';
