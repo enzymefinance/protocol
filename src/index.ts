@@ -3,6 +3,7 @@
 
 export const utils = require('utils');
 export const token = require('contracts/dependencies/token');
+export const engine = require('contracts/engine');
 export const exchanges = require('contracts/exchanges');
 export const factory = require('contracts/factory');
 export const accounting = require('contracts/fund/accounting');

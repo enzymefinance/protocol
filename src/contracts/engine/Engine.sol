@@ -18,7 +18,7 @@ contract Engine {
         address _priceSource,
         uint _delay,
         address _mlnAddress
-    ){
+    ) {
         version = _version;
         priceSource = _priceSource;
         lastStoke = block.timestamp;

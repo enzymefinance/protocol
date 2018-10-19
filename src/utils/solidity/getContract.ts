@@ -11,6 +11,7 @@ export type GetContractFunction = (
 
 export enum Contract {
   Accounting = 'fund/accounting/Accounting',
+  Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
   Hub = 'fund/hub/Hub',
