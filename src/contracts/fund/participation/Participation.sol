@@ -22,6 +22,7 @@ contract Participation is Spoke, DSMath {
     }
 
     mapping (address => Request) public requests;
+    uint public SHARES_DECIMALS;
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -40,6 +41,7 @@ contract Participation is Spoke, DSMath {
             timestamp: block.timestamp,
             atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
+        SHARES_DECIMALS = 18;
     }
 
     function cancelRequest() external {
@@ -70,9 +72,8 @@ contract Participation is Spoke, DSMath {
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePriceAndAllocateFees()) / 10 ** 18; // By definition quoteDecimals == fundDecimals
+        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePriceAndAllocateFees()) / 10 ** SHARES_DECIMALS; // By definition quoteDecimals == fundDecimals
         // TODO: maybe allocate fees in a separate step (to come later)
-        // TODO: watch this, in case we change decimals from default 18
         if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
             bool isPriceRecent;
             uint invertedInvestmentAssetPrice;

@@ -92,6 +92,7 @@ export const deploySystem = async () => {
     defaultTokens,
     exchangeConfigs,
     priceSource,
+    quoteToken,
   });
 
   await continueCreation(fundFactoryAddress);

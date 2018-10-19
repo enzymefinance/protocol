@@ -46,6 +46,7 @@ contract FundFactory {
     struct Settings {
         address[] exchanges;
         address[] adapters;
+        address quoteAsset;
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
@@ -78,12 +79,12 @@ contract FundFactory {
     // TODO: improve naming
     function createComponents(
         // string _name,
-        // address _quoteAsset,
         // address _compliance,
         // address[] _policies,
         // address[] _fees,
         address[] _exchanges,
         address[] _adapters,
+        address _quoteAsset,
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
@@ -92,11 +93,12 @@ contract FundFactory {
         managersToSettings[msg.sender] = Settings(
             _exchanges,
             _adapters,
+            _quoteAsset,
             _defaultAssets,
             _takesCustody,
             _priceSource
         );
-        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
+        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
