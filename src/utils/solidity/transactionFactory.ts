@@ -15,73 +15,73 @@ type TransactionArgs = TransactionArg[];
 // They are crucial to spot "Transaction Execution Errors" before
 // the transaction actually hit the nodes. They should throw Errors with
 // meaningfull messages
-export type GuardFunction = (
-  params,
+export type GuardFunction<Args> = (
+  params: Args,
   contractAddress?: Address,
   environment?: Environment,
 ) => Promise<void>;
 
 // Translates JavaScript/TypeScript params into the form that the EVM
 // understands: token-math structs, ...
-export type PrepareArgsFunction = (
-  params,
+export type PrepareArgsFunction<Args> = (
+  params: Args,
   contractAddress?: Address,
   environment?: Environment,
 ) => Promise<TransactionArgs>;
 
 // Takes the transaction receipt from the EVM, checks if everything is as
 // expected and returns a meaningful object
-export type PostProcessFunction = (
+export type PostProcessFunction<Args, Result> = (
   receipt,
-  params,
+  params: Args,
   contractAddress?: Address,
   environment?: Environment,
-) => Promise<any>;
+) => Promise<Result>;
 
-//  <P> //  params: P
-export type TransactionFactory = (
+export type TransactionFactory = <Args, Result>(
   name: string,
   contract: Contract,
-  guard: GuardFunction,
-  prepareArgs: PrepareArgsFunction,
-  postProcess: PostProcessFunction,
-) => EnhancedExecute;
+  guard: GuardFunction<Args>,
+  prepareArgs: PrepareArgsFunction<Args>,
+  postProcess: PostProcessFunction<Args, Result>,
+) => EnhancedExecute<Args, Result>;
 
-type SendFunction = (
+type SendFunction<Args> = (
   contractAddress: Address,
-  params,
+  params: Args,
   prepared: PreparedTransaction,
   environment: Environment,
 ) => Promise<any>;
 
-type PrepareFunction = (
+type PrepareFunction<Args> = (
   contractAddress: Address,
-  params,
+  params: Args,
   environment: Environment,
 ) => Promise<PreparedTransaction>;
 
-type ExecuteFunction = (
+type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
-  params,
-  environment: Environment,
-) => Promise<any>;
+  params: Args,
+  environment?: Environment,
+) => Promise<Result>;
 
-export interface ExecuteMixin {
-  send: SendFunction;
-  prepare: PrepareFunction;
+export interface ExecuteMixin<Args> {
+  send: SendFunction<Args>;
+  prepare: PrepareFunction<Args>;
 }
 
-export type EnhancedExecute = ExecuteFunction & ExecuteMixin;
+export type EnhancedExecute<Args, Result> = ExecuteFunction<Args, Result> &
+  ExecuteMixin<Args>;
 
-const transactionFactory: TransactionFactory = (
+const transactionFactory: TransactionFactory = <Args, Result>(
   name,
   contract,
   guard,
   prepareArgs,
   postProcess,
 ) => {
-  const prepare = async (
-    contractAddress: Address,
+  const prepare: PrepareFunction<Args> = async (
+    contractAddress,
     params,
     environment: Environment = getGlobalEnvironment(),
   ) => {
@@ -94,7 +94,7 @@ const transactionFactory: TransactionFactory = (
     return prepared;
   };
 
-  const send: SendFunction = async (
+  const send: SendFunction<Args> = async (
     contractAddress,
     params,
     prepared,
@@ -110,10 +110,10 @@ const transactionFactory: TransactionFactory = (
     return postprocessed;
   };
 
-  const execute = async (
-    contractAddress: Address,
+  const execute: EnhancedExecute<Args, Result> = async (
+    contractAddress,
     params,
-    environment: Environment = getGlobalEnvironment(),
+    environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(contractAddress, params, environment);
     const result = await send(contractAddress, params, prepared, environment);

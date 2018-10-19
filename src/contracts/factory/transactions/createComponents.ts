@@ -1,7 +1,11 @@
 import { IToken } from '@melonproject/token-math';
 
 import { Address } from '~/utils/types';
-import { Contract, transactionFactory } from '~/utils/solidity';
+import {
+  Contract,
+  transactionFactory,
+  EnhancedExecute,
+} from '~/utils/solidity';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -11,12 +15,16 @@ interface ExchangeConfig {
   takesCustody: boolean;
 }
 
-interface CreateComponentArgs {
+interface CreateComponentsArgs {
   fundName: string;
   exchangeConfigs: ExchangeConfig[];
   quoteToken: IToken;
   defaultTokens: IToken[];
   priceSource: Address;
+}
+
+interface CreateComponentsResult {
+  success: boolean;
 }
 
 const guard = async (contractAddress: string, params, environment) => {
@@ -49,10 +57,13 @@ const prepareArgs = async (
 };
 
 const postProcess = async (receipt, params) => {
-  return true;
+  return { success: true };
 };
 
-export const createComponents = transactionFactory(
+export const createComponents: EnhancedExecute<
+  CreateComponentsArgs,
+  CreateComponentsResult
+> = transactionFactory(
   'createComponents',
   Contract.FundFactory,
   guard,
