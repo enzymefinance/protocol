@@ -44,6 +44,7 @@ contract FundFactory {
     mapping (address => uint8) public stepFor;
 
     struct Settings {
+        string name;
         address[] exchanges;
         address[] adapters;
         address quoteAsset;
@@ -78,7 +79,7 @@ contract FundFactory {
 
     // TODO: improve naming
     function createComponents(
-        // string _name,
+        string _name,
         // address _compliance,
         // address[] _policies,
         // address[] _fees,
@@ -89,8 +90,9 @@ contract FundFactory {
         bool[] _takesCustody,
         address _priceSource
     ) public step(1) {
-        managersToHubs[msg.sender] = new Hub(msg.sender);
+        managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
+            _name,
             _exchanges,
             _adapters,
             _quoteAsset,

@@ -55,7 +55,7 @@ test.before(async t => {
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
-    [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+    'Test Fund', [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
   ).send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.setupFund().send({from: manager, gasPrice: config.gasPrice});

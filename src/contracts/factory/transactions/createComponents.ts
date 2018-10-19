@@ -17,6 +17,7 @@ interface ExchangeConfig {
 }
 
 interface CreateComponentArgs {
+  fundName: string;
   exchangeConfigs: ExchangeConfig[];
   quoteToken: IToken;
   defaultTokens: IToken[];
@@ -29,7 +30,7 @@ const guards = async (contractAddress: string, params, environment) => {
 
 const prepare = async (
   contractAddress: string,
-  { exchangeConfigs, quoteToken, defaultTokens, priceSource },
+  { fundName, exchangeConfigs, quoteToken, defaultTokens, priceSource },
   environment,
 ) => {
   const contract = getContract(Contract.FundFactory, contractAddress);
@@ -43,6 +44,7 @@ const prepare = async (
   const quoteTokenAddress = quoteToken.address;
 
   const transaction = contract.methods.createComponents(
+    fundName,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
@@ -65,6 +67,7 @@ export const createComponents = async (
   contractAddress: string,
   // Test if named params are better for VS Code autocompletion --> Works
   {
+    fundName,
     exchangeConfigs,
     quoteToken,
     defaultTokens,
@@ -82,6 +85,7 @@ export const createComponents = async (
     {
       defaultTokens,
       exchangeConfigs,
+      fundName,
       priceSource,
       quoteToken,
     },
@@ -91,6 +95,7 @@ export const createComponents = async (
   const result = validateReceipt(receipt, {
     defaultTokens,
     exchangeConfigs,
+    fundName,
     priceSource,
     quoteToken,
   });

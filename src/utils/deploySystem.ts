@@ -41,6 +41,7 @@ import { getSettings } from '~/contracts/fund/hub';
 export const deploySystem = async () => {
   const globalEnvironment = getGlobalEnvironment();
   const accounts = await globalEnvironment.eth.getAccounts();
+  const fundName = 'Clever Fund Name';
   const quoteTokenAddress = await deployToken('ETH');
   const baseTokenAddress = await deployToken('MLN');
   const quoteToken = await getToken(quoteTokenAddress);
@@ -91,6 +92,7 @@ export const deploySystem = async () => {
   await createComponents(fundFactoryAddress, {
     defaultTokens,
     exchangeConfigs,
+    fundName,
     priceSource,
     quoteToken,
   });
