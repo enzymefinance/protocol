@@ -6,8 +6,8 @@ import {
 } from '~/utils/environment';
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { ensure } from '~/utils/guards';
-
-import { getPrices, getContract } from '..';
+import { getPrices } from '..';
+import { Contract, getContract } from '~/utils/solidity';
 
 const guards = async (contractAddress, prices, environment) => {
   ensureAddress(contractAddress);
@@ -17,7 +17,11 @@ const guards = async (contractAddress, prices, environment) => {
 };
 
 const prepare = async (contractAddress, prices, environment) => {
-  const contract = getContract(contractAddress, environment);
+  const contract = getContract(
+    Contract.TestingPriceFeed,
+    contractAddress,
+    environment,
+  );
   const transaction = contract.methods.update(
     prices.map(p => p.base.address),
     prices.map(Price.toAtomic),

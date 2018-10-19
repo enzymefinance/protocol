@@ -1,9 +1,13 @@
 import { IToken } from '@melonproject/token-math';
 
 import { Address } from '~/utils/types';
-import { prepareTransaction, sendTransaction } from '~/utils/solidity';
+import {
+  Contract,
+  getContract,
+  prepareTransaction,
+  sendTransaction,
+} from '~/utils/solidity';
 
-import { getContract } from '..';
 // import ensure from '~/utils/guards/ensure';
 
 interface ExchangeConfig {
@@ -27,7 +31,7 @@ const prepare = async (
   { exchangeConfigs, defaultTokens, priceSource },
   environment,
 ) => {
-  const contract = getContract(contractAddress);
+  const contract = getContract(Contract.FundFactory, contractAddress);
 
   const exchangeAddresses = exchangeConfigs.map(e => e.address.toString());
   const adapterAddresses = exchangeConfigs.map(e =>

@@ -1,10 +1,7 @@
 import * as path from 'path';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-import { deploy, getContract, ContractPath } from '~/utils/solidity';
-import {
-  deploy as deployToken,
-  getContract as getTokenContract,
-} from '~/contracts/dependencies/token';
+import { deploy, getContract, Contract } from '~/utils/solidity';
+import { deploy as deployToken } from '~/contracts/dependencies/token';
 import { createVaultInstance, deployVaultFactory, getVaultContract } from '..';
 import { randomAddress } from '~/utils/helpers';
 import { emptyAddress } from '~/utils/constants';
@@ -15,7 +12,7 @@ beforeAll(async () => {
   await initTestEnvironment();
   shared.env = getGlobalEnvironment();
   const tokenAddress = await deployToken();
-  shared.token = getTokenContract(tokenAddress);
+  shared.token = getContract(Contract.PreminedToken, tokenAddress);
   shared.factoryAddress = await deployVaultFactory();
   shared.authAddress = await deploy(
     path.join('dependencies', 'PermissiveAuthority'),
@@ -28,7 +25,7 @@ beforeEach(async () => {
     { hubAddress: shared.authAddress },
     shared.env,
   );
-  shared.vault = getContract(ContractPath.Vault, vaultAddress);
+  shared.vault = getContract(Contract.Vault, vaultAddress);
 });
 
 test('withdraw token that is not present', async () => {

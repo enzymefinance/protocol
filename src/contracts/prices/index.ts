@@ -5,4 +5,3 @@ export * from './calls/getPrices';
 export * from './calls/getQuoteToken';
 export * from './transactions/deploy';
 export * from './transactions/update';
-export * from './utils/getContract';

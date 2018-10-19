@@ -1,12 +1,15 @@
-import { prepareTransaction, sendTransaction } from '~/utils/solidity';
-
-import { getContract } from '..';
+import {
+  Contract,
+  getContract,
+  prepareTransaction,
+  sendTransaction,
+} from '~/utils/solidity';
 // import ensure from '~/utils/guards';
 
 export const guards = async (contractAddress: string, environment) => {};
 
 const prepare = async (contractAddress: string, environment) => {
-  const contract = getContract(contractAddress);
+  const contract = getContract(Contract.FundFactory, contractAddress);
   const transaction = contract.methods.continueCreation();
   transaction.name = 'continueCreation';
 

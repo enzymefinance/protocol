@@ -4,7 +4,7 @@ import * as R from 'ramda';
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment } from '~/utils/environment/getGlobalEnvironment';
 
-export enum ContractPath {
+export enum Contract {
   Accounting = 'fund/accounting/Accounting',
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
@@ -12,7 +12,9 @@ export enum ContractPath {
   MatchingMarket = 'exchanges/MatchingMarket',
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
+  PreminedToken = 'dependencies/token/PreminedToken',
   Shares = 'fund/shares/Shares',
+  StandardToken = 'dependencies/token/StandardToken',
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
@@ -20,9 +22,13 @@ export enum ContractPath {
 
 export const getContract = R.memoizeWith(
   R.identity,
-  (contractPath, address: Address, environment = getGlobalEnvironment()) => {
+  (
+    relativePath: Contract,
+    address: Address,
+    environment = getGlobalEnvironment(),
+  ) => {
     const rawABI = fs.readFileSync(
-      path.join(process.cwd(), 'out', `${contractPath}.abi`),
+      path.join(process.cwd(), 'out', `${relativePath}.abi`),
       { encoding: 'utf-8' },
     );
     const ABI = JSON.parse(rawABI);

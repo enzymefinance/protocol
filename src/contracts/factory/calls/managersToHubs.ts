@@ -1,14 +1,18 @@
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment } from '~/utils/environment';
 import { isAddress, isEmptyAddress } from '~/utils/checks';
-import { getContract } from '../utils/getContract';
+import { Contract, getContract } from '~/utils/solidity';
 
 export const managersToHubs = async (
   contractAddress: Address,
   managerAddress: Address,
   environment = getGlobalEnvironment(),
 ) => {
-  const contract = getContract(contractAddress, environment);
+  const contract = getContract(
+    Contract.FundFactory,
+    contractAddress,
+    environment,
+  );
   const hubAddress = await contract.methods
     .managersToHubs(managerAddress.toString())
     .call();

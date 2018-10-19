@@ -3,7 +3,8 @@ import * as R from 'ramda';
 import { IToken, Price, Quantity, Token } from '@melonproject/token-math';
 
 import { Environment } from '~/utils/environment';
-import { getContract, getQuoteToken } from '..';
+import { getQuoteToken } from '..';
+import { Contract, getContract } from '~/utils/solidity';
 
 const getPrice = Price.getPrice;
 
@@ -13,7 +14,11 @@ export const getPrices = async (
   environment?: Environment,
 ) => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
-  const contract = await getContract(contractAddress, environment);
+  const contract = await getContract(
+    Contract.TestingPriceFeed,
+    contractAddress,
+    environment,
+  );
 
   const result = await contract.methods
     .getPrices(tokens.map(t => t.address))
