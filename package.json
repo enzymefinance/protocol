@@ -6,6 +6,7 @@
     "build": "yarn createIndexFiles && tsc",
     "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
     "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
+    "dev": "yarn jest --watch src/",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
     "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
