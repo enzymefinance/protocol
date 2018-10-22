@@ -34,7 +34,6 @@ contract PaysAMGU is DSMath {
     modifier amgu_payable() {
         uint initialGas = gasleft();
         _;
-        // TODO: use actual contract type
         PriceSource source = PriceSource(priceSource);
         uint mlnPerAmgu = VersionInterface(version).getAmguPrice();
         uint ethPerMln = source.getPrice(mlnAddress);
