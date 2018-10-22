@@ -1,16 +1,19 @@
 pragma solidity ^0.4.21;
 
-import "ERC20.sol";
+import "../dependencies/math.sol";
+import "../dependencies/token/BurnableToken.sol";
+import "../prices/PriceSource.sol";
+import "../version/Version.i.sol";
 
 /// @notice Contract
-contract Engine {
-    address version;
-    address priceSource;
-    uint frozenEther;
-    uint liquidEther;
-    uint lastStoke;
-    uint STOKING_DELAY;
-    ERC20 mlnToken;
+contract Engine is DSMath {
+    uint public frozenEther;
+    uint public liquidEther;
+    uint public lastStoke;
+    uint public STOKING_DELAY;
+    BurnableToken public mlnToken;
+    PriceSource public priceSource;
+    VersionInterface public version;
 
 
     constructor(
@@ -19,11 +22,11 @@ contract Engine {
         uint _delay,
         address _mlnAddress
     ) {
-        version = _version;
-        priceSource = _priceSource;
+        version = VersionInterface(_version);
+        priceSource = PriceSource(_priceSource);
         lastStoke = block.timestamp;
         STOKING_DELAY = _delay;
-        mlnToken = ERC20(_mlnAddress);
+        mlnToken = BurnableToken(_mlnAddress);
     }
 
     modifier stays_frozen() {
@@ -61,8 +64,8 @@ contract Engine {
     }
 
     function enginePrice() view returns (uint) {
-        uint ethPerMln = priceSource.getPrice(mlnAddress);
-        uint premium = mul(ethPerMln, (premiumPercent / 100));
+        uint ethPerMln = priceSource.getPrice(address(mlnToken));
+        uint premium = mul(ethPerMln, (premiumPercent() / 100));
         return add(ethPerMln, premium);
     }
 
