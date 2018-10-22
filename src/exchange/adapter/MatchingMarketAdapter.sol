@@ -27,19 +27,14 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     // - place asset in ownedAssets if not already tracked
     /// @notice Makes an order on the selected exchange
     /// @dev These orders are not expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderValues [0] Maker token quantity
-    /// @param orderValues [1] Taker token quantity
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
@@ -88,17 +83,14 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     // - place asset in ownedAssets if not already tracked
     /// @notice Takes an active order on the selected exchange
     /// @dev These orders are expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderValues [6] Fill amount : amount of taker token to fill
-    /// @param identifier Active order id
     function takeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         require(Fund(address(this)).owner() == msg.sender);
         require(!Fund(address(this)).isShutDown());
@@ -140,17 +132,14 @@ contract MatchingMarketAdapter is ExchangeAdapterInterface, DSMath, DBC {
     // - remove order from tracking array
     // - cancel order on exchange
     /// @notice Cancels orders that were not expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Order maker asset
-    /// @param identifier Order ID on the exchange
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
         pre_cond(Fund(address(this)).owner() == msg.sender ||
                  Fund(address(this)).isShutDown()          ||
