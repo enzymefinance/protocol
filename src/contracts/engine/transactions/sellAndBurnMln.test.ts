@@ -18,11 +18,11 @@ beforeAll(async () => {
   shared.env = getGlobalEnvironment();
   const mlnAddress = await deployToken('MLN');
   shared.mlnToken = await getToken(mlnAddress);
-  const version = await deployAndGetContract('version/MockVersion');
+  shared.version = await deployAndGetContract('version/MockVersion');
   const feedAddress = await deployFeed(shared.mlnToken);
   shared.delay = 30 * 24 * 60 * 60;
   shared.engineAddress = await deployEngine(
-    version.options.address,
+    shared.version.options.address,
     feedAddress,
     shared.delay,
     mlnAddress,
@@ -76,7 +76,19 @@ test('eth sent via contract selfdestruct is not tracked', async () => {
   expect(Number(liquidEth)).toBe(0);
 });
 
-test('AMGU payment fails when sender not fund', async () => {});
+test('AMGU payment fails when sender not fund', async () => {
+  const sender = shared.env.wallet.address;
+  const isFund = await shared.version.methods.isFund(sender).call();
+
+  expect(isFund).toBe(false);
+
+  await expect(
+    shared.engine.methods
+      .payAmguInEther()
+      .send({ from: sender, value: 1000000 }),
+  ).rejects.toThrow('revert');
+});
+
 test('eth can be sent as AMGU from a fund', async () => {});
 test('eth sent as AMGU is frozen and thaws', async () => {});
 test('sell and burn', async () => {
