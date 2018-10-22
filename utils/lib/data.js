@@ -16,11 +16,11 @@ const [takeOrderSignature, takeOrderSignatureString] = abiEncode("takeOrder", [
 ]);
 
 const [cancelOrderSignature, cancelOrderSignatureString] = abiEncode("cancelOrder", [
-  "address", "address[6]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
 const [swapTokensSignature, swapTokensSignatureString] = abiEncode("swapTokens", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
 function toBytes32(input) {

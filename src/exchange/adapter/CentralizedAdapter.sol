@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./ExchangeAdapterInterface.sol";
 import "../thirdparty/CentralizedExchangeBridge.sol";
@@ -11,28 +12,15 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     // NON-CONSTANT METHODS
 
-    // Responsibilities of makeOrder are:
-    // - check price recent
-    // - check risk management passes
-    // - approve funds to be traded (if necessary)
-    // - make order on the exchange
-    // - check order was made (if possible)
-    // - place asset in ownedAssets if not already tracked
-    /// @notice Makes an order on the selected exchange
-    /// @dev These orders are not expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderValues [0] Maker token quantity
-    /// @param orderValues [1] Taker token quantity
+    /// @dev Make an order on the centralized exchange bridge
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
         pre_cond(Fund(address(this)).owner() == msg.sender)
         pre_cond(!Fund(address(this)).isShutDown())
@@ -74,12 +62,12 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function takeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         revert();
     }
@@ -94,12 +82,12 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @param identifier Order ID on the exchange
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
         pre_cond(Fund(address(this)).owner() == msg.sender ||
                  Fund(address(this)).isShutDown()          ||

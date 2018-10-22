@@ -446,7 +446,7 @@ test.serial("Make order through the fund", async t => {
         0,
         0
       ],
-      web3.utils.padLeft("a0x0", 64),
+      web3.utils.padLeft("0x0", 64),
       order.makerAssetData,
       order.takerAssetData,
       orderSignature
