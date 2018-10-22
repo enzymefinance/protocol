@@ -1,7 +1,7 @@
-import * as R from 'ramda';
 import * as Eth from 'web3-eth';
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment, Environment } from '~/utils/environment';
+import { getContractWithPath } from '.';
 
 export type GetContractFunction = (
   relativePath: Contract,
@@ -26,16 +26,8 @@ export enum Contract {
   Vault = 'fund/vault/Vault',
 }
 
-export const getContract: GetContractFunction = R.memoizeWith(
-  // TODO: Make this work with separate environments
-  (relativePath, address, environment) => `${relativePath}${address}`,
-  (
-    relativePath: Contract,
-    address: Address,
-    environment = getGlobalEnvironment(),
-  ) => {
-    const abi = require(`~/../out/${relativePath}.abi.json`);
-    const contract = new environment.eth.Contract(abi, address);
-    return contract;
-  },
-);
+export const getContract = (
+  relativePath: Contract,
+  address: Address,
+  environment = getGlobalEnvironment(),
+) => getContractWithPath(relativePath, address, environment);
