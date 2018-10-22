@@ -59,6 +59,7 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
     struct OpenMakeOrder {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
+        uint orderIndex; // Index of the make order entry in the orders array
     }
 
     struct Order { // Describes an order event (make or take order)
@@ -300,16 +301,19 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
 
     // EXTERNAL : MANAGING
 
+    /// @dev This should be called after orderUpdateHook so the orderIndex is correct
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
         uint orderId
     )
         pre_cond(msg.sender == address(this))
+        pre_cond(orders.length > 0)
     {
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
 
     function removeOpenMakeOrder(
@@ -659,8 +663,8 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
-            if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
+            var (, , sellQuantity, buyQuantity) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id, ofAsset);
+            if (sellQuantity == 0 || buyQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
@@ -711,8 +715,12 @@ contract Fund is DSMath, DBC, Owned, Shares, FundInterface {
         require(expiryTime > 0);
         return block.timestamp >= expiryTime;
     }
-    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint) {
+    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
-        return (order.id, order.expiresAt);
+        return (order.id, order.expiresAt, order.orderIndex);
+    }
+    function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
+        Order memory order = orders[orderIndex];
+        return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 }

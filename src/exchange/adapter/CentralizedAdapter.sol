@@ -48,7 +48,6 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(address(this)).addAssetToOwnedAssets(takerAsset);
         Fund(address(this)).orderUpdateHook(
             targetExchange,
@@ -57,6 +56,7 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
+        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
     }
 
     /// @dev Dummy function; not implemented on exchange
@@ -96,7 +96,8 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
     {
         Fund(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
 
-        var (makerAsset, , makerQuantity,) = getOrder(targetExchange, uint(identifier));
+        // Pass in 0 address as makerAsset parameter to getOrder function as it's not used
+        var (makerAsset, , makerQuantity,) = getOrder(targetExchange, uint(identifier), address(0));
         require(Asset(makerAsset).transferFrom(msg.sender, address(this), makerQuantity));
         require(Asset(makerAsset).approve(targetExchange, makerQuantity));
         require(CentralizedExchangeBridge(targetExchange).cancelOrder(uint(identifier)));
@@ -113,19 +114,20 @@ contract CentralizedAdapter is ExchangeAdapterInterface, DBC, DSMath {
 
     function getOrder(
         address targetExchange,
-        uint id
+        uint id,
+        address makerAsset
     )
         view
         returns (
-            address makerAsset, address takerAsset,
+            address makerAssetAddress, address takerAssetAddress,
             uint makerQuantity, uint takerQuantity
         )
     {
         (
             makerQuantity,
-            makerAsset,
+            makerAssetAddress,
             takerQuantity,
-            takerAsset
+            takerAssetAddress
         ) = CentralizedExchangeBridge(targetExchange).getOrder(id);
     }
 

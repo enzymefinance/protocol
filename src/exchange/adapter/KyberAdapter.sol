@@ -132,7 +132,8 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function getOrder(
         address targetExchange,
-        uint id
+        uint id,
+        address makerAsset
     )
         view
         returns (address, address, uint, uint)

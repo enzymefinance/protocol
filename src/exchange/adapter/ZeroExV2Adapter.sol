@@ -57,7 +57,6 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
-        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
         Fund(address(this)).addAssetToOwnedAssets(takerAsset);
         Fund(address(this)).orderUpdateHook(
             targetExchange,
@@ -66,6 +65,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
+        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
     }
 
     // Responsibilities of takeOrder are:
@@ -150,8 +150,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        require(Fund(address(this)).owner() == msg.sender);
-        require(!Fund(address(this)).isShutDown());
+        require(Fund(address(this)).owner() == msg.sender || Fund(address(this)).isShutDown());
 
         address makerAsset = orderAddresses[2];
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
@@ -178,12 +177,18 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         revert();
     }
 
-    // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
+    // TODO: Get order details
+    function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
     {
-        revert();
+        var (orderId, , orderIndex) = Fund(address(this)).getOpenOrderInfo(targetExchange, makerAsset);
+        var (, takerAsset, makerQuantity, takerQuantity) = Fund(address(this)).getOrderDetails(orderIndex);
+        uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
+        if (Exchange(targetExchange).cancelled(bytes32(orderId))) {
+            return (makerAsset, takerAsset, 0, 0);
+        }
+        return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
     }
 
     // INTERNAL METHODS
