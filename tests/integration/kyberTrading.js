@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { swapTokensSignature } from "../../utils/lib/data";
+import { swapTokensSignature, swapTokensSignatureString } from "../../utils/lib/data";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -331,17 +331,18 @@ test.serial(
     await fund.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        swapTokensSignatureString,
         [
           "0x0",
           "0x0",
           ethToken.options.address,
           mlnToken.options.address,
+          "0x0",
           "0x0"
         ],
         [srcAmount, 0, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
-        0,
+        web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64)
       )
@@ -371,17 +372,18 @@ test.serial(
     await fund.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        swapTokensSignatureString,
         [
           "0x0",
           "0x0",
           mlnToken.options.address,
           ethToken.options.address,
+          "0x0",
           "0x0"
         ],
         [srcAmount, 0, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
-        0,
+        web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64)
       )
@@ -415,17 +417,18 @@ test.serial(
     await fund.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        swapTokensSignatureString,
         [
           "0x0",
           "0x0",
           mlnToken.options.address,
           ethToken.options.address,
+          "0x0",
           "0x0"
         ],
         [srcAmount, destAmount, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
-        0,
+        web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64)
       )
@@ -523,17 +526,18 @@ test.serial(
     await fund.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        swapTokensSignatureString,
         [
           "0x0",
           "0x0",
           mlnToken.options.address,
           eurToken.options.address,
+          "0x0",
           "0x0"
         ],
         [srcAmount, 0, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
-        0,
+        web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64)
       )
@@ -563,17 +567,18 @@ test.serial("swapTokens fails if minPrice is not satisfied", async t => {
     fund.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        swapTokensSignatureString,
         [
           "0x0",
           "0x0",
           mlnToken.options.address,
           ethToken.options.address,
+          "0x0",
           "0x0"
         ],
         [srcAmount, destAmount, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
-        0,
+        web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64)
       )
@@ -609,17 +614,18 @@ test.serial(
       fund.methods
         .callOnExchange(
           0,
-          swapTokensSignature,
+          swapTokensSignatureString,
           [
             "0x0",
             "0x0",
             ethToken.options.address,
             mlnToken.options.address,
+            "0x0",
             "0x0"
           ],
           [srcAmount, 0, 0, 0, 0, 0, 0, 0],
           web3.utils.padLeft("0x0", 64),
-          0,
+          web3.utils.padLeft("0x0", 64),
           web3.utils.padLeft("0x0", 64),
           web3.utils.padLeft("0x0", 64)
         )
