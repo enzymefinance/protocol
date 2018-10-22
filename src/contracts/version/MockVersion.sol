@@ -1,7 +1,9 @@
 pragma solidity ^0.4.21;
 
+import "./Version.i.sol";
+
 /// @notice Version contract useful for testing
-contract MockVersion {
+contract MockVersion is VersionInterface {
     uint public amguPrice;
 
     function setAmguPrice(uint _price) {
