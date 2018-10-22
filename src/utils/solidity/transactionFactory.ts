@@ -1,3 +1,5 @@
+import * as R from 'ramda';
+
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
   Contract,
@@ -33,7 +35,7 @@ export type PrepareArgsFunction<Args> = (
 // expected and returns a meaningful object
 export type PostProcessFunction<Args, Result> = (
   receipt,
-  params: Args,
+  params?: Args,
   contractAddress?: Address,
   environment?: Environment,
 ) => Promise<Result>;
@@ -72,6 +74,21 @@ export interface ExecuteMixin<Args> {
 
 export type EnhancedExecute<Args, Result> = ExecuteFunction<Args, Result> &
   ExecuteMixin<Args>;
+
+export type ExecuteFunctionWithoutContractAddress<Args, Result> = (
+  params?: Args,
+  environment?: Environment,
+) => Promise<Result>;
+
+export type ImplicitExecute<
+  Args,
+  Result
+> = ExecuteFunctionWithoutContractAddress<Args, Result> & ExecuteMixin<Args>;
+
+export type WithContractAddressQuery = <Args, Result>(
+  contractAddressQuery: string[],
+  transaction: EnhancedExecute<Args, Result>,
+) => ImplicitExecute<Args, Result>;
 
 const defaultGuard: GuardFunction<any> = async () => {};
 const defaultPrepareArgs: PrepareArgsFunction<any> = async (
@@ -157,4 +174,45 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   return execute;
 };
 
-export { transactionFactory };
+/**
+ * Wraps the result of the transaction factory (EnhancedExecute) in helper
+ * functions that do not require to provide contractAddress, but derive this
+ * from the params with the contractAddressQuery
+ *
+ * @param contractAddressQuery
+ * @param transaction
+ */
+const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
+  contractAddressQuery,
+  transaction,
+) => {
+  const prepare = async (params: Args, environment?) =>
+    await transaction.prepare(
+      R.path(contractAddressQuery, params).toString(),
+      params,
+      environment,
+    );
+
+  const send = async (prepared, params: Args, environment?): Promise<Result> =>
+    await transaction.send(
+      R.path(contractAddressQuery, params).toString(),
+      prepared,
+      params,
+      environment,
+    );
+
+  const execute = async (params: Args, environment?) => {
+    return await transaction(
+      R.path(contractAddressQuery, params).toString(),
+      params,
+      environment,
+    );
+  };
+
+  execute.prepare = prepare;
+  execute.send = send;
+
+  return execute;
+};
+
+export { transactionFactory, withContractAddressQuery };

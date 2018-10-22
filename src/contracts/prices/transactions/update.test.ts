@@ -1,4 +1,5 @@
-import { Price, Quantity, Token } from '@melonproject/token-math';
+import { createQuantity } from '@melonproject/token-math/quantity';
+import { getPrice, isEqual } from '@melonproject/token-math/price';
 
 import { initTestEnvironment } from '~/utils/environment';
 
@@ -24,18 +25,12 @@ beforeAll(async () => {
 });
 
 test('update', async () => {
-  const newPrice = Price.getPrice(
-    Quantity.createQuantity(
-      shared.mlnToken,
-      Token.appendDecimals(shared.mlnToken, 1),
-    ),
-    Quantity.createQuantity(
-      shared.quoteToken,
-      Token.appendDecimals(shared.quoteToken, 0.34),
-    ),
+  const newPrice = getPrice(
+    createQuantity(shared.mlnToken, 1),
+    createQuantity(shared.quoteToken, 0.34),
   );
 
   const receipt = await update(shared.address, [newPrice]);
 
-  expect(Price.isEqual(receipt[0], newPrice)).toBe(true);
+  expect(isEqual(receipt[0], newPrice)).toBe(true);
 });

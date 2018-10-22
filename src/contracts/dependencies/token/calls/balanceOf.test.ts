@@ -1,4 +1,4 @@
-import { Quantity } from '@melonproject/token-math';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
@@ -18,7 +18,7 @@ test('balanceOf', async () => {
     address: environment.wallet.address,
   });
 
-  const expected = Quantity.createQuantity(
+  const expected = createQuantity(
     {
       address: shared.address,
       decimals: 18,
@@ -27,5 +27,5 @@ test('balanceOf', async () => {
     '1000000000000000000000000',
   );
 
-  expect(Quantity.isEqual(balance, expected)).toBe(true);
+  expect(isEqual(balance, expected)).toBe(true);
 });

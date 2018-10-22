@@ -1,9 +1,8 @@
-import { BigInteger } from '@melonproject/token-math';
+import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
 import { getGlobalEnvironment } from '~/utils/environment';
 
 const debug = require('~/utils/getDebug').default(__filename);
-const { toBI, greaterThan } = BigInteger;
 
 export interface PreparedTransaction {
   encoded: string;
@@ -18,7 +17,7 @@ export const prepareTransaction = async (
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
   const gasEstimation = await transaction.estimateGas({
-    from: environment.wallet.address,
+    from: environment.wallet.address.toString(),
   });
 
   debug(

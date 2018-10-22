@@ -1,15 +1,18 @@
-import { Token, IToken } from '@melonproject/token-math';
+import {
+  isToken,
+  hasAddress,
+  log,
+  TokenInterface,
+} from '@melonproject/token-math/token';
 
 import { getGlobalEnvironment } from '~/utils/environment';
 import { ensure } from '~/utils/guards';
 
 import { getContract, Contract } from '~/utils/solidity';
 
-const { isToken, hasAddress, log } = Token;
-
 interface IAddTokenPairWhitelist {
-  quoteToken: IToken;
-  baseToken: IToken;
+  quoteToken: TokenInterface;
+  baseToken: TokenInterface;
 }
 
 export const guards = async (

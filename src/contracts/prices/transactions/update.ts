@@ -1,4 +1,8 @@
-import { Price, IPrice } from '@melonproject/token-math';
+import {
+  isEqual,
+  PriceInterface,
+  toAtomic,
+} from '@melonproject/token-math/price';
 
 import {
   ensureAccountAddress,
@@ -22,9 +26,10 @@ const prepare = async (contractAddress, prices, environment) => {
     contractAddress,
     environment,
   );
+
   const transaction = contract.methods.update(
-    prices.map(p => p.base.address),
-    prices.map(Price.toAtomic),
+    prices.map(p => p.base.token.address),
+    prices.map(toAtomic),
   );
 
   return transaction;
@@ -32,7 +37,7 @@ const prepare = async (contractAddress, prices, environment) => {
 
 const send = async (transaction, environment) => {
   const receipt = await transaction.send({
-    from: environment.wallet.address,
+    from: environment.wallet.address.toString(),
   });
 
   return receipt;
@@ -42,12 +47,12 @@ const send = async (transaction, environment) => {
 const postProcess = async (contractAddress, prices, receipt) => {
   const updatedPrices = await getPrices(
     contractAddress,
-    prices.map(p => p.base),
+    prices.map(p => p.base.token),
   );
 
-  ensure(Price.isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
-    should: prices[0],
+  ensure(isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
     is: updatedPrices[0],
+    should: prices[0],
   });
 
   return updatedPrices;
@@ -55,9 +60,9 @@ const postProcess = async (contractAddress, prices, receipt) => {
 
 export const update = async (
   contractAddress: string,
-  prices: IPrice[],
+  prices: PriceInterface[],
   environment = getGlobalEnvironment(),
-): Promise<IPrice[]> => {
+): Promise<PriceInterface[]> => {
   await guards(contractAddress, prices, environment);
   const transaction = await prepare(contractAddress, prices, environment);
   const receipt = await send(transaction, environment);

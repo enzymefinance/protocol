@@ -883,10 +883,10 @@
     pretty-ms "^0.2.1"
     text-table "^0.2.0"
 
-"@melonproject/token-math@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.7.tgz#a7195cad30aaebfb9975eb43d9c712a3b2e6f97b"
-  integrity sha512-xkAn0GFzk0W8Mkd9wGkyx5hlklBfu9VslOAewG3wqTHXFWLsqQy2dxTpuioio3uSkDxAHG9qmA62arKfvQ3swg==
+"@melonproject/token-math@0.0.10":
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.10.tgz#87874fd1d052a0145d5383c85a5f067a9b083fbe"
+  integrity sha512-OqiMmS1NT8bQ4ZUDY9xO8HfWV+D3Xq3fq8fRoNGbcSJmw+XatVnCQcJoY5kDE6FrPCGHnmg9VCGCueiy5pLy4w==
   dependencies:
     bn.js "^4.11.8"
     web3-utils "^1.0.0-beta.36"
@@ -1758,11 +1758,6 @@ babel-plugin-syntax-export-extensions@^6.8.0:
   resolved "http://registry.npmjs.org/babel-plugin-syntax-export-extensions/-/babel-plugin-syntax-export-extensions-6.13.0.tgz#70a1484f0f9089a4e84ad44bac353c95b9b12721"
   integrity sha1-cKFITw+QiaToStRLrDU8lbmxJyE=
 
-babel-plugin-syntax-flow@^6.18.0:
-  version "6.18.0"
-  resolved "http://registry.npmjs.org/babel-plugin-syntax-flow/-/babel-plugin-syntax-flow-6.18.0.tgz#4c3ab20a2af26aa20cd25995c398c4eb70310c8d"
-  integrity sha1-TDqyCiryaqIM0lmVw5jE63AxDI0=
-
 babel-plugin-syntax-function-bind@^6.8.0:
   version "6.13.0"
   resolved "http://registry.npmjs.org/babel-plugin-syntax-function-bind/-/babel-plugin-syntax-function-bind-6.13.0.tgz#48c495f177bdf31a981e732f55adc0bdd2601f46"
@@ -2041,14 +2036,6 @@ babel-plugin-transform-export-extensions@^6.22.0:
     babel-plugin-syntax-export-extensions "^6.8.0"
     babel-runtime "^6.22.0"
 
-babel-plugin-transform-flow-strip-types@^6.22.0:
-  version "6.22.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-transform-flow-strip-types/-/babel-plugin-transform-flow-strip-types-6.22.0.tgz#84cb672935d43714fdc32bce84568d87441cf7cf"
-  integrity sha1-hMtnKTXUNxT9wyvOhFaNh0Qc988=
-  dependencies:
-    babel-plugin-syntax-flow "^6.18.0"
-    babel-runtime "^6.22.0"
-
 babel-plugin-transform-function-bind@^6.22.0:
   version "6.22.0"
   resolved "https://registry.yarnpkg.com/babel-plugin-transform-function-bind/-/babel-plugin-transform-function-bind-6.22.0.tgz#c6fb8e96ac296a310b8cf8ea401462407ddf6a97"
@@ -2125,13 +2112,6 @@ babel-preset-es2015@^6.24.1:
     babel-plugin-transform-es2015-typeof-symbol "^6.22.0"
     babel-plugin-transform-es2015-unicode-regex "^6.24.1"
     babel-plugin-transform-regenerator "^6.24.1"
-
-babel-preset-flow@^6.23.0:
-  version "6.23.0"
-  resolved "https://registry.yarnpkg.com/babel-preset-flow/-/babel-preset-flow-6.23.0.tgz#e71218887085ae9a24b5be4169affb599816c49d"
-  integrity sha1-5xIYiHCFrpoktb5Baa/7WZgWxJ0=
-  dependencies:
-    babel-plugin-transform-flow-strip-types "^6.22.0"
 
 babel-preset-jest@^23.2.0:
   version "23.2.0"
