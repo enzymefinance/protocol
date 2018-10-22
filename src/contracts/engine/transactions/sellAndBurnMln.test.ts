@@ -6,23 +6,33 @@ import {
   approve,
   getToken,
   balanceOf,
-} from '~/dependencies/token';
-import { Contract, getContract } from '~/utils/solidity';
+} from '~/contracts/dependencies/token';
+import {
+  Contract,
+  deploy as deployContract,
+  getContract,
+} from '~/utils/solidity';
 
 const shared: any = {};
 
 beforeAll(async () => {
   await initTestEnvironment();
+  shared.env = getGlobalEnvironment();
   const mlnAddress = await deployToken('MLN');
-  // shared.engineAddress = await deployEngine(); //TODO: args
-  shared.engineAddress = 'placeholder';
+  const versionAddress = await deployContract('version/MockVersion');
+  shared.delay = 30 * 24 * 60 * 60;
+  shared.engineAddress = await deployEngine(
+    versionAddress,
+    shared.priceSource,
+    shared.delay,
+    mlnAddress,
+  );
   shared.mlnToken = await getToken(mlnAddress);
-  shared.engine = await getContract(Contract.Engine, engineAddress);
-  shared.amount = Quantity.createQuantity(
+  shared.engine = await getContract(Contract.Engine, shared.engineAddress);
+  shared.quantity = Quantity.createQuantity(
     shared.mlnToken,
     Token.appendDecimals(shared.mlnToken, 1),
   );
-  shared.env = getGlobalEnvironment();
 });
 
 test('eth sent manually is not tracked', async () => {});
@@ -30,7 +40,7 @@ test('fails when eth sender not a fund', async () => {});
 test('eth can be sent as AMGU from a fund', async () => {});
 test('eth sent as AMGU is frozen and thaws', async () => {});
 test('sell and burn', async () => {
-  await approve(shared.amount, shared.env.wallet.address);
-  await sellAndBurnMln(shared.engineAddress, shared.amount);
+  await approve(shared.quantity, shared.env.wallet.address);
+  await sellAndBurnMln(shared.engineAddress, shared.quantity);
   expect(true).toBe(true);
 });
