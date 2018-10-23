@@ -313,7 +313,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], 
             exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], 
             identifier
-        )
+        );
     }
     
     /// @notice Universal method for calling exchange functions through adapters

@@ -3,68 +3,37 @@ pragma solidity ^0.4.21;
 import "../dependencies/Owned.sol";
 
 // Generic AssetList
+// should this inherit from Policy?
 contract AssetList is Owned {
 
-    mapping(address => bool)  private list;
-    address[]                 private mirror;
-    bool                      private frozen;
-    uint                      private cap; //Max number of whitelisted assets; implicit cap for distinct fund holdings
-    //NOTE: assetUnivCap < MaxPositions would be nonsensical
-    //NOTE: assetUnivCap <= asset number in AssetRegistrar
-    //NOTE: if specified, assetUnivCap must >= 2
-    //NOTE: if not specified, assetUnivCap defaults to 0
+    mapping(address => bool)  internal list;
+    address[]                 internal mirror;
 
-    // TODO modifier "isAppendable"
+    enum Conditionality { pre, post }
 
-    // TODO modifier "isRemovable"
-
-    // Constructor, set max size of listed
-    // cap = 0 => unlimited
-    function AssetList(uint _cap) public {
-        require(_cap != 1);
-        cap = _cap;
+    //Construct taks array of assets as parameter
+    function AssetList(address[] _addresses) public {
+      for (uint i = 0; i < _addresses.length; ++i) {
+        //ensure no duplicates in _addresses
+        if (!isMember(_addresses[i])) {
+          list[_addresses[i]] = true;
+          mirror.push(_addresses[i]);
+        }
+      }
     }
-    
-    function register(address _asset) external pre_cond(isOwner()) {
-      require(!isFrozen());
-      require(!exists(_asset));
-      require(cap != 0 && mirror.length < cap);
-      
-      list[_asset] = true;
-      mirror.push(_asset);
-    }
-    
-    function exists(address _asset) public view returns (bool) {
+
+    //returns asset member status in list
+    function isMember(address _asset) public view returns (bool) {
       return list[_asset];
     }
 
-    //Permanently freezes the list members
-    function freeze() external pre_cond(isOwner()) {
-        if (!frozen) {
-          frozen = true;
-        }
-    }
-
-    //check if the list is frozen
-    function isFrozen() public view returns (bool) {
-        return frozen;
-    }
-
     //returns the current number of assets specified on the list
-    function getNumList() external view returns (uint) {
+    function getMemberCount() external view returns (uint) {
       return mirror.length;
     }
 
-    //returns the set maximum number of assets for the fund's investment universe
-    function getCap() external view returns (uint) {
-      return cap;
-    }
-
     //returns an array of all listed asset addresses
-    function getList() external view returns (address[]) {
+    function getMembers() external view returns (address[]) {
       return mirror;
     }
-
-    //TBD
-    //function removeFromList(address _asset) public {}
 }

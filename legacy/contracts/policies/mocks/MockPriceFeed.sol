@@ -4,6 +4,7 @@ import "../../pricefeeds/SimplePriceFeedInterface.sol";
 
 contract MockPriceFeed is SimplePriceFeedInterface {
     mapping(address => uint) addresses;
+    address quote;
 
     function update(address[] ofAssets, uint[] newPrices) external {
         for(uint i = 0; i < ofAssets.length; ++i) {
@@ -11,10 +12,14 @@ contract MockPriceFeed is SimplePriceFeedInterface {
         }
     }
 
-    function getQuoteAsset() view returns (address) {
-        return address(0x0);
+    function setQuoteAsset(address _ofQuote) {
+        quote = _ofQuote;
     }
 
+    function getQuoteAsset() view returns (address) {
+        return quote;
+    }
+    
     function getLastUpdateId() view returns (uint) {
         return 1;
     }
