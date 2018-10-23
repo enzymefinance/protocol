@@ -1,7 +1,7 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
 
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
 
 import {
@@ -36,6 +36,8 @@ import {
   setupFund,
 } from '~/contracts/factory';
 import { getSettings } from '~/contracts/fund/hub';
+
+const debug = require('./getDebug').default(__filename);
 
 /**
  * Deploys all contracts and checks their health
@@ -123,12 +125,10 @@ export const deploySystem = async () => {
     howMuch: createQuantity(baseToken, 1),
     spender: new Address(accounts[1]),
   });
-};
 
-if (require.main === module) {
-  // compile("exchanges/MatchingMarket.sol");
-  initTestEnvironment().then(async () => {
-    await deploySystem();
-    process.exit();
-  });
-}
+  const addresses = {
+    fundFactory: fundFactoryAddress,
+  };
+
+  return addresses;
+};
