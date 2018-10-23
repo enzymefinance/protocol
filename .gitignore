@@ -28,3 +28,4 @@ coverage/
 
 # ignore concatenated files (only updated at verification time)
 utils/etherscan/concatenated
+utils/devchain-snapshot/0x_ganache_snapshot

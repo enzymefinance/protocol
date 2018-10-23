@@ -5,7 +5,7 @@ import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
-import { makeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
+import { makeOrderSignature, makeOrderSignatureString, cancelOrderSignature, cancelOrderSignatureString } from "../../utils/lib/data";
 import governanceAction from "../../utils/lib/governanceAction";
 
 const BigNumber = require("bignumber.js");
@@ -176,11 +176,11 @@ test.serial(
     await updateCanonicalPriceFeed(deployed);
     await fund.methods.callOnExchange(
       0,
-      makeOrderSignature,
-      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+      makeOrderSignatureString,
+      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0", "0x0"],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      0,
+      web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(
@@ -238,11 +238,11 @@ test.serial("Manager cancels an order from the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    makeOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0", "0x0"],
     [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -258,13 +258,13 @@ test.serial("Manager cancels an order from the fund", async t => {
   const orderId = await deployed.CentralizedExchangeBridge.methods.getLastOrderId().call();
   await fund.methods.callOnExchange(
     0,
-    cancelOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],
+    cancelOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0", "0x0"],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(orderId)
       .toString(16)
       .padStart(64, "0")}`,
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(

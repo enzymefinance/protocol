@@ -29,12 +29,12 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @param orderValues [1] Dest token amount
     function swapTokens(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
     {
         require(Fund(address(this)).owner() == msg.sender);
@@ -90,12 +90,12 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         revert();
     }
@@ -103,12 +103,12 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function takeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         revert();
     }
@@ -116,12 +116,12 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
     {
         revert();
@@ -132,7 +132,8 @@ contract KyberAdapter is ExchangeAdapterInterface, DBC, DSMath {
     /// @dev Dummy function; not implemented on exchange
     function getOrder(
         address targetExchange,
-        uint id
+        uint id,
+        address makerAsset
     )
         view
         returns (address, address, uint, uint)

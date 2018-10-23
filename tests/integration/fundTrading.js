@@ -9,7 +9,10 @@ import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import {
   makeOrderSignature,
   takeOrderSignature,
-  cancelOrderSignature
+  cancelOrderSignature,
+  makeOrderSignatureString,
+  takeOrderSignatureString,
+  cancelOrderSignatureString,
 } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
@@ -206,9 +209,6 @@ exchangeIndexes.forEach(i => {
     async t => {
       const boostedOffer = offeredValue.times(1.01); // account for increasing share price after trades occur
       let investorGasTotal = new BigNumber(0);
-      await ethToken.methods.transfer(investor, new BigNumber(10 ** 14)).send(
-        { from: deployer, gasPrice: config.gasPrice }
-      );
       const pre = await getAllBalances(deployed, accounts, fund);
       receipt = await ethToken.methods.approve(fund.options.address, boostedOffer).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
@@ -283,11 +283,11 @@ exchangeIndexes.forEach(i => {
     await updateCanonicalPriceFeed(deployed);
     receipt = await fund.methods.callOnExchange(
       i,
-      makeOrderSignature,
-      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+      makeOrderSignatureString,
+      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0", "0x0"],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      0,
+      web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
@@ -437,11 +437,11 @@ exchangeIndexes.forEach(i => {
       const orderId = await exchanges[i].methods.last_offer_id().call();
       receipt = await fund.methods.callOnExchange(
         i,
-        takeOrderSignature,
-        ["0x0", "0x0", "0x0", "0x0", "0x0"],
+        takeOrderSignatureString,
+        ["0x0", "0x0", "0x0", "0x0", "0x0", "0x0"],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
         `0x${Number(orderId).toString(16).padStart(64, "0")}`,
-        0,
+        web3.utils.padLeft('0x0', 64),
         web3.utils.padLeft('0x0', 64),
         web3.utils.padLeft('0x0', 64),
       ).send(
@@ -493,11 +493,11 @@ test.serial(
     const preOrderId = await exchanges[0].methods.last_offer_id().call();
     receipt = await t.throws(fund.methods.callOnExchange(
       0,
-      makeOrderSignature,
-      ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+      makeOrderSignatureString,
+      ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0", "0x0"],
       [trade3.sellQuantity, trade3.buyQuantity, 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      0,
+      web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(
@@ -577,14 +577,14 @@ test.serial(
 
     await t.throws(fund.methods.callOnExchange(
       0,
-      takeOrderSignature,
-      ["0x0", "0x0", "0x0", "0x0", "0x0"],
+      takeOrderSignatureString,
+      ["0x0", "0x0", "0x0", "0x0", "0x0", "0x0"],
       [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
       `0x${Number(orderId)
         .toString(16)
         .padStart(64, "0")}`,
-      0,
-      web3.utils.padLeft('0x0', 64),
+        web3.utils.padLeft('0x0', 64),
+        web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(
       { from: manager, gas: config.gas }
@@ -616,11 +616,11 @@ test.serial(
 test.serial("manager makes an order and cancels it", async t => {
   receipt = await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    makeOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0", "0x0"],
     [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -634,13 +634,13 @@ test.serial("manager makes an order and cancels it", async t => {
 
   receipt = await fund.methods.callOnExchange(
     0,
-    cancelOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],
+    cancelOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0", "0x0"],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -833,11 +833,11 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0"],
+    makeOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, ethToken.options.address, "0x0", "0x0"],
     [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -846,13 +846,13 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
   await t.throws(fund.methods.callOnExchange(
     0,
-    cancelOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],
+    cancelOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0", "0x0"],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -903,13 +903,13 @@ test.serial("shutdown of fund allows anyone to cancel order", async t => {
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
   receipt = await fund.methods.callOnExchange(
     0,
-    cancelOrderSignature,
-    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0"],
+    cancelOrderSignatureString,
+    ["0x0", "0x0", mlnToken.options.address, "0x0", "0x0", "0x0"],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
