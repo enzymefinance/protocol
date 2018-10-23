@@ -92,7 +92,7 @@ const writeFiles = (compileOutput, contract) => {
   );
 };
 
-const compileAll = (query = 'src/contracts/**/*.sol') => {
+export const compileAll = (query = 'src/contracts/**/*.sol') => {
   const candidates = glob.sync(query);
 
   debug(`Compiling ${query}, ${candidates.length} files ...`);

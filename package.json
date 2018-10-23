@@ -9,12 +9,12 @@
   },
   "scripts": {
     "build": "yarn createIndexFiles && parcel build src/index.ts --target node -d build",
-    "compile": "DEBUG=melon:protocol:* ts-node src/utils/solidity/compile.ts",
+    "compile": "node bin/melon.js compile",
     "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
     "dev": "yarn jest --watch src/",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
-    "deploy": "node bin/melon.js",
+    "deploy": "node bin/melon.js deploy",
     "format": "prettier --write src/**/*.ts",
     "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
     "lint:eslint": "eslint .",
@@ -34,7 +34,7 @@
     "access": "public"
   },
   "files": [
-    "bin/melon.js",
+    "bin/",
     "build/",
     "tests/",
     "src/"
@@ -92,6 +92,7 @@
   },
   "dependencies": {
     "@melonproject/token-math": "0.0.10",
+    "commander": "^2.19.0",
     "debug": "^4.0.1",
     "dotenv": "^6.0.0",
     "find-up": "^3.0.0",
