@@ -51,7 +51,7 @@ const writeExportAs = (
     // );
     fs.appendFileSync(
       df,
-      `export const ${basename} = require('${relativePath}');\n`,
+      `export const ${basename} = require('./${relativePath}');\n`,
     ); // ${basename}Export;\n
   });
 };
