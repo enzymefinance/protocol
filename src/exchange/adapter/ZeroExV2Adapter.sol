@@ -51,7 +51,7 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
                 signature
             ),
             "INVALID_ORDER_SIGNATURE"
-         );
+        );
         require(
             Fund(address(this)).isInAssetList(takerAsset) ||
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
@@ -182,10 +182,10 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         view
         returns (address, address, uint, uint)
     {
-        var (orderId, , orderIndex) = Fund(address(this)).getOpenOrderInfo(targetExchange, makerAsset);
-        var (, takerAsset, makerQuantity, takerQuantity) = Fund(address(this)).getOrderDetails(orderIndex);
+        var (orderId, , orderIndex) = Fund(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
+        var (, takerAsset, makerQuantity, takerQuantity) = Fund(msg.sender).getOrderDetails(orderIndex);
         uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
-        if (Exchange(targetExchange).cancelled(bytes32(orderId))) {
+        if (Exchange(targetExchange).cancelled(bytes32(orderId)) || sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
         return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));

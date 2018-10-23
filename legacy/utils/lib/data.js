@@ -43,6 +43,14 @@ function toBytesN(input, numBytes) {
     return web3.utils.padLeft(hexString, hexLength);
 }
 
+function toBytes32(input) {
+  return toBytesN(input, 32);
+}
+
+function toBytes8(input) {
+  return toBytesN(input, 8);
+}
+
 export {
   toBytes32,
   toBytes8,

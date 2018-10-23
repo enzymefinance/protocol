@@ -3,9 +3,7 @@ import {
   assetDataUtils,
   orderHashUtils,
   signatureUtils,
-  ContractWrappers,
-  SignerType,
-  SignatureType
+  SignerType
 } from "0x.js";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
@@ -48,8 +46,8 @@ let opts;
 
 // mock data
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const offeredValue = new BigNumber(10 ** 20);
-const wantedShares = new BigNumber(10 ** 20);
+const offeredValue = new BigNumber(10 ** 18);
+const wantedShares = new BigNumber(10 ** 18);
 
 test.before(async t => {
   deployed = await deployEnvironment(environment);
@@ -130,7 +128,7 @@ test.beforeEach(async () => {
   };
 });
 
-const initialTokenAmount = new BigNumber(10 ** 20);
+const initialTokenAmount = new BigNumber(10 ** 18);
 test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await ethToken.methods
@@ -580,6 +578,9 @@ test.serial("Third party fund takes the order made by the fund", async t => {
 
 test.serial("Fund can make another make order for same asset (After it's inactive)", async t => {
   await mlnToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
+  console.log(await fund.methods.exchangesToOpenMakeOrders(zeroExExchange.options.address, mlnToken.options.address).call());
+  await fund.methods.quantityHeldInCustodyOfExchange(mlnToken.options.address).send(opts);
+  console.log(await fund.methods.isInOpenMakeOrder(mlnToken.options.address).call());
   const makerAddress = fund.options.address.toLowerCase();
   order = {
     exchangeAddress: zeroExExchange.options.address.toLowerCase(),
