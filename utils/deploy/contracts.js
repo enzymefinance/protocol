@@ -409,7 +409,7 @@ async function deployEnvironment(environment) {
     );
     // deployed.Version = await retrieveContract("version/Version", "0x58727Ae4791e6E7E25707062DA4084EdF0cb9Aa2");
 
-    deployed.Fundranking = await retrieveContract("FundRanking", '0xE52eE3dB0587170DEb20B1c71B17229A28b79A9b');
+    deployed.FundRanking = await retrieveContract("FundRanking", '0xE52eE3dB0587170DEb20B1c71B17229A28b79A9b');
 
     // add Version to Governance tracking
     // NB: be sure that relevant authority account is unlocked
