@@ -6,14 +6,14 @@ interface TradingInterface {
 
     function callOnExchange(
         uint exchangeIndex,
-        bytes4 method,
-        address[5] orderAddresses,
+        string methodSignature,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    );
 
     function addOpenMakeOrder(
         address ofExchange,

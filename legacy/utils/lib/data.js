@@ -1,26 +1,30 @@
 import web3 from "./web3";
 
-function abiEncode(name, argTypes=[]) {
-  return web3.eth.abi.encodeFunctionSignature(
-    `${name}(${argTypes.join(",")})`
-  );
+function joinSignature(name, argTypes=[]) {
+    return `${name}(${argTypes.join(",")})`
 }
 
-const makeOrderSignature = abiEncode("makeOrder", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
+function abiEncode(joinedSignature) {
+  return web3.eth.abi.encodeFunctionSignature(joinedSignature);
+}
+
+export const makeOrderSignature = joinSignature("makeOrder", [
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
+]);
+export const takeOrderSignature = joinSignature("takeOrder", [
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
+]);
+export const cancelOrderSignature = joinSignature("cancelOrder", [
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
+]);
+export const swapTokensSignature = joinSignature("swapTokens", [
+  "address", "address[6]", "uint256[8]", "bytes32", "bytes", "bytes", "bytes",
 ]);
 
-const takeOrderSignature = abiEncode("takeOrder", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
-]);
-
-const cancelOrderSignature = abiEncode("cancelOrder", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
-]);
-
-const swapTokensSignature = abiEncode("swapTokens", [
-  "address", "address[5]", "uint256[8]", "bytes32", "uint8", "bytes32", "bytes32",
-]);
+export const makeOrderSignatureBytes = abiEncode(makeOrderSignature);
+export const takeOrderSignatureBytes = abiEncode(takeOrderSignature);
+export const cancelOrderSignatureBytes = abiEncode(cancelOrderSignature);
+export const swapTokensSignatureBytes = abiEncode(swapTokensSignature);
 
 function toBytes32(input) {
   return toBytesN(input, 32);
@@ -40,10 +44,6 @@ function toBytesN(input, numBytes) {
 }
 
 export {
-  makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature,
-  swapTokensSignature,
   toBytes32,
   toBytes8,
   abiEncode

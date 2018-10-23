@@ -11,6 +11,11 @@ import getChainTime from '../../utils/lib/getChainTime';
 import createStakingFeed from '../lib/createStakingFeed';
 import { clone } from '../lib/misc';
 import { abiEncode } from '../lib/data';
+import {
+  makeOrderSignatureBytes,
+  takeOrderSignatureBytes,
+  cancelOrderSignatureBytes,
+} from "../../utils/lib/data";
 // import verifyDeployment from "./verify";
 
 const BigNumber = require('bignumber.js');
@@ -101,41 +106,6 @@ async function deployEnvironment(environment) {
     gas: 8000000,
     gasPrice: config.gasPrice,
   };
-
-  // TODO: put signature functions in a lib and use across all tests/utils
-  const makeOrderSignature = api.util
-    .abiSignature('makeOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
-  const takeOrderSignature = api.util
-    .abiSignature('takeOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
-  const cancelOrderSignature = api.util
-    .abiSignature('cancelOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
 
   const deployed = {};
 
@@ -361,9 +331,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -377,7 +347,7 @@ async function deployEnvironment(environment) {
     //     // deployed.ZeroExExchange.options.address,
     //     // deployed.ZeroExV1Adapter.options.address,
     //     false,
-    //     [ takeOrderSignature ]
+    //     [ takeOrderSignatureBytes ]
     //   ]
     // );
     // console.log('Registered ZeroEx');
@@ -509,9 +479,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -524,9 +494,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -844,7 +814,7 @@ async function deployEnvironment(environment) {
         deployed.MatchingMarket.options.address,
         deployed.MatchingMarketAdapter.options.address,
         true,
-        [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
+        [makeOrderSignatureBytes, takeOrderSignatureBytes, cancelOrderSignatureBytes],
       ],
     );
 

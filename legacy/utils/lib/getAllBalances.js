@@ -25,7 +25,7 @@ async function getAllBalances(instances, accounts, fund) {
     fund: {
       MlnToken: new BigNumber(await fund.accounting.methods.assetHoldings(instances.MlnToken.options.address).call()),
       EthToken: new BigNumber(await fund.accounting.methods.assetHoldings(instances.EthToken.options.address).call()),
-      ether: new BigNumber(await api.eth.getBalance(fund.vault.options.address))
+      ether: new BigNumber(await web3.eth.getBalance(fund.vault.options.address))
     },
     worker: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(worker).call()),

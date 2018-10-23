@@ -10,9 +10,9 @@ import {
   makeOrderSignature,
   takeOrderSignature,
   cancelOrderSignature,
-  makeOrderSignatureString,
-  takeOrderSignatureString,
-  cancelOrderSignatureString,
+  makeOrderSignatureBytes,
+  takeOrderSignatureBytes,
+  cancelOrderSignatureBytes,
 } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
@@ -71,8 +71,8 @@ test.before(async t => {
 
   // Register price tolerance policy
   const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
-  await t.notThrows(fund.policyManager.methods.register(makeOrderSignature, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
-  await t.notThrows(fund.policyManager.methods.register(takeOrderSignature, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
+  await t.notThrows(fund.policyManager.methods.register(makeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
+  await t.notThrows(fund.policyManager.methods.register(takeOrderSignatureBytes, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
 });
 
 test.beforeEach(async () => {
@@ -237,7 +237,7 @@ exchangeIndexes.forEach(i => {
     await updateTestingPriceFeed(deployed);
     receipt = await fund.trading.methods.callOnExchange(
       i,
-      makeOrderSignatureString,
+      makeOrderSignature,
       [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
       [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
@@ -391,7 +391,7 @@ exchangeIndexes.forEach(i => {
       const orderId = await exchanges[i].methods.last_offer_id().call();
       receipt = await fund.trading.methods.callOnExchange(
         i,
-        takeOrderSignatureString,
+        takeOrderSignature,
         [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity.toFixed(), 0],
         `0x${Number(orderId).toString(16).padStart(64, "0")}`,
@@ -449,7 +449,7 @@ test.serial(
     const preOrderId = await exchanges[0].methods.last_offer_id().call();
     receipt = await t.throws(fund.trading.methods.callOnExchange(
       0,
-      makeOrderSignatureString,
+      makeOrderSignature,
       [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
       [trade3.sellQuantity.toFixed(), trade3.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
@@ -533,7 +533,7 @@ test.serial(
 
     await t.throws(fund.trading.methods.callOnExchange(
       0,
-      takeOrderSignatureString,
+      takeOrderSignature,
       [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
       [0, 0, 0, 0, 0, 0, trade4.buyQuantity.toFixed(), 0],  // changed from [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
       `0x${Number(orderId)
@@ -579,7 +579,7 @@ test.serial("manager makes an order and cancels it", async t => {
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
   receipt = await fund.trading.methods.callOnExchange(
     0,
-    makeOrderSignatureString,
+    makeOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -592,7 +592,7 @@ test.serial("manager makes an order and cancels it", async t => {
   
   receipt = await fund.trading.methods.callOnExchange(
     0,
-    cancelOrderSignatureString,
+    cancelOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
@@ -788,7 +788,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await fund.trading.methods.callOnExchange(
     0,
-    makeOrderSignatureString,
+    makeOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
@@ -801,7 +801,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
   await t.throws(fund.trading.methods.callOnExchange(
     0,
-    cancelOrderSignatureString,
+    cancelOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
@@ -858,7 +858,7 @@ test.serial("shutdown of fund allows anyone to cancel order", async t => {
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
   receipt = await fund.trading.methods.callOnExchange(
     0,
-    cancelOrderSignatureString,
+    cancelOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)

@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 
 import "./Trading.i.sol";
@@ -72,26 +73,74 @@ contract Trading is DSMath, Spoke, TradingInterface {
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
 
+    /// @notice Universal method for calling exchange functions through adapters
+    /// @notice See adapter contracts for parameters needed for each exchange
+    /// @param exchangeIndex Index of the exchange in the "exchanges" array
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [1] Order taker
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
+    /// @param orderValues [0] makerAssetAmount
+    /// @param orderValues [1] takerAssetAmount
+    /// @param orderValues [2] Maker fee
+    /// @param orderValues [3] Taker fee
+    /// @param orderValues [4] expirationTimeSeconds
+    /// @param orderValues [5] Salt/nonce
+    /// @param orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param orderValues [7] Dexy signature mode
+    /// @param identifier Order identifier
+    /// @param makerAssetData Encoded data specific to makerAsset.
+    /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of order maker.
     function callOnExchange(
         uint exchangeIndex,
-        bytes4 method,
-        address[5] orderAddresses,
+        string methodSignature,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
-        external
+        public
     {
-        PolicyManager(routes.policyManager).preValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
-        address adapter = exchanges[exchangeIndex].adapter;
-        address exchange = exchanges[exchangeIndex].exchange;
-        require(adapter.delegatecall(
-            method, exchange, orderAddresses, orderValues, identifier, v, r, s
-        ));
-        PolicyManager(routes.policyManager).postValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        // require(
+        //     modules.pricefeed.exchangeMethodIsAllowed(
+        //         exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
+        //     )
+        // );
+        PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        // require(bytes4(hex'79705be7') == bytes4(keccak256(methodSignature)));
+        // require(
+        //     exchanges[exchangeIndex].adapter.delegatecall(
+        //         hex'79705be7',
+        //         // bytes4(keccak256(methodSignature)),
+        //         exchanges[exchangeIndex].exchange,
+        //         orderAddresses,
+        //         orderValues, 
+        //         identifier, 
+        //         makerAssetData,
+        //         takerAssetData,
+        //         signature
+        // ));
+
+        require(
+            exchanges[exchangeIndex].adapter.delegatecall(
+                abi.encodeWithSignature(
+                    methodSignature,
+                    exchanges[exchangeIndex].exchange,
+                    orderAddresses,
+                    orderValues, 
+                    identifier, 
+                    makerAssetData,
+                    takerAssetData,
+                    signature
+                )
+            )
+        );
+        // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
     function addOpenMakeOrder(
