@@ -37,7 +37,7 @@
     "bin/melon.js",
     "build/",
     "tests/",
-    "src/**/*.sol"
+    "src/"
   ],
   "repository": {
     "type": "git",
