@@ -1,4 +1,4 @@
-import { IToken } from '@melonproject/token-math';
+import { TokenInterface } from '@melonproject/token-math/token';
 
 import { Address } from '~/utils/types';
 import {
@@ -18,8 +18,8 @@ interface ExchangeConfig {
 interface CreateComponentsArgs {
   fundName: string;
   exchangeConfigs: ExchangeConfig[];
-  quoteToken: IToken;
-  defaultTokens: IToken[];
+  quoteToken: TokenInterface;
+  defaultTokens: TokenInterface[];
   priceSource: Address;
 }
 

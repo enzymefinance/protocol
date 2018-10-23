@@ -1,16 +1,16 @@
 import * as R from 'ramda';
 
-import { IToken, Price, Quantity, Token } from '@melonproject/token-math';
+import { getPrice } from '@melonproject/token-math/price';
+import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { Environment } from '~/utils/environment';
 import { getQuoteToken } from '..';
 import { Contract, getContract } from '~/utils/solidity';
 
-const getPrice = Price.getPrice;
-
 export const getPrices = async (
   contractAddress: string,
-  tokens: IToken[],
+  tokens: TokenInterface[],
   environment?: Environment,
 ) => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
@@ -31,9 +31,9 @@ export const getPrices = async (
 
   const processed = R.zipWith(processResult, result['0'], result['1']);
 
-  const createPrice = (t: IToken, { price, timestamp }) => {
-    const base = Quantity.createQuantity(t, Token.appendDecimals(t, 1));
-    const quote = Quantity.createQuantity(quoteToken, price);
+  const createPrice = (t: TokenInterface, { price, timestamp }) => {
+    const base = createQuantity(t, appendDecimals(t, 1));
+    const quote = createQuantity(quoteToken, price);
     return getPrice(base, quote);
   };
 

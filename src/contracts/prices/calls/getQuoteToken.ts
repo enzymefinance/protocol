@@ -1,4 +1,4 @@
-import { IToken } from '@melonproject/token-math';
+import { TokenInterface } from '@melonproject/token-math/token';
 
 import { Environment } from '~/utils/environment';
 import { Contract, getContract } from '~/utils/solidity';
@@ -6,7 +6,7 @@ import { Contract, getContract } from '~/utils/solidity';
 export const getQuoteToken = async (
   contractAddress: string,
   environment?: Environment,
-): Promise<IToken> => {
+): Promise<TokenInterface> => {
   const contract = await getContract(
     Contract.TestingPriceFeed,
     contractAddress,
