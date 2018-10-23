@@ -1,4 +1,4 @@
-import { Quantity } from '@melonproject/token-math';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { getGlobalEnvironment } from '~/utils/environment';
 import { getToken } from '..';
@@ -16,5 +16,5 @@ export const balanceOf = async (
   );
   const tokenMathToken = await getToken(contractAddress, environment);
   const result = await contract.methods.balanceOf(address).call();
-  return Quantity.createQuantity(tokenMathToken, result);
+  return createQuantity(tokenMathToken, result);
 };

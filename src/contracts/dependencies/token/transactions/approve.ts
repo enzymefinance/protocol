@@ -1,52 +1,56 @@
-import { IQuantity } from '@melonproject/token-math';
+import { QuantityInterface } from '@melonproject/token-math/quantity';
 
 import { Address } from '~/utils/types';
 import {
-  prepareTransaction,
-  sendTransaction,
-  getContract,
+  transactionFactory,
+  withContractAddressQuery,
+  ImplicitExecute,
   Contract,
 } from '~/utils/solidity';
 import { isAddress } from '~/utils/checks';
 import { ensure } from '~/utils/guards';
 
-const guards = async (howMuch, spender, environment) => {
+const guard = async ({ howMuch, spender }, environment) => {
   ensure(
     isAddress(spender),
     `Spender is not an address. Got: ${spender}`,
     spender,
   );
   ensure(
-    isAddress(howMuch.address),
+    isAddress(howMuch.token.address),
     `Spend token needs to have an address. Got: ${howMuch.address}`,
     spender,
   );
 };
 
-const prepare = async (howMuch, spender, environment) => {
-  const contract = getContract(Contract.PreminedToken, howMuch.address);
-  const transaction = contract.methods.approve(
-    spender.toString(),
-    howMuch.quantity.toString(),
-  );
-  transaction.name = 'approve';
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
+const prepareArgs = async ({ howMuch, spender }) => [
+  spender.toString(),
+  howMuch.quantity.toString(),
+];
 
-const validateReceipt = receipt => {
+const postProcess = async receipt => {
   return true;
 };
 
-// tslint:disable-next-line:variable-name
-export const approve = async (
-  howMuch: IQuantity,
-  spender: Address,
-  environment?,
-) => {
-  await guards(howMuch, spender, environment);
-  const transaction = await prepare(howMuch, spender, environment);
-  const receipt = await sendTransaction(transaction, environment);
-  const result = validateReceipt(receipt);
-  return result;
-};
+interface ApproveArgs {
+  howMuch: QuantityInterface;
+  spender: Address;
+}
+
+type ApproveResult = boolean;
+
+const approve: ImplicitExecute<
+  ApproveArgs,
+  ApproveResult
+> = withContractAddressQuery(
+  ['howMuch', 'token', 'address'],
+  transactionFactory(
+    'approve',
+    Contract.StandardToken,
+    guard,
+    prepareArgs,
+    postProcess,
+  ),
+);
+
+export { approve };

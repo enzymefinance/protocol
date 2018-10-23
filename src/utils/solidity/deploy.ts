@@ -1,10 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { BigInteger } from '@melonproject/token-math';
+import {
+  BigInteger,
+  toBI,
+  greaterThan,
+} from '@melonproject/token-math/bigInteger';
 
 import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
 
-const { toBI, greaterThan } = BigInteger;
 const debug = require('~/utils/getDebug').default(__filename);
 
 type ConstructorArg = number | string;

@@ -1,4 +1,6 @@
-import { Price, Quantity, Token } from '@melonproject/token-math';
+import { createQuantity } from '@melonproject/token-math/quantity';
+import { getPrice } from '@melonproject/token-math/price';
+
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
 
@@ -110,17 +112,17 @@ export const deploySystem = async () => {
     policy: priceToleranceAddress,
   });
 
-  const newPrice = Price.getPrice(
-    Quantity.createQuantity(baseToken, Token.appendDecimals(baseToken, 1)),
-    Quantity.createQuantity(quoteToken, Token.appendDecimals(quoteToken, 0.34)),
+  const newPrice = getPrice(
+    createQuantity(baseToken, 1),
+    createQuantity(quoteToken, 0.34),
   );
 
   await update(priceFeedAddress, [newPrice]);
 
-  await approve(
-    Quantity.createQuantity(baseToken, Token.appendDecimals(baseToken, 1)),
-    new Address(accounts[1]),
-  );
+  await approve({
+    howMuch: createQuantity(baseToken, 1),
+    spender: new Address(accounts[1]),
+  });
 };
 
 if (require.main === module) {
