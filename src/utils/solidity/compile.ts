@@ -154,13 +154,6 @@ if (require.main === module) {
     compile(contract);
   } else {
     debug('Compiling all contracts.');
-    debug('CWD:', process.cwd());
-    debug('__filename:', __filename);
-    debug('__dirname:', __dirname);
-    debug('require.main.filename:', require.main.filename);
-    debug('path.resolve("./src")', path.resolve('./src'));
-    debug('path.resolve("src")', path.resolve('src'));
-    debug('process.mainModule.filename', process.mainModule.filename);
     console.log(
       // tslint:disable-next-line:max-line-length
       'If you want to compile just one, call `yarn compile src/contracts/path/to/contract.sol`',
