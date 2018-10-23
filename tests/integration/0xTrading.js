@@ -48,8 +48,8 @@ let opts;
 
 // mock data
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const offeredValue = new BigNumber(10 ** 19);
-const wantedShares = new BigNumber(10 ** 19);
+const offeredValue = new BigNumber(10 ** 20);
+const wantedShares = new BigNumber(10 ** 20);
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
@@ -126,7 +126,7 @@ test.beforeEach(async () => {
   };
 });
 
-const initialTokenAmount = new BigNumber(10 ** 19);
+const initialTokenAmount = new BigNumber(10 ** 20);
 test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await ethToken.methods
@@ -338,7 +338,7 @@ test.serial("third party makes another order with taker fees", async t => {
 test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
-  zrxToken.methods
+  await zrxToken.methods
     .transfer(fund.options.address, new BigNumber(10 ** 20))
     .send(opts);
   await fund.methods
@@ -572,4 +572,72 @@ test.serial("Third party fund takes the order made by the fund", async t => {
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
   t.deepEqual(postTPFundMln, preTPFundMln.plus(trade1.sellQuantity));
   t.deepEqual(post.fund.ether, pre.fund.ether);
+});
+
+test.serial("Fund can make another make order for same asset (After it's inactive)", async t => {
+  await mlnToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
+  const makerAddress = fund.options.address.toLowerCase();
+  order = {
+    exchangeAddress: zeroExExchange.options.address.toLowerCase(),
+    makerAddress,
+    takerAddress: NULL_ADDRESS,
+    senderAddress: NULL_ADDRESS,
+    feeRecipientAddress: NULL_ADDRESS,
+    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
+      80000
+    ),
+    salt: new BigNumber(585),
+    makerAssetAmount: new BigNumber(trade1.sellQuantity),
+    takerAssetAmount: new BigNumber(trade1.buyQuantity),
+    makerAssetData: assetDataUtils.encodeERC20AssetData(
+      mlnToken.options.address.toLowerCase()
+    ),
+    takerAssetData: assetDataUtils.encodeERC20AssetData(
+      ethToken.options.address.toLowerCase()
+    ),
+    makerFee: new BigNumber(0),
+    takerFee: new BigNumber(0)
+  };
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  orderSignature = await signatureUtils.ecSignOrderHashAsync(
+    web3.currentProvider,
+    orderHashHex,
+    manager,
+    SignerType.Default
+  );
+  orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
+  await fund.methods
+    .callOnExchange(
+      0,
+      makeOrderSignatureString,
+      [
+        makerAddress,
+        NULL_ADDRESS,
+        mlnToken.options.address,
+        ethToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        order.salt,
+        0,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: manager, gas: config.gas });
+  const makerAssetAllowance = new BigNumber(
+    await mlnToken.methods
+      .allowance(fund.options.address, erc20ProxyAddress)
+      .call()
+  );
+  t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
 });
