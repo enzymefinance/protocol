@@ -15,8 +15,6 @@ const BigNumber = require("bignumber.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
-const competitionTerms =
-  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 const fundName = web3.utils.toHex("Super Fund");
 
@@ -26,6 +24,7 @@ let deployer;
 let manager;
 
 async function registerFund(t, fundAddress, by, value) {
+  const competitionTerms = await t.context.competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(by, competitionTerms);
   await t.context.competition.methods.registerForCompetition(fundAddress, v, r, s).send(
     {
@@ -186,7 +185,7 @@ test("Mln deposited to the fund is deterministic", async t => {
 
   t.deepEqual(fundMln, secondFundMln);
   t.is(Number(fundMln), Number(expectedReward));;
-  t.true(fundSupply < secondFundSupply);
+  t.true(Number(fundSupply) < Number(secondFundSupply));
 });
 
 test.serial("Cannot register after endTime", async t => {

@@ -1,5 +1,6 @@
 import web3 from "./web3";
 
+
 async function getSignature(signer, contents) {
   return web3.eth.sign(contents, signer);
 }
@@ -15,11 +16,11 @@ async function getSignatureParameters(signer, contents) {
 
 async function getTermsSignatureParameters(managerAddress) {
   const termsAndConditionsHash =
-    "0xAA9C907B0D6B4890E7225C09CBC16A01CB97288840201AA7CDCB27F4ED7BF159";
+    "0xD35EBA0B0FF284A240D50F43381D8A1E00F19FBFDBF5162224335251A7D6D154";
   return getSignatureParameters(managerAddress, termsAndConditionsHash);
 }
 
-export { 
+export {
   getSignature,
   getSignatureParameters,
   getTermsSignatureParameters

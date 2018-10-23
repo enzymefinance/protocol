@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./assets/Shares.sol";
 import "./dependencies/DBC.sol";
@@ -38,7 +39,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         uint timestamp; // Time when calculations are performed in seconds
     }
 
-    enum UpdateType { make, take, cancel }
+    enum UpdateType { make, take, cancel, swap }
     enum RequestStatus { active, cancelled, executed }
     struct Request { // Describes and logs whenever asset enter and leave fund due to Participants
         address participant; // Participant in Melon fund requesting investment or redemption
@@ -60,12 +61,13 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     struct OpenMakeOrder {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
+        uint orderIndex; // Index of the make order entry in the orders array
     }
 
     struct Order { // Describes an order event (make or take order)
         address exchangeAddress; // address of the exchange this order is on
         bytes32 orderId; // Id as returned from exchange
-        UpdateType updateType; // Enum: make, take (cancel should be ignored)
+        UpdateType updateType; // Enum: make, take, swap (cancel should be ignored)
         address makerAsset; // Order maker's asset
         address takerAsset; // Order taker's asset
         uint makerQuantity; // Quantity of makerAsset to be traded
@@ -84,6 +86,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     uint public PERFORMANCE_FEE_RATE; // Fee rate in QUOTE_ASSET per delta improvement in WAD
     address public VERSION; // Address of Version contract
     Asset public QUOTE_ASSET; // QUOTE asset as ERC20 contract
+    Asset public NATIVE_ASSET; // NATIVE asset as ERC20 contract
     // Methods fields
     Modules public modules; // Struct which holds all the initialised module instances
     Exchange[] public exchanges; // Array containing exchanges this fund supports
@@ -116,6 +119,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         address ofManager,
         bytes32 withName,
         address ofQuoteAsset,
+        address ofNativeAsset,
         uint ofManagementFee,
         uint ofPerformanceFee,
         address ofCompliance,
@@ -147,6 +151,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             }));
         }
         QUOTE_ASSET = Asset(ofQuoteAsset);
+        NATIVE_ASSET = Asset(ofNativeAsset);
         // Quote Asset always in owned assets list
         ownedAssets.push(ofQuoteAsset);
         isInAssetList[ofQuoteAsset] = true;
@@ -315,55 +320,20 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             identifier
         );
     }
-    
-    /// @notice Universal method for calling exchange functions through adapters
-    /// @notice See adapter contracts for parameters needed for each exchange
-    /// @param exchangeIndex Index of the exchange in the "exchanges" array
-    /// @param method Signature of the adapter method to call (as per ABI spec)
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] Fee recipient
-    /// @param orderValues [0] Maker token quantity
-    /// @param orderValues [1] Taker token quantity
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] Timestamp (seconds)
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param identifier Order identifier
-    /// @param v ECDSA recovery id
-    /// @param r ECDSA signature output r
-    /// @param s ECDSA signature output s
-    function callOnExchange(
-        uint exchangeIndex,
-        bytes4 method,
-        address[5] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-    external 
-    isValidPolicyBySig(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
-    {
-        require(modules.pricefeed.exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
-        require((exchanges[exchangeIndex].exchangeAdapter).delegatecall(method, exchanges[exchangeIndex].exchange,orderAddresses, orderValues, identifier, v, r, s));
-    }
-    
+
+    /// @dev This should be called after orderUpdateHook so the orderIndex is correct
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
         uint orderId
     )
         pre_cond(msg.sender == address(this))
+        pre_cond(orders.length > 0)
     {
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(now, ORDER_EXPIRATION_TIME);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
 
     function removeOpenMakeOrder(
@@ -372,6 +342,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     )
         pre_cond(msg.sender == address(this))
     {
+        isInOpenMakeOrder[ofSellAsset] = false;
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
     }
 
@@ -385,7 +356,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         pre_cond(msg.sender == address(this))
     {
         // only save make/take
-        if (updateType == UpdateType.make || updateType == UpdateType.take) {
+        if (updateType == UpdateType.make || updateType == UpdateType.take || updateType == UpdateType.swap) {
             orders.push(Order({
                 exchangeAddress: ofExchange,
                 orderId: orderId,
@@ -402,6 +373,61 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
     }
 
     // PUBLIC METHODS
+
+    /// @notice Universal method for calling exchange functions through adapters
+    /// @notice See adapter contracts for parameters needed for each exchange
+    /// @param exchangeIndex Index of the exchange in the "exchanges" array
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [1] Order taker
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
+    /// @param orderValues [0] makerAssetAmount
+    /// @param orderValues [1] takerAssetAmount
+    /// @param orderValues [2] Maker fee
+    /// @param orderValues [3] Taker fee
+    /// @param orderValues [4] expirationTimeSeconds
+    /// @param orderValues [5] Salt/nonce
+    /// @param orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param orderValues [7] Dexy signature mode
+    /// @param identifier Order identifier
+    /// @param makerAssetData Encoded data specific to makerAsset.
+    /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of order maker.
+    function callOnExchange(
+        uint exchangeIndex,
+        string methodSignature,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    )
+        public
+        isValidPolicyBySig(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier) 
+    {
+        require(
+            modules.pricefeed.exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
+            )
+        );
+        require(
+            exchanges[exchangeIndex].exchangeAdapter.delegatecall(
+                abi.encodeWithSignature(
+                    methodSignature,
+                    exchanges[exchangeIndex].exchange,
+                    orderAddresses,
+                    orderValues, 
+                    identifier, 
+                    makerAssetData,
+                    takerAssetData,
+                    signature
+                )
+            )
+        );
+    }
 
     // PUBLIC METHODS : ACCOUNTING
 
@@ -685,6 +711,8 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         return true;
     }
 
+    function() public payable { }
+
     // PUBLIC : FEES
 
     /// @dev Quantity of asset held in exchange according to associated order id
@@ -697,8 +725,8 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
                 continue;
             }
-            var (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
-            if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
+            var (, , sellQuantity, buyQuantity) = GenericExchangeInterface(exchanges[i].exchangeAdapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id, ofAsset);
+            if (sellQuantity == 0 || buyQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
             totalSellQuantity = add(totalSellQuantity, sellQuantity);
@@ -707,7 +735,7 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
             }
         }
         if (totalSellQuantity == 0) {
-            isInOpenMakeOrder[sellAsset] = false;
+            isInOpenMakeOrder[ofAsset] = false;
         }
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
@@ -749,8 +777,12 @@ contract Fund is PolicyManager, DSMath, DBC, Owned, Shares, FundInterface {
         require(expiryTime > 0);
         return block.timestamp >= expiryTime;
     }
-    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint) {
+    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
-        return (order.id, order.expiresAt);
+        return (order.id, order.expiresAt, order.orderIndex);
+    }
+    function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
+        Order memory order = orders[orderIndex];
+        return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 }

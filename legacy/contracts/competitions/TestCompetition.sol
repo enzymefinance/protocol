@@ -34,9 +34,10 @@ contract TestCompetition is CompetitionInterface, DSMath, DBC, Owned {
     // FIELDS
 
     // Constant fields
-    // Competition terms and conditions as displayed on https://ipfs.io/ipfs/QmXuUfPi6xeYfuMwpVAughm7GjGUjkbEojhNR8DJqVBBxc
-    // IPFS hash encoded using http://lenschulwitz.com/base58
-    bytes public constant TERMS_AND_CONDITIONS = hex"12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
+    // Competition terms and conditions as displayed on https://ipfs.io/ipfs/QmSCdmLL8BV4f9RSFjpsqZ3JTAdqgdwoQkfTYxNtG1uTNt
+    // IPFS hash can be encoded and decoded using http://lenschulwitz.com/base58
+    string public constant ORIGINAL_IPFS_HASH = "QmSCdmLL8BV4f9RSFjpsqZ3JTAdqgdwoQkfTYxNtG1uTNt";
+    bytes public constant TERMS_AND_CONDITIONS = hex"1220396108900B284DDF2F10C83838E87BB7808A96996072521254D24EAABE7F6F5D";
     uint public MELON_BASE_UNIT = 10 ** 18;
     // Constructor fields
     address public custodian; // Address of the custodian which holds the funds sent

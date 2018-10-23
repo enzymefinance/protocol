@@ -9,6 +9,8 @@ import deployVersion from "./contracts/version";
 import deployCompetition from "./contracts/competition";
 import deployFundRanking from "./contracts/fundRanking";
 
+const addressBookFile = "./addressBook.json";
+
 async function deployEnvironment(environment) {
   let deployed = {};
   switch (environment) {

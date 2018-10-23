@@ -7,7 +7,7 @@
     "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
     "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
     "dev": "yarn jest --watch src/",
-    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
+    "devchain": "unzip -o ./utils/devchain-snapshot/0x-snapshot.zip -d ./utils/devchain-snapshot && ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000 --db ./utils/devchain-snapshot/0x_ganache_snapshot -m 'concert load couple harbor equip island argue ramp clarify fence smart topic'",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
     "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
     "format": "prettier --write src/**/*.ts",
@@ -24,7 +24,8 @@
     "test:TOFIX": "yarn lint:solium"
   },
   "files": [
-    "out",
+    "out/**/*.json",
+    "out/**/*.abi",
     "utils/info",
     "utils/config",
     "utils/build",
@@ -106,6 +107,7 @@
       "tests/integration/centralizedExchange.js",
       "tests/integration/simpleMarketWithApprove.js",
       "tests/integration/redeemMaliciousAsset.js",
+      "tests/integration/kyberTrading.js",
       "tests/integration/0xTrading.js",
       "tests/integration/tradingAlternativeToken.js",
       "tests/unit/pricefeed/priceFeed.js",

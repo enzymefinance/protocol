@@ -8,6 +8,9 @@ import "../assets/PreminedAsset.sol";
 contract MaliciousToken is PreminedAsset {
     bool public isThrowing = false;
 
+    function MaliciousToken(uint _decimals) PreminedAsset(_decimals) {
+    }
+    
     function startThrowing() {
         isThrowing = true;
     }
