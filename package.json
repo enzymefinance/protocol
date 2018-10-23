@@ -37,7 +37,8 @@
     "bin/",
     "build/",
     "tests/",
-    "src/"
+    "src/",
+    "tsconfig.json"
   ],
   "repository": {
     "type": "git",

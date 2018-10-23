@@ -15,6 +15,9 @@ const { deploySystem } = require('../src/utils/deploySystem');
 
 program
   .version(pkg.version, '-v, --version')
+  .description('The Melon Protocol CLI');
+
+program
   .command('compile')
   .description('Compile the Melon Smart Contracts.')
   .action(async () => {
