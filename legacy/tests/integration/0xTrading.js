@@ -576,73 +576,90 @@ test.serial("Third party fund takes the order made by the fund", async t => {
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-test.serial("Fund can make another make order for same asset (After it's inactive)", async t => {
-  await mlnToken.methods.transfer(fund.options.address, new BigNumber(10 ** 20)).send(opts);
-  console.log(await fund.methods.exchangesToOpenMakeOrders(zeroExExchange.options.address, mlnToken.options.address).call());
-  await fund.methods.quantityHeldInCustodyOfExchange(mlnToken.options.address).send(opts);
-  console.log(await fund.methods.isInOpenMakeOrder(mlnToken.options.address).call());
-  const makerAddress = fund.options.address.toLowerCase();
-  order = {
-    exchangeAddress: zeroExExchange.options.address.toLowerCase(),
-    makerAddress,
-    takerAddress: NULL_ADDRESS,
-    senderAddress: NULL_ADDRESS,
-    feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
-    ),
-    salt: new BigNumber(585),
-    makerAssetAmount: new BigNumber(trade1.sellQuantity),
-    takerAssetAmount: new BigNumber(trade1.buyQuantity),
-    makerAssetData: assetDataUtils.encodeERC20AssetData(
-      mlnToken.options.address.toLowerCase()
-    ),
-    takerAssetData: assetDataUtils.encodeERC20AssetData(
-      ethToken.options.address.toLowerCase()
-    ),
-    makerFee: new BigNumber(0),
-    takerFee: new BigNumber(0)
-  };
-  const orderHashHex = orderHashUtils.getOrderHashHex(order);
-  orderSignature = await signatureUtils.ecSignOrderHashAsync(
-    web3.currentProvider,
-    orderHashHex,
-    manager,
-    SignerType.Default
-  );
-  orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
-  await fund.methods
-    .callOnExchange(
-      0,
-      makeOrderSignatureString,
-      [
-        makerAddress,
-        NULL_ADDRESS,
-        mlnToken.options.address,
-        ethToken.options.address,
-        order.feeRecipientAddress,
-        NULL_ADDRESS
-      ],
-      [
-        order.makerAssetAmount,
-        order.takerAssetAmount,
-        order.makerFee,
-        order.takerFee,
-        order.expirationTimeSeconds,
-        order.salt,
-        0,
-        0
-      ],
-      web3.utils.padLeft("0x0", 64),
-      order.makerAssetData,
-      order.takerAssetData,
-      orderSignature
-    )
-    .send({ from: manager, gas: config.gas });
-  const makerAssetAllowance = new BigNumber(
+test.serial(
+  "Fund can make another make order for same asset (After it's inactive)",
+  async t => {
     await mlnToken.methods
-      .allowance(fund.options.address, erc20ProxyAddress)
-      .call()
-  );
-  t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
-});
+      .transfer(fund.options.address, new BigNumber(10 ** 20))
+      .send(opts);
+    console.log(
+      await fund.methods
+        .exchangesToOpenMakeOrders(
+          zeroExExchange.options.address,
+          mlnToken.options.address
+        )
+        .call()
+    );
+    await fund.methods
+      .quantityHeldInCustodyOfExchange(mlnToken.options.address)
+      .send(opts);
+    console.log(
+      await fund.methods.isInOpenMakeOrder(mlnToken.options.address).call()
+    );
+    const makerAddress = fund.options.address.toLowerCase();
+    order = {
+      exchangeAddress: zeroExExchange.options.address.toLowerCase(),
+      makerAddress,
+      takerAddress: NULL_ADDRESS,
+      senderAddress: NULL_ADDRESS,
+      feeRecipientAddress: NULL_ADDRESS,
+      expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
+        80000
+      ),
+      salt: new BigNumber(585),
+      makerAssetAmount: new BigNumber(trade1.sellQuantity),
+      takerAssetAmount: new BigNumber(trade1.buyQuantity),
+      makerAssetData: assetDataUtils.encodeERC20AssetData(
+        mlnToken.options.address.toLowerCase()
+      ),
+      takerAssetData: assetDataUtils.encodeERC20AssetData(
+        ethToken.options.address.toLowerCase()
+      ),
+      makerFee: new BigNumber(0),
+      takerFee: new BigNumber(0)
+    };
+    const orderHashHex = orderHashUtils.getOrderHashHex(order);
+    orderSignature = await signatureUtils.ecSignOrderHashAsync(
+      web3.currentProvider,
+      orderHashHex,
+      manager,
+      SignerType.Default
+    );
+    orderSignature =
+      orderSignature.substring(0, orderSignature.length - 1) + "6";
+    await fund.methods
+      .callOnExchange(
+        0,
+        makeOrderSignatureString,
+        [
+          makerAddress,
+          NULL_ADDRESS,
+          mlnToken.options.address,
+          ethToken.options.address,
+          order.feeRecipientAddress,
+          NULL_ADDRESS
+        ],
+        [
+          order.makerAssetAmount,
+          order.takerAssetAmount,
+          order.makerFee,
+          order.takerFee,
+          order.expirationTimeSeconds,
+          order.salt,
+          0,
+          0
+        ],
+        web3.utils.padLeft("0x0", 64),
+        order.makerAssetData,
+        order.takerAssetData,
+        orderSignature
+      )
+      .send({ from: manager, gas: config.gas });
+    const makerAssetAllowance = new BigNumber(
+      await mlnToken.methods
+        .allowance(fund.options.address, erc20ProxyAddress)
+        .call()
+    );
+    t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
+  }
+);
