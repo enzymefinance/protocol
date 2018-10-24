@@ -15,12 +15,10 @@ yarn-error.log
 # doxity
 scripts/
 
-# ignore built contracts
+# ignore built code
 out/
-
-# ignore transpiled code
 utils/build
-build
+build/
 
 # ignore development addressBook
 addressBook.json
@@ -34,3 +32,10 @@ coverage/
 
 # ignore concatenated files (only updated at verification time)
 utils/etherscan/concatenated
+
+# ignore node version manager files
+.nvmrc
+.node-version
+
+# ignore devchain snapshot
+legacy/utils/devchain-snapshot/
