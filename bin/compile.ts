@@ -6,9 +6,10 @@ import * as mkdirp from 'mkdirp';
 import * as R from 'ramda';
 import * as rimraf from 'rimraf';
 
-import { soliditySourceDirectory, solidityCompileTarget } from '~/settings';
+const soliditySourceDirectory = path.join(__dirname, '..', 'src', 'contracts');
+const solidityCompileTarget = path.join(__dirname, '..', 'out');
 
-const debug = require('../getDebug').default(__filename);
+const debug = require('debug').default('melon:protocol:bin');
 
 const findImports = (missingPath: string, b, c) => {
   const query = path.join(soliditySourceDirectory, '**', missingPath);

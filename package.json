@@ -9,7 +9,7 @@
   },
   "scripts": {
     "compile": "node bin/melon.js compile",
-    "build": "yarn createIndexFiles && tsc && parcel build src/index.ts --target node -d build",
+    "build": "yarn createIndexFiles && tsc && yarn tsc bin/compile.ts && parcel build src/index.ts --target node -d build",
     "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts",
     "dev": "yarn jest --watch src/",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
@@ -71,9 +71,7 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
-    "babel-runtime": "^6.26.0",
     "bignumber.js": "^4.1.0",
-    "camel-case": "^3.0.0",
     "ganache-cli": "^6.1.4",
     "glob": "^7.1.3",
     "husky": "^1.1.2",
@@ -92,10 +90,13 @@
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
-    "typescript": "^3.1.1"
+    "typescript": "^3.1.1",
+    "web3": "^1.0.0-beta.34"
   },
   "dependencies": {
     "@melonproject/token-math": "0.0.10",
+    "babel-runtime": "^6.26.0",
+    "camel-case": "^3.0.0",
     "commander": "^2.19.0",
     "debug": "^4.0.1",
     "dotenv": "^6.0.0",
@@ -104,10 +105,9 @@
     "request-promise": "^4.2.2",
     "solc": "^0.4.25",
     "tsconfig-paths": "^3.6.0",
-    "web3": "^1.0.0-beta.34",
-    "web3-eth": "^1.0.0-beta.36",
-    "web3-eth-abi": "^1.0.0-beta.36",
-    "web3-utils": "^1.0.0-beta.36",
+    "web3-eth": "1.0.0-beta.36",
+    "web3-eth-abi": "1.0.0-beta.36",
+    "web3-utils": "1.0.0-beta.36",
     "yup": "^0.26.6"
   },
   "ava": {

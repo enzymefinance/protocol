@@ -34,7 +34,7 @@ program
   .action(async () => {
     console.log('Compiling all contracts');
     try {
-      const { compileAll } = require('../build/utils/solidity/compile');
+      const { compileAll } = require('./compile');
       await initTestEnvironment();
       await compileAll();
     } catch (e) {
