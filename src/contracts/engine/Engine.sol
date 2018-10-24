@@ -29,6 +29,7 @@ contract Engine is DSMath {
         mlnToken = BurnableToken(_mlnAddress);
     }
 
+    // TODO: do we need this check anywhere? if not, remove modifier
     modifier stays_frozen() {
         uint frozenBefore = frozenEther;
         _;

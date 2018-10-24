@@ -46,7 +46,7 @@ const constructProvider = jsonRpcEndpoint => {
     .url(
       [
         `Invalid JSON RPC endpoint url: ${endpoint}.`,
-        `Check your .env file or provide it explicitely`,
+        `Check your .env file or provide it explicitly`,
       ].join(''),
     )
     .isValid(endpoint);
