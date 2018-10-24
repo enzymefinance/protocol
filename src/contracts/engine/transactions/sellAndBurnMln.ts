@@ -1,4 +1,10 @@
-import { Quantity, IQuantity, Token } from '@melonproject/token-math';
+import { isSameToken } from '@melonproject/token-math/token';
+import {
+  QuantityInterface,
+  createQuantity,
+  isEqual,
+  greaterThan,
+} from '@melonproject/token-math/quantity';
 import { Address } from '~/utils/types';
 import {
   prepareTransaction,
@@ -12,7 +18,7 @@ import { ensure } from '~/utils/guards';
 
 const guards = async (
   engineAddress: Address,
-  quantity: IQuantity,
+  quantity: QuantityInterface,
   environment,
 ) => {
   const engine = getContract(Contract.Engine, engineAddress);
@@ -20,25 +26,24 @@ const guards = async (
   const mlnTokenContract = getContract(Contract.StandardToken, mlnAddress);
   const mlnToken = await getToken(mlnAddress);
   ensure(
-    Token.isSameToken(quantity, mlnToken),
+    isSameToken(quantity.token, mlnToken),
     'It is only possible to burn MLN',
   );
-  const allowedMln = Quantity.createQuantity(
+  const allowedMln = createQuantity(
     mlnToken,
     await mlnTokenContract.methods
       .allowance(environment.wallet.address, engineAddress.toString())
       .call(),
   );
   ensure(
-    Quantity.isEqual(allowedMln, quantity) ||
-      Quantity.greaterThan(allowedMln, quantity),
+    isEqual(allowedMln, quantity) || greaterThan(allowedMln, quantity),
     `Amount must be approved prior to calling this function.`,
   );
 };
 
 const prepare = async (
   engineAddress: Address,
-  quantity: IQuantity,
+  quantity: QuantityInterface,
   environment,
 ) => {
   const contract = getContract(Contract.Engine, engineAddress);
@@ -54,7 +59,7 @@ const validateReceipt = receipt => {
 
 export const sellAndBurnMln = async (
   engineAddress: Address,
-  quantity: IQuantity,
+  quantity: QuantityInterface,
   environment?,
 ) => {
   await guards(engineAddress, quantity, environment);

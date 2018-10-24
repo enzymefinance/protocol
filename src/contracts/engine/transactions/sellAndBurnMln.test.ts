@@ -1,4 +1,5 @@
-import { Quantity, BigInteger, Token } from '@melonproject/token-math';
+import { appendDecimals } from '@melonproject/token-math/token';
+import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
 import { deploy as deployEngine, sellAndBurnMln } from '..';
@@ -32,9 +33,9 @@ beforeAll(async () => {
     shared.feedAddress,
   );
   shared.engine = getContract(Contract.Engine, shared.engineAddress);
-  shared.quantity = Quantity.createQuantity(
+  shared.quantity = createQuantity(
     shared.mlnToken,
-    Token.appendDecimals(shared.mlnToken, 1),
+    appendDecimals(shared.mlnToken, 1),
   );
 });
 
