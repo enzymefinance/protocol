@@ -8,9 +8,9 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "build": "yarn createIndexFiles && parcel build src/index.ts --target node -d build",
     "compile": "node bin/melon.js compile",
-    "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
+    "build": "yarn createIndexFiles && tsc && parcel build src/index.ts --target node -d build",
+    "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts",
     "dev": "yarn jest --watch src/",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
@@ -24,10 +24,11 @@
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",
     "publish:alpha": "yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
-    "test:verbose": "TERM=dumb yarn jest",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && yarn test:integration:legacy",
-    "test:TOFIX": "yarn lint:solium"
+    "test:TOFIX": "yarn lint:solium",
+    "test:verbose": "TERM=dumb yarn jest",
+    "ts-node": "ts-node -r tsconfig-paths/register -r dotenv/config"
   },
   "publishConfig": {
     "access": "public"
@@ -36,8 +37,9 @@
     "bin/",
     "build/",
     "tests/",
-    "src/",
-    "tsconfig.json"
+    "src/contracts/**/*.sol",
+    "tsconfig.json",
+    "typings.d.ts"
   ],
   "repository": {
     "type": "git",
@@ -86,9 +88,11 @@
     "semver": "^5.6.0",
     "solium": "^1.1.0",
     "ts-jest": "^23.10.4",
+    "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.0",
-    "tslint-config-prettier": "^1.15.0"
+    "tslint-config-prettier": "^1.15.0",
+    "typescript": "^3.1.1"
   },
   "dependencies": {
     "@melonproject/token-math": "0.0.10",
@@ -99,9 +103,7 @@
     "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
     "solc": "^0.4.25",
-    "ts-node": "^7.0.1",
     "tsconfig-paths": "^3.6.0",
-    "typescript": "^3.1.1",
     "web3": "^1.0.0-beta.34",
     "web3-eth": "^1.0.0-beta.36",
     "web3-eth-abi": "^1.0.0-beta.36",

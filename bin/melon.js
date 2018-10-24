@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const R = require('ramda');
 const path = require('path');
 const fs = require('fs');
 const program = require('commander');
@@ -10,15 +11,18 @@ const project = path.join(__dirname, '..', 'tsconfig.json');
 require('dotenv').config({
   path: require('find-up').sync(['.env', '.env.defaults']),
 });
-require('ts-node').register({ project });
+// require('ts-node').register({ project, skipIgnore: true });
 
 const tsconfigPaths = require('tsconfig-paths');
 tsconfigPaths.register({
   baseUrl: path.dirname(project),
-  paths: tsConfig.compilerOptions.paths,
+  paths: R.map(
+    value => value.map(p => p.replace('src/', 'build/')),
+    tsConfig.compilerOptions.paths,
+  ),
 });
 
-const { initTestEnvironment } = require('../src/utils/environment');
+const { initTestEnvironment } = require('../build/utils/environment');
 
 program
   .version(pkg.version, '-v, --version')
@@ -30,7 +34,7 @@ program
   .action(async () => {
     console.log('Compiling all contracts');
     try {
-      const { compileAll } = require('../src/utils/solidity/compile');
+      const { compileAll } = require('../build/utils/solidity/compile');
       await initTestEnvironment();
       await compileAll();
     } catch (e) {
@@ -46,7 +50,7 @@ program
     `Deploy the Melon Smart Contracts to ${process.env.JSON_RPC_ENDPOINT}`,
   )
   .action(async (dir, cmd) => {
-    const { deploySystem } = require('../src/utils/deploySystem');
+    const { deploySystem } = require('../build/utils/deploySystem');
     await initTestEnvironment();
     const addresses = await deploySystem();
     fs.writeFileSync('./addressBook.json', JSON.stringify(addresses, null, 2));
