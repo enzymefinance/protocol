@@ -101,6 +101,8 @@ contract MatchingMarketAdapter is DSMath {
         bytes32 s
     ) {
         // require(Fund(address(this)).manager() == msg.sender);
+        // TODO: add check that sender is manager
+        //      require(hub.manager() == msg.sender)
         require(!Hub(Trading(address(this)).hub()).isShutDown());
         address pricefeed = Hub(Trading(address(this)).hub()).priceSource();
         uint fillTakerQuantity = orderValues[6];
