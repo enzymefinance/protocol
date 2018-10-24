@@ -16,7 +16,9 @@ import {
   takeOrderSignatureString,
   takeOrderSignature,
   makeOrderSignatureString,
-  makeOrderSignature
+  makeOrderSignature,
+  cancelOrderSignatureString,
+  cancelOrderSignature
 } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
@@ -80,7 +82,7 @@ test.before(async t => {
       zeroExExchange.options.address,
       deployed.ZeroExV2Adapter.options.address,
       false,
-      [makeOrderSignature, takeOrderSignature]
+      [makeOrderSignature, takeOrderSignature, cancelOrderSignature]
     ]
   );
 
@@ -647,5 +649,48 @@ test.serial(
         .call()
     );
     t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
+  }
+);
+
+test.serial(
+  "Fund can cancel the order",
+  async t => {
+    await fund.methods
+      .callOnExchange(
+        0,
+        cancelOrderSignatureString,
+        [
+          order.makerAddress,
+          NULL_ADDRESS,
+          mlnToken.options.address,
+          ethToken.options.address,
+          order.feeRecipientAddress,
+          NULL_ADDRESS
+        ],
+        [
+          order.makerAssetAmount,
+          order.takerAssetAmount,
+          order.makerFee,
+          order.takerFee,
+          order.expirationTimeSeconds,
+          order.salt,
+          0,
+          0
+        ],
+        web3.utils.padLeft("0x0", 64),
+        order.makerAssetData,
+        order.takerAssetData,
+        orderSignature
+      )
+      .send({ from: manager, gas: config.gas });
+    const orderHashHex = orderHashUtils.getOrderHashHex(order);
+    const isOrderCancelled = await zeroExExchange.methods.cancelled(orderHashHex).call();
+    const makerAssetAllowance = new BigNumber(
+      await mlnToken.methods
+        .allowance(fund.options.address, erc20ProxyAddress)
+        .call()
+    );
+    t.true(isOrderCancelled);
+    t.deepEqual(makerAssetAllowance, new BigNumber(0));
   }
 );
