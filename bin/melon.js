@@ -61,6 +61,14 @@ program
     process.exit();
   });
 
-program.command('').action(() => program.help());
+program.on('command:*', function() {
+  program.help();
+  process.exit();
+});
+
+if (process.argv.length < 3) {
+  program.help();
+  process.exit();
+}
 
 program.parse(process.argv);
