@@ -23,6 +23,7 @@ export enum Contract {
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
+  VaultFactory = 'fund/vault/VaultFactory',
 }
 
 export const getContract: GetContractFunction = R.memoizeWith(
@@ -34,7 +35,7 @@ export const getContract: GetContractFunction = R.memoizeWith(
     environment = getGlobalEnvironment(),
   ) => {
     const abi = require(`~/../out/${relativePath}.abi.json`);
-    const contract = new environment.eth.Contract(abi, address);
+    const contract = new environment.eth.Contract(abi, address.toString());
     return contract;
   },
 );

@@ -1,11 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  BigInteger,
-  toBI,
-  greaterThan,
-} from '@melonproject/token-math/bigInteger';
+import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
+import { outRoot } from '~/settings';
 import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
 
 const debug = require('~/utils/getDebug').default(__filename);
@@ -23,12 +20,12 @@ export const deploy = async (
   const parsed = path.parse(pathToSolidityFile);
 
   const rawABI = fs.readFileSync(
-    path.join(process.cwd(), 'out', parsed.dir, `${parsed.name}.abi`),
+    path.join(outRoot, parsed.dir, `${parsed.name}.abi`),
     { encoding: 'utf-8' },
   );
 
   const bin = fs.readFileSync(
-    path.join(process.cwd(), 'out', parsed.dir, `${parsed.name}.bin`),
+    path.join(outRoot, parsed.dir, `${parsed.name}.bin`),
     { encoding: 'utf-8' },
   );
 

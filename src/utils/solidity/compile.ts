@@ -6,10 +6,13 @@ import * as mkdirp from 'mkdirp';
 import * as R from 'ramda';
 import * as rimraf from 'rimraf';
 
+import { sourceRoot, outRoot } from '~/settings';
+
 const debug = require('../getDebug').default(__filename);
 
 const findImports = (missingPath: string, b, c) => {
-  const candidates = glob.sync(`src/contracts/**/${missingPath}`);
+  const query = path.join(sourceRoot, 'contracts', '**', missingPath);
+  const candidates = glob.sync(query);
 
   if (candidates.length > 1) {
     throw new Error(
@@ -50,7 +53,7 @@ const compile = (pathToSol: string) => {
 
   if (output.errors) output.errors.forEach(debug);
 
-  const targetDir = path.join(process.cwd(), 'out', parsed.dir);
+  const targetDir = path.join(outRoot, parsed.dir);
   const targetPath = path.join(targetDir, `${parsed.name}.json`);
 
   debug('Writing to', targetPath);
@@ -64,11 +67,12 @@ const compile = (pathToSol: string) => {
 
 const writeFiles = (compileOutput, contract) => {
   const [sourceName, contractName] = contract.split(':');
+  const out = path.join(sourceRoot, '..', 'out');
 
   debug('Writing', contract);
 
   const parsedPath = path.parse(sourceName);
-  const targetDir = path.join(process.cwd(), 'out', parsedPath.dir);
+  const targetDir = path.join(out, parsedPath.dir);
   const targetBasePath = path.join(targetDir, contractName);
 
   mkdirp.sync(targetDir);
@@ -92,16 +96,24 @@ const writeFiles = (compileOutput, contract) => {
   );
 };
 
-export const compileAll = (query = 'src/contracts/**/*.sol') => {
+export const compileAll = () => {
+  const query = path.join(sourceRoot, 'contracts', '**', '*.sol');
+  const out = path.join(sourceRoot, '..', 'out');
   const candidates = glob.sync(query);
 
   debug(`Compiling ${query}, ${candidates.length} files ...`);
 
-  const unmerged = candidates.map(path => ({
-    [path.substr(14)]: fs.readFileSync(path, { encoding: 'utf-8' }),
+  const unmerged = candidates.map(source => ({
+    [path.relative(
+      path.join(sourceRoot, 'contracts'),
+      source,
+    )]: fs.readFileSync(source, {
+      encoding: 'utf-8',
+    }),
   }));
 
   const sources = R.mergeAll(unmerged);
+
   const output = solc.compile({ sources }, 1, findImports);
 
   const messages = output.errors;
@@ -119,17 +131,17 @@ export const compileAll = (query = 'src/contracts/**/*.sol') => {
   debug('Writing compilation results');
 
   // Delete and recreate out/
-  rimraf.sync('out');
-  mkdirp.sync('out');
+  rimraf.sync(out);
+  mkdirp.sync(out);
 
   fs.writeFileSync(
-    path.join('out', 'compilerResult.json'),
+    path.join(out, 'compilerResult.json'),
     JSON.stringify(output, null, 2),
   );
 
   if (messages.length > 0) {
     fs.writeFileSync(
-      path.join('out', 'compilerMessages.txt'),
+      path.join(out, 'compilerMessages.txt'),
       output.errors.join('\n\n'),
     );
   }
