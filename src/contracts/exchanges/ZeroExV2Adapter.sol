@@ -1,17 +1,20 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "./ExchangeAdapterInterface.sol";
-import "../thirdparty/0x/Exchange.sol";
-import "../../Fund.sol";
-import "../../dependencies/DBC.sol";
-import "../../dependencies/math.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "./Exchange.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/vault/Vault.sol";
+import "../fund/accounting/Accounting.sol";
+import "../dependencies/DBC.sol";
+import "../dependencies/math.sol";
 
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
+contract ZeroExV2Adapter is DSMath, DBC {
 
     //  METHODS
 
@@ -27,8 +30,11 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        require(Fund(address(this)).owner() == msg.sender);
-        require(!Fund(address(this)).isShutDown());
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender);
+        require(hub.isShutDown() == false);
+        // require(Trading(address(this)).owner() == msg.sender);
+        // require(!Trading(address(this)).isShutDown());
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -36,9 +42,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
         // Order parameter checks
         require(orderValues[4] >= now && orderValues[4] <= add(now, 1 days));
-        require(makeOrderPermitted(order.makerAssetAmount, makerAsset, order.takerAssetAmount, takerAsset));
-        Fund(address(this)).quantityHeldInCustodyOfExchange(address(makerAsset));
-        require(!Fund(address(this)).isInOpenMakeOrder(makerAsset));
+        Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
+        require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
@@ -52,20 +57,21 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        require(
-            Fund(address(this)).isInAssetList(takerAsset) ||
-            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        );
+        // TODO: ADD back 
+        // require(
+        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
+        // );
 
-        Fund(address(this)).addAssetToOwnedAssets(takerAsset);
-        Fund(address(this)).orderUpdateHook(
+        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
-            Fund.UpdateType.make,
+            Trading.UpdateType.make,
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
     }
 
     // Responsibilities of takeOrder are:
@@ -109,32 +115,33 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        require(Fund(address(this)).owner() == msg.sender);
-        require(!Fund(address(this)).isShutDown());
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender);
+        require(hub.isShutDown() == false);
+        // require(Trading(address(this)).owner() == msg.sender);
+        // require(!Trading(address(this)).isShutDown());
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint fillTakerQuantity = orderValues[6];
-        uint fillMakerQuantity = mul(fillTakerQuantity, order.makerAssetAmount) / order.takerAssetAmount;
-
-        require(takeOrderPermitted(fillTakerQuantity, takerAsset, fillMakerQuantity, makerAsset));
         
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
 
         require(takerAssetFilledAmount == fillTakerQuantity);
-        require(
-            Fund(address(this)).isInAssetList(makerAsset) ||
-            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        );
+        // TODO: Add it back
+        // require(
+        //     Accounting(hub.accounting()).isInAssetList(makerAsset) ||
+        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
+        // );
 
-        Fund(address(this)).addAssetToOwnedAssets(makerAsset);
-        Fund(address(this)).orderUpdateHook(
+        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
-            Fund.UpdateType.take,
+            Trading.UpdateType.take,
             [makerAsset, takerAsset],
             [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
         );
@@ -150,7 +157,9 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         bytes takerAssetData,
         bytes signature
     ) {
-        require(Fund(address(this)).owner() == msg.sender || Fund(address(this)).isShutDown());
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender || hub.isShutDown() == false);
+        // require(Trading(address(this)).owner() == msg.sender || Trading(address(this)).isShutDown());
 
         address makerAsset = orderAddresses[2];
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
@@ -159,11 +168,11 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
 
         // Set the approval back to 0
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, 0);
-        Fund(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
-        Fund(address(this)).orderUpdateHook(
+        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
-            Fund.UpdateType.cancel,
+            Trading.UpdateType.cancel,
             [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
         );
@@ -182,8 +191,8 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         view
         returns (address, address, uint, uint)
     {
-        var (orderId, , orderIndex) = Fund(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
-        var (, takerAsset, makerQuantity, takerQuantity) = Fund(msg.sender).getOrderDetails(orderIndex);
+        var (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
+        var (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
         uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
         if (Exchange(targetExchange).cancelled(bytes32(orderId)) || sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
@@ -198,16 +207,22 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
     function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
         internal
     {
+        Hub hub = Hub(Trading(address(this)).hub());
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(takerAsset, fillTakerQuantity);
         address assetProxy = getAssetProxy(targetExchange, takerAssetData);
-        require(Asset(takerAsset).approve(assetProxy, fillTakerQuantity));
+        require(ERC20(takerAsset).approve(assetProxy, fillTakerQuantity));
     }
 
     /// @notice needed to avoid stack too deep error
     function approveMakerAsset(address targetExchange, address makerAsset, bytes makerAssetData, uint makerQuantity)
         internal
     {
+        Hub hub = Hub(Trading(address(this)).hub());
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(makerAsset, makerQuantity);
         address assetProxy = getAssetProxy(targetExchange, makerAssetData);
-        require(Asset(makerAsset).approve(assetProxy, makerQuantity));
+        require(ERC20(makerAsset).approve(assetProxy, makerQuantity));
     }
 
     /// @dev needed to avoid stack too deep error
@@ -224,11 +239,14 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
         if (takerFee > 0) {
             bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
             address zrxProxy = getAssetProxy(targetExchange, assetData);
-            require(Asset(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
+            Hub hub = Hub(Trading(address(this)).hub());
+            Vault vault = Vault(hub.vault());
+            vault.withdraw(getAssetAddress(assetData), takerFee);
+            require(ERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
         }
 
         address makerAsset = getAssetAddress(order.makerAssetData);
-        uint preMakerAssetBalance = Asset(makerAsset).balanceOf(this);
+        uint preMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
         
         LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
@@ -236,83 +254,13 @@ contract ZeroExV2Adapter is ExchangeAdapterInterface, DSMath, DBC, Asset {
             signature
         );
 
-        uint postMakerAssetBalance = Asset(makerAsset).balanceOf(this);
+        uint postMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
         require(postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount));
 
         return fillResults.takerAssetFilledAmount;
     }
 
     // VIEW METHODS
-
-    /// @dev needed to avoid stack too deep error
-    function takeOrderPermitted(
-        uint takerQuantity,
-        address takerAsset,
-        uint makerQuantity,
-        address makerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        require(makerAsset != takerAsset);
-        // require(fillTakerQuantity <= maxTakerQuantity);
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            takerQuantity,
-            makerQuantity
-        );
-        return(
-            riskmgmt.isTakePermitted(
-                orderPrice,
-                referencePrice,
-                takerAsset,
-                makerAsset,
-                takerQuantity,
-                makerQuantity
-            )
-        );
-    }
-
-    /// @dev needed to avoid stack too deep error
-    function makeOrderPermitted(
-        uint makerQuantity,
-        address makerAsset,
-        uint takerQuantity,
-        address takerAsset
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(takerAsset != address(this) && makerAsset != address(this));
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(makerAsset, takerAsset));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(makerAsset, takerAsset);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            makerAsset,
-            takerAsset,
-            makerQuantity,
-            takerQuantity
-        );
-        return(
-            riskmgmt.isMakePermitted(
-                orderPrice,
-                referencePrice,
-                makerAsset,
-                takerAsset,
-                makerQuantity,
-                takerQuantity
-            )
-        );
-    }
 
     function constructOrderStruct(
         address[6] orderAddresses,
