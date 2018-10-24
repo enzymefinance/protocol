@@ -7,11 +7,11 @@ import {
 const debug = require('~/utils/getDebug').default(__filename);
 
 const getGanache = () => {
-  debug('Setting ganache up');
+  debug('Setting Ganache up');
   // tslint:disable-next-line:variable-name
   const Ganache = require('ganache-cli');
   const provider = Ganache.provider();
-  debug('Setup ganache finished');
+  debug('Ganache setup finished');
   return provider;
 };
 
