@@ -582,20 +582,6 @@ test.serial(
     await mlnToken.methods
       .transfer(fund.options.address, new BigNumber(10 ** 20))
       .send(opts);
-    console.log(
-      await fund.methods
-        .exchangesToOpenMakeOrders(
-          zeroExExchange.options.address,
-          mlnToken.options.address
-        )
-        .call()
-    );
-    await fund.methods
-      .quantityHeldInCustodyOfExchange(mlnToken.options.address)
-      .send(opts);
-    console.log(
-      await fund.methods.isInOpenMakeOrder(mlnToken.options.address).call()
-    );
     const makerAddress = fund.options.address.toLowerCase();
     order = {
       exchangeAddress: zeroExExchange.options.address.toLowerCase(),
