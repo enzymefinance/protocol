@@ -53,8 +53,9 @@ program
     const { deploySystem } = require('../build/utils/deploySystem');
     await initTestEnvironment();
     const addresses = await deploySystem();
-    fs.writeFileSync('./addressBook.json', JSON.stringify(addresses, null, 2));
-    console.log("Wrote deployed addresses to: './addressBook.json'.");
+    const addressBookPath = path.join(__dirname, '..', 'addressBook.json')
+    fs.writeFileSync(addressBookPath, JSON.stringify(addresses, null, 2));
+    console.log("Wrote deployed addresses to:", addressBookPath);
     console.log(
       "You can use it with: `import * as addressBook from '@melonproject/protocol/addressBook.json';",
     );
