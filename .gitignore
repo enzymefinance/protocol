@@ -35,3 +35,7 @@ coverage/
 # ignore concatenated files (only updated at verification time)
 legacy/utils/etherscan/concatenated
 legacy/utils/devchain-snapshot/0x_ganache_snapshot
+
+# node version manager files
+.nvmrc
+.node-version
