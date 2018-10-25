@@ -52,14 +52,14 @@ contract KyberAdapter is DBC, DSMath {
         uint actualReceiveAmount;
 
         // If destAmount is non-zero, set a minimum rate for the trade
-        if (destAmount != 0) {
-            minRate = calcMinRate(
-                srcToken,
-                destToken,
-                srcAmount,
-                destAmount
-            );
-        }
+        // if (destAmount != 0) {
+        //     minRate = calcMinRate(
+        //         srcToken,
+        //         destToken,
+        //         srcAmount,
+        //         destAmount
+        //     );
+        // }
 
         // Call different functions based on type of assets supplied
         if (srcToken == nativeAsset) {
