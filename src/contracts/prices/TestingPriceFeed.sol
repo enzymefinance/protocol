@@ -32,8 +32,10 @@ contract TestingPriceFeed is DSMath {
         require(_assets.length == _prices.length);
         updateId++;
         for (uint i = 0; i < _assets.length; ++i) {
-            assetsToPrices[_assets[i]].timestamp = block.timestamp;
-            assetsToPrices[_assets[i]].price = _prices[i];
+            assetsToPrices[_assets[i]] = Data({
+                timestamp: block.timestamp,
+                price: _prices[i]
+            });
         }
     }
 
