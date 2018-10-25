@@ -14,7 +14,7 @@ contract Engine is DSMath {
     BurnableToken public mlnToken;
     PriceSource public priceSource;
     VersionInterface public version;
-
+    uint public MLN_DECIMALS = 18;
 
     constructor(
         address _version,
@@ -64,16 +64,19 @@ contract Engine is DSMath {
         frozenEther = add(frozenEther, msg.value);
     }
 
+    /// @return ETH per MLN including premium
     function enginePrice() view returns (uint) {
-        uint ethPerMln = priceSource.getPrice(address(mlnToken));
+        uint ethPerMln;
+        (ethPerMln, ) = priceSource.getPrice(address(mlnToken));
         uint premium = mul(ethPerMln, (premiumPercent() / 100));
         return add(ethPerMln, premium);
     }
 
     function sellAndBurnMln(uint mlnAmount) {
-        require(mlnToken.transfer(address(this), mlnAmount));
-        uint ethPriceWithPremium = enginePrice();
-        uint ethToSend = mul(mlnAmount, enginePrice());
+        require(mlnToken.transferFrom(msg.sender, address(this), mlnAmount));
+        uint ethToSend = mul(mlnAmount, enginePrice()) / 10 ** MLN_DECIMALS;
+        require(ethToSend > 0);
+        require(liquidEther >= ethToSend);
         msg.sender.send(ethToSend);
         mlnToken.burn(mlnAmount);
     }
