@@ -5,7 +5,7 @@ import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import governanceAction from "../../utils/lib/governanceAction";
-import { makeOrderSignature, makeOrderSignatureString } from "../../utils/lib/data";
+import { makeOrderSignatureString } from "../../utils/lib/data";
 
 const environmentConfig = require("../../utils/config/environment.js");
 

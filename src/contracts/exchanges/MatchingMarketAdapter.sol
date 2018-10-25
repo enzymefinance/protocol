@@ -64,7 +64,6 @@ contract MatchingMarketAdapter is DSMath {
         //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         // );
 
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -73,6 +72,7 @@ contract MatchingMarketAdapter is DSMath {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
     }
 
     // Responsibilities of takeOrder are:
@@ -187,7 +187,7 @@ contract MatchingMarketAdapter is DSMath {
     }
 
     // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
+    function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
     {
