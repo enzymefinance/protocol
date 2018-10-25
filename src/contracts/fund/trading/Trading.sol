@@ -144,6 +144,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
+    /// @dev Make sure this is called after orderUpdateHook in adapters
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
