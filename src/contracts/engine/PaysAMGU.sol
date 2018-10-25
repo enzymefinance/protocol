@@ -36,7 +36,8 @@ contract PaysAMGU is DSMath {
         _;
         PriceSource source = PriceSource(priceSource);
         uint mlnPerAmgu = VersionInterface(version).getAmguPrice();
-        uint ethPerMln = source.getPrice(mlnAddress);
+        uint ethPerMln;
+        (ethPerMln,) = source.getPrice(mlnAddress);
         uint ethPerAmgu = mul(mlnPerAmgu, ethPerMln);
         uint amguToPay = sub(initialGas, gasleft());
         uint ethToPay = mul(amguToPay, ethPerAmgu);
