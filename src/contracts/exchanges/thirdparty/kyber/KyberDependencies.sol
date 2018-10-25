@@ -2,13 +2,24 @@ pragma solidity ^0.4.21;
 
 import "../../../dependencies/token/StandardToken.sol";
 
+contract ERC20Clone is ERC20 {
+    function totalSupply() public view returns (uint supply);
+    function balanceOf(address _owner) public view returns (uint balance);
+    function transfer(address _to, uint _value) public returns (bool success);
+    function transferFrom(address _from, address _to, uint _value) public returns (bool success);
+    function approve(address _spender, uint _value) public returns (bool success);
+    function allowance(address _owner, address _spender) public view returns (uint remaining);
+    function decimals() public view returns(uint digits);
+    event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+
 /// @title Kyber Reserve contract
 interface KyberReserveInterface {
 
     function trade(
-        ERC20 srcToken,
+        ERC20Clone srcToken,
         uint srcAmount,
-        ERC20 destToken,
+        ERC20Clone destToken,
         address destAddress,
         uint conversionRate,
         bool validate
@@ -17,21 +28,21 @@ interface KyberReserveInterface {
         payable
         returns(bool);
 
-    function getConversionRate(ERC20 src, ERC20 dest, uint srcQty, uint blockNumber) public view returns(uint);
+    function getConversionRate(ERC20Clone src, ERC20Clone dest, uint srcQty, uint blockNumber) public view returns(uint);
 }
 
 /// @title Kyber Network interface
 interface KyberNetworkInterface {
     function maxGasPrice() public view returns(uint);
     function getUserCapInWei(address user) public view returns(uint);
-    function getUserCapInTokenWei(address user, ERC20 token) public view returns(uint);
+    function getUserCapInTokenWei(address user, ERC20Clone token) public view returns(uint);
     function enabled() public view returns(bool);
     function info(bytes32 id) public view returns(uint);
 
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty) public view
+    function getExpectedRate(ERC20Clone src, ERC20Clone dest, uint srcQty) public view
         returns (uint expectedRate, uint slippageRate);
 
-    function tradeWithHint(address trader, ERC20 src, uint srcAmount, ERC20 dest, address destAddress,
+    function tradeWithHint(address trader, ERC20Clone src, uint srcAmount, ERC20Clone dest, address destAddress,
         uint maxDestAmount, uint minConversionRate, address walletId, bytes hint) public payable returns(uint);
 }
 
@@ -166,13 +177,13 @@ contract PermissionGroups {
  */
 contract Withdrawable is PermissionGroups {
 
-    event TokenWithdraw(ERC20 token, uint amount, address sendTo);
+    event TokenWithdraw(ERC20Clone token, uint amount, address sendTo);
 
     /**
-     * @dev Withdraw all ERC20 compatible tokens
-     * @param token ERC20 The address of the token contract
+     * @dev Withdraw all ERC20Clone compatible tokens
+     * @param token ERC20Clone The address of the token contract
      */
-    function withdrawToken(ERC20 token, uint amount, address sendTo) external onlyAdmin {
+    function withdrawToken(ERC20Clone token, uint amount, address sendTo) external onlyAdmin {
         require(token.transfer(sendTo, amount));
         TokenWithdraw(token, amount, sendTo);
     }
@@ -190,7 +201,7 @@ contract Withdrawable is PermissionGroups {
 
 contract Utils {
 
-    ERC20 constant internal ETH_TOKEN_ADDRESS = ERC20(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
+    ERC20Clone constant internal ETH_TOKEN_ADDRESS = ERC20Clone(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
     uint  constant internal PRECISION = (10**18);
     uint  constant internal MAX_QTY   = (10**28); // 10B tokens
     uint  constant internal MAX_RATE  = (PRECISION * 10**6); // up to 1M tokens per ETH
@@ -198,12 +209,12 @@ contract Utils {
     uint  constant internal ETH_DECIMALS = 18;
     mapping(address=>uint) internal decimals;
 
-    function setDecimals(ERC20 token) internal {
+    function setDecimals(ERC20Clone token) internal {
         if (token == ETH_TOKEN_ADDRESS) decimals[token] = ETH_DECIMALS;
         else decimals[token] = token.decimals();
     }
 
-    function getDecimals(ERC20 token) internal view returns(uint) {
+    function getDecimals(ERC20Clone token) internal view returns(uint) {
         if (token == ETH_TOKEN_ADDRESS) return ETH_DECIMALS; // save storage access
         uint tokenDecimals = decimals[token];
         // technically, there might be token with decimals 0
@@ -252,14 +263,14 @@ contract Utils2 is Utils {
     /// @dev get the balance of a user.
     /// @param token The token type
     /// @return The balance
-    function getBalance(ERC20 token, address user) public view returns(uint) {
+    function getBalance(ERC20Clone token, address user) public view returns(uint) {
         if (token == ETH_TOKEN_ADDRESS)
             return user.balance;
         else
             return token.balanceOf(user);
     }
 
-    function getDecimalsSafe(ERC20 token) internal returns(uint) {
+    function getDecimalsSafe(ERC20Clone token) internal returns(uint) {
 
         if (decimals[token] == 0) {
             setDecimals(token);
@@ -269,7 +280,7 @@ contract Utils2 is Utils {
     }
 
     /// @dev notice, overrides previous implementation.
-    function setDecimals(ERC20 token) internal {
+    function setDecimals(ERC20Clone token) internal {
         uint decimal;
 
         if (token == ETH_TOKEN_ADDRESS) {
@@ -287,11 +298,11 @@ contract Utils2 is Utils {
         decimals[token] = decimal;
     }
 
-    function calcDestAmount(ERC20 src, ERC20 dest, uint srcAmount, uint rate) internal view returns(uint) {
+    function calcDestAmount(ERC20Clone src, ERC20Clone dest, uint srcAmount, uint rate) internal view returns(uint) {
         return calcDstQty(srcAmount, getDecimals(src), getDecimals(dest), rate);
     }
 
-    function calcSrcAmount(ERC20 src, ERC20 dest, uint destAmount, uint rate) internal view returns(uint) {
+    function calcSrcAmount(ERC20Clone src, ERC20Clone dest, uint destAmount, uint rate) internal view returns(uint) {
         return calcSrcQty(destAmount, getDecimals(src), getDecimals(dest), rate);
     }
 
@@ -316,7 +327,7 @@ contract WhiteListInterface {
 }
 
 interface ExpectedRateInterface {
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty) public view
+    function getExpectedRate(ERC20Clone src, ERC20Clone dest, uint srcQty) public view
         returns (uint expectedRate, uint slippageRate);
 }
 
@@ -327,18 +338,18 @@ interface FeeBurnerInterface {
 interface ConversionRatesInterface {
 
     function recordImbalance(
-        ERC20 token,
+        ERC20Clone token,
         int buyAmount,
         uint rateUpdateBlock,
         uint currentBlock
     )
         public;
 
-    function getRate(ERC20 token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint);
+    function getRate(ERC20Clone token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint);
 }
 
 interface SanityRatesInterface {
-    function getSanityRate(ERC20 src, ERC20 dest) public view returns(uint);
+    function getSanityRate(ERC20Clone src, ERC20Clone dest) public view returns(uint);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -346,7 +357,7 @@ interface SanityRatesInterface {
 /*
  * SimpleToken
  *
- * Very simple ERC20 Token example, where all tokens are pre-assigned
+ * Very simple ERC20Clone Token example, where all tokens are pre-assigned
  * to the creator. Note they can later distribute these tokens
  * as they wish using `transfer` and other `StandardToken` functions.
  */
@@ -388,9 +399,9 @@ contract KyberWhiteList is WhiteListInterface, Withdrawable {
     mapping (address=>uint) public userCategory; // each user has a category defining cap on trade. 0 for standard.
     mapping (uint=>uint)    public categoryCap;  // will define cap on trade amount per category in singapore Dollar.
     uint constant public kgtHolderCategory = 2;
-    ERC20 public kgtToken;
+    ERC20Clone public kgtToken;
 
-    function KyberWhiteList(address _admin, ERC20 _kgtToken) public {
+    function KyberWhiteList(address _admin, ERC20Clone _kgtToken) public {
         require(_admin != address(0));
         require(_kgtToken != address(0));
         kgtToken = _kgtToken;

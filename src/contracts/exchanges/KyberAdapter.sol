@@ -2,12 +2,13 @@
 pragma solidity ^0.4.21;
 
 import "./thirdparty/kyber/KyberNetworkProxy.sol";
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/WETH9.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DBC.sol";
+
 
 contract KyberAdapter is DBC, DSMath {
 
@@ -38,10 +39,11 @@ contract KyberAdapter is DBC, DSMath {
         bytes signature
     )
     {
-        require(Fund(address(this)).owner() == msg.sender);
-        require(!Fund(address(this)).isShutDown());
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender);
+        require(hub.isShutDown() == false);
 
-        address nativeAsset = Fund(address(this)).NATIVE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
         uint srcAmount = orderValues[0];
@@ -70,19 +72,19 @@ contract KyberAdapter is DBC, DSMath {
             actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, minRate);
         }
 
-        // Apply risk management (Post-trade basis)
-        require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
-        require(
-            Fund(address(this)).isInAssetList(destToken) ||
-            Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        );
+        // TODO: ADD BACK
+        // require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
+        // require(
+        //     Fund(address(this)).isInAssetList(destToken) ||
+        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
+        // );
 
         // Add dest token to fund's owned asset list if not already exists and update order hook
-        Fund(address(this)).addAssetToOwnedAssets(destToken);
-        Fund(address(this)).orderUpdateHook(
+        Accounting(hub.accounting()).addAssetToOwnedAssets(destToken);
+        Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),
-            Fund.UpdateType.swap,
+            Trading.UpdateType.swap,
             [address(destToken), address(srcToken)],
             [actualReceiveAmount, srcAmount, srcAmount]
         );
@@ -162,11 +164,14 @@ contract KyberAdapter is DBC, DSMath {
         returns (uint receivedAmount)
     {
         // Convert WETH to ETH
+        Hub hub = Hub(Trading(address(this)).hub());
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(nativeAsset, srcAmount);
         WETH9(nativeAsset).withdraw(srcAmount);
 
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(ETH_TOKEN_ADDRESS), ERC20(destToken), srcAmount);
-        require(isMinPricePermitted(minRate, srcAmount, nativeAsset, destToken));
-        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20(destToken), minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(ETH_TOKEN_ADDRESS), ERC20Clone(destToken), srcAmount);
+        // require(isMinPricePermitted(minRate, srcAmount, nativeAsset, destToken));
+        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20Clone(destToken), minRate);
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
@@ -186,10 +191,13 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(ETH_TOKEN_ADDRESS), srcAmount);
-        require(isMinPricePermitted(minRate, srcAmount, srcToken, nativeAsset));
-        ERC20(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20(srcToken), srcAmount, minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(srcToken), ERC20Clone(ETH_TOKEN_ADDRESS), srcAmount);
+        // require(isMinPricePermitted(minRate, srcAmount, srcToken, nativeAsset));
+        Hub hub = Hub(Trading(address(this)).hub());
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(srcToken, srcAmount);
+        ERC20Clone(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20Clone(srcToken), srcAmount, minRate);
 
         // Convert ETH to WETH
         WETH9(nativeAsset).deposit.value(receivedAmount)();
@@ -212,10 +220,13 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20(srcToken), ERC20(destToken), srcAmount);
-        require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
-        ERC20(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20(srcToken), srcAmount, ERC20(destToken), minRate);
+        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(srcToken), ERC20Clone(destToken), srcAmount);
+        // require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
+        Hub hub = Hub(Trading(address(this)).hub());
+        Vault vault = Vault(hub.vault());
+        vault.withdraw(srcToken, srcAmount);
+        ERC20Clone(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20Clone(srcToken), srcAmount, ERC20Clone(destToken), minRate);
     }
 
     /// @dev Calculate min rate to be supplied to the network based on provided order parameters
@@ -233,15 +244,19 @@ contract KyberAdapter is DBC, DSMath {
         view
         returns (uint minRate)
     {
-        var (pricefeed, , ,) = Fund(address(this)).modules();
-        minRate = pricefeed.getOrderPriceInfo(
-            srcToken,
-            destToken,
-            srcAmount,
-            destAmount
-        );
+        // TODO
+        // var (pricefeed, , ,) = Fund(address(this)).modules();
+        // minRate = pricefeed.getOrderPriceInfo(
+        //     srcToken,
+        //     destToken,
+        //     srcAmount,
+        //     destAmount
+        // );
+        minRate = 0;
     }
 
+    // TODO
+    /*
     /// @dev Pre trade execution risk management check for minRate
     /// @param minPrice minPrice parameter to be supplied to Kyber proxy
     /// @param srcToken Address of src token
@@ -312,4 +327,5 @@ contract KyberAdapter is DBC, DSMath {
             )
         );
     }
+    */
 }

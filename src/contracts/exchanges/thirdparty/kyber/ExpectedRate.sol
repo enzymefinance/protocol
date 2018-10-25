@@ -37,7 +37,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils {
     //@dev when srcQty too small or 0 the expected rate will be calculated without quantity,
     // will enable rate reference before committing to any quantity
     //@dev when srcQty too small (no actual dest qty) slippage rate will be 0.
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty)
+    function getExpectedRate(ERC20Clone src, ERC20Clone dest, uint srcQty)
         public view
         returns (uint expectedRate, uint slippageRate)
     {
@@ -69,7 +69,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils {
 
     //@dev for small src quantities dest qty might be 0, then returned rate is zero.
     //@dev for backward compatibility we would like to return non zero rate (correct one) for small src qty
-    function expectedRateSmallQty(ERC20 src, ERC20 dest) internal view returns(uint) {
+    function expectedRateSmallQty(ERC20Clone src, ERC20Clone dest) internal view returns(uint) {
         address reserve;
         uint rateSrcToEth;
         uint rateEthToDest;

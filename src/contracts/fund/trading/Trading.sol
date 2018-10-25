@@ -20,7 +20,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bool takesCustody;
     }
 
-    enum UpdateType { make, take, cancel }
+    enum UpdateType { make, take, cancel, swap }
 
     struct Order {
         address exchangeAddress;
