@@ -11,18 +11,20 @@ import {
   Contract,
 } from '~/utils/solidity';
 
-const guard = async ({ howMuch, from, to }, environment) => {
-  ensure(isAddress(from), `From is not an address. Got: ${from}`, from);
-  ensure(isAddress(to), `To is not an address. Got: ${to}`, to);
+const guard = async ({ howMuch, spender }, environment) => {
+  ensure(
+    isAddress(spender),
+    `Spender is not an address. Got: ${spender}`,
+    spender,
+  );
   ensure(
     isAddress(howMuch.token.address),
     `Token needs to have an address. Got: ${howMuch.token.address}`,
   );
 };
 
-const prepareArgs = async ({ howMuch, from, to }) => [
-  from.toString(),
-  to.toString(),
+const prepareArgs = async ({ howMuch, spender }) => [
+  spender.toString(),
   howMuch.quantity.toString(),
 ];
 
@@ -30,21 +32,20 @@ const postProcess = async receipt => {
   return true;
 };
 
-interface TransferFromArgs {
+interface IncreaseApprovalArgs {
   howMuch: QuantityInterface;
-  from: Address;
-  to: Address;
+  spender: Address;
 }
 
-type TransferFromResult = boolean;
+type IncreaseApprovalResult = boolean;
 
-const transferFrom: ImplicitExecute<
-  TransferFromArgs,
-  TransferFromResult
+const increaseApproval: ImplicitExecute<
+  IncreaseApprovalArgs,
+  IncreaseApprovalResult
 > = withContractAddressQuery(
   ['howMuch', 'token', 'address'],
   transactionFactory(
-    'transferFrom',
+    'increaseApproval',
     Contract.StandardToken,
     guard,
     prepareArgs,
@@ -52,4 +53,4 @@ const transferFrom: ImplicitExecute<
   ),
 );
 
-export { transferFrom };
+export { increaseApproval };
