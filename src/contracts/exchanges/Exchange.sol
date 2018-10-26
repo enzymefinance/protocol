@@ -689,7 +689,12 @@ contract LibConstants {
     
     // Mainnet ZRX address is 0xe41d2489571d322189246dafa5ebde1f4699f498.
     // The ABI encoded proxyId and address is 0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498
-    bytes constant public ZRX_ASSET_DATA = "\xf4\x72\x61\xb0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe4\x1d\x24\x89\x57\x1d\x32\x21\x89\x24\x6d\xaf\xa5\xeb\xde\x1f\x46\x99\xf4\x98";
+    bytes public ZRX_ASSET_DATA = "\xf4\x72\x61\xb0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe4\x1d\x24\x89\x57\x1d\x32\x21\x89\x24\x6d\xaf\xa5\xeb\xde\x1f\x46\x99\xf4\x98";
+    
+    // For easier testing
+    function changeZRXAssetData(bytes newData) public {
+        ZRX_ASSET_DATA = newData;
+    }
 }
 // solhint-enable max-line-length
 

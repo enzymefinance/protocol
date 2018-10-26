@@ -25,6 +25,7 @@ export enum Contract {
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
+  ZeroEx = 'exchanges/Exchange',
 }
 
 export const getContract: GetContractFunction = R.memoizeWith(
