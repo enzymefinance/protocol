@@ -12,21 +12,6 @@ import {
   Contract,
 } from '~/utils/solidity';
 
-// export const guards = async (
-// contractAddress: string,
-// { to, tokens },
-// environment,
-// ) => {
-// ensureAccountAddress(environment);
-// const currentBalance = await balanceOf(
-// contractAddress,
-// { address: environment.wallet.address },
-// environment,
-// );
-
-// // const balanceAfter = quantity.subtract(currentBalance, )
-// };
-
 const guard = async ({ howMuch, to }, environment) => {
   ensure(isAddress(to), `To is not an address. Got: ${to}`, to);
   ensure(
