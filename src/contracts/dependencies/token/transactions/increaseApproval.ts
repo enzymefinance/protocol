@@ -3,7 +3,6 @@ import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { ensure } from '~/utils/guards';
 import { Address } from '~/utils/types';
 import { isAddress } from '~/utils/checks';
-import { ensureAccountAddress } from '~/utils/environment';
 
 import {
   transactionFactory,
@@ -12,16 +11,20 @@ import {
   Contract,
 } from '~/utils/solidity';
 
-const guard = async ({ howMuch, to }, environment) => {
-  ensure(isAddress(to), `To is not an address. Got: ${to}`, to);
+const guard = async ({ howMuch, spender }, environment) => {
+  ensure(
+    isAddress(spender),
+    `Spender is not an address. Got: ${spender}`,
+    spender,
+  );
   ensure(
     isAddress(howMuch.token.address),
     `Token needs to have an address. Got: ${howMuch.token.address}`,
   );
 };
 
-const prepareArgs = async ({ howMuch, to }) => [
-  to.toString(),
+const prepareArgs = async ({ howMuch, spender }) => [
+  spender.toString(),
   howMuch.quantity.toString(),
 ];
 
@@ -29,20 +32,20 @@ const postProcess = async receipt => {
   return true;
 };
 
-interface TransferArgs {
+interface IncreaseApprovalArgs {
   howMuch: QuantityInterface;
-  to: Address;
+  spender: Address;
 }
 
-type TransferResult = boolean;
+type IncreaseApprovalResult = boolean;
 
-const transfer: ImplicitExecute<
-  TransferArgs,
-  TransferResult
+const increaseApproval: ImplicitExecute<
+  IncreaseApprovalArgs,
+  IncreaseApprovalResult
 > = withContractAddressQuery(
   ['howMuch', 'token', 'address'],
   transactionFactory(
-    'transfer',
+    'increaseApproval',
     Contract.StandardToken,
     guard,
     prepareArgs,
@@ -50,4 +53,4 @@ const transfer: ImplicitExecute<
   ),
 );
 
-export { transfer };
+export { increaseApproval };
