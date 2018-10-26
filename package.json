@@ -27,9 +27,9 @@
     "oyente": "oyente -s src/Fund.sol",
     "publish:alpha": "yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
-    "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && yarn test:integration:legacy",
+    "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && echo 'Jest finished' && yarn test:integration:legacy",
     "test:TOFIX": "yarn lint:solium",
-    "test:verbose": "TERM=dumb yarn jest --detectOpenHandles",
+    "test:verbose": "TERM=dumb yarn jest --forceExit",
     "ts-node": "ts-node -r tsconfig-paths/register -r dotenv/config"
   },
   "publishConfig": {
