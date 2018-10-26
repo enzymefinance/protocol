@@ -43,34 +43,23 @@ contract KyberAdapter is DBC, DSMath {
         require(hub.manager() == msg.sender);
         require(hub.isShutDown() == false);
 
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
         uint srcAmount = orderValues[0];
         uint destAmount = orderValues[1];
         uint minRate = 0;
-        uint actualReceiveAmount;
 
         // If destAmount is non-zero, set a minimum rate for the trade
-        // if (destAmount != 0) {
-        //     minRate = calcMinRate(
-        //         srcToken,
-        //         destToken,
-        //         srcAmount,
-        //         destAmount
-        //     );
-        // }
+        if (destAmount != 0) {
+            minRate = calcMinRate(
+                srcToken,
+                destToken,
+                srcAmount,
+                destAmount
+            );
+        }
 
-        // Call different functions based on type of assets supplied
-        if (srcToken == nativeAsset) {
-            actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
-        }
-        else if (destToken == nativeAsset) {
-            actualReceiveAmount = swapTokenToNativeAsset(targetExchange, srcToken, srcAmount, nativeAsset, minRate);
-        }
-        else {
-            actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, minRate);
-        }
+        uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, destAmount);
 
         // TODO: ADD BACK
         // require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
@@ -85,7 +74,7 @@ contract KyberAdapter is DBC, DSMath {
             targetExchange,
             bytes32(0),
             Trading.UpdateType.swap,
-            [address(destToken), address(srcToken)],
+            [destToken, srcToken],
             [actualReceiveAmount, srcAmount, srcAmount]
         );
     }
@@ -145,6 +134,32 @@ contract KyberAdapter is DBC, DSMath {
     }
 
     // INTERNAL FUNCTIONS
+
+    /// @notice Call different functions based on type of assets supplied
+    function dispatchSwap(
+        address targetExchange,
+        address srcToken,
+        uint srcAmount,
+        address destToken,
+        uint minRate
+    )
+        internal
+        returns (uint actualReceiveAmount)
+    {
+        
+        Hub hub = Hub(Trading(address(this)).hub());
+        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        
+        if (srcToken == nativeAsset) {
+            actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
+        }
+        else if (destToken == nativeAsset) {
+            actualReceiveAmount = swapTokenToNativeAsset(targetExchange, srcToken, srcAmount, nativeAsset, minRate);
+        }
+        else {
+            actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, minRate);
+        }
+    }
 
     /// @dev If minRate is not defined, uses expected rate from the network
     /// @param targetExchange Address of Kyber proxy contract
