@@ -10,7 +10,7 @@
   },
   "scripts": {
     "compile": "node bin/melon.js compile",
-    "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts",
+    "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts && prettier --write src/**/index.ts",
     "build": "yarn createIndexFiles && tsc && tscpaths -p tsconfig.json -s ./src -o ./build && yarn tsc bin/compile.ts",
     "build:bundle": "parcel build src/index.ts --target node -d build --out-file bundle.js",
     "dev": "yarn jest --watch src/",
