@@ -1,16 +1,19 @@
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 
 import { Address } from '~/utils/types';
+import { isAddress } from '~/utils/checks';
+import { ensure } from '~/utils/guards';
+import { ensureAccountAddress } from '~/utils/environment';
+
 import {
   transactionFactory,
   withContractAddressQuery,
   ImplicitExecute,
   Contract,
 } from '~/utils/solidity';
-import { isAddress } from '~/utils/checks';
-import { ensure } from '~/utils/guards';
 
-const guard = async ({ howMuch, spender }, environment) => {
+const guard = async ({ howMuch, spender }, contractAddress, environment) => {
+  ensureAccountAddress(environment);
   ensure(
     isAddress(spender),
     `Spender is not an address. Got: ${spender}`,
