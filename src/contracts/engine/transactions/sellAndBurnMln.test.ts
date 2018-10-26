@@ -212,3 +212,6 @@ test('eth sent as AMGU from a fund thaws and can be bought', async () => {
     new BigNumber(preMlnTotalSupply).minus(sendMln).toFixed(),
   );
 });
+
+test('Other contracts can pay amgu on function calls', async () => {});
+test('Engine price and premium computes at multiple values', async () => {});
