@@ -5,6 +5,7 @@ import "../dependencies/token/BurnableToken.sol";
 import "../prices/PriceSource.sol";
 import "../version/Version.i.sol";
 
+// TODO: integrate so we do not need all of the constructor params
 /// @notice Contract
 contract Engine is DSMath {
     uint public frozenEther;
@@ -27,13 +28,6 @@ contract Engine is DSMath {
         lastStoke = block.timestamp;
         STOKING_DELAY = _delay;
         mlnToken = BurnableToken(_mlnAddress);
-    }
-
-    // TODO: do we need this check anywhere? if not, remove modifier
-    modifier stays_frozen() {
-        uint frozenBefore = frozenEther;
-        _;
-        require(frozenBefore == frozenEther);
     }
 
     function premiumPercent() view returns (uint) {
