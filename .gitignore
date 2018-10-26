@@ -26,6 +26,3 @@ coverage/
 
 # ignore cache
 .cache/
-
-# Doxity files ??
-legacy/scripts/
