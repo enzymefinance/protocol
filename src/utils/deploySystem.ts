@@ -128,6 +128,11 @@ export const deploySystem = async () => {
 
   const addresses = {
     fundFactory: fundFactoryAddress,
+    quoteToken,
+    baseToken,
+    priceFeedAddress,
+    matchingMarketAddress,
+    matchingMarketAdapterAddress,
   };
 
   return addresses;
