@@ -30,6 +30,21 @@ test('transfer', async () => {
   expect(receipt).toBeTruthy();
 });
 
+test('transfer without account address', async () => {
+  const emptyEnvironment = constructEnvironment({});
+  const howMuch = createQuantity(shared.token, '1000000000000000000');
+
+  await expect(
+    transfer(
+      {
+        howMuch,
+        to: shared.accounts[1],
+      },
+      emptyEnvironment,
+    ),
+  ).rejects.toThrow('No address');
+});
+
 // // TODO: Make this test work
 // test.skip('insufficent balance', async () => {
 // await expect(
