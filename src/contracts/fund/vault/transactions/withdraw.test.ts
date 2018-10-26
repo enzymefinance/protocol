@@ -2,9 +2,7 @@ import * as path from 'path';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import { deploy, getContract, Contract } from '~/utils/solidity';
 import { deploy as deployToken } from '~/contracts/dependencies/token';
-import { createVaultInstance, deployVaultFactory, getVaultContract } from '..';
-import { randomAddress } from '~/utils/helpers';
-import { emptyAddress } from '~/utils/constants';
+import { createVaultInstance, deployVaultFactory } from '..';
 
 const shared: any = {};
 
