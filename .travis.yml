@@ -23,7 +23,6 @@ cache:
 install:
   - yarn install
 script:
-  - yarn compile &> compile.log || cat compile.log
   - yarn devchain > ganache.log &
   - sleep 20
   - yarn test

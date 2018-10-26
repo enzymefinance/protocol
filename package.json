@@ -29,7 +29,7 @@
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && yarn test:integration:legacy",
     "test:TOFIX": "yarn lint:solium",
-    "test:verbose": "TERM=dumb yarn jest",
+    "test:verbose": "TERM=dumb yarn jest --detectOpenHandles",
     "ts-node": "ts-node -r tsconfig-paths/register -r dotenv/config"
   },
   "publishConfig": {
