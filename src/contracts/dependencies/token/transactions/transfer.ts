@@ -12,7 +12,8 @@ import {
   Contract,
 } from '~/utils/solidity';
 
-const guard = async ({ howMuch, to }, environment) => {
+const guard = async ({ howMuch, to }, contractAddress, environment) => {
+  ensureAccountAddress(environment);
   ensure(isAddress(to), `To is not an address. Got: ${to}`, to);
   ensure(
     isAddress(howMuch.token.address),
