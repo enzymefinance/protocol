@@ -18,7 +18,7 @@
     "lint:solium": "solium --dir .",
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",
-    "test:verbose": "TERM=dumb yarn jest",
+    "test:verbose": "TERM=dumb yarn jest --maxWorkers=1",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && yarn test:integration:legacy",
     "test:TOFIX": "yarn lint:solium"
