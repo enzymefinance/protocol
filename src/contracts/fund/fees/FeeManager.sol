@@ -6,9 +6,10 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
+import "../../engine/AmguConsumer.sol";
 
 /// @notice Manages and allocates fees for a particular fund
-contract FeeManager is Spoke, DSMath {
+contract FeeManager is DSMath, AmguConsumer, Spoke {
 
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
@@ -41,7 +42,7 @@ contract FeeManager is Spoke, DSMath {
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
     }
 
-    function rewardAllFees() public {
+    function rewardAllFees() public amguPayable {
         for (uint i = 0; i < fees.length; i++) {
             rewardFee(fees[i]);
         }
