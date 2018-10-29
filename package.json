@@ -7,7 +7,7 @@
     "compile": "DEBUG=melon:protocol:* yarn ts-node src/utils/solidity/compile.ts",
     "createIndexFiles": "DEBUG=melon:protocol:* yarn ts-node src/utils/createIndexFiles.ts",
     "dev": "yarn jest --watch src/",
-    "devchain": "yarn unzipSnapshot && ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000 --db ./legacy/utils/devchain-snapshot/0x_ganache_snapshot -m 'concert load couple harbor equip island argue ramp clarify fence smart topic'",
+    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
     "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
     "format": "prettier --write src/**/*.ts",
@@ -21,8 +21,7 @@
     "test:verbose": "TERM=dumb yarn jest",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && yarn test:integration:legacy",
-    "test:TOFIX": "yarn lint:solium",
-    "unzipSnapshot": "if [ ! -d ./legacy/utils/devchain-snapshot/0x_ganache_snapshot ]; then unzip -o ./legacy/utils/devchain-snapshot/0x-snapshot.zip -d ./legacy/utils/devchain-snapshot; fi"
+    "test:TOFIX": "yarn lint:solium"
   },
   "files": [
     "out/**/*.json",
