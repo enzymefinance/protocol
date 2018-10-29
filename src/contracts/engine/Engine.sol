@@ -53,8 +53,7 @@ contract Engine is DSMath {
     }
 
     function payAmguInEther() payable {
-        // TODO: implement version.isFund
-        require(version.isFund(msg.sender));
+        require(version.isFund(msg.sender) || version.isFundFactory(msg.sender));
         frozenEther = add(frozenEther, msg.value);
     }
 

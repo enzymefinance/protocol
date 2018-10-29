@@ -11,6 +11,10 @@ interface FundComponentAddresses {
   tradingFactoryAddress: Address;
   vaultFactoryAddress: Address;
   policyManagerFactoryAddress: Address;
+  versionAddress: Address;
+  engineAddress: Address;
+  factoryPriceSourceAddress: Address;
+  mlnTokenAddress: Address;
 }
 
 export const deployFundFactory = async (
@@ -19,12 +23,16 @@ export const deployFundFactory = async (
 ) => {
   const {
     accountingFactoryAddress,
+    engineAddress,
+    factoryPriceSourceAddress,
     feeManagerFactoryAddress,
+    mlnTokenAddress,
     participationFactoryAddress,
+    policyManagerFactoryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
-    policyManagerFactoryAddress,
+    versionAddress,
   } = addresses;
 
   const argsRaw = [
@@ -35,6 +43,10 @@ export const deployFundFactory = async (
     tradingFactoryAddress,
     vaultFactoryAddress,
     policyManagerFactoryAddress,
+    versionAddress,
+    engineAddress,
+    factoryPriceSourceAddress,
+    mlnTokenAddress,
   ];
 
   const args = argsRaw.map(a => a.toString());
