@@ -42,7 +42,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
     }
 
-    function rewardAllFees() public amguPayable {
+    function rewardAllFees() public {//amguPayable {
         for (uint i = 0; i < fees.length; i++) {
             rewardFee(fees[i]);
         }
