@@ -18,6 +18,8 @@ contract Spoke is DSAuth {
         address priceSource;
         address canonicalRegistrar;
         address version;
+        address engine;
+        address mlnAddress;
     }
 
     Hub public hub;
@@ -30,7 +32,7 @@ contract Spoke is DSAuth {
         // TODO: remove "owner" authority?
     }
 
-    function initialize(address[10] _spokes) {
+    function initialize(address[12] _spokes) {
         require(!initialized);
         routes = Routes(
             _spokes[0],
@@ -42,9 +44,16 @@ contract Spoke is DSAuth {
             _spokes[6],
             _spokes[7],
             _spokes[8],
-            _spokes[9]
+            _spokes[9],
+            _spokes[10],
+            _spokes[11]
         );
         initialized = true;
     }
+
+    function engine() view returns (address) { return routes.engine; }
+    function mlnAddress() view returns (address) { return routes.mlnAddress; }
+    function priceSource() view returns (address) { return routes.priceSource; }
+    function version() view returns (address) { return routes.version; }
 }
 
