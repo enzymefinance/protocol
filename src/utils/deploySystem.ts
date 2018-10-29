@@ -3,6 +3,7 @@ import { getPrice } from '@melonproject/token-math/price';
 
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
+import { deployAndGetContract } from '~/utils/solidity';
 
 import {
   deploy as deployToken,
@@ -16,6 +17,7 @@ import {
   addTokenPairWhitelist,
 } from '~/contracts/exchanges';
 // tslint:disable-next-line:max-line-length
+import { deploy as deployEngine } from '~/contracts/engine';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
@@ -45,7 +47,8 @@ export const deploySystem = async () => {
   const accounts = await globalEnvironment.eth.getAccounts();
   const fundName = 'Clever Fund Name';
   const quoteTokenAddress = await deployToken('ETH');
-  const baseTokenAddress = await deployToken('MLN');
+  const mlnTokenAddress = await deployToken('MLN');
+  const baseTokenAddress = mlnTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
   const priceFeedAddress = await deployPriceFeed(quoteToken);
@@ -59,6 +62,8 @@ export const deploySystem = async () => {
     globalEnvironment.wallet.address,
   ]);
 
+  const mockVersion = await deployAndGetContract('version/MockVersion');
+
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
   const feeManagerFactoryAddress = await deployFeeManagerFactory();
@@ -67,18 +72,33 @@ export const deploySystem = async () => {
   const tradingFactoryAddress = await deployTradingFactory();
   const vaultFactoryAddress = await deployVaultFactory();
   const policyManagerFactoryAddress = await deployPolicyManagerFactory();
+  const monthInSeconds = 30 * 24 * 60 * 60;
+  const engineAddress = await deployEngine(
+    mockVersion.options.address,
+    priceFeedAddress,
+    monthInSeconds,
+    mlnTokenAddress,
+  );
 
   const fundFactoryAddress = await deployFundFactory({
     accountingFactoryAddress,
+    engineAddress,
+    factoryPriceSourceAddress: priceFeedAddress,
     feeManagerFactoryAddress,
+    mlnTokenAddress,
     participationFactoryAddress,
     policyManagerFactoryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
+    versionAddress: mockVersion.options.address,
   });
 
   // From here on it is already integration testing
+  await mockVersion.methods
+    .setFundFactory(fundFactoryAddress)
+    .send({ from: accounts[0] });
+
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -98,7 +118,6 @@ export const deploySystem = async () => {
     priceSource,
     quoteToken,
   });
-
   await continueCreation(fundFactoryAddress);
   const hubAddress = await setupFund(fundFactoryAddress);
 
@@ -126,7 +145,6 @@ export const deploySystem = async () => {
 };
 
 if (require.main === module) {
-  // compile("exchanges/MatchingMarket.sol");
   initTestEnvironment().then(async () => {
     await deploySystem();
     process.exit();
