@@ -314,22 +314,22 @@ test.serial(
     const srcAmount = new BigNumber(10 ** 17);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
-        .findBestRate(ethAddress, mlnToken.options.address, srcAmount)
+        .findBestRate(ethAddress, mlnToken.options.address, srcAmount.toFixed())
         .call()
     ).map(e => new BigNumber(e));
-    await fund.methods
+    await fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignatureString,
+        swapTokensSignature,
         [
-          "0x0",
-          "0x0",
+          NULL_ADDRESS,
+          NULL_ADDRESS,
           ethToken.options.address,
           mlnToken.options.address,
-          "0x0",
-          "0x0"
+          NULL_ADDRESS,
+          NULL_ADDRESS        
         ],
-        [srcAmount, 0, 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(), 0, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -355,20 +355,20 @@ test.serial(
     const srcAmount = new BigNumber(10 ** 17);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
-        .findBestRate(mlnToken.options.address, ethAddress, srcAmount)
+        .findBestRate(mlnToken.options.address, ethAddress, srcAmount.toFixed())
         .call()
     ).map(e => new BigNumber(e));
     await fund.methods
       .callOnExchange(
         0,
-        swapTokensSignatureString,
+        swapTokensSignature,
         [
-          "0x0",
-          "0x0",
+          NULL_ADDRESS,
+          NULL_ADDRESS,
           mlnToken.options.address,
           ethToken.options.address,
-          "0x0",
-          "0x0"
+          NULL_ADDRESS,
+          NULL_ADDRESS
         ],
         [srcAmount, 0, 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),

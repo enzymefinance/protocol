@@ -560,10 +560,10 @@ async function deployEnvironment(environment) {
   } else if (environment === 'development') {
     console.log(`Deployer: ${accounts[0]}`);
     deployed.EthToken = await deployContract(
-      'dependencies/token/PreminedToken',
-      opts,
-      ['ETH-T', 18, 'Ether token'],
+      'dependencies/token/WETH9',
+      opts
     );
+    await deployed.EthToken.methods.deposit().send({value: new BigNumber(10 ** 25), ...opts});
     deployed.MlnToken = await deployContract(
       'dependencies/token/PreminedToken',
       opts,
