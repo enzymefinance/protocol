@@ -35,7 +35,7 @@ let ethToken;
 let mlnToken;
 let zrxToken;
 let zeroExExchange;
-let erc20ProxyAddress;
+let erc20Proxy;
 let fund;
 let investor;
 let manager;
@@ -61,15 +61,16 @@ test.before(async t => {
   pricefeed = await deployed.TestingPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await retrieveContract(
-    "dependencies/token/ERC20",
-    "0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c"
+  zrxToken = await deployContract(
+    "exchanges/ZrxToken",
+     opts 
   );
-  zeroExExchange = await retrieveContract(
-    "exchanges/Exchange",
-    "0x48bacb9266a570d521063ef5dd96e61686dbe788"
+  zeroExExchange = await deployContract(
+    "exchanges/Exchange", opts
   );
-  erc20ProxyAddress = "0x1dc4c1cefef38a777b15aa20260a54e584b16c48";
+  erc20Proxy = await deployContract(
+    "exchanges/ERC20Proxy", opts
+  );
   deployed.ZeroExV2Adapter = await deployContract(
     "exchanges/ZeroExV2Adapter",
     opts
@@ -87,7 +88,10 @@ test.before(async t => {
   //     [makeOrderSignature, takeOrderSignature, cancelOrderSignature]
   //   ]
   // );
-
+  await erc20Proxy.methods.addAuthorizedAddress(zeroExExchange.options.address).send(opts);
+  await zeroExExchange.methods.registerAssetProxy(erc20Proxy.options.address).send(opts);
+  const zrxAssetData = assetDataUtils.encodeERC20AssetData(zrxToken.options.address);
+  await zeroExExchange.methods.changeZRXAssetData(zrxAssetData).send(opts);
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
     'Test Fund', [zeroExExchange.options.address], [deployed.ZeroExV2Adapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
@@ -205,7 +209,7 @@ test.serial("third party makes and validates an off-chain order", async t => {
   );
 
   await mlnToken.methods
-    .approve(erc20ProxyAddress, trade1.sellQuantity.toFixed())
+    .approve(erc20Proxy.options.address, trade1.sellQuantity.toFixed())
     .send({ from: deployer });
 
   const signatureValid = await signatureUtils.isValidSignatureAsync(
@@ -311,7 +315,7 @@ test.serial("third party makes another order with taker fees", async t => {
     SignerType.Default
   );
   await mlnToken.methods
-    .approve(erc20ProxyAddress, trade1.sellQuantity.toFixed())
+    .approve(erc20Proxy.options.address, trade1.sellQuantity.toFixed())
     .send({ from: deployer });
 
   const signatureValid = await signatureUtils.isValidSignatureAsync(
@@ -328,7 +332,7 @@ test.serial("fund with enough ZRX takes the above order", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   const fillQuantity = trade1.buyQuantity.div(2);
   await zrxToken.methods
-    .transfer(fund.trading.options.address, new BigNumber(10 ** 20).toFixed())
+    .transfer(fund.vault.options.address, new BigNumber(10 ** 17).toFixed())
     .send(opts);
   await fund.trading.methods
     .callOnExchange(
@@ -444,7 +448,7 @@ test.serial("Make order through the fund", async t => {
     .send({ from: manager, gas: config.gas });
   const makerAssetAllowance = new BigNumber(
     await mlnToken.methods
-      .allowance(fund.trading.options.address, erc20ProxyAddress)
+      .allowance(fund.trading.options.address, erc20Proxy.options.address)
       .call()
   );
   t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
@@ -620,7 +624,7 @@ test.serial(
       .send({ from: manager, gas: config.gas });
     const makerAssetAllowance = new BigNumber(
       await mlnToken.methods
-        .allowance(fund.trading.options.address, erc20ProxyAddress)
+        .allowance(fund.trading.options.address, erc20Proxy.options.address)
         .call()
     );
     t.deepEqual(makerAssetAllowance, order.makerAssetAmount);
@@ -662,7 +666,7 @@ test.serial(
     const isOrderCancelled = await zeroExExchange.methods.cancelled(orderHashHex).call();
     const makerAssetAllowance = new BigNumber(
       await mlnToken.methods
-        .allowance(fund.trading.options.address, erc20ProxyAddress)
+        .allowance(fund.trading.options.address, erc20Proxy.options.address)
         .call()
     );
     t.true(isOrderCancelled);
