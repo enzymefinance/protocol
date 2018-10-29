@@ -5,7 +5,12 @@ import "./Version.i.sol";
 /// @notice Version contract useful for testing
 contract MockVersion is VersionInterface {
     uint public amguPrice;
+    address public fundFactory;
     mapping (address => bool) public fundExists;
+
+    function setFundFactory(address _who) {
+        fundFactory = _who;
+    }
 
     function setAmguPrice(uint _price) {
         amguPrice = _price;
@@ -21,5 +26,9 @@ contract MockVersion is VersionInterface {
 
     function isFund(address _who) returns (bool) {
         return fundExists[_who];
+    }
+
+    function isFundFactory(address _who) returns (bool) {
+        return _who == fundFactory;
     }
 }
