@@ -84,7 +84,7 @@ export const deploySystem = async () => {
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
-      address: matchingMarketAddress,
+      exchangeAddress: matchingMarketAddress,
       takesCustody: false,
     },
   ];
