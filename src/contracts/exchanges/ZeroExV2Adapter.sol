@@ -2,7 +2,7 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
-import "./Exchange.sol";
+import "./thirdparty/0x/Exchange.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";

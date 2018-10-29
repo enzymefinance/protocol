@@ -62,14 +62,14 @@ test.before(async t => {
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
   zrxToken = await deployContract(
-    "exchanges/ZrxToken",
+    "exchanges/thirdparty/0x/ZrxToken",
      opts 
   );
   zeroExExchange = await deployContract(
-    "exchanges/Exchange", opts
+    "exchanges/thirdparty/0x/Exchange", opts
   );
   erc20Proxy = await deployContract(
-    "exchanges/ERC20Proxy", opts
+    "exchanges/thirdparty/0x/ERC20Proxy", opts
   );
   deployed.ZeroExV2Adapter = await deployContract(
     "exchanges/ZeroExV2Adapter",

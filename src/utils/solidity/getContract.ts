@@ -14,7 +14,7 @@ export enum Contract {
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
   Hub = 'fund/hub/Hub',
-  MatchingMarket = 'exchanges/MatchingMarket',
+  MatchingMarket = 'exchanges/thirdparty/oasisdex/MatchingMarket',
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',

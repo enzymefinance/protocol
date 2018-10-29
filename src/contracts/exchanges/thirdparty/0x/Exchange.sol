@@ -19,7 +19,7 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/StandardToken.sol";
+import "../../../dependencies/token/StandardToken.sol";
 
 library LibBytes {
 

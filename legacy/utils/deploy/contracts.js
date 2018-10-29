@@ -586,12 +586,7 @@ async function deployEnvironment(environment) {
       .setDecimals(deployed.EurToken.options.address, 18)
       .send(clone(opts));
     deployed.MatchingMarket = await deployContract(
-      'exchanges/MatchingMarket',
-      opts,
-      [99999999999],
-    );
-    deployed.MatchingMarket = await deployContract(
-      'exchanges/MatchingMarket',
+      'exchanges/thirdparty/oasisdex/MatchingMarket',
       opts,
       [99999999999],
     );

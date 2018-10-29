@@ -6,7 +6,7 @@ export const deployMatchingMarketAdapter = async (
   environment?: Environment,
 ) => {
   const address = await deployContract(
-    'exchanges/MatchingMarketAdapter.sol',
+    'exchanges/thirdparty/oasisdex/MatchingMarketAdapter.sol',
     null,
     environment,
   );
