@@ -85,6 +85,7 @@ export const deploySystem = async () => {
     {
       adapterAddress: matchingMarketAdapterAddress,
       exchangeAddress: matchingMarketAddress,
+      name: 'MatchingMarket',
       takesCustody: false,
     },
   ];
