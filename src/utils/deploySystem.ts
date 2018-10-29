@@ -127,7 +127,10 @@ export const deploySystem = async () => {
   });
 
   const addresses = {
+    exchangeConfigs,
     fundFactory: fundFactoryAddress,
+    priceSource,
+    tokens: [quoteToken, baseToken],
   };
 
   return addresses;

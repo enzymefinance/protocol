@@ -6,6 +6,6 @@ export * from './calls/getInfo';
 export * from './calls/getToken';
 export * from './transactions/approve';
 export * from './transactions/deploy';
+export * from './transactions/increaseApproval';
 export * from './transactions/transfer';
 export * from './transactions/transferFrom';
-export * from './transactions/increaseApproval';
