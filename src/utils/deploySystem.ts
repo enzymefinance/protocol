@@ -84,7 +84,8 @@ export const deploySystem = async () => {
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
-      address: matchingMarketAddress,
+      exchangeAddress: matchingMarketAddress,
+      name: 'MatchingMarket',
       takesCustody: false,
     },
   ];
@@ -127,7 +128,10 @@ export const deploySystem = async () => {
   });
 
   const addresses = {
+    exchangeConfigs,
     fundFactory: fundFactoryAddress,
+    priceSource,
+    tokens: [quoteToken, baseToken],
   };
 
   return addresses;
