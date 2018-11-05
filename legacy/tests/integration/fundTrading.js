@@ -177,6 +177,7 @@ exchangeIndexes.forEach(i => {
       receipt = await fund.participation.methods.requestInvestment(wantedShares.toFixed(), boostedOffer.toFixed(), ethToken.options.address).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
+
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       await updateTestingPriceFeed(deployed);
       await updateTestingPriceFeed(deployed);
