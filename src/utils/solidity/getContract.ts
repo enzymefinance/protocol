@@ -2,6 +2,7 @@ import * as R from 'ramda';
 import * as Eth from 'web3-eth';
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment, Environment } from '~/utils/environment';
+import { solidityCompileTarget } from '~/settings';
 
 export type GetContractFunction = (
   relativePath: Contract,
@@ -23,6 +24,8 @@ export enum Contract {
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
+  VaultFactory = 'fund/vault/VaultFactory',
+  ZeroEx = 'exchanges/Exchange',
 }
 
 export const getContract: GetContractFunction = R.memoizeWith(
@@ -33,8 +36,8 @@ export const getContract: GetContractFunction = R.memoizeWith(
     address: Address,
     environment = getGlobalEnvironment(),
   ) => {
-    const abi = require(`~/../out/${relativePath}.abi.json`);
-    const contract = new environment.eth.Contract(abi, address);
+    const abi = require(`${solidityCompileTarget}/${relativePath}.abi.json`);
+    const contract = new environment.eth.Contract(abi, address.toString());
     return contract;
   },
 );

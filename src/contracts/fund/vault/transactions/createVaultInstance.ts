@@ -4,7 +4,7 @@ import { Address } from '~/utils/types';
 import { ensure } from '~/utils/guards/ensure';
 import { sha3 } from 'web3-utils';
 
-import { getFactoryContract } from '../utils/getFactoryContract';
+import { getContract, Contract } from '~/utils/solidity';
 
 interface CreateInstanceArgs {
   hubAddress: Address;
@@ -21,7 +21,11 @@ export const prepare = async (
   { hubAddress }: CreateInstanceArgs,
   environment,
 ) => {
-  const contract = getFactoryContract(contractAddress);
+  const contract = getContract(
+    Contract.VaultFactory,
+    new Address(contractAddress),
+    environment,
+  );
   const transaction = contract.methods.createInstance(hubAddress);
   transaction.name = 'createInstance';
   const prepared = await prepareTransaction(transaction, environment);

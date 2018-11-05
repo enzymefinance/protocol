@@ -37,6 +37,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     struct OpenMakeOrder {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
+        uint orderIndex; // Index of the order in the orders array
     }
 
     Exchange[] public exchanges;
@@ -143,15 +144,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
         // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
+    /// @dev Make sure this is called after orderUpdateHook in adapters
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
         uint orderId
     ) delegateInternal {
         require(!isInOpenMakeOrder[ofSellAsset]);
+        require(orders.length > 0);
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
 
     function removeOpenMakeOrder(
@@ -199,7 +203,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             }
             address sellAsset;
             uint sellQuantity;
-            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id, ofAsset);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
@@ -218,6 +222,16 @@ contract Trading is DSMath, Spoke, TradingInterface {
         for (uint i = 0; i < _tokens.length; i++) {
             _tokens[i].transfer(Vault(routes.vault), _tokens[i].balanceOf(this));
         }
+    }
+
+    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
+        OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
+        return (order.id, order.expiresAt, order.orderIndex);
+    }
+
+    function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
+        Order memory order = orders[orderIndex];
+        return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 }
 
