@@ -224,6 +224,9 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
+    /// @notice Payable function to get back ETH from WETH
+    function() public payable { }
+
     function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
         return (order.id, order.expiresAt, order.orderIndex);
