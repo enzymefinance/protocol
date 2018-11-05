@@ -6,10 +6,14 @@ import * as mkdirp from 'mkdirp';
 import * as R from 'ramda';
 import * as rimraf from 'rimraf';
 
-const debug = require('../getDebug').default(__filename);
+const soliditySourceDirectory = path.join(__dirname, '..', 'src', 'contracts');
+const solidityCompileTarget = path.join(__dirname, '..', 'out');
+
+const debug = require('debug').default('melon:protocol:bin');
 
 const findImports = (missingPath: string, b, c) => {
-  const candidates = glob.sync(`src/contracts/**/${missingPath}`);
+  const query = path.join(soliditySourceDirectory, '**', missingPath);
+  const candidates = glob.sync(query);
 
   if (candidates.length > 1) {
     throw new Error(
@@ -31,6 +35,7 @@ const findImports = (missingPath: string, b, c) => {
 };
 
 // Not used at the moment
+// TODO: Fix this and make it work
 const compile = (pathToSol: string) => {
   debug('Compiling ...', pathToSol);
 
@@ -50,7 +55,7 @@ const compile = (pathToSol: string) => {
 
   if (output.errors) output.errors.forEach(debug);
 
-  const targetDir = path.join(process.cwd(), 'out', parsed.dir);
+  const targetDir = path.join(solidityCompileTarget, parsed.dir);
   const targetPath = path.join(targetDir, `${parsed.name}.json`);
 
   debug('Writing to', targetPath);
@@ -64,12 +69,11 @@ const compile = (pathToSol: string) => {
 
 const writeFiles = (compileOutput, contract) => {
   const [sourceName, contractName] = contract.split(':');
+  const parsedPath = path.parse(sourceName);
+  const targetDir = path.join(solidityCompileTarget, parsedPath.dir);
+  const targetBasePath = path.join(targetDir, contractName);
 
   debug('Writing', contract);
-
-  const parsedPath = path.parse(sourceName);
-  const targetDir = path.join(process.cwd(), 'out', parsedPath.dir);
-  const targetBasePath = path.join(targetDir, contractName);
 
   mkdirp.sync(targetDir);
 
@@ -92,16 +96,23 @@ const writeFiles = (compileOutput, contract) => {
   );
 };
 
-const compileAll = (query = 'src/contracts/**/*.sol') => {
+export const compileAll = () => {
+  const query = path.join(soliditySourceDirectory, '**', '*.sol');
   const candidates = glob.sync(query);
 
   debug(`Compiling ${query}, ${candidates.length} files ...`);
 
-  const unmerged = candidates.map(path => ({
-    [path.substr(14)]: fs.readFileSync(path, { encoding: 'utf-8' }),
+  const unmerged = candidates.map(source => ({
+    [path.relative(
+      path.join(soliditySourceDirectory),
+      source,
+    )]: fs.readFileSync(source, {
+      encoding: 'utf-8',
+    }),
   }));
 
   const sources = R.mergeAll(unmerged);
+
   const output = solc.compile({ sources }, 1, findImports);
 
   const messages = output.errors;
@@ -119,17 +130,17 @@ const compileAll = (query = 'src/contracts/**/*.sol') => {
   debug('Writing compilation results');
 
   // Delete and recreate out/
-  rimraf.sync('out');
-  mkdirp.sync('out');
+  rimraf.sync(solidityCompileTarget);
+  mkdirp.sync(solidityCompileTarget);
 
   fs.writeFileSync(
-    path.join('out', 'compilerResult.json'),
+    path.join(solidityCompileTarget, 'compilerResult.json'),
     JSON.stringify(output, null, 2),
   );
 
   if (messages.length > 0) {
     fs.writeFileSync(
-      path.join('out', 'compilerMessages.txt'),
+      path.join(solidityCompileTarget, 'compilerMessages.txt'),
       output.errors.join('\n\n'),
     );
   }
@@ -145,19 +156,3 @@ const compileAll = (query = 'src/contracts/**/*.sol') => {
     process.exit(0);
   }
 };
-
-if (require.main === module) {
-  const contract = process.argv[2];
-
-  if (contract) {
-    debug('Compiling only one contract', contract);
-    compile(contract);
-  } else {
-    debug('Compiling all contracts.');
-    console.log(
-      // tslint:disable-next-line:max-line-length
-      'If you want to compile just one, call `yarn compile src/contracts/path/to/contract.sol`',
-    );
-    compileAll();
-  }
-}

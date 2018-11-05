@@ -82,6 +82,37 @@ parity \
 npm run deploy:kovan
 ```
 
+## Use it as a consumer
+
+To integrate the Melon Protocol into your application, you do not need to clone this repo, you can just install it from npm:
+
+```bash
+yarn add @melonproject/protocol
+```
+
+You need to have a local dev-chain running to develop your consuming application. We recommend Ganache:
+
+```bash
+yarn add -D ganache-cli
+yarn ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000
+```
+
+Then, you can deploy the contracts to your local dev node:
+
+```bash
+yarn melon deploy
+```
+
+This creates a new addressBook which you can use like this:
+
+```typescript
+import * as protocol from "@melonproject/protocol";
+import * as addressBook from "@melonproject/protocol/addressBook.json";
+
+const hub = await protocol.factory.managersToHubs(addressBook.fundFactory, '0xdeadbeef');    
+```
+
+
 ## Troubleshooting
 
 #### Permission denied (publickey) when cloning the repo

@@ -45,14 +45,11 @@ const writeExportAs = (
     const relativePath = path.relative(directory, src);
     const basename = camelCase(path.basename(src));
 
-    // fs.appendFileSync(
-    //   df,
-    //   `import * as ${basename}Export from './${relativePath}';\n`,
-    // );
     fs.appendFileSync(
       df,
-      `export const ${basename} = require('${relativePath}');\n`,
-    ); // ${basename}Export;\n
+      `import * as ${basename}Export from './${relativePath}';\n`,
+    );
+    fs.appendFileSync(df, `export const ${basename} = ${basename}Export;\n\n`);
   });
 };
 

@@ -1,4 +1,3 @@
-app/
 node_modules/
 npm-debug.log
 *.orig
@@ -12,14 +11,10 @@ yarn-error.log
 # manual backup files
 *.bak
 
-# doxity
-scripts/
-
 # ignore built contracts
 out/
 
 # ignore transpiled code
-utils/build
 build
 
 # ignore development addressBook
