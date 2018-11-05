@@ -6,7 +6,7 @@ import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
-import { makeOrderSignature, makeOrderSignatureString } from "../../utils/lib/data";
+import { makeOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -126,11 +126,11 @@ test.serial(
     await updateCanonicalPriceFeed(deployed);
     await fund.methods.callOnExchange(
       0,
-      makeOrderSignatureString,
-      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0", "0x0"],
+      makeOrderSignature,
+      ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
       [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      web3.utils.padLeft('0x0', 64),
+      0,
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(

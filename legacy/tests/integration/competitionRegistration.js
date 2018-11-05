@@ -1,4 +1,5 @@
 import test from "ava";
+import api from "../../utils/lib/api";
 import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
@@ -11,6 +12,8 @@ const environmentConfig = require("../../utils/config/environment.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
+const competitionTerms =
+  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 // hoisted variables
 let accounts;
@@ -24,7 +27,7 @@ let deployed;
 
 test.before(async () => {
   deployed = await deployEnvironment(environment);
-  accounts = await web3.eth.getAccounts();
+  accounts = await api.eth.accounts();
   [deployer, manager] = accounts;
   version = await deployed.Version;
   competition = await deployed.Competition;
@@ -84,7 +87,6 @@ test.serial(
       competition.options.address,
     ).call());
     const preTotalSupply = new BigNumber(await fund.methods.totalSupply().call());
-    const competitionTerms = competition.methods.TERMS_AND_CONDITIONS().call();
     const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
     const estimatedMlnReward = await competition.methods.calculatePayout(buyinValue).call();
     const estimatedShares = await competition.methods.getEtherValue(estimatedMlnReward).call();

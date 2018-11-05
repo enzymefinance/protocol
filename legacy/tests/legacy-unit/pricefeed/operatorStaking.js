@@ -1,5 +1,5 @@
 import test from "ava";
-import web3 from "../../../utils/lib/web3";
+import api from "../../../utils/lib/api";
 import deployEnvironment from "../../../utils/deploy/contracts";
 import {deployContract} from "../../../utils/lib/contracts";
 import {increaseTime, currentTimestamp, blockNumberToTimestamp} from "../../../utils/lib/time";
@@ -24,7 +24,7 @@ function shuffle(array) { // TODO: iterate stakers randomly (further below)
 */
 
 test.before(async () => {
-  const accounts = await web3.eth.getAccounts();
+  const accounts = await api.eth.accounts();
   [deployer] = accounts;
   stakers = accounts.slice(1,6);
 });

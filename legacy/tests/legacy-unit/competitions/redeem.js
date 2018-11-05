@@ -14,6 +14,8 @@ const BigNumber = require("bignumber.js");
 
 const environment = "development";
 const config = environmentConfig[environment];
+const competitionTerms =
+  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 // hoisted variables
 let accounts;
@@ -24,7 +26,6 @@ const fundName = web3.utils.toHex("Super Fund");
 
 async function registerFund(t, fundAddress, by, value) {
   await updateCanonicalPriceFeed(t.context.deployed);
-  const competitionTerms = await t.context.competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(by, competitionTerms);
   await t.context.competition.methods.registerForCompetition(fundAddress, v, r, s).send(
     {
@@ -103,7 +104,7 @@ test.beforeEach(async t => {
   t.context.fund = await retrieveContract("Fund", fundAddress);
 
   // Send some MLN to competition contract
-  await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 26)).send(
+  await t.context.deployed.MlnToken.methods.transfer(t.context.competition.options.address, new BigNumber(10 ** 24)).send(
     { from: deployer, gasPrice: config.gasPrice },
   );
   await updateCanonicalPriceFeed(t.context.deployed);
@@ -140,7 +141,6 @@ test("Cannot redeem without being registered", async t => {
 test("Can redeem before endTime if version is shutdown", async t => {
   const buyinValue = new BigNumber(10 ** 19);
   const registrantFund = await registerFund(t, t.context.fund.options.address, manager, buyinValue);
-
   await t.context.version.methods.shutDown().send(
     { from: deployer, gas: config.gas, gasPrice: config.gasPrice }
   );
