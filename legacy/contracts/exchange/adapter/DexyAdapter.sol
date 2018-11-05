@@ -71,6 +71,7 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
             Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         );
 
+        // Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Fund(address(this)).addAssetToOwnedAssets(takerAsset);
         // TODO: get orderId from hash (may be emitting this event another way [see #433])
         // Fund(address(this)).orderUpdateHook(
@@ -80,7 +81,6 @@ contract DexyAdapter is ExchangeAdapterInterface, DSMath, DBC {
         //     [makerAsset, takerAsset],
         //     [makerQuantity, takerQuantity, uint(0)]
         // );
-        // Fund(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
     }
 
     // Responsibilities of takeOrder are:

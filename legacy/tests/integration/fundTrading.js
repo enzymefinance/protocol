@@ -1,19 +1,13 @@
 import test from "ava";
 import web3 from "../../utils/lib/web3";
+import api from "../../utils/lib/api";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import deployEnvironment from "../../utils/deploy/contracts";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import getFundComponents from "../../utils/lib/getFundComponents";
 import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
-import {
-  makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature,
-  makeOrderSignatureBytes,
-  takeOrderSignatureBytes,
-  cancelOrderSignatureBytes,
-} from "../../utils/lib/data";
+import { makeOrderSignature, takeOrderSignature, cancelOrderSignature } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
 const environmentConfig = require("../../utils/config/environment.js");
@@ -126,12 +120,12 @@ test.beforeEach(async () => {
 const initialTokenAmount = new BigNumber(10 ** 23);
 test.serial("investor receives initial ethToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
-  const preDeployerEth = new BigNumber(await web3.eth.getBalance(deployer));
+  const preDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
   receipt = await ethToken.methods.transfer(investor, initialTokenAmount.toFixed()).send(
     { from: deployer, gasPrice: config.gasPrice }
   );
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
-  const postDeployerEth = new BigNumber(await web3.eth.getBalance(deployer));
+  const postDeployerEth = new BigNumber(await api.eth.getBalance(deployer));
   const post = await getAllBalances(deployed, accounts, fund);
 
   t.deepEqual(
@@ -238,10 +232,10 @@ exchangeIndexes.forEach(i => {
     receipt = await fund.trading.methods.callOnExchange(
       i,
       makeOrderSignature,
-      [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
+      [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20)],
       [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      web3.utils.padLeft('0x0', 64),
+      0,
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
@@ -392,10 +386,10 @@ exchangeIndexes.forEach(i => {
       receipt = await fund.trading.methods.callOnExchange(
         i,
         takeOrderSignature,
-        [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
+        [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity.toFixed(), 0],
         `0x${Number(orderId).toString(16).padStart(64, "0")}`,
-        web3.utils.padLeft('0x0', 64),
+        0,
         web3.utils.padLeft('0x0', 64),
         web3.utils.padLeft('0x0', 64),
       ).send(
@@ -450,10 +444,10 @@ test.serial(
     receipt = await t.throws(fund.trading.methods.callOnExchange(
       0,
       makeOrderSignature,
-      [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
+      [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20)],
       [trade3.sellQuantity.toFixed(), trade3.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
       web3.utils.padLeft('0x0', 64),
-      web3.utils.padLeft('0x0', 64),
+      0,
       web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(
@@ -534,13 +528,13 @@ test.serial(
     await t.throws(fund.trading.methods.callOnExchange(
       0,
       takeOrderSignature,
-      [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
-      [0, 0, 0, 0, 0, 0, trade4.buyQuantity.toFixed(), 0],  // changed from [0, trade4.sellQuantity, 0, 0, 0, 0, 0, 0],
+      [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
+      [0, 0, 0, 0, 0, 0, trade4.buyQuantity.toFixed(), 0],
       `0x${Number(orderId)
         .toString(16)
         .padStart(64, "0")}`,
-        web3.utils.padLeft('0x0', 64),
-        web3.utils.padLeft('0x0', 64),
+      0,
+      web3.utils.padLeft('0x0', 64),
       web3.utils.padLeft('0x0', 64),
     ).send(
       { from: manager, gas: config.gas }
@@ -580,10 +574,10 @@ test.serial("manager makes an order and cancels it", async t => {
   receipt = await fund.trading.methods.callOnExchange(
     0,
     makeOrderSignature,
-    [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
+    [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, mlnToken.options.address, web3.utils.randomHex(20)],
     [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    web3.utils.padLeft('0x0', 64),
+    0,
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send({from: manager, gas: config.gas, gasPrice: config.gasPrice});
@@ -593,12 +587,12 @@ test.serial("manager makes an order and cancels it", async t => {
   receipt = await fund.trading.methods.callOnExchange(
     0,
     cancelOrderSignature,
-    [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
+    [web3.utils.randomHex(20), web3.utils.randomHex(20), ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    web3.utils.padLeft('0x0', 64),
+    0,
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send({from: manager, gas: config.gas, gasPrice: config.gasPrice});
@@ -789,10 +783,10 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   await fund.trading.methods.callOnExchange(
     0,
     makeOrderSignature,
-    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
+    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20)],
     [trade1.sellQuantity.toFixed(), trade1.buyQuantity.toFixed(), 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    web3.utils.padLeft('0x0', 64),
+    0,
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -802,12 +796,12 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   await t.throws(fund.trading.methods.callOnExchange(
     0,
     cancelOrderSignature,
-    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
+    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    web3.utils.padLeft('0x0', 64),
+    0,
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -859,12 +853,12 @@ test.serial("shutdown of fund allows anyone to cancel order", async t => {
   receipt = await fund.trading.methods.callOnExchange(
     0,
     cancelOrderSignature,
-    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
+    [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
     [0, 0, 0, 0, 0, 0, 0, 0],
     `0x${Number(offerNumber)
       .toString(16)
       .padStart(64, "0")}`,
-    web3.utils.padLeft('0x0', 64),
+    0,
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(

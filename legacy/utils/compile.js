@@ -1,7 +1,6 @@
 const Compile = require("truffle-workflow-compile");
 const path = require("path");
 const fs = require("fs");
-const mkdirp = require('mkdirp');
 
 const compileOptions = {
   contracts_directory: path.join(__dirname, "../src"),
@@ -10,38 +9,36 @@ const compileOptions = {
   solc: {
     optimizer: {
       enabled: true,
-      runs: 1,
-    },
-  },
+      runs: 1
+    }
+  }
 };
 
 Compile.compile(compileOptions, (err, result) => {
   if (err) {
-    console.log(err.message);
+    console.log(err.message); 
     return;
   }
-  const formattedDir = path.join(__dirname, "../out/formatted/");
-  if (!fs.existsSync(formattedDir)) {
-    fs.mkdirSync(formattedDir);
+  const abiDir = path.join(__dirname, "../out/abi/");
+  const binDir = path.join(__dirname, "../out/bin/");
+  if (!fs.existsSync(abiDir)) {
+    fs.mkdirSync(abiDir);
   }
-  Object.entries(result.contracts).forEach(([, value]) => {
-    const cNameRegex = new RegExp('(src)(.*/)(.*.sol)$');
-    const contractFolderName = value.sourcePath;
-    const [, , contractPath] = cNameRegex.exec(contractFolderName);
-    const contractDir = formattedDir + contractPath;
-
-    mkdirp.sync(contractDir);
+  if (!fs.existsSync(binDir)) {
+    fs.mkdirSync(binDir);
+  }
+  Object.entries(result).forEach(([, value]) => {
     fs.writeFileSync(
-      `${contractDir + value.contract_name}.abi`,
+      `${abiDir + value.contract_name  }.abi`,
       JSON.stringify(value.abi, null, "  "),
       "utf8",
     );
     fs.writeFileSync(
-      `${contractDir +  value.contract_name}.bin`,
+      `${binDir + value.contract_name  }.bin`,
       value.bytecode,
       "utf8",
     );
-    console.log(`Compiled ${value.contract_name}`);
+    console.log(`Compiled ${  value.contract_name}`);
   });
   console.log("Successfully compiled");
 });

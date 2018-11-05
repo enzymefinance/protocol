@@ -34,7 +34,7 @@ interface GenericExchangeInterface {
     function getLastOrderId(address onExchange) view returns (uint);
     function isActive(address onExchange, uint id) view returns (bool);
     function getOwner(address onExchange, uint id) view returns (address);
-    function getOrder(address onExchange, uint id, address makerAsset) view returns (address, address, uint, uint);
+    function getOrder(address onExchange, uint id) view returns (address, address, uint, uint);
     function getTimestamp(address onExchange, uint id) view returns (uint);
 
 }

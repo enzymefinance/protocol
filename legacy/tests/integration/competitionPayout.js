@@ -17,6 +17,8 @@ const environment = "development";
 const config = environmentConfig[environment];
 const buyinValue = new BigNumber(0.5 * 10 ** 19);
 const competitionDuration = 13; // Duration in seconds
+const competitionTerms =
+  "0x12208E21FD34B8B2409972D30326D840C9D747438A118580D6BA8C0735ED53810491";
 
 let accounts;
 let deployer;
@@ -100,7 +102,6 @@ test.before(async () => {
 
 test.serial("Registration leads to entry of the fund", async t => {
   await updateCanonicalPriceFeed(deployed);
-  const competitionTerms = await competition.methods.TERMS_AND_CONDITIONS().call();
   const [r, s, v] = await getSignatureParameters(manager, competitionTerms);
   await competition.methods.registerForCompetition(fund.options.address, v, r, s).send(
     {

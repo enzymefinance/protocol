@@ -1,4 +1,4 @@
-import web3 from "./web3";
+import api from "./api";
 
 const BigNumber = require('bignumber.js');
 
@@ -15,12 +15,12 @@ async function getAllBalances(instances, accounts, fund) {
     investor: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(investor).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(investor).call()),
-      ether: new BigNumber(await web3.eth.getBalance(investor))
+      ether: new BigNumber(await api.eth.getBalance(investor))
     },
     manager: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(manager).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(manager).call()),
-      ether: new BigNumber(await web3.eth.getBalance(manager))
+      ether: new BigNumber(await api.eth.getBalance(manager))
     },
     fund: {
       MlnToken: new BigNumber(await fund.accounting.methods.assetHoldings(instances.MlnToken.options.address).call()),
@@ -30,22 +30,22 @@ async function getAllBalances(instances, accounts, fund) {
     worker: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(worker).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(worker).call()),
-      ether: new BigNumber(await web3.eth.getBalance(worker))
+      ether: new BigNumber(await api.eth.getBalance(worker))
     },
     deployer: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(deployer).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(deployer).call()),
-      ether: new BigNumber(await web3.eth.getBalance(deployer)),
+      ether: new BigNumber(await api.eth.getBalance(deployer)),
     },
     exchangeOwner: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(exchangeOwner).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(exchangeOwner).call()),
-      ether: new BigNumber(await web3.eth.getBalance(deployer)),
+      ether: new BigNumber(await api.eth.getBalance(deployer)),
     },
     custodian: {
       MlnToken: new BigNumber(await instances.MlnToken.methods.balanceOf(custodian).call()),
       EthToken: new BigNumber(await instances.EthToken.methods.balanceOf(custodian).call()),
-      ether: new BigNumber(await web3.eth.getBalance(custodian)),
+      ether: new BigNumber(await api.eth.getBalance(custodian)),
     }
   };
 }

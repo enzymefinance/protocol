@@ -275,7 +275,9 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns (bool isRecent, uint price, uint assetDecimals)
     {
-        return getReferencePriceInfo(ofAsset, QUOTE_ASSET);
+        isRecent = hasRecentPrice(ofAsset);
+        (price, ) = getPrice(ofAsset);
+        assetDecimals = getDecimals(ofAsset);
     }
 
     /**
@@ -293,36 +295,43 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         view
         returns (bool isRecent, uint invertedPrice, uint assetDecimals)
     {
-        return getReferencePriceInfo(QUOTE_ASSET, ofAsset);
+        uint inputPrice;
+        // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
+        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
+
+        // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
+        uint quoteDecimals = getDecimals(QUOTE_ASSET);
+
+        return (
+            isRecent,
+            mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
+            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
+        );
     }
 
     /**
     @notice Gets reference price of an asset pair
     @dev One of the address is equal to quote asset
     @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
-    @param _baseAsset Address of base asset
-    @param _quoteAsset Address of quote asset
+    @param ofBase Address of base asset
+    @param ofQuote Address of quote asset
     @return {
         "isRecent": "Whether the price is fresh, given VALIDITY interval",
         "referencePrice": "Reference price",
-        "decimals": "Decimal places for this asset"
+        "decimal": "Decimal places for this asset"
     }
     */
-    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
+    function getReferencePriceInfo(address ofBase, address ofQuote)
         view
-        returns (bool isRecent, uint referencePrice, uint decimals)
+        returns (bool isRecent, uint referencePrice, uint decimal)
     {
-        uint basePrice;
-        uint quotePrice;
-        (basePrice, ) = getPrice(_baseAsset);
-        uint decimalBase = getDecimals(_baseAsset);
-        bool isRecentBase = hasRecentPrice(_baseAsset);
-        (quotePrice, ) = getPrice(_quoteAsset);
-        uint decimalQuote = getDecimals(_quoteAsset);
-        bool isRecentQuote = hasRecentPrice(_quoteAsset);
-        isRecent = isRecentBase && isRecentQuote;
-        referencePrice = mul(basePrice, 10 ** uint(decimalQuote)) / quotePrice;
-        decimals = decimalQuote;
+        if (getQuoteAsset() == ofQuote) {
+            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
+        } else if (getQuoteAsset() == ofBase) {
+            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
+        } else {
+            revert(); // no suitable reference price available
+        }
     }
 
     /// @notice Gets price of Order
@@ -354,7 +363,9 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     {
         return
             hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            hasRecentPrice(buyAsset);
+            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
+            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
 
     /// @return Sparse array of addresses of owned pricefeeds

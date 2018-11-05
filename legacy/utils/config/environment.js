@@ -4,7 +4,7 @@ module.exports = {
     host: 'localhost',
     port: 8549,
     gas: 6900000,
-    gasPrice: 140000000000,
+    gasPrice: 100000000000,
     protocol: {
       deployer: '0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC',
       pricefeed: {
@@ -14,7 +14,7 @@ module.exports = {
         preEpochUpdatePeriod: 60 * 60 * 6,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'NMR', 'DGX',
+          'MLN', 'WETH', 'MKR', 'DAI', 'ANT', 'ZRX', 'DGX',
           'BAT', 'DGD', 'GNO', 'OMG', 'JNT', 'REP', 'REQ', 'KNC'
         ],
       },
@@ -28,14 +28,6 @@ module.exports = {
         quorum: 1,
         window: 60 * 60 * 24 * 365
       },
-      competition: {
-        custodian:      '0xD14AaE595Cec3906c75249494696fA139C206948',
-        startTime:      1534154400,
-        endTime:        1535364000,
-        mlnPerEth:      60 * 10 ** 18,
-        totalMaxBuyin:  4000 * 10 ** 18,
-        maxRegistrants: 4000
-      }
     },
   },
   kovan: {
@@ -47,11 +39,11 @@ module.exports = {
     protocol: {
       pricefeed: {
         interval: 60,
-        validity: 120,
+        validity: 60,
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'NMR-T', 'DGX-T',
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'DGX-T',
           'BAT-T','DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
@@ -71,11 +63,11 @@ module.exports = {
     protocol: {
       pricefeed: {
         interval: 60,
-        validity: 120,
+        validity: 60,
         preEpochUpdatePeriod: 30,
         minimumUpdates: 1,
         assetsToRegister: [
-          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T', 'NMR-T', 'DGX-T',
+          'MLN-T', 'WETH-T', 'MKR-T', 'DAI-T', 'ANT-T', 'ZRX-T',
           'BAT-T', 'DGD-T', 'GNO-T', 'OMG-T', 'JNT-T', 'REP-T', 'REQ-T', 'KNC-T'
         ],
       },
