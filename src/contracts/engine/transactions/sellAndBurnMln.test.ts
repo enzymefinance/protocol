@@ -110,7 +110,7 @@ test('AMGU payment fails when sender not fund', async () => {
   ).rejects.toThrow('revert');
 });
 
-test('eth sent as AMGU from a fund thaws and can be bought', async () => {
+test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   const sender = shared.env.wallet.address;
   const sendEth = 1000000794359;
   await shared.version.methods.setIsFund(sender).send({ from: sender });
