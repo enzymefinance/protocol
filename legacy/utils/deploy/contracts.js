@@ -9,6 +9,7 @@ import web3 from '../lib/web3';
 import governanceAction from '../lib/governanceAction';
 import getChainTime from '../../utils/lib/getChainTime';
 import createStakingFeed from '../lib/createStakingFeed';
+import { setupKyberDevEnv } from "./kyberDevEnv";
 import { clone } from '../lib/misc';
 import { abiEncode } from '../lib/data';
 import {
@@ -107,7 +108,7 @@ async function deployEnvironment(environment) {
     gasPrice: config.gasPrice,
   };
 
-  const deployed = {};
+  let deployed = {};
 
   if (environment === 'kovan' || environment === 'kovanCompetition') {
     // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
@@ -585,6 +586,11 @@ async function deployEnvironment(environment) {
     await deployed.TestingPriceFeed.methods
       .setDecimals(deployed.EurToken.options.address, 18)
       .send(clone(opts));
+    deployed.KyberNetworkProxy = await deployContract(
+      "exchanges/thirdparty/kyber/KyberNetworkProxy",
+      opts,
+      [accounts[0]]
+    );
     deployed.MatchingMarket = await deployContract(
       'exchanges/thirdparty/oasisdex/MatchingMarket',
       opts,
@@ -650,6 +656,7 @@ async function deployEnvironment(environment) {
       deployed.VaultFactory.options.address,
       deployed.PolicyManagerFactory.options.address,
     ]);
+    deployed = setupKyberDevEnv(deployed, accounts, opts);
   } else if (environment === 'development-old') {
     [opts.from] = accounts;
     deployed.Governance = await deployContract('system/Governance', opts, [
