@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 
 import { Address } from '~/utils/types';
-import { getGlobalEnvironment } from '~/utils/environment/getGlobalEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getPolicyManagerABI } from './getPolicyManagerABI';
 
 export const getPolicyManagerContractAnew = (

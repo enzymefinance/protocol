@@ -16,11 +16,6 @@ const getGanache = () => {
 };
 
 export const initTestEnvironment = async () => {
-  if (getGlobalEnvironment().eth) {
-    debug('Environment already initialized.');
-    return;
-  }
-
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set
