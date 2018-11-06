@@ -125,4 +125,43 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 
-export { updatePriceFeed, updateCanonicalPriceFeed, updateTestingPriceFeed };
+// TODO: Doesn't handle decimals yet (correctly), works fine in dev because all assets are 18 decimals
+async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
+  let prices;
+  const tokens = [];
+  const compactBuyArr = [];
+  const compactSellArr = [];
+  const baseBuys = [];
+  const baseSells = [];
+  const buys = [];
+  const sells = [];
+  const indices = [];
+
+  if(Object.keys(inputPrices).length === 0) {
+    prices = await getConvertedPrices(deployed, quoteSymbol);
+  } else {
+    prices = inputPrices;
+  }
+  
+  for (const key of Object.keys(prices)) {
+    /* eslint-disable no-continue */
+    if (key === deployed.EthToken.options.address) continue;
+    tokens.push(key);
+    baseBuys.push(new BigNumber(10 ** 36).div(prices[key]).toFixed(0));
+    baseSells.push(prices[key]);
+    compactBuyArr.push(0);
+    compactSellArr.push(0);
+  }
+  
+  const splitCompactBuyArr = splitArray(compactBuyArr, 14);
+  const splitCompactSellArr = splitArray(compactSellArr, 14);
+  for (let i = 0; i < splitCompactBuyArr.length; i += 1) {
+    buys.push(bytesToHex(splitCompactBuyArr[i]));
+    sells.push(bytesToHex(splitCompactSellArr[i]));
+    indices.push(i);
+  }
+  const currentBlock = await web3.eth.getBlockNumber();
+  await deployed.ConversionRates.methods.setBaseRate(tokens, baseBuys, baseSells, buys, sells, currentBlock, indices).send();
+}
+
+export { updatePriceFeed, updateCanonicalPriceFeed, updateTestingPriceFeed, updateKyberPriceFeed };
