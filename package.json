@@ -110,6 +110,7 @@
     "find-up": "^3.0.0",
     "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
+    "rxjs": "^6.3.3",
     "solc": "^0.4.25",
     "tsconfig-paths": "^3.6.0",
     "web3-eth": "1.0.0-beta.36",
