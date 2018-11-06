@@ -26,3 +26,7 @@ coverage/
 
 # ignore cache
 .cache/
+
+# ignore concatenated files (only updated at verification time)
+utils/etherscan/concatenated
+legacy/utils/devchain-snapshot/0x_ganache_snapshot
