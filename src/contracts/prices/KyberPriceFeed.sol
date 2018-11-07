@@ -14,6 +14,7 @@ contract KyberPriceFeed is SimplePriceFeed {
     // FIELDS
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
+    uint public MAX_SPREAD;
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
     uint public constant KYBER_PRECISION = 18;
@@ -25,6 +26,7 @@ contract KyberPriceFeed is SimplePriceFeed {
     /// @dev Define and register a quote asset against which all prices are measured/based against
     function KyberPriceFeed(
         address ofKyberNetworkProxy,
+        uint ofMaxSpread,
         address ofQuoteAsset,
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
@@ -51,6 +53,7 @@ contract KyberPriceFeed is SimplePriceFeed {
         //     quoteAssetFunctionSignatures
         // );
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
+        MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
         setOwner(ofGovernance);
     }
@@ -155,9 +158,18 @@ contract KyberPriceFeed is SimplePriceFeed {
         isRecent = true;
         if (_baseAsset == QUOTE_ASSET) _baseAsset = ETH_TOKEN_ADDRESS;
         if (_quoteAsset == QUOTE_ASSET) _quoteAsset = ETH_TOKEN_ADDRESS;
+
         // 10 ** 10 some random value for now TODO
-        var (referencePriceFromKyber, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_baseAsset), ERC20Clone(_quoteAsset), 10 ** 10);
-        referencePrice = mul(referencePriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;
+        var (bidRate, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_baseAsset), ERC20Clone(_quoteAsset), 10 ** 10);
+        var (bidRateOfReversePair, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_quoteAsset), ERC20Clone(_baseAsset), 10 ** 10);
+        uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
+        
+        // Check the the spread and average the price on both sides
+        uint spreadFromKyber = mul(sub(askRate, bidRate), 10 ** KYBER_PRECISION) / bidRate;
+        require (spreadFromKyber <= MAX_SPREAD);
+        uint averagedPriceFromKyber = add(bidRate, askRate) / 2;
+
+        referencePrice = mul(averagedPriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;
     }
 
     /// @notice Gets price of Order

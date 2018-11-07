@@ -61,7 +61,7 @@ test.before(async () => {
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
   deployed = await deployEnvironment(environment);
-  pricefeed = await deployed.TestingPriceFeed;
+  pricefeed = await deployed.KyberPriceFeed;
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
   eurToken = deployed.EurToken;
@@ -214,8 +214,7 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const srcAmount = new BigNumber(10 ** 17);
-    const destAmount = new BigNumber(srcAmount).mul(mlnPrice).
-    div(precisionUnits);
+    const destAmount = new BigNumber(srcAmount).mul(mlnPrice).div(precisionUnits);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(mlnToken.options.address, ethAddress, srcAmount.toFixed())
@@ -233,7 +232,7 @@ test.serial(
           NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [srcAmount.toFixed(), destAmount.toFixed(), 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),

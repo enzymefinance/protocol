@@ -593,6 +593,7 @@ async function deployEnvironment(environment) {
     );
     deployed.KyberPriceFeed = await deployContract("prices/KyberPriceFeed", opts, [
       deployed.KyberNetworkProxy.options.address,
+      new BigNumber(5 * 10 ** 16).toFixed(),
       deployed.EthToken.options.address,
       web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
       web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
