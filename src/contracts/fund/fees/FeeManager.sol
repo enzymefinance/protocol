@@ -45,6 +45,16 @@ contract FeeManager is Spoke, DSMath {
             rewardFee(fees[i]);
         }
     }
+
+    /// @dev Convention that management fee is 0
+    function rewardManagementFee() public {
+        rewardFee(fees[0]);
+    }
+
+    /// @dev Convention that performace fee is 1
+    function rewardPerformanceFee() public {
+        rewardFee(fees[1]);
+    }
 }
 
 contract FeeManagerFactory is Factory {

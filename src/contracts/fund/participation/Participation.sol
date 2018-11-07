@@ -70,9 +70,11 @@ contract Participation is Spoke, DSMath {
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
         require(isRecent);
 
+        FeeManager(routes.feeManager).rewardManagementFee();
+
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePriceAndAllocateFees()) / 10 ** SHARES_DECIMALS; // By definition quoteDecimals == fundDecimals
+        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePrice()) / 10 ** SHARES_DECIMALS;
         // TODO: maybe allocate fees in a separate step (to come later)
         if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
             bool isPriceRecent;
@@ -125,6 +127,10 @@ contract Participation is Spoke, DSMath {
         Shares shares = Shares(routes.shares);
         Vault vault = Vault(routes.vault);
         require(shares.balanceOf(msg.sender) >= shareQuantity);
+
+        FeeManager(routes.feeManager).rewardManagementFee();
+        FeeManager(routes.feeManager).rewardPerformanceFee();
+
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
