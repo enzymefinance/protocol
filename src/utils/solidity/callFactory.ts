@@ -11,7 +11,11 @@ const callFactory = (name, contract, { prepareArgs, postProcess }) => {
     environment = getGlobalEnvironment(),
   ) => {
     const args = prepareArgs(params, contractAddress, environment);
-    const contractInstance = getContract(contract, contractAddress);
+    const contractInstance = getContract(
+      contract,
+      contractAddress,
+      environment,
+    );
     const txObject = contractInstance.methods[name](...args);
     const prepared = {
       contractAddress,
