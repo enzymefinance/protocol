@@ -6,7 +6,8 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { Environment } from '~/utils/environment';
 import { getQuoteToken } from '..';
-import { Contract, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 export const getPrices = async (
   contractAddress: string,
@@ -15,7 +16,7 @@ export const getPrices = async (
 ) => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
   const contract = await getContract(
-    Contract.TestingPriceFeed,
+    Contracts.TestingPriceFeed,
     contractAddress,
     environment,
   );

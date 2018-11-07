@@ -9,9 +9,12 @@ const genericExchangeInterfaceABI = getGenericExchangeInterfaceABI();
 export enum PolicedMethods {
   makeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'makeOrder'),
   takeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
-  // TODO: Add more here
   // tslint:disable-next-line:max-line-length
-  // executeRequest = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
+  executeRequest = getFunctionSignature(
+    genericExchangeInterfaceABI,
+    'takeOrder',
+  ),
+  // TODO: Add more here
 }
 
 interface RegisterArgs {

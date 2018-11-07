@@ -1,6 +1,7 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-import { Contract, callFactory } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 import { getToken } from '..';
 
@@ -11,7 +12,7 @@ const postProcess = async (result, prepared, environment) => {
   return quantity;
 };
 
-export const balanceOf = callFactory('balanceOf', Contract.PreminedToken, {
+export const balanceOf = callFactory('balanceOf', Contracts.PreminedToken, {
   postProcess,
   prepareArgs,
 });

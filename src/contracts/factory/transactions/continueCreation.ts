@@ -1,6 +1,7 @@
-import { Contract, transactionFactory } from '~/utils/solidity';
+import { transactionFactory } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 export const continueCreation = transactionFactory(
   'continueCreation',
-  Contract.FundFactory,
+  Contracts.FundFactory,
 );

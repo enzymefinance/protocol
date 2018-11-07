@@ -3,7 +3,8 @@ import { fromEvent } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { getGlobalEnvironment } from '~/utils/environment';
-import { getContract, Contract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 export interface OnTransferFilter {
   from: Address;
@@ -24,7 +25,7 @@ const onTransfer = (
   environment = getGlobalEnvironment(),
 ) => {
   const contract = getContract(
-    Contract.PreminedToken,
+    Contracts.PreminedToken,
     contractAddress,
     environment,
   );
