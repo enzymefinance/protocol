@@ -4,4 +4,3 @@
 export * from './transactions/addTokenPairWhitelist';
 export * from './transactions/deployMatchingMarket';
 export * from './transactions/deployMatchingMarketAdapter';
-export * from './utils/getGenericExchangeInterfaceABI';

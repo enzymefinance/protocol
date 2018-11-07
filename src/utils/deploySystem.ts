@@ -114,6 +114,10 @@ export const deploySystem = async () => {
     method: PolicedMethods.takeOrder,
     policy: priceToleranceAddress,
   });
+  await register(settings.policyManagerAddress, {
+    method: PolicedMethods.executeRequest,
+    policy: whitelistAddress,
+  });
 
   const newPrice = getPrice(
     createQuantity(baseToken, 1),

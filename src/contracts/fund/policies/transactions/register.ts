@@ -1,19 +1,17 @@
 import { Address } from '~/utils/types';
 import { getFunctionSignature } from '~/utils/abi';
 import { prepareTransaction, sendTransaction } from '~/utils/solidity';
-import { getGenericExchangeInterfaceABI } from '~/contracts/exchanges';
 import { getPolicyManagerContract } from '../utils/getPolicyManagerContract';
+import { Contracts, requireMap } from '~/Contracts';
 
-const genericExchangeInterfaceABI = getGenericExchangeInterfaceABI();
+const genericExchangeInterfaceABI = requireMap[Contracts.GenericExchange];
+const participationABI = requireMap[Contracts.Participation];
 
 export enum PolicedMethods {
   makeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'makeOrder'),
   takeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
   // tslint:disable-next-line:max-line-length
-  executeRequest = getFunctionSignature(
-    genericExchangeInterfaceABI,
-    'takeOrder',
-  ),
+  executeRequest = getFunctionSignature(participationABI, 'executeRequestFor'),
   // TODO: Add more here
 }
 
