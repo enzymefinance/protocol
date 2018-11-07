@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "./Fee.i.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
@@ -29,15 +28,15 @@ contract FeeManager is Spoke, DSMath {
 
     function totalFeeAmount() public view returns (uint total) {
         for (uint i = 0; i < fees.length; i++) {
-            total = add(total, fees[i].amountFor(hub));
+            total = add(total, fees[i].feeAmount());
         }
         return total;
     }
 
     function rewardFee(Fee fee) public {
         require(feeIsRegistered[fee]);
-        uint rewardShares = fee.amountFor(hub);
-        fee.updateFor(hub);
+        uint rewardShares = fee.feeAmount();
+        fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
     }
 
