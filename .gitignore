@@ -17,8 +17,9 @@ out/
 # ignore transpiled code
 build
 
-# ignore development addressBook
+# ignore old development addressBook
 addressBook.json
+out/deployments.json
 
 # ignore generated coverage data
 coverage.json
