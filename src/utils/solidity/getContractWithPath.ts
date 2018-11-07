@@ -18,7 +18,7 @@ export const getContractWithPath: GetContractWithPathFunction = R.memoizeWith(
     environment = getGlobalEnvironment(),
   ) => {
     const abi = require(`~/../out/${relativePath}.abi.json`);
-    const contract = new environment.eth.Contract(abi, address);
+    const contract = new environment.eth.Contract(abi, address.toString());
     return contract;
   },
 );

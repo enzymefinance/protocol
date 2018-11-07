@@ -43,9 +43,9 @@ beforeAll(async () => {
     shared.delay,
     shared.mln.options.address,
   );
-  shared.priceSource = getContract(
+  shared.priceSource = await getContract(
     Contract.TestingPriceFeed,
-    shared.feedAddress,
+    feedAddress,
   );
   shared.engine = getContract(Contract.Engine, shared.engineAddress);
   await shared.feed.methods

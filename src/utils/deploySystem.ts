@@ -155,10 +155,3 @@ export const deploySystem = async () => {
 
   return addresses;
 };
-
-if (require.main === module) {
-  initTestEnvironment().then(async () => {
-    await deploySystem();
-    process.exit();
-  });
-}
