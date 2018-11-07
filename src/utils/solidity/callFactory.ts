@@ -1,4 +1,5 @@
 import { Observable } from 'zen-observable-ts';
+import * as R from 'ramda';
 
 import { getContract } from './getContract';
 import { getGlobalEnvironment } from '../environment';
@@ -34,13 +35,18 @@ const callFactory = (name, contract, { prepareArgs, postProcess }) => {
     environment = getGlobalEnvironment(),
   ) =>
     new Observable(observer => {
+      let lastResult;
       const prepared = prepare(contractAddress, params, environment);
       const subscription = environment.eth.subscribe('newBlockHeaders');
 
       subscription.on('data', async block => {
         if (block.number) {
           const result = await call(prepared, environment);
-          observer.next(result);
+
+          if (!R.equals(result, lastResult)) {
+            observer.next(result);
+            lastResult = result;
+          }
         }
       });
 
