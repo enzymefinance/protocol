@@ -19,6 +19,7 @@ export const initTestEnvironment = async () => {
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set
+    endpoint: process.env.JSON_RPC_ENDPOINT,
     provider: !process.env.JSON_RPC_ENDPOINT && getGanache(),
   });
   const accounts = await environment.eth.getAccounts();
