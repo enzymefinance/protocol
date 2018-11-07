@@ -4,7 +4,7 @@ import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { swapTokensSignature, swapTokensSignatureBytes } from "../../utils/lib/data";
-import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
+import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
 import getFundComponents from "../../utils/lib/getFundComponents";
@@ -65,7 +65,7 @@ test.before(async () => {
   ethToken = deployed.EthToken;
   mlnToken = deployed.MlnToken;
   eurToken = deployed.EurToken;
-  await updateTestingPriceFeed(deployed);
+  await updateKyberPriceFeed(deployed);
   [mlnPrice] = Object.values(
     await pricefeed.methods
       .getPrice(mlnToken.options.address)
@@ -73,7 +73,7 @@ test.before(async () => {
   ).map(e => new BigNumber(e).toFixed(0));
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
-    'Test Fund', [deployed.KyberNetworkProxy.options.address], [deployed.KyberAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+    'Test Fund', [deployed.KyberNetworkProxy.options.address], [deployed.KyberAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.KyberPriceFeed.options.address
   ).send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.setupFund().send({from: manager, gasPrice: config.gasPrice});

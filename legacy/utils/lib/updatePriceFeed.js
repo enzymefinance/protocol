@@ -125,6 +125,26 @@ async function updateCanonicalPriceFeed(deployed, inputPrices = {}, quoteSymbol 
   await governanceAction({from: accounts[0]}, deployed.Governance, deployed.CanonicalPriceFeed, "collectAndUpdate", [assetList]);
 }
 
+// Kyber related price updates
+
+function toHexString(byteArray) {
+  /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
+  return Array.from(byteArray, (byte) => (`0${  (byte & 0xff).toString(16)}`).slice(-2)).join("");
+}
+
+function bytesToHex(byteArray) {
+  const strNum = toHexString(byteArray);
+  const num = `0x${  strNum}`;
+  return num;
+}
+
+function splitArray(arr, length) {
+  const groups = arr
+    .map((e, i) => i % length === 0 ? arr.slice(i, i + length) : null)
+    .filter((e) => e);
+  return groups;
+}
+
 // TODO: Doesn't handle decimals yet (correctly), works fine in dev because all assets are 18 decimals
 async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'ETH') {
   let prices;
@@ -148,7 +168,7 @@ async function updateKyberPriceFeed(deployed, inputPrices = {}, quoteSymbol = 'E
     if (key === deployed.EthToken.options.address) continue;
     tokens.push(key);
     baseBuys.push(new BigNumber(10 ** 36).div(prices[key]).toFixed(0));
-    baseSells.push(prices[key]);
+    baseSells.push(prices[key].toFixed());
     compactBuyArr.push(0);
     compactSellArr.push(0);
   }

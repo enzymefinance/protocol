@@ -591,6 +591,19 @@ async function deployEnvironment(environment) {
       opts,
       [accounts[0]]
     );
+    deployed.KyberPriceFeed = await deployContract("prices/KyberPriceFeed", opts, [
+      deployed.KyberNetworkProxy.options.address,
+      deployed.EthToken.options.address,
+      web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+      web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
+      18,
+      'ethereum.org',
+      mockBytes,
+      [mockAddress, mockAddress],
+      [],
+      [],
+      accounts[0]
+    ]);
     deployed.MatchingMarket = await deployContract(
       'exchanges/thirdparty/oasisdex/MatchingMarket',
       opts,
