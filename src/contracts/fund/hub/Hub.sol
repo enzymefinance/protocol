@@ -98,6 +98,7 @@ contract Hub is DSGuard {
         permit(settings.participation, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
         permissionsSet = true;
     }
 
