@@ -4,10 +4,24 @@ import * as R from 'ramda';
 import { getContract } from './getContract';
 import { getGlobalEnvironment } from '../environment';
 
-const callFactory = (name, contract, { prepareArgs, postProcess }) => {
+const defaultPrepareArgs = (params: {}, contractAddress, environment) =>
+  Object.values(params).map(v => v.toString());
+const defaultPostProcess = (result, prepared, environment) => result;
+
+const defaultProcessors = {
+  postProcess: defaultPostProcess,
+  prepareArgs: defaultPrepareArgs,
+};
+
+const callFactory = (name, contract, processors = defaultProcessors) => {
+  const { postProcess, prepareArgs } = {
+    ...defaultProcessors,
+    ...processors,
+  };
+
   const prepare = (
     contractAddress,
-    params,
+    params?,
     environment = getGlobalEnvironment(),
   ) => {
     const args = prepareArgs(params, contractAddress, environment);
@@ -64,7 +78,7 @@ const callFactory = (name, contract, { prepareArgs, postProcess }) => {
 
   const execute = async (
     contractAddress,
-    params,
+    params?,
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = prepare(contractAddress, params, environment);

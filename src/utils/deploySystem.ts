@@ -47,6 +47,8 @@ const debug = require('./getDebug').default(__filename);
 export const deploySystem = async () => {
   const environment = getGlobalEnvironment();
   const accounts = await environment.eth.getAccounts();
+
+  debug('Deploying system from', accounts[0]);
   const quoteTokenAddress = await deployToken('ETH');
   const mlnTokenAddress = await deployToken('MLN');
   const baseTokenAddress = mlnTokenAddress;
@@ -119,6 +121,8 @@ export const deploySystem = async () => {
     priceSource,
     tokens: [quoteToken, baseToken],
   };
+
+  debug('Deployed:', addresses);
 
   return addresses;
 };

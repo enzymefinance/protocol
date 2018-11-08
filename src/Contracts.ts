@@ -10,6 +10,7 @@ export enum Contracts {
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
   Shares = 'fund/shares/Shares',
+  Spoke = 'fund/shares/Spoke',
   StandardToken = 'dependencies/token/StandardToken',
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
@@ -43,6 +44,8 @@ export const requireMap = {
     require('../out/dependencies/token/PreminedToken.abi.json'),
   [Contracts.Shares]:
     require('../out/fund/shares/Shares.abi.json'),
+  [Contracts.Spoke]:
+    require('../out/fund/hub/Spoke.abi.json'),
   [Contracts.StandardToken]:
     require('../out/dependencies/token/StandardToken.abi.json'),
   [Contracts.TestingPriceFeed]:
