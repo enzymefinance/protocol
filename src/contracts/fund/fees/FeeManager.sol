@@ -19,6 +19,7 @@ contract FeeManager is Spoke, DSMath {
         require(!feeIsRegistered[feeAddress]);
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
+        Fee(feeAddress).updateState();  // initialize state
     }
 
     function batchRegister(address[] feeAddresses) public {
@@ -55,13 +56,7 @@ contract FeeManager is Spoke, DSMath {
 
     /// @dev Convenience function
     /// @dev Convention that performace fee is 1
-    function rewardPerformanceFee() public {
-        rewardFee(fees[1]);
-    }
-
-    /// @dev Convenience function
-    /// @dev Convention that performace fee is 1
-    function performanceFeeAmount() public returns (uint) {
+    function performanceFeeAmount() public view returns (uint) {
         return fees[1].feeAmount();
     }
 }

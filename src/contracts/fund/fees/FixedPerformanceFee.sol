@@ -12,6 +12,7 @@ contract FixedPerformanceFee is DSMath, Fee {
 
     uint public PERFORMANCE_FEE_RATE = 10 ** 16; // 0.01*10^18, or 1%
     uint public DIVISOR = 10 ** 18;
+    uint public PERIOD = 90 days;
 
     mapping(address => uint) public highWaterMark;
     mapping(address => uint) public lastPayoutTime;
@@ -45,10 +46,10 @@ contract FixedPerformanceFee is DSMath, Fee {
     function updateState() external {
         Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());
         uint currentSharePrice = accounting.calcSharePrice();
-        if (currentSharePrice > highWaterMark[msg.sender]) {
-            lastPayoutTime[msg.sender] = block.timestamp;
-            highWaterMark[msg.sender] = currentSharePrice;
-        }
+        require(currentSharePrice > highWaterMark[msg.sender]);
+        require(block.timestamp > add(lastPayoutTime[msg.sender], PERIOD));
+        lastPayoutTime[msg.sender] = block.timestamp;
+        highWaterMark[msg.sender] = currentSharePrice;
     }
 }
 
