@@ -1,5 +1,6 @@
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
+  Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
   GenericExchange = 'exchanges/GenericExchange',
@@ -22,6 +23,8 @@ export enum Contracts {
 export const requireMap = {
   [Contracts.Accounting]:
     require('../out/fund/accounting/Accounting.abi.json'),
+  [Contracts.Engine]:
+    require('../out/engine/Engine.abi.json'),
   [Contracts.FeeManager]:
     require('../out/fund/fees/FeeManager.abi.json'),
   [Contracts.FundFactory]:

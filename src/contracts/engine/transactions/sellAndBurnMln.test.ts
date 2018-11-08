@@ -14,10 +14,10 @@ import {
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import {
   increaseTime,
-  Contract,
   deployAndGetContract,
   getContract,
 } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 const shared: any = {};
 
@@ -32,10 +32,10 @@ beforeAll(async () => {
     18,
     '',
   ]);
-  shared.weth = await getContract(Contract.StandardToken, wethAddress);
+  shared.weth = await getContract(Contracts.StandardToken, wethAddress);
   shared.version = await deployAndGetContract('version/MockVersion');
   const feedAddress = await deployFeed(await getToken(wethAddress));
-  shared.feed = await getContract(Contract.TestingPriceFeed, feedAddress);
+  shared.feed = await getContract(Contracts.TestingPriceFeed, feedAddress);
   shared.delay = 30 * 24 * 60 * 60;
   shared.engineAddress = await deployEngine(
     shared.version.options.address,
@@ -44,10 +44,10 @@ beforeAll(async () => {
     shared.mln.options.address,
   );
   shared.priceSource = await getContract(
-    Contract.TestingPriceFeed,
+    Contracts.TestingPriceFeed,
     feedAddress,
   );
-  shared.engine = getContract(Contract.Engine, shared.engineAddress);
+  shared.engine = getContract(Contracts.Engine, shared.engineAddress);
   await shared.feed.methods
     .update(
       [shared.weth.options.address, shared.mln.options.address],

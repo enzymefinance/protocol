@@ -3,13 +3,13 @@ import {
   prepareTransaction,
   sendTransaction,
   getContract,
-  Contract,
 } from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { BigNumber } from 'bignumber.js';
+import { Contracts } from '~/Contracts';
 
 const guards = async (engineAddress: Address, environment) => {
-  const engine = getContract(Contract.Engine, engineAddress);
+  const engine = getContract(Contracts.Engine, engineAddress);
   const now = new BigNumber(Math.floor(new Date().getTime() / 1000));
   const lastStoke = new BigNumber(await engine.methods.lastStoke().call());
   const stokingDelay = new BigNumber(
@@ -25,7 +25,7 @@ const guards = async (engineAddress: Address, environment) => {
 };
 
 const prepare = async (engineAddress: Address, environment) => {
-  const contract = getContract(Contract.Engine, engineAddress);
+  const contract = getContract(Contracts.Engine, engineAddress);
   const transaction = contract.methods.stoke();
   transaction.name = 'stoke';
   const prepared = await prepareTransaction(transaction, environment);

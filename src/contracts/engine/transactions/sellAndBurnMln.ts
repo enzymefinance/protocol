@@ -10,20 +10,20 @@ import {
   prepareTransaction,
   sendTransaction,
   getContract,
-  Contract,
 } from '~/utils/solidity';
 import { getToken } from '~/contracts/dependencies/token';
 import { isAddress } from '~/utils/checks';
 import { ensure } from '~/utils/guards';
+import { Contracts } from '~/Contracts';
 
 const guards = async (
   engineAddress: Address,
   quantity: QuantityInterface,
   environment,
 ) => {
-  const engine = getContract(Contract.Engine, engineAddress);
+  const engine = getContract(Contracts.Engine, engineAddress);
   const mlnAddress = await engine.methods.mlnToken().call();
-  const mlnTokenContract = getContract(Contract.StandardToken, mlnAddress);
+  const mlnTokenContract = getContract(Contracts.StandardToken, mlnAddress);
   const mlnToken = await getToken(mlnAddress);
   ensure(
     isSameToken(quantity.token, mlnToken),
@@ -46,7 +46,7 @@ const prepare = async (
   quantity: QuantityInterface,
   environment,
 ) => {
-  const contract = getContract(Contract.Engine, engineAddress);
+  const contract = getContract(Contracts.Engine, engineAddress);
   const transaction = contract.methods.sellAndBurnMln(quantity);
   transaction.name = 'sellAndBurnMln';
   const prepared = await prepareTransaction(transaction, environment);
