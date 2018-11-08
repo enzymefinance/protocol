@@ -26,7 +26,7 @@ contract AmguConsumer is DSMath {
         );
         require(msg.value >= ethToPay);
         Engine(engine()).payAmguInEther.value(ethToPay)();
-        msg.sender.transfer(msg.value - ethToPay);
+        msg.sender.transfer(sub(msg.value, ethToPay));
     }
 
     function engine() view returns (address);

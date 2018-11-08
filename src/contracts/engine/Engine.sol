@@ -6,12 +6,12 @@ import "../prices/PriceSource.sol";
 import "../version/Version.i.sol";
 
 // TODO: integrate so we do not need all of the constructor params
-/// @notice Contract
+/// @notice Liquidity contract and token sink
 contract Engine is DSMath {
     uint public frozenEther;
     uint public liquidEther;
-    uint public lastStoke;
-    uint public STOKING_DELAY;
+    uint public lastThaw;
+    uint public THAWING_DELAY;
     BurnableToken public mlnToken;
     PriceSource public priceSource;
     VersionInterface public version;
@@ -25,47 +25,49 @@ contract Engine is DSMath {
     ) {
         version = VersionInterface(_version);
         priceSource = PriceSource(_priceSource);
-        lastStoke = block.timestamp;
-        STOKING_DELAY = _delay;
+        lastThaw = block.timestamp;
+        THAWING_DELAY = _delay;
         mlnToken = BurnableToken(_mlnAddress);
     }
 
+    // TODO: convert to a continuous function
     function premiumPercent() view returns (uint) {
         if (liquidEther < 1 ether) {
             return 0;
-        } else if (1 ether <= liquidEther && liquidEther < 5 ether) {
+        } else if (liquidEther >= 1 ether && liquidEther < 5 ether) {
             return 5;
-        } else if (5 ether <= liquidEther && liquidEther < 10 ether) {
+        } else if (liquidEther >= 5 ether && liquidEther < 10 ether) {
             return 10;
-        } else if (10 ether <= liquidEther) {
+        } else if (liquidEther >= 10 ether) {
             return 15;
         }
     }
 
-    /// @notice Move frozen ether to liquid pool after delay
-    /// @dev Delay only restarts when this function is called
-    function stoke() public {
-        require((block.timestamp >= add(lastStoke, STOKING_DELAY)));
-        require(frozenEther > 0);
-        lastStoke = block.timestamp;
-        liquidEther = add(liquidEther, frozenEther);
-        frozenEther = 0;
-    }
-
-    function payAmguInEther() payable {
+    function payAmguInEther() public payable {
         require(version.isFund(msg.sender) || version.isFundFactory(msg.sender));
         frozenEther = add(frozenEther, msg.value);
     }
 
+    /// @notice Move frozen ether to liquid pool after delay
+    /// @dev Delay only restarts when this function is called
+    function thaw() public {
+        require((block.timestamp >= add(lastThaw, THAWING_DELAY)));
+        require(frozenEther > 0);
+        lastThaw = block.timestamp;
+        liquidEther = add(liquidEther, frozenEther);
+        frozenEther = 0;
+    }
+
     /// @return ETH per MLN including premium
-    function enginePrice() view returns (uint) {
+    function enginePrice() public view returns (uint) {
         uint ethPerMln;
         (ethPerMln, ) = priceSource.getPrice(address(mlnToken));
         uint premium = mul(ethPerMln, (premiumPercent() / 100));
         return add(ethPerMln, premium);
     }
 
-    function sellAndBurnMln(uint mlnAmount) {
+    /// @notice MLN must be approved first
+    function sellAndBurnMln(uint mlnAmount) public {
         require(mlnToken.transferFrom(msg.sender, address(this), mlnAmount));
         uint ethToSend = mul(mlnAmount, enginePrice()) / 10 ** MLN_DECIMALS;
         require(ethToSend > 0);
