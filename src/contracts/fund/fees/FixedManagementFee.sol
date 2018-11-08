@@ -26,7 +26,10 @@ contract FixedManagementFee is DSMath, Fee {
             uint timePassed = sub(block.timestamp, lastPayoutTime[msg.sender]);
             uint gavPercentage = mul(timePassed, gav) / (1 years);
             uint feeInAsset = mul(gavPercentage, MANAGEMENT_FEE_RATE) / DIVISOR;
-            feeInShares = mul(shares.totalSupply(), feeInAsset) / gav;
+            uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
+            feeInShares =
+                mul(preDilutionFee, shares.totalSupply()) /
+                sub(shares.totalSupply(), preDilutionFee);
         }
         return feeInShares;
     }

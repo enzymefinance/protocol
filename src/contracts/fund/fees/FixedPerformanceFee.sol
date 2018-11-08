@@ -7,6 +7,7 @@ import "../hub/Hub.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/math.sol";
 
+// TODO: think about third function on interface that conditionally updates but is also aware of fee amount
 contract FixedPerformanceFee is DSMath, Fee {
 
     uint public PERFORMANCE_FEE_RATE = 10 ** 16; // 0.01*10^18, or 1%
@@ -28,7 +29,10 @@ contract FixedPerformanceFee is DSMath, Fee {
                 uint sharePriceGain = sub(currentSharePrice, highWaterMark[msg.sender]);
                 uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
                 uint feeInAsset = mul(totalGain, PERFORMANCE_FEE_RATE) / DIVISOR;
-                feeInShares = mul(shares.totalSupply(), feeInAsset) / gav;
+                uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
+                feeInShares =
+                    mul(preDilutionFee, shares.totalSupply()) /
+                    sub(shares.totalSupply(), preDilutionFee);
             }
         } else {
             feeInShares = 0;
@@ -39,10 +43,11 @@ contract FixedPerformanceFee is DSMath, Fee {
     // TODO: avoid replication of variables between this and feeAmount
     // TODO: avoid running everything twice when calculating & claiming fees
     function updateState() external {
-        if (feeAmount() > 0) {
-            Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());
+        Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());
+        uint currentSharePrice = accounting.calcSharePrice();
+        if (currentSharePrice > highWaterMark[msg.sender]) {
             lastPayoutTime[msg.sender] = block.timestamp;
-            highWaterMark[msg.sender] = accounting.calcSharePrice();
+            highWaterMark[msg.sender] = currentSharePrice;
         }
     }
 }

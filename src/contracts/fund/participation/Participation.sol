@@ -116,6 +116,18 @@ contract Participation is Spoke, DSMath {
         require(redeemWithConstraints(shareQuantity, assetList)); //TODO: assetList from another module
     }
 
+    function getOwedPerformanceFees(uint shareQuantity) 
+        view
+        returns (uint remainingShareQuantity)
+    {
+        Shares shares = Shares(routes.shares);
+        uint performanceFeePortion = mul(
+            FeeManager(routes.feeManager).performanceFeeAmount(),
+            shareQuantity
+        ) / shares.totalSupply();
+        return performanceFeePortion;
+    }
+
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
@@ -123,19 +135,20 @@ contract Participation is Spoke, DSMath {
         public
         returns (bool)
     {
-        Accounting accounting = Accounting(routes.accounting);
         Shares shares = Shares(routes.shares);
-        Vault vault = Vault(routes.vault);
         require(shares.balanceOf(msg.sender) >= shareQuantity);
 
         FeeManager(routes.feeManager).rewardManagementFee();
-        FeeManager(routes.feeManager).rewardPerformanceFee();
+        uint owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
+        shares.destroyFor(msg.sender, owedPerformanceFees);
+        shares.createFor(hub.manager(), owedPerformanceFees);
+        uint remainingShareQuantity = sub(shareQuantity, owedPerformanceFees);
 
         address ofAsset;
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
-
         // Check whether enough assets held by fund
+        Accounting accounting = Accounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
             require(accounting.isInAssetList(ofAsset));
@@ -149,18 +162,10 @@ contract Participation is Spoke, DSMath {
             if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(quantityHeld, shareQuantity) / shares.totalSupply();
-
-            // TODO: do we want to represent this as an error and shutdown, or do something else? See NB1 scenario above
-            // CRITICAL ERR: Not enough fund asset balance for owed ownershipQuantitiy, eg in case of unreturned asset quantity at address(exchanges[i].exchange) address
-            // if (uint(ERC20(ofAsset).balanceOf(address(vault))) < ownershipQuantities[i]) {
-            //     isShutDown = true; // TODO: external call most likely
-            //     // emit ErrorMessage("CRITICAL ERR: Not enough quantityHeld for owed ownershipQuantitiy");
-            //     return false;
-            // }
+            ownershipQuantities[i] = mul(quantityHeld, remainingShareQuantity) / shares.totalSupply();
         }
 
-        shares.destroyFor(msg.sender, shareQuantity);
+        shares.destroyFor(msg.sender, remainingShareQuantity);
 
         // Transfer owned assets
         for (uint k = 0; k < requestedAssets.length; ++k) {
@@ -168,7 +173,7 @@ contract Participation is Spoke, DSMath {
             if (ownershipQuantities[k] == 0) {
                 continue;
             } else {
-                vault.withdraw(ofAsset, ownershipQuantities[k]);
+                Vault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
                 require(ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]));
             }
         }

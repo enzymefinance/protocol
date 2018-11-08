@@ -6,6 +6,7 @@ import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 
+// TODO: permissioning
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is Spoke, DSMath {
 
@@ -46,14 +47,22 @@ contract FeeManager is Spoke, DSMath {
         }
     }
 
+    /// @dev Convenience function
     /// @dev Convention that management fee is 0
     function rewardManagementFee() public {
         rewardFee(fees[0]);
     }
 
+    /// @dev Convenience function
     /// @dev Convention that performace fee is 1
     function rewardPerformanceFee() public {
         rewardFee(fees[1]);
+    }
+
+    /// @dev Convenience function
+    /// @dev Convention that performace fee is 1
+    function performanceFeeAmount() public returns (uint) {
+        return fees[1].feeAmount();
     }
 }
 
