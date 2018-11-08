@@ -3,5 +3,3 @@
 
 export * from './transactions/deployPolicyManagerFactory';
 export * from './transactions/register';
-export * from './utils/getPolicyManagerABI';
-export * from './utils/getPolicyManagerContract';

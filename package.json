@@ -13,7 +13,7 @@
     "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts && prettier --write src/**/index.ts",
     "build": "yarn createIndexFiles && tsc && tscpaths -p tsconfig.json -s ./src -o ./build && yarn tsc bin/compile.ts",
     "build:bundle": "parcel build src/index.ts --target node -d build --out-file bundle.js",
-    "dev": "yarn jest --watch src/",
+    "dev": "yarn jest --watch ./**/*.test.ts",
     "devchain": "unzip -o ./legacy/utils/devchain-snapshot/0x-snapshot.zip -d ./legacy/utils/devchain-snapshot && ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000 --db ./legacy/utils/devchain-snapshot/0x_ganache_snapshot -m 'concert load couple harbor equip island argue ramp clarify fence smart topic'",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
     "deploy": "node bin/melon.js deploy",

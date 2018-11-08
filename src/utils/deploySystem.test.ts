@@ -7,7 +7,8 @@ beforeAll(async () => await initTestEnvironment());
 test(
   'Happy path',
   async () => {
-    await deploySystem();
+    const deployment = await deploySystem();
+    console.log(deployment);
   },
   30 * 1000,
 );

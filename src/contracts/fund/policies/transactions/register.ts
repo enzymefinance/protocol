@@ -1,7 +1,10 @@
 import { Address } from '~/utils/types';
 import { getFunctionSignature } from '~/utils/abi';
-import { prepareTransaction, sendTransaction } from '~/utils/solidity';
-import { getPolicyManagerContract } from '../utils/getPolicyManagerContract';
+import {
+  prepareTransaction,
+  sendTransaction,
+  getContract,
+} from '~/utils/solidity';
 import { Contracts, requireMap } from '~/Contracts';
 
 const genericExchangeInterfaceABI = requireMap[Contracts.GenericExchange];
@@ -29,7 +32,7 @@ export const prepare = async (
   { method, policy },
   environment,
 ) => {
-  const contract = getPolicyManagerContract(contractAddress);
+  const contract = getContract(Contracts.PolicyManager, contractAddress);
   const transaction = contract.methods.register(method, policy.toString());
   transaction.name = 'register';
   const prepared = await prepareTransaction(transaction, environment);

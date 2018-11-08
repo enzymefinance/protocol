@@ -43,9 +43,8 @@ const debug = require('./getDebug').default(__filename);
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async () => {
-  const globalEnvironment = getGlobalEnvironment();
-  const accounts = await globalEnvironment.eth.getAccounts();
-  const fundName = 'Clever Fund Name';
+  const environment = getGlobalEnvironment();
+  const accounts = await environment.eth.getAccounts();
   const quoteTokenAddress = await deployToken('ETH');
   const baseTokenAddress = await deployToken('MLN');
   const quoteToken = await getToken(quoteTokenAddress);
@@ -57,9 +56,7 @@ export const deploySystem = async () => {
 
   const priceToleranceAddress = await deployPriceTolerance(10);
 
-  const whitelistAddress = await deployWhitelist([
-    globalEnvironment.wallet.address,
-  ]);
+  const whitelistAddress = await deployWhitelist([accounts[0]]);
 
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
@@ -80,7 +77,6 @@ export const deploySystem = async () => {
     vaultFactoryAddress,
   });
 
-  // From here on it is already integration testing
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -90,50 +86,15 @@ export const deploySystem = async () => {
     },
   ];
 
-  const defaultTokens = [quoteToken, baseToken];
-
   const priceSource = priceFeedAddress;
-
-  await createComponents(fundFactoryAddress, {
-    defaultTokens,
-    exchangeConfigs,
-    fundName,
-    priceSource,
-    quoteToken,
-  });
-
-  await continueCreation(fundFactoryAddress);
-  const hubAddress = await setupFund(fundFactoryAddress);
-
-  const settings = await getSettings(hubAddress);
-  await register(settings.policyManagerAddress, {
-    method: PolicedMethods.makeOrder,
-    policy: priceToleranceAddress,
-  });
-  await register(settings.policyManagerAddress, {
-    method: PolicedMethods.takeOrder,
-    policy: priceToleranceAddress,
-  });
-  await register(settings.policyManagerAddress, {
-    method: PolicedMethods.executeRequest,
-    policy: whitelistAddress,
-  });
-
-  const newPrice = getPrice(
-    createQuantity(baseToken, 1),
-    createQuantity(quoteToken, 0.34),
-  );
-
-  await update(priceFeedAddress, [newPrice]);
-
-  await approve({
-    howMuch: createQuantity(baseToken, 1),
-    spender: new Address(accounts[1]),
-  });
 
   const addresses = {
     exchangeConfigs,
     fundFactory: fundFactoryAddress,
+    policies: {
+      priceTolerance: priceToleranceAddress,
+      whitelist: whitelistAddress,
+    },
     priceSource,
     tokens: [quoteToken, baseToken],
   };
