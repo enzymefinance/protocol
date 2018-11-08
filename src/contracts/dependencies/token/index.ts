@@ -4,6 +4,7 @@
 export * from './calls/balanceOf';
 export * from './calls/getInfo';
 export * from './calls/getToken';
+export * from './events/onTransfer';
 export * from './transactions/approve';
 export * from './transactions/deploy';
 export * from './transactions/increaseApproval';

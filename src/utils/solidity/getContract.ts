@@ -1,10 +1,10 @@
 import * as Eth from 'web3-eth';
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment, Environment } from '~/utils/environment';
-import { getContractWithPath } from '.';
+import { requireMap, Contracts } from '~/Contracts';
 
 export type GetContractFunction = (
-  relativePath: Contract,
+  relativePath: Contracts,
   address: Address,
   environment?: Environment,
 ) => typeof Eth.Contract;

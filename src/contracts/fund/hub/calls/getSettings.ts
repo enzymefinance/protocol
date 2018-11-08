@@ -1,6 +1,7 @@
 import { getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
-import { getContract, Contract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 // TODO: Share interfaces between .sol and .ts?
 //  Code generation out of solidity AST?
@@ -21,7 +22,7 @@ export const getSettings = async (
   hubAddress: Address,
   environment = getGlobalEnvironment(),
 ): Promise<Settings> => {
-  const hubContract = await getContract(Contract.Hub, hubAddress, environment);
+  const hubContract = await getContract(Contracts.Hub, hubAddress, environment);
 
   const settings = await hubContract.methods.settings().call();
 

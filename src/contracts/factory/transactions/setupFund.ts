@@ -1,8 +1,9 @@
-import { Contract, transactionFactory, getContract } from '~/utils/solidity';
+import { transactionFactory, getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 const postProcess = async (receipt, params, contractAddress, environment?) => {
   const contract = getContract(
-    Contract.FundFactory,
+    Contracts.FundFactory,
     contractAddress,
     environment,
   );
@@ -14,7 +15,7 @@ const postProcess = async (receipt, params, contractAddress, environment?) => {
 
 export const setupFund = transactionFactory(
   'setupFund',
-  Contract.FundFactory,
+  Contracts.FundFactory,
   undefined,
   undefined,
   postProcess,

@@ -2,13 +2,13 @@ import * as R from 'ramda';
 
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
-  Contract,
   getContract,
   prepareTransaction,
   PreparedTransaction,
   sendTransaction,
 } from '../solidity';
 import { Address } from '../types';
+import { Contracts } from '~/Contracts';
 
 type TransactionArg = number | string;
 type TransactionArgs = TransactionArg[];
@@ -42,7 +42,7 @@ export type PostProcessFunction<Args, Result> = (
 
 export type TransactionFactory = <Args, Result>(
   name: string,
-  contract: Contract,
+  contract: Contracts,
   guard?: GuardFunction<Args>,
   prepareArgs?: PrepareArgsFunction<Args>,
   postProcess?: PostProcessFunction<Args, Result>,

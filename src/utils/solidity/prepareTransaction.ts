@@ -1,7 +1,7 @@
 import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
 import { getGlobalEnvironment } from '~/utils/environment';
-import { Contract } from './getContract';
+import { Contracts } from '~/Contracts';
 
 const debug = require('~/utils/getDebug').default(__filename);
 
@@ -10,7 +10,7 @@ export interface PreparedTransaction {
   gasEstimation: number;
   name: string;
   transaction: any;
-  contract?: Contract;
+  contract?: Contracts;
 }
 
 export const prepareTransaction = async (

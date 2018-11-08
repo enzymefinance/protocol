@@ -1,12 +1,13 @@
 import { getGlobalEnvironment } from '~/utils/environment';
-import { Contract, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 export const getInfo = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
   const contract = getContract(
-    Contract.PreminedToken,
+    Contracts.PreminedToken,
     contractAddress,
     environment,
   );
