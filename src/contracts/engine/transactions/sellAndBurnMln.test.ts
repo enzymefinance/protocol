@@ -129,8 +129,8 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   expect(Number(liquidEth)).toBe(0);
 
   await expect(
-    // early call to stoke fails
-    shared.engine.methods.stoke().send({ from: shared.accounts[1] }),
+    // early call to thaw fails
+    shared.engine.methods.thaw().send({ from: shared.accounts[1] }),
   ).rejects.toThrow('revert');
 
   const enginePrice = await shared.engine.methods.enginePrice().call();
@@ -164,7 +164,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   ).rejects.toThrow('revert');
 
   increaseTime(shared.delay);
-  await shared.engine.methods.stoke().send({ from: shared.accounts[1] });
+  await shared.engine.methods.thaw().send({ from: shared.accounts[1] });
   const frozenEthPost = await shared.engine.methods.frozenEther().call();
   const liquidEthPost = await shared.engine.methods.liquidEther().call();
 

@@ -3,4 +3,4 @@
 
 export * from './transactions/deploy';
 export * from './transactions/sellAndBurnMln';
-export * from './transactions/stoke';
+export * from './transactions/thaw';
