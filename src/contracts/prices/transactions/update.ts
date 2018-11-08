@@ -11,7 +11,8 @@ import {
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { ensure } from '~/utils/guards';
 import { getPrices } from '..';
-import { Contract, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 const guards = async (contractAddress, prices, environment) => {
   ensureAddress(contractAddress);
@@ -22,7 +23,7 @@ const guards = async (contractAddress, prices, environment) => {
 
 const prepare = async (contractAddress, prices, environment) => {
   const contract = getContract(
-    Contract.TestingPriceFeed,
+    Contracts.TestingPriceFeed,
     contractAddress,
     environment,
   );

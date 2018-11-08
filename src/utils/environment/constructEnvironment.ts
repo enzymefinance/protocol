@@ -30,23 +30,25 @@ const checkIpc = endpoint => {
   }
 };
 
+const makeWsProvider = endpoint =>
+  new Eth.providers.WebsocketProvider(endpoint);
+
+const makeHttpProvider = endpoint => new Eth.providers.HttpProvider(endpoint);
+
+const makeIpcProvider = endpoint => new Eth.providers.IpcProvider(endpoint);
+
 const selectProvider = R.cond([
-  [
-    R.startsWith('ws'),
-    endpoint => new Eth.providers.WebsocketProvider(endpoint),
-  ],
-  [R.startsWith('http', endpoint => new Eth.providers.HttpProvider(endpoint))],
-  [checkIpc, endpoint => new Eth.providers.IpcProvider(endpoint)],
+  [R.startsWith('ws'), makeWsProvider],
+  [R.startsWith('http', makeHttpProvider)],
+  [checkIpc, makeIpcProvider],
 ]);
 
-const constructProvider = jsonRpcEndpoint => {
-  const endpoint = jsonRpcEndpoint || process.env.JSON_RPC_ENDPOINT;
-
+const constructProvider = endpoint => {
   string()
     .url(
       [
         `Invalid JSON RPC endpoint url: ${endpoint}.`,
-        `Check your .env file or provide it explicitely`,
+        `Check your .env file or provide it explicitly`,
       ].join(''),
     )
     .isValid(endpoint);
@@ -59,15 +61,23 @@ const constructProvider = jsonRpcEndpoint => {
 };
 
 export const constructEnvironment = ({
-  jsonRpcEndpoint = undefined,
+  endpoint = undefined,
   provider = undefined,
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,
-}): Environment => ({
-  eth: new Eth(provider || constructProvider(jsonRpcEndpoint)),
-  // tslint:disable-next-line:object-shorthand-properties-first
-  options,
-  track,
-  wallet,
-});
+}): Environment => {
+  if (!endpoint && !provider) {
+    throw new Error(
+      'You need to provide either a endpoint or a provider instance.',
+    );
+  }
+
+  return {
+    eth: new Eth(provider || constructProvider(endpoint)),
+    // tslint:disable-next-line:object-shorthand-properties-first
+    options,
+    track,
+    wallet,
+  };
+};

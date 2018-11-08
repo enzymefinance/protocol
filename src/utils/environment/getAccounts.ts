@@ -1,5 +1,5 @@
 import { Environment } from './Environment';
-import { getGlobalEnvironment } from './getGlobalEnvironment';
+import { getGlobalEnvironment } from './globalEnvironment';
 
 const getAccounts = async (
   environment: Environment = getGlobalEnvironment(),

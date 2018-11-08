@@ -31,7 +31,9 @@ test('transfer', async () => {
 });
 
 test('transfer without account address', async () => {
-  const emptyEnvironment = constructEnvironment({});
+  const emptyEnvironment = constructEnvironment({
+    endpoint: process.env.JSON_RPC_ENDPOINT,
+  });
   const howMuch = createQuantity(shared.token, '1000000000000000000');
 
   await expect(

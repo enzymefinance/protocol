@@ -1,11 +1,8 @@
 import { TokenInterface } from '@melonproject/token-math/token';
 
 import { Address } from '~/utils/types';
-import {
-  Contract,
-  transactionFactory,
-  EnhancedExecute,
-} from '~/utils/solidity';
+import { transactionFactory, EnhancedExecute } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -67,7 +64,7 @@ export const createComponents: EnhancedExecute<
   CreateComponentsResult
 > = transactionFactory(
   'createComponents',
-  Contract.FundFactory,
+  Contracts.FundFactory,
   guard,
   prepareArgs,
   postProcess,

@@ -17,8 +17,9 @@ out/
 # ignore transpiled code
 build
 
-# ignore development addressBook
+# ignore old development addressBook
 addressBook.json
+out/deployments.json
 
 # ignore generated coverage data
 coverage.json
@@ -26,3 +27,7 @@ coverage/
 
 # ignore cache
 .cache/
+
+# ignore concatenated files (only updated at verification time)
+utils/etherscan/concatenated
+legacy/utils/devchain-snapshot/0x_ganache_snapshot
