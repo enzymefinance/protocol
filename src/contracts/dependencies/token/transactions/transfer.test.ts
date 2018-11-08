@@ -47,7 +47,7 @@ test('transfer without account address', async () => {
   ).rejects.toThrow('No address');
 });
 
-test('insufficent balance', async () => {
+test.only('insufficent balance', async () => {
   await expect(
     transfer({
       howMuch: createQuantity(shared.token, '2000000000000000000000000'),
