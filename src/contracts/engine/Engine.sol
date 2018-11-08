@@ -48,6 +48,7 @@ contract Engine is DSMath {
         frozenEther = add(frozenEther, msg.value);
     }
 
+    // TODO: revisit need for a delay now that only funds can do this
     /// @notice Move frozen ether to liquid pool after delay
     /// @dev Delay only restarts when this function is called
     function thaw() public {
@@ -66,10 +67,15 @@ contract Engine is DSMath {
         return add(ethPerMln, premium);
     }
 
+    function ethPayoutForMlnAmount(uint mlnAmount) public view returns (uint) {
+        return mul(mlnAmount, enginePrice()) / 10 ** MLN_DECIMALS;
+    }
+
     /// @notice MLN must be approved first
     function sellAndBurnMln(uint mlnAmount) public {
+        require(version.isFund(msg.sender));
         require(mlnToken.transferFrom(msg.sender, address(this), mlnAmount));
-        uint ethToSend = mul(mlnAmount, enginePrice()) / 10 ** MLN_DECIMALS;
+        uint ethToSend = ethPayoutForMlnAmount(mlnAmount);
         require(ethToSend > 0);
         require(liquidEther >= ethToSend);
         msg.sender.send(ethToSend);
