@@ -1,4 +1,8 @@
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import {
+  QuantityInterface,
+  greaterThan,
+  toFixed,
+} from '@melonproject/token-math/quantity';
 
 import { ensure } from '~/utils/guards';
 import { Address } from '~/utils/types';
@@ -11,6 +15,7 @@ import {
   ImplicitExecute,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import { balanceOf } from '..';
 
 const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensureAccountAddress(environment);
@@ -18,6 +23,19 @@ const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensure(
     isAddress(howMuch.token.address),
     `Token needs to have an address. Got: ${howMuch.token.address}`,
+  );
+
+  const balance = await balanceOf(
+    howMuch.token.address,
+    { address: environment.wallet.address },
+    environment,
+  );
+
+  ensure(
+    greaterThan(balance, howMuch),
+    `Insufficient ${howMuch.token.symbol}. Got: ${toFixed(
+      balance,
+    )}, need: ${toFixed(howMuch)}`,
   );
 };
 
