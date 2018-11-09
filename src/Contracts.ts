@@ -16,6 +16,7 @@ export enum Contracts {
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
+  Version = 'version/VersionInterface',
 }
 
 // HINT: Link the interfaces instead of the implementations wherever possible
@@ -56,4 +57,7 @@ export const requireMap = {
     require('../out/fund/vault/Vault.abi.json'),
   [Contracts.VaultFactory]:
     require('../out/fund/vault/VaultFactory.abi.json'),
+  // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
+  [Contracts.Version]:
+      require('../out/version/MockVersion.abi.json'),
 };

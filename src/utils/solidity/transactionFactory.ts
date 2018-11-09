@@ -90,11 +90,15 @@ export type WithContractAddressQuery = <Args, Result>(
   transaction: EnhancedExecute<Args, Result>,
 ) => ImplicitExecute<Args, Result>;
 
-const defaultGuard: GuardFunction<any> = async () => {};
-const defaultPrepareArgs: PrepareArgsFunction<any> = async (
-  params: string[] = [],
-) => params;
-const defaultPostProcess: PostProcessFunction<any, any> = async () => true;
+export const defaultGuard: GuardFunction<any> = async () => {};
+
+export const defaultPrepareArgs = async (
+  params,
+  contractAddress,
+  environment,
+) => Object.values(params || {}).map(v => v.toString());
+export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
+  true;
 
 /**
  * The transaction factory returns a function "execute" (You have to rename it

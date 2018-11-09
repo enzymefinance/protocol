@@ -1,14 +1,8 @@
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { getPrice } from '@melonproject/token-math/price';
-
 import { getGlobalEnvironment } from '~/utils/environment';
-import { Address } from '~/utils/types';
-import { deployAndGetContract } from '~/utils/solidity';
 
 import {
   deploy as deployToken,
   getToken,
-  approve,
 } from '~/contracts/dependencies/token';
 import { deploy as deployPriceFeed, update } from '~/contracts/prices';
 import {
@@ -26,18 +20,9 @@ import { deployParticipationFactory } from '~/contracts/fund/participation';
 import { deploySharesFactory } from '~/contracts/fund/shares';
 import { deployTradingFactory } from '~/contracts/fund/trading';
 import { deployVaultFactory } from '~/contracts/fund/vault';
-import {
-  deployPolicyManagerFactory,
-  register,
-  PolicedMethods,
-} from '~/contracts/fund/policies';
-import {
-  deployFundFactory,
-  createComponents,
-  continueCreation,
-  setupFund,
-} from '~/contracts/factory';
-import { getSettings } from '~/contracts/fund/hub';
+import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
+import { deployFundFactory } from '~/contracts/factory';
+import { deployMockVersion, setFundFactory } from '~/contracts/version';
 
 const debug = require('./getDebug').default(__filename);
 
@@ -60,11 +45,8 @@ export const deploySystem = async () => {
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
   const priceToleranceAddress = await deployPriceTolerance(10);
-
   const whitelistAddress = await deployWhitelist([accounts[0]]);
-
-  const mockVersion = await deployAndGetContract('version/MockVersion');
-
+  const versionAddress = await deployMockVersion();
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
   const feeManagerFactoryAddress = await deployFeeManagerFactory();
@@ -75,7 +57,7 @@ export const deploySystem = async () => {
   const policyManagerFactoryAddress = await deployPolicyManagerFactory();
   const monthInSeconds = 30 * 24 * 60 * 60;
   const engineAddress = await deployEngine(
-    mockVersion.options.address,
+    versionAddress,
     priceFeedAddress,
     monthInSeconds,
     mlnTokenAddress,
@@ -92,13 +74,10 @@ export const deploySystem = async () => {
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
-    versionAddress: mockVersion.options.address,
+    versionAddress,
   });
 
-  // From here on it is already integration testing
-  await mockVersion.methods
-    .setFundFactory(fundFactoryAddress)
-    .send({ from: accounts[0] });
+  await setFundFactory(versionAddress, { address: fundFactoryAddress });
 
   const exchangeConfigs = [
     {
@@ -120,6 +99,7 @@ export const deploySystem = async () => {
     },
     priceSource,
     tokens: [quoteToken, baseToken],
+    version: versionAddress,
   };
 
   debug('Deployed:', addresses);
