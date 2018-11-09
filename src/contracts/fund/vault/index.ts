@@ -3,5 +3,3 @@
 
 export * from './transactions/createVaultInstance';
 export * from './transactions/deployVaultFactory';
-export * from './utils/getFactoryContract';
-export * from './utils/getVaultContract';

@@ -32,4 +32,5 @@ export const initTestEnvironment = async () => {
     wallet: { address: accounts[0] },
   };
   setGlobalEnvironment(enhancedEnvironment);
+  return enhancedEnvironment;
 };

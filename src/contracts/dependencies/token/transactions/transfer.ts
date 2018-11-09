@@ -1,53 +1,54 @@
+import { QuantityInterface } from '@melonproject/token-math/quantity';
+
+import { ensure } from '~/utils/guards';
+import { Address } from '~/utils/types';
+import { isAddress } from '~/utils/checks';
+import { ensureAccountAddress } from '~/utils/environment';
+
 import {
-  getGlobalEnvironment,
-  ensureAccountAddress,
-} from '~/utils/environment';
-import { balanceOf } from '..';
-import { Contract, getContract } from '~/utils/solidity';
+  transactionFactory,
+  withContractAddressQuery,
+  ImplicitExecute,
+  Contract,
+} from '~/utils/solidity';
 
-// import ensure from '~/utils/guards/ensure';
-
-export const guards = async (
-  contractAddress: string,
-  { to, tokens },
-  environment,
-) => {
+const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensureAccountAddress(environment);
-  const currentBalance = await balanceOf(
-    contractAddress,
-    { address: environment.wallet.address },
-    environment,
+  ensure(isAddress(to), `To is not an address. Got: ${to}`, to);
+  ensure(
+    isAddress(howMuch.token.address),
+    `Token needs to have an address. Got: ${howMuch.token.address}`,
   );
-
-  // const balanceAfter = quantity.subtract(currentBalance, )
 };
 
-export const prepare = async (contractAddress: string, { to, tokens }) => {
-  const contract = getContract(Contract.PreminedToken, contractAddress);
-  const transaction = contract.methods.transfer(to, tokens);
-  return transaction;
-};
+const prepareArgs = async ({ howMuch, to }) => [
+  to.toString(),
+  howMuch.quantity.toString(),
+];
 
-export const send = async (transaction, environment) => {
-  const receipt = await transaction.send({
-    from: environment.wallet.address,
-  });
-
-  return receipt;
-};
-
-export const validateReceipt = (receipt, { to, tokens }) => {
+const postProcess = async receipt => {
   return true;
 };
 
-export const transfer = async (
-  contractAddress: string,
-  { to, tokens },
-  environment = getGlobalEnvironment(),
-) => {
-  await guards(contractAddress, { to, tokens }, environment);
-  const transaction = await prepare(contractAddress, { to, tokens });
-  const receipt = await send(transaction, environment);
-  const result = validateReceipt(receipt, { to, tokens });
-  return result;
-};
+interface TransferArgs {
+  howMuch: QuantityInterface;
+  to: Address;
+}
+
+type TransferResult = boolean;
+
+const transfer: ImplicitExecute<
+  TransferArgs,
+  TransferResult
+> = withContractAddressQuery(
+  ['howMuch', 'token', 'address'],
+  transactionFactory(
+    'transfer',
+    Contract.StandardToken,
+    guard,
+    prepareArgs,
+    postProcess,
+  ),
+);
+
+export { transfer };

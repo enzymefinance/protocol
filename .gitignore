@@ -1,4 +1,3 @@
-app/
 node_modules/
 npm-debug.log
 *.orig
@@ -11,9 +10,6 @@ yarn-error.log
 
 # manual backup files
 *.bak
-
-# doxity
-scripts/
 
 # ignore built contracts
 out/
@@ -31,7 +27,3 @@ coverage/
 
 # ignore cache
 .cache/
-
-# ignore concatenated files (only updated at verification time)
-legacy/utils/etherscan/concatenated
-legacy/utils/devchain-snapshot/0x_ganache_snapshot
