@@ -3,8 +3,11 @@
 
 export * from './callFactory';
 export * from './deploy';
+export * from './deployAndGetContract';
 export * from './getContract';
+export * from './getContractWithPath';
 export * from './getDeployment';
+export * from './increaseTime';
 export * from './prepareTransaction';
 export * from './sendTransaction';
 export * from './transactionFactory';

@@ -55,13 +55,22 @@ test.before(async t => {
 
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
-    'Test Fund', [deployed.MatchingMarket.options.address], [deployed.MatchingMarketAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.TestingPriceFeed.options.address
+    'Test Fund',
+    [deployed.MatchingMarket.options.address],
+    [deployed.MatchingMarketAdapter.options.address],
+    deployed.EthToken.options.address,
+    [deployed.EthToken.options.address, deployed.MlnToken.options.address],
+    [false],
+    deployed.TestingPriceFeed.options.address
   ).send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.setupFund().send({from: manager, gasPrice: config.gasPrice});
   const fundId = await deployed.FundFactory.methods.getLastFundId().call();
   const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
+  await Promise.all(Object.values(fund).map(async (component) => {
+    await deployed.MockVersion.methods.setIsFund(component.options.address).send({from: manager});
+  }));
 
   // Register price tolerance policy
   const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
@@ -168,6 +177,7 @@ exchangeIndexes.forEach(i => {
       receipt = await fund.participation.methods.requestInvestment(wantedShares.toFixed(), boostedOffer.toFixed(), ethToken.options.address).send(
         { from: investor, gas: config.gas, gasPrice: config.gasPrice }
       );
+
       investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
       await updateTestingPriceFeed(deployed);
       await updateTestingPriceFeed(deployed);

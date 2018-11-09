@@ -12,7 +12,8 @@ export const sendTransaction = async (
   const receipt = await prepared.transaction.send({
     from: environment.wallet.address,
     // TODO: Check for DELEGATE_CALL or LIBRARY
-    gas: Math.floor(prepared.gasEstimation * 1.2).toString(),
+    // TODO: boost gas estimation to MAX (?)
+    gas: Math.floor(prepared.gasEstimation).toString(),
     gasPrice: environment.options.gasPrice,
   });
 

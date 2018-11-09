@@ -52,8 +52,8 @@ const postProcess = async (contractAddress, prices, receipt) => {
   );
 
   ensure(isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
-    is: updatedPrices[0],
-    should: prices[0],
+    is: JSON.stringify(updatedPrices[0]),
+    should: JSON.stringify(prices[0]),
   });
 
   return updatedPrices;
