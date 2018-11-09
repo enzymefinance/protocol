@@ -76,7 +76,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
   await deployed.ConversionRates.methods.setImbalanceStepFunction(mlnToken.options.address, [0], [0], [0], [0]).send();
 
   deployed.KyberWhiteList = await deployContract(
-    "exchanges/thirdparty/kyber/KyberWhitelist",
+    "exchanges/thirdparty/kyber/KyberWhiteList",
     opts,
     [accounts[0], deployed.KGTToken.options.address]
   );
