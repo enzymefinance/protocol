@@ -103,15 +103,19 @@ Then, you can deploy the contracts to your local dev node:
 yarn melon deploy
 ```
 
-This creates a new addressBook which you can use like this:
+This creates a new deployment which you can use like this:
 
 ```typescript
-import * as protocol from "@melonproject/protocol";
-import * as addressBook from "@melonproject/protocol/addressBook.json";
+import * as protocol from '@melonproject/protocol';
 
-const hub = await protocol.factory.managersToHubs(addressBook.fundFactory, '0xdeadbeef');    
+const environment = await protocol.utils.environment.initTestEnvironment();
+const deployment = protocol.utils.solidity.getDeployment(environment);
+const hub = await protocol.factory.managersToHubs(
+  deployment.fundFactory,
+  '0xdeadbeef',
+  environment,
+);
 ```
-
 
 ## Troubleshooting
 

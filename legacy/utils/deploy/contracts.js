@@ -629,6 +629,20 @@ async function deployEnvironment(environment) {
       opts,
       [[accounts[0]]],
     );
+    deployed.MockVersion = await deployContract(
+      'version/MockVersion',
+      opts,
+    );
+    deployed.Engine = await deployContract(
+      'engine/Engine',
+      opts,
+      [
+        deployed.MockVersion.options.address,
+        deployed.TestingPriceFeed.options.address,
+        30 * 24 * 60 * 60,
+        deployed.MlnToken.options.address
+      ]
+    );
     deployed.MatchingMarketAdapter = await deployContract(
       'exchanges/MatchingMarketAdapter',
       opts,
@@ -669,7 +683,12 @@ async function deployEnvironment(environment) {
       deployed.TradingFactory.options.address,
       deployed.VaultFactory.options.address,
       deployed.PolicyManagerFactory.options.address,
+      deployed.MockVersion.options.address,
+      deployed.Engine.options.address,
+      deployed.TestingPriceFeed.options.address,
+      deployed.MlnToken.options.address,
     ]);
+    await deployed.MockVersion.methods.setFundFactory(deployed.FundFactory.options.address).send(opts);
     deployed = setupKyberDevEnv(deployed, accounts, opts);
   } else if (environment === 'development-old') {
     [opts.from] = accounts;

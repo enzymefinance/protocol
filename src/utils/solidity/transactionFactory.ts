@@ -2,13 +2,13 @@ import * as R from 'ramda';
 
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
-  Contract,
   getContract,
   prepareTransaction,
   PreparedTransaction,
   sendTransaction,
 } from '../solidity';
 import { Address } from '../types';
+import { Contracts } from '~/Contracts';
 
 type TransactionArg = number | string;
 type TransactionArgs = TransactionArg[];
@@ -42,7 +42,7 @@ export type PostProcessFunction<Args, Result> = (
 
 export type TransactionFactory = <Args, Result>(
   name: string,
-  contract: Contract,
+  contract: Contracts,
   guard?: GuardFunction<Args>,
   prepareArgs?: PrepareArgsFunction<Args>,
   postProcess?: PostProcessFunction<Args, Result>,
@@ -57,8 +57,8 @@ type SendFunction<Args> = (
 
 type PrepareFunction<Args> = (
   contractAddress: Address,
-  params: Args,
-  environment: Environment,
+  params?: Args,
+  environment?: Environment,
 ) => Promise<PreparedTransaction>;
 
 type ExecuteFunction<Args, Result> = (
@@ -139,7 +139,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     const transaction = contractInstance.methods[name](...args);
     transaction.name = name;
     const prepared = await prepareTransaction(transaction, environment);
-    return prepared;
+    return { ...prepared, contract };
   };
 
   const send: SendFunction<Args> = async (

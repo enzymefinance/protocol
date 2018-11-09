@@ -1,16 +1,13 @@
 import { TokenInterface } from '@melonproject/token-math/token';
 
 import { Address } from '~/utils/types';
-import {
-  Contract,
-  transactionFactory,
-  EnhancedExecute,
-} from '~/utils/solidity';
+import { transactionFactory, EnhancedExecute } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 // import ensure from '~/utils/guards/ensure';
 
 interface ExchangeConfig {
-  address: Address;
+  exchangeAddress: Address;
   adapterAddress: Address;
   takesCustody: boolean;
 }
@@ -35,7 +32,9 @@ const prepareArgs = async (
   { fundName, exchangeConfigs, quoteToken, defaultTokens, priceSource },
   contractAddress,
 ) => {
-  const exchangeAddresses = exchangeConfigs.map(e => e.address.toString());
+  const exchangeAddresses = exchangeConfigs.map(e =>
+    e.exchangeAddress.toString(),
+  );
   const adapterAddresses = exchangeConfigs.map(e =>
     e.adapterAddress.toString(),
   );
@@ -65,7 +64,7 @@ export const createComponents: EnhancedExecute<
   CreateComponentsResult
 > = transactionFactory(
   'createComponents',
-  Contract.FundFactory,
+  Contracts.FundFactory,
   guard,
   prepareArgs,
   postProcess,

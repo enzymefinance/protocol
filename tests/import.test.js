@@ -3,6 +3,7 @@ test('Import this package from node', () => {
   expect(Object.keys(melonProtocol)).toEqual([
     'utils',
     'token',
+    'engine',
     'exchanges',
     'factory',
     'accounting',

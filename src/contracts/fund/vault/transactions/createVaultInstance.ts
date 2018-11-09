@@ -4,7 +4,8 @@ import { Address } from '~/utils/types';
 import { ensure } from '~/utils/guards/ensure';
 import { sha3 } from 'web3-utils';
 
-import { getContract, Contract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 interface CreateInstanceArgs {
   hubAddress: Address;
@@ -22,7 +23,7 @@ export const prepare = async (
   environment,
 ) => {
   const contract = getContract(
-    Contract.VaultFactory,
+    Contracts.VaultFactory,
     new Address(contractAddress),
     environment,
   );

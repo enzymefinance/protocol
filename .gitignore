@@ -11,15 +11,17 @@ yarn-error.log
 # manual backup files
 *.bak
 
-# ignore built contracts
+# doxity
+scripts/
+
+# ignore built code
 out/
+utils/build
+build/
 
-# ignore transpiled code
-legacy/utils/build
-build
-
-# ignore development addressBook
+# ignore old development addressBook
 addressBook.json
+out/deployments.json
 
 # ignore generated coverage data
 coverage.json
@@ -27,3 +29,13 @@ coverage/
 
 # ignore cache
 .cache/
+
+# ignore concatenated files (only updated at verification time)
+utils/etherscan/concatenated
+
+# ignore node version manager files
+.nvmrc
+.node-version
+
+# ignore devchain snapshot
+legacy/utils/devchain-snapshot/

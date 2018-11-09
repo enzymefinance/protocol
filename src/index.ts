@@ -7,6 +7,9 @@ export const utils = utilsExport;
 import * as tokenExport from './contracts/dependencies/token';
 export const token = tokenExport;
 
+import * as engineExport from './contracts/engine';
+export const engine = engineExport;
+
 import * as exchangesExport from './contracts/exchanges';
 export const exchanges = exchangesExport;
 
