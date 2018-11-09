@@ -20,28 +20,20 @@ const postProcess = async (
   prepared,
   environment,
 ): Promise<RequestInvestmentResult> => {
-  const [
-    investmentAssetAddress,
-    investmentAmountUint,
-    requestedSharesUint,
-    timestampUint,
-    atUpdateIdUint,
-  ] = result;
-
-  const investToken = await getToken(investmentAssetAddress, environment);
+  const investToken = await getToken(result.investmentAsset, environment);
   const hub = await getHub(prepared.contractAddress, environment);
   const settings = await getSettings(hub, environment);
   const fundToken = await getToken(settings.sharesAddress, environment);
 
   return {
-    atUpdateId: atUpdateIdUint.toNumber(),
-    investmentAmount: createQuantity(investToken, investmentAmountUint),
-    requestedShares: createQuantity(fundToken, requestedSharesUint),
-    timestamp: timestampUint.toNumber(),
+    atUpdateId: parseInt(result.atUpdateId, 10),
+    investmentAmount: createQuantity(investToken, result.investmentAmount),
+    requestedShares: createQuantity(fundToken, result.requestedShares),
+    timestamp: parseInt(result.timestamp, 10),
   };
 };
 
-const getRequest = callFactory('getRequest', Contracts.Participation, {
+const getRequest = callFactory('requests', Contracts.Participation, {
   postProcess,
   prepareArgs,
 });

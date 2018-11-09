@@ -1,6 +1,6 @@
-import { callFactory } from '~/utils/solidity';
+import { callFactoryWithoutParams } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 
-const getHub = callFactory('getHub', Contracts.Spoke);
+const getHub = callFactoryWithoutParams('hub', Contracts.Spoke);
 
 export { getHub };

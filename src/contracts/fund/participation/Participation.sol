@@ -31,13 +31,13 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         uint requestedShares,
         uint investmentAmount,
         address investmentAsset
-    ) 
-        external 
+    )
+        external
         amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
-        require(!hub.isShutDown());
+        require(!hub.isShutDown(), "Cannot invest in shut down fund (hub)");
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -66,7 +66,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
         //         priceSource.updateId() >= add(requests[id].atUpdateId, 2)
         //     )
-        // ) 
+        // )
     {
         require(!hub.isShutDown());
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");

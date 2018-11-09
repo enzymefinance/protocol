@@ -20,7 +20,7 @@ const guard: GuardFunction<RequestInvestmentArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const hub = getHub(contractAddress, null, environment);
+  const hub = await getHub(contractAddress, environment);
   await ensureIsNotShutDown(hub, environment);
   await approve({ howMuch: params.investmentAmount, spender: contractAddress });
 };

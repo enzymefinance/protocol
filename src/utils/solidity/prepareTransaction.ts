@@ -17,10 +17,20 @@ export const prepareTransaction = async (
   transaction,
   environment = getGlobalEnvironment(),
 ): Promise<PreparedTransaction> => {
+  let gasEstimation;
   const encoded = transaction.encodeABI();
-  const gasEstimation = await transaction.estimateGas({
-    from: environment.wallet.address.toString(),
-  });
+
+  try {
+    gasEstimation = await transaction.estimateGas({
+      from: environment.wallet.address.toString(),
+    });
+  } catch (e) {
+    throw new Error(
+      `Gas estimation (preflight) failed for ${
+        transaction.name
+      }(${transaction.arguments.join(', ')}): ${e.message}`,
+    );
+  }
 
   debug(
     'Prepared transaction:',
