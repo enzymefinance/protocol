@@ -446,7 +446,7 @@ contract KyberWhiteList is WhiteListInterface, Withdrawable {
     }
 }
 
-interface BurnableToken {
+interface BurnableTokenClone {
     function transferFrom(address _from, address _to, uint _value) public returns (bool);
     function burnFrom(address _from, uint256 _value) public returns (bool);
 }
@@ -463,11 +463,11 @@ contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils {
     address public taxWallet;
     uint public taxFeeBps = 0; // burned fees are taxed. % out of burned fees.
 
-    BurnableToken public knc;
+    BurnableTokenClone public knc;
     address public kyberNetwork;
     uint public kncPerETHRate = 300;
 
-    function FeeBurner(address _admin, BurnableToken kncToken, address _kyberNetwork) public {
+    function FeeBurner(address _admin, BurnableTokenClone kncToken, address _kyberNetwork) public {
         require(_admin != address(0));
         require(kncToken != address(0));
         require(_kyberNetwork != address(0));

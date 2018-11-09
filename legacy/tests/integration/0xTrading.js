@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import test from "ava";
 import {
   assetDataUtils,
@@ -101,6 +102,9 @@ test.before(async t => {
   const fundId = await deployed.FundFactory.methods.getLastFundId().call();
   const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
+  await Promise.all(Object.values(fund).map(async (component) => {
+    await deployed.MockVersion.methods.setIsFund(component.options.address).send({from: manager});
+  }));
 
   const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
   await t.notThrows(fund.policyManager.methods.register(makeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));

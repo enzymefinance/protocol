@@ -80,6 +80,9 @@ test.before(async () => {
   const fundId = await deployed.FundFactory.methods.getLastFundId().call();
   const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
+  await Promise.all(Object.values(fund).map(async (component) => {
+    await deployed.MockVersion.methods.setIsFund(component.options.address).send({from: manager});
+  }));
 });
 
 const initialTokenAmount = new BigNumber(10 ** 19).toFixed();
