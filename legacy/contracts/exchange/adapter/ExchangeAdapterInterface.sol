@@ -3,31 +3,31 @@ pragma solidity ^0.4.21;
 interface ExchangeAdapterInterface {
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     );
 
     function takeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     );
 
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     );
 }

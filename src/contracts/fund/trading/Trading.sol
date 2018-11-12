@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 
 import "./Trading.i.sol";
@@ -19,7 +20,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bool takesCustody;
     }
 
-    enum UpdateType { make, take, cancel }
+    enum UpdateType { make, take, cancel, swap }
 
     struct Order {
         address exchangeAddress;
@@ -36,6 +37,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     struct OpenMakeOrder {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
+        uint orderIndex; // Index of the order in the orders array
     }
 
     Exchange[] public exchanges;
@@ -72,37 +74,88 @@ contract Trading is DSMath, Spoke, TradingInterface {
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
 
+    /// @notice Universal method for calling exchange functions through adapters
+    /// @notice See adapter contracts for parameters needed for each exchange
+    /// @param exchangeIndex Index of the exchange in the "exchanges" array
+    /// @param orderAddresses [0] Order maker
+    /// @param orderAddresses [1] Order taker
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [4] feeRecipientAddress
+    /// @param orderAddresses [5] senderAddress
+    /// @param orderValues [0] makerAssetAmount
+    /// @param orderValues [1] takerAssetAmount
+    /// @param orderValues [2] Maker fee
+    /// @param orderValues [3] Taker fee
+    /// @param orderValues [4] expirationTimeSeconds
+    /// @param orderValues [5] Salt/nonce
+    /// @param orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param orderValues [7] Dexy signature mode
+    /// @param identifier Order identifier
+    /// @param makerAssetData Encoded data specific to makerAsset.
+    /// @param takerAssetData Encoded data specific to takerAsset.
+    /// @param signature Signature of order maker.
     function callOnExchange(
         uint exchangeIndex,
-        bytes4 method,
-        address[5] orderAddresses,
+        string methodSignature,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     )
-        external
+        public
     {
-        PolicyManager(routes.policyManager).preValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeMethodIsAllowed(exchanges[exchangeIndex].exchange, method));
-        address adapter = exchanges[exchangeIndex].adapter;
-        address exchange = exchanges[exchangeIndex].exchange;
-        require(adapter.delegatecall(
-            method, exchange, orderAddresses, orderValues, identifier, v, r, s
-        ));
-        PolicyManager(routes.policyManager).postValidate(method, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        // require(
+        //     modules.pricefeed.exchangeMethodIsAllowed(
+        //         exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
+        //     )
+        // );
+        PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        // require(bytes4(hex'79705be7') == bytes4(keccak256(methodSignature)));
+        // require(
+        //     exchanges[exchangeIndex].adapter.delegatecall(
+        //         hex'79705be7',
+        //         // bytes4(keccak256(methodSignature)),
+        //         exchanges[exchangeIndex].exchange,
+        //         orderAddresses,
+        //         orderValues, 
+        //         identifier, 
+        //         makerAssetData,
+        //         takerAssetData,
+        //         signature
+        // ));
+
+        require(
+            exchanges[exchangeIndex].adapter.delegatecall(
+                abi.encodeWithSignature(
+                    methodSignature,
+                    exchanges[exchangeIndex].exchange,
+                    orderAddresses,
+                    orderValues, 
+                    identifier, 
+                    makerAssetData,
+                    takerAssetData,
+                    signature
+                )
+            )
+        );
+        // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
 
+    /// @dev Make sure this is called after orderUpdateHook in adapters
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
         uint orderId
     ) delegateInternal {
         require(!isInOpenMakeOrder[ofSellAsset]);
+        require(orders.length > 0);
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
 
     function removeOpenMakeOrder(
@@ -150,7 +203,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             }
             address sellAsset;
             uint sellQuantity;
-            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id);
+            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id, ofAsset);
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
@@ -169,6 +222,19 @@ contract Trading is DSMath, Spoke, TradingInterface {
         for (uint i = 0; i < _tokens.length; i++) {
             _tokens[i].transfer(Vault(routes.vault), _tokens[i].balanceOf(this));
         }
+    }
+
+    /// @notice Payable function to get back ETH from WETH
+    function() public payable { }
+
+    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
+        OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
+        return (order.id, order.expiresAt, order.orderIndex);
+    }
+
+    function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
+        Order memory order = orders[orderIndex];
+        return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 }
 

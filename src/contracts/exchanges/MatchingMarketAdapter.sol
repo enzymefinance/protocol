@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 
-import "./MatchingMarket.sol";
+import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
@@ -36,12 +36,12 @@ contract MatchingMarketAdapter is DSMath {
     /// @param orderValues [1] Taker token quantity
     function makeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender);
@@ -64,7 +64,6 @@ contract MatchingMarketAdapter is DSMath {
         //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
         // );
 
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
         Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -73,6 +72,7 @@ contract MatchingMarketAdapter is DSMath {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
     }
 
     // Responsibilities of takeOrder are:
@@ -93,12 +93,12 @@ contract MatchingMarketAdapter is DSMath {
     /// @param identifier Active order id
     function takeOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         // require(Fund(address(this)).manager() == msg.sender);
         // TODO: add check that sender is manager
@@ -147,14 +147,13 @@ contract MatchingMarketAdapter is DSMath {
     /// @param identifier Order ID on the exchange
     function cancelOrder(
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-    {
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender ||    // TODO: check that this makes sense (manager)
                 hub.isShutDown()          //||
@@ -190,7 +189,7 @@ contract MatchingMarketAdapter is DSMath {
     }
 
     // TODO: delete this function if possible
-    function getOrder(address targetExchange, uint id)
+    function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
     {

@@ -9,8 +9,8 @@ import "../../dependencies/math.sol";
 contract PriceTolerance is DSMath, Policy {
     uint tolerance;
 
-    bytes4 constant public MAKE_ORDER = 0x570bc25f; // makeOrderSignature
-    bytes4 constant public TAKE_ORDER = 0xf97f8e17; // takeOrderSignature
+    bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
+    bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature
 
     // _tolerance: 10 equals to 10% of tolerance
     function PriceTolerance(uint256 _tolerance) public {

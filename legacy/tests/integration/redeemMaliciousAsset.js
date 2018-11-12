@@ -5,7 +5,7 @@ import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import { updateCanonicalPriceFeed } from "../../utils/lib/updatePriceFeed";
 import governanceAction from "../../utils/lib/governanceAction";
-import { makeOrderSignature } from "../../utils/lib/data";
+import { makeOrderSignatureString } from "../../utils/lib/data";
 
 const environmentConfig = require("../../utils/config/environment.js");
 
@@ -42,7 +42,7 @@ test.before(async () => {
   version = await deployed.Version;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  maliciousToken = await deployContract("testing/MaliciousToken", opts);
+  maliciousToken = await deployContract("testing/MaliciousToken", opts, [18]);
   await deployed.MatchingMarket.methods.addTokenPairWhitelist(ethToken.options.address, maliciousToken.options.address).send(
     opts,
   );
@@ -116,11 +116,11 @@ test.serial("fund buys some mlnToken", async t => {
   });
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
-    ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0"],
+    makeOrderSignatureString,
+    ["0x0", "0x0", ethToken.options.address, mlnToken.options.address, "0x0", "0x0"],
     [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(
@@ -146,11 +146,11 @@ test.serial("fund buys some mlnToken", async t => {
 test.serial("fund buys some MaliciousToken", async t => {
   await fund.methods.callOnExchange(
     0,
-    makeOrderSignature,
-    ["0x0", "0x0", ethToken.options.address, maliciousToken.options.address, "0x0"],
+    makeOrderSignatureString,
+    ["0x0", "0x0", ethToken.options.address, maliciousToken.options.address, "0x0", "0x0"],
     [sellQuantity, buyQuantity, 0, 0, 0, 0, 0, 0],
     web3.utils.padLeft('0x0', 64),
-    0,
+    web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
     web3.utils.padLeft('0x0', 64),
   ).send(

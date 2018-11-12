@@ -31,6 +31,6 @@
 
 - [ ] Remove babel, flow, eslint, ...
 
-solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out src/contracts/exchanges/MatchingMarket.sol
+solc --optimize --optimize-runs=0 --overwrite --abi --bin --bin-runtime = -o out src/contracts/exchanges/thirdparty/oasisdex/MatchingMarket.sol
 
 yarn babel-node utils/compile.js

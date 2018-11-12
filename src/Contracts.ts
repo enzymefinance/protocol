@@ -36,7 +36,7 @@ export const requireMap = {
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MatchingMarket]:
-    require('../out/exchanges/MatchingMarket.abi.json'),
+    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.Participation]:
     require('../out/fund/participation/ParticipationInterface.abi.json'),
   [Contracts.PolicyManager]:

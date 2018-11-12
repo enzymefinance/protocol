@@ -31,6 +31,10 @@ test('Throwing error if gasLimit is below gasEstimation', async () => {
     },
   };
   await expect(
-    deploy('exchanges/MatchingMarket.sol', [99999999999], environment),
+    deploy(
+      'exchanges/thirdparty/oasisdex/MatchingMarket.sol',
+      [99999999999],
+      environment,
+    ),
   ).rejects.toThrow('gas limit:');
 });

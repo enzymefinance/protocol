@@ -9,8 +9,14 @@ import web3 from '../lib/web3';
 import governanceAction from '../lib/governanceAction';
 import getChainTime from '../../utils/lib/getChainTime';
 import createStakingFeed from '../lib/createStakingFeed';
+import { setupKyberDevEnv } from "./kyberDevEnv";
 import { clone } from '../lib/misc';
 import { abiEncode } from '../lib/data';
+import {
+  makeOrderSignatureBytes,
+  takeOrderSignatureBytes,
+  cancelOrderSignatureBytes,
+} from "../../utils/lib/data";
 // import verifyDeployment from "./verify";
 
 const BigNumber = require('bignumber.js');
@@ -102,42 +108,7 @@ async function deployEnvironment(environment) {
     gasPrice: config.gasPrice,
   };
 
-  // TODO: put signature functions in a lib and use across all tests/utils
-  const makeOrderSignature = api.util
-    .abiSignature('makeOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
-  const takeOrderSignature = api.util
-    .abiSignature('takeOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
-  const cancelOrderSignature = api.util
-    .abiSignature('cancelOrder', [
-      'address',
-      'address[5]',
-      'uint256[8]',
-      'bytes32',
-      'uint8',
-      'bytes32',
-      'bytes32',
-    ])
-    .slice(0, 10);
-
-  const deployed = {};
+  let deployed = {};
 
   if (environment === 'kovan' || environment === 'kovanCompetition') {
     // const deploymentAddress = "0x4288c8108837bd04bc656ee3aeb8e643f79a0756";
@@ -361,9 +332,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -377,7 +348,7 @@ async function deployEnvironment(environment) {
     //     // deployed.ZeroExExchange.options.address,
     //     // deployed.ZeroExV1Adapter.options.address,
     //     false,
-    //     [ takeOrderSignature ]
+    //     [ takeOrderSignatureBytes ]
     //   ]
     // );
     // console.log('Registered ZeroEx');
@@ -509,9 +480,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -524,9 +495,9 @@ async function deployEnvironment(environment) {
     //     deployed.MatchingMarketAdapter.options.address,
     //     true,
     //     [
-    //       makeOrderSignature,
-    //       takeOrderSignature,
-    //       cancelOrderSignature
+    //       makeOrderSignatureBytes,
+    //       takeOrderSignatureBytes,
+    //       cancelOrderSignatureBytes
     //     ]
     //   ]
     // );
@@ -590,10 +561,10 @@ async function deployEnvironment(environment) {
   } else if (environment === 'development') {
     console.log(`Deployer: ${accounts[0]}`);
     deployed.EthToken = await deployContract(
-      'dependencies/token/PreminedToken',
-      opts,
-      ['ETH-T', 18, 'Ether token'],
+      'dependencies/token/WETH9',
+      opts
     );
+    await deployed.EthToken.methods.deposit().send({value: new BigNumber(10 ** 25), ...opts});
     deployed.MlnToken = await deployContract(
       'dependencies/token/PreminedToken',
       opts,
@@ -615,13 +586,27 @@ async function deployEnvironment(environment) {
     await deployed.TestingPriceFeed.methods
       .setDecimals(deployed.EurToken.options.address, 18)
       .send(clone(opts));
-    deployed.MatchingMarket = await deployContract(
-      'exchanges/MatchingMarket',
+    deployed.KyberNetworkProxy = await deployContract(
+      "exchanges/thirdparty/kyber/KyberNetworkProxy",
       opts,
-      [99999999999],
+      [accounts[0]]
     );
+    deployed.KyberPriceFeed = await deployContract("prices/KyberPriceFeed", opts, [
+      deployed.KyberNetworkProxy.options.address,
+      new BigNumber(5 * 10 ** 16).toFixed(),
+      deployed.EthToken.options.address,
+      web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+      web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
+      18,
+      'ethereum.org',
+      mockBytes,
+      [mockAddress, mockAddress],
+      [],
+      [],
+      accounts[0]
+    ]);
     deployed.MatchingMarket = await deployContract(
-      'exchanges/MatchingMarket',
+      'exchanges/thirdparty/oasisdex/MatchingMarket',
       opts,
       [99999999999],
     );
@@ -704,6 +689,7 @@ async function deployEnvironment(environment) {
       deployed.MlnToken.options.address,
     ]);
     await deployed.MockVersion.methods.setFundFactory(deployed.FundFactory.options.address).send(opts);
+    deployed = setupKyberDevEnv(deployed, accounts, opts);
   } else if (environment === 'development-old') {
     [opts.from] = accounts;
     deployed.Governance = await deployContract('system/Governance', opts, [
@@ -863,7 +849,7 @@ async function deployEnvironment(environment) {
         deployed.MatchingMarket.options.address,
         deployed.MatchingMarketAdapter.options.address,
         true,
-        [makeOrderSignature, takeOrderSignature, cancelOrderSignature],
+        [makeOrderSignatureBytes, takeOrderSignatureBytes, cancelOrderSignatureBytes],
       ],
     );
 
