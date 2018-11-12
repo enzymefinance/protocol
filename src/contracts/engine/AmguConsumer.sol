@@ -24,7 +24,7 @@ contract AmguConsumer is DSMath {
             sub(initialGas, gasleft()),
             mul(mlnPerAmgu, ethPerMln)
         );
-        require(msg.value >= ethToPay);
+        require(msg.value >= ethToPay, "Insufficent amgu");
         Engine(engine()).payAmguInEther.value(ethToPay)();
         msg.sender.transfer(sub(msg.value, ethToPay));
     }

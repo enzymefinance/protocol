@@ -17,5 +17,6 @@ test('Import this package from node', () => {
     'trading',
     'vault',
     'prices',
+    'version',
   ]);
 });

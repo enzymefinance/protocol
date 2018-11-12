@@ -48,3 +48,6 @@ export const vault = vaultExport;
 
 import * as pricesExport from './contracts/prices';
 export const prices = pricesExport;
+
+import * as versionExport from './contracts/version';
+export const version = versionExport;

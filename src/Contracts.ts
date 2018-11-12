@@ -10,11 +10,13 @@ export enum Contracts {
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
   Shares = 'fund/shares/Shares',
+  Spoke = 'fund/shares/Spoke',
   StandardToken = 'dependencies/token/StandardToken',
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
+  Version = 'version/VersionInterface',
 }
 
 // HINT: Link the interfaces instead of the implementations wherever possible
@@ -43,6 +45,8 @@ export const requireMap = {
     require('../out/dependencies/token/PreminedToken.abi.json'),
   [Contracts.Shares]:
     require('../out/fund/shares/Shares.abi.json'),
+  [Contracts.Spoke]:
+    require('../out/fund/hub/Spoke.abi.json'),
   [Contracts.StandardToken]:
     require('../out/dependencies/token/StandardToken.abi.json'),
   [Contracts.TestingPriceFeed]:
@@ -53,4 +57,7 @@ export const requireMap = {
     require('../out/fund/vault/Vault.abi.json'),
   [Contracts.VaultFactory]:
     require('../out/fund/vault/VaultFactory.abi.json'),
+  // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
+  [Contracts.Version]:
+      require('../out/version/MockVersion.abi.json'),
 };

@@ -8,16 +8,19 @@ export const sendTransaction = async (
 ) => {
   debug('Sending transaction: ', prepared.name);
 
-  // TODO: Error handling
-  const receipt = await prepared.transaction.send({
-    from: environment.wallet.address,
-    // TODO: Check for DELEGATE_CALL or LIBRARY
-    // TODO: boost gas estimation to MAX (?)
-    gas: Math.floor(prepared.gasEstimation).toString(),
-    gasPrice: environment.options.gasPrice,
-  });
-
-  debug('TX Receipt', receipt);
-
-  return receipt;
+  try {
+    const receipt = await prepared.transaction.send({
+      from: environment.wallet.address,
+      // TODO: Check for DELEGATE_CALL or LIBRARY
+      gas: Math.floor(prepared.gasEstimation).toString(),
+      gasPrice: environment.options.gasPrice,
+    });
+    return receipt;
+  } catch (e) {
+    throw new Error(
+      `Gas estimation (preflight) failed for ${
+        prepared.name
+      }(${prepared.transaction.arguments.join(', ')}): ${e.message}`,
+    );
+  }
 };

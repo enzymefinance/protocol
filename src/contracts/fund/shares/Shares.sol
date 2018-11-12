@@ -7,8 +7,15 @@ import "../../dependencies/token/StandardToken.sol";
 import "../../factory/Factory.sol";
 
 contract Shares is Spoke, StandardToken, SharesInterface {
+    string public symbol;
+    string public name;
+    uint8 public decimals;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub) Spoke(_hub) {
+        name = hub.name();
+        symbol = "MLNF";
+        decimals = 18;
+    }
 
     function createFor(address who, uint amount) auth {
         _mint(who, amount);

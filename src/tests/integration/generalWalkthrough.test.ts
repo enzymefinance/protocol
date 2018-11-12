@@ -8,10 +8,12 @@ import {
   continueCreation,
   setupFund,
 } from '~/contracts/factory';
-import { getSettings } from '~/contracts/fund/hub';
+import { getSettings, componentsFromSettings } from '~/contracts/fund/hub';
 import { register, PolicedMethods } from '~/contracts/fund/policies';
 import { update } from '~/contracts/prices';
 import { approve } from '~/contracts/dependencies/token';
+import { requestInvestment } from '~/contracts/fund/participation';
+import { getAmguPrice, setIsFund } from '~/contracts/version';
 
 const shared: any = {};
 
@@ -36,6 +38,7 @@ test(
       priceSource,
       tokens,
       policies,
+      version,
     } = deployment;
     const [quoteToken, baseToken] = tokens;
 
@@ -73,10 +76,26 @@ test(
 
     await update(priceSource, [newPrice]);
 
-    await approve({
-      howMuch: createQuantity(baseToken, 1),
-      spender: new Address(shared.accounts[1]),
+    // await approve({
+    //   howMuch: createQuantity(quoteToken, 1),
+    //   spender: new Address(shared.accounts[1]),
+    // });
+
+    const components = componentsFromSettings(settings);
+
+    await Promise.all(
+      Object.values(components).map((address: Address) =>
+        setIsFund(version, { address }),
+      ),
+    );
+
+    const amguPrice = await getAmguPrice(version);
+
+    const request = await requestInvestment(settings.participationAddress, {
+      investmentAmount: createQuantity(quoteToken, 1),
     });
+
+    console.log(amguPrice, request);
   },
   30 * 1000,
 );

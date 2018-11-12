@@ -4,7 +4,21 @@ import * as R from 'ramda';
 import { getContract } from './getContract';
 import { getGlobalEnvironment } from '../environment';
 
-const callFactory = (name, contract, { prepareArgs, postProcess }) => {
+const defaultPrepareArgs = (params, contractAddress, environment) =>
+  Object.values(params || {}).map(v => v.toString());
+const defaultPostProcess = (result, prepared, environment) => result;
+
+const defaultProcessors = {
+  postProcess: defaultPostProcess,
+  prepareArgs: defaultPrepareArgs,
+};
+
+const callFactory = (name, contract, processors = defaultProcessors) => {
+  const { postProcess, prepareArgs } = {
+    ...defaultProcessors,
+    ...processors,
+  };
+
   const prepare = (
     contractAddress,
     params,
@@ -25,7 +39,16 @@ const callFactory = (name, contract, { prepareArgs, postProcess }) => {
   };
 
   const call = async (prepared, environment = getGlobalEnvironment()) => {
-    const result = await prepared.txObject.call();
+    let result;
+    try {
+      result = await prepared.txObject.call();
+    } catch (error) {
+      throw new Error(
+        `Call failed. ${name}(${prepared.txObject.arguments.join(', ')}): ${
+          error.message
+        }`,
+      );
+    }
     const postProcessed = await postProcess(result, prepared, environment);
     return postProcessed;
   };
@@ -79,4 +102,28 @@ const callFactory = (name, contract, { prepareArgs, postProcess }) => {
   return execute;
 };
 
-export { callFactory };
+const callFactoryWithoutParams = (name, contract, processors?) => {
+  const withParams = callFactory(name, contract, processors);
+  const prepare = (contractAddress, environment?) =>
+    withParams.prepare(contractAddress, {}, environment);
+  const call = withParams.call;
+  const observable = (contractAddress, environment?) =>
+    withParams.observable(contractAddress, {}, environment);
+
+  const execute = async (
+    contractAddress,
+    environment = getGlobalEnvironment(),
+  ) => {
+    const prepared = prepare(contractAddress, environment);
+    const result = await call(prepared, environment);
+    return result;
+  };
+
+  execute.prepare = prepare;
+  execute.call = call;
+  execute.observable = observable;
+
+  return execute;
+};
+
+export { callFactory, callFactoryWithoutParams };

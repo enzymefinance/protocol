@@ -90,11 +90,15 @@ export type WithContractAddressQuery = <Args, Result>(
   transaction: EnhancedExecute<Args, Result>,
 ) => ImplicitExecute<Args, Result>;
 
-const defaultGuard: GuardFunction<any> = async () => {};
-const defaultPrepareArgs: PrepareArgsFunction<any> = async (
-  params: string[] = [],
-) => params;
-const defaultPostProcess: PostProcessFunction<any, any> = async () => true;
+export const defaultGuard: GuardFunction<any> = async () => {};
+
+export const defaultPrepareArgs = async (
+  params,
+  contractAddress,
+  environment,
+) => Object.values(params || {}).map(v => v.toString());
+export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
+  true;
 
 /**
  * The transaction factory returns a function "execute" (You have to rename it
@@ -102,22 +106,22 @@ const defaultPostProcess: PostProcessFunction<any, any> = async () => true;
  * minimum, one needs to provide the transaction name and the contract path:
  *
  * ```typescript
- * const tx = transactionFactory('transfer', Contract.Token);
+ * const transfer = transactionFactory('transfer', Contract.Token);
  * ```
  *
  * This transfer function can then be executed directly:
  *
  * ```typescript
- * await tx(new Address('0xdeadbeef'));
+ * await transfer(new Address('0xdeadbeef'));
  * ```
  *
  * Or sliced into a prepare and a send part:
  * ```typescript
  * const preparedTransaction: PreparedTransaction =
- *    await tx.prepare(new Address('0xdeadbeef'));
+ *    await transfer.prepare(new Address('0xdeadbeef'));
  *
  * // pass that prepared transaction to the signer
- * const result = await tx.send(new Address('0xdeadbeef'),
+ * const result = await transfer.send(new Address('0xdeadbeef'),
  *    preparedTransaction);
  * ```
  */

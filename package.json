@@ -102,7 +102,7 @@
     "webpack-cli": "^3.1.2"
   },
   "dependencies": {
-    "@melonproject/token-math": "0.0.10",
+    "@melonproject/token-math": "0.0.17",
     "babel-runtime": "^6.26.0",
     "camel-case": "^3.0.0",
     "commander": "^2.19.0",
