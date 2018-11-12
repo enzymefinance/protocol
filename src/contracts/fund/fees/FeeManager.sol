@@ -56,12 +56,13 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     /// @dev Convenience function
     /// @dev Convention that management fee is 0
     function rewardManagementFee() public {
-        rewardFee(fees[0]);
+        if (fees.length >= 1) rewardFee(fees[0]);
     }
 
     /// @dev Convenience function
     /// @dev Convention that performace fee is 1
     function performanceFeeAmount() public view returns (uint) {
+        if (fees.length < 2) return 0;
         return fees[1].feeAmount();
     }
 }

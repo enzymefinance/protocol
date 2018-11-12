@@ -17,17 +17,19 @@ contract FixedPerformanceFee is DSMath, Fee {
     mapping(address => uint) public highWaterMark;
     mapping(address => uint) public lastPayoutTime;
 
+    /// @notice Assumes management fee is zero
     function feeAmount() public view returns (uint feeInShares) {
         Hub hub = FeeManager(msg.sender).hub();
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
-        uint currentSharePrice = accounting.calcSharePrice();
-        if (currentSharePrice > highWaterMark[msg.sender]) {
-            uint gav = accounting.calcGav();
+        uint gav = accounting.calcGav();
+        uint valuePerShare = shares.totalSupply() > 0 ? accounting.calcValuePerShare(gav, shares.totalSupply()) 
+            : accounting.DEFAULT_SHARE_PRICE();
+        if (false) {
             if (gav == 0) {
                 feeInShares = 0;
             } else {
-                uint sharePriceGain = sub(currentSharePrice, highWaterMark[msg.sender]);
+                uint sharePriceGain = sub(valuePerShare, highWaterMark[msg.sender]);
                 uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
                 uint feeInAsset = mul(totalGain, PERFORMANCE_FEE_RATE) / DIVISOR;
                 uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
@@ -45,7 +47,13 @@ contract FixedPerformanceFee is DSMath, Fee {
     // TODO: avoid running everything twice when calculating & claiming fees
     function updateState() external {
         Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());
-        uint currentSharePrice = accounting.calcSharePrice();
+        // TODO: Assumes starting share price is 10 ** 18, make it more flexible
+        uint currentSharePrice;
+        if (lastPayoutTime[msg.sender] == 0) {
+            currentSharePrice = 10 ** 18;
+        } else {
+            currentSharePrice = accounting.calcSharePrice();
+        }
         require(currentSharePrice > highWaterMark[msg.sender]);
         require(block.timestamp > add(lastPayoutTime[msg.sender], PERIOD));
         lastPayoutTime[msg.sender] = block.timestamp;
