@@ -68,9 +68,10 @@ test.before(async t => {
   const fundId = await deployed.FundFactory.methods.getLastFundId().call();
   const hubAddress = await deployed.FundFactory.methods.getFundById(fundId).call();
   fund = await getFundComponents(hubAddress);
-  const managementFee = await deployContract('fund/fees/FixedManagementFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
-  const performanceFee = await deployContract('fund/fees/FixedPerformanceFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
-  await fund.feeManager.methods.batchRegister([managementFee.options.address, performanceFee.options.address]).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
+  // TODO: Add back later
+  // const managementFee = await deployContract('fund/fees/FixedManagementFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
+  // const performanceFee = await deployContract('fund/fees/FixedPerformanceFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
+  // await fund.feeManager.methods.batchRegister([managementFee.options.address, performanceFee.options.address]).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
   await Promise.all(Object.values(fund).map(async (component) => {
     await deployed.MockVersion.methods.setIsFund(component.options.address).send({from: manager});
   }));
@@ -633,8 +634,8 @@ test.serial("manager makes an order and cancels it", async t => {
 
 // redeeming after trading
 const redemptions = [
-  { amount: new BigNumber(10 ** 7) },
-  { amount: new BigNumber(2 * 10 ** 7) },
+  { amount: new BigNumber(10 ** 20) },
+  { amount: new BigNumber(2 * 10 ** 20) },
 ];
 redemptions.forEach((redemption, index) => {
   test.serial(
@@ -702,7 +703,7 @@ test.serial(`Allows investment in native asset`, async t => {
     { from: deployer, gasPrice: config.gasPrice }
   );
   const pre = await getAllBalances(deployed, accounts, fund);
-  const investorPreShares = Number(
+  const investorPreShares = new BigNumber(
     await fund.shares.methods.balanceOf(investor).call(),
   );
   const sharePrice = await fund.accounting.methods.calcSharePrice().call();
@@ -739,11 +740,11 @@ test.serial(`Allows investment in native asset`, async t => {
   );
   investorGasTotal = investorGasTotal.plus(receipt.gasUsed);
   const post = await getAllBalances(deployed, accounts, fund);
-  const investorPostShares = Number(
+  const investorPostShares = new BigNumber(
     await fund.shares.methods.balanceOf(investor).call(),
   );
 
-  t.is(investorPostShares, investorPreShares + wantedShareQuantity);
+  t.deepEqual(investorPostShares, investorPreShares.add(wantedShareQuantity));
   t.true(post.investor.EthToken >= pre.investor.EthToken.minus(giveQuantity));
   t.deepEqual(
     post.investor.ether,
@@ -753,11 +754,11 @@ test.serial(`Allows investment in native asset`, async t => {
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
   t.deepEqual(post.manager.ether, pre.manager.ether);
   t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
-  t.true(post.fund.EthToken <= pre.fund.EthToken.plus(giveQuantity));
+  t.true(Number(post.fund.EthToken) <= Number(pre.fund.EthToken.plus(giveQuantity)));
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });
 
-// TODO: calcSharePriceAndAllocateFees also tries to redeem perf fees which fails as it's not end of period
+// TODO: calcSharePriceAndAllocateFees also tries to redeem perf fees which fails as it's not end of
 test.serial.skip("converts fees and manager receives them", async t => {
   await updateTestingPriceFeed(deployed);
   const pre = await getAllBalances(deployed, accounts, fund);
