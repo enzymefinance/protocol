@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
 import "./thirdparty/0x/Exchange.sol";
+import "./thirdparty/ethfinex/WrapperRegistryEFX.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -16,7 +17,7 @@ import "../dependencies/math.sol";
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
 contract EthfinexAdapter is DSMath, DBC {
 
-    address public tokenRegistry;
+    WrapperRegistryEFX public tokenRegistry;
 
     //  METHODS
 
@@ -25,7 +26,7 @@ contract EthfinexAdapter is DSMath, DBC {
     constructor(
         address _tokenRegistry
     ) {
-        tokenRegistry = _tokenRegistry;
+        tokenRegistry = WrapperRegistryEFX(_tokenRegistry);
     }
 
     //  PUBLIC METHODS
@@ -84,38 +85,7 @@ contract EthfinexAdapter is DSMath, DBC {
         Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
     }
 
-    // Responsibilities of takeOrder are:
-    // - check sender
-    // - check fund not shut down
-    // - check not buying own fund tokens
-    // - check price exists for asset pair
-    // - check price is recent
-    // - check price passes risk management
-    // - approve funds to be traded (if necessary)
-    // - take order from the exchange
-    // - check order was taken (if possible)
-    // - place asset in ownedAssets if not already tracked
-    /// @notice Takes an active order on the selected exchange
-    /// @dev These orders are expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] feeRecipientAddress
-    /// @param orderAddresses [5] senderAddress
-    /// @param orderValues [0] makerAssetAmount
-    /// @param orderValues [1] takerAssetAmount
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] expirationTimeSeconds
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
-    /// @param signature Signature of the order.
+    /// @notice No Take orders on Ethfinex
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -125,36 +95,7 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes takerAssetData,
         bytes signature
     ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
-        // require(Trading(address(this)).owner() == msg.sender);
-        // require(!Trading(address(this)).isShutDown());
-
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
-        uint fillTakerQuantity = orderValues[6];
-        
-        approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
-        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
-        uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
-
-        require(takerAssetFilledAmount == fillTakerQuantity);
-        // TODO: Add it back
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // );
-
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
-        Trading(address(this)).orderUpdateHook(
-            targetExchange,
-            orderInfo.orderHash,
-            Trading.UpdateType.take,
-            [makerAsset, takerAsset],
-            [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
-        );
+        revert();
     }
 
     /// @notice Cancel the 0x make order
@@ -168,7 +109,7 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender || hub.isShutDown() == false);
+        require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
         // require(Trading(address(this)).owner() == msg.sender || Trading(address(this)).isShutDown());
 
         address makerAsset = orderAddresses[2];
