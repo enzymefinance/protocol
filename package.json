@@ -108,6 +108,7 @@
     "commander": "^2.19.0",
     "debug": "^4.0.1",
     "dotenv": "^6.0.0",
+    "emoji-regex": "^7.0.1",
     "find-up": "^3.0.0",
     "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
