@@ -968,10 +968,10 @@
     pretty-ms "^0.2.1"
     text-table "^0.2.0"
 
-"@melonproject/token-math@0.0.10":
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.10.tgz#87874fd1d052a0145d5383c85a5f067a9b083fbe"
-  integrity sha512-OqiMmS1NT8bQ4ZUDY9xO8HfWV+D3Xq3fq8fRoNGbcSJmw+XatVnCQcJoY5kDE6FrPCGHnmg9VCGCueiy5pLy4w==
+"@melonproject/token-math@0.0.17":
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.17.tgz#df2aea18178128e00683301faed0ef087a88b458"
+  integrity sha512-9mDxl5AvLli+5+JDoQ7KbTzWyJ/DGzx7/XqpujnbLz/GHj4mpeZVpCdqF2KSPPQKFCeWit+rDLrrBrohG5g/uw==
   dependencies:
     bn.js "^4.11.8"
     web3-utils "^1.0.0-beta.36"

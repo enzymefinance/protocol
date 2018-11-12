@@ -11,6 +11,7 @@ import {
   ImplicitExecute,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import { ensureSufficientBalance } from '..';
 
 const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensureAccountAddress(environment);
@@ -18,6 +19,12 @@ const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensure(
     isAddress(howMuch.token.address),
     `Token needs to have an address. Got: ${howMuch.token.address}`,
+  );
+
+  await ensureSufficientBalance(
+    howMuch,
+    environment.wallet.address,
+    environment,
   );
 };
 
