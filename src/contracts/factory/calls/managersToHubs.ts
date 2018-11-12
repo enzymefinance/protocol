@@ -1,7 +1,8 @@
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment } from '~/utils/environment';
 import { isAddress, isEmptyAddress } from '~/utils/checks';
-import { Contract, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 export const managersToHubs = async (
   contractAddress: Address,
@@ -9,7 +10,7 @@ export const managersToHubs = async (
   environment = getGlobalEnvironment(),
 ) => {
   const contract = getContract(
-    Contract.FundFactory,
+    Contracts.FundFactory,
     contractAddress,
     environment,
   );

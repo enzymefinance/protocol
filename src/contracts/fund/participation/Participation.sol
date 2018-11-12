@@ -9,9 +9,10 @@ import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";
+import "../../../engine/AmguConsumer.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is Spoke, DSMath {
+contract Participation is DSMath, AmguConsumer, Spoke {
 
     struct Request {
         address investmentAsset;
@@ -30,7 +31,10 @@ contract Participation is Spoke, DSMath {
         uint requestedShares,
         uint investmentAmount,
         address investmentAsset
-    ) external // TODO: implement and use below modifiers
+    ) 
+        external 
+        amguPayable
+        // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         require(!hub.isShutDown());
@@ -52,7 +56,9 @@ contract Participation is Spoke, DSMath {
         executeRequestFor(msg.sender);
     }
 
-    function executeRequestFor(address requestOwner) public 
+    function executeRequestFor(address requestOwner)
+        public
+        amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(
         //     Shares(routes.shares).totalSupply() == 0 ||

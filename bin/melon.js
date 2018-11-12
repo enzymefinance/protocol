@@ -51,13 +51,52 @@ program
   )
   .action(async (dir, cmd) => {
     const { deploySystem } = require('../build/utils/deploySystem');
-    await initTestEnvironment();
-    const addresses = await deploySystem();
-    const addressBookPath = path.join(__dirname, '..', 'addressBook.json')
-    fs.writeFileSync(addressBookPath, JSON.stringify(addresses, null, 2));
-    console.log("Wrote deployed addresses to:", addressBookPath);
+    const environment = await initTestEnvironment();
+    const thisDeployment = await deploySystem();
+    const deploymentsPath = path.join(
+      __dirname,
+      '..',
+      'out',
+      'deployments.json',
+    );
+
+    let otherDeployments = {};
+
+    fs.access(deploymentsPath, fs.constants.F_OK | fs.constants.W_OK, err => {
+      if (err) {
+        console.error(
+          `${deploymentsPath} ${
+            err.code === 'ENOENT' ? 'does not exist' : 'is read-only'
+          }`,
+        );
+      } else {
+        const raw = fs.readFileSync(deploymentsPath, { encoding: 'utf8' });
+        otherDeployments = JSON.parse(raw);
+      }
+    });
+
+    const deploymentId = `${await environment.eth.net.getId()}:${
+      environment.track
+    }`;
+
+    otherDeployments[deploymentId] = thisDeployment;
+
+    fs.writeFileSync(
+      deploymentsPath,
+      JSON.stringify(otherDeployments, null, 2),
+    );
     console.log(
-      "You can use it with: `import * as addressBook from '@melonproject/protocol/addressBook.json';",
+      'Wrote deployed addresses as',
+      deploymentId,
+      'to',
+      deploymentsPath,
+    );
+    console.log(
+      "You can use it with: `import protocol from '@melonproject/protocol';",
+    );
+    console.log('// and then ...;');
+    console.log(
+      'const deployment = protocol.utils.solidity.getDeployment(environment);',
     );
     process.exit();
   });

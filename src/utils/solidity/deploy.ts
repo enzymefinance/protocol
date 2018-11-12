@@ -6,7 +6,6 @@ import { solidityCompileTarget } from '~/settings';
 import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
 
 const debug = require('~/utils/getDebug').default(__filename);
-
 type ConstructorArg = number | string;
 type ConstructorArgs = ConstructorArg | ConstructorArg[];
 

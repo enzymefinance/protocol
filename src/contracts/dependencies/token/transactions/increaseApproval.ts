@@ -8,8 +8,8 @@ import {
   transactionFactory,
   withContractAddressQuery,
   ImplicitExecute,
-  Contract,
 } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 const guard = async ({ howMuch, spender }, environment) => {
   ensure(
@@ -46,7 +46,7 @@ const increaseApproval: ImplicitExecute<
   ['howMuch', 'token', 'address'],
   transactionFactory(
     'increaseApproval',
-    Contract.StandardToken,
+    Contracts.StandardToken,
     guard,
     prepareArgs,
     postProcess,

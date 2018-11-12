@@ -23,6 +23,8 @@ contract Hub is DSGuard {
         address priceSource;
         address canonicalRegistrar;
         address version;
+        address engine;
+        address mlnAddress;
     }
     Settings public settings;
     address public manager;
@@ -44,7 +46,7 @@ contract Hub is DSGuard {
     }
 
     // TODO: add permissioning for sender
-    function setSpokes(address[10] _spokes) {
+    function setSpokes(address[12] _spokes) {
         require(!spokesSet);
         settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
@@ -56,6 +58,8 @@ contract Hub is DSGuard {
         settings.priceSource = _spokes[7];
         settings.canonicalRegistrar = _spokes[8];
         settings.version = _spokes[9];
+        settings.engine = _spokes[10];
+        settings.mlnAddress = _spokes[11];
         spokesSet = true;
     }
 
@@ -63,11 +67,11 @@ contract Hub is DSGuard {
     function setRouting() {
         require(spokesSet);
         require(!routingSet);
-        address[10] memory spokes = [
+        address[12] memory spokes = [
             settings.accounting, settings.feeManager, settings.participation,
             settings.policyManager, settings.shares, settings.trading,
             settings.vault, settings.priceSource, settings.canonicalRegistrar,
-            settings.version
+            settings.version, settings.engine, settings.mlnAddress
         ];
         Spoke(settings.accounting).initialize(spokes);
         Spoke(settings.feeManager).initialize(spokes);
@@ -95,6 +99,7 @@ contract Hub is DSGuard {
         permit(settings.participation, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
         permissionsSet = true;
     }
 

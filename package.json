@@ -13,7 +13,7 @@
     "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts && prettier --write src/**/index.ts",
     "build": "yarn createIndexFiles && tsc && tscpaths -p tsconfig.json -s ./src -o ./build && yarn tsc bin/compile.ts",
     "build:bundle": "parcel build src/index.ts --target node -d build --out-file bundle.js",
-    "dev": "yarn jest --watch src/",
+    "dev": "yarn jest --watch ./**/*.test.ts",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 1000000",
     "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
     "deploy": "node bin/melon.js deploy",
@@ -22,14 +22,15 @@
     "lint:eslint": "eslint .",
     "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
+    "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
     "lint:solium": "solium --dir .",
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",
     "publish:alpha": "yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
-    "test": "yarn build && yarn compile && yarn lint && yarn test:verbose && echo 'Jest finished' && yarn test:integration:legacy",
+    "test": "yarn build && yarn compile && yarn deploy && yarn lint && yarn test:verbose && echo 'Jest finished' && yarn test:integration:legacy",
     "test:TOFIX": "yarn lint:solium",
-    "test:verbose": "TERM=dumb yarn jest --forceExit",
+    "test:verbose": "TERM=dumb yarn jest --maxWorkers=1 --forceExit",
     "ts-node": "ts-node -r tsconfig-paths/register -r dotenv/config"
   },
   "publishConfig": {
@@ -110,12 +111,14 @@
     "find-up": "^3.0.0",
     "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
+    "rxjs": "^6.3.3",
     "solc": "^0.4.25",
     "tsconfig-paths": "^3.6.0",
     "web3-eth": "1.0.0-beta.36",
     "web3-eth-abi": "1.0.0-beta.36",
     "web3-utils": "1.0.0-beta.36",
-    "yup": "^0.26.6"
+    "yup": "^0.26.6",
+    "zen-observable-ts": "^0.8.10"
   },
   "ava": {
     "files": [

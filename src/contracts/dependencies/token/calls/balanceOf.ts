@@ -1,20 +1,18 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-import { getGlobalEnvironment } from '~/utils/environment';
-import { getToken } from '..';
-import { Contract, getContract } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
-export const balanceOf = async (
-  contractAddress,
-  { address },
-  environment = getGlobalEnvironment(),
-) => {
-  const contract = getContract(
-    Contract.PreminedToken,
-    contractAddress,
-    environment,
-  );
-  const tokenMathToken = await getToken(contractAddress, environment);
-  const result = await contract.methods.balanceOf(address).call();
-  return createQuantity(tokenMathToken, result);
+import { getToken } from '..';
+
+const prepareArgs = ({ address }) => [address.toString()];
+const postProcess = async (result, prepared, environment) => {
+  const tokenMathToken = await getToken(prepared.contractAddress, environment);
+  const quantity = createQuantity(tokenMathToken, result.toString());
+  return quantity;
 };
+
+export const balanceOf = callFactory('balanceOf', Contracts.PreminedToken, {
+  postProcess,
+  prepareArgs,
+});

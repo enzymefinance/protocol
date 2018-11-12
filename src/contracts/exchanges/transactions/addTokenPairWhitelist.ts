@@ -8,7 +8,8 @@ import {
 import { getGlobalEnvironment } from '~/utils/environment';
 import { ensure } from '~/utils/guards';
 
-import { getContract, Contract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
 
 interface IAddTokenPairWhitelist {
   quoteToken: TokenInterface;
@@ -34,7 +35,7 @@ export const prepare = async (
   contractAddress: string,
   { quoteToken, baseToken },
 ) => {
-  const contract = getContract(Contract.MatchingMarket, contractAddress);
+  const contract = getContract(Contracts.MatchingMarket, contractAddress);
   const transaction = contract.methods.addTokenPairWhitelist(
     quoteToken.address,
     baseToken.address,
