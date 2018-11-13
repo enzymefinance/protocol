@@ -10,6 +10,7 @@ import {
   prepareTransaction,
   sendTransaction,
   getContract,
+  transactionFactory,
 } from '~/utils/solidity';
 import { getToken } from '~/contracts/dependencies/token';
 import { isAddress } from '~/utils/checks';
@@ -17,12 +18,8 @@ import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment';
 
-const guards = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment,
-) => {
-  const engine = getContract(Contracts.Engine, engineAddress);
+const guard = async ({ quantity }, contractAddress: Address, environment) => {
+  const engine = getContract(Contracts.Engine, contractAddress);
   const mlnAddress = await engine.methods.mlnToken().call();
   const mlnTokenContract = getContract(Contracts.StandardToken, mlnAddress);
   const mlnToken = await getToken(mlnAddress);
@@ -33,7 +30,7 @@ const guards = async (
   const allowedMln = createQuantity(
     mlnToken,
     await mlnTokenContract.methods
-      .allowance(environment.wallet.address, engineAddress.toString())
+      .allowance(environment.wallet.address, contractAddress.toString())
       .call(),
   );
   ensure(
@@ -42,33 +39,14 @@ const guards = async (
   );
 };
 
-const prepare = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment,
-) => {
-  const contract = getContract(Contracts.Engine, engineAddress);
-  const transaction = contract.methods.sellAndBurnMln(
-    String(quantity.quantity),
-  );
-  transaction.gasEstimation = environment.options.gasLimit;
-  transaction.name = 'sellAndBurnMln';
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
+const prepareArgs = async ({ quantity }) => [String(quantity.quantity)];
 
-const validateReceipt = receipt => {
-  return true;
-};
+const postProcess = async receipt => receipt;
 
-export const sellAndBurnMln = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment = getGlobalEnvironment(),
-) => {
-  await guards(engineAddress, quantity, environment);
-  const transaction = await prepare(engineAddress, quantity, environment);
-  const receipt = await sendTransaction(transaction, environment);
-  const result = validateReceipt(receipt);
-  return receipt;
-};
+export const sellAndBurnMln = transactionFactory(
+  'sellAndBurnMln',
+  Contracts.Engine,
+  guard,
+  prepareArgs,
+  postProcess,
+);

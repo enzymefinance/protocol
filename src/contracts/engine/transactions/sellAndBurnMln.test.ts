@@ -166,7 +166,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
 
   await expect(
     // throws when trying to burn without liquid ETH
-    sellAndBurnMln(shared.engine.options.address, sendMln),
+    sellAndBurnMln(shared.engine.options.address, { quantity: sendMln }),
   ).rejects.toThrow('revert');
 
   increaseTime(shared.delay);
@@ -190,7 +190,9 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     .ethPayoutForMlnAmount(String(sendMln.quantity))
     .call();
 
-  const receipt = await sellAndBurnMln(shared.engine.options.address, sendMln);
+  const receipt = await sellAndBurnMln(shared.engine.options.address, {
+    quantity: sendMln,
+  });
   const gasUsed = receipt.gasUsed;
   const burnerPostMln = await shared.mln.methods.balanceOf(sender).call();
   const burnerPostEth = await shared.env.eth.getBalance(sender);

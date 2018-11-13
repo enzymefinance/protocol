@@ -16,7 +16,7 @@ type TransactionArgs = TransactionArg[];
 // Guard check if the given transaction can run without errors
 // They are crucial to spot "Transaction Execution Errors" before
 // the transaction actually hit the nodes. They should throw Errors with
-// meaningfull messages
+// meaningful messages
 export type GuardFunction<Args> = (
   params?: Args,
   contractAddress?: Address,
