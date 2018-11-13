@@ -17,33 +17,39 @@ export const prepareTransaction = async (
   transaction,
   environment = getGlobalEnvironment(),
 ): Promise<PreparedTransaction> => {
-  let gasEstimation;
   const encoded = transaction.encodeABI();
 
-  try {
-    gasEstimation = await transaction.estimateGas({
-      from: environment.wallet.address.toString(),
-    });
-  } catch (e) {
-    throw new Error(
-      `Gas estimation (preflight) failed for ${
-        transaction.name
-      }(${transaction.arguments.join(', ')}): ${e.message}`,
-    );
+  if (transaction.gasEstimation === undefined) {
+    try {
+      transaction.gasEstimation = await transaction.estimateGas({
+        from: environment.wallet.address.toString(),
+      });
+    } catch (e) {
+      throw new Error(
+        `Gas estimation (preflight) failed for ${
+          transaction.name
+        }(${transaction.arguments.join(', ')}): ${e.message}`,
+      );
+    }
   }
 
   debug(
     'Prepared transaction:',
     transaction.name,
     transaction.arguments,
-    gasEstimation,
+    transaction.gasEstimation,
     encoded,
   );
 
-  if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
+  if (
+    greaterThan(
+      toBI(transaction.gasEstimation),
+      toBI(environment.options.gasLimit),
+    )
+  ) {
     throw new Error(
       [
-        `Estimated gas consumption (${gasEstimation})`,
+        `Estimated gas consumption (${transaction.gasEstimation})`,
         `is higher than the provided gas limit: ${
           environment.options.gasLimit
         }`,
@@ -53,7 +59,7 @@ export const prepareTransaction = async (
 
   const prepared = {
     encoded,
-    gasEstimation,
+    gasEstimation: transaction.gasEstimation,
     name: transaction.name,
     transaction,
   };

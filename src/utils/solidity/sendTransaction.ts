@@ -18,7 +18,7 @@ export const sendTransaction = async (
     return receipt;
   } catch (e) {
     throw new Error(
-      `Gas estimation (preflight) failed for ${
+      `Transaction failed for ${
         prepared.name
       }(${prepared.transaction.arguments.join(', ')}): ${e.message}`,
     );
