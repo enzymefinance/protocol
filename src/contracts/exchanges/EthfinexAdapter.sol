@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 import "../dependencies/token/ERC20.i.sol";
 import "./thirdparty/0x/Exchange.sol";
 import "./thirdparty/ethfinex/WrapperRegistryEFX.sol";
+import "./thirdparty/ethfinex/WrapperLock.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -110,7 +111,6 @@ contract EthfinexAdapter is DSMath, DBC {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
-        // require(Trading(address(this)).owner() == msg.sender || Trading(address(this)).isShutDown());
 
         address makerAsset = orderAddresses[2];
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
@@ -153,18 +153,6 @@ contract EthfinexAdapter is DSMath, DBC {
 
     // INTERNAL METHODS
 
-
-    /// @notice needed to avoid stack too deep error
-    function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
-        internal
-    {
-        Hub hub = Hub(Trading(address(this)).hub());
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(takerAsset, fillTakerQuantity);
-        address assetProxy = getAssetProxy(targetExchange, takerAssetData);
-        require(ERC20(takerAsset).approve(assetProxy, fillTakerQuantity));
-    }
-
     /// @notice needed to avoid stack too deep error
     function approveMakerAsset(address targetExchange, address makerAsset, bytes makerAssetData, uint makerQuantity)
         internal
@@ -172,43 +160,11 @@ contract EthfinexAdapter is DSMath, DBC {
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
+        address wrappedToken = tokenRegistry.token2WrapperLookup(makerAsset);
+        ERC20(makerAsset).approve(wrappedToken, makerQuantity);
+        WrapperLock(wrappedToken).deposit(makerQuantity, 1);
         address assetProxy = getAssetProxy(targetExchange, makerAssetData);
-        require(ERC20(makerAsset).approve(assetProxy, makerQuantity));
-    }
-
-    /// @dev needed to avoid stack too deep error
-    function executeFill(
-        address targetExchange,
-        LibOrder.Order memory order,
-        uint256 takerAssetFillAmount,
-        bytes signature
-    )
-        internal
-        returns (uint)
-    {
-        uint takerFee = order.takerFee;
-        if (takerFee > 0) {
-            bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
-            address zrxProxy = getAssetProxy(targetExchange, assetData);
-            Hub hub = Hub(Trading(address(this)).hub());
-            Vault vault = Vault(hub.vault());
-            vault.withdraw(getAssetAddress(assetData), takerFee);
-            require(ERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
-        }
-
-        address makerAsset = getAssetAddress(order.makerAssetData);
-        uint preMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
-        
-        LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
-            order,
-            takerAssetFillAmount,
-            signature
-        );
-
-        uint postMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
-        require(postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount));
-
-        return fillResults.takerAssetFilledAmount;
+        require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
     }
 
     // VIEW METHODS

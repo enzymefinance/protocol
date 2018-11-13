@@ -1,5 +1,8 @@
 pragma solidity ^0.4.21;
 
+import "../../../dependencies/SafeMath.sol";
+import "./OwnableClone.sol";
+
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
@@ -11,11 +14,8 @@ contract ERC20Basic {
   function transfer(address to, uint256 value) public returns (bool);
   event Transfer(address indexed from, address indexed to, uint256 value);
 }
-/**
- * @title ERC20 interface
- * @dev see https://github.com/ethereum/EIPs/issues/20
- */
-contract ERC20 is ERC20Basic {
+
+contract ERC20Extended is ERC20Basic {
   function allowance(address owner, address spender) public view returns (uint256);
   function transferFrom(address from, address to, uint256 value) public returns (bool);
   function approve(address spender, uint256 value) public returns (bool);
@@ -42,52 +42,6 @@ contract ERC20Old is ERC20OldBasic {
   function transferFrom(address from, address to, uint256 value) public;
   function approve(address spender, uint256 value) public returns (bool);
   event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-/**
- * @title SafeMath
- * @dev Math operations with safety checks that throw on error
- */
-library SafeMath {
-
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
-      return 0;
-    }
-    uint256 c = a * b;
-    assert(c / a == b);
-    return c;
-  }
-
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  /**
-  * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
 }
 
 /**
@@ -135,46 +89,6 @@ contract BasicToken is ERC20Basic {
 
 }
 
-/**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
-contract Ownable {
-  address public owner;
-
-
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function Ownable() public {
-    owner = msg.sender;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    require(newOwner != address(0));
-    OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-  }
-
-}
-
 /*
 
   Copyright Ethfinex Inc 2018
@@ -184,7 +98,7 @@ contract Ownable {
 
 */
 
-contract WrapperLock is BasicToken, Ownable {
+contract WrapperLock is BasicToken, OwnableClone {
     using SafeMath for uint256;
 
     address public TRANSFER_PROXY_VEFX = 0x7e03d2b8edc3585ecd8a5807661fff0830a0b603;
@@ -200,7 +114,7 @@ contract WrapperLock is BasicToken, Ownable {
     mapping (address => uint256) public depositLock;
     mapping (address => uint256) public balances;
 
-    function WrapperLock(address _originalToken, string _name, string _symbol, uint _decimals, bool _erc20old) Ownable() {
+    function WrapperLock(address _originalToken, string _name, string _symbol, uint _decimals, bool _erc20old) OwnableClone() {
         originalToken = _originalToken;
         name = _name;
         symbol = _symbol;
@@ -215,7 +129,7 @@ contract WrapperLock is BasicToken, Ownable {
         if (erc20old) {
             ERC20Old(originalToken).transferFrom(msg.sender, address(this), _value);
         } else {
-            require(ERC20(originalToken).transferFrom(msg.sender, address(this), _value));
+            require(ERC20Extended(originalToken).transferFrom(msg.sender, address(this), _value));
         }
         balances[msg.sender] = balances[msg.sender].add(_value);
         totalSupply_ = totalSupply_.add(_value);
@@ -245,28 +159,28 @@ contract WrapperLock is BasicToken, Ownable {
         if (erc20old) {
             ERC20Old(originalToken).transfer(msg.sender, _value);
         } else {
-            require(ERC20(originalToken).transfer(msg.sender, _value));
+            require(ERC20Extended(originalToken).transfer(msg.sender, _value));
         }
         return true;
     }
 
     function withdrawBalanceDifference() public onlyOwner returns (bool success) {
-        require(ERC20(originalToken).balanceOf(address(this)).sub(totalSupply_) > 0);
+        require(ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_) > 0);
         if (erc20old) {
-            ERC20Old(originalToken).transfer(msg.sender, ERC20(originalToken).balanceOf(address(this)).sub(totalSupply_));
+            ERC20Old(originalToken).transfer(msg.sender, ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_));
         } else {
-            require(ERC20(originalToken).transfer(msg.sender, ERC20(originalToken).balanceOf(address(this)).sub(totalSupply_)));
+            require(ERC20Extended(originalToken).transfer(msg.sender, ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_)));
         }
         return true;
     }
 
     function withdrawDifferentToken(address _differentToken, bool _erc20old) public onlyOwner returns (bool) {
         require(_differentToken != originalToken);
-        require(ERC20(_differentToken).balanceOf(address(this)) > 0);
+        require(ERC20Extended(_differentToken).balanceOf(address(this)) > 0);
         if (_erc20old) {
-            ERC20Old(_differentToken).transfer(msg.sender, ERC20(_differentToken).balanceOf(address(this)));
+            ERC20Old(_differentToken).transfer(msg.sender, ERC20Extended(_differentToken).balanceOf(address(this)));
         } else {
-            require(ERC20(_differentToken).transfer(msg.sender, ERC20(_differentToken).balanceOf(address(this))));
+            require(ERC20Extended(_differentToken).transfer(msg.sender, ERC20Extended(_differentToken).balanceOf(address(this))));
         }
         return true;
     }
