@@ -1,4 +1,11 @@
-import { BigNumber } from 'bignumber.js';
+import {
+  BigInteger,
+  add,
+  subtract,
+  divide,
+  multiply,
+  isEqual,
+} from '@melonproject/token-math/bigInteger';
 import { appendDecimals } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
@@ -48,15 +55,20 @@ beforeAll(async () => {
     feedAddress,
   );
   shared.engine = getContract(Contracts.Engine, shared.engineAddress);
-  await shared.feed.methods
-    .update(
-      [shared.weth.options.address, shared.mln.options.address],
-      [
-        new BigNumber(10 ** 18).toFixed(),
-        new BigNumber(0.0588 * 10 ** 18).toFixed(),
-      ],
-    )
-    .send({ from: shared.env.wallet.address, gas: 8000000 });
+  const aa = new BigInteger(0.0588);
+  const bb = new BigInteger('1000000000000000000');
+  const bottomPrice = String(multiply(aa, bb));
+  const mlnQuantity = createQuantity(
+    await getToken(shared.mln.options.address),
+    0.34,
+  );
+  const wethQuantity = createQuantity(await getToken(wethAddress), 1);
+  const newPrice = getPrice(
+    createQuantity(await getToken(shared.mln.options.address), 1),
+    createQuantity(await getToken(wethAddress), 2.94),
+    true,
+  );
+  const receipt = await update(feedAddress, [newPrice]);
 });
 
 test('directly sending eth fails', async () => {
@@ -64,13 +76,13 @@ test('directly sending eth fails', async () => {
     shared.env.eth.sendTransaction({
       from: shared.env.wallet.address,
       to: shared.engine.options.address,
-      value: 1000000,
+      value: 1,
     }),
   ).rejects.toThrow('revert');
 });
 
 test('eth sent via contract selfdestruct is not tracked', async () => {
-  const sendEth = 10 ** 18;
+  const sendEth = new BigInteger('100000000');
   const destructing = await deployAndGetContract('testing/SelfDestructing');
   const preHeldEth = await shared.env.eth.getBalance(
     shared.engine.options.address,
@@ -81,7 +93,7 @@ test('eth sent via contract selfdestruct is not tracked', async () => {
   await shared.env.eth.sendTransaction({
     from: shared.env.wallet.address,
     to: destructing.options.address,
-    value: sendEth,
+    value: Number(sendEth),
   });
   await destructing.methods
     .bequeath(shared.engine.options.address)
@@ -92,7 +104,7 @@ test('eth sent via contract selfdestruct is not tracked', async () => {
   const frozenEth = await shared.engine.methods.frozenEther().call();
   const liquidEth = await shared.engine.methods.liquidEther().call();
 
-  expect(Number(postHeldEth)).toBe(sendEth);
+  expect(isEqual(new BigInteger(postHeldEth), sendEth));
   expect(Number(frozenEth)).toBe(0);
   expect(Number(liquidEth)).toBe(0);
 });
@@ -112,7 +124,7 @@ test('AMGU payment fails when sender not fund', async () => {
 
 test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   const sender = shared.env.wallet.address;
-  const sendEth = 1000000794359;
+  const sendEth = new BigInteger('100000');
   await shared.version.methods.setIsFund(sender).send({ from: sender });
   const isFund = await shared.version.methods.isFund(sender).call();
 
@@ -120,12 +132,12 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
 
   await shared.engine.methods
     .payAmguInEther()
-    .send({ from: sender, value: sendEth });
+    .send({ from: sender, value: Number(sendEth) });
 
   const frozenEth = await shared.engine.methods.frozenEther().call();
   const liquidEth = await shared.engine.methods.liquidEther().call();
 
-  expect(Number(frozenEth)).toBe(sendEth);
+  expect(isEqual(new BigInteger(frozenEth), sendEth));
   expect(Number(liquidEth)).toBe(0);
 
   await expect(
@@ -134,32 +146,34 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   ).rejects.toThrow('revert');
 
   const enginePrice = await shared.engine.methods.enginePrice().call();
-  const premiumPercent = new BigNumber(
+  const premiumPercent = new BigInteger(
     await shared.engine.methods.premiumPercent().call(),
   );
-  const ethPerMln = new BigNumber(
+  const ethPerMln = new BigInteger(
     (await shared.feed.methods
       .getPrice(shared.mln.options.address)
       .call()).price,
   );
-  const premiumPrice = ethPerMln
-    .plus(ethPerMln.times(premiumPercent).dividedBy(100))
-    .floor();
+
+  const premiumPrice = add(
+    ethPerMln,
+    divide(multiply(ethPerMln, premiumPercent), new BigInteger(100)),
+  );
 
   expect(Number(enginePrice)).toBe(Number(premiumPrice));
 
-  const sendMln = new BigNumber(sendEth)
-    .times(10 ** 18)
-    .dividedBy(premiumPrice)
-    .ceil();
+  const sendMln = divide(
+    multiply(sendEth, new BigInteger('1000000000000000000')),
+    premiumPrice,
+  );
   await shared.mln.methods
-    .approve(shared.engine.options.address, sendMln.toFixed())
+    .approve(shared.engine.options.address, String(sendMln))
     .send({ from: sender });
 
   await expect(
     // throws when trying to burn without liquid ETH
     shared.engine.methods
-      .sellAndBurnMln(sendMln.toFixed())
+      .sellAndBurnMln(String(sendMln))
       .send({ from: sender }),
   ).rejects.toThrow('revert');
 
@@ -169,7 +183,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   const liquidEthPost = await shared.engine.methods.liquidEther().call();
 
   expect(Number(frozenEthPost)).toBe(0);
-  expect(Number(liquidEthPost)).toBe(sendEth);
+  expect(isEqual(new BigInteger(liquidEthPost), sendEth));
 
   const burnerPreMln = await shared.mln.methods.balanceOf(sender).call();
   const burnerPreEth = await shared.env.eth.getBalance(sender);
@@ -180,8 +194,11 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     shared.engine.options.address,
   );
   const preMlnTotalSupply = await shared.mln.methods.totalSupply().call();
+  const ethPurchased = await shared.engine.methods
+    .ethPayoutForMlnAmount(String(sendMln))
+    .call();
   const receipt = await shared.engine.methods
-    .sellAndBurnMln(sendMln.toFixed())
+    .sellAndBurnMln(String(sendMln))
     .send({ from: sender, gasPrice: 1 });
   const gasUsed = receipt.gasUsed;
   const burnerPostMln = await shared.mln.methods.balanceOf(sender).call();
@@ -194,23 +211,14 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   );
   const postMlnTotalSupply = await shared.mln.methods.totalSupply().call();
 
-  expect(burnerPostMln).toBe(
-    new BigNumber(burnerPreMln).minus(sendMln).toFixed(),
-  );
+  expect(burnerPostMln).toBe(String(subtract(burnerPreMln, sendMln)));
   expect(burnerPostEth).toBe(
-    new BigNumber(burnerPreEth)
-      .plus(sendEth)
-      .minus(gasUsed)
-      .toFixed(),
+    String(subtract(add(burnerPreEth, ethPurchased), gasUsed)),
   );
   expect(enginePostMln).toBe(enginePostMln);
-  expect(Number(enginePostMln)).toBe(0);
-  expect(new BigNumber(enginePostEth).toFixed()).toBe(
-    new BigNumber(enginePreEth).minus(sendEth).toFixed(),
-  );
-  expect(postMlnTotalSupply).toBe(
-    new BigNumber(preMlnTotalSupply).minus(sendMln).toFixed(),
-  );
+  expect(String(enginePostMln)).toBe('0');
+  expect(enginePostEth).toBe(String(subtract(enginePreEth, ethPurchased)));
+  expect(postMlnTotalSupply).toBe(String(subtract(preMlnTotalSupply, sendMln)));
 });
 
 test('Other contracts can pay amgu on function calls', async () => {});

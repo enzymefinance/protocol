@@ -22,7 +22,6 @@
     "lint:eslint": "eslint .",
     "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
-    "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
     "lint:solium": "solium --dir .",
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",

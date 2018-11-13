@@ -35,7 +35,7 @@ export const getPrices = async (
   const createPrice = (t: TokenInterface, { price, timestamp }) => {
     const base = createQuantity(t, appendDecimals(t, 1));
     const quote = createQuantity(quoteToken, price);
-    return getPrice(base, quote);
+    return getPrice(base, quote, true);
   };
 
   const prices = R.zipWith(createPrice, tokens, processed);
