@@ -30,8 +30,7 @@ const shared: any = {};
 
 // TODO: use the actual sellAndBurnMln typescript function rather than testing like this
 beforeAll(async () => {
-  await initTestEnvironment();
-  shared.env = getGlobalEnvironment();
+  shared.env = await initTestEnvironment();
   shared.accounts = await shared.env.eth.getAccounts();
   const wethAddress = await deployToken('ETH');
   shared.mln = await deployAndGetContract('dependencies/token/BurnableToken', [
@@ -160,21 +159,23 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     divide(multiply(ethPerMln, premiumPercent), new BigInteger(100)),
   );
 
-  expect(Number(enginePrice)).toBe(Number(premiumPrice));
+  expect(String(enginePrice)).toBe(String(premiumPrice));
 
-  const sendMln = divide(
-    multiply(sendEth, new BigInteger('1000000000000000000')),
-    premiumPrice,
+  const sendMln = createQuantity(
+    await getToken(shared.mln.options.address),
+    divide(
+      multiply(sendEth, new BigInteger('1000000000000000000')),
+      premiumPrice,
+    ),
   );
-  await shared.mln.methods
-    .approve(shared.engine.options.address, String(sendMln))
-    .send({ from: sender });
+  await approve({
+    howMuch: sendMln,
+    spender: shared.engine.options.address,
+  });
 
   await expect(
     // throws when trying to burn without liquid ETH
-    shared.engine.methods
-      .sellAndBurnMln(String(sendMln))
-      .send({ from: sender }),
+    sellAndBurnMln(shared.engine.options.address, sendMln),
   ).rejects.toThrow('revert');
 
   increaseTime(shared.delay);
@@ -195,11 +196,10 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   );
   const preMlnTotalSupply = await shared.mln.methods.totalSupply().call();
   const ethPurchased = await shared.engine.methods
-    .ethPayoutForMlnAmount(String(sendMln))
+    .ethPayoutForMlnAmount(String(sendMln.quantity))
     .call();
-  const receipt = await shared.engine.methods
-    .sellAndBurnMln(String(sendMln))
-    .send({ from: sender, gasPrice: 1 });
+
+  const receipt = await sellAndBurnMln(shared.engine.options.address, sendMln);
   const gasUsed = receipt.gasUsed;
   const burnerPostMln = await shared.mln.methods.balanceOf(sender).call();
   const burnerPostEth = await shared.env.eth.getBalance(sender);
@@ -211,14 +211,21 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   );
   const postMlnTotalSupply = await shared.mln.methods.totalSupply().call();
 
-  expect(burnerPostMln).toBe(String(subtract(burnerPreMln, sendMln)));
+  expect(burnerPostMln).toBe(String(subtract(burnerPreMln, sendMln.quantity)));
   expect(burnerPostEth).toBe(
-    String(subtract(add(burnerPreEth, ethPurchased), gasUsed)),
+    String(
+      subtract(
+        add(burnerPreEth, ethPurchased),
+        multiply(gasUsed, shared.env.options.gasPrice),
+      ),
+    ),
   );
   expect(enginePostMln).toBe(enginePostMln);
   expect(String(enginePostMln)).toBe('0');
   expect(enginePostEth).toBe(String(subtract(enginePreEth, ethPurchased)));
-  expect(postMlnTotalSupply).toBe(String(subtract(preMlnTotalSupply, sendMln)));
+  expect(postMlnTotalSupply).toBe(
+    String(subtract(preMlnTotalSupply, sendMln.quantity)),
+  );
 });
 
 test('Other contracts can pay amgu on function calls', async () => {});

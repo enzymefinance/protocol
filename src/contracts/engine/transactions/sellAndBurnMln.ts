@@ -15,6 +15,7 @@ import { getToken } from '~/contracts/dependencies/token';
 import { isAddress } from '~/utils/checks';
 import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const guards = async (
   engineAddress: Address,
@@ -47,7 +48,10 @@ const prepare = async (
   environment,
 ) => {
   const contract = getContract(Contracts.Engine, engineAddress);
-  const transaction = contract.methods.sellAndBurnMln(quantity);
+  const transaction = contract.methods.sellAndBurnMln(
+    String(quantity.quantity),
+  );
+  transaction.gasEstimation = environment.options.gasLimit;
   transaction.name = 'sellAndBurnMln';
   const prepared = await prepareTransaction(transaction, environment);
   return prepared;
@@ -60,11 +64,11 @@ const validateReceipt = receipt => {
 export const sellAndBurnMln = async (
   engineAddress: Address,
   quantity: QuantityInterface,
-  environment?,
+  environment = getGlobalEnvironment(),
 ) => {
   await guards(engineAddress, quantity, environment);
   const transaction = await prepare(engineAddress, quantity, environment);
   const receipt = await sendTransaction(transaction, environment);
   const result = validateReceipt(receipt);
-  return result;
+  return receipt;
 };
