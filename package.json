@@ -1,43 +1,50 @@
 {
-  "name": "@melonproject/smart-contracts",
-  "version": "0.8.9",
-  "description": "Technology Regulated Investment Funds",
-  "directories": {
-    "test": "tests"
+  "name": "@melonproject/protocol",
+  "version": "0.9.0-alpha.19",
+  "description": "Technology Regulated and Operated Investment Funds",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "bin": {
+    "melon": "./bin/melon.js"
   },
   "scripts": {
-    "start": "babel-node utils/main.js",
-    "lint": "npm run lint:eslint && npm run lint:solium",
-    "lint:solium": "solium --dir .",
+    "compile": "node bin/melon.js compile",
+    "createIndexFiles": "yarn ts-node src/utils/createIndexFiles.ts && prettier --write src/**/index.ts",
+    "build": "yarn createIndexFiles && tsc && tscpaths -p tsconfig.json -s ./src -o ./build && yarn tsc bin/compile.ts",
+    "build:bundle": "parcel build src/index.ts --target node -d build --out-file bundle.js",
+    "dev": "yarn jest --watch ./**/*.test.ts",
+    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
+    "deploy:legacy:refactor": "CHAIN_ENV=development babel-node legacy/utils/deploy/refactorDeploy.js",
+    "deploy": "node bin/melon.js deploy",
+    "format": "prettier --write src/**/*.ts",
+    "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
     "lint:eslint": "eslint .",
+    "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
+    "lint:prettier": "yarn prettier --list-different src/**/*.ts",
+    "deploy:typescript": "yarn ts-node -r tsconfig-paths/register -r dotenv/config src/utils/deploySystem.ts",
+    "lint:solium": "solium --dir .",
+    "lint": "yarn lint:tslint && yarn lint:prettier",
     "oyente": "oyente -s src/Fund.sol",
-    "devchain": "unzip -o ./utils/devchain-snapshot/0x-snapshot.zip -d ./utils/devchain-snapshot && ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 100000000000 --db ./utils/devchain-snapshot/0x_ganache_snapshot -m 'concert load couple harbor equip island argue ramp clarify fence smart topic'",
-    "test": "npm run test:ava",
-    "test:ava": "CHAIN_ENV=development ava --serial --verbose",
-    "test:unit": "CHAIN_ENV=development ava --files tests/unit/**",
-    "compile": "babel-node utils/compile.js",
-    "deploy": "CHAIN_ENV=development babel-node utils/deploy/contracts.js",
-    "deploy:kovan": "CHAIN_ENV=kovan babel-node utils/deploy/contracts.js",
-    "deploy:kovanCompetition": "CHAIN_ENV=kovanCompetition babel-node utils/deploy/contracts.js",
-    "deploy:live": "CHAIN_ENV=live babel-node utils/deploy/contracts.js",
-    "docs:server": "cd scripts/doxity && ./node_modules/.bin/gatsby develop",
-    "docs:build": "doxity build",
-    "babel-build": "babel utils/lib/ --out-dir utils/build",
-    "append-json": "find out/ -name '*.abi' | xargs -t -I{} cp {} {}.json",
-    "prepublishOnly": "npm run babel-build && npm run append-json",
-    "concatenate-contracts": "bash ./utils/etherscan/concatenateContracts.sh"
+    "publish:alpha": "yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
+    "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
+    "test": "yarn build && yarn compile && yarn deploy && yarn lint && yarn test:verbose && echo 'Jest finished' && yarn test:integration:legacy",
+    "test:TOFIX": "yarn lint:solium",
+    "test:verbose": "TERM=dumb yarn jest --maxWorkers=1 --forceExit",
+    "ts-node": "ts-node -r tsconfig-paths/register -r dotenv/config"
   },
-  "files": [
-    "out/**/*.json",
-    "out/**/*.abi",
-    "utils/info",
-    "utils/config",
-    "utils/build",
-    "addressBook.json"
-  ],
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "bin/",
+    "build/",
+    "tests/",
+    "src/",
+    "out/",
+    "tsconfig.json",
+    "typings.d.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/melonproject/protocol.git"
@@ -45,47 +52,74 @@
   "keywords": [
     "Ethereum",
     "Protocol",
-    "Melon"
+    "Melon",
+    "Solidity",
+    "Type Script",
+    "Smart Contracts"
   ],
-  "author": "“Melonport AG <“team@melonport.com”>",
+  "author": "Melonport AG <team@melonport.com>",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/melonproject/protocol/issues"
   },
   "homepage": "https://github.com/melonproject/protocol#readme",
   "devDependencies": {
-    "@digix/doxity": "^0.5.2",
+    "0x.js": "1.0.7",
+    "@parity/api": "^2.1.20",
+    "@types/glob": "^7.1.1",
+    "@types/jest": "^23.3.3",
     "ava": "^0.25.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^7.2.3",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
-    "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-0": "^6.24.1",
-    "babel-runtime": "^6.26.0",
-    "eslint": "^4.15.0",
-    "eslint-config-airbnb": "^16.1.0",
-    "eslint-config-prettier": "^2.7.0",
-    "eslint-plugin-ava": "^4.4.0",
-    "eslint-plugin-flowtype": "^2.39.1",
-    "eslint-plugin-import": "^2.8.0",
-    "eslint-plugin-jsx-a11y": "^6.0.3",
-    "eslint-plugin-react": "^7.5.1",
-    "flow-bin": "^0.63.1",
+    "bignumber.js": "^4.1.0",
+    "ganache-cli": "^6.1.4",
+    "glob": "^7.1.3",
+    "husky": "^1.1.2",
+    "jest": "^23.6.0",
+    "lint-staged": "^7.3.0",
+    "mkdirp": "^0.5.1",
+    "parcel-bundler": "^1.10.3",
+    "prettier": "^1.14.3",
     "prettier-eslint": "^8.2.2",
-    "solium": "^1.1.0"
+    "prettier-plugin-solidity": "^1.0.0-alpha.5",
+    "rimraf": "^2.6.2",
+    "semver": "^5.6.0",
+    "solium": "^1.1.0",
+    "ts-jest": "^23.10.4",
+    "ts-loader": "^5.2.2",
+    "ts-node": "^7.0.1",
+    "tscpaths": "^0.0.6",
+    "tslint": "^5.11.0",
+    "tslint-config-airbnb": "^5.11.0",
+    "tslint-config-prettier": "^1.15.0",
+    "typescript": "^3.1.1",
+    "web3": "^1.0.0-beta.34",
+    "webpack": "^4.23.0",
+    "webpack-cli": "^3.1.2"
   },
   "dependencies": {
-    "0x.js": "^1.0.7",
-    "@0xproject/sol-compiler": "^0.5.2",
-    "bignumber.js": "^4.1.0",
-    "ethereumjs-testrpc": "^4.1.3",
-    "ganache-cli": "^6.1.4",
-    "mkdirp": "^0.5.1",
+    "@melonproject/token-math": "0.0.17",
+    "babel-runtime": "^6.26.0",
+    "camel-case": "^3.0.0",
+    "commander": "^2.19.0",
+    "debug": "^4.0.1",
+    "dotenv": "^6.0.0",
+    "emoji-regex": "^7.0.1",
+    "find-up": "^3.0.0",
+    "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
-    "truffle-workflow-compile": "^2.0.0-beta.1",
-    "web3": "^1.0.0-beta.34"
+    "rxjs": "^6.3.3",
+    "solc": "^0.4.25",
+    "tsconfig-paths": "^3.6.0",
+    "web3-eth": "1.0.0-beta.36",
+    "web3-eth-abi": "1.0.0-beta.36",
+    "web3-utils": "1.0.0-beta.36",
+    "yup": "^0.26.6",
+    "zen-observable-ts": "^0.8.10"
   },
   "ava": {
     "files": [
@@ -118,6 +152,17 @@
     "babel": "inherit",
     "require": [
       "babel-register"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "yarn format",
+      "git add"
     ]
   }
 }

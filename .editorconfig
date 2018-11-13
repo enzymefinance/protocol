@@ -24,3 +24,6 @@ insert_final_newline = true
 [*.md]
 trim_trailing_whitespace = false
 max_line_length = 80
+
+[*.sol]
+indent_size = 4
