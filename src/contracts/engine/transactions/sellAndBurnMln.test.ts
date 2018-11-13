@@ -28,7 +28,6 @@ import { Contracts } from '~/Contracts';
 
 const shared: any = {};
 
-// TODO: use the actual sellAndBurnMln typescript function rather than testing like this
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.accounts = await shared.env.eth.getAccounts();
@@ -54,20 +53,12 @@ beforeAll(async () => {
     feedAddress,
   );
   shared.engine = getContract(Contracts.Engine, shared.engineAddress);
-  const aa = new BigInteger(0.0588);
-  const bb = new BigInteger('1000000000000000000');
-  const bottomPrice = String(multiply(aa, bb));
-  const mlnQuantity = createQuantity(
-    await getToken(shared.mln.options.address),
-    0.34,
-  );
-  const wethQuantity = createQuantity(await getToken(wethAddress), 1);
   const newPrice = getPrice(
     createQuantity(await getToken(shared.mln.options.address), 1),
     createQuantity(await getToken(wethAddress), 2.94),
     true,
   );
-  const receipt = await update(feedAddress, [newPrice]);
+  await update(feedAddress, [newPrice], true);
 });
 
 test('directly sending eth fails', async () => {
