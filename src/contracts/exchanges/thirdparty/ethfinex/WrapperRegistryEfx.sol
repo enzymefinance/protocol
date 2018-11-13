@@ -1,7 +1,6 @@
 pragma solidity ^0.4.21;
 
-
-contract Ownable {
+contract OwnableClone {
   address private _owner;
 
   event OwnershipTransferred(
@@ -41,7 +40,7 @@ contract Ownable {
   }
 }
 
-contract WrapperRegistryEFX is Ownable{
+contract WrapperRegistryEFX is OwnableClone {
     
     mapping (address => address) public wrapper2TokenLookup;
     mapping (address => address) public token2WrapperLookup;
