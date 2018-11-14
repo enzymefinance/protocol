@@ -129,6 +129,17 @@ contract EthfinexAdapter is DSMath, DBC {
         );
     }
 
+    /// @notice Cancel the 0x make order
+    function withdrawTokens(
+        address[] tokens
+    ) {
+        for (uint i = 0; i < tokens.length; i++) {
+            address wrappedToken = tokenRegistry.token2WrapperLookup(tokens[i]);
+            uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
+            WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
+        }
+    }
+
     // TODO: delete this function if possible
     function getLastOrderId(address targetExchange)
         view
@@ -137,7 +148,7 @@ contract EthfinexAdapter is DSMath, DBC {
         revert();
     }
 
-    // TODO: Get order details
+    // TODO: Get order details. Minor: Wrapped tokens directly sent to the fund are not accounted
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
@@ -145,7 +156,7 @@ contract EthfinexAdapter is DSMath, DBC {
         var (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
         var (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
         uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
-        if (Exchange(targetExchange).cancelled(bytes32(orderId)) || sub(takerQuantity, takerAssetFilledAmount) == 0) {
+        if (sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
         return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
