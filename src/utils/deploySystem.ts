@@ -4,7 +4,7 @@ import {
   deploy as deployToken,
   getToken,
 } from '~/contracts/dependencies/token';
-import { deploy as deployPriceFeed, update } from '~/contracts/prices';
+import { deploy as deployPriceFeed } from '~/contracts/prices';
 import {
   deployMatchingMarket,
   deployMatchingMarketAdapter,

@@ -6,17 +6,14 @@ import {
   multiply,
   isEqual,
 } from '@melonproject/token-math/bigInteger';
-import { appendDecimals } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-import { Address } from '~/utils/types';
+import { initTestEnvironment } from '~/utils/environment';
 import { deploy as deployEngine, sellAndBurnMln } from '..';
 import {
   deploy as deployToken,
   approve,
   getToken,
-  balanceOf,
 } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import {
@@ -184,9 +181,6 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
 
   const burnerPreMln = await shared.mln.methods.balanceOf(sender).call();
   const burnerPreEth = await shared.env.eth.getBalance(sender);
-  const enginePreMln = await shared.mln.methods
-    .balanceOf(shared.engine.options.address)
-    .call();
   const enginePreEth = await shared.env.eth.getBalance(
     shared.engine.options.address,
   );

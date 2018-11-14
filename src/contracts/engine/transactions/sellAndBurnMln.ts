@@ -1,22 +1,14 @@
 import { isSameToken } from '@melonproject/token-math/token';
 import {
-  QuantityInterface,
   createQuantity,
   isEqual,
   greaterThan,
 } from '@melonproject/token-math/quantity';
 import { Address } from '~/utils/types';
-import {
-  prepareTransaction,
-  sendTransaction,
-  getContract,
-  transactionFactory,
-} from '~/utils/solidity';
+import { getContract, transactionFactory } from '~/utils/solidity';
 import { getToken } from '~/contracts/dependencies/token';
-import { isAddress } from '~/utils/checks';
 import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment';
 
 const guard = async ({ quantity }, contractAddress: Address, environment) => {
   const engine = getContract(Contracts.Engine, contractAddress);

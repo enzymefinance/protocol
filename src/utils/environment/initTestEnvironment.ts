@@ -1,8 +1,4 @@
-import {
-  constructEnvironment,
-  setGlobalEnvironment,
-  getGlobalEnvironment,
-} from './';
+import { constructEnvironment, setGlobalEnvironment } from './';
 
 const debug = require('~/utils/getDebug').default(__filename);
 

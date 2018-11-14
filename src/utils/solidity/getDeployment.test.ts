@@ -6,5 +6,5 @@ beforeAll(async () => {
 });
 
 test('Happy path', async () => {
-  const deployment = await getDeployment();
+  await getDeployment();
 });

@@ -1,10 +1,6 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-import {
-  initTestEnvironment,
-  getGlobalEnvironment,
-  constructEnvironment,
-} from '~/utils/environment';
+import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
 import { Address } from '~/utils/types';
 
