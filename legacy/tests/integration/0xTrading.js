@@ -636,37 +636,28 @@ test.serial(
 );
 
 test.serial(
-  "Fund can cancel the order",
+  "Fund can cancel the order using just the orderId",
   async t => {
+    const orderHashHex = orderHashUtils.getOrderHashHex(order);
     await fund.trading.methods
       .callOnExchange(
         0,
         cancelOrderSignature,
         [
-          order.makerAddress,
           NULL_ADDRESS,
-          mlnToken.options.address,
-          ethToken.options.address,
-          order.feeRecipientAddress,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [
-          order.makerAssetAmount.toFixed(),
-          order.takerAssetAmount.toFixed(),
-          order.makerFee.toFixed(),
-          order.takerFee.toFixed(),
-          order.expirationTimeSeconds.toFixed(),
-          order.salt.toFixed(),
-          0,
-          0
-        ],
-        web3.utils.padLeft("0x0", 64),
-        order.makerAssetData,
-        order.takerAssetData,
-        orderSignature
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        orderHashHex,
+        "0x0",
+        "0x0",
+        "0x0"
       )
       .send({ from: manager, gas: config.gas });
-    const orderHashHex = orderHashUtils.getOrderHashHex(order);
     const isOrderCancelled = await zeroExExchange.methods.cancelled(orderHashHex).call();
     const makerAssetAllowance = new BigNumber(
       await mlnToken.methods
