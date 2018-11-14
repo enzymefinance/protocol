@@ -19,21 +19,13 @@ export const postProcess = async (
   return vaultAddress;
 };
 
-export const createVaultInstance = (
-  contractAddress: string,
-  params: CreateInstanceArgs,
-  environment?,
-) => {
-  const transaction = transactionFactory<
-    CreateInstanceArgs,
-    CreateInstanceResult
-  >(
-    'createInstance',
-    Contracts.VaultFactory,
-    undefined,
-    prepareArgs,
-    postProcess,
-  );
-
-  return transaction(contractAddress, params, environment);
-};
+export const createVaultInstance = transactionFactory<
+  CreateInstanceArgs,
+  CreateInstanceResult
+>(
+  'createInstance',
+  Contracts.VaultFactory,
+  undefined,
+  prepareArgs,
+  postProcess,
+);
