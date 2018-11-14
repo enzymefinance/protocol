@@ -860,9 +860,9 @@
   dependencies:
     events "^3.0.0"
 
-"@melonproject/token-math@0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.17.tgz#df2aea18178128e00683301faed0ef087a88b458"
+"@melonproject/token-math@^0.0.18":
+  version "0.0.18"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.18.tgz#dc1276908531956999f30472905a8f50451b6dbd"
   dependencies:
     bn.js "^4.11.8"
     web3-utils "^1.0.0-beta.36"
@@ -12280,6 +12280,10 @@ yargs@^7.0.2:
     which-module "^1.0.0"
     y18n "^3.2.1"
     yargs-parser "^5.0.0"
+
+yarn.lock@^0.0.1-security:
+  version "0.0.1-security"
+  resolved "https://registry.yarnpkg.com/yarn.lock/-/yarn.lock-0.0.1-security.tgz#8e7117924bfe916671b21f14212ba1bb49dfe0c7"
 
 yauzl@^2.4.2:
   version "2.10.0"
