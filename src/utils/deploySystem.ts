@@ -10,8 +10,8 @@ import {
   deployMatchingMarketAdapter,
   addTokenPairWhitelist,
 } from '~/contracts/exchanges';
-// tslint:disable-next-line:max-line-length
 import { deploy as deployEngine } from '~/contracts/engine';
+// tslint:disable-next-line:max-line-length
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
