@@ -21,8 +21,8 @@ import {
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import {
   increaseTime,
-  deployAndGetContract,
   getContract,
+  deploy as deployContract,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 
@@ -32,13 +32,15 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.accounts = await shared.env.eth.getAccounts();
   const wethAddress = await deployToken('ETH');
-  shared.mln = await deployAndGetContract('dependencies/token/BurnableToken', [
-    'MLN',
-    18,
-    '',
-  ]);
+  shared.mln = getContract(
+    Contracts.BurnableToken,
+    await deployContract(Contracts.BurnableToken, ['MLN', 18, '']),
+  );
   shared.weth = await getContract(Contracts.StandardToken, wethAddress);
-  shared.version = await deployAndGetContract('version/MockVersion');
+  shared.version = getContract(
+    Contracts.MockVersion,
+    await deployContract(Contracts.MockVersion),
+  );
   const feedAddress = await deployFeed(await getToken(wethAddress));
   shared.feed = await getContract(Contracts.TestingPriceFeed, feedAddress);
   shared.delay = 30 * 24 * 60 * 60;
@@ -73,7 +75,10 @@ test('directly sending eth fails', async () => {
 
 test('eth sent via contract selfdestruct is not tracked', async () => {
   const sendEth = new BigInteger('100000000');
-  const destructing = await deployAndGetContract('testing/SelfDestructing');
+  const destructing = getContract(
+    Contracts.SelfDestructing,
+    await deployContract(Contracts.SelfDestructing),
+  );
   const preHeldEth = await shared.env.eth.getBalance(
     shared.engine.options.address,
   );

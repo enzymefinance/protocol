@@ -1,14 +1,17 @@
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
+  BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
   GenericExchange = 'exchanges/GenericExchange',
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
+  MockVersion = 'version/MockVersion',
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
+  SelfDestructing = 'testing/SelfDestructing',
   Shares = 'fund/shares/Shares',
   Spoke = 'fund/shares/Spoke',
   StandardToken = 'dependencies/token/StandardToken',
@@ -25,6 +28,8 @@ export enum Contracts {
 export const requireMap = {
   [Contracts.Accounting]:
     require('../out/fund/accounting/Accounting.abi.json'),
+  [Contracts.BurnableToken]:
+    require('../out/dependencies/token/BurnableToken.abi.json'),
   [Contracts.Engine]:
     require('../out/engine/Engine.abi.json'),
   [Contracts.FeeManager]:
@@ -37,12 +42,16 @@ export const requireMap = {
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+  [Contracts.MockVersion]:
+    require('../out/version/MockVersion.abi.json'),
   [Contracts.Participation]:
     require('../out/fund/participation/Participation.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:
     require('../out/dependencies/token/PreminedToken.abi.json'),
+  [Contracts.SelfDestructing]:
+    require('../out/testing/SelfDestructing.abi.json'),
   [Contracts.Shares]:
     require('../out/fund/shares/Shares.abi.json'),
   [Contracts.Spoke]:
