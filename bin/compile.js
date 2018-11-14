@@ -56,9 +56,9 @@ var writeFiles = function (compileOutput, contract) {
     debug('Writing', contract);
     mkdirp.sync(targetDir);
     if (fs.existsSync(targetBasePath + ".abi")) {
-        throw new Error(
-        // tslint:disable-next-line:max-line-length
-        "Contract name duplication detected: " + targetBasePath + ".abi. Please make sure that every contract is uniquely named inside the same directory.");
+        // throw new Error(
+        // // tslint:disable-next-line:max-line-length
+        // "Contract name duplication detected: " + targetBasePath + ".abi. Please make sure that every contract is uniquely named inside the same directory.");
     }
     fs.writeFileSync(targetBasePath + ".bin", compileOutput.bytecode);
     fs.writeFileSync(targetBasePath + ".abi.json", JSON.stringify(JSON.parse(compileOutput.interface), null, 2));
