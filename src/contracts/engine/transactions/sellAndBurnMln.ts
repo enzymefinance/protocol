@@ -43,10 +43,13 @@ const prepareArgs = async ({ quantity }) => [String(quantity.quantity)];
 
 const postProcess = async receipt => receipt;
 
+const options = { gas: '8000000' };
+
 export const sellAndBurnMln = transactionFactory(
   'sellAndBurnMln',
   Contracts.Engine,
   guard,
   prepareArgs,
   postProcess,
+  options,
 );

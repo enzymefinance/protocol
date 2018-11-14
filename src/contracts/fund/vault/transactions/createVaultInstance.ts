@@ -1,51 +1,39 @@
 import { prepareTransaction } from '~/utils/solidity/prepareTransaction';
 import { sendTransaction } from '~/utils/solidity/sendTransaction';
+import {
+  transactionFactory,
+  getContract,
+  EnhancedExecute,
+} from '~/utils/solidity';
 import { Address } from '~/utils/types';
 import { ensure } from '~/utils/guards/ensure';
 import { sha3 } from 'web3-utils';
 
-import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 
-interface CreateInstanceArgs {
+export interface CreateInstanceArgs {
   hubAddress: Address;
 }
 
-export const guards = async (
-  contractAddress: string,
-  params: CreateInstanceArgs,
-  environment,
-) => {};
+export type CreateInstanceResult = Address;
 
-export const prepare = async (
-  contractAddress: string,
-  { hubAddress }: CreateInstanceArgs,
-  environment,
-) => {
-  const contract = getContract(
-    Contracts.VaultFactory,
-    new Address(contractAddress),
-    environment,
-  );
-  const transaction = contract.methods.createInstance(hubAddress);
-  transaction.name = 'createInstance';
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
+export const prepareArgs = async ({ hubAddress }: CreateInstanceArgs) => [
+  `${hubAddress}`,
+];
 
-export const validateReceipt = async (receipt: any) => {
+export const postProcess = (receipt: any): CreateInstanceResult => {
   const vaultAddress = receipt.events.InstanceCreated.returnValues.child;
   return vaultAddress;
 };
 
-export const createVaultInstance = async (
-  contractAddress: string,
-  params: CreateInstanceArgs,
-  environment?,
-) => {
-  await guards(contractAddress, params, environment);
-  const transaction = await prepare(contractAddress, params, environment);
-  const receipt = await sendTransaction(transaction, environment);
-  const result = await validateReceipt(receipt);
-  return result;
-};
+export const createVaultInstance: EnhancedExecute<
+  CreateInstanceArgs,
+  CreateInstanceResult
+> = (contractAddress: string, params: CreateInstanceArgs, environment?) =>
+  transactionFactory(
+    'createInstance',
+    Contracts.VaultFactory,
+    undefined,
+    prepareArgs,
+    postProcess,
+  );

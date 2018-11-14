@@ -19,11 +19,9 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  const vaultAddress = await createVaultInstance(
-    shared.factoryAddress,
-    { hubAddress: shared.authAddress },
-    shared.env,
-  );
+  const vaultAddress = await createVaultInstance(shared.factoryAddress, {
+    hubAddress: shared.authAddress,
+  });
   shared.vault = getContract(Contracts.Vault, vaultAddress);
 });
 

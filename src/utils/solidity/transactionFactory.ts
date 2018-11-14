@@ -6,6 +6,7 @@ import {
   prepareTransaction,
   PreparedTransaction,
   sendTransaction,
+  OptionsOrCallback,
 } from '../solidity';
 import { Address } from '../types';
 import { Contracts } from '~/Contracts';
@@ -46,12 +47,14 @@ export type TransactionFactory = <Args, Result>(
   guard?: GuardFunction<Args>,
   prepareArgs?: PrepareArgsFunction<Args>,
   postProcess?: PostProcessFunction<Args, Result>,
+  providedOptions?: OptionsOrCallback,
 ) => EnhancedExecute<Args, Result>;
 
 type SendFunction<Args> = (
   contractAddress: Address,
   prepared: PreparedTransaction,
   params: Args,
+  providedOptions: OptionsOrCallback,
   environment: Environment,
 ) => Promise<any>;
 
@@ -131,6 +134,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   guard = defaultGuard,
   prepareArgs = defaultPrepareArgs,
   postProcess = defaultPostProcess,
+  providedOptions?,
 ) => {
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
@@ -150,6 +154,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     contractAddress,
     prepared,
     params,
+    options = providedOptions,
     environment = getGlobalEnvironment(),
   ) => {
     const receipt = await sendTransaction(prepared, environment);
@@ -168,7 +173,13 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(contractAddress, params, environment);
-    const result = await send(contractAddress, prepared, params, environment);
+    const result = await send(
+      contractAddress,
+      prepared,
+      params,
+      providedOptions,
+      environment,
+    );
     return result;
   };
 
@@ -197,11 +208,17 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
       environment,
     );
 
-  const send = async (prepared, params: Args, environment?): Promise<Result> =>
+  const send = async (
+    prepared,
+    params: Args,
+    providedOptions,
+    environment?,
+  ): Promise<Result> =>
     await transaction.send(
       R.path(contractAddressQuery, params).toString(),
       prepared,
       params,
+      providedOptions,
       environment,
     );
 
