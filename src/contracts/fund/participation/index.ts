@@ -3,4 +3,5 @@
 
 export * from './calls/getRequest';
 export * from './transactions/deployParticipationFactory';
+export * from './transactions/executeRequest';
 export * from './transactions/requestInvestment';

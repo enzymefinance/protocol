@@ -12,7 +12,10 @@ import { getSettings, componentsFromSettings } from '~/contracts/fund/hub';
 import { register, PolicedMethods } from '~/contracts/fund/policies';
 import { update } from '~/contracts/prices';
 import { approve } from '~/contracts/dependencies/token';
-import { requestInvestment } from '~/contracts/fund/participation';
+import {
+  requestInvestment,
+  executeRequest,
+} from '~/contracts/fund/participation';
 import { getAmguPrice, setIsFund } from '~/contracts/version';
 
 const shared: any = {};
@@ -96,6 +99,10 @@ test(
     });
 
     console.log(amguPrice, request);
+
+    const executedRequest = await executeRequest(settings.participationAddress);
+
+    console.log(executedRequest);
   },
   30 * 1000,
 );

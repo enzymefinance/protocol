@@ -152,7 +152,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     environment = getGlobalEnvironment(),
   ) => {
-    const receipt = sendTransaction(prepared, environment);
+    const receipt = await sendTransaction(prepared, environment);
     const postprocessed = await postProcess(
       receipt,
       params,
