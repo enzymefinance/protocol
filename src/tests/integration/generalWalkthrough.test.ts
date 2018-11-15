@@ -19,6 +19,7 @@ import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+import { rewardManagementFee } from '~/contracts/fund/fees/transactions/rewardManagementFee';
 
 const shared: any = {};
 
@@ -106,6 +107,10 @@ test.skip(
     const executedRequest = await executeRequest(settings.participationAddress);
 
     console.log(executedRequest);
+
+    const managementFee = await rewardManagementFee(settings.feeManagerAddress);
+
+    console.log(managementFee);
 
     const redemption = await redeem(settings.participationAddress);
     console.log(redemption);
