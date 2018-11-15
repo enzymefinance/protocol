@@ -1,17 +1,7 @@
-import {
-  transactionFactory,
-  GuardFunction,
-  PostProcessFunction,
-  getContract,
-  PrepareArgsFunction,
-} from '~/utils/solidity';
+import { transactionFactory, PrepareArgsFunction } from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { getRequest } from '../calls/getRequest';
-import {
-  QuantityInterface,
-  createQuantity,
-  greaterThan,
-} from '@melonproject/token-math/quantity';
+import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token';
 import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
@@ -33,7 +23,7 @@ const guard = async (params, contractAddress, environment) => {
     greaterThan(request.requestedShares, createQuantity(fundToken, '0')),
     'Amount of requested shares is null',
   );
-  //TODO: remaining pre flights
+  // TODO: remaining pre flights
   // ensure isRecent
   // ensure isPriceRecent
 };

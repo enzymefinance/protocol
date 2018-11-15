@@ -2,8 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as Eth from 'web3-eth';
 
-import { Address } from '@melonproject/token-math/address';
-
 // Websocket could be the problem
 // HTTP is faster, but same error
 const eth = new Eth(new Eth.providers.HttpProvider('http://localhost:8545'));

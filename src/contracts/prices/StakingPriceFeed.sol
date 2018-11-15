@@ -36,8 +36,14 @@ contract StakingPriceFeed is SimplePriceFeed {
         external
         auth
     {
-        require(stakingToken.transferFrom(msg.sender, address(this), amount));
-        require(stakingToken.approve(stakingContract, amount));
+        require(
+            stakingToken.transferFrom(msg.sender, address(this), amount),
+            "Transferring staking token to fee failed"
+        );
+        require(
+            stakingToken.approve(stakingContract, amount),
+            "Approving staking token for staking contract failed"
+        );
         stakingContract.stake(amount, data);
     }
 
@@ -56,6 +62,9 @@ contract StakingPriceFeed is SimplePriceFeed {
     {
         uint amountToWithdraw = stakingContract.stakeToWithdraw(address(this));
         stakingContract.withdrawStake();
-        require(stakingToken.transfer(msg.sender, amountToWithdraw));
+        require(
+            stakingToken.transfer(msg.sender, amountToWithdraw),
+            "Staking token transfer to sender failed"
+        );
     }
 }

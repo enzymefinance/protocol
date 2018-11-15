@@ -16,7 +16,7 @@ contract PolicyManager is Spoke {
     constructor(address _hub) Spoke(_hub) {}
 
     function registerBatch(bytes4[] sign, address[] ofPolicies) public {
-        require(sign.length == ofPolicies.length);
+        require(sign.length == ofPolicies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sign.length; ++i) {
             register(sign[i], ofPolicies[i]);
         }
@@ -31,7 +31,7 @@ contract PolicyManager is Spoke {
             // Post condition
             policies[sign].post.push(Policy(ofPolicy));
         } else {
-            revert();    // Only 0 or 1 allowed
+            revert("Only 0 or 1 allowed");
         }
     }
 
@@ -69,9 +69,10 @@ contract PolicyManager is Spoke {
 
     function validate(Policy[] storage aux, bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
         for(uint i = 0; i < aux.length; ++i) {
-            if (aux[i].rule(sig, addresses, values, identifier) == false) {
-                revert();
-            }
+            require(
+                aux[i].rule(sig, addresses, values, identifier),
+                "Rule evaluated to false"
+            );
         }
     }
 }

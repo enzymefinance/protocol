@@ -11,7 +11,8 @@
     "outDir": "./build",
     "paths": {
       "~/*": ["src/*"]
-    }
+    },
+    "noUnusedLocals": true
   },
   "files": ["typings.d.ts"],
   "include": [

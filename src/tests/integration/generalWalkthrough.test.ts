@@ -11,7 +11,6 @@ import {
 import { getSettings, componentsFromSettings } from '~/contracts/fund/hub';
 import { register, PolicedMethods } from '~/contracts/fund/policies';
 import { update } from '~/contracts/prices';
-import { approve } from '~/contracts/dependencies/token';
 import {
   requestInvestment,
   executeRequest,

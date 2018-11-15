@@ -26,7 +26,7 @@ contract Shares is Spoke, StandardToken, SharesInterface {
     }
 
     function transfer(address to, uint amount) public returns (bool) {
-        revert();
+        revert("Unimplemented");
     }
 
     function transferFrom(
@@ -37,11 +37,11 @@ contract Shares is Spoke, StandardToken, SharesInterface {
         public
         returns (bool)
     {
-        revert();
+        revert("Unimplemented");
     }
 
     function approve(address spender, uint amount) public returns (bool) {
-        revert();
+        revert("Unimplemented");
     }
 
     function increaseApproval(
@@ -51,7 +51,7 @@ contract Shares is Spoke, StandardToken, SharesInterface {
         public
         returns (bool)
     {
-        revert();
+        revert("Unimplemented");
     }
 
     function decreaseApproval(
@@ -61,7 +61,7 @@ contract Shares is Spoke, StandardToken, SharesInterface {
         public
         returns (bool)
     {
-        revert();
+        revert("Unimplemented");
     }
 }
 

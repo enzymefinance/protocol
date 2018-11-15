@@ -44,8 +44,8 @@ contract MatchingMarketAdapter is DSMath {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(!hub.isShutDown());
+        require(hub.manager() == msg.sender, "Manager must be sender");
+        require(hub.isShutDown() == false, "Hub is shut down");
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
@@ -54,11 +54,16 @@ contract MatchingMarketAdapter is DSMath {
 
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
-        require(makerAsset.approve(targetExchange, makerQuantity));
+        require(
+            makerAsset.approve(targetExchange, makerQuantity),
+            "Could not approve maker asset"
+        );
 
         uint orderId = MatchingMarket(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
 
-        require(orderId != 0);   // defines success in MatchingMarket
+        // defines success in MatchingMarket
+        require(orderId != 0, "Order ID should not be zero");
+
         // require(
         //     Accounting(hub.accounting()).isInAssetList(takerAsset)
         //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
@@ -103,7 +108,10 @@ contract MatchingMarketAdapter is DSMath {
         // require(Fund(address(this)).manager() == msg.sender);
         // TODO: add check that sender is manager
         //      require(hub.manager() == msg.sender)
-        require(!Hub(Trading(address(this)).hub()).isShutDown());
+        require(
+            !Hub(Trading(address(this)).hub()).isShutDown(),
+            "Fund is shut down"
+        );
         address pricefeed = Hub(Trading(address(this)).hub()).priceSource();
         uint fillTakerQuantity = orderValues[6];
         var (
@@ -114,14 +122,22 @@ contract MatchingMarketAdapter is DSMath {
         ) = MatchingMarket(targetExchange).getOffer(uint(identifier));
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        require(takerAsset != address(this) && makerAsset != address(this));
-        require(address(makerAsset) != address(takerAsset));
+        require(
+            address(makerAsset) != address(takerAsset),
+            "Maker and taker assets cannot be the same"
+        );
         // require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
-        require(fillMakerQuantity <= maxMakerQuantity);
-        require(fillTakerQuantity <= maxTakerQuantity);
+        require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
+        require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
-        require(takerAsset.approve(targetExchange, fillTakerQuantity));
-        require(MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity));
+        require(
+            takerAsset.approve(targetExchange, fillTakerQuantity),
+            "Taker asset could not be approved"
+        );
+        require(
+            MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity),
+            "Buy on matching market failed"
+        );
         // require(
         //     Trading(address(this)).isInAssetList(makerAsset) ||
         //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
@@ -156,14 +172,18 @@ contract MatchingMarketAdapter is DSMath {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender ||    // TODO: check that this makes sense (manager)
-                hub.isShutDown()          //||
+                hub.isShutDown(),         //||
                 // hub.orderExpired(targetExchange, orderAddresses[2])
+                "Manager must be sender or fund must be shut down"
         );
-        require(uint(identifier) != 0);
+        require(uint(identifier) != 0, "ID cannot be zero");
 
         var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
 
-        require(address(makerAsset) == orderAddresses[2]); // ensure we are checking correct asset
+        require(
+            address(makerAsset) == orderAddresses[2],
+            "Retrieved and passed assets do not match"
+        );
 
         Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
         MatchingMarket(targetExchange).cancel(

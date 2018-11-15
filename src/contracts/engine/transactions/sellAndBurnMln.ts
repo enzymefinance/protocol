@@ -1,70 +1,41 @@
 import { isSameToken } from '@melonproject/token-math/token';
-import {
-  QuantityInterface,
-  createQuantity,
-  isEqual,
-  greaterThan,
-} from '@melonproject/token-math/quantity';
+import { isEqual, greaterThan } from '@melonproject/token-math/quantity';
 import { Address } from '~/utils/types';
-import {
-  prepareTransaction,
-  sendTransaction,
-  getContract,
-} from '~/utils/solidity';
-import { getToken } from '~/contracts/dependencies/token';
-import { isAddress } from '~/utils/checks';
+import { getContract, transactionFactory } from '~/utils/solidity';
+import { getToken, allowance } from '~/contracts/dependencies/token';
 import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';
 
-const guards = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment,
-) => {
-  const engine = getContract(Contracts.Engine, engineAddress);
+const guard = async ({ quantity }, contractAddress: Address, environment) => {
+  const engine = getContract(Contracts.Engine, contractAddress);
   const mlnAddress = await engine.methods.mlnToken().call();
-  const mlnTokenContract = getContract(Contracts.StandardToken, mlnAddress);
   const mlnToken = await getToken(mlnAddress);
   ensure(
     isSameToken(quantity.token, mlnToken),
     'It is only possible to burn MLN',
   );
-  const allowedMln = createQuantity(
-    mlnToken,
-    await mlnTokenContract.methods
-      .allowance(environment.wallet.address, engineAddress.toString())
-      .call(),
-  );
+  const allowedMln = await allowance(mlnAddress, {
+    owner: environment.wallet.address,
+    spender: contractAddress.toString(),
+  });
+
   ensure(
     isEqual(allowedMln, quantity) || greaterThan(allowedMln, quantity),
     `Amount must be approved prior to calling this function.`,
   );
 };
 
-const prepare = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment,
-) => {
-  const contract = getContract(Contracts.Engine, engineAddress);
-  const transaction = contract.methods.sellAndBurnMln(quantity);
-  transaction.name = 'sellAndBurnMln';
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
+const prepareArgs = async ({ quantity }) => [String(quantity.quantity)];
 
-const validateReceipt = receipt => {
-  return true;
-};
+const postProcess = async receipt => receipt;
 
-export const sellAndBurnMln = async (
-  engineAddress: Address,
-  quantity: QuantityInterface,
-  environment?,
-) => {
-  await guards(engineAddress, quantity, environment);
-  const transaction = await prepare(engineAddress, quantity, environment);
-  const receipt = await sendTransaction(transaction, environment);
-  const result = validateReceipt(receipt);
-  return result;
-};
+const options = { gas: '8000000' };
+
+export const sellAndBurnMln = transactionFactory(
+  'sellAndBurnMln',
+  Contracts.Engine,
+  guard,
+  prepareArgs,
+  postProcess,
+  options,
+);

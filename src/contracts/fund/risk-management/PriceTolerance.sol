@@ -85,8 +85,7 @@ contract PriceTolerance is DSMath, Policy {
         } else if (sig == TAKE_ORDER) {
             return takeOrder(addresses, values, identifier);
         }
-        
-        revert();
+        revert("Signature was neither MakeOrder nor TakeOrder");
     }
 
     function position() external view returns (uint) {

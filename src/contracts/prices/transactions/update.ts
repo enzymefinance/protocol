@@ -45,10 +45,16 @@ const send = async (transaction, environment) => {
 };
 
 // TODO: Real postprocessing
-const postProcess = async (contractAddress, prices, receipt) => {
+const postProcess = async (
+  contractAddress,
+  prices,
+  preventCancelDown,
+  receipt,
+) => {
   const updatedPrices = await getPrices(
     contractAddress,
     prices.map(p => p.base.token),
+    preventCancelDown,
   );
 
   ensure(isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
@@ -62,11 +68,17 @@ const postProcess = async (contractAddress, prices, receipt) => {
 export const update = async (
   contractAddress: string,
   prices: PriceInterface[],
+  preventCancelDown: boolean = false,
   environment = getGlobalEnvironment(),
 ): Promise<PriceInterface[]> => {
   await guards(contractAddress, prices, environment);
   const transaction = await prepare(contractAddress, prices, environment);
   const receipt = await send(transaction, environment);
-  const result = postProcess(contractAddress, prices, receipt);
+  const result = postProcess(
+    contractAddress,
+    prices,
+    preventCancelDown,
+    receipt,
+  );
   return result;
 };

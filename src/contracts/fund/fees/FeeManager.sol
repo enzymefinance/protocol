@@ -17,7 +17,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     constructor(address _hub) Spoke(_hub) {}
 
     function register(address feeAddress) public {
-        require(!feeIsRegistered[feeAddress]);
+        require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
         Fee(feeAddress).updateState();  // initialize state
@@ -37,7 +37,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     }
 
     function rewardFee(Fee fee) public {
-        require(feeIsRegistered[fee]);
+        require(feeIsRegistered[fee], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);

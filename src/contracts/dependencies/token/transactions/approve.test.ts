@@ -1,6 +1,6 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
+import { initTestEnvironment } from '~/utils/environment';
 import { Address } from '~/utils/types';
 
 import { deploy, getToken } from '..';
@@ -18,7 +18,6 @@ beforeAll(async () => {
 });
 
 test('approve', async () => {
-  const environment = getGlobalEnvironment();
   const howMuch = createQuantity(shared.token, '1000000000000000000');
 
   const receipt = await approve({ howMuch, spender: shared.accounts[1] });
