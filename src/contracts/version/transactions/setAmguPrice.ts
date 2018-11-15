@@ -1,0 +1,3 @@
+const setAmguPrice = () => {};
+
+export { setAmguPrice };

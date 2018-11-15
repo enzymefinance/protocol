@@ -3,5 +3,6 @@
 
 export * from './calls/getAmguPrice';
 export * from './transactions/deployMockVersion';
+export * from './transactions/setAmguPrice';
 export * from './transactions/setFundFactory';
 export * from './transactions/setIsFund';
