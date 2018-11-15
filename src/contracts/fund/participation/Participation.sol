@@ -100,19 +100,22 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
-        if (
-            // isInvestAllowed[request.investmentAsset] &&
-            costQuantity <= request.investmentAmount
-        ) {
-            delete requests[requestOwner];
-            require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(routes.vault), costQuantity)); // Allocate Value
-            Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-            // // TODO: this should be done somewhere else
-            if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
-                Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
-            }
-        } else {
-            revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
+        // TODO: re-enable
+        // require(
+        //     isInvestAllowed[request.investmentAsset],
+        //     "Investment not allowed in this asset"
+        // );
+        require(
+            costQuantity <= request.investmentAmount,
+            "Invested amount too low"
+        );
+
+        delete requests[requestOwner];
+        require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(routes.vault), costQuantity)); // Allocate Value
+        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
+        // // TODO: this should be done somewhere else
+        if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
+            Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
         }
         RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
     }
@@ -168,9 +171,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             ofAsset = requestedAssets[i];
             require(accounting.isInAssetList(ofAsset));
             for (uint j = 0; j < redeemedAssets.length; j++) {
-                if (ofAsset == redeemedAssets[j]) {
-                    revert();
-                }
+                require(ofAsset != redeemedAssets[j], "Asset was already redeemed");
             }
             redeemedAssets[i] = ofAsset;
             uint quantityHeld = accounting.assetHoldings(ofAsset);

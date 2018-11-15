@@ -183,7 +183,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
         view
         returns (uint)
     {
-        revert();
+        revert("Unimplemented");
     }
 
     // TODO: Get order details

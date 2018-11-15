@@ -106,7 +106,7 @@ contract TestingPriceFeed is DSMath {
         } else if (QUOTE_ASSET == ofBase) {
             (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
-            revert();
+            revert("One of the parameters must be quoteAsset");
         }
     }
 

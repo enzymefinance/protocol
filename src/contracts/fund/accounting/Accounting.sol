@@ -72,9 +72,7 @@ contract Accounting is DSMath, Spoke {
         uint assetPrice;
         uint assetDecimals;
         (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
-        if (!isRecent) {
-            revert();
-        }
+        require(isRecent, "Price is not recent");
         return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
     }
 
@@ -100,9 +98,7 @@ contract Accounting is DSMath, Spoke {
             // NB: should we revert inside this view function, or just calculate it optimistically?
             //     maybe it should be left to consumers to decide whether to use older prices?
             //     or perhaps even source's job not to give untrustworthy prices?
-            if (!isRecent) {
-                revert();
-            }
+            require(isRecent, "Price is not recent");
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(gav, mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals)));
         }
