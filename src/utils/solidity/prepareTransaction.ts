@@ -15,11 +15,12 @@ export interface PreparedTransaction {
 
 export const prepareTransaction = async (
   transaction,
+  options?,
   environment = getGlobalEnvironment(),
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
 
-  if (transaction.gasEstimation === undefined) {
+  if (options === undefined || options.gas === undefined) {
     try {
       transaction.gasEstimation = await transaction.estimateGas({
         from: environment.wallet.address.toString(),
@@ -31,6 +32,8 @@ export const prepareTransaction = async (
         }(${transaction.arguments.join(', ')}): ${e.message}`,
       );
     }
+  } else {
+    transaction.gasEstimation = options.gas;
   }
 
   debug(

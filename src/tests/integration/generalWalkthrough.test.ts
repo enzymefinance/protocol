@@ -14,10 +14,11 @@ import { update } from '~/contracts/prices';
 import {
   requestInvestment,
   executeRequest,
-  redeem,
 } from '~/contracts/fund/participation';
 import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { redeem } from '~/contracts/fund/participation/transactions/redeem';
+import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 
 const shared: any = {};
 
@@ -60,6 +61,7 @@ test(
     const hubAddress = await setupFund(fundFactory);
 
     const settings = await getSettings(hubAddress);
+
     await register(settings.policyManagerAddress, {
       method: PolicedMethods.makeOrder,
       policy: policies.priceTolerance,
@@ -107,6 +109,9 @@ test(
 
     const redemption = await redeem(settings.participationAddress);
     console.log(redemption);
+
+    const holdings = await getFundHoldings(settings.accountingAddress);
+    console.log(holdings);
 
     const shutDown = await shutDownFund(hubAddress);
 

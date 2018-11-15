@@ -6,4 +6,5 @@ export * from './transactions/deployParticipationFactory';
 export * from './transactions/executeRequest';
 export * from './transactions/executeRequestFor';
 export * from './transactions/redeem';
+export * from './transactions/redeemQuantity';
 export * from './transactions/requestInvestment';

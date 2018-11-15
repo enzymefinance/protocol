@@ -178,6 +178,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         Accounting accounting = Accounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            if (ofAsset == address(0)) continue;
             require(
                 accounting.isInAssetList(ofAsset),
                 "Requested asset not in asset list"
@@ -185,7 +186,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 require(
                     ofAsset != redeemedAssets[j],
-                    "Asset was already redeemed"
+                    "Asset can only be redeemed once"
                 );
             }
             redeemedAssets[i] = ofAsset;
@@ -212,7 +213,6 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             }
         }
         emit SuccessfulRedemption(remainingShareQuantity);
-        return true;
     }
 }
 
