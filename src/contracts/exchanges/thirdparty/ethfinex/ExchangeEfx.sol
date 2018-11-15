@@ -1,9 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./OwnableClone.sol";
+import "../0x/Exchange.sol";
 
-contract WrapperRegistryEFX is OwnableClone {
-    
+contract ExchangeEfx is Exchange {
     mapping (address => address) public wrapper2TokenLookup;
     mapping (address => address) public token2WrapperLookup;
     event AddNewPair(address token, address wrapper);

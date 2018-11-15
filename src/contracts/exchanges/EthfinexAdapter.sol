@@ -2,8 +2,7 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
-import "./thirdparty/0x/Exchange.sol";
-import "./thirdparty/ethfinex/WrapperRegistryEFX.sol";
+import "./thirdparty/ethfinex/ExchangeEfx.sol";
 import "./thirdparty/ethfinex/WrapperLock.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
@@ -18,17 +17,7 @@ import "../dependencies/math.sol";
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
 contract EthfinexAdapter is DSMath, DBC {
 
-    WrapperRegistryEFX public tokenRegistry;
-
     //  METHODS
-
-    // CONSTRUCTOR
-
-    constructor(
-        address _tokenRegistry
-    ) {
-        tokenRegistry = WrapperRegistryEFX(_tokenRegistry);
-    }
 
     //  PUBLIC METHODS
 
@@ -56,32 +45,32 @@ contract EthfinexAdapter is DSMath, DBC {
         require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
         approveWrappedMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
-        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
-        Exchange(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
+        // LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
+        // ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
         
-        require(
-            Exchange(targetExchange).isValidSignature(
-                orderInfo.orderHash,
-                address(this),
-                signature
-            ),
-            "INVALID_ORDER_SIGNATURE"
-        );
-        // TODO: ADD back 
         // require(
-        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
+        //     ExchangeEfx(targetExchange).isValidSignature(
+        //         orderInfo.orderHash,
+        //         address(this),
+        //         signature
+        //     ),
+        //     "INVALID_ORDER_SIGNATURE"
         // );
+        // // TODO: ADD back 
+        // // require(
+        // //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+        // //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
+        // // );
 
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
-        Trading(address(this)).orderUpdateHook(
-            targetExchange,
-            orderInfo.orderHash,
-            Trading.UpdateType.make,
-            [address(makerAsset), address(takerAsset)],
-            [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
-        );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        // Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        // Trading(address(this)).orderUpdateHook(
+        //     targetExchange,
+        //     orderInfo.orderHash,
+        //     Trading.UpdateType.make,
+        //     [address(makerAsset), address(takerAsset)],
+        //     [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
+        // );
+        // Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
     }
 
     /// @notice No Take orders on Ethfinex
@@ -111,8 +100,8 @@ contract EthfinexAdapter is DSMath, DBC {
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
 
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
-        address makerAsset = tokenRegistry.wrapper2TokenLookup(getAssetAddress(order.makerAssetData));
-        Exchange(targetExchange).cancelOrder(order);
+        address makerAsset = ExchangeEfx(targetExchange).wrapper2TokenLookup(getAssetAddress(order.makerAssetData));
+        ExchangeEfx(targetExchange).cancelOrder(order);
 
         // Set the approval back to 0
         approveWrappedMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
@@ -128,10 +117,11 @@ contract EthfinexAdapter is DSMath, DBC {
 
     /// @notice Cancel the 0x make order
     function withdrawTokens(
+        address targetExchange,
         address[] tokens
     ) {
         for (uint i = 0; i < tokens.length; i++) {
-            address wrappedToken = tokenRegistry.token2WrapperLookup(tokens[i]);
+            address wrappedToken = ExchangeEfx(targetExchange).token2WrapperLookup(tokens[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
         }
@@ -154,14 +144,14 @@ contract EthfinexAdapter is DSMath, DBC {
         var (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
 
         // Check if order has been completely filled
-        uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
+        uint takerAssetFilledAmount = ExchangeEfx(targetExchange).filled(bytes32(orderId));
         if (sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
 
         // Check if order has been cancelled and tokens have been withdrawn
-        uint balance = WrapperLock(tokenRegistry.token2WrapperLookup(makerAsset)).balanceOf(address(this));
-        if (Exchange(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
+        uint balance = WrapperLock(ExchangeEfx(targetExchange).token2WrapperLookup(makerAsset)).balanceOf(address(this));
+        if (ExchangeEfx(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
         return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
@@ -176,11 +166,11 @@ contract EthfinexAdapter is DSMath, DBC {
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
-        address wrappedToken = tokenRegistry.token2WrapperLookup(makerAsset);
-        ERC20(makerAsset).approve(wrappedToken, makerQuantity);
-        WrapperLock(wrappedToken).deposit(makerQuantity, 1);
-        address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
-        require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
+        address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
+        // ERC20(makerAsset).approve(wrappedToken, makerQuantity);
+        // WrapperLock(wrappedToken).deposit(makerQuantity, 1);
+        // address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
+        // require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
     }
 
     // VIEW METHODS
@@ -223,7 +213,7 @@ contract EthfinexAdapter is DSMath, DBC {
                 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
             )
         }
-        assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
+        assetProxy = ExchangeEfx(targetExchange).getAssetProxy(assetProxyId);
     }
 
     function getAssetAddress(bytes assetData)
