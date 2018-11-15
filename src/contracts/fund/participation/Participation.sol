@@ -14,6 +14,14 @@ import "../../../engine/AmguConsumer.sol";
 /// @notice Entry and exit point for investors
 contract Participation is DSMath, AmguConsumer, Spoke {
 
+    event RequestExecuted (
+        address investmentAsset,
+        uint investmentAmount,
+        uint requestedShares,
+        uint timestamp,
+        uint atUpdateId
+    );
+
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -106,6 +114,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
+        RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
     }
 
     /// @dev "Happy path" (no asset throws & quantity available)
@@ -122,7 +131,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         require(redeemWithConstraints(shareQuantity, assetList)); //TODO: assetList from another module
     }
 
-    function getOwedPerformanceFees(uint shareQuantity) 
+    function getOwedPerformanceFees(uint shareQuantity)
         view
         returns (uint remainingShareQuantity)
     {

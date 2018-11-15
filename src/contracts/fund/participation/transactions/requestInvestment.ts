@@ -29,6 +29,7 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async ({
   investmentAmount,
   requestedShares,
 }) => {
+  //TODO: check how many shares the investAmount is worth
   const requestedSharesArg = requestedShares
     ? requestedShares.quantity.toString()
     : investmentAmount.quantity.toString();
