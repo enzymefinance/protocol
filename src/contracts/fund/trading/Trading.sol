@@ -49,7 +49,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     uint public constant ORDER_LIFESPAN = 1 days;
 
     modifier delegateInternal() {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this), "Sender is not this contract");
         _;
     }
 
@@ -59,8 +59,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address[] _adapters,
         bool[] _takesCustody
     ) Spoke(_hub) {
-        require(_exchanges.length == _adapters.length);
-        require(_exchanges.length == _takesCustody.length);
+        require(_exchanges.length == _adapters.length, "Array lengths unequal");
+        require(_exchanges.length == _takesCustody.length, "Array lengths unequal");
         for (uint i = 0; i < _exchanges.length; i++) {
             addExchange(_exchanges[i], _adapters[i], _takesCustody[i]);
         }
@@ -69,7 +69,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     // TODO: who can add exchanges? should they just be set at creation?
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
         // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeIsRegistered(_exchange));
-        require(!exchangeIsAdded[_exchange]);
+        require(!exchangeIsAdded[_exchange], "Exchange already added");
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
@@ -139,7 +139,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
                     takerAssetData,
                     signature
                 )
-            )
+            ),
+            "Delegated call to exchange failed"
         );
         // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
     }
@@ -150,8 +151,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address ofSellAsset,
         uint orderId
     ) delegateInternal {
-        require(!isInOpenMakeOrder[ofSellAsset]);
-        require(orders.length > 0);
+        require(!isInOpenMakeOrder[ofSellAsset], "Sell asset already in open order");
+        require(orders.length > 0, "No orders in array");
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);

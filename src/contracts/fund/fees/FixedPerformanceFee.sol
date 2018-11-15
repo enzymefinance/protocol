@@ -51,8 +51,14 @@ contract FixedPerformanceFee is DSMath, Fee {
         } else {
             currentSharePrice = accounting.calcSharePrice();
         }
-        require(currentSharePrice > highWaterMark[msg.sender]);
-        require(block.timestamp > add(lastPayoutTime[msg.sender], PERIOD));
+        require(
+            currentSharePrice > highWaterMark[msg.sender],
+            "Current share price does not pass high water mark"
+        );
+        require(
+            block.timestamp > add(lastPayoutTime[msg.sender], PERIOD),
+            "Performance period has not yet ended"
+        );
         lastPayoutTime[msg.sender] = block.timestamp;
         highWaterMark[msg.sender] = currentSharePrice;
     }

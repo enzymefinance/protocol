@@ -40,8 +40,8 @@ contract KyberAdapter is DBC, DSMath {
     )
     {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
+        require(hub.manager() == msg.sender, "Manager is not sender");
+        require(!hub.isShutDown(), "Hub is shut down");
 
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
