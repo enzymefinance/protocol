@@ -152,7 +152,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     divide(multiply(ethPerMln, premiumPercent), new BigInteger(100)),
   );
 
-  expect(String(enginePrice)).toBe(String(premiumPrice));
+  expect(`${enginePrice}`).toBe(`${premiumPrice}`);
 
   const sendMln = createQuantity(
     await getToken(shared.mln.options.address),
@@ -186,7 +186,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   );
   const preMlnTotalSupply = await shared.mln.methods.totalSupply().call();
   const ethPurchased = await shared.engine.methods
-    .ethPayoutForMlnAmount(String(sendMln.quantity))
+    .ethPayoutForMlnAmount(`${sendMln.quantity}`)
     .call();
 
   const receipt = await sellAndBurnMln(shared.engine.options.address, {
@@ -203,20 +203,18 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   );
   const postMlnTotalSupply = await shared.mln.methods.totalSupply().call();
 
-  expect(burnerPostMln).toBe(String(subtract(burnerPreMln, sendMln.quantity)));
+  expect(burnerPostMln).toBe(`${subtract(burnerPreMln, sendMln.quantity)}`);
   expect(burnerPostEth).toBe(
-    String(
-      subtract(
-        add(burnerPreEth, ethPurchased),
-        multiply(gasUsed, shared.env.options.gasPrice),
-      ),
-    ),
+    `${subtract(
+      add(burnerPreEth, ethPurchased),
+      multiply(gasUsed, shared.env.options.gasPrice),
+    )}`,
   );
   expect(enginePostMln).toBe(enginePostMln);
-  expect(String(enginePostMln)).toBe('0');
-  expect(enginePostEth).toBe(String(subtract(enginePreEth, ethPurchased)));
+  expect(`${enginePostMln}`).toBe('0');
+  expect(enginePostEth).toBe(`${subtract(enginePreEth, ethPurchased)}`);
   expect(postMlnTotalSupply).toBe(
-    String(subtract(preMlnTotalSupply, sendMln.quantity)),
+    `${subtract(preMlnTotalSupply, sendMln.quantity)}`,
   );
 });
 
