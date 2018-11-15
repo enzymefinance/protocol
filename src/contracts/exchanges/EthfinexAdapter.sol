@@ -45,11 +45,9 @@ contract EthfinexAdapter is DSMath, DBC {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender);
         require(hub.isShutDown() == false);
-        // require(Trading(address(this)).owner() == msg.sender);
-        // require(!Trading(address(this)).isShutDown());
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = orderAddresses[2];
+        address makerAsset = tokenRegistry.token2WrapperLookup(orderAddresses[2]);
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
@@ -155,8 +153,16 @@ contract EthfinexAdapter is DSMath, DBC {
     {
         var (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
         var (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
+
+        // Check if order has been completely filled
         uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
         if (sub(takerQuantity, takerAssetFilledAmount) == 0) {
+            return (makerAsset, takerAsset, 0, 0);
+        }
+
+        // Check if order has been cancelled and tokens have been withdrawn
+        uint balance = WrapperLock(tokenRegistry.token2WrapperLookup(makerAsset)).balanceOf(address(this));
+        if (Exchange(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
         return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
