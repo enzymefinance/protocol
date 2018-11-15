@@ -2,6 +2,8 @@ import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem } from '~/utils';
 import { createComponents } from '~/contracts/factory';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
+import { createQuantity } from '@melonproject/token-math/quantity';
+import { getAmguPrice, setAmguPrice } from '~/contracts/version';
 
 const shared: any = {};
 
@@ -23,17 +25,24 @@ test('Set amgu and check its usage', async () => {
     fundFactory,
     priceSource,
     tokens,
-    engine,
+    // engine,
     // policies,
-    // version,
+    version,
   } = deployment;
   const [quoteToken, baseToken] = tokens;
 
   const defaultTokens = [quoteToken, baseToken];
 
-  const amguToken = await getAmguToken(engine);
+  const amguToken = await getAmguToken(fundFactory);
 
-  console.log(amguToken);
+  const amguPrice = createQuantity(amguToken, 0.00000012);
+
+  const oldAmugPrice = await getAmguPrice(version);
+  const newAmguPrice = await setAmguPrice(version, amguPrice);
+
+  console.log(
+    JSON.stringify({ amguToken, oldAmugPrice, newAmguPrice }, null, 2),
+  );
 
   await createComponents(fundFactory, {
     defaultTokens,

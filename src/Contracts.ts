@@ -1,5 +1,6 @@
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
+  AmguConsumer = 'engine/AmguConsumer',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
@@ -28,6 +29,8 @@ export enum Contracts {
 export const requireMap = {
   [Contracts.Accounting]:
     require('../out/fund/accounting/Accounting.abi.json'),
+  [Contracts.AmguConsumer]:
+    require('../out/engine/AmguConsumer.abi.json'),
   [Contracts.BurnableToken]:
     require('../out/dependencies/token/BurnableToken.abi.json'),
   [Contracts.Engine]:
