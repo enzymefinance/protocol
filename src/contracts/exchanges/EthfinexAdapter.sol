@@ -38,7 +38,7 @@ contract EthfinexAdapter is DSMath, DBC {
         address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
+        bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
     ) {
@@ -46,8 +46,8 @@ contract EthfinexAdapter is DSMath, DBC {
         require(hub.manager() == msg.sender);
         require(hub.isShutDown() == false);
 
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = tokenRegistry.token2WrapperLookup(orderAddresses[2]);
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
+        address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
@@ -55,7 +55,7 @@ contract EthfinexAdapter is DSMath, DBC {
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
         require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
-        approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
+        approveWrappedMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         Exchange(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
         
@@ -103,24 +103,23 @@ contract EthfinexAdapter is DSMath, DBC {
         address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
+        bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
 
-        address makerAsset = orderAddresses[2];
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+        LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
+        address makerAsset = tokenRegistry.wrapper2TokenLookup(getAssetAddress(order.makerAssetData));
         Exchange(targetExchange).cancelOrder(order);
 
         // Set the approval back to 0
-        approveMakerAsset(targetExchange, makerAsset, makerAssetData, 0);
+        approveWrappedMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
         Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
-            orderInfo.orderHash,
+            identifier,
             Trading.UpdateType.cancel,
             [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
@@ -171,7 +170,7 @@ contract EthfinexAdapter is DSMath, DBC {
     // INTERNAL METHODS
 
     /// @notice needed to avoid stack too deep error
-    function approveMakerAsset(address targetExchange, address makerAsset, bytes makerAssetData, uint makerQuantity)
+    function approveWrappedMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity)
         internal
     {
         Hub hub = Hub(Trading(address(this)).hub());
@@ -180,7 +179,7 @@ contract EthfinexAdapter is DSMath, DBC {
         address wrappedToken = tokenRegistry.token2WrapperLookup(makerAsset);
         ERC20(makerAsset).approve(wrappedToken, makerQuantity);
         WrapperLock(wrappedToken).deposit(makerQuantity, 1);
-        address assetProxy = getAssetProxy(targetExchange, makerAssetData);
+        address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
         require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
     }
 
