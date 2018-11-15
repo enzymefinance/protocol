@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "../../../dependencies/SafeMath.sol";
-import "./OwnableClone.sol";
+import "../0x/Ownable.sol";
 
 /**
  * @title ERC20Basic
@@ -98,11 +98,11 @@ contract BasicToken is ERC20Basic {
 
 */
 
-contract WrapperLock is BasicToken, OwnableClone {
+contract WrapperLock is BasicToken, Ownable {
     using SafeMath for uint256;
 
-    address public TRANSFER_PROXY_VEFX = 0x7e03d2b8edc3585ecd8a5807661fff0830a0b603;
-    address public TRANSFER_PROXY_V2 = 0x2240Dab907db71e64d3E0dbA4800c83B5C502d4E;
+    address public TRANSFER_PROXY_VEFX;
+    address public TRANSFER_PROXY_V2;
     mapping (address => bool) public isSigner;
 
     bool public erc20old;
@@ -114,13 +114,25 @@ contract WrapperLock is BasicToken, OwnableClone {
     mapping (address => uint256) public depositLock;
     mapping (address => uint256) public balances;
 
-    function WrapperLock(address _originalToken, string _name, string _symbol, uint _decimals, bool _erc20old) OwnableClone() {
+    function WrapperLock(
+        address _originalToken, 
+        string _name, 
+        string _symbol, 
+        uint _decimals, 
+        bool _erc20old, 
+        address _proxyEfx, 
+        address _proxyV2
+    ) 
+        Ownable() 
+    {
         originalToken = _originalToken;
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
         isSigner[msg.sender] = true;
         erc20old = _erc20old;
+        TRANSFER_PROXY_VEFX = _proxyEfx;
+        TRANSFER_PROXY_V2 = _proxyV2;
     }
 
     function deposit(uint _value, uint _forTime) public returns (bool success) {

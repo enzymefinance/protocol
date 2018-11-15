@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../dependencies/token/StandardToken.sol";
 import "./LibOrder.sol";
+import "./Ownable.sol";
 
 library LibBytes {
 
@@ -1155,12 +1156,6 @@ contract LibAbiEncoder {
     }
 }
 
-contract IOwnable {
-
-    function transferOwnership(address newOwner)
-        public;
-}
-
 contract IAuthorizable is
     IOwnable
 {
@@ -1813,35 +1808,6 @@ contract MWrapperFunctions is
     )
         internal
         returns (LibFillResults.FillResults memory fillResults);
-}
-
-contract Ownable is
-    IOwnable
-{
-    address public owner;
-
-    constructor ()
-        public
-    {
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(
-            msg.sender == owner,
-            "ONLY_CONTRACT_OWNER"
-        );
-        _;
-    }
-
-    function transferOwnership(address newOwner)
-        public
-        onlyOwner
-    {
-        if (newOwner != address(0)) {
-            owner = newOwner;
-        }
-    }
 }
 
 contract MixinExchangeCore is
