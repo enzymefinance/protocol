@@ -44,7 +44,11 @@ contract Engine is DSMath {
     }
 
     function payAmguInEther() public payable {
-        require(version.isFund(msg.sender) || version.isFundFactory(msg.sender));
+        require(
+            version.isFund(msg.sender) ||
+            version.isFundFactory(msg.sender),
+            "Sender must be a fund or the factory"
+        );
         frozenEther = add(frozenEther, msg.value);
     }
 
@@ -52,8 +56,11 @@ contract Engine is DSMath {
     /// @notice Move frozen ether to liquid pool after delay
     /// @dev Delay only restarts when this function is called
     function thaw() public {
-        require((block.timestamp >= add(lastThaw, THAWING_DELAY)));
-        require(frozenEther > 0);
+        require(
+            block.timestamp >= add(lastThaw, THAWING_DELAY),
+            "Thawing delay has not passed"
+        );
+        require(frozenEther > 0, "No frozen ether to thaw");
         lastThaw = block.timestamp;
         liquidEther = add(liquidEther, frozenEther);
         frozenEther = 0;
@@ -73,11 +80,14 @@ contract Engine is DSMath {
 
     /// @notice MLN must be approved first
     function sellAndBurnMln(uint mlnAmount) public {
-        require(version.isFund(msg.sender));
-        require(mlnToken.transferFrom(msg.sender, address(this), mlnAmount));
+        require(version.isFund(msg.sender), "Only funds can use the engine");
+        require(
+            mlnToken.transferFrom(msg.sender, address(this), mlnAmount),
+            "MLN transferFrom failed"
+        );
         uint ethToSend = ethPayoutForMlnAmount(mlnAmount);
-        require(ethToSend > 0);
-        require(liquidEther >= ethToSend);
+        require(ethToSend > 0, "No ether to pay out");
+        require(liquidEther >= ethToSend, "Not enough liquid ether to send");
         msg.sender.send(ethToSend);
         mlnToken.burn(mlnAmount);
     }

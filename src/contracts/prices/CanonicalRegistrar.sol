@@ -177,7 +177,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         auth
         pre_cond(assetInformation[ofAsset].exists)
     {
-        require(registeredAssets[assetIndex] == ofAsset);
+        require(registeredAssets[assetIndex] == ofAsset, "Array slot mismatch");
         delete assetInformation[ofAsset]; // Sets exists boolean to false
         delete registeredAssets[assetIndex];
         for (uint i = assetIndex; i < registeredAssets.length-1; i++) {
@@ -198,7 +198,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         auth
         pre_cond(exchangeInformation[ofExchange].exists)
     {
-        require(registeredExchanges[exchangeIndex] == ofExchange);
+        require(registeredExchanges[exchangeIndex] == ofExchange, "Array slot mismatch");
         delete exchangeInformation[ofExchange];
         delete registeredExchanges[exchangeIndex];
         for (uint i = exchangeIndex; i < registeredExchanges.length-1; i++) {

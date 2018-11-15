@@ -4,14 +4,14 @@ import {
   deploy as deployToken,
   getToken,
 } from '~/contracts/dependencies/token';
-import { deploy as deployPriceFeed, update } from '~/contracts/prices';
+import { deploy as deployPriceFeed } from '~/contracts/prices';
 import {
   deployMatchingMarket,
   deployMatchingMarketAdapter,
   addTokenPairWhitelist,
 } from '~/contracts/exchanges';
-// tslint:disable-next-line:max-line-length
 import { deploy as deployEngine } from '~/contracts/engine';
+// tslint:disable-next-line:max-line-length
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';

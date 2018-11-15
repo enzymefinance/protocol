@@ -56,7 +56,7 @@ contract OperatorStaking is DBC {
     )
         public
     {
-        require(address(_stakingToken) != address(0));
+        require(address(_stakingToken) != address(0), "Staking token is null");
         stakingToken = _stakingToken;
         minimumStake = _minimumStake;
         numOperators = _numOperators;
@@ -76,7 +76,10 @@ contract OperatorStaking is DBC {
     {
         stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
-        require(stakingToken.transferFrom(msg.sender, address(this), amount));
+        require(
+            stakingToken.transferFrom(msg.sender, address(this), amount),
+            "Transferring staking token failed"
+        );
     }
 
     function unstake(
@@ -87,8 +90,14 @@ contract OperatorStaking is DBC {
     {
         uint preStake = stakedAmounts[msg.sender];
         uint postStake = preStake - amount;
-        require(postStake >= minimumStake || postStake == 0);
-        require(stakedAmounts[msg.sender] >= amount);
+        require(
+            postStake >= minimumStake || postStake == 0,
+            "Unstaking would put remaining amount below minimum"
+        );
+        require(
+            stakedAmounts[msg.sender] >= amount,
+            "Cannot unstake more than has been staked"
+        );
         latestUnstakeTime[msg.sender] = block.timestamp;
         stakedAmounts[msg.sender] -= amount;
         stakeToWithdraw[msg.sender] += amount;
@@ -103,7 +112,10 @@ contract OperatorStaking is DBC {
     {
         uint amount = stakeToWithdraw[msg.sender];
         stakeToWithdraw[msg.sender] = 0;
-        require(stakingToken.transfer(msg.sender, amount));
+        require(
+            stakingToken.transfer(msg.sender, amount),
+            "Staking token transfer failed"
+        );
     }
 
     // VIEW FUNCTIONS
@@ -192,7 +204,7 @@ contract OperatorStaking is DBC {
     function insertNodeAfter(uint id, uint amount, address staker) internal returns (uint newID) {
 
         // 0 is allowed here to insert at the beginning.
-        require(id == 0 || isValidNode(id));
+        require(id == 0 || isValidNode(id), "Invalid node ID");
 
         Node storage node = stakeNodes[id];
 
@@ -214,7 +226,7 @@ contract OperatorStaking is DBC {
     }
 
     function removeNode(uint id) internal {
-        require(isValidNode(id));
+        require(isValidNode(id), "Invalid node ID");
 
         Node storage node = stakeNodes[id];
 
@@ -243,7 +255,7 @@ contract OperatorStaking is DBC {
 
     function removeStakerFromArray(address _staker) internal {
         uint id = searchNode(_staker);
-        require(id > 0);
+        require(id > 0, "Node ID cannot be zero");
         removeNode(id);
     }
 

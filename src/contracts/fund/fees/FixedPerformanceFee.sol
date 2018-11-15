@@ -23,21 +23,18 @@ contract FixedPerformanceFee is DSMath, Fee {
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
         uint gav = accounting.calcGav();
-        uint valuePerShare = shares.totalSupply() > 0 ? accounting.calcValuePerShare(gav, shares.totalSupply()) 
+        uint gavPerShare = shares.totalSupply() > 0 ? accounting.calcValuePerShare(gav, shares.totalSupply()) 
             : accounting.DEFAULT_SHARE_PRICE();
-        if (false) {
-            if (gav == 0) {
-                feeInShares = 0;
-            } else {
-                uint sharePriceGain = sub(valuePerShare, highWaterMark[msg.sender]);
-                uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
-                uint feeInAsset = mul(totalGain, PERFORMANCE_FEE_RATE) / DIVISOR;
-                uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
-                feeInShares =
-                    mul(preDilutionFee, shares.totalSupply()) /
-                    sub(shares.totalSupply(), preDilutionFee);
-            }
-        } else {
+        if (gavPerShare > highWaterMark[msg.sender] && gav != 0) {
+            uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
+            uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
+            uint feeInAsset = mul(totalGain, PERFORMANCE_FEE_RATE) / DIVISOR;
+            uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
+            feeInShares =
+                mul(preDilutionFee, shares.totalSupply()) /
+                sub(shares.totalSupply(), preDilutionFee);
+        }
+        else {
             feeInShares = 0;
         }
         return feeInShares;
@@ -54,8 +51,14 @@ contract FixedPerformanceFee is DSMath, Fee {
         } else {
             currentSharePrice = accounting.calcSharePrice();
         }
-        require(currentSharePrice > highWaterMark[msg.sender]);
-        require(block.timestamp > add(lastPayoutTime[msg.sender], PERIOD));
+        require(
+            currentSharePrice > highWaterMark[msg.sender],
+            "Current share price does not pass high water mark"
+        );
+        require(
+            block.timestamp > add(lastPayoutTime[msg.sender], PERIOD),
+            "Performance period has not yet ended"
+        );
         lastPayoutTime[msg.sender] = block.timestamp;
         highWaterMark[msg.sender] = currentSharePrice;
     }

@@ -12,6 +12,7 @@ import { Contracts } from '~/Contracts';
 export const getPrices = async (
   contractAddress: string,
   tokens: TokenInterface[],
+  preventCancelDown: boolean = false,
   environment?: Environment,
 ) => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
@@ -35,7 +36,7 @@ export const getPrices = async (
   const createPrice = (t: TokenInterface, { price, timestamp }) => {
     const base = createQuantity(t, appendDecimals(t, 1));
     const quote = createQuantity(quoteToken, price);
-    return getPrice(base, quote);
+    return getPrice(base, quote, preventCancelDown);
   };
 
   const prices = R.zipWith(createPrice, tokens, processed);

@@ -3,7 +3,6 @@ import * as R from 'ramda';
 import { Address } from '~/utils/types';
 import { getGlobalEnvironment, Environment } from '~/utils/environment';
 import { requireMap, Contracts } from '~/Contracts';
-import { getContractWithPath } from '.';
 
 export type GetContractFunction = (
   relativePath: Contracts,

@@ -22,6 +22,7 @@ test('TypeScript function argument interpolation', () => {
 
   expect(suSt.additional).toEqual(123);
 
+  // @ts-ignore
   const superFn = (a: SuperString) => {
     expect(a).toBe('asdf');
   };
@@ -35,5 +36,6 @@ type FN = <T>(a: T) => T;
 test('Generics', () => {
   const fn: FN = <T>(a: T) => a;
 
+  // @ts-ignore
   const b = fn('asdf');
 });

@@ -60,7 +60,7 @@ contract FundFactory is AmguConsumer {
     }
 
     modifier step(uint8 n) {
-        require(stepFor[msg.sender] == n - 1);
+        require(stepFor[msg.sender] == n - 1, "Previous step incomplete");
         _;
         stepFor[msg.sender] = n;
     }

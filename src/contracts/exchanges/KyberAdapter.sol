@@ -40,8 +40,8 @@ contract KyberAdapter is DBC, DSMath {
     )
     {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
+        require(hub.manager() == msg.sender, "Manager is not sender");
+        require(!hub.isShutDown(), "Hub is shut down");
 
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
@@ -89,7 +89,7 @@ contract KyberAdapter is DBC, DSMath {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        revert("Unimplemented");
     }
 
     /// @dev Dummy function; not implemented on exchange
@@ -102,7 +102,7 @@ contract KyberAdapter is DBC, DSMath {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        revert("Unimplemented");
     }
 
     /// @dev Dummy function; not implemented on exchange
@@ -116,7 +116,7 @@ contract KyberAdapter is DBC, DSMath {
         bytes signature
     )
     {
-        revert();
+        revert("Unimplemented");
     }
 
     // VIEW FUNCTIONS
@@ -130,7 +130,7 @@ contract KyberAdapter is DBC, DSMath {
         view
         returns (address, address, uint, uint)
     {
-        revert();
+        revert("Unimplemented");
     }
 
     // INTERNAL FUNCTIONS

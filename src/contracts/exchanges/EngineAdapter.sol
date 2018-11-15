@@ -26,8 +26,8 @@ contract EngineAdapter is DSMath {
         bytes32 s
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(!hub.isShutDown());
+        require(hub.manager() == msg.sender, "Manager is not sender");
+        require(!hub.isShutDown(), "Hub is shut down");
 
         address mlnAddress = orderAddresses[0];
         address wethAddress = orderAddresses[1];
@@ -35,7 +35,10 @@ contract EngineAdapter is DSMath {
 
         Vault vault = Vault(hub.vault());
         vault.withdraw(mlnAddress, mlnQuantity);
-        require(ERC20(mlnAddress).approve(targetExchange, mlnQuantity));
+        require(
+            ERC20(mlnAddress).approve(targetExchange, mlnQuantity),
+            "MLN could not be approved"
+        );
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);

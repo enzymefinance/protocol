@@ -12,7 +12,7 @@ contract Vault is Spoke, VaultInterface {
     bool public locked;
 
     modifier onlyUnlocked {
-        require(!locked);
+        require(!locked, "Vault is locked");
         _;
     }
 

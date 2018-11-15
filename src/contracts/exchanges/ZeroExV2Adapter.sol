@@ -31,19 +31,23 @@ contract ZeroExV2Adapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
-        // require(Trading(address(this)).owner() == msg.sender);
-        // require(!Trading(address(this)).isShutDown());
+        require(hub.manager() == msg.sender, "Manager must be sender");
+        require(hub.isShutDown() == false, "Hub is shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        require(orderValues[4] >= now && orderValues[4] <= add(now, 1 days));
+        require(
+            orderValues[4] >= now && orderValues[4] <= add(now, 1 days),
+            "Order time invalid"
+        );
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
-        require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
+        require(
+            !Trading(address(this)).isInOpenMakeOrder(makerAsset),
+            "This asset is already in an open make order"
+        );
 
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
@@ -116,10 +120,8 @@ contract ZeroExV2Adapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
-        // require(Trading(address(this)).owner() == msg.sender);
-        // require(!Trading(address(this)).isShutDown());
+        require(hub.manager() == msg.sender, "Manager must be sender");
+        require(hub.isShutDown() == false, "Hub is shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -130,11 +132,15 @@ contract ZeroExV2Adapter is DSMath, DBC {
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
 
-        require(takerAssetFilledAmount == fillTakerQuantity);
+        require(
+            takerAssetFilledAmount == fillTakerQuantity,
+            "Filled amount does not match desired fill amount"
+        );
         // TODO: Add it back
         // require(
         //     Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
+        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS(),
+        //     "Not in asset list or cannot be added"
         // );
 
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
@@ -158,8 +164,10 @@ contract ZeroExV2Adapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender || hub.isShutDown() == false);
-        // require(Trading(address(this)).owner() == msg.sender || Trading(address(this)).isShutDown());
+        require(
+            hub.manager() == msg.sender || hub.isShutDown() == false,
+            "Manager must be sender or fund must be shut down"
+        );
 
         address makerAsset = orderAddresses[2];
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
@@ -183,7 +191,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
         view
         returns (uint)
     {
-        revert();
+        revert("Unimplemented");
     }
 
     // TODO: Get order details
@@ -211,7 +219,10 @@ contract ZeroExV2Adapter is DSMath, DBC {
         Vault vault = Vault(hub.vault());
         vault.withdraw(takerAsset, fillTakerQuantity);
         address assetProxy = getAssetProxy(targetExchange, takerAssetData);
-        require(ERC20(takerAsset).approve(assetProxy, fillTakerQuantity));
+        require(
+            ERC20(takerAsset).approve(assetProxy, fillTakerQuantity),
+            "Taker asset could not be approved"
+        );
     }
 
     /// @notice needed to avoid stack too deep error
@@ -222,7 +233,10 @@ contract ZeroExV2Adapter is DSMath, DBC {
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address assetProxy = getAssetProxy(targetExchange, makerAssetData);
-        require(ERC20(makerAsset).approve(assetProxy, makerQuantity));
+        require(
+            ERC20(makerAsset).approve(assetProxy, makerQuantity),
+            "Maker asset could not be approved"
+        );
     }
 
     /// @dev needed to avoid stack too deep error
@@ -242,7 +256,10 @@ contract ZeroExV2Adapter is DSMath, DBC {
             Hub hub = Hub(Trading(address(this)).hub());
             Vault vault = Vault(hub.vault());
             vault.withdraw(getAssetAddress(assetData), takerFee);
-            require(ERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee));
+            require(
+                ERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee),
+                "Fee asset could not be approved"
+            );
         }
 
         address makerAsset = getAssetAddress(order.makerAssetData);
@@ -255,7 +272,10 @@ contract ZeroExV2Adapter is DSMath, DBC {
         );
 
         uint postMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
-        require(postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount));
+        require(
+            postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount),
+            "Maker asset balance different than expected"
+        );
 
         return fillResults.takerAssetFilledAmount;
     }

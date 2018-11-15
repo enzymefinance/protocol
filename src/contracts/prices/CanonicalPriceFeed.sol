@@ -98,7 +98,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
     }
 
     /// @dev override inherited update function to prevent manual update from authority
-    function update(address[] ofAssets, uint[] newPrices) external { revert(); }
+    function update(address[] ofAssets, uint[] newPrices) external { revert("Unimplemented"); }
 
     /// @dev Burn state for a pricefeed operator
     /// @param user Address of pricefeed operator to burn the stake from
@@ -194,9 +194,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
                 numValidEntries++;
             }
         }
-        if (numValidEntries < minimumPriceCount) {
-            revert();
-        }
+        require(numValidEntries > minimumPriceCount, "Not enough prices");
         uint counter;
         uint[] memory out = new uint[](numValidEntries);
         for (uint j = 0; j < unsorted.length; j++) {
@@ -330,7 +328,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
         } else if (getQuoteAsset() == ofBase) {
             (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
-            revert(); // no suitable reference price available
+            revert("One of the parameters must be quoteAsset");
         }
     }
 
