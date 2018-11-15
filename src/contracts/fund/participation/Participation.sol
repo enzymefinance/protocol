@@ -45,7 +45,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
-        require(!hub.isShutDown(), "Cannot invest in shut down fund (hub)");
+        require(!hub.isShutDown(), "Cannot invest in shut down fund");
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -76,13 +76,13 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         //     )
         // )
     {
-        require(!hub.isShutDown());
+        require(!hub.isShutDown(), "Hub must not be shut down");
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0);
+        require(request.requestedShares > 0, "Trying to redeem zero shares");
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
-        require(isRecent);
+        require(isRecent, "Price not recent");
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
@@ -96,7 +96,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             uint investmentAssetDecimal;
             (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
             // TODO: is below check needed, given the recency check a few lines above?
-            require(isPriceRecent);
+            require(isPriceRecent, "Investment asset price not recent");
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
@@ -111,7 +111,12 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         );
 
         delete requests[requestOwner];
-        require(ERC20(request.investmentAsset).transferFrom(requestOwner, address(routes.vault), costQuantity)); // Allocate Value
+        require(
+            ERC20(request.investmentAsset).transferFrom(
+                requestOwner, address(routes.vault), costQuantity
+            ),
+            "Failed to transfer investment asset to vault"
+        );
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         // // TODO: this should be done somewhere else
         if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
@@ -131,7 +136,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     function redeemQuantity(uint shareQuantity) public {
         address[] memory assetList;
         (, assetList) = Accounting(routes.accounting).getFundHoldings();
-        require(redeemWithConstraints(shareQuantity, assetList)); //TODO: assetList from another module
+        redeemWithConstraints(shareQuantity, assetList); //TODO: assetList from another module
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
@@ -149,12 +154,12 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
-    function redeemWithConstraints(uint shareQuantity, address[] requestedAssets)
-        public
-        returns (bool)
-    {
+    function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
         Shares shares = Shares(routes.shares);
-        require(shares.balanceOf(msg.sender) >= shareQuantity);
+        require(
+            shares.balanceOf(msg.sender) >= shareQuantity,
+            "Sender does not enough shares to fulfill request"
+        );
 
         FeeManager(routes.feeManager).rewardManagementFee();
         uint owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
@@ -169,9 +174,15 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         Accounting accounting = Accounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
-            require(accounting.isInAssetList(ofAsset));
+            require(
+                accounting.isInAssetList(ofAsset),
+                "Requested asset not in asset list"
+            );
             for (uint j = 0; j < redeemedAssets.length; j++) {
-                require(ofAsset != redeemedAssets[j], "Asset was already redeemed");
+                require(
+                    ofAsset != redeemedAssets[j],
+                    "Asset was already redeemed"
+                );
             }
             redeemedAssets[i] = ofAsset;
             uint quantityHeld = accounting.assetHoldings(ofAsset);
@@ -190,10 +201,12 @@ contract Participation is DSMath, AmguConsumer, Spoke {
                 continue;
             } else {
                 Vault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
-                require(ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]));
+                require(
+                    ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]),
+                    "Asset transfer failed"
+                );
             }
         }
-        return true;
     }
 }
 

@@ -33,7 +33,7 @@ contract Spoke is DSAuth {
     }
 
     function initialize(address[12] _spokes) {
-        require(!initialized);
+        require(!initialized, "Already initialized");
         routes = Routes(
             _spokes[0],
             _spokes[1],

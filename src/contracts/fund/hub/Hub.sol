@@ -41,13 +41,13 @@ contract Hub is DSGuard {
 
     // TODO: extend this ability to the version (if version shut down and we still need this)
     function shutDownFund() public {
-        require(msg.sender == manager);
+        require(msg.sender == manager, "Only manager can shut down fund");
         isShutDown = true;
     }
 
     // TODO: add permissioning for sender
     function setSpokes(address[12] _spokes) {
-        require(!spokesSet);
+        require(!spokesSet, "Spokes already set");
         settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
         settings.participation = _spokes[2];
@@ -65,8 +65,8 @@ contract Hub is DSGuard {
 
     // TODO: add permissioning for sender
     function setRouting() {
-        require(spokesSet);
-        require(!routingSet);
+        require(spokesSet, "Spokes must be set");
+        require(!routingSet, "Routing already set");
         address[12] memory spokes = [
             settings.accounting, settings.feeManager, settings.participation,
             settings.policyManager, settings.shares, settings.trading,
@@ -86,9 +86,9 @@ contract Hub is DSGuard {
     // TODO: add permissioning for sender
     // TODO: decide how to handle `owner`; should any of the components have an owner? if not then we need to remove owner after everything is initialized.
     function setPermissions() {
-        require(spokesSet);
-        require(routingSet);
-        require(!permissionsSet);
+        require(spokesSet, "Spokes must be set");
+        require(routingSet, "Routing must be set");
+        require(!permissionsSet, "Permissioning already set");
         permit(settings.participation, settings.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(settings.trading, settings.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(settings.participation, settings.shares, bytes4(keccak256('createFor(address,uint256)')));

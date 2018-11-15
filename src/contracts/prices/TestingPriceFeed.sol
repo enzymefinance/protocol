@@ -29,7 +29,7 @@ contract TestingPriceFeed is DSMath {
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
     function update(address[] _assets, uint[] _prices) {
-        require(_assets.length == _prices.length);
+        require(_assets.length == _prices.length, "Array lengths unequal");
         updateId++;
         for (uint i = 0; i < _assets.length; ++i) {
             assetsToPrices[_assets[i]] = Data({
@@ -91,7 +91,7 @@ contract TestingPriceFeed is DSMath {
 
     // needed just to get decimals for prices
     function batchSetDecimals(address[] _assets, uint[] _decimals) {
-        require(_assets.length == _decimals.length);
+        require(_assets.length == _decimals.length, "Array lengths unequal");
         for (uint i = 0; i < _assets.length; i++) {
             setDecimals(_assets[i], _decimals[i]);
         }

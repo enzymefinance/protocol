@@ -194,7 +194,7 @@ contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegist
                 numValidEntries++;
             }
         }
-        require(numValidEntries > minimumPriceCount);
+        require(numValidEntries > minimumPriceCount, "Not enough prices");
         uint counter;
         uint[] memory out = new uint[](numValidEntries);
         for (uint j = 0; j < unsorted.length; j++) {
