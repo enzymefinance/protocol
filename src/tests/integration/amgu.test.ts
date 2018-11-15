@@ -4,6 +4,9 @@ import { createComponents } from '~/contracts/factory';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAmguPrice, setAmguPrice } from '~/contracts/version';
+import { subtract } from '@melonproject/token-math/bigInteger';
+import { getPrice } from '@melonproject/token-math/price';
+import { update } from '~/contracts/prices';
 
 const shared: any = {};
 
@@ -44,11 +47,40 @@ test('Set amgu and check its usage', async () => {
     JSON.stringify({ amguToken, oldAmugPrice, newAmguPrice }, null, 2),
   );
 
-  await createComponents(fundFactory, {
+  const args = {
     defaultTokens,
     exchangeConfigs,
     fundName,
     priceSource,
     quoteToken,
-  });
+  };
+
+  const newPrice = getPrice(
+    createQuantity(baseToken, 1),
+    createQuantity(quoteToken, 0.34),
+  );
+
+  await update(priceSource, [newPrice]);
+
+  const prepared = await createComponents.prepare(fundFactory, args);
+
+  const preBalance = await shared.environment.eth.getBalance(
+    shared.accounts[0],
+  );
+
+  console.log('pp', preBalance, prepared.gasEstimation);
+
+  const result = await createComponents.send(
+    fundFactory,
+    prepared,
+    args,
+    undefined,
+    shared.environment,
+  );
+
+  const postBalance = await shared.environment.eth.getBalance(
+    shared.accounts[0],
+  );
+
+  console.log(result, subtract(preBalance, postBalance).toString());
 });
