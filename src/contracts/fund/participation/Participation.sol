@@ -22,6 +22,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         uint atUpdateId
     );
 
+    event SuccessfulRedemption (
+        uint quantity
+    );
+
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -114,7 +118,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         } else {
             revert(); // Invalid Request or invalid giveQuantity / receiveQuantity
         }
-        RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
+        emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
     }
 
     /// @dev "Happy path" (no asset throws & quantity available)
@@ -192,6 +196,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
                 require(ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]));
             }
         }
+        emit SuccessfulRedemption(remainingShareQuantity);
         return true;
     }
 }

@@ -15,6 +15,7 @@ import { approve } from '~/contracts/dependencies/token';
 import {
   requestInvestment,
   executeRequest,
+  redeem,
 } from '~/contracts/fund/participation';
 import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
@@ -104,6 +105,9 @@ test(
     const executedRequest = await executeRequest(settings.participationAddress);
 
     console.log(executedRequest);
+
+    const redemption = await redeem(settings.participationAddress);
+    console.log(redemption);
 
     const shutDown = await shutDownFund(hubAddress);
 
