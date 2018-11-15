@@ -17,6 +17,7 @@ import {
   executeRequest,
 } from '~/contracts/fund/participation';
 import { getAmguPrice, setIsFund } from '~/contracts/version';
+import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 
 const shared: any = {};
 
@@ -103,6 +104,16 @@ test(
     const executedRequest = await executeRequest(settings.participationAddress);
 
     console.log(executedRequest);
+
+    const shutDown = await shutDownFund(hubAddress);
+
+    console.log(shutDown);
+
+    await expect(
+      requestInvestment(settings.participationAddress, {
+        investmentAmount: createQuantity(quoteToken, 1),
+      }),
+    ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   },
   30 * 1000,
 );

@@ -3,6 +3,7 @@ import {
   GuardFunction,
   PostProcessFunction,
   getContract,
+  PrepareArgsFunction,
 } from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { getRequest } from '../calls/getRequest';
@@ -14,6 +15,11 @@ import {
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token';
 import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
+import { Address } from '~/utils';
+
+export interface ExecuteRequestForArgs {
+  who: Address;
+}
 
 const guard = async (params, contractAddress, environment) => {
   const hub = await getHub(contractAddress, environment);
@@ -32,6 +38,12 @@ const guard = async (params, contractAddress, environment) => {
   // ensure isPriceRecent
 };
 
+const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async ({
+  who,
+}) => {
+  return [who.toString()];
+};
+
 const postProcess = async (receipt, params, contractAddress, environment) => {
   const hub = await getHub(contractAddress, environment);
   const settings = await getSettings(hub, environment);
@@ -44,12 +56,12 @@ const postProcess = async (receipt, params, contractAddress, environment) => {
   };
 };
 
-const executeRequest = transactionFactory(
-  'executeRequest',
+const executeRequestFor = transactionFactory(
+  'executeRequestFor',
   Contracts.Participation,
   guard,
-  undefined,
+  prepareArgs,
   postProcess,
 );
 
-export { executeRequest };
+export { executeRequestFor };
