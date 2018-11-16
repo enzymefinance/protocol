@@ -11,55 +11,39 @@ import "../0x/Ownable.sol";
   Licensed under the Apache License, Version 2.0
   http://www.apache.org/licenses/LICENSE-2.0
 
+  will@ethfinex.com
+
 */
 
-contract WrapperLock is BasicToken, Ownable {
+contract WrapperLockEth is BasicToken, Ownable {
     using SafeMath for uint256;
 
     address public TRANSFER_PROXY_VEFX;
     address public TRANSFER_PROXY_V2;
     mapping (address => bool) public isSigner;
 
-    bool public erc20old;
     string public name;
     string public symbol;
     uint public decimals;
-    address public originalToken;
+    address public originalToken = 0x00;
 
-    mapping (address => uint256) public depositLock;
+    mapping (address => uint) public depositLock;
     mapping (address => uint256) public balances;
 
-    function WrapperLock(
-        address _originalToken, 
-        string _name, 
-        string _symbol, 
-        uint _decimals, 
-        bool _erc20old, 
-        address _proxyEfx, 
-        address _proxyV2
-    ) 
-        Ownable() 
-    {
-        originalToken = _originalToken;
+    function WrapperLockEth(string _name, string _symbol, uint _decimals, address _proxyEfx, address _proxyV2) Ownable() {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
         isSigner[msg.sender] = true;
-        erc20old = _erc20old;
         TRANSFER_PROXY_VEFX = _proxyEfx;
         TRANSFER_PROXY_V2 = _proxyV2;
     }
 
-    function deposit(uint _value, uint _forTime) public returns (bool success) {
+    function deposit(uint _value, uint _forTime) public payable returns (bool success) {
         require(_forTime >= 1);
         require(now + _forTime * 1 hours >= depositLock[msg.sender]);
-        if (erc20old) {
-            ERC20Old(originalToken).transferFrom(msg.sender, address(this), _value);
-        } else {
-            require(ERC20Extended(originalToken).transferFrom(msg.sender, address(this), _value));
-        }
-        balances[msg.sender] = balances[msg.sender].add(_value);
-        totalSupply_ = totalSupply_.add(_value);
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        totalSupply_ = totalSupply_.add(msg.value);
         depositLock[msg.sender] = now + _forTime * 1 hours;
         return true;
     }
@@ -73,41 +57,30 @@ contract WrapperLock is BasicToken, Ownable {
     )
         public
         returns
-        (bool success)
+        (bool)
     {
         require(balanceOf(msg.sender) >= _value);
-        if (now <= depositLock[msg.sender]) {
+        if (now > depositLock[msg.sender]) {
+            balances[msg.sender] = balances[msg.sender].sub(_value);
+            totalSupply_ = totalSupply_.sub(msg.value);
+            msg.sender.transfer(_value);
+        } else {
             require(block.number < signatureValidUntilBlock);
             require(isValidSignature(keccak256(msg.sender, address(this), signatureValidUntilBlock), v, r, s));
-        }
-        balances[msg.sender] = balances[msg.sender].sub(_value);
-        totalSupply_ = totalSupply_.sub(_value);
-        depositLock[msg.sender] = 0;
-        if (erc20old) {
-            ERC20Old(originalToken).transfer(msg.sender, _value);
-        } else {
-            require(ERC20Extended(originalToken).transfer(msg.sender, _value));
+            balances[msg.sender] = balances[msg.sender].sub(_value);
+            totalSupply_ = totalSupply_.sub(msg.value);
+            depositLock[msg.sender] = 0;
+            msg.sender.transfer(_value);
         }
         return true;
     }
 
-    function withdrawBalanceDifference() public onlyOwner returns (bool success) {
-        require(ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_) > 0);
-        if (erc20old) {
-            ERC20Old(originalToken).transfer(msg.sender, ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_));
-        } else {
-            require(ERC20Extended(originalToken).transfer(msg.sender, ERC20Extended(originalToken).balanceOf(address(this)).sub(totalSupply_)));
-        }
-        return true;
-    }
-
-    function withdrawDifferentToken(address _differentToken, bool _erc20old) public onlyOwner returns (bool) {
-        require(_differentToken != originalToken);
-        require(ERC20Extended(_differentToken).balanceOf(address(this)) > 0);
+    function withdrawDifferentToken(address _token, bool _erc20old) public onlyOwner returns (bool) {
+        require(ERC20Extended(_token).balanceOf(address(this)) > 0);
         if (_erc20old) {
-            ERC20Old(_differentToken).transfer(msg.sender, ERC20Extended(_differentToken).balanceOf(address(this)));
+            ERC20Old(_token).transfer(msg.sender, ERC20Extended(_token).balanceOf(address(this)));
         } else {
-            require(ERC20Extended(_differentToken).transfer(msg.sender, ERC20Extended(_differentToken).balanceOf(address(this))));
+            ERC20Extended(_token).transfer(msg.sender, ERC20Extended(_token).balanceOf(address(this)));
         }
         return true;
     }
@@ -139,8 +112,7 @@ contract WrapperLock is BasicToken, Ownable {
         bytes32 hash,
         uint8 v,
         bytes32 r,
-        bytes32 s
-    )
+        bytes32 s)
         public
         constant
         returns (bool)
@@ -161,5 +133,4 @@ contract WrapperLock is BasicToken, Ownable {
     function keccak(address _sender, address _wrapper, uint _validTill) public constant returns(bytes32) {
         return keccak256(_sender, _wrapper, _validTill);
     }
-
 }
