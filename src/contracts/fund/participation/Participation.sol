@@ -129,6 +129,18 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
     }
 
+    function getOwedPerformanceFees(uint shareQuantity)
+        view
+        returns (uint remainingShareQuantity)
+    {
+        Shares shares = Shares(routes.shares);
+        uint performanceFeePortion = mul(
+            FeeManager(routes.feeManager).performanceFeeAmount(),
+            shareQuantity
+        ) / shares.totalSupply();
+        return performanceFeePortion;
+    }
+
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares and across all assets
     function redeem() public {
@@ -143,26 +155,15 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         redeemWithConstraints(shareQuantity, assetList); //TODO: assetList from another module
     }
 
-    function getOwedPerformanceFees(uint shareQuantity)
-        view
-        returns (uint remainingShareQuantity)
-    {
-        Shares shares = Shares(routes.shares);
-        uint performanceFeePortion = mul(
-            FeeManager(routes.feeManager).performanceFeeAmount(),
-            shareQuantity
-        ) / shares.totalSupply();
-        return performanceFeePortion;
-    }
-
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
         Shares shares = Shares(routes.shares);
         require(
-            shares.balanceOf(msg.sender) >= shareQuantity,
-            "Sender does not enough shares to fulfill request"
+            shares.balanceOf(msg.sender) >= shareQuantity &&
+            shares.balanceOf(msg.sender) > 0,
+            "Sender does not have enough shares to fulfill request"
         );
 
         FeeManager(routes.feeManager).rewardManagementFee();
