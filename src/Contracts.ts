@@ -7,6 +7,9 @@ export enum Contracts {
   GenericExchange = 'exchanges/GenericExchange',
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
+  MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
+  MockFeeManager = 'fund/fees/MockFeeManager',
+  MockHub = 'fund/hub/MockHub',
   MockVersion = 'version/MockVersion',
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
@@ -40,12 +43,18 @@ export const requireMap = {
     require('../out/exchanges/GenericExchangeInterface.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
-  [Contracts.MatchingMarket]:
-    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+  [Contracts.MockFeeManager]:
+    require('../out/fund/fees/MockFeeManager.abi.json'),
+  [Contracts.MockHub]:
+    require('../out/fund/hub/MockHub.abi.json'),
   [Contracts.MockVersion]:
     require('../out/version/MockVersion.abi.json'),
+  [Contracts.MatchingMarket]:
+    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+  [Contracts.MatchingMarketAdapter]:
+  require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
-    require('../out/fund/participation/Participation.abi.json'),
+    require('../out/fund/participation/ParticipationInterface.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:
