@@ -74,11 +74,6 @@ export const prepareTransaction = async (
         ...R.omit(['amguPayable'], amguOptions),
       });
     } catch (e) {
-      console.log(
-        isEnvironment(optionsOrEnvironment),
-        options,
-        R.omit(['amguPayable'], amguOptions),
-      );
       throw new Error(
         `Gas estimation (preflight) failed for ${
           transaction.name
