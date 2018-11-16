@@ -13,8 +13,6 @@ import {
   defaultOptions,
 } from '~/utils/environment';
 
-console.log(isEnvironment, 'asdf');
-
 import { Contracts } from '~/Contracts';
 import { Options } from './sendTransaction';
 

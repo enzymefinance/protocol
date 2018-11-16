@@ -6,8 +6,6 @@ import {
 
 import { Contracts } from '~/Contracts';
 
-// import { calcAmguInEth } from '~/contracts/engine';
-
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
   getContract,
@@ -184,16 +182,19 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       typeof providedOptions === 'function'
         ? providedOptions(prepared, environment)
         : providedOptions;
+
+    // HACK: To avoid circular dependencies (?)
+    const {
+      calcAmguInEth,
+    } = await import('~/contracts/engine/calls/calcAmguInEth');
+
     const amguInEth = options.amguPayable
-      ? createQuantity('eth', `${42141 * 1000000000}`)
-      : createQuantity(
-          'eth',
-          '0',
-        ); /*await calcAmguInEth(
-      contractAddress,
-      prepared.gasEstimation,
-      environment,
-    );*/
+      ? await calcAmguInEth(
+          contractAddress,
+          prepared.gasEstimation,
+          environment,
+        )
+      : createQuantity('eth', '0'); /*;*/
 
     const melonTransaction = {
       amguInEth,
@@ -221,8 +222,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     environment = getGlobalEnvironment(),
   ) => {
     //  const receipt = await sendTransaction(prepared, options, environment);
-    console.log(name, prepared);
-
     const receipt = await environment.eth.sendTransaction(
       prepared.rawTransaction,
     );

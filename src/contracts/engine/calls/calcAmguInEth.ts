@@ -24,15 +24,14 @@ const calcAmguInEth = async (
     false,
     environment,
   );
-  console.log(mlnPerAmgu, ethPerMln);
 
   return createQuantity(
     'ETH',
     multiply(
       new BigInteger(toAtomic(ethPerMln[0])),
-      new BigInteger(toAtomic(mlnPerAmgu)),
+      new BigInteger(mlnPerAmgu.quantity),
       new BigInteger(gasEstimation),
-    ),
+    ).slice(0, -18),
   );
 };
 
