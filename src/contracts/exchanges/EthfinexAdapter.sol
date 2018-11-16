@@ -71,6 +71,7 @@ contract EthfinexAdapter is DSMath, DBC {
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
     /// @notice No Take orders on Ethfinex
@@ -100,12 +101,11 @@ contract EthfinexAdapter is DSMath, DBC {
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
 
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
-        address makerAsset = ExchangeEfx(targetExchange).wrapper2TokenLookup(getAssetAddress(order.makerAssetData));
+        address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
         ExchangeEfx(targetExchange).cancelOrder(order);
 
-        // Set the approval back to 0
-        approveWrappedMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
+        // Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             identifier,
