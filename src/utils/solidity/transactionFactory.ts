@@ -95,6 +95,17 @@ export type WithContractAddressQuery = <Args, Result>(
   transaction: EnhancedExecute<Args, Result>,
 ) => ImplicitExecute<Args, Result>;
 
+export interface WithTransactionDecoratorOptions<Args, Result> {
+  guard?: GuardFunction<Args>;
+  prepareArgs?: PrepareArgsFunction<Args>;
+  postProcess?: PostProcessFunction<Args, Result>;
+}
+
+export type WithTransactionDecorator = <Args, Result>(
+  transaction: EnhancedExecute<Args, Result>,
+  decorator: WithTransactionDecoratorOptions<Args, Result>,
+) => EnhancedExecute<Args, Result>;
+
 export const defaultGuard: GuardFunction<any> = async () => {};
 
 export const defaultPrepareArgs = async (
@@ -102,6 +113,7 @@ export const defaultPrepareArgs = async (
   contractAddress,
   environment,
 ) => Object.values(params || {}).map(v => v.toString());
+
 export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
   true;
 
@@ -136,7 +148,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   guard = defaultGuard,
   prepareArgs = defaultPrepareArgs,
   postProcess = defaultPostProcess,
-  defaultOptions?,
+  defaultOptions,
 ) => {
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
@@ -174,7 +186,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     return postprocessed;
   };
 
-  const execute: EnhancedExecute<Args, Result> = async (
+  const execute: ExecuteFunction<Args, Result> = async (
     contractAddress,
     params,
     options = defaultOptions,
@@ -196,10 +208,82 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     return result;
   };
 
-  execute.prepare = prepare;
-  execute.send = send;
+  (execute as EnhancedExecute<Args, Result>).prepare = prepare;
+  (execute as EnhancedExecute<Args, Result>).send = send;
 
-  return execute;
+  return execute as EnhancedExecute<Args, Result>;
+};
+
+const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
+  transaction,
+  decorator,
+) => {
+  const prepare: PrepareFunction<Args> = async (
+    contractAddress,
+    params,
+    options,
+    environment: Environment = getGlobalEnvironment(),
+  ) => {
+    if (typeof decorator.guard !== 'undefined') {
+      await decorator.guard(params, contractAddress, environment);
+    }
+
+    let processedParams = params;
+    if (typeof decorator.prepareArgs !== 'undefined') {
+      processedParams = await decorator.prepareArgs(
+        params,
+        contractAddress,
+        environment,
+      );
+    }
+
+    return transaction.prepare(
+      contractAddress,
+      processedParams,
+      options,
+      environment,
+    );
+  };
+
+  const send: SendFunction<Args> = async (
+    contractAddress,
+    prepared,
+    params,
+    options,
+    environment = getGlobalEnvironment(),
+  ) => {
+    const result = await transaction.send(
+      contractAddress,
+      prepared,
+      params,
+      options,
+      environment,
+    );
+    if (typeof decorator.postProcess !== 'undefined') {
+      return decorator.postProcess(
+        result,
+        params,
+        contractAddress,
+        environment,
+      );
+    }
+
+    return result;
+  };
+
+  const execute: ExecuteFunction<Args, Result> = async (
+    contractAddress,
+    params,
+    options,
+    environment = getGlobalEnvironment(),
+  ) => {
+    return transaction.execute(contractAddress, params, options, environment);
+  };
+
+  (execute as EnhancedExecute<Args, Result>).prepare = prepare;
+  (execute as EnhancedExecute<Args, Result>).send = send;
+
+  return execute as EnhancedExecute<Args, Result>;
 };
 
 /**
@@ -249,4 +333,8 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
   return execute;
 };
 
-export { transactionFactory, withContractAddressQuery };
+export {
+  transactionFactory,
+  withTransactionDecorator,
+  withContractAddressQuery,
+};
