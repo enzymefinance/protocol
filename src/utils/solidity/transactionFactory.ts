@@ -1,18 +1,47 @@
 import * as R from 'ramda';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
+
+import { Contracts } from '~/Contracts';
+
+// import { calcAmguInEth } from '~/contracts/engine';
 
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
   getContract,
   prepareTransaction,
-  PreparedTransaction,
-  sendTransaction,
   OptionsOrCallback,
+  Options,
 } from '../solidity';
 import { Address } from '../types';
-import { Contracts } from '~/Contracts';
 
 type TransactionArg = number | string;
 type TransactionArgs = TransactionArg[];
+
+// The raw unsigned transaction object from web3
+// https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
+export interface UnsignedRawTransaction {
+  from: string;
+  to: string;
+  value?: string;
+  gas?: string;
+  gasPrice?: string;
+  data?: string;
+  nonce?: number;
+}
+
+export interface MelonTransaction<Args> {
+  amguInEth: QuantityInterface;
+  params: Args;
+  rawTransaction: UnsignedRawTransaction;
+  // Already signed transaction in HEX as described here:
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendsignedtransaction
+  // If not specified, signing will be done through web3.js
+  signedTransaction?: string;
+  transactionArgs: TransactionArgs;
+}
 
 // Guard check if the given transaction can run without errors
 // They are crucial to spot "Transaction Execution Errors" before
@@ -52,7 +81,7 @@ export type TransactionFactory = <Args, Result>(
 
 type SendFunction<Args> = (
   contractAddress: Address,
-  prepared: PreparedTransaction,
+  melonTransaction: MelonTransaction<Args>,
   params: Args,
   providedOptions: OptionsOrCallback,
   environment: Environment,
@@ -62,7 +91,7 @@ type PrepareFunction<Args> = (
   contractAddress: Address,
   params?: Args,
   environment?: Environment,
-) => Promise<PreparedTransaction>;
+) => Promise<MelonTransaction<Args>>;
 
 type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
@@ -134,7 +163,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   guard = defaultGuard,
   prepareArgs = defaultPrepareArgs,
   postProcess = defaultPostProcess,
-  providedOptions?,
+  providedOptions = {},
 ) => {
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
@@ -146,24 +175,65 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     const contractInstance = getContract(contract, contractAddress);
     const transaction = contractInstance.methods[name](...args);
     transaction.name = name;
-    const prepared = await prepareTransaction(transaction, environment);
-    return { ...prepared, contract };
+    const prepared = await prepareTransaction(
+      transaction,
+      providedOptions,
+      environment,
+    );
+    const options: Options =
+      typeof providedOptions === 'function'
+        ? providedOptions(prepared, environment)
+        : providedOptions;
+    const amguInEth = options.amguPayable
+      ? createQuantity('eth', `${42141 * 1000000000}`)
+      : createQuantity(
+          'eth',
+          '0',
+        ); /*await calcAmguInEth(
+      contractAddress,
+      prepared.gasEstimation,
+      environment,
+    );*/
+
+    const melonTransaction = {
+      amguInEth,
+      params,
+      rawTransaction: {
+        data: prepared.encoded,
+        from: `${environment.wallet.address}`,
+        gas: `${prepared.gasEstimation}`,
+        gasPrice: `${environment.options.gasPrice}`,
+        to: `${contractAddress}`,
+        value: `${amguInEth.quantity}`,
+      },
+      transactionArgs: prepared.transaction.arguments,
+    };
+
+    return melonTransaction;
   };
 
   const send: SendFunction<Args> = async (
     contractAddress,
     prepared,
     params,
+    // TODO: investigate options
     options = providedOptions,
     environment = getGlobalEnvironment(),
   ) => {
-    const receipt = await sendTransaction(prepared, options, environment);
+    //  const receipt = await sendTransaction(prepared, options, environment);
+    console.log(name, prepared);
+
+    const receipt = await environment.eth.sendTransaction(
+      prepared.rawTransaction,
+    );
+
     const postprocessed = await postProcess(
       receipt,
       params,
       contractAddress,
       environment,
     );
+
     return postprocessed;
   };
 

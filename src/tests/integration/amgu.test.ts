@@ -68,7 +68,7 @@ test('Set amgu and check its usage', async () => {
     shared.accounts[0],
   );
 
-  console.log('pp', preBalance, prepared.gasEstimation);
+  console.log('pp', preBalance, prepared);
 
   const result = await createComponents.send(
     fundFactory,

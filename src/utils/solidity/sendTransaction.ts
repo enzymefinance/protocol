@@ -3,6 +3,7 @@ import { getGlobalEnvironment } from '~/utils/environment';
 const debug = require('~/utils/getDebug').default(__filename);
 
 export interface Options {
+  amguPayable?: boolean;
   from?: string;
   gas?: string;
   gasPrice?: string;
@@ -13,7 +14,8 @@ export type OptionsCallback = (prepared, environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
 
-const defaultOptions = (prepared, environment) => ({
+export const defaultOptions = (prepared, environment) => ({
+  amguPayable: false,
   from: environment.wallet.address,
   gas: `${prepared.gasEstimation}`,
   gasPrice: `${environment.options.gasPrice}`,
