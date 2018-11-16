@@ -4,10 +4,12 @@ pragma experimental ABIEncoderV2;
 import "../dependencies/token/ERC20.i.sol";
 import "./thirdparty/ethfinex/ExchangeEfx.sol";
 import "./thirdparty/ethfinex/WrapperLock.sol";
+import "./thirdparty/ethfinex/WrapperLockEth.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
+import "../dependencies/token/WETH9.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/math.sol";
 
@@ -101,10 +103,10 @@ contract EthfinexAdapter is DSMath, DBC {
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
 
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
-        address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
         ExchangeEfx(targetExchange).cancelOrder(order);
 
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
+        // address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
         // Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -120,10 +122,17 @@ contract EthfinexAdapter is DSMath, DBC {
         address targetExchange,
         address[] tokens
     ) {
+        Hub hub = Hub(Trading(address(this)).hub());
+        // TODO: Change to Native Asset or Wrapped Native Asset?
+        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+
         for (uint i = 0; i < tokens.length; i++) {
-            address wrappedToken = ExchangeEfx(targetExchange).token2WrapperLookup(tokens[i]);
+            address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(tokens[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
+            if (tokens[i] == nativeAsset) {
+                WETH9(nativeAsset).deposit.value(balance)();
+            }
         }
     }
 
@@ -150,7 +159,7 @@ contract EthfinexAdapter is DSMath, DBC {
         }
 
         // Check if order has been cancelled and tokens have been withdrawn
-        uint balance = WrapperLock(ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset)).balanceOf(address(this));
+        uint balance = WrapperLock(ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset)).balanceOf(msg.sender);
         if (ExchangeEfx(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
@@ -167,8 +176,16 @@ contract EthfinexAdapter is DSMath, DBC {
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
-        ERC20(makerAsset).approve(wrappedToken, makerQuantity);
-        WrapperLock(wrappedToken).deposit(makerQuantity, 1);
+
+        // Handle case for WETH
+        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        if (makerAsset == nativeAsset) {
+            WETH9(nativeAsset).withdraw(makerQuantity);
+            WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, 1);
+        } else { 
+            ERC20(makerAsset).approve(wrappedToken, makerQuantity);
+            WrapperLock(wrappedToken).deposit(makerQuantity, 1);
+        }
     }
 
     // VIEW METHODS
