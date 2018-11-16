@@ -121,7 +121,7 @@ contract FundFactory is AmguConsumer {
     }
 
     // TODO: improve naming
-    function continueCreation() public step(2) amguPayable {
+    function continueCreation() public payable step(2) amguPayable {
         Hub hub = Hub(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].trading = tradingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].exchanges, managersToSettings[msg.sender].adapters, managersToSettings[msg.sender].takesCustody);
@@ -134,7 +134,7 @@ contract FundFactory is AmguConsumer {
     }
 
     // TODO: improve naming
-    function setupFund() public step(3) amguPayable {
+    function setupFund() public payable step(3) amguPayable {
 
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
