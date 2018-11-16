@@ -2,16 +2,21 @@ import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
+  getContract,
 } from '~/utils/solidity';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import {
+  QuantityInterface,
+  createQuantity,
+  greaterThan,
+} from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getHub, ensureIsNotShutDown } from '../../hub';
-import { Address } from '~/utils';
+import { getHub, ensureIsNotShutDown } from '../../fund/hub';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { ensure } from '~/utils/guards';
 
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;
   buy: QuantityInterface;
-  timeout: number;
 }
 
 const guard: GuardFunction<CallOnExchangeArgs> = async (
@@ -21,46 +26,51 @@ const guard: GuardFunction<CallOnExchangeArgs> = async (
 ) => {
   const hub = await getHub(contractAddress, environment);
   await ensureIsNotShutDown(hub, environment);
+  await approve({ howMuch: params.sell, spender: contractAddress });
+  const oasisDexContract = getContract(
+    Contracts.MatchingMarket,
+    contractAddress,
+  );
+  const dust = await oasisDexContract.methods._dust().call();
+  ensure(greaterThan(params.sell, dust), 'Selling quantity too low.');
 };
 
 const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
   sell,
   buy,
-  timeout,
 }) => {
   return [
-    exchangeIndex,
-    method,
-    [maker, taker, makerAsset, takerAsset, feeRecipient, senderAddress],
-    [
-      makerQuantity.toString(),
-      takerQuantity.toString(),
-      makerFee.toString(),
-      takerFee.toString(),
-      timestamp,
-      salt,
-      fillTakerTokenAmount.toString(),
-      dexySignatureMode,
-    ],
-    `0x${Number(identifier)
-      .toString(16)
-      .padStart(64, '0')}`,
-    signature,
-    makerAssetData,
-    takerAssetData,
+    sell.quantity.toString(),
+    sell.token.address,
+    buy.quantity.toString(),
+    buy.token.address,
+    0,
   ];
 };
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  return receipt;
+  return {
+    id: receipt.events.LogMake.returnValues.id,
+    maker: receipt.events.LogMake.returnValues.maker,
+    taker: receipt.events.LogMake.returnValues.taker,
+    sell: createQuantity(
+      receipt.events.LogMake.returnValues.pay_gem,
+      receipt.events.LogMake.returnValues.pay_amt,
+    ),
+    buy: createQuantity(
+      receipt.events.LogMake.returnValues.buy_gem,
+      receipt.events.LogMake.returnValues.buy_amt,
+    ),
+    timestamp: receipt.events.LogMake.returnValues.timestamp,
+  };
 };
 
-const callOnExchange = transactionFactory(
-  'callOnExchange',
-  Contracts.Participation,
+const makeOrderFromAccountOasisDex = transactionFactory(
+  'offer',
+  Contracts.MatchingMarket,
   guard,
   prepareArgs,
   postProcess,
 );
 
-export { callOnExchange };
+export { makeOrderFromAccountOasisDex };
