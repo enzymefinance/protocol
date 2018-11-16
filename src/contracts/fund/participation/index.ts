@@ -8,3 +8,4 @@ export * from './transactions/executeRequestFor';
 export * from './transactions/redeem';
 export * from './transactions/redeemQuantity';
 export * from './transactions/requestInvestment';
+export * from './transactions/redeemWithConstraints';
