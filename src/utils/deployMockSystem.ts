@@ -26,7 +26,7 @@ export const deployMockSystem = async (
   hubContract = Contracts.MockHub,
   participationContract = Contracts.Participation,
   priceSourceContract = Contracts.TestingPriceFeed,
-  sharesContract = Contracts.Shares,
+  sharesContract = Contracts.MockShares,
   tradingContract = Contracts.Trading,
   vaultContract = Contracts.Vault,
   versionContract = Contracts.MockVersion,
@@ -35,11 +35,15 @@ export const deployMockSystem = async (
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
-  const quoteTokenAddress = await deployToken('ETH');
+  const wethTokenAddress = await deployToken('ETH');
   const mlnTokenAddress = await deployToken('MLN');
   const baseTokenAddress = mlnTokenAddress;
+  const quoteTokenAddress = wethTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
+  const mln = await getContract(Contracts.StandardToken, mlnTokenAddress);
+  const weth = await getContract(Contracts.StandardToken, wethTokenAddress);
+
   const priceSource = await deployAndGet(priceSourceContract, [
     quoteToken.address,
     quoteToken.decimals,
@@ -119,11 +123,13 @@ export const deployMockSystem = async (
     accounting,
     feeManager,
     hub,
+    mln,
     participation,
     priceSource,
     shares,
     trading,
     vault,
     version,
+    weth,
   };
 };

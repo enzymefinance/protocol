@@ -1,22 +1,12 @@
-import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment';
-import {
-  deploy as deployToken,
-  getToken,
-} from '~/contracts/dependencies/token';
-import { deploy as deployFeed, update } from '~/contracts/prices';
-import { getContract, deploy as deployContract } from '~/utils/solidity';
 import { randomAddress } from '~/utils/helpers';
-import { Contracts } from '~/Contracts';
 import { deployMockSystem } from '~/utils';
-import { redeem } from '..';
 
 let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = Object.assign(shared, await deployMockSystem());
-  shared.accounts = await shared.env.eth.getAccounts();
   shared.user = shared.env.wallet.address;
 });
 

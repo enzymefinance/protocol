@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
