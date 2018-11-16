@@ -34,7 +34,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     }
 
     mapping (address => Request) public requests;
-    uint public SHARES_DECIMALS;
+    uint public SHARES_DECIMALS = 18;
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -56,7 +56,6 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             timestamp: block.timestamp,
             atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
-        SHARES_DECIMALS = 18;
     }
 
     function cancelRequest() external {
@@ -79,10 +78,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         //     )
         // )
     {
-        require(!hub.isShutDown(), "Hub must not be shut down");
+        require(!hub.isShutDown(), "Cannot invest in shut down fund");
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0, "Trying to redeem zero shares");
+        require(request.requestedShares > 0, "Trying to buy zero shares");
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
         require(isRecent, "Price not recent");

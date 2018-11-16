@@ -29,7 +29,7 @@ contract MockHub is DSGuard {
 
     function setName(string _name) { name = _name; }
 
-    function shutDownFund() { isShutDown = true; }
+    function setShutDownState(bool _state) { isShutDown = _state; }
 
     function setSpokes(address[12] _spokes) {
         settings.accounting = _spokes[0];
