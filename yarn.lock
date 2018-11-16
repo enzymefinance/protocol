@@ -860,10 +860,10 @@
   dependencies:
     events "^3.0.0"
 
-"@melonproject/token-math@0.0.19":
-  version "0.0.19"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.19.tgz#9587d0432bc33a8cfcf820f79201c073d5e12e84"
-  integrity sha512-BAq/5yGXmqJVFb1es47aiFze42DbJjf2cEMj957o4UOAdwxnI6+nc3+2Uh9ZnGdj+aPqO6t8f408tKT8FehT8Q==
+"@melonproject/token-math@^0.0.20":
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.20.tgz#47be3df0b9cca70b26dc45fb0a2f4bef2a22000e"
+  integrity sha512-k0Sz8JgEmPxIY0Zlfa1xsiIn79OdSjscN6imTEWtqkYfPoRtS/E2Y4L/K1oA7x6Tgk151A4o5ZzEoqtwhpIqPg==
   dependencies:
     bn.js "^4.11.8"
     web3-utils "^1.0.0-beta.36"

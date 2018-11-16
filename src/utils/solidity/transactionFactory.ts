@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import * as Web3EthAbi from 'web3-eth-abi';
 import {
   QuantityInterface,
   createQuantity,
@@ -225,6 +226,20 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     const receipt = await environment.eth.sendTransaction(
       prepared.rawTransaction,
     );
+
+    const contractInstance = getContract(contract, contractAddress);
+
+    console.log(contractInstance.options.jsonInterface);
+
+    const events = receipt.logs.map(log =>
+      Web3EthAbi.decodeLog(
+        contractInstance.options.jsonInterface,
+        log.data,
+        log.topics,
+      ),
+    );
+
+    console.log(events);
 
     const postprocessed = await postProcess(
       receipt,
