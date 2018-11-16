@@ -44,7 +44,7 @@ contract EthfinexAdapter is DSMath, DBC {
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
         require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
-        approveWrappedMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
+        wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
         
@@ -160,7 +160,7 @@ contract EthfinexAdapter is DSMath, DBC {
     // INTERNAL METHODS
 
     /// @notice needed to avoid stack too deep error
-    function approveWrappedMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity)
+    function wrapMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity)
         internal
     {
         Hub hub = Hub(Trading(address(this)).hub());
@@ -169,8 +169,6 @@ contract EthfinexAdapter is DSMath, DBC {
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
         ERC20(makerAsset).approve(wrappedToken, makerQuantity);
         WrapperLock(wrappedToken).deposit(makerQuantity, 1);
-        address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
-        // require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
     }
 
     // VIEW METHODS
