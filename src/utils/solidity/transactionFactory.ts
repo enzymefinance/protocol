@@ -11,7 +11,7 @@ import {
 import { Address } from '../types';
 import { Contracts } from '~/Contracts';
 
-type TransactionArg = number | string;
+type TransactionArg = number | string | (number | string)[];
 type TransactionArgs = TransactionArg[];
 
 // Guard check if the given transaction can run without errors
