@@ -1,13 +1,4 @@
-// import {
-//   BigInteger,
-//   add,
-//   subtract,
-//   divide,
-//   multiply,
-//   isEqual,
-// } from '@melonproject/token-math/bigInteger';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getPrice } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/utils/environment';
 import {
   deploy as deployToken,
@@ -15,6 +6,7 @@ import {
 } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import { getContract, deploy as deployContract } from '~/utils/solidity';
+import { randomAddress } from '~/utils/helpers';
 import { Contracts } from '~/Contracts';
 import { deployMockSystem } from '~/utils';
 import { redeem } from '..';
@@ -25,32 +17,87 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = Object.assign(shared, await deployMockSystem());
   shared.accounts = await shared.env.eth.getAccounts();
-  // const wethAddress = await deployToken('ETH');
-  // shared.mln = getContract(
-  //   Contracts.BurnableToken,
-  //   await deployContract(Contracts.BurnableToken, ['MLN', 18, '']),
-  // );
-  // shared.weth = await getContract(Contracts.StandardToken, wethAddress);
-  // const newPrice = getPrice(
-  //   createQuantity(await getToken(shared.mln.options.address), 1),
-  //   createQuantity(await getToken(wethAddress), 2.94),
-  //   true,
-  // );
-  // await update(feedAddress, [newPrice], true);
+  shared.user = shared.env.wallet.address;
 });
 
 test('Redeem with no shares fails', async () => {
   const errorMessage = 'Sender does not have enough shares to fulfill request';
+  const preShares = await shared.shares.methods.balanceOf(shared.user).call();
 
-  await expect(redeem(shared.participation.options.address)).rejects.toThrow(
-    'does not own shares of the fund',
-  );
+  await shared.shares.methods
+    .createFor(`${randomAddress()}`, '1000')
+    .send({ from: shared.user });
 
+  expect(preShares).toBe('0');
   await expect(
     shared.participation.methods
       .redeem()
-      .send({ from: shared.env.wallet.address }),
+      .send({ from: shared.user, gas: 8000000 }),
+  ).rejects.toThrow(errorMessage);
+  await expect(
+    shared.participation.methods
+      .redeemWithConstraints('1', [])
+      .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 });
 
-test('', async () => {});
+test('Asset not in list prevents redemption', async () => {
+  const errorMessage = 'Requested asset not in asset list';
+  const addr = `${randomAddress()}`;
+
+  await shared.shares.methods
+    .createFor(`${shared.user}`, '1000')
+    .send({ from: shared.user });
+
+  const preShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  await expect(
+    shared.participation.methods
+      .redeemWithConstraints('1', [addr])
+      .send({ from: shared.user, gas: 8000000 }),
+  ).rejects.toThrow(errorMessage);
+
+  const postShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  expect(preShares).toBe(postShares);
+});
+
+test('Asset cannot be redeemed twice', async () => {
+  const errorMessage = 'Asset can only be redeemed once';
+
+  const preShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  await expect(
+    shared.participation.methods
+      .redeemWithConstraints('1', [
+        shared.weth.options.address,
+        shared.weth.options.address,
+      ])
+      .send({ from: shared.user, gas: 8000000 }),
+  ).rejects.toThrow(errorMessage);
+
+  const postShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  expect(preShares).toBe(postShares);
+});
+
+test('Vault-held assets can be redeemed', async () => {
+  const wethAmount = '1000';
+  await shared.weth.methods
+    .transfer(shared.vault.options.address, wethAmount)
+    .send({ from: shared.user });
+  const heldWeth = await shared.accounting.methods
+    .assetHoldings(shared.weth.options.address)
+    .call();
+  const preShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  expect(heldWeth).toBe(wethAmount);
+
+  await shared.participation.methods
+    .redeemWithConstraints(preShares, [shared.weth.options.address])
+    .send({ from: shared.user, gas: 8000000 });
+
+  const postShares = await shared.shares.methods.balanceOf(shared.user).call();
+
+  expect(postShares).toBe('0');
+});
