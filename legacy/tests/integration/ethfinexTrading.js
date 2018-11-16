@@ -37,6 +37,7 @@ let ethToken;
 let mlnToken;
 let eurToken;
 let zrxToken;
+let ethTokenWrapper;
 let mlnTokenWrapper; 
 let eurTokenWrapper;
 let ethfinexExchange;
@@ -55,8 +56,8 @@ let opts;
 
 // mock data
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const offeredValue = new BigNumber(10 ** 18);
-const wantedShares = new BigNumber(10 ** 18);
+const offeredValue = new BigNumber(10 ** 19);
+const wantedShares = new BigNumber(10 ** 19);
 
 test.before(async t => {
   deployed = await deployEnvironment(environment);
@@ -81,6 +82,11 @@ test.before(async t => {
   const ethfinexAdapter = await deployContract(
     "exchanges/EthfinexAdapter",
     opts
+  );
+  ethTokenWrapper = await deployContract(
+    "exchanges/thirdparty/ethfinex/WrapperlockEth",
+    opts,
+    ["WETH", "WETH Token", 18, ethfinexExchange.options.address, erc20Proxy.options.address]
   );
   mlnTokenWrapper = await deployContract(
     "exchanges/thirdparty/ethfinex/Wrapperlock",
@@ -113,8 +119,8 @@ test.before(async t => {
   const zrxAssetData = assetDataUtils.encodeERC20AssetData(zrxToken.options.address);
   await ethfinexExchange.methods.changeZRXAssetData(zrxAssetData).send(opts);
   await ethfinexExchange.methods.addNewWrapperPair(
-    [mlnToken.options.address, eurToken.options.address], 
-    [mlnTokenWrapper.options.address, eurTokenWrapper.options.address]
+    [ethToken.options.address, mlnToken.options.address, eurToken.options.address], 
+    [ethTokenWrapper.options.address, mlnTokenWrapper.options.address, eurTokenWrapper.options.address]
   ).send(opts);
 
   // Setup Fund
@@ -280,10 +286,7 @@ test.serial("Make order through the fund", async t => {
   const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
-  console.log(await fund.accounting.methods.getFundHoldings().call());
-  console.log(postGav);
   t.is(preGav, postGav);
-  await web3.evm.increaseTime(1000);
 });
 
 test.serial(
@@ -323,3 +326,85 @@ test.serial(
     t.deepEqual(makerAssetAllowance, new BigNumber(0));
   }
 );
+
+
+test.serial("Make order through the fund", async t => {
+  const makerAddress = fund.trading.options.address.toLowerCase();
+  const [, referencePrice] = Object.values(
+    await pricefeed.methods
+      .getReferencePriceInfo(mlnToken.options.address, ethToken.options.address)
+      .call()
+  );  
+  const sellQuantity1 = new BigNumber(10 ** 18);
+  const trade2 = {
+    sellQuantity: sellQuantity1,
+    buyQuantity: new BigNumber(referencePrice)
+      .dividedBy(new BigNumber(10 ** 18))
+      .times(sellQuantity1)
+  };
+  order = {
+    exchangeAddress: ethfinexExchange.options.address.toLowerCase(),
+    makerAddress,
+    takerAddress: NULL_ADDRESS,
+    senderAddress: NULL_ADDRESS,
+    feeRecipientAddress: NULL_ADDRESS,
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
+    ),
+    salt: new BigNumber(555),
+    makerAssetAmount: new BigNumber(trade2.sellQuantity),
+    takerAssetAmount: new BigNumber(trade2.buyQuantity),
+    makerAssetData: assetDataUtils.encodeERC20AssetData(
+      ethTokenWrapper.options.address.toLowerCase()
+    ),
+    takerAssetData: assetDataUtils.encodeERC20AssetData(
+      mlnToken.options.address.toLowerCase()
+    ),
+    makerFee: new BigNumber(0),
+    takerFee: new BigNumber(0)
+  };
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+  orderSignature = await signatureUtils.ecSignOrderHashAsync(
+    web3.currentProvider,
+    orderHashHex,
+    manager,
+    SignerType.Default
+  );
+  orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
+  const preGav = await fund.accounting.methods.calcGav().call();
+  const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  await fund.trading.methods
+    .callOnExchange(
+      0,
+      makeOrderSignature,
+      [
+        makerAddress,
+        NULL_ADDRESS,
+        ethToken.options.address,
+        mlnToken.options.address,
+        order.feeRecipientAddress,
+        NULL_ADDRESS
+      ],
+      [
+        order.makerAssetAmount.toFixed(),
+        order.takerAssetAmount.toFixed(),
+        order.makerFee.toFixed(),
+        order.takerFee.toFixed(),
+        order.expirationTimeSeconds.toFixed(),
+        order.salt.toFixed(),
+        0,
+        0
+      ],
+      web3.utils.padLeft("0x0", 64),
+      order.makerAssetData,
+      order.takerAssetData,
+      orderSignature
+    )
+    .send({ from: manager, gas: config.gas });
+  const postGav = await fund.accounting.methods.calcGav().call();
+  const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  t.false(isValidSignatureBeforeMake);
+  t.true(isValidSignatureAfterMake);
+  t.is(preGav, postGav);
+  await web3.evm.increaseTime(1000);
+});
