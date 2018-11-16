@@ -45,32 +45,32 @@ contract EthfinexAdapter is DSMath, DBC {
         require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
         approveWrappedMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
-        // LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
-        // ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
+        LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
+        ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
         
+        require(
+            ExchangeEfx(targetExchange).isValidSignature(
+                orderInfo.orderHash,
+                address(this),
+                signature
+            ),
+            "INVALID_ORDER_SIGNATURE"
+        );
+        // TODO: ADD back 
         // require(
-        //     ExchangeEfx(targetExchange).isValidSignature(
-        //         orderInfo.orderHash,
-        //         address(this),
-        //         signature
-        //     ),
-        //     "INVALID_ORDER_SIGNATURE"
+        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
         // );
-        // // TODO: ADD back 
-        // // require(
-        // //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-        // //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // // );
 
-        // Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
-        // Trading(address(this)).orderUpdateHook(
-        //     targetExchange,
-        //     orderInfo.orderHash,
-        //     Trading.UpdateType.make,
-        //     [address(makerAsset), address(takerAsset)],
-        //     [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
-        // );
-        // Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).orderUpdateHook(
+            targetExchange,
+            orderInfo.orderHash,
+            Trading.UpdateType.make,
+            [address(makerAsset), address(takerAsset)],
+            [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
+        );
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
     }
 
     /// @notice No Take orders on Ethfinex
@@ -150,7 +150,7 @@ contract EthfinexAdapter is DSMath, DBC {
         }
 
         // Check if order has been cancelled and tokens have been withdrawn
-        uint balance = WrapperLock(ExchangeEfx(targetExchange).token2WrapperLookup(makerAsset)).balanceOf(address(this));
+        uint balance = WrapperLock(ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset)).balanceOf(address(this));
         if (ExchangeEfx(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
@@ -167,9 +167,9 @@ contract EthfinexAdapter is DSMath, DBC {
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
-        // ERC20(makerAsset).approve(wrappedToken, makerQuantity);
-        // WrapperLock(wrappedToken).deposit(makerQuantity, 1);
-        // address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
+        ERC20(makerAsset).approve(wrappedToken, makerQuantity);
+        WrapperLock(wrappedToken).deposit(makerQuantity, 1);
+        address assetProxy = getAssetProxy(targetExchange, wrappedMakerAssetData);
         // require(ERC20(wrappedToken).approve(assetProxy, makerQuantity));
     }
 
