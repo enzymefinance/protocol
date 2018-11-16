@@ -13,6 +13,7 @@ import getFundComponents from "../../utils/lib/getFundComponents";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import getChainTime from "../../utils/lib/getChainTime";
 import governanceAction from "../../utils/lib/governanceAction";
 import {
   makeOrderSignature,
@@ -189,8 +190,8 @@ test.serial("third party makes and validates an off-chain order", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -296,8 +297,8 @@ test.serial("third party makes another order with taker fees", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: investor.toLowerCase(),
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -399,8 +400,8 @@ test.serial("Make order through the fund", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -574,8 +575,8 @@ test.serial(
       takerAddress: NULL_ADDRESS,
       senderAddress: NULL_ADDRESS,
       feeRecipientAddress: NULL_ADDRESS,
-      expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-        80000
+      expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+        20000
       ),
       salt: new BigNumber(585),
       makerAssetAmount: new BigNumber(trade1.sellQuantity),

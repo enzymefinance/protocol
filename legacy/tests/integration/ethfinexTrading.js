@@ -13,6 +13,7 @@ import getFundComponents from "../../utils/lib/getFundComponents";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import getChainTime from "../../utils/lib/getChainTime";
 import governanceAction from "../../utils/lib/governanceAction";
 import {
   makeOrderSignature,
@@ -222,8 +223,8 @@ test.serial("Make order through the fund", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -245,8 +246,8 @@ test.serial("Make order through the fund", async t => {
     SignerType.Default
   );
   orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
+  console.log(await fund.accounting.methods.getFundHoldings().call());
   const preGav = await fund.accounting.methods.calcGav().call();
-  console.log(await fund.trading.methods.exchanges(0).call());
   const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
   await fund.trading.methods
     .callOnExchange(
@@ -280,5 +281,45 @@ test.serial("Make order through the fund", async t => {
   const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
+  console.log(await fund.accounting.methods.getFundHoldings().call());
   t.is(preGav, postGav);
+  await web3.evm.increaseTime(1000);
 });
+
+test.serial(
+    "Fund can cancel the order using just the orderId",
+    async t => {
+    //   await web3.evm.increaseTime(30000);
+      const preGav = await fund.accounting.methods.calcGav().call();
+      const orderHashHex = orderHashUtils.getOrderHashHex(order);
+      await fund.trading.methods
+        .callOnExchange(
+          0,
+          cancelOrderSignature,
+          [
+            NULL_ADDRESS,
+            NULL_ADDRESS,
+            NULL_ADDRESS,
+            NULL_ADDRESS,
+            NULL_ADDRESS,
+            NULL_ADDRESS
+          ],
+          [0, 0, 0, 0, 0, 0, 0, 0],
+          orderHashHex,
+          "0x0",
+          "0x0",
+          "0x0"
+        )
+        .send({ from: manager, gas: config.gas });
+      const postGav = await fund.accounting.methods.calcGav().call();
+      const isOrderCancelled = await ethfinexExchange.methods.cancelled(orderHashHex).call();
+      const makerAssetAllowance = new BigNumber(
+        await mlnToken.methods
+          .allowance(fund.trading.options.address, erc20Proxy.options.address)
+          .call()
+      );
+      t.true(isOrderCancelled);
+      t.is(preGav, postGav);
+      t.deepEqual(makerAssetAllowance, new BigNumber(0));
+    }
+  );
