@@ -17,6 +17,8 @@ import {
 } from '~/contracts/fund/participation';
 import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { redeem } from '~/contracts/fund/participation/transactions/redeem';
+import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 
 const shared: any = {};
 
@@ -30,7 +32,7 @@ const randomString = (length = 4) =>
     .toString(36)
     .substr(2, length);
 
-test(
+test.skip(
   'Happy path',
   async () => {
     const fundName = `test-fund-${randomString()}`;
@@ -59,6 +61,7 @@ test(
     const hubAddress = await setupFund(fundFactory);
 
     const settings = await getSettings(hubAddress);
+
     await register(settings.policyManagerAddress, {
       method: PolicedMethods.makeOrder,
       policy: policies.priceTolerance,
@@ -103,6 +106,12 @@ test(
     const executedRequest = await executeRequest(settings.participationAddress);
 
     console.log(executedRequest);
+
+    const redemption = await redeem(settings.participationAddress);
+    console.log(redemption);
+
+    const holdings = await getFundHoldings(settings.accountingAddress);
+    console.log(holdings);
 
     const shutDown = await shutDownFund(hubAddress);
 

@@ -47,26 +47,28 @@ export type TransactionFactory = <Args, Result>(
   guard?: GuardFunction<Args>,
   prepareArgs?: PrepareArgsFunction<Args>,
   postProcess?: PostProcessFunction<Args, Result>,
-  providedOptions?: OptionsOrCallback,
+  defaultOptions?: OptionsOrCallback,
 ) => EnhancedExecute<Args, Result>;
 
 type SendFunction<Args> = (
   contractAddress: Address,
   prepared: PreparedTransaction,
   params: Args,
-  providedOptions: OptionsOrCallback,
-  environment: Environment,
+  options?: OptionsOrCallback,
+  environment?: Environment,
 ) => Promise<any>;
 
 type PrepareFunction<Args> = (
   contractAddress: Address,
   params?: Args,
+  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<PreparedTransaction>;
 
 type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
   params?: Args,
+  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<Result>;
 
@@ -134,11 +136,12 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   guard = defaultGuard,
   prepareArgs = defaultPrepareArgs,
   postProcess = defaultPostProcess,
-  providedOptions?,
+  defaultOptions?,
 ) => {
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
     params,
+    options = defaultOptions,
     environment: Environment = getGlobalEnvironment(),
   ) => {
     await guard(params, contractAddress, environment);
@@ -146,7 +149,11 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     const contractInstance = getContract(contract, contractAddress);
     const transaction = contractInstance.methods[name](...args);
     transaction.name = name;
-    const prepared = await prepareTransaction(transaction, environment);
+    const prepared = await prepareTransaction(
+      transaction,
+      options,
+      environment,
+    );
     return { ...prepared, contract };
   };
 
@@ -154,7 +161,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     contractAddress,
     prepared,
     params,
-    options = providedOptions,
+    options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
     const receipt = await sendTransaction(prepared, options, environment);
@@ -170,14 +177,20 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   const execute: EnhancedExecute<Args, Result> = async (
     contractAddress,
     params,
+    options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
-    const prepared = await prepare(contractAddress, params, environment);
+    const prepared = await prepare(
+      contractAddress,
+      params,
+      options,
+      environment,
+    );
     const result = await send(
       contractAddress,
       prepared,
       params,
-      providedOptions,
+      defaultOptions,
       environment,
     );
     return result;
@@ -211,14 +224,14 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
   const send = async (
     prepared,
     params: Args,
-    providedOptions,
+    defaultOptions,
     environment?,
   ): Promise<Result> =>
     await transaction.send(
       R.path(contractAddressQuery, params).toString(),
       prepared,
       params,
-      providedOptions,
+      defaultOptions,
       environment,
     );
 
