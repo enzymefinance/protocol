@@ -41,6 +41,7 @@ contract Accounting is DSMath, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
+    /// @dev Returns sparse array
     function getFundHoldings() returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);

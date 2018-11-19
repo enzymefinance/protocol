@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
@@ -22,6 +21,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         uint atUpdateId
     );
 
+    event SuccessfulRedemption (
+        uint quantity
+    );
+
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -31,7 +34,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     }
 
     mapping (address => Request) public requests;
-    uint public SHARES_DECIMALS;
+    uint public SHARES_DECIMALS = 18;
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -54,7 +57,6 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             timestamp: block.timestamp,
             atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
-        SHARES_DECIMALS = 18;
     }
 
     function cancelRequest() external {
@@ -78,10 +80,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         //     )
         // )
     {
-        require(!hub.isShutDown(), "Hub must not be shut down");
+        require(!hub.isShutDown(), "Cannot invest in shut down fund");
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0, "Trying to redeem zero shares");
+        require(request.requestedShares > 0, "Trying to buy zero shares");
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
         require(isRecent, "Price not recent");
@@ -124,7 +126,19 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
             Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
         }
-        RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
+        emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
+    }
+
+    function getOwedPerformanceFees(uint shareQuantity)
+        view
+        returns (uint remainingShareQuantity)
+    {
+        Shares shares = Shares(routes.shares);
+        uint performanceFeePortion = mul(
+            FeeManager(routes.feeManager).performanceFeeAmount(),
+            shareQuantity
+        ) / shares.totalSupply();
+        return performanceFeePortion;
     }
 
     /// @dev "Happy path" (no asset throws & quantity available)
@@ -141,26 +155,15 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         redeemWithConstraints(shareQuantity, assetList); //TODO: assetList from another module
     }
 
-    function getOwedPerformanceFees(uint shareQuantity)
-        view
-        returns (uint remainingShareQuantity)
-    {
-        Shares shares = Shares(routes.shares);
-        uint performanceFeePortion = mul(
-            FeeManager(routes.feeManager).performanceFeeAmount(),
-            shareQuantity
-        ) / shares.totalSupply();
-        return performanceFeePortion;
-    }
-
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
         Shares shares = Shares(routes.shares);
         require(
-            shares.balanceOf(msg.sender) >= shareQuantity,
-            "Sender does not enough shares to fulfill request"
+            shares.balanceOf(msg.sender) >= shareQuantity &&
+            shares.balanceOf(msg.sender) > 0,
+            "Sender does not have enough shares to fulfill request"
         );
 
         FeeManager(routes.feeManager).rewardManagementFee();
@@ -176,6 +179,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         Accounting accounting = Accounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
+            if (ofAsset == address(0)) continue;
             require(
                 accounting.isInAssetList(ofAsset),
                 "Requested asset not in asset list"
@@ -183,7 +187,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 require(
                     ofAsset != redeemedAssets[j],
-                    "Asset was already redeemed"
+                    "Asset can only be redeemed once"
                 );
             }
             redeemedAssets[i] = ofAsset;
@@ -209,6 +213,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
                 );
             }
         }
+        emit SuccessfulRedemption(remainingShareQuantity);
     }
 }
 

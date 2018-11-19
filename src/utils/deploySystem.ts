@@ -24,6 +24,8 @@ import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
 import { deployFundFactory } from '~/contracts/factory';
 import { deployMockVersion, setFundFactory } from '~/contracts/version';
 
+export const sessionDeployments = {};
+
 const debug = require('./getDebug').default(__filename);
 
 /**
@@ -103,7 +105,13 @@ export const deploySystem = async () => {
     version: versionAddress,
   };
 
-  debug('Deployed:', addresses);
+  const track = environment.track;
+  const network = await environment.eth.net.getId();
+  const deploymentId = `${network}:${track}`;
+
+  debug('Deployed:', deploymentId, addresses);
+
+  sessionDeployments[deploymentId] = addresses;
 
   return addresses;
 };

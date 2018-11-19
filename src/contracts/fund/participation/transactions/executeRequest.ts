@@ -4,11 +4,13 @@ import { Address } from '@melonproject/token-math/address';
 
 const prepare = async (
   contractAddress: Address,
+  options = {},
   environment = getGlobalEnvironment(),
 ) =>
   executeRequestFor.prepare(
     contractAddress,
     { who: environment.wallet.address },
+    options,
     environment,
   );
 
@@ -22,9 +24,10 @@ const send = async (
 
 const execute = async (
   contractAddress: Address,
+  options = {},
   environment = getGlobalEnvironment(),
 ) => {
-  const prepared = await prepare(contractAddress, environment);
+  const prepared = await prepare(contractAddress, options, environment);
   const result = await send(contractAddress, prepared, undefined, environment);
   return result;
 };

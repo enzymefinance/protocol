@@ -17,7 +17,7 @@ export interface Options {
   value?: string;
 }
 
-export type OptionsCallback = (prepared, environment) => Options;
+export type OptionsCallback = (environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
 
@@ -33,7 +33,7 @@ export interface PreparedTransaction {
 
 export const prepareTransaction = async (
   transaction,
-  optionsOrEnvironment: Options | Environment,
+  optionsOrEnvironment: OptionsOrCallback | Environment,
   maybeEnvironment = getGlobalEnvironment(),
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
@@ -50,7 +50,9 @@ export const prepareTransaction = async (
     : {
         amguPayable: false,
         from: environment.wallet.address.toString(),
-        ...optionsOrEnvironment,
+        ...(typeof optionsOrEnvironment === 'function'
+          ? optionsOrEnvironment(environment)
+          : optionsOrEnvironment),
       };
 
   const maxGasPrice = multiply(

@@ -11,14 +11,18 @@ const ensureDeployments = () => {
   }
 };
 
-const doGetDeployment = (deployments, track, network) => {
+const doGetDeployment = (track, network) => {
   const deploymentId = `${network}:${track}`;
-  const deployment = deployments[deploymentId];
+
+  const { sessionDeployments } = require('../deploySystem');
+
+  const deployment =
+    sessionDeployments[deploymentId] || ensureDeployments()[deploymentId];
 
   if (!deployment) {
     throw new Error(
       // tslint:disable-next-line:max-line-length
-      `No deployment found with id ${deploymentId}. (chainId:track). Did you run 'yarn deploy'?`,
+      `No deployment found with id ${deploymentId}. (chainId:track)`,
     );
   }
 
@@ -26,16 +30,14 @@ const doGetDeployment = (deployments, track, network) => {
 };
 
 const getDeployment = async (environment = getGlobalEnvironment()) => {
-  const deployments = ensureDeployments();
   const track = environment.track;
   const network = await environment.eth.net.getId();
-  return doGetDeployment(deployments, track, network);
+  return doGetDeployment(track, network);
 };
 
 const getDeploymentSync = (network, environment = getGlobalEnvironment()) => {
-  const deployments = ensureDeployments();
   const track = environment.track;
-  return doGetDeployment(deployments, track, network);
+  return doGetDeployment(track, network);
 };
 
 export { getDeployment, getDeploymentSync };
