@@ -9,7 +9,17 @@ import {
 } from '~/utils/environment';
 
 import { Contracts } from '~/Contracts';
-import { Options } from './sendTransaction';
+export interface Options {
+  amguPayable?: boolean;
+  from?: string;
+  gas?: string;
+  gasPrice?: string;
+  value?: string;
+}
+
+export type OptionsCallback = (prepared, environment) => Options;
+
+export type OptionsOrCallback = Options | OptionsCallback;
 
 const debug = require('~/utils/getDebug').default(__filename);
 
