@@ -117,20 +117,27 @@ contract EthfinexAdapter is DSMath, DBC {
         );
     }
 
-    /// @notice Cancel the 0x make order
+    /// @notice Unwrap (withdraw) tokens, uses orderAddresses for input list of tokens to be unwrapped
     function withdrawTokens(
         address targetExchange,
-        address[] tokens
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         // TODO: Change to Native Asset or Wrapped Native Asset?
         address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
 
-        for (uint i = 0; i < tokens.length; i++) {
-            address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(tokens[i]);
+        for (uint i = 0; i < orderAddresses.length; i++) {
+            // Check if the input token address is null address
+            if (orderAddresses[i] == address(0)) continue;
+            address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(orderAddresses[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
-            if (tokens[i] == nativeAsset) {
+            if (orderAddresses[i] == nativeAsset) {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
         }

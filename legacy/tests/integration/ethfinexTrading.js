@@ -22,6 +22,7 @@ import {
   makeOrderSignatureBytes,
   takeOrderSignatureBytes,
   cancelOrderSignatureBytes,
+  withdrawTokensSignature,
 } from "../../utils/lib/data";
 
 const BigNumber = require("bignumber.js");
@@ -329,8 +330,7 @@ test.serial(
   }
 );
 
-
-test.serial("Make order through the fund", async t => {
+test.serial("Make order through the fund with native asset", async t => {
   const makerAddress = fund.trading.options.address.toLowerCase();
   const [, referencePrice] = Object.values(
     await pricefeed.methods
@@ -411,5 +411,36 @@ test.serial("Make order through the fund", async t => {
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
   t.deepEqual(ethTokenWrapperBalance, order.makerAssetAmount);
+  t.is(preGav, postGav);
+});
+
+
+test.serial("Withdraw (unwrap) tokens after lock time has passed", async t => {
+  await web3.evm.increaseTime(30000);
+  const preGav = await fund.accounting.methods.calcGav().call();
+  await fund.trading.methods
+    .callOnExchange(
+      0,
+      withdrawTokensSignature,
+      [
+        ethToken.options.address,
+        mlnToken.options.address,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS
+      ],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      web3.utils.padLeft("0x0", 64),
+      "0x0",
+      "0x0",
+      "0x0"
+    )
+    .send({ from: manager, gas: config.gas });
+  const postGav = await fund.accounting.methods.calcGav().call();
+  const ethTokenWrapperBalance = Number(await ethTokenWrapper.methods.balanceOf(fund.trading.options.address).call());
+  const mlnTokenWrapperBalance = Number(await mlnTokenWrapper.methods.balanceOf(fund.trading.options.address).call());
+  t.is(ethTokenWrapperBalance, 0);
+  t.is(mlnTokenWrapperBalance, 0);
   t.is(preGav, postGav);
 });
