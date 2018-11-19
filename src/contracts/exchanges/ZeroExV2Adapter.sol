@@ -76,6 +76,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
     // Responsibilities of takeOrder are:
@@ -169,17 +170,16 @@ contract ZeroExV2Adapter is DSMath, DBC {
             "Manager must be sender or fund must be shut down"
         );
 
-        address makerAsset = orderAddresses[2];
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+        LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
+        address makerAsset = getAssetAddress(order.makerAssetData);
         Exchange(targetExchange).cancelOrder(order);
 
         // Set the approval back to 0
-        approveMakerAsset(targetExchange, makerAsset, makerAssetData, 0);
+        approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
         Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
-            orderInfo.orderHash,
+            identifier,
             Trading.UpdateType.cancel,
             [address(0), address(0)],
             [uint(0), uint(0), uint(0)]

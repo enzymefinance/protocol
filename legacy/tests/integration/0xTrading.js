@@ -13,6 +13,7 @@ import getFundComponents from "../../utils/lib/getFundComponents";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
 import { updateTestingPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
+import getChainTime from "../../utils/lib/getChainTime";
 import governanceAction from "../../utils/lib/governanceAction";
 import {
   makeOrderSignature,
@@ -189,8 +190,8 @@ test.serial("third party makes and validates an off-chain order", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -296,8 +297,8 @@ test.serial("third party makes another order with taker fees", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: investor.toLowerCase(),
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -399,8 +400,8 @@ test.serial("Make order through the fund", async t => {
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-      80000
+    expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+      20000
     ),
     salt: new BigNumber(555),
     makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -574,8 +575,8 @@ test.serial(
       takerAddress: NULL_ADDRESS,
       senderAddress: NULL_ADDRESS,
       feeRecipientAddress: NULL_ADDRESS,
-      expirationTimeSeconds: new BigNumber(Math.floor(Date.now() / 1000)).add(
-        80000
+      expirationTimeSeconds: new BigNumber(await getChainTime()).add(
+        20000
       ),
       salt: new BigNumber(585),
       makerAssetAmount: new BigNumber(trade1.sellQuantity),
@@ -636,37 +637,28 @@ test.serial(
 );
 
 test.serial(
-  "Fund can cancel the order",
+  "Fund can cancel the order using just the orderId",
   async t => {
+    const orderHashHex = orderHashUtils.getOrderHashHex(order);
     await fund.trading.methods
       .callOnExchange(
         0,
         cancelOrderSignature,
         [
-          order.makerAddress,
           NULL_ADDRESS,
-          mlnToken.options.address,
-          ethToken.options.address,
-          order.feeRecipientAddress,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [
-          order.makerAssetAmount.toFixed(),
-          order.takerAssetAmount.toFixed(),
-          order.makerFee.toFixed(),
-          order.takerFee.toFixed(),
-          order.expirationTimeSeconds.toFixed(),
-          order.salt.toFixed(),
-          0,
-          0
-        ],
-        web3.utils.padLeft("0x0", 64),
-        order.makerAssetData,
-        order.takerAssetData,
-        orderSignature
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        orderHashHex,
+        "0x0",
+        "0x0",
+        "0x0"
       )
       .send({ from: manager, gas: config.gas });
-    const orderHashHex = orderHashUtils.getOrderHashHex(order);
     const isOrderCancelled = await zeroExExchange.methods.cancelled(orderHashHex).call();
     const makerAssetAllowance = new BigNumber(
       await mlnToken.methods

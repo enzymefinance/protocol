@@ -148,6 +148,7 @@ contract KyberAdapter is DBC, DSMath {
     {
         
         Hub hub = Hub(Trading(address(this)).hub());
+        // TODO: Change to Native Asset or Wrapped Native Asset?
         address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
         
         if (srcToken == nativeAsset) {

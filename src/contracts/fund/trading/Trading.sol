@@ -10,6 +10,7 @@ import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../exchanges/GenericExchangeInterface.sol";
+import "../../exchanges/thirdparty/0x/LibOrder.sol";
 import "../../prices/CanonicalRegistrar.sol";
 
 contract Trading is DSMath, Spoke, TradingInterface {
@@ -45,6 +46,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     mapping (address => bool) public exchangeIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => bool) public isInOpenMakeOrder;
+    mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
     uint public constant ORDER_LIFESPAN = 1 days;
 
@@ -158,12 +160,20 @@ contract Trading is DSMath, Spoke, TradingInterface {
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
-
+    
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
     ) delegateInternal {
         delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
+    }
+
+    /// @dev Bit of Redundancy for now
+    function addZeroExOrderData(
+        bytes32 orderId,
+        LibOrder.Order zeroExOrderData
+    ) delegateInternal {
+        orderIdToZeroExOrder[orderId] = zeroExOrderData;
     }
 
     function orderUpdateHook(
@@ -236,6 +246,10 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
         Order memory order = orders[orderIndex];
         return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
+    }
+
+    function getZeroExOrderDetails(bytes32 orderId) view returns (LibOrder.Order) {
+        return orderIdToZeroExOrder[orderId];
     }
 }
 
