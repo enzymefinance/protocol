@@ -957,6 +957,13 @@
   dependencies:
     events "^3.0.0"
 
+"@melonproject/ganache-cli@^6.1.9":
+  version "6.1.9"
+  resolved "https://registry.yarnpkg.com/@melonproject/ganache-cli/-/ganache-cli-6.1.9.tgz#9ee571a954c2dfb9fb2258e636f576810ce2a18d"
+  integrity sha512-vjBDGXF2OA+gBSZ1AOIxUpzTYl+9Pl1ME1ERGbLx/3r0F1F5yhZJ+9vrQd4jxdNZlQzLt5XXFYY+H9TXH8HlQQ==
+  dependencies:
+    source-map-support "^0.5.3"
+
 "@melonproject/token-math@0.0.18":
   version "0.0.18"
   resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.18.tgz#dc1276908531956999f30472905a8f50451b6dbd"
@@ -1646,7 +1653,7 @@ async-eventemitter@^0.2.2:
   dependencies:
     async "^2.4.0"
 
-async-eventemitter@ahultgren/async-eventemitter#fa06e39e56786ba541c180061dbf2c0a5bbf951c:
+"async-eventemitter@github:ahultgren/async-eventemitter#fa06e39e56786ba541c180061dbf2c0a5bbf951c":
   version "0.2.3"
   resolved "https://codeload.github.com/ahultgren/async-eventemitter/tar.gz/fa06e39e56786ba541c180061dbf2c0a5bbf951c"
   dependencies:
@@ -4753,6 +4760,7 @@ elliptic@^6.0.0, elliptic@^6.2.3, elliptic@^6.4.0:
 emoji-regex@^7.0.1:
   version "7.0.1"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-7.0.1.tgz#5a132b28ebf84a289ba692862f7d4206ebcd32d0"
+  integrity sha512-cjx7oFbFIyZMpmWaEBnKeJXWAVzjXwK6yHiz/5X73A2Ww4pnabw+4ZaA/MxLroIQQrB3dL6XzEz8P3aZsSdj8Q==
 
 emojis-list@^2.0.0:
   version "2.1.0"
@@ -6058,12 +6066,6 @@ functional-red-black-tree@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz#1b0ab3bd553b2a0d6399d29c0e3ea0b252078327"
   integrity sha1-GwqzvVU7Kg1jmdKcDj6gslIHgyc=
-
-ganache-cli@travs/ganache-cli#fix-path:
-  version "6.1.8"
-  resolved "https://codeload.github.com/travs/ganache-cli/tar.gz/d5b7f05b4e1afd2355c84235cc2bf34830ddfb98"
-  dependencies:
-    source-map-support "^0.5.3"
 
 ganache-core@0xProject/ganache-core#monorepo-dep:
   version "2.1.2"
