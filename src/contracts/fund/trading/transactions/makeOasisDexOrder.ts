@@ -5,7 +5,10 @@ import {
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
 import { Contracts, requireMap } from '~/Contracts';
@@ -13,6 +16,9 @@ import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
 import { getGlobalEnvironment } from '~/utils/environment';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token';
+import { getSettings, getHub } from '~/contracts/fund/hub';
+import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 
 export type MakeOasisDexOrderResult = any;
 
@@ -25,10 +31,28 @@ export interface MakeOasisDexOrderArgs {
 }
 
 const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
-  { makerQuantity, takerQuantity },
+  { maker, makerAssetSymbol, takerAssetSymbol, makerQuantity, takerQuantity },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
+  const hubAddress = await getHub(contractAddress, environment);
+  const { vaultAddress } = await getSettings(hubAddress);
+
+  const minBalance = createQuantity(makerAssetSymbol, makerQuantity.quantity);
+  ensureSufficientBalance(minBalance, vaultAddress, environment);
+
+  ensureFundOwner(contractAddress, environment);
+
+  // Ensure fund not shut down.
+  // Ensure exchange method is allowed.
+  // Ensure not buying/selling of own fund token.
+  // Ensure price provided on this asset pair.
+  // Ensure price feed data is not outdated.
+  // Ensure there are no other open orders for the asset.
+
+  // IF MATCHINGMARKET:
+  // Ensure selling quantity is not too low.
+
   ensureMakePermitted(
     contractAddress,
     makerQuantity,
@@ -82,7 +106,7 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
 const postProcess: PostProcessFunction<
   MakeOasisDexOrderArgs,
   MakeOasisDexOrderResult
-> = async (receipt, params, contractAddress, environment) => {
+> = async receipt => {
   return receipt;
 };
 
