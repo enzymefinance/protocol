@@ -2,14 +2,21 @@ import {
   PrepareArgsFunction,
   withTransactionDecorator,
   getDeployment,
+  GuardFunction,
+  PostProcessFunction,
 } from '~/utils/solidity';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
 import { Contracts, requireMap } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
+import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
+import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
+import { getGlobalEnvironment } from '~/utils/environment';
 
-export interface MakeOrderOasisDexArgs {
+export type MakeOasisDexOrderResult = any;
+
+export interface MakeOasisDexOrderArgs {
   maker: Address;
   makerAssetSymbol: string;
   takerAssetSymbol: string;
@@ -17,30 +24,23 @@ export interface MakeOrderOasisDexArgs {
   takerQuantity: QuantityInterface;
 }
 
-const guard: GuardFunction = async (params, ContractAddress, environment) => {
-  const deployment = await getDeployment();
-  const exchangeAddress = deployment.find(o => o.name === 'MatchingMarket')
-    .exchangeAddress;
-  //TODO: preflights
-  // const preflightCheck = await preflightMakeOrder(environment, {
-  //   fundContract,
-  //   exchangeAddress,
-  //   makerAssetSymbol,
-  //   takerAssetSymbol,
-  //   makerQuantity,
-  //   takerQuantity,
-  // });
-
-  // ensure(
-  //   preflightCheck,
-  //   'One of the pre-conditions of the function makeOrder failed on pre-flight.',
-  //   );
+const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
+  { makerQuantity, takerQuantity },
+  contractAddress,
+  environment = getGlobalEnvironment(),
+) => {
+  ensureMakePermitted(
+    contractAddress,
+    makerQuantity,
+    takerQuantity,
+    environment,
+  );
 };
 
 const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   { maker, makerAssetSymbol, takerAssetSymbol, makerQuantity, takerQuantity },
   contractAddress,
-  environment,
+  environment = getGlobalEnvironment(),
 ) => {
   const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
   const method = await getFunctionSignature(matchingMarketAbi, 'makeOrder');
@@ -48,6 +48,7 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   const matchingMarketAddress = deployment.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
+
   const exchangeIndex = await getExchangeIndex(
     matchingMarketAddress,
     contractAddress,
@@ -70,15 +71,18 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     timestamp: '0',
     salt: '0x0',
     fillTakerTokenAmount: '0',
-    dexySignatureMode = 0,
-    identifier = 0,
-    makerAssetData = '0',
-    takerAssetData = '0',
-    signature = '0x0',
+    dexySignatureMode: 0,
+    identifier: 0,
+    makerAssetData: '0',
+    takerAssetData: '0',
+    signature: '0x0',
   };
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
+const postProcess: PostProcessFunction<
+  MakeOasisDexOrderArgs,
+  MakeOasisDexOrderResult
+> = async (receipt, params, contractAddress, environment) => {
   return receipt;
 };
 
@@ -87,3 +91,5 @@ const makeOasisDexOrder = withTransactionDecorator(callOnExchange, {
   prepareArgs,
   guard,
 });
+
+export { makeOasisDexOrder };
