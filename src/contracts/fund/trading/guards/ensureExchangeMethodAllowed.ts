@@ -1,6 +1,7 @@
 import { ensure } from '~/utils/guards';
 
 const ensureExchangeMethodAllowed = async (address, method, environment) => {
+  // TODO:
   const signature = await getMethodNameSignature(environment, method);
   const canonicalPriceFeedContract = await getCanonicalPriceFeedContract(
     environment,
@@ -11,7 +12,7 @@ const ensureExchangeMethodAllowed = async (address, method, environment) => {
     [address, signature],
   );
 
-  ensure(isExchangeMethodAllowed, 'This exchange method is not allowed');
+  ensure(isExchangeMethodAllowed, 'This exchange method is not allowed.');
 };
 
 export { ensureExchangeMethodAllowed };
