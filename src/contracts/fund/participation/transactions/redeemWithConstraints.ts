@@ -1,9 +1,14 @@
-import { transactionFactory, PrepareArgsFunction } from '~/utils/solidity';
+import {
+  transactionFactory,
+  PrepareArgsFunction,
+  PostProcessFunction,
+} from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { Address } from '~/utils/types';
 import {
   createQuantity,
   greaterThan,
+  isEqual,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
@@ -15,6 +20,11 @@ export interface RedeemWithConstraintsArgs {
   requestedAssets: [Address];
 }
 
+// TODO: do real postprocessing
+export interface RedeemWithConstraintsResult {
+  success: boolean;
+}
+
 const guard = async (params, contractAddress, environment) => {
   const hub = await getHub(contractAddress, environment);
   await ensureIsNotShutDown(hub, environment);
@@ -23,11 +33,9 @@ const guard = async (params, contractAddress, environment) => {
   const balance = await balanceOf(settings.sharesAddress, {
     address: environment.wallet.address,
   });
+  const shareQuantity = createQuantity(fundToken, `${params.sharesQuantity}`);
   ensure(
-    greaterThan(
-      balance,
-      createQuantity(fundToken, params.sharesQuantity.toString()),
-    ), // there's no greaterThanOrEqualTo function yet
+    greaterThan(balance, shareQuantity) || isEqual(balance, shareQuantity),
     `Address ${
       environment.wallet.address
     } doesn't have enough shares of the fund ${hub}`,
@@ -37,16 +45,19 @@ const guard = async (params, contractAddress, environment) => {
 const prepareArgs: PrepareArgsFunction<RedeemWithConstraintsArgs> = async ({
   sharesQuantity,
   requestedAssets,
-}) => [
-  sharesQuantity.toString(),
-  requestedAssets.map(asset => asset.toString()),
-];
+}) => [`${sharesQuantity}`, requestedAssets.map(asset => `${asset}`)];
 
-const postProcess = async receipt => {
-  return true;
+const postProcess: PostProcessFunction<
+  RedeemWithConstraintsArgs,
+  RedeemWithConstraintsResult
+> = async receipt => {
+  return { success: true };
 };
 
-const redeemWithConstraints = transactionFactory(
+const redeemWithConstraints = transactionFactory<
+  RedeemWithConstraintsArgs,
+  RedeemWithConstraintsResult
+>(
   'redeemWithConstraints',
   Contracts.Participation,
   guard,
