@@ -173,6 +173,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     const args = await prepareArgs(params, contractAddress, environment);
     const contractInstance = getContract(contract, contractAddress);
     const transaction = contractInstance.methods[name](...args);
+
     transaction.name = name;
     const prepared = await prepareTransaction(
       transaction,
@@ -202,11 +203,11 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       params,
       rawTransaction: {
         data: prepared.encoded,
-        from: `${environment.wallet.address}`,
-        gas: `${prepared.gasEstimation}`,
-        gasPrice: `${environment.options.gasPrice}`,
+        from: `${options.from || environment.wallet.address}`,
+        gas: `${options.gas || prepared.gasEstimation}`,
+        gasPrice: `${options.gasPrice || environment.options.gasPrice}`,
         to: `${contractAddress}`,
-        value: `${amguInEth.quantity}`,
+        value: `${options.value || amguInEth.quantity}`,
       },
       transactionArgs: prepared.transaction.arguments,
     };
@@ -218,13 +219,19 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     contractAddress,
     prepared,
     params,
-    // TODO: investigate options
-    options = providedOptions,
+    // TODO: Remove this. Options are provided through transaction
+    _ = providedOptions,
     environment = getGlobalEnvironment(),
   ) => {
-    const receipt = await environment.eth.sendTransaction(
-      prepared.rawTransaction,
-    );
+    const receipt = await environment.eth
+      .sendTransaction(prepared.rawTransaction)
+      .then(null, error => {
+        throw new Error(
+          `Transaction failed for ${name}(${prepared.transactionArgs.join(
+            ', ',
+          )}): ${error.message}`,
+        );
+      });
 
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];

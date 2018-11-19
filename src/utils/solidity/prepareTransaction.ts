@@ -1,10 +1,5 @@
 import * as R from 'ramda';
-import {
-  toBI,
-  greaterThan,
-  multiply,
-  subtract,
-} from '@melonproject/token-math/bigInteger';
+import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
 
 import {
   getGlobalEnvironment,
@@ -66,18 +61,20 @@ export const prepareTransaction = async (
       }
     : options;
 
-  if (transaction.gasEstimation === undefined) {
-    try {
-      transaction.gasEstimation = await transaction.estimateGas({
-        ...R.omit(['amguPayable'], amguOptions),
-      });
-    } catch (e) {
-      throw new Error(
-        `Gas estimation (preflight) failed for ${
-          transaction.name
-        }(${transaction.arguments.join(', ')}): ${e.message}`,
-      );
-    }
+  try {
+    const gasEstimation = await transaction.estimateGas({
+      ...R.omit(['amguPayable'], amguOptions),
+    });
+
+    transaction.gasEstimation = Math.ceil(
+      Math.min(gasEstimation * 1.1, parseInt(environment.options.gasLimit, 10)),
+    );
+  } catch (e) {
+    throw new Error(
+      `Gas estimation (preflight) failed for ${
+        transaction.name
+      }(${transaction.arguments.join(', ')}): ${e.message}`,
+    );
   }
 
   debug(
@@ -87,22 +84,6 @@ export const prepareTransaction = async (
     transaction.gasEstimation,
     encoded,
   );
-
-  if (
-    greaterThan(
-      toBI(transaction.gasEstimation),
-      toBI(environment.options.gasLimit),
-    )
-  ) {
-    throw new Error(
-      [
-        `Estimated gas consumption (${transaction.gasEstimation})`,
-        `is higher than the provided gas limit: ${
-          environment.options.gasLimit
-        }`,
-      ].join(' '),
-    );
-  }
 
   const prepared = {
     encoded,
