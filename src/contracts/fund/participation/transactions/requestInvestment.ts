@@ -29,7 +29,7 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async ({
   investmentAmount,
   requestedShares,
 }) => {
-  //TODO: check how many shares the investAmount is worth
+  // TODO: check how many shares the investAmount is worth
   const requestedSharesArg = requestedShares
     ? requestedShares.quantity.toString()
     : investmentAmount.quantity.toString();
@@ -58,6 +58,7 @@ const requestInvestment = transactionFactory<
   guard,
   prepareArgs,
   postProcess,
+  { amguPayable: true },
 );
 
 export { requestInvestment };

@@ -61,7 +61,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public {
+    function executeRequest() public payable amguPayable {
         executeRequestFor(msg.sender);
     }
 

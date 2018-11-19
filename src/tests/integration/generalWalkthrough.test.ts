@@ -15,8 +15,9 @@ import {
   requestInvestment,
   executeRequest,
 } from '~/contracts/fund/participation';
-import { getAmguPrice, setIsFund } from '~/contracts/version';
+import { setIsFund, setAmguPrice } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 
 const shared: any = {};
 
@@ -79,11 +80,6 @@ test(
 
     await update(priceSource, [newPrice]);
 
-    // await approve({
-    //   howMuch: createQuantity(quoteToken, 1),
-    //   spender: new Address(shared.accounts[1]),
-    // });
-
     const components = componentsFromSettings(settings);
 
     await Promise.all(
@@ -92,7 +88,9 @@ test(
       ),
     );
 
-    const amguPrice = await getAmguPrice(version);
+    const amguToken = await getAmguToken(fundFactory);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(version, amguPrice);
 
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),

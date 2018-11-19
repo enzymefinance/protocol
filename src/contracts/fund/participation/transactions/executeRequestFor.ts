@@ -52,6 +52,7 @@ const executeRequestFor = transactionFactory(
   guard,
   prepareArgs,
   postProcess,
+  { amguPayable: true },
 );
 
 export { executeRequestFor };
