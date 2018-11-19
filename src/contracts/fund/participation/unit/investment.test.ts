@@ -9,7 +9,7 @@ beforeAll(async () => {
   shared.user = shared.env.wallet.address;
 });
 
-test('Invest fails in shut down fund', async () => {
+test.skip('Invest fails in shut down fund', async () => {
   const errorMessage = 'Cannot invest in shut down fund';
   await shared.hub.methods.setShutDownState(true).send({ from: shared.user });
 

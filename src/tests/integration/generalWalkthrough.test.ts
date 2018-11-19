@@ -32,7 +32,7 @@ const randomString = (length = 4) =>
     .toString(36)
     .substr(2, length);
 
-test(
+test.skip(
   'Happy path',
   async () => {
     const fundName = `test-fund-${randomString()}`;
