@@ -34,18 +34,23 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender);
-        require(hub.isShutDown() == false);
+        require(hub.manager() == msg.sender, "Manager must be sender");
+        require(hub.isShutDown() == false, "Hub is shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        require(orderValues[4] >= now && orderValues[4] <= add(now, 1 days));
+        require(
+            orderValues[4] >= now && orderValues[4] <= add(now, 1 days),
+            "Expiration time must be less than 1 day from now and great than now"
+        );
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
-        require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
-
+        require(
+            !Trading(address(this)).isInOpenMakeOrder(makerAsset),
+            "This asset is already in an open make order"
+        );
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
@@ -100,8 +105,10 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp >= orderValues[4]);
-
+        require(
+            hub.manager() == msg.sender || hub.isShutDown() == false,
+            "Manager must be sender or fund must be shut down"
+        );
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
         ExchangeEfx(targetExchange).cancelOrder(order);
 
