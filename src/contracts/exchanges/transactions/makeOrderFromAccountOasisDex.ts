@@ -10,7 +10,6 @@ import {
   greaterThan,
 } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getHub, ensureIsNotShutDown } from '../../fund/hub';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { ensure } from '~/utils/guards';
 
@@ -24,9 +23,7 @@ const guard: GuardFunction<CallOnExchangeArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  await approve({ howMuch: params.sell, spender: contractAddress });
+  await approve({ howMuch: params.sell, spender: environment.wallet.address });
   const oasisDexContract = getContract(
     Contracts.MatchingMarket,
     contractAddress,
@@ -50,6 +47,7 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
   return {
+    receipt,
     id: receipt.events.LogMake.returnValues.id,
     maker: receipt.events.LogMake.returnValues.maker,
     taker: receipt.events.LogMake.returnValues.taker,

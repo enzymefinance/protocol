@@ -19,6 +19,7 @@ import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 
 const shared: any = {};
 
@@ -122,6 +123,15 @@ test(
         investmentAmount: createQuantity(quoteToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
+
+    const matchingMarketAddress = deployment.exchangeConfigs.find(
+      o => o.name === 'MatchingMarket',
+    ).exchangeAddress;
+    const accountOrder = await makeOrderFromAccountOasisDex(
+      matchingMarketAddress,
+      { sell: createQuantity('ETH', 1), buy: createQuantity('MLN', 10) },
+    );
+    console.log(accountOrder);
   },
   30 * 1000,
 );
