@@ -56,8 +56,8 @@ let opts;
 
 // mock data
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const offeredValue = new BigNumber(10 ** 19);
-const wantedShares = new BigNumber(10 ** 19);
+const offeredValue = new BigNumber(10 ** 18);
+const wantedShares = new BigNumber(10 ** 18);
 
 test.before(async t => {
   deployed = await deployEnvironment(environment);
@@ -168,7 +168,7 @@ test.beforeEach(async () => {
 });
 
 const initialTokenAmount = new BigNumber(10 ** 18);
-test.serial("investor gets initial mlnToken for testing)", async t => {
+test.serial("investor gets initial ethToken for testing)", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
   await ethToken.methods
     .transfer(investor, initialTokenAmount.toFixed())
@@ -253,7 +253,8 @@ test.serial("Make order through the fund", async t => {
   );
   orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
   const preGav = await fund.accounting.methods.calcGav().call();
-  const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(
+    orderHashHex, fund.trading.options.address, orderSignature).call();
   await fund.trading.methods
     .callOnExchange(
       0,
@@ -283,7 +284,8 @@ test.serial("Make order through the fund", async t => {
     )
     .send({ from: manager, gas: config.gas });
   const postGav = await fund.accounting.methods.calcGav().call();
-  const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(
+    orderHashHex, fund.trading.options.address, orderSignature).call();
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
   t.is(preGav, postGav);
@@ -332,7 +334,7 @@ test.serial("Make order through the fund", async t => {
   const makerAddress = fund.trading.options.address.toLowerCase();
   const [, referencePrice] = Object.values(
     await pricefeed.methods
-      .getReferencePriceInfo(mlnToken.options.address, ethToken.options.address)
+      .getReferencePriceInfo(ethToken.options.address, mlnToken.options.address)
       .call()
   );  
   const sellQuantity1 = new BigNumber(10 ** 18);
@@ -372,7 +374,8 @@ test.serial("Make order through the fund", async t => {
   );
   orderSignature = orderSignature.substring(0, orderSignature.length - 1) + "6";
   const preGav = await fund.accounting.methods.calcGav().call();
-  const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  const isValidSignatureBeforeMake = await ethfinexExchange.methods.isValidSignature(
+    orderHashHex, fund.trading.options.address, orderSignature).call();
   await fund.trading.methods
     .callOnExchange(
       0,
@@ -402,9 +405,11 @@ test.serial("Make order through the fund", async t => {
     )
     .send({ from: manager, gas: config.gas });
   const postGav = await fund.accounting.methods.calcGav().call();
-  const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(orderHashHex, fund.trading.options.address, orderSignature).call();
+  const ethTokenWrapperBalance = new BigNumber(await ethTokenWrapper.methods.balanceOf(fund.trading.options.address).call());
+  const isValidSignatureAfterMake = await ethfinexExchange.methods.isValidSignature(
+    orderHashHex, fund.trading.options.address, orderSignature).call();
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
+  t.deepEqual(ethTokenWrapperBalance, order.makerAssetAmount);
   t.is(preGav, postGav);
-  await web3.evm.increaseTime(1000);
 });
