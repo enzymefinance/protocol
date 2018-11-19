@@ -1,5 +1,5 @@
 import { getPrice } from '@melonproject/token-math/price';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem, Address } from '~/utils';
@@ -96,15 +96,15 @@ test(
       investmentAmount: createQuantity(quoteToken, 1),
     });
 
-    console.log(amguPrice, request);
-
     const executedRequest = await executeRequest(settings.participationAddress);
 
-    console.log(executedRequest);
+    expect(
+      isEqual(request.requestedShares, executedRequest.shareQuantity),
+    ).toBe(true);
 
     const shutDown = await shutDownFund(hubAddress);
 
-    console.log(shutDown);
+    expect(shutDown).toBe(true);
 
     await expect(
       requestInvestment(settings.participationAddress, {
