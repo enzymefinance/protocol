@@ -6,7 +6,7 @@ import { createQuantity, toFixed } from '@melonproject/token-math/quantity';
 import { getAmguPrice, setAmguPrice } from '~/contracts/version';
 import { subtract } from '@melonproject/token-math/bigInteger';
 import { getPrice } from '@melonproject/token-math/price';
-import { price } from '@melonproject/token-math';
+// import { price } from '@melonproject/token-math';
 import { update, getPrices } from '~/contracts/prices';
 
 const shared: any = {};
@@ -43,8 +43,9 @@ test(
 
     const amguPrice = createQuantity(amguToken, '1000000000');
 
-    const oldAmugPrice = await getAmguPrice(version);
+    const oldAmguPrice = await getAmguPrice(version);
     const newAmguPrice = await setAmguPrice(version, amguPrice);
+    console.log(oldAmguPrice, newAmguPrice);
 
     const args = {
       defaultTokens,
@@ -62,6 +63,8 @@ test(
     await update(priceSource, [newPrice]);
 
     const prices = await getPrices(priceSource, [baseToken]);
+
+    console.log(prices);
 
     const prepared = await createComponents.prepare(fundFactory, args);
 

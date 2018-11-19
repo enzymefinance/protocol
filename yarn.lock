@@ -860,7 +860,7 @@
   dependencies:
     events "^3.0.0"
 
-"@melonproject/token-math@^0.0.20":
+"@melonproject/token-math@0.0.20":
   version "0.0.20"
   resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.20.tgz#47be3df0b9cca70b26dc45fb0a2f4bef2a22000e"
   integrity sha512-k0Sz8JgEmPxIY0Zlfa1xsiIn79OdSjscN6imTEWtqkYfPoRtS/E2Y4L/K1oA7x6Tgk151A4o5ZzEoqtwhpIqPg==
