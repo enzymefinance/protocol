@@ -75,7 +75,7 @@
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "bignumber.js": "^4.1.0",
-    "ganache-cli": "schmidsi/ganache-cli",
+    "ganache-cli": "travs/ganache-cli#fix-path",
     "glob": "^7.1.3",
     "husky": "^1.1.2",
     "jest": "^23.6.0",
