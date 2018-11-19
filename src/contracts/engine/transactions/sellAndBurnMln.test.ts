@@ -22,6 +22,7 @@ import {
   deploy as deployContract,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import { thaw } from './thaw';
 
 const shared: any = {};
 
@@ -176,7 +177,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
 
   await increaseTime(shared.delay);
 
-  await shared.engine.methods.thaw().send({ from: shared.accounts[1] });
+  await thaw(shared.engine.options.address);
   const frozenEthPost = await shared.engine.methods.frozenEther().call();
   const liquidEthPost = await shared.engine.methods.liquidEther().call();
 
