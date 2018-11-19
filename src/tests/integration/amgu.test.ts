@@ -2,12 +2,18 @@ import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem } from '~/utils';
 import { createComponents } from '~/contracts/factory';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { createQuantity, toFixed } from '@melonproject/token-math/quantity';
-import { getAmguPrice, setAmguPrice } from '~/contracts/version';
-import { subtract } from '@melonproject/token-math/bigInteger';
-import { getPrice } from '@melonproject/token-math/price';
-// import { price } from '@melonproject/token-math';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { update, getPrices } from '~/contracts/prices';
+import { getAmguPrice, setAmguPrice } from '~/contracts/version';
+import {
+  subtract,
+  greaterThan,
+  BigInteger,
+} from '@melonproject/token-math/bigInteger';
+import {
+  getPrice,
+  isEqual as isEqualPrice,
+} from '@melonproject/token-math/price';
 
 const shared: any = {};
 
@@ -38,14 +44,13 @@ test(
     const [quoteToken, baseToken] = tokens;
 
     const defaultTokens = [quoteToken, baseToken];
-
     const amguToken = await getAmguToken(fundFactory);
-
     const amguPrice = createQuantity(amguToken, '1000000000');
-
     const oldAmguPrice = await getAmguPrice(version);
     const newAmguPrice = await setAmguPrice(version, amguPrice);
-    console.log(oldAmguPrice, newAmguPrice);
+
+    expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
+    expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
 
     const args = {
       defaultTokens,
@@ -57,14 +62,13 @@ test(
 
     const newPrice = getPrice(
       createQuantity(baseToken, '1'),
-      createQuantity(quoteToken, '1'),
+      createQuantity(quoteToken, '2'),
     );
 
     await update(priceSource, [newPrice]);
 
-    const prices = await getPrices(priceSource, [baseToken]);
-
-    console.log(prices);
+    const [price] = await getPrices(priceSource, [baseToken]);
+    expect(isEqualPrice(price, newPrice)).toBe(true);
 
     const prepared = await createComponents.prepare(fundFactory, args);
 
@@ -84,9 +88,12 @@ test(
       shared.accounts[0],
     );
 
-    const diffQ = createQuantity('ETH', subtract(preBalance, postBalance));
+    const diffQ = subtract(preBalance, postBalance);
 
-    console.log(result, toFixed(diffQ));
+    expect(result.success).toBe(true);
+    expect(
+      greaterThan(diffQ, new BigInteger(prepared.rawTransaction.gas)),
+    ).toBe(true);
   },
   30 * 1000,
 );
