@@ -28,8 +28,6 @@ const postProcess = async (receipt, params, contractAddress, environment) => {
   const settings = await getSettings(hub, environment);
   const fundToken = await getToken(settings.sharesAddress, environment);
 
-  console.log(receipt);
-
   return {
     shareQuantity: createQuantity(
       fundToken,

@@ -1,3 +1,6 @@
+import * as R from 'ramda';
+import * as web3EthAbi from 'web3-eth-abi';
+
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
   AmguConsumer = 'engine/AmguConsumer',
@@ -73,3 +76,18 @@ export const requireMap = {
   [Contracts.Version]:
       require('../out/version/MockVersion.abi.json'),
 };
+
+const allAbis = R.toPairs(requireMap);
+const onlyEvents = R.propEq('type', 'event');
+
+export const eventSignatureABIMap = allAbis.reduce((carry, [contract, abi]) => {
+  const events = R.filter(onlyEvents, abi);
+  const signatureToEvents = R.map(eventAbi => [
+    web3EthAbi.encodeEventSignature(eventAbi),
+    eventAbi,
+  ])(events);
+  return {
+    ...carry,
+    ...R.fromPairs(signatureToEvents),
+  };
+}, {});

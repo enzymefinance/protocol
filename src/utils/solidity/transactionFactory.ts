@@ -5,7 +5,7 @@ import {
   createQuantity,
 } from '@melonproject/token-math/quantity';
 
-import { Contracts } from '~/Contracts';
+import { Contracts, eventSignatureABIMap } from '~/Contracts';
 
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
@@ -222,24 +222,35 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     options = providedOptions,
     environment = getGlobalEnvironment(),
   ) => {
-    //  const receipt = await sendTransaction(prepared, options, environment);
     const receipt = await environment.eth.sendTransaction(
       prepared.rawTransaction,
     );
 
-    const contractInstance = getContract(contract, contractAddress);
+    const events = receipt.logs.reduce((carry, log) => {
+      const eventABI = eventSignatureABIMap[log.topics[0]];
 
-    console.log(contractInstance.options.jsonInterface);
+      // Ignore event if not found in eventSignaturesABI map;
+      if (!eventABI) {
+        return carry;
+      }
 
-    const events = receipt.logs.map(log =>
-      Web3EthAbi.decodeLog(
-        contractInstance.options.jsonInterface,
+      const decoded = Web3EthAbi.decodeLog(
+        eventABI.inputs,
         log.data,
         log.topics,
-      ),
-    );
+      );
+      const keys = R.map(R.prop('name'), eventABI.inputs);
+      const picked = R.pick(keys, decoded);
 
-    console.log(events);
+      return {
+        ...carry,
+        [eventABI.name]: {
+          returnValues: picked,
+        },
+      };
+    }, {});
+
+    receipt.events = events;
 
     const postprocessed = await postProcess(
       receipt,
