@@ -1,5 +1,4 @@
 import { getGlobalEnvironment } from '../environment';
-import { sessionDeployments } from '../deploySystem';
 
 const ensureDeployments = () => {
   try {
@@ -14,6 +13,8 @@ const ensureDeployments = () => {
 
 const doGetDeployment = (track, network) => {
   const deploymentId = `${network}:${track}`;
+
+  const { sessionDeployments } = require('../deploySystem');
 
   const deployment =
     sessionDeployments[deploymentId] || ensureDeployments()[deploymentId];
