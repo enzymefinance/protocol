@@ -290,6 +290,7 @@ test.serial("Make order through the fund", async t => {
   t.false(isValidSignatureBeforeMake);
   t.true(isValidSignatureAfterMake);
   t.is(preGav, postGav);
+  console.log(preGav);
 });
 
 test.serial(
@@ -417,6 +418,8 @@ test.serial("Make order through the fund with native asset", async t => {
 
 test.serial("Withdraw (unwrap) tokens after lock time has passed", async t => {
   await web3.evm.increaseTime(30000);
+  console.log(await ethTokenWrapper.methods.balanceOf(fund.trading.options.address).call());
+  console.log(await mlnTokenWrapper.methods.balanceOf(fund.trading.options.address).call());
   const preGav = await fund.accounting.methods.calcGav().call();
   await fund.trading.methods
     .callOnExchange(

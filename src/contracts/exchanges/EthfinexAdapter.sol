@@ -46,7 +46,7 @@ contract EthfinexAdapter is DSMath, DBC {
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
         require(!Trading(address(this)).isInOpenMakeOrder(makerAsset));
 
-        wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount);
+        wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
         
@@ -140,6 +140,7 @@ contract EthfinexAdapter is DSMath, DBC {
             if (orderAddresses[i] == nativeAsset) {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
+            Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[i]);
         }
     }
 
@@ -165,9 +166,9 @@ contract EthfinexAdapter is DSMath, DBC {
             return (makerAsset, takerAsset, 0, 0);
         }
 
-        // Check if order has been cancelled and tokens have been withdrawn
+        // Check if tokens have been withdrawn (cancelled order may still need to be accounted if there is balance)
         uint balance = WrapperLock(ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset)).balanceOf(msg.sender);
-        if (ExchangeEfx(targetExchange).cancelled(bytes32(orderId)) && balance == 0) {
+        if (balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
         return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
@@ -176,22 +177,25 @@ contract EthfinexAdapter is DSMath, DBC {
     // INTERNAL METHODS
 
     /// @notice needed to avoid stack too deep error
-    function wrapMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity)
+    /// @dev deposit time should be greater than 1 hour
+    function wrapMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity, uint orderExpirationTime)
         internal
     {
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
+        // Deposit to rounded up value of time difference of expiration time and current time (in hours)
+        uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
 
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
         if (makerAsset == nativeAsset) {
             WETH9(nativeAsset).withdraw(makerQuantity);
-            WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, 1);
+            WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
         } else { 
             ERC20(makerAsset).approve(wrappedToken, makerQuantity);
-            WrapperLock(wrappedToken).deposit(makerQuantity, 1);
+            WrapperLock(wrappedToken).deposit(makerQuantity, depositTime);
         }
     }
 
