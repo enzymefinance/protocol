@@ -64,16 +64,15 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
   return {
-    receipt,
     id: receipt.events.LogMake.returnValues.id,
     maker: receipt.events.LogMake.returnValues.maker,
     taker: receipt.events.LogMake.returnValues.taker,
     sell: createQuantity(
-      receipt.events.LogMake.returnValues.pay_gem,
+      params.sell.token,
       receipt.events.LogMake.returnValues.pay_amt,
     ),
     buy: createQuantity(
-      receipt.events.LogMake.returnValues.buy_gem,
+      params.buy.token,
       receipt.events.LogMake.returnValues.buy_amt,
     ),
     timestamp: receipt.events.LogMake.returnValues.timestamp,

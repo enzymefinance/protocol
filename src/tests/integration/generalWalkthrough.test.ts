@@ -1,5 +1,5 @@
 import { getPrice } from '@melonproject/token-math/price';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem, Address } from '~/utils';
@@ -135,7 +135,13 @@ test(
         buy: createQuantity(deployment.tokens[1], 2),
       },
     );
-    console.log(accountOrder);
+    await expect(accountOrder.buy).toEqual(
+      createQuantity(deployment.tokens[1], 2),
+    );
+    await expect(accountOrder.sell).toEqual(
+      createQuantity(deployment.tokens[0], 0.1),
+    );
+    console.log(`Made order from account with id ${accountOrder.id}`);
   },
   30 * 1000,
 );
