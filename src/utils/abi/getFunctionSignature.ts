@@ -8,6 +8,7 @@ const findFunctionDefinition = (abi: any, functionName: string) =>
   R.find(query(functionName))(abi);
 
 export const getFunctionSignature = (abi: any, functionName: string) => {
+  console.log('----- ', functionName);
   return Web3EthAbi.encodeFunctionSignature(
     findFunctionDefinition(abi, functionName),
   );

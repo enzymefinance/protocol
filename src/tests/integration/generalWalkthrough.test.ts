@@ -164,10 +164,9 @@ test(
 
     // const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
     //   maker: settings.tradingAddress,
-    //   makerAssetSymbol: 'MLN',
-    //   takerAssetSymbol: 'ETH',
-    //   makerQuantity: 0.1,
-    //   takerQuantity: 0.005,
+
+    //   makerQuantity: createQuantity(deployment.tokens[1], 2),
+    //   takerQuantity: createQuantity(deployment.tokens[0], 0.1),
     // });
     // console.log(orderFromFund);
 

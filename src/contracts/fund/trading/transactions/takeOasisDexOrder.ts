@@ -19,6 +19,7 @@ import { getGlobalEnvironment } from '~/utils/environment';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 import { getSettings, getHub } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
+import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 
 export type TakeOasisDexOrderResult = any;
 
@@ -68,10 +69,14 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
-  const method = await getFunctionSignature(matchingMarketAbi, 'takeOrder');
+  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
+  const method = await getFunctionSignature(
+    matchingMarketAdapterAbi,
+    'takeOrder',
+  );
   const deployment = await getDeployment();
-  const matchingMarketAddress = deployment.find(
+
+  const matchingMarketAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
 

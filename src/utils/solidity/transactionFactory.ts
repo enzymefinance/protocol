@@ -279,7 +279,20 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
     options,
     environment = getGlobalEnvironment(),
   ) => {
-    return transaction.execute(contractAddress, params, options, environment);
+    const prepared = await prepare(
+      contractAddress,
+      params,
+      options,
+      environment,
+    );
+    const result = await send(
+      contractAddress,
+      prepared,
+      params,
+      options,
+      environment,
+    );
+    return result;
   };
 
   (execute as EnhancedExecute<Args, Result>).prepare = prepare;
