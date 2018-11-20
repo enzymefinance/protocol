@@ -13,6 +13,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
+    event FeeRewarded(uint shareQuantity);
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -41,6 +42,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         uint rewardShares = fee.feeAmount();
         fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
+        emit FeeRewarded(rewardShares);
     }
 
     function rewardAllFees() public auth {

@@ -16,7 +16,7 @@ import {
 } from '../solidity';
 import { Address } from '../types';
 
-type TransactionArg = number | string;
+type TransactionArg = number | number[] | string | string[];
 type TransactionArgs = TransactionArg[];
 
 // The raw unsigned transaction object from web3

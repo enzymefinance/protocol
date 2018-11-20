@@ -31,7 +31,7 @@ test('withdraw token that is not present', async () => {
       .withdraw(shared.token.options.address, 100)
       .send({ from: shared.env.wallet.address }),
   ).rejects.toThrow();
-});
+}, 10000);
 
 test('withdraw available token', async () => {
   const amount = 100000;
