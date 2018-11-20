@@ -112,7 +112,7 @@ interface EventSignatureABIEntry {
  * const eventABI = eventSignatureABIMap[event.logs[0].topics[0]]
  * */
 type EventSignatureABIMap = {
-  [key: string]: EventSignatureABIEntry[];
+  [key: string]: EventSignatureABIEntry;
 };
 
 export const eventSignatureABIMap: EventSignatureABIMap = allAbis.reduce(
