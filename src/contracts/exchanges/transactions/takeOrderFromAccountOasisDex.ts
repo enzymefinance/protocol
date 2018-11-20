@@ -3,12 +3,19 @@ import {
   GuardFunction,
   PrepareArgsFunction,
 } from '~/utils/solidity';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
+import * as web3Utils from 'web3-utils';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 export interface TakeOrderFromAccountOasisDexArgs {
-  id: string;
+  id: number;
   maxTakeAmount: QuantityInterface;
+  sell: QuantityInterface;
+  buy: QuantityInterface;
 }
 
 const guard: GuardFunction<TakeOrderFromAccountOasisDexArgs> = async (
@@ -17,20 +24,31 @@ const guard: GuardFunction<TakeOrderFromAccountOasisDexArgs> = async (
   environment,
 ) => {
   // TODO
+
+  await approve({ howMuch: params.buy, spender: contractAddress });
 };
 
 const prepareArgs: PrepareArgsFunction<
   TakeOrderFromAccountOasisDexArgs
 > = async ({ id, maxTakeAmount }) => {
-  return [id, maxTakeAmount.toString()];
+  return [id.toString(), maxTakeAmount.quantity.toString()];
 };
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  return { receipt };
+  return {
+    sold: createQuantity(
+      params.buy.token,
+      receipt.events.LogTrade.returnValues.buy_amt,
+    ),
+    bought: createQuantity(
+      params.sell.token,
+      receipt.events.LogTrade.returnValues.sell_amt,
+    ),
+  };
 };
 
 const takeOrderFromAccountOasisDex = transactionFactory(
-  'take',
+  'buy',
   Contracts.MatchingMarket,
   guard,
   prepareArgs,

@@ -24,6 +24,9 @@ import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOas
 import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
+import { getContract } from '~/utils/solidity';
+import { Contracts } from '~/Contracts';
+import { approve } from '~/contracts/dependencies/token';
 
 const shared: any = {};
 
@@ -105,28 +108,16 @@ test(
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
     });
-
-    console.log(amguPrice, request);
+    console.log('Requested an investment');
 
     const executedRequest = await executeRequest(settings.participationAddress);
 
-    console.log(executedRequest);
+    console.log('Executed request');
 
     const redemption = await redeem(settings.participationAddress);
-    console.log(redemption);
+    console.log('Redeemed');
 
     const holdings = await getFundHoldings(settings.accountingAddress);
-    console.log(holdings);
-
-    const shutDown = await shutDownFund(hubAddress);
-
-    console.log(shutDown);
-
-    await expect(
-      requestInvestment(settings.participationAddress, {
-        investmentAmount: createQuantity(quoteToken, 1),
-      }),
-    ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
 
     const matchingMarketAddress = deployment.exchangeConfigs.find(
       o => o.name === 'MatchingMarket',
@@ -139,28 +130,26 @@ test(
         buy: createQuantity(deployment.tokens[1], 2),
       },
     );
-    console.log(accountOrder);
-    // await expect(accountOrder.buy).toEqual(
-    //   createQuantity(deployment.tokens[1], 2),
-    // );
-    // await expect(accountOrder.sell).toEqual(
-    //   createQuantity(deployment.tokens[0], 0.1),
-    // );
+    expect(accountOrder.buy).toEqual(createQuantity(deployment.tokens[1], 2));
+    expect(accountOrder.sell).toEqual(
+      createQuantity(deployment.tokens[0], 0.1),
+    );
     console.log(`Made order from account with id ${accountOrder.id}`);
 
     const order1 = await getOasisDexOrder(matchingMarketAddress, {
       id: accountOrder.id,
     });
-    console.log('ORDER 1 ', order1);
-    // const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
-    //   matchingMarketAddress,
-    //   {
-    //     id: accountOrder.id,
-    //     maxTakeAmount: '1000000000000000000',
-    //   },
-    // );
+    const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
+      matchingMarketAddress,
+      {
+        id: order1.id,
+        maxTakeAmount: order1.sell,
+        buy: order1.buy,
+        sell: order1.sell,
+      },
+    );
 
-    // console.log('TAKEN ', takenOrderFromAccount);
+    console.log(`Took order from account with id ${accountOrder.id}`);
 
     // const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
     //   maker: settings.tradingAddress,
@@ -170,6 +159,16 @@ test(
     //   takerQuantity: 0.005,
     // });
     // console.log(orderFromFund);
+
+    const shutDown = await shutDownFund(hubAddress);
+
+    console.log('Shut down fund');
+
+    await expect(
+      requestInvestment(settings.participationAddress, {
+        investmentAmount: createQuantity(quoteToken, 1),
+      }),
+    ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   },
   30 * 1000,
 );
