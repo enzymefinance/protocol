@@ -52,7 +52,7 @@ const isOasisDexMakePermitted = async (
   );
 
   const result = await policyManager.methods
-    .isMakePermitted(
+    .preValidate(
       methodSignature, // bytes4(keccak256(methodSignature))
       [
         tradingAddress, // orderAddresses[0],

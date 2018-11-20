@@ -13,7 +13,7 @@ import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { ensure } from '~/utils/guards';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token';
-
+import * as web3Utils from 'web3-utils';
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;
   buy: QuantityInterface;
@@ -64,7 +64,7 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
   return {
-    id: receipt.events.LogMake.returnValues.id,
+    id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,
     taker: receipt.events.LogMake.returnValues.taker,
     sell: createQuantity(

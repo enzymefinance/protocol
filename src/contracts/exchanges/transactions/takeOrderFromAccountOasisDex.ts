@@ -26,7 +26,7 @@ const prepareArgs: PrepareArgsFunction<
 };
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  return { id: receipt.events.LogTake.returnValues.id };
+  return { receipt };
 };
 
 const takeOrderFromAccountOasisDex = transactionFactory(
