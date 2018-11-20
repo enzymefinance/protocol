@@ -27,6 +27,7 @@ import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
 import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token';
+import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 
 const shared: any = {};
 
@@ -123,22 +124,14 @@ test(
       o => o.name === 'MatchingMarket',
     ).exchangeAddress;
 
-    const accountOrder = await makeOrderFromAccountOasisDex(
-      matchingMarketAddress,
-      {
-        sell: createQuantity(deployment.tokens[0], 0.1),
-        buy: createQuantity(deployment.tokens[1], 2),
-      },
-    );
-    expect(accountOrder.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-    expect(accountOrder.sell).toEqual(
-      createQuantity(deployment.tokens[0], 0.1),
-    );
-    console.log(`Made order from account with id ${accountOrder.id}`);
-
-    const order1 = await getOasisDexOrder(matchingMarketAddress, {
-      id: accountOrder.id,
+    const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
+      sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(deployment.tokens[1], 2),
     });
+    expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
+    expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+    console.log(`Made order from account with id ${order1.id}`);
+
     const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
       matchingMarketAddress,
       {
@@ -149,7 +142,24 @@ test(
       },
     );
 
-    console.log(`Took order from account with id ${accountOrder.id}`);
+    console.log(`Took order from account with id ${order1.id}`);
+
+    const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
+      sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(deployment.tokens[1], 2),
+    });
+    expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
+    expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+    console.log(`Made order from account with id ${order2.id}`);
+
+    const canceledOrderFromAccount = await cancelOrderFromAccountOasisDex(
+      matchingMarketAddress,
+      {
+        id: order2.id,
+      },
+    );
+
+    console.log(`Canceled order from account with id ${order2.id}`);
 
     // const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
     //   maker: settings.tradingAddress,

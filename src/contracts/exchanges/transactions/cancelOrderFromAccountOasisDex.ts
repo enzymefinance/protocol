@@ -4,6 +4,7 @@ import {
   PrepareArgsFunction,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import * as web3Utils from 'web3-utils';
 
 export interface CancelOrderFromAccountOasisDexArgs {
   id: string;
@@ -24,7 +25,7 @@ const prepareArgs: PrepareArgsFunction<
 };
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  return { id: receipt.events.LogKill.returnValues.id };
+  return { id: web3Utils.toDecimal(receipt.events.LogKill.returnValues.id) };
 };
 
 const cancelOrderFromAccountOasisDex = transactionFactory(
