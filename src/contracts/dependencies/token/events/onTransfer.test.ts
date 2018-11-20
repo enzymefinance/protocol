@@ -3,7 +3,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
-import { transfer, deploy, getToken, onTransfer } from '..';
+import { transfer, deployToken, getToken, onTransfer } from '..';
 
 const shared: any = {};
 
@@ -11,7 +11,7 @@ beforeAll(async () => {
   await initTestEnvironment();
   const environment = getGlobalEnvironment();
 
-  shared.address = await deploy();
+  shared.address = await deployToken();
   shared.token = await getToken(shared.address);
   shared.accounts = (await environment.eth.getAccounts()).map(
     account => new Address(account),

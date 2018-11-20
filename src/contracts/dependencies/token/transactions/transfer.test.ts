@@ -8,7 +8,7 @@ import {
 
 import { Address } from '~/utils/types';
 
-import { transfer, deploy, getToken } from '..';
+import { transfer, deployToken, getToken } from '..';
 
 const shared: any = {};
 
@@ -16,7 +16,7 @@ beforeAll(async () => {
   await initTestEnvironment();
   const environment = getGlobalEnvironment();
 
-  shared.address = await deploy();
+  shared.address = await deployToken();
   shared.token = await getToken(shared.address);
   shared.accounts = (await environment.eth.getAccounts()).map(
     account => new Address(account),

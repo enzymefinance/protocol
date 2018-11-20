@@ -1,9 +1,6 @@
 import { getGlobalEnvironment } from '~/utils/environment';
 
-import {
-  deploy as deployToken,
-  getToken,
-} from '~/contracts/dependencies/token';
+import { deployToken, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployPriceFeed } from '~/contracts/prices';
 import {
   deployMatchingMarket,

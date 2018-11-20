@@ -10,11 +10,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/utils/environment';
 import { deploy as deployEngine, sellAndBurnMln } from '..';
-import {
-  deploy as deployToken,
-  approve,
-  getToken,
-} from '~/contracts/dependencies/token';
+import { deployToken, approve, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import {
   increaseTime,
