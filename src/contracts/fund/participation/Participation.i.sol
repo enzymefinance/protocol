@@ -20,10 +20,10 @@ interface ParticipationInterface {
         uint requestedShares,
         uint investmentAmount,
         address investmentAsset
-    ) external;
+    ) external payable;
     function cancelRequest() external;
     function executeRequest() external;
-    function executeRequestFor(address requestOwner) external;
+    function executeRequestFor(address requestOwner) external payable;
     function redeem() public;
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public returns (bool);
 }
