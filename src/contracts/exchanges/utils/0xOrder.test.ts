@@ -1,8 +1,12 @@
+import * as web3EthAbi from 'web3-eth-abi';
+import * as R from 'ramda';
+
 import { initTestEnvironment } from '~/utils/environment';
 import { deploy0xExchange } from '../transactions/deploy0xExchange';
 import { deployToken, getToken } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { create0xOrder, sign0xOrder } from './create0xOrder';
+import { Contracts, requireMap } from '~/Contracts';
 
 const shared: any = {};
 
@@ -35,7 +39,24 @@ test('Happy path', async () => {
     makerQuantity.quantity.toString(),
   );
 
-  console.log(signedOrder);
+  const signedOrderPairs = R.toPairs(signedOrder);
+  const stringified = R.map(
+    ([key, value]) => [key, value.toString()],
+    signedOrderPairs,
+  );
+  const stringifiedSignedOrder = R.fromPairs(stringified);
+
+  console.log(stringifiedSignedOrder);
+
+  const exchangeAbi = requireMap[Contracts.ZeroExExchange];
+  const fillOrderAbi = exchangeAbi.filter(a => a.name === 'fillOrder')[0];
+  const encoded = web3EthAbi.encodeFunctionCall(fillOrderAbi, [
+    stringifiedSignedOrder,
+    stringifiedSignedOrder.makerAssetAmount,
+    stringifiedSignedOrder.signature,
+  ]);
+
+  console.log(JSON.stringify(encoded, null, 2));
 
   //
   /*
