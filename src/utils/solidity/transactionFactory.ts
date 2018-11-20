@@ -11,8 +11,10 @@ import {
 import { Address } from '../types';
 import { Contracts } from '~/Contracts';
 
-type TransactionArg = number | string;
-type TransactionArgs = TransactionArg[];
+// TODO: Fix the types here once the transaction factory decorators are
+// properly implemented.
+type TransactionArg = any;
+type TransactionArgs = TransactionArg[] | any;
 
 // Guard check if the given transaction can run without errors
 // They are crucial to spot "Transaction Execution Errors" before
