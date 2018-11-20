@@ -123,13 +123,17 @@ test(
         investmentAmount: createQuantity(quoteToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
-    console.log(deployment.tokens);
+
     const matchingMarketAddress = deployment.exchangeConfigs.find(
       o => o.name === 'MatchingMarket',
     ).exchangeAddress;
+
     const accountOrder = await makeOrderFromAccountOasisDex(
       matchingMarketAddress,
-      { sell: createQuantity('ETH', 1), buy: createQuantity('MLN', 10) },
+      {
+        sell: createQuantity(deployment.tokens[0], 0.1),
+        buy: createQuantity(deployment.tokens[1], 2),
+      },
     );
     console.log(accountOrder);
   },

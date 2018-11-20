@@ -12,6 +12,7 @@ import {
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { ensure } from '~/utils/guards';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;
@@ -23,13 +24,29 @@ const guard: GuardFunction<CallOnExchangeArgs> = async (
   contractAddress,
   environment,
 ) => {
-  await approve({ howMuch: params.sell, spender: environment.wallet.address });
+  await approve({ howMuch: params.sell, spender: contractAddress });
   const oasisDexContract = getContract(
     Contracts.MatchingMarket,
     contractAddress,
   );
-  const dust = await oasisDexContract.methods._dust().call();
-  ensure(greaterThan(params.sell, dust), 'Selling quantity too low.');
+  const dust = await oasisDexContract.methods
+    ._dust(params.sell.token.address)
+    .call();
+  ensure(
+    greaterThan(params.sell, createQuantity(params.sell.token, dust)),
+    'Selling quantity too low.',
+  );
+
+  const isWhitelisted = await oasisDexContract.methods
+    .isTokenPairWhitelisted(params.sell.token.address, params.buy.token.address)
+    .call();
+
+  ensure(isWhitelisted, 'Token pair not whitelisted');
+
+  ensureSufficientBalance(params.sell, environment.wallet.address, environment);
+
+  const isMarketClosed = await oasisDexContract.methods.isClosed().call();
+  ensure(!isMarketClosed, 'Market closed');
 };
 
 const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
