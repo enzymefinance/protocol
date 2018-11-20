@@ -8,6 +8,7 @@ export enum Contracts {
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
+  MockAdapter = 'exchanges/MockAdapter',
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockHub = 'fund/hub/MockHub',
   MockShares = 'fund/shares/MockShares',
@@ -44,6 +45,8 @@ export const requireMap = {
     require('../out/exchanges/GenericExchangeInterface.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
+  [Contracts.MockAdapter]:
+    require('../out/exchanges/MockAdapter.abi.json'),
   [Contracts.MockFeeManager]:
     require('../out/fund/fees/MockFeeManager.abi.json'),
   [Contracts.MockHub]:
