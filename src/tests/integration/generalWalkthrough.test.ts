@@ -123,7 +123,7 @@ test(
         investmentAmount: createQuantity(quoteToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
-
+    console.log(deployment.tokens);
     const matchingMarketAddress = deployment.exchangeConfigs.find(
       o => o.name === 'MatchingMarket',
     ).exchangeAddress;
