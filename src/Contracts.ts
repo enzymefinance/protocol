@@ -28,6 +28,8 @@ export enum Contracts {
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
   Version = 'version/VersionInterface',
+  ZeroEx = 'exchanges/thirdparty/0x/Exchange',
+  ZeroExAdapter = 'exchanges/ZeroExV2Adapter',
 }
 
 // HINT: Link the interfaces instead of the implementations wherever possible
@@ -61,7 +63,7 @@ export const requireMap = {
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
-  require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+    require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
     require('../out/fund/participation/Participation.abi.json'),
   [Contracts.PolicyManager]:
@@ -84,9 +86,14 @@ export const requireMap = {
     require('../out/fund/vault/Vault.abi.json'),
   [Contracts.VaultFactory]:
     require('../out/fund/vault/VaultFactory.abi.json'),
+  // tslint:disable-next-line:max-line-length
   // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
   [Contracts.Version]:
-      require('../out/version/MockVersion.abi.json'),
+    require('../out/version/MockVersion.abi.json'),
+  [Contracts.ZeroEx]:
+    require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
+  [Contracts.ZeroExAdapter]:
+    require('../out/exchanges/ZeroExV2Adapter.abi.json'),
 };
 
 const allAbis = R.toPairs(requireMap);
