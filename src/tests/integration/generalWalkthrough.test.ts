@@ -28,6 +28,7 @@ import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
+import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 
 const shared: any = {};
 
@@ -169,6 +170,23 @@ test(
     //   takerQuantity: 0.005,
     // });
     // console.log(orderFromFund);
+
+    const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
+      sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(deployment.tokens[1], 2),
+    });
+    expect(order3.buy).toEqual(createQuantity(deployment.tokens[1], 2));
+    expect(order3.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+    console.log(`Made order from account with id ${order3.id}`);
+
+    const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
+      id: order3.id,
+      makerQuantity: order3.sell,
+      takerQuantity: order3.buy,
+      fillTakerTokenAmount: order3.buy,
+    });
+
+    console.log('----- ', fundTakenOrder);
 
     const shutDown = await shutDownFund(hubAddress);
 

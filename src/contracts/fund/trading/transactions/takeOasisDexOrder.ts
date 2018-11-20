@@ -20,22 +20,24 @@ import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 import { getSettings, getHub } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 
-export type MakeOasisDexOrderResult = any;
+export type TakeOasisDexOrderResult = any;
 
-export interface MakeOasisDexOrderArgs {
+export interface TakeOasisDexOrderArgs {
+  id: number;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
+  fillTakerTokenAmount: QuantityInterface;
 }
 
-const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
-  { makerQuantity, takerQuantity },
+const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
+  { id, makerQuantity, takerQuantity, fillTakerTokenAmount = takerQuantity },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
   const hubAddress = await getHub(contractAddress, environment);
   const { vaultAddress } = await getSettings(hubAddress);
 
-  const minBalance = makerQuantity;
+  const minBalance = fillTakerTokenAmount;
   ensureSufficientBalance(minBalance, vaultAddress, environment);
 
   ensureFundOwner(contractAddress, environment);
@@ -50,21 +52,24 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   // IF MATCHINGMARKET:
   // Ensure selling quantity is not too low.
 
-  ensureMakePermitted(
+  // ensyre take permited
+  ensureTakePermitted(
     contractAddress,
+    id,
     makerQuantity,
     takerQuantity,
+    fillTakerTokenAmount,
     environment,
   );
 };
 
-const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
-  { makerQuantity, takerQuantity },
+const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
+  { id, makerQuantity, takerQuantity, fillTakerTokenAmount },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
   const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
-  const method = await getFunctionSignature(matchingMarketAbi, 'makeOrder');
+  const method = await getFunctionSignature(matchingMarketAbi, 'takeOrder');
   const deployment = await getDeployment();
   const matchingMarketAddress = deployment.find(
     o => o.name === 'MatchingMarket',
@@ -79,8 +84,8 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   return {
     exchangeIndex,
     method,
-    maker: contractAddress,
-    taker: '0x0000000000000000000000000000000000000000',
+    maker: '0x0000000000000000000000000000000000000000',
+    taker: contractAddress,
     makerAssetSymbol: makerQuantity.token.address,
     takerAssetSymbol: takerQuantity.token.address,
     feeRecipient: '0x0000000000000000000000000000000000000000',
@@ -91,9 +96,9 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     takerFee: '0',
     timestamp: '0',
     salt: '0x0',
-    fillTakerTokenAmount: '0',
+    fillTakerTokenAmount,
     dexySignatureMode: 0,
-    identifier: 0,
+    identifier: id,
     makerAssetData: '0',
     takerAssetData: '0',
     signature: '0x0',
@@ -101,16 +106,16 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
 };
 
 const postProcess: PostProcessFunction<
-  MakeOasisDexOrderArgs,
-  MakeOasisDexOrderResult
+  TakeOasisDexOrderArgs,
+  TakeOasisDexOrderResult
 > = async receipt => {
   return receipt;
 };
 
-const makeOasisDexOrder = withTransactionDecorator(callOnExchange, {
+const takeOasisDexOrder = withTransactionDecorator(callOnExchange, {
   postProcess,
   prepareArgs,
   guard,
 });
 
-export { makeOasisDexOrder };
+export { takeOasisDexOrder };
