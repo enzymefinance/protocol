@@ -7,6 +7,7 @@ import { deployToken, getToken } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { create0xOrder, sign0xOrder } from './create0xOrder';
 import { Contracts, requireMap } from '~/Contracts';
+import { fill0xOrder } from '../transactions/fill0xOrder';
 
 const shared: any = {};
 
@@ -57,6 +58,12 @@ test('Happy path', async () => {
   ]);
 
   console.log(JSON.stringify(encoded, null, 2));
+
+  const result = await fill0xOrder(
+    shared.zeroExExchangeAddress,
+    { signedOrder },
+    { from: shared.accounts[1] },
+  );
 
   //
   /*

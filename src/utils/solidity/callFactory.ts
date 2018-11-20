@@ -33,6 +33,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
     const txObject = contractInstance.methods[name](...args);
     const prepared = {
       contractAddress,
+      params,
       txObject,
     };
     return prepared;

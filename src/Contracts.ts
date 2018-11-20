@@ -28,7 +28,7 @@ export enum Contracts {
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
   Version = 'version/VersionInterface',
-  ZeroEx = 'exchanges/thirdparty/0x/Exchange',
+  ZeroExExchange = 'exchanges/thirdparty/0x/Exchange',
   ZeroExAdapter = 'exchanges/ZeroExV2Adapter',
 }
 
@@ -90,7 +90,7 @@ export const requireMap = {
   // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
   [Contracts.Version]:
     require('../out/version/MockVersion.abi.json'),
-  [Contracts.ZeroEx]:
+  [Contracts.ZeroExExchange]:
     require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
     require('../out/exchanges/ZeroExV2Adapter.abi.json'),

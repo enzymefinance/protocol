@@ -36,9 +36,13 @@ interface Sign0xOrderArgs {
 
 const create0xOrder = async (
   exchangeAddress: Address,
-  { from, makerQuantity, takerQuantity, duration = 60 * 60 }: Create0xOrderArgs,
+  {
+    from,
+    makerQuantity,
+    takerQuantity,
+    duration = 24 * 60 * 60,
+  }: Create0xOrderArgs,
 ): Promise<Sign0xOrderArgs> => {
-  console.log('create0xOrder', from, makerQuantity);
   await approve({ howMuch: makerQuantity, spender: exchangeAddress });
 
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
@@ -56,7 +60,7 @@ const create0xOrder = async (
     senderAddress: constants.NULL_ADDRESS,
     feeRecipientAddress: constants.NULL_ADDRESS,
     expirationTimeSeconds: new BigNumber(
-      Math.ceil((Date.now() + duration) / 1000),
+      Math.ceil(Date.now() / 1000 + duration),
     ),
     salt: generatePseudoRandomSalt(),
     makerAssetAmount: new BigNumber(`${makerQuantity.quantity}`),
