@@ -5,6 +5,19 @@ import { deploy, getContract } from '~/utils/solidity';
 
 let shared: any = {};
 
+// Mock data
+const mockExchanges = [
+  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+];
+
+const mockExchangeAdapters = [
+  '0xcccccccccccccccccccccccccccccccccccccccc',
+  '0xdddddddddddddddddddddddddddddddddddddddd',
+];
+
+const takesCustodyMasks = [true, false];
+
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = Object.assign(shared, await deployMockSystem());
@@ -12,18 +25,6 @@ beforeAll(async () => {
 });
 
 test('Exchanges are properly initialized', async () => {
-  const mockExchanges = [
-    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-  ];
-
-  const mockExchangeAdapters = [
-    '0xcccccccccccccccccccccccccccccccccccccccc',
-    '0xdddddddddddddddddddddddddddddddddddddddd',
-  ];
-
-  const takesCustodyMasks = [true, false];
-
   const trading = getContract(
     Contracts.Trading,
     await deploy(Contracts.Trading, [
@@ -39,5 +40,21 @@ test('Exchanges are properly initialized', async () => {
     expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
     expect(exchangeObject.adapter.toLowerCase()).toBe(mockExchangeAdapters[i]);
     expect(exchangeObject.takesCustody).toBe(takesCustodyMasks[i]);
+    await expect(
+      trading.methods.exchangeIsAdded(mockExchanges[i]).call(),
+    ).toBeTruthy();
   }
+});
+
+test('Exchanges cant be initialized without its adapter', async () => {
+  const errorMessage = 'Array lengths unequal';
+
+  await expect(
+    deploy(Contracts.Trading, [
+      shared.hub.options.address,
+      mockExchanges,
+      [mockExchangeAdapters[0]],
+      takesCustodyMasks,
+    ]),
+  ).rejects.toThrow(errorMessage);
 });
