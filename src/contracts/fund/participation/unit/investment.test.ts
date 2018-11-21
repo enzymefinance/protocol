@@ -89,4 +89,30 @@ test('Need fresh price to executeRequest', async () => {
   await shared.priceSource.methods
     .setIsRecent(true)
     .send({ from: shared.user });
+  await shared.participation.methods
+    .cancelRequest()
+    .send({ from: shared.user, gas: 8000000 });
+});
+
+test('Invested amount must be above price minimum', async () => {
+  console.log(shared.participation.options.address);
+  console.log(shared.feeManager.options.address);
+  console.log(shared.accounting.options.address);
+  const errorMessage = 'Invested amount too low';
+  const price = '1000000000000000000';
+  await shared.priceSource.methods
+    .update(
+      [shared.weth.options.address, shared.mln.options.address],
+      [price, price],
+    )
+    .send({ from: shared.user, gas: 8000000 });
+  await shared.participation.methods
+    .requestInvestment('1000', '1', shared.weth.options.address)
+    .send({ from: shared.user, gas: 8000000 });
+
+  await expect(
+    shared.participation.methods
+      .executeRequest()
+      .send({ from: shared.user, gas: 8000000 }),
+  ).rejects.toThrow(errorMessage);
 });

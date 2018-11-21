@@ -9,8 +9,15 @@ import "../../engine/AmguConsumer.sol";
 
 contract MockFeeManager is DSMath, AmguConsumer, Spoke {
 
+    uint totalFees;
+    uint performanceFees;
+
     constructor(address _hub) Spoke(_hub) {}
 
+    function setTotalFeeAmount(uint _amt) { totalFees = _amt; }
+    function setPerformanceFeeAmount(uint _amt) { performanceFees = _amt; }
+
     function rewardManagementFee() { return; }
-    function performanceFeeAmount() returns (uint) { return 0; }
+    function performanceFeeAmount() view returns (uint) { return performanceFees; }
+    function totalFeeAmount() public view returns (uint) { return totalFees; }
 }
