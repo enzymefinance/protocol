@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem } from '~/utils';
 import { createComponents } from '~/contracts/factory';
