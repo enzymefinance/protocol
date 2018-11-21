@@ -24,6 +24,7 @@ export const deployMockSystem = async (
   accountingContract = Contracts.Accounting,
   feeManagerContract = Contracts.MockFeeManager,
   hubContract = Contracts.MockHub,
+  policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
   priceSourceContract = Contracts.TestingPriceFeed,
   sharesContract = Contracts.MockShares,
@@ -72,6 +73,9 @@ export const deployMockSystem = async (
   const feeManager = await deployAndGet(feeManagerContract, [
     hub.options.address,
   ]);
+  const policyManager = await deployAndGet(policyManagerContract, [
+    hub.options.address,
+  ]);
   const participation = await deployAndGet(participationContract, [
     hub.options.address,
   ]);
@@ -89,7 +93,7 @@ export const deployMockSystem = async (
       accounting.options.address,
       feeManager.options.address,
       participation.options.address,
-      randomAddress().toString(), // policyManager
+      policyManager.options.address, // policyManager
       shares.options.address,
       trading.options.address,
       vault.options.address,
@@ -125,6 +129,7 @@ export const deployMockSystem = async (
     hub,
     mln,
     participation,
+    policyManager,
     priceSource,
     shares,
     trading,

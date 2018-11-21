@@ -16,11 +16,11 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = await Object.assign(shared, await deployMockSystem());
   shared.user = shared.env.wallet.address;
-  const mockAdapter = getContract(
+  const mockAdapter = await getContract(
     Contracts.MockAdapter,
     await deploy(Contracts.MockAdapter),
   );
-  shared.trading = getContract(
+  shared.trading = await getContract(
     Contracts.Trading,
     await deploy(Contracts.Trading, [
       shared.hub.options.address,
@@ -29,13 +29,25 @@ beforeAll(async () => {
       [false],
     ]),
   );
+  await shared.trading.methods
+    .initialize([
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      shared.policyManager.options.address,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+    ])
+    .send({ from: shared.user, gas: 8000000 });
 });
 
 test('Make order associated callbacks add data', async () => {
-  const mockAdapter = getContract(
-    Contracts.MockAdapter,
-    await deploy(Contracts.MockAdapter),
-  );
   await shared.trading.methods
     .callOnExchange(
       0,
@@ -56,5 +68,5 @@ test('Make order associated callbacks add data', async () => {
       '0x0',
       '0x0',
     )
-    .send();
+    .send({ from: shared.user, gas: 8000000 });
 });
