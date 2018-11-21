@@ -1,15 +1,16 @@
 pragma solidity ^0.4.21;
 
+import "./PriceSource.i.sol";
+import "./UpdatableFeed.i.sol";
 import "./CanonicalRegistrar.sol";
 import "./CanonicalPriceFeed.sol";
-import "./SimplePriceFeedInterface.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/thing.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Updates and exposes price information for consuming contracts
-contract SimplePriceFeed is SimplePriceFeedInterface, DSThing, DBC {
+contract SimplePriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSThing, DBC {
 
     // TYPES
     struct Data {
