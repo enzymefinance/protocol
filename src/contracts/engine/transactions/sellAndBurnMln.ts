@@ -25,11 +25,16 @@ const guard = async ({ quantity }, contractAddress: Address, environment) => {
   );
 };
 
-const prepareArgs = async ({ quantity }) => [String(quantity.quantity)];
+const prepareArgs = async ({ quantity }) => {
+  return [`${quantity.quantity}`];
+};
 
 const postProcess = async receipt => receipt;
 
-const options = { gas: '8000000' };
+// Gas behaves kinda weird for this function:
+// Estimation: 88289, Effective usage: 58289
+// const options = { gas: '89399' };
+// NOTE: Fixed with gas boost
 
 export const sellAndBurnMln = transactionFactory(
   'sellAndBurnMln',
@@ -37,5 +42,5 @@ export const sellAndBurnMln = transactionFactory(
   guard,
   prepareArgs,
   postProcess,
-  options,
+  // options,
 );

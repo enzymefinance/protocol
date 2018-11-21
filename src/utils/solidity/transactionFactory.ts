@@ -1,18 +1,46 @@
 import * as R from 'ramda';
+import * as Web3EthAbi from 'web3-eth-abi';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
+
+import { Contracts, eventSignatureABIMap } from '~/Contracts';
 
 import { Environment, getGlobalEnvironment } from '../environment';
 import {
   getContract,
   prepareTransaction,
-  PreparedTransaction,
-  sendTransaction,
   OptionsOrCallback,
+  Options,
 } from '../solidity';
 import { Address } from '../types';
-import { Contracts } from '~/Contracts';
 
 type TransactionArg = number | number[] | string | string[];
 type TransactionArgs = TransactionArg[];
+
+// The raw unsigned transaction object from web3
+// https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
+export interface UnsignedRawTransaction {
+  from: string;
+  to: string;
+  value?: string;
+  gas?: string;
+  gasPrice?: string;
+  data?: string;
+  nonce?: number;
+}
+
+export interface MelonTransaction<Args> {
+  amguInEth: QuantityInterface;
+  params: Args;
+  rawTransaction: UnsignedRawTransaction;
+  // Already signed transaction in HEX as described here:
+  // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendsignedtransaction
+  // If not specified, signing will be done through web3.js
+  signedTransaction?: string;
+  transactionArgs: TransactionArgs;
+}
 
 // Guard check if the given transaction can run without errors
 // They are crucial to spot "Transaction Execution Errors" before
@@ -52,7 +80,7 @@ export type TransactionFactory = <Args, Result>(
 
 type SendFunction<Args> = (
   contractAddress: Address,
-  prepared: PreparedTransaction,
+  melonTransaction: MelonTransaction<Args>,
   params: Args,
   options?: OptionsOrCallback,
   environment?: Environment,
@@ -63,7 +91,7 @@ type PrepareFunction<Args> = (
   params?: Args,
   options?: OptionsOrCallback,
   environment?: Environment,
-) => Promise<PreparedTransaction>;
+) => Promise<MelonTransaction<Args>>;
 
 type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
@@ -136,25 +164,58 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   guard = defaultGuard,
   prepareArgs = defaultPrepareArgs,
   postProcess = defaultPostProcess,
-  defaultOptions?,
+  defaultOptions = {},
 ) => {
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
     params,
-    options = defaultOptions,
+    optionsOrCallback = defaultOptions,
     environment: Environment = getGlobalEnvironment(),
   ) => {
     await guard(params, contractAddress, environment);
     const args = await prepareArgs(params, contractAddress, environment);
     const contractInstance = getContract(contract, contractAddress);
     const transaction = contractInstance.methods[name](...args);
+
     transaction.name = name;
     const prepared = await prepareTransaction(
       transaction,
-      options,
+      optionsOrCallback,
       environment,
     );
-    return { ...prepared, contract };
+    const options: Options =
+      typeof optionsOrCallback === 'function'
+        ? optionsOrCallback(environment)
+        : optionsOrCallback;
+
+    // HACK: To avoid circular dependencies (?)
+    const {
+      calcAmguInEth,
+    } = await import('~/contracts/engine/calls/calcAmguInEth');
+
+    const amguInEth = options.amguPayable
+      ? await calcAmguInEth(
+          contractAddress,
+          prepared.gasEstimation,
+          environment,
+        )
+      : createQuantity('eth', '0'); /*;*/
+
+    const melonTransaction = {
+      amguInEth,
+      params,
+      rawTransaction: {
+        data: prepared.encoded,
+        from: `${options.from || environment.wallet.address}`,
+        gas: `${options.gas || prepared.gasEstimation}`,
+        gasPrice: `${options.gasPrice || environment.options.gasPrice}`,
+        to: `${contractAddress}`,
+        value: `${options.value || amguInEth.quantity}`,
+      },
+      transactionArgs: prepared.transaction.arguments,
+    };
+
+    return melonTransaction;
   };
 
   const send: SendFunction<Args> = async (
@@ -164,13 +225,49 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
-    const receipt = await sendTransaction(prepared, options, environment);
+    const receipt = await environment.eth
+      .sendTransaction(prepared.rawTransaction)
+      .then(null, error => {
+        throw new Error(
+          `Transaction failed for ${name}(${prepared.transactionArgs.join(
+            ', ',
+          )}): ${error.message}`,
+        );
+      });
+
+    const events = receipt.logs.reduce((carry, log) => {
+      const eventABI = eventSignatureABIMap[log.topics[0]];
+
+      // Ignore event if not found in eventSignaturesABI map;
+      if (!eventABI) {
+        return carry;
+      }
+
+      const decoded = Web3EthAbi.decodeLog(
+        eventABI.inputs,
+        log.data,
+        log.topics,
+      );
+      const keys = R.map(R.prop('name'), eventABI.inputs);
+      const picked = R.pick(keys, decoded);
+
+      return {
+        ...carry,
+        [eventABI.name]: {
+          returnValues: picked,
+        },
+      };
+    }, {});
+
+    receipt.events = events;
+
     const postprocessed = await postProcess(
       receipt,
       params,
       contractAddress,
       environment,
     );
+
     return postprocessed;
   };
 
@@ -190,7 +287,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       contractAddress,
       prepared,
       params,
-      defaultOptions,
+      options,
       environment,
     );
     return result;

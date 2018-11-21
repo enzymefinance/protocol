@@ -68,4 +68,5 @@ export const createComponents: EnhancedExecute<
   guard,
   prepareArgs,
   postProcess,
+  { amguPayable: true },
 );

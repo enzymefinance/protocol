@@ -7,8 +7,6 @@ import { transfer, deploy, getToken, onTransfer } from '..';
 
 const shared: any = {};
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 beforeAll(async () => {
   await initTestEnvironment();
   const environment = getGlobalEnvironment();
@@ -20,15 +18,19 @@ beforeAll(async () => {
   );
 });
 
-test('onTransfer', async () => {
-  onTransfer(shared.token.address, {
-    from: new Address(shared.accounts[0]),
-  }).subscribe(a => console.log(a));
+test('onTransfer', async () =>
+  new Promise(async resolve => {
+    onTransfer(shared.token.address, {
+      from: new Address(shared.accounts[0]),
+    }).subscribe(a => {
+      expect(a.from).toBe(shared.accounts[0].toString());
+      expect(a.to).toBe(shared.accounts[1].toString());
+      expect(a.value).toBe('1000000000000000000');
+      resolve();
+    });
 
-  await transfer({
-    howMuch: createQuantity(shared.token, '1000000000000000000'),
-    to: shared.accounts[1],
-  });
-
-  await delay(1000);
-});
+    await transfer({
+      howMuch: createQuantity(shared.token, '1000000000000000000'),
+      to: shared.accounts[1],
+    });
+  }));
