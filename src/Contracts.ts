@@ -1,5 +1,9 @@
+import * as R from 'ramda';
+import * as web3EthAbi from 'web3-eth-abi';
+
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
+  AmguConsumer = 'engine/AmguConsumer',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
@@ -32,6 +36,8 @@ export enum Contracts {
 export const requireMap = {
   [Contracts.Accounting]:
     require('../out/fund/accounting/Accounting.abi.json'),
+  [Contracts.AmguConsumer]:
+    require('../out/engine/AmguConsumer.abi.json'),
   [Contracts.BurnableToken]:
     require('../out/dependencies/token/BurnableToken.abi.json'),
   [Contracts.Engine]:
@@ -82,3 +88,44 @@ export const requireMap = {
   [Contracts.Version]:
       require('../out/version/MockVersion.abi.json'),
 };
+
+const allAbis = R.toPairs(requireMap);
+const onlyEvents = R.propEq('type', 'event');
+
+interface ABIInput {
+  indexed: boolean;
+  name: string;
+  type: string;
+}
+
+interface EventSignatureABIEntry {
+  anonymous: boolean;
+  name: string;
+  type: 'event';
+  inputs: ABIInput[];
+}
+
+/***
+ * The key is the signature: web3EthAbi.encodeEventSignature(eventAbi)
+ *
+ * So if you observe an event, you can lookup its abi like:
+ * const eventABI = eventSignatureABIMap[event.logs[0].topics[0]]
+ * */
+type EventSignatureABIMap = {
+  [key: string]: EventSignatureABIEntry;
+};
+
+export const eventSignatureABIMap: EventSignatureABIMap = allAbis.reduce(
+  (carry, [contract, abi]) => {
+    const events = R.filter(onlyEvents, abi);
+    const signatureToEvents = R.map(eventAbi => [
+      web3EthAbi.encodeEventSignature(eventAbi),
+      eventAbi,
+    ])(events);
+    return {
+      ...carry,
+      ...R.fromPairs(signatureToEvents),
+    };
+  },
+  {},
+);

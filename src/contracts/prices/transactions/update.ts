@@ -30,7 +30,7 @@ const prepare = async (contractAddress, prices, environment) => {
 
   const transaction = contract.methods.update(
     prices.map(p => p.base.token.address),
-    prices.map(toAtomic),
+    prices.map(p => `${toAtomic(p)}`),
   );
 
   return transaction;

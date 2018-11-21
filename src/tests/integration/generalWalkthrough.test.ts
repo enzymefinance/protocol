@@ -1,5 +1,5 @@
 import { getPrice } from '@melonproject/token-math/price';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem, Address } from '~/utils';
@@ -15,9 +15,11 @@ import {
   requestInvestment,
   executeRequest,
 } from '~/contracts/fund/participation';
-import { getAmguPrice, setIsFund } from '~/contracts/version';
+import { setIsFund, setAmguPrice } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
+// tslint:disable-next-line:max-line-length
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 
 const shared: any = {};
@@ -82,11 +84,6 @@ test.skip(
 
     await update(priceSource, [newPrice]);
 
-    // await approve({
-    //   howMuch: createQuantity(quoteToken, 1),
-    //   spender: new Address(shared.accounts[1]),
-    // });
-
     const components = componentsFromSettings(settings);
 
     await Promise.all(
@@ -95,17 +92,19 @@ test.skip(
       ),
     );
 
-    const amguPrice = await getAmguPrice(version);
+    const amguToken = await getAmguToken(fundFactory);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(version, amguPrice);
 
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
     });
 
-    console.log(amguPrice, request);
-
     const executedRequest = await executeRequest(settings.participationAddress);
 
-    console.log(executedRequest);
+    expect(
+      isEqual(request.requestedShares, executedRequest.shareQuantity),
+    ).toBe(true);
 
     const redemption = await redeem(settings.participationAddress);
     console.log(redemption);
@@ -115,7 +114,7 @@ test.skip(
 
     const shutDown = await shutDownFund(hubAddress);
 
-    console.log(shutDown);
+    expect(shutDown).toBe(true);
 
     await expect(
       requestInvestment(settings.participationAddress, {

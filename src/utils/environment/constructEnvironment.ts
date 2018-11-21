@@ -9,9 +9,9 @@ import { Environment, Options } from './Environment';
 
 const debug = getDebug(__filename);
 
-const defaultOptions: Options = {
+export const defaultOptions: Options = {
   gasLimit: '8000000',
-  gasPrice: '2000000000',
+  gasPrice: '1000000000',
 };
 
 const checkIpc = endpoint => {

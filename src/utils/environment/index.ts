@@ -9,3 +9,4 @@ export * from './getWeb3Options';
 export * from './globalEnvironment';
 export * from './initGlobalEnvironment';
 export * from './initTestEnvironment';
+export * from './isEnvironment';

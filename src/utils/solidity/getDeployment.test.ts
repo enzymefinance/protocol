@@ -20,4 +20,4 @@ test('Happy path', async () => {
       'version',
     ]),
   );
-});
+}, 10000);

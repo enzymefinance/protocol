@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { getPrice } from '@melonproject/token-math/price';
+import { getPrice, PriceInterface } from '@melonproject/token-math/price';
 import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -14,7 +14,7 @@ export const getPrices = async (
   tokens: TokenInterface[],
   preventCancelDown: boolean = false,
   environment?: Environment,
-) => {
+): Promise<PriceInterface[]> => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
   const contract = await getContract(
     Contracts.TestingPriceFeed,
