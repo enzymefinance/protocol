@@ -26,7 +26,6 @@ contract MockAdapter {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             identifier,
