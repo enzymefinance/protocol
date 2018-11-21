@@ -36,9 +36,9 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   const { vaultAddress } = await getSettings(hubAddress);
 
   const minBalance = makerQuantity;
-  ensureSufficientBalance(minBalance, vaultAddress, environment);
+  await ensureSufficientBalance(minBalance, vaultAddress, environment);
 
-  ensureFundOwner(contractAddress, environment);
+  await ensureFundOwner(contractAddress, environment);
 
   // Ensure fund not shut down.
   // Ensure exchange method is allowed.
@@ -50,7 +50,7 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   // IF MATCHINGMARKET:
   // Ensure selling quantity is not too low.
 
-  ensureMakePermitted(
+  await ensureMakePermitted(
     contractAddress,
     makerQuantity,
     takerQuantity,
@@ -63,10 +63,13 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
-  const method = await getFunctionSignature(matchingMarketAbi, 'makeOrder');
+  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
+  const method = await getFunctionSignature(
+    matchingMarketAdapterAbi,
+    'makeOrder',
+  );
   const deployment = await getDeployment();
-  const matchingMarketAddress = deployment.find(
+  const matchingMarketAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
 

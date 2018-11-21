@@ -42,34 +42,34 @@ const isOasisDexTakePermitted = async (
     environment,
   );
 
-  const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
-  const methodSignature = getFunctionSignature(matchingMarketAbi, 'takeOrder');
-  const deployment = await getDeployment(environment);
-  const exchangeAddress = deployment.find(o => o.name === 'MatchingMarket')
-    .exchangeAddress;
-
-  const exchangeIndex = await getExchangeIndex(
-    exchangeAddress,
-    tradingAddress,
-    environment,
+  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
+  const methodSignature = getFunctionSignature(
+    matchingMarketAdapterAbi,
+    'takeOrder',
   );
+  const deployment = await getDeployment(environment);
+  const exchangeAddress = deployment.exchangeConfigs.find(
+    o => o.name === 'MatchingMarket',
+  ).exchangeAddress;
 
   const result = await policyManager.methods
     .preValidate(
       methodSignature, // bytes4(keccak256(methodSignature))
       [
         '0x0000000000000000000000000000000000000000', // orderAddresses[0],
-        tradingAddress, // orderAddresses[1],
+        tradingAddress.toString(), // orderAddresses[1],
         makerQuantity.token.address, // orderAddresses[2],
         takerQuantity.token.address, // orderAddresses[3],
-        exchangeIndex, // exchanges[exchangeIndex].exchange
+        exchangeAddress, // exchanges[exchangeIndex].exchange
       ],
       [
         makerQuantity.quantity.toString(), // orderValues[0],
         takerQuantity.quantity.toString(), // orderValues[1],
         fillTakerTokenAmount.quantity.toString(), // orderValues[6]
       ],
-      id, // identifier
+      `0x${Number(id)
+        .toString(16)
+        .padStart(64, '0')}`, // identifier
     )
     .call();
 

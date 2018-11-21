@@ -116,8 +116,8 @@ test(
 
     console.log('Executed request');
 
-    const redemption = await redeem(settings.participationAddress);
-    console.log('Redeemed');
+    // const redemption = await redeem(settings.participationAddress);
+    // console.log('Redeemed');
 
     const holdings = await getFundHoldings(settings.accountingAddress);
 
@@ -162,30 +162,29 @@ test(
 
     console.log(`Canceled order from account with id ${order2.id}`);
 
-    // const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
-    //   maker: settings.tradingAddress,
-
-    //   makerQuantity: createQuantity(deployment.tokens[1], 2),
-    //   takerQuantity: createQuantity(deployment.tokens[0], 0.1),
-    // });
-    // console.log(orderFromFund);
+    const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
+      maker: settings.tradingAddress,
+      makerQuantity: createQuantity(deployment.tokens[0], 0.1),
+      takerQuantity: createQuantity(deployment.tokens[1], 2),
+    });
+    console.log(orderFromFund);
 
     const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-      sell: createQuantity(deployment.tokens[0], 0.1),
-      buy: createQuantity(deployment.tokens[1], 2),
+      buy: createQuantity(deployment.tokens[0], 0.1),
+      sell: createQuantity(deployment.tokens[1], 2),
     });
-    expect(order3.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-    expect(order3.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+    expect(order3.sell).toEqual(createQuantity(deployment.tokens[1], 2));
+    expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
     console.log(`Made order from account with id ${order3.id}`);
 
-    const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
-      id: order3.id,
-      makerQuantity: order3.sell,
-      takerQuantity: order3.buy,
-      fillTakerTokenAmount: order3.buy,
-    });
+    // const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
+    //   id: order3.id,
+    //   makerQuantity: order3.sell,
+    //   takerQuantity: order3.buy,
+    //   fillTakerTokenAmount: order3.buy,
+    // });
 
-    console.log('----- ', fundTakenOrder);
+    // console.log('----- ', fundTakenOrder);
 
     const shutDown = await shutDownFund(hubAddress);
 

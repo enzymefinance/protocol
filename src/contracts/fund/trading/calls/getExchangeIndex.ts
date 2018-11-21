@@ -2,14 +2,18 @@ import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import { ensure } from '~/utils/guards/ensure';
 
-const getExchangeIndex = (exchangeAddress, tradingAddress, environment) => {
+const getExchangeIndex = async (
+  exchangeAddress,
+  tradingAddress,
+  environment,
+) => {
   const tradingContract = getContract(
     Contracts.Trading,
     tradingAddress,
     environment,
   );
-  const exchanges = tradingContract.methods.exchanges().call();
-  const index = exchanges.findIndex(
+  const exchanges = await tradingContract.methods.getExchangeInfo().call();
+  const index = exchanges[0].findIndex(
     e => e.toLowerCase() === exchangeAddress.toLowerCase(),
   );
   ensure(

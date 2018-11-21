@@ -39,9 +39,9 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
   const { vaultAddress } = await getSettings(hubAddress);
 
   const minBalance = fillTakerTokenAmount;
-  ensureSufficientBalance(minBalance, vaultAddress, environment);
+  await ensureSufficientBalance(minBalance, vaultAddress, environment);
 
-  ensureFundOwner(contractAddress, environment);
+  await ensureFundOwner(contractAddress, environment);
 
   // Ensure fund not shut down.
   // Ensure exchange method is allowed.
@@ -54,7 +54,7 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
   // Ensure selling quantity is not too low.
 
   // ensyre take permited
-  ensureTakePermitted(
+  await ensureTakePermitted(
     contractAddress,
     id,
     makerQuantity,

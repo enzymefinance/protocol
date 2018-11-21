@@ -39,27 +39,25 @@ const isOasisDexMakePermitted = async (
     environment,
   );
 
-  const matchingMarketAbi = requireMap[Contracts.MatchingMarket];
-  const methodSignature = getFunctionSignature(matchingMarketAbi, 'makeOrder');
-  const deployment = await getDeployment(environment);
-  const exchangeAddress = deployment.find(o => o.name === 'MatchingMarket')
-    .exchangeAddress;
-
-  const exchangeIndex = await getExchangeIndex(
-    exchangeAddress,
-    tradingAddress,
-    environment,
+  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
+  const methodSignature = getFunctionSignature(
+    matchingMarketAdapterAbi,
+    'makeOrder',
   );
+  const deployment = await getDeployment(environment);
+  const exchangeAddress = deployment.exchangeConfigs.find(
+    o => o.name === 'MatchingMarket',
+  ).exchangeAddress;
 
   const result = await policyManager.methods
     .preValidate(
       methodSignature, // bytes4(keccak256(methodSignature))
       [
-        tradingAddress, // orderAddresses[0],
+        tradingAddress.toString(), // orderAddresses[0],
         '0x0000000000000000000000000000000000000000', // orderAddresses[1],
         makerQuantity.token.address, // orderAddresses[2],
         takerQuantity.token.address, // orderAddresses[3],
-        exchangeIndex, // exchanges[exchangeIndex].exchange
+        exchangeAddress, // exchanges[exchangeIndex].exchange
       ],
       [
         makerQuantity.quantity.toString(), // orderValues[0],
