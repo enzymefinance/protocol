@@ -9,9 +9,10 @@ import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";
 import "../../../engine/AmguConsumer.sol";
+import "./Participation.i.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is DSMath, AmguConsumer, Spoke {
+contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     event RequestExecuted (
         address investmentAsset,
@@ -38,6 +39,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
+    function hasRequest(address _who) view returns (bool) {
+        return requests[_who].requestedShares > 0;
+    }
+
     function requestInvestment(
         uint requestedShares,
         uint investmentAmount,
@@ -63,7 +68,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public payable amguPayable {
+    function executeRequest() public payable {
         executeRequestFor(msg.sender);
     }
 
@@ -81,11 +86,14 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         // )
     {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0, "Trying to buy zero shares");
+        require(
+            hasRequest(requestOwner),
+            "No request for this address"
+        );
         bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
+        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
         require(isRecent, "Price not recent");
 
         FeeManager(routes.feeManager).rewardManagementFee();

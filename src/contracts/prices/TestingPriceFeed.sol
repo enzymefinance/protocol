@@ -17,6 +17,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     uint public updateId;
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
+    bool mockIsRecent = true;
 
     constructor(address _quoteAsset, uint _quoteDecimals) {
         QUOTE_ASSET = _quoteAsset;
@@ -62,7 +63,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (bool isRecent, uint price, uint assetDecimals)
     {
-        isRecent = true;    // NB: mock value, always recent
+        isRecent = mockIsRecent;
         (price, ) = getPrice(ofAsset);
         assetDecimals = assetsToDecimals[ofAsset];
     }
@@ -83,6 +84,10 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
             mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
             quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
         );
+    }
+
+    function setIsRecent(bool _state) {
+        mockIsRecent = _state;
     }
 
     // NB: not permissioned; anyone can change this in a test
