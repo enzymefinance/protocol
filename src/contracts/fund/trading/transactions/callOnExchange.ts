@@ -80,7 +80,7 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
       takerFee.toString(),
       timestamp,
       salt,
-      fillTakerTokenAmount.toString(),
+      fillTakerTokenAmount,
       dexySignatureMode,
     ],
     `0x${Number(identifier)

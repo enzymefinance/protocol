@@ -19,7 +19,6 @@ import { getGlobalEnvironment } from '~/utils/environment';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 import { getSettings, getHub, ensureIsNotShutDown } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
-import { hub } from '~/';
 import * as web3Utils from 'web3-utils';
 
 export type MakeOasisDexOrderResult = any;
@@ -67,11 +66,6 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const method = await getFunctionSignature(
-    matchingMarketAdapterAbi,
-    'makeOrder',
-  );
   const deployment = await getDeployment();
   const matchingMarketAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',

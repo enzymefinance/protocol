@@ -20,6 +20,8 @@ import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 import { getSettings, getHub } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
+import * as web3Utils from 'web3-utils';
+import { ensure } from '~/utils/guards';
 
 export type TakeOasisDexOrderResult = any;
 
@@ -39,6 +41,7 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
   const { vaultAddress } = await getSettings(hubAddress);
 
   const minBalance = fillTakerTokenAmount;
+
   await ensureSufficientBalance(minBalance, vaultAddress, environment);
 
   await ensureFundOwner(contractAddress, environment);
@@ -53,7 +56,6 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
   // IF MATCHINGMARKET:
   // Ensure selling quantity is not too low.
 
-  // ensyre take permited
   await ensureTakePermitted(
     contractAddress,
     id,
@@ -69,11 +71,6 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const method = await getFunctionSignature(
-    matchingMarketAdapterAbi,
-    'takeOrder',
-  );
   const deployment = await getDeployment();
 
   const matchingMarketAddress = deployment.exchangeConfigs.find(
@@ -88,11 +85,12 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
 
   return {
     exchangeIndex,
-    method,
+    method:
+      'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
     maker: '0x0000000000000000000000000000000000000000',
     taker: contractAddress,
-    makerAssetSymbol: makerQuantity.token.address,
-    takerAssetSymbol: takerQuantity.token.address,
+    makerAsset: makerQuantity.token.address,
+    takerAsset: takerQuantity.token.address,
     feeRecipient: '0x0000000000000000000000000000000000000000',
     senderAddress: '0x0000000000000000000000000000000000000000',
     makerQuantity,
@@ -100,13 +98,13 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
     makerFee: '0',
     takerFee: '0',
     timestamp: '0',
-    salt: '0x0',
-    fillTakerTokenAmount,
+    salt: '0',
+    fillTakerTokenAmount: fillTakerTokenAmount.quantity.toString(),
     dexySignatureMode: 0,
     identifier: id,
-    makerAssetData: '0',
-    takerAssetData: '0',
-    signature: '0x0',
+    makerAssetData: web3Utils.padLeft('0x0', 64),
+    takerAssetData: web3Utils.padLeft('0x0', 64),
+    signature: web3Utils.padLeft('0x0', 64),
   };
 };
 
@@ -117,10 +115,13 @@ const postProcess: PostProcessFunction<
   return receipt;
 };
 
+const options = { gas: '8000000' };
+
 const takeOasisDexOrder = withTransactionDecorator(callOnExchange, {
   postProcess,
   prepareArgs,
   guard,
+  options,
 });
 
 export { takeOasisDexOrder };
