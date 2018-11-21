@@ -65,10 +65,17 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
   return [
     exchangeIndex,
     method,
-    [maker, taker, makerAsset, takerAsset, feeRecipient, senderAddress],
     [
-      makerQuantity.toString(),
-      takerQuantity.toString(),
+      maker.toString(),
+      taker.toString(),
+      makerAsset.toString(),
+      takerAsset.toString(),
+      feeRecipient.toString(),
+      senderAddress.toString(),
+    ],
+    [
+      makerQuantity.quantity.toString(),
+      takerQuantity.quantity.toString(),
       makerFee.toString(),
       takerFee.toString(),
       timestamp,
@@ -91,7 +98,7 @@ const postProcess = async (receipt, params, contractAddress, environment) => {
 
 const callOnExchange = transactionFactory(
   'callOnExchange',
-  Contracts.Participation,
+  Contracts.Trading,
   guard,
   prepareArgs,
   postProcess,

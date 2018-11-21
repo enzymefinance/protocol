@@ -10,6 +10,7 @@ import {
 } from '../solidity';
 import { Address } from '../types';
 import { Contracts } from '~/Contracts';
+import { ensure } from '../guards';
 
 // TODO: Fix the types here once the transaction factory decorators are
 // properly implemented.
@@ -101,6 +102,7 @@ export interface WithTransactionDecoratorOptions<Args, Result> {
   guard?: GuardFunction<Args>;
   prepareArgs?: PrepareArgsFunction<Args>;
   postProcess?: PostProcessFunction<Args, Result>;
+  options?: OptionsOrCallback;
 }
 
 export type WithTransactionDecorator = <Args, Result>(
@@ -161,6 +163,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     await guard(params, contractAddress, environment);
     const args = await prepareArgs(params, contractAddress, environment);
     const contractInstance = getContract(contract, contractAddress);
+    ensure(
+      !!contractInstance.methods[name],
+      `Method ${name} does not exist on contract ${contract}`,
+    );
     const transaction = contractInstance.methods[name](...args);
     transaction.name = name;
     const prepared = await prepareTransaction(
@@ -223,7 +229,7 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   const prepare: PrepareFunction<Args> = async (
     contractAddress,
     params,
-    options,
+    options = decorator.options,
     environment: Environment = getGlobalEnvironment(),
   ) => {
     if (typeof decorator.guard !== 'undefined') {
@@ -251,7 +257,7 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
     contractAddress,
     prepared,
     params,
-    options,
+    options = decorator.options,
     environment = getGlobalEnvironment(),
   ) => {
     const result = await transaction.send(
@@ -276,7 +282,7 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   const execute: ExecuteFunction<Args, Result> = async (
     contractAddress,
     params,
-    options,
+    options = decorator.options,
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(
