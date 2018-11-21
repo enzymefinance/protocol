@@ -1,5 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment';
 import { deployMockSystem } from '~/utils';
+import { randomAddress } from '~/utils/helpers';
 
 let shared: any = {};
 
@@ -37,13 +38,13 @@ test('Invest fails in shut down fund', async () => {
   ).rejects.toThrow(errorMessage);
 
   await shared.hub.methods.setShutDownState(false).send({ from: shared.user });
+  await shared.participation.methods
+    .cancelRequest()
+    .send({ from: shared.user, gas: 8000000 });
 });
 
 test('Request must exist to execute', async () => {
   const errorMessage = 'No request for this address';
-  await shared.participation.methods
-    .cancelRequest()
-    .send({ from: shared.user, gas: 8000000 });
   const requestExists = await shared.participation.methods
     .hasRequest(shared.user)
     .call();
@@ -89,6 +90,36 @@ test('Need fresh price to executeRequest', async () => {
   await shared.priceSource.methods
     .setIsRecent(true)
     .send({ from: shared.user });
+  await shared.participation.methods
+    .cancelRequest()
+    .send({ from: shared.user, gas: 8000000 });
+});
+
+test('Asset must be permitted', async () => {
+  const errorMessage = 'Investment not allowed in this asset';
+  const asset = `${randomAddress()}`;
+  const allowed = await shared.participation.methods
+    .investAllowed(asset)
+    .call();
+
+  expect(allowed).toBe(false);
+
+  await expect(
+    shared.participation.methods
+      .requestInvestment('100', '100', asset)
+      .send({ from: shared.user, gas: 8000000 }),
+  ).rejects.toThrow(errorMessage);
+
+  await shared.participation.methods
+    .enableInvestment([asset])
+    .send({ from: shared.user });
+
+  await expect(
+    shared.participation.methods
+      .requestInvestment('100', '100', asset)
+      .send({ from: shared.user, gas: 8000000 }),
+  ).resolves.not.toThrow(errorMessage);
+
   await shared.participation.methods
     .cancelRequest()
     .send({ from: shared.user, gas: 8000000 });

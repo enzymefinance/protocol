@@ -35,12 +35,27 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     mapping (address => Request) public requests;
+    mapping (address => bool) public investAllowed;
     uint public SHARES_DECIMALS = 18;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub, address[] _defaultAssets) Spoke(_hub) {
+        enableInvestment(_defaultAssets);
+    }
 
-    function hasRequest(address _who) view returns (bool) {
-        return requests[_who].requestedShares > 0;
+    function enableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            // require(
+            //     modules.pricefeed.assetIsRegistered(_assets[i]),
+            //     "Asset not registered"
+            // ); // TODO: re-enable
+            investAllowed[_assets[i]] = true;
+        }
+    }
+
+    function disableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            investAllowed[_assets[i]] = false;
+        }
     }
 
     function requestInvestment(
@@ -55,6 +70,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
+        require(
+            investAllowed[investmentAsset],
+            "Investment not allowed in this asset"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -92,6 +111,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             hasRequest(requestOwner),
             "No request for this address"
         );
+        require(
+            investAllowed[request.investmentAsset],
+            "Investment not allowed in this asset"
+        );
         bool isRecent;
         (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
         require(isRecent, "Price not recent");
@@ -112,11 +135,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
-        // TODO: re-enable
-        // require(
-        //     isInvestAllowed[request.investmentAsset],
-        //     "Investment not allowed in this asset"
-        // );
         require(
             costQuantity <= request.investmentAmount,
             "Invested amount too low"
@@ -223,11 +241,18 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
         emit SuccessfulRedemption(remainingShareQuantity);
     }
+
+    function hasRequest(address _who) view returns (bool) {
+        return requests[_who].requestedShares > 0;
+    }
 }
 
 contract ParticipationFactory is Factory {
-    function createInstance(address _hub) public returns (address) {
-        address participation = new Participation(_hub);
+    function createInstance(address _hub, address[] _defaultAssets)
+        public
+        returns (address)
+    {
+        address participation = new Participation(_hub, _defaultAssets);
         childExists[participation] = true;
         return participation;
     }

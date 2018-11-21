@@ -80,6 +80,7 @@ export const deployMockSystem = async (
   ]);
   const participation = await deployAndGet(participationContract, [
     hub.options.address,
+    [quoteToken.address, baseToken.address],
   ]);
   const shares = await deployAndGet(sharesContract, [hub.options.address]);
   const trading = await deployAndGet(tradingContract, [

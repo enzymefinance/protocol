@@ -32,7 +32,7 @@ contract Spoke is DSAuth {
         // TODO: remove "owner" authority?
     }
 
-    function initialize(address[12] _spokes) {
+    function initialize(address[12] _spokes) {  //TODO: onlyInitialized modifier?
         require(!initialized, "Already initialized");
         routes = Routes(
             _spokes[0],
