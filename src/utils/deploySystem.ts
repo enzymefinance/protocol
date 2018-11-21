@@ -93,6 +93,7 @@ export const deploySystem = async () => {
   const priceSource = priceFeedAddress;
 
   const addresses = {
+    engine: engineAddress,
     exchangeConfigs,
     fundFactory: fundFactoryAddress,
     policies: {

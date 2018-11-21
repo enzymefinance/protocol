@@ -19,4 +19,5 @@ export const setupFund = transactionFactory(
   undefined,
   undefined,
   postProcess,
+  { amguPayable: true },
 );

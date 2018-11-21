@@ -101,7 +101,7 @@
   },
   "dependencies": {
     "@melonproject/ganache-cli": "^6.1.9",
-    "@melonproject/token-math": "0.0.18",
+    "@melonproject/token-math": "0.0.20",
     "babel-runtime": "^6.26.0",
     "camel-case": "^3.0.0",
     "commander": "^2.19.0",

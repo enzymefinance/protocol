@@ -51,7 +51,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         }
     }
 
-    function triggerRewardAllFees() external amguPayable {
+    function triggerRewardAllFees() external payable amguPayable {
         rewardAllFees();
     }
 

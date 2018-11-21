@@ -44,6 +44,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         address investmentAsset
     )
         external
+        payable
         amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
@@ -62,12 +63,13 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public {
+    function executeRequest() public payable amguPayable {
         executeRequestFor(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)
         public
+        payable
         amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(
