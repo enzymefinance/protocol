@@ -95,9 +95,6 @@ test('Need fresh price to executeRequest', async () => {
 });
 
 test('Invested amount must be above price minimum', async () => {
-  console.log(shared.participation.options.address);
-  console.log(shared.feeManager.options.address);
-  console.log(shared.accounting.options.address);
   const errorMessage = 'Invested amount too low';
   const price = '1000000000000000000';
   await shared.priceSource.methods
@@ -115,4 +112,36 @@ test('Invested amount must be above price minimum', async () => {
       .executeRequest()
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
+
+  await shared.participation.methods
+    .cancelRequest()
+    .send({ from: shared.user, gas: 8000000 });
+});
+
+test('Basic investment works', async () => {
+  const investAmount = '1000';
+  const sharesAmount = '1000';
+  const preVaultWeth = await shared.weth.methods
+    .balanceOf(shared.vault.options.address)
+    .call();
+  await shared.weth.methods
+    .approve(shared.participation.options.address, investAmount)
+    .send({ from: shared.user });
+  await shared.participation.methods
+    .requestInvestment(sharesAmount, investAmount, shared.weth.options.address)
+    .send({ from: shared.user, gas: 8000000 });
+  await shared.participation.methods
+    .executeRequest()
+    .send({ from: shared.user, gas: 8000000 });
+  const postVaultWeth = await shared.weth.methods
+    .balanceOf(shared.vault.options.address)
+    .call();
+  const postShares = await shared.shares.methods.balanceOf(shared.user).call();
+  const postSupply = await shared.shares.methods.totalSupply().call();
+
+  expect(postShares).toEqual(sharesAmount);
+  expect(postSupply).toEqual(sharesAmount);
+  expect(Number(postVaultWeth)).toEqual(
+    Number(preVaultWeth) + Number(investAmount),
+  );
 });
