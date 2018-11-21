@@ -2,19 +2,14 @@ import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment';
 import { deployMockSystem } from '~/utils';
 import { deploy, getContract } from '~/utils/solidity';
+import { randomAddress } from '~/utils/helpers';
 
 let shared: any = {};
 
 // Mock data
-const mockExchanges = [
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-];
+const mockExchanges = [randomAddress(), randomAddress()];
 
-const mockExchangeAdapters = [
-  '0xcccccccccccccccccccccccccccccccccccccccc',
-  '0xdddddddddddddddddddddddddddddddddddddddd',
-];
+const mockExchangeAdapters = [randomAddress(), randomAddress()];
 
 const takesCustodyMasks = [true, false];
 
