@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "target": "es2015",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "sourceMap": true,
     "module": "commonjs",
     "moduleResolution": "node",

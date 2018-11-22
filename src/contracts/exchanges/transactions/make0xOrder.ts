@@ -25,7 +25,7 @@ const guard = async (params, contractAddress, environment) => {
   );
 
   const manager = getManager(contractAddress, environment);
-  ensure(manager == environment.wallet.address, 'Sender is not a manager');
+  ensure(manager === environment.wallet.address, 'Sender is not a manager');
 
   // TODO: construct Order and check if signature is valid
 };
@@ -50,7 +50,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async ({
 
 const make0xOrder = transactionFactory<Make0xOrderArgs, undefined>(
   'makeOrder',
-  Contracts.ZeroExV2Adapter,
+  Contracts.ZeroExAdapter,
   guard,
   prepareArgs,
   undefined,

@@ -112,6 +112,7 @@
     "emoji-regex": "^7.0.1",
     "find-up": "^3.0.0",
     "ramda": "^0.25.0",
+    "request": "^2.34",
     "request-promise": "^4.2.2",
     "rxjs": "^6.3.3",
     "solc": "^0.4.25",
