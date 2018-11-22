@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+// TODO: change back to interface when upgraded to solidity 0.5
 contract Policy {
     enum Applied { pre, post }
 

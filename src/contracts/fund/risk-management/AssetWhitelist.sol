@@ -5,6 +5,8 @@ import "./AssetList.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
 contract AssetWhitelist is AssetList, Policy {
+    constructor(address[] _assets) AssetList(_assets) {}
+
     function removeFromWhitelist(address _asset) external auth {
         require(isMember(_asset), "Asset not in whitelist");
         delete list[_asset];
@@ -17,9 +19,7 @@ contract AssetWhitelist is AssetList, Policy {
 
     function getAssetIndex(address _asset) public view returns (uint) {
         for (uint i = 0; i < mirror.length; i++) {
-            if (mirror[i] == _asset) {
-                return i;
-            }
+            if (mirror[i] == _asset) { return i; }
         }
     }
 
