@@ -169,7 +169,10 @@ test(
       makerQuantity: createQuantity(deployment.tokens[0], 0.1),
       takerQuantity: createQuantity(deployment.tokens[1], 2),
     });
-    console.log('Made order from fund');
+    console.log(
+      'Made order from fund ',
+      JSON.stringify(orderFromFund.events[0].raw),
+    );
 
     const fundOrder = await getFundOpenOrder(
       settings.tradingAddress,
@@ -184,7 +187,7 @@ test(
       maker: settings.tradingAddress,
     });
 
-    console.log(`Canceled order ${fundOrder.id} from fund `);
+    console.log(`Canceled order ${fundOrder.id} from fund `, canceled);
 
     const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
       buy: createQuantity(deployment.tokens[0], 0.1),
@@ -202,7 +205,7 @@ test(
       fillTakerTokenAmount: order3.buy,
     });
 
-    console.log(`Took order from fund with id ${order3.id}`);
+    console.log(`Took order from fund with id ${order3.id} `, fundTakenOrder);
 
     const shutDown = await shutDownFund(hubAddress);
 
