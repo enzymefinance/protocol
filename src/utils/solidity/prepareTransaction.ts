@@ -73,6 +73,8 @@ export const prepareTransaction = async (
       }
     : options;
 
+  console.log(amguOptions, transaction.arguments);
+
   try {
     const gasEstimation = await transaction.estimateGas({
       ...R.omit(['amguPayable'], amguOptions),

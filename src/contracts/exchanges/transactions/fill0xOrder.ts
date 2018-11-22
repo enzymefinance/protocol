@@ -1,3 +1,4 @@
+import * as R from 'ramda';
 import {
   transactionFactory,
   EnhancedExecute,
@@ -9,8 +10,9 @@ import { Contracts } from '~/Contracts';
 import { SignedOrder } from '@0x/types';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { get0xOrderInfo } from '../calls/get0xOrderInfo';
-import { OrderStatus } from '0x.js';
+import { OrderStatus, signatureUtils, orderHashUtils } from '0x.js';
 import { ensure } from '~/utils/guards';
+import { isValidSignature } from '../calls/isValidSignature';
 
 interface Fill0xOrderArgs {
   signedOrder: SignedOrder;
@@ -27,12 +29,28 @@ interface Fill0xOrderResult {
 const guard: GuardFunction<Fill0xOrderArgs> = async (
   { signedOrder },
   contractAddress,
+  environment,
 ) => {
   const orderInfo = await get0xOrderInfo(contractAddress, { signedOrder });
   ensure(
-    orderInfo.status === OrderStatus.FILLABLE,
+    orderInfo.status === `${OrderStatus.FILLABLE}`,
     `Order is not fillable. Got status: ${OrderStatus[orderInfo.status]}`,
   );
+
+  const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
+  const offChainCheck = await signatureUtils.isValidSignatureAsync(
+    environment.eth.currentProvider,
+    orderHash,
+    signedOrder.signature,
+    signedOrder.makerAddress,
+  );
+
+  console.log(offChainCheck);
+
+  const validSignature = await isValidSignature(contractAddress, {
+    signedOrder,
+  });
+  ensure(validSignature, 'Signature invalid');
 };
 
 const prepareArgs: PrepareArgsFunction<Fill0xOrderArgs> = async ({
@@ -47,7 +65,13 @@ const prepareArgs: PrepareArgsFunction<Fill0xOrderArgs> = async ({
 
   const signature = stringifiedSignedOrder.signature;
 
-  return [stringifiedSignedOrder, takerAssetAmount, signature];
+  console.log(takerAssetAmount);
+
+  return [
+    R.omit(['signature'], stringifiedSignedOrder),
+    takerAssetAmount,
+    signature,
+  ];
 };
 
 const fill0xOrder: EnhancedExecute<

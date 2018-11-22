@@ -12,6 +12,9 @@ import {
   BigNumber,
   generatePseudoRandomSalt,
   orderHashUtils,
+  signatureUtils,
+  Web3ProviderEngine,
+  RPCSubprovider,
 } from '0x.js';
 import { Order, SignedOrder } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
@@ -19,6 +22,8 @@ import { getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '@melonproject/token-math/address';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { approve } from '~/contracts/dependencies/token';
+import { getLatestBlock } from '~/utils/evm';
+import { add, toBI } from '@melonproject/token-math/bigInteger';
 
 interface Create0xOrderArgs {
   from: Address;
@@ -40,6 +45,7 @@ const create0xOrder = async (
     takerQuantity,
     duration = 24 * 60 * 60,
   }: Create0xOrderArgs,
+  environment = getGlobalEnvironment(),
 ): Promise<Sign0xOrderArgs> => {
   await approve({ howMuch: makerQuantity, spender: exchangeAddress });
 
@@ -50,6 +56,8 @@ const create0xOrder = async (
     takerQuantity.token.address,
   );
 
+  const latestBlock = await getLatestBlock(environment);
+
   // tslint:disable:object-literal-sort-keys
   const order: Order = {
     exchangeAddress: `${exchangeAddress.toLowerCase()}`,
@@ -58,7 +66,7 @@ const create0xOrder = async (
     senderAddress: constants.NULL_ADDRESS,
     feeRecipientAddress: constants.NULL_ADDRESS,
     expirationTimeSeconds: new BigNumber(
-      Math.ceil(Date.now() / 1000 + duration),
+      add(latestBlock.timestamp, toBI(duration)).toString(),
     ),
     salt: generatePseudoRandomSalt(),
     makerAssetAmount: new BigNumber(`${makerQuantity.quantity}`),
@@ -82,7 +90,23 @@ const sign0xOrder = async (
   { order, orderHash }: Sign0xOrderArgs,
   environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
-  const signature = await environment.eth.sign(orderHash, order.makerAddress);
+  const providerEngine = new Web3ProviderEngine();
+  providerEngine.addProvider(new RPCSubprovider('http://localhost:8545'));
+  providerEngine.start();
+  // tslint:disable-next-line:max-line-length
+  const web3signature = await environment.eth.sign(
+    orderHash,
+    order.makerAddress,
+  );
+  const signature = await signatureUtils.ecSignHashAsync(
+    providerEngine,
+    orderHash,
+    order.makerAddress,
+  );
+
+  console.log('orderHash', orderHash);
+  console.log('signature    ', signature);
+  console.log('web3signature', web3signature);
   const signedOrder = { ...order, signature };
   return signedOrder;
 };

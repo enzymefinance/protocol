@@ -20,6 +20,9 @@ export const constants = constantsExport;
 import * as environmentExport from './environment';
 export const environment = environmentExport;
 
+import * as evmExport from './evm';
+export const evm = evmExport;
+
 import * as guardsExport from './guards';
 export const guards = guardsExport;
 

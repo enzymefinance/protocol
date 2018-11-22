@@ -29,7 +29,6 @@ const postProcess = async (result, { params }): Promise<OrderInfo> => {
     status: result.orderStatus,
     takerFilled: createQuantity(takerToken, result.orderTakerAssetFilledAmount),
   };
-  console.log(info);
   return info;
 };
 

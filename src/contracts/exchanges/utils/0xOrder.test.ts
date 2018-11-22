@@ -25,11 +25,15 @@ test('Happy path', async () => {
   const makerQuantity = createQuantity(shared.mlnToken, 1);
   const takerQuantity = createQuantity(shared.wethToken, 0.05);
 
-  const unsigned0xOrder = await create0xOrder(shared.zeroExExchangeAddress, {
-    from: shared.accounts[0],
-    makerQuantity,
-    takerQuantity,
-  });
+  const unsigned0xOrder = await create0xOrder(
+    shared.zeroExExchangeAddress,
+    {
+      from: shared.accounts[0],
+      makerQuantity,
+      takerQuantity,
+    },
+    shared.environment,
+  );
 
   const signedOrder = await sign0xOrder(unsigned0xOrder, shared.environment);
   expect(signedOrder.exchangeAddress).toBe(
@@ -40,24 +44,27 @@ test('Happy path', async () => {
     makerQuantity.quantity.toString(),
   );
 
-  const signedOrderPairs = R.toPairs(signedOrder);
-  const stringified = R.map(
-    ([key, value]) => [key, value.toString()],
-    signedOrderPairs,
-  );
-  const stringifiedSignedOrder = R.fromPairs(stringified);
+  // const signedOrderPairs = R.toPairs(signedOrder);
+  // const stringified = R.map(
+  //   ([key, value]) => [key, value.toString()],
+  //   signedOrderPairs,
+  // );
+  // const stringifiedSignedOrder = R.fromPairs(stringified);
 
-  console.log(stringifiedSignedOrder);
+  // console.log(
+  //   stringifiedSignedOrder.expirationTimeSeconds,
+  //   Math.floor(Date.now() / 1000),
+  // );
 
-  const exchangeAbi = requireMap[Contracts.ZeroExExchange];
-  const fillOrderAbi = exchangeAbi.filter(a => a.name === 'fillOrder')[0];
-  const encoded = web3EthAbi.encodeFunctionCall(fillOrderAbi, [
-    stringifiedSignedOrder,
-    stringifiedSignedOrder.makerAssetAmount,
-    stringifiedSignedOrder.signature,
-  ]);
+  // const exchangeAbi = requireMap[Contracts.ZeroExExchange];
+  // const fillOrderAbi = exchangeAbi.filter(a => a.name === 'fillOrder')[0];
+  // const encoded = web3EthAbi.encodeFunctionCall(fillOrderAbi, [
+  //   stringifiedSignedOrder,
+  //   stringifiedSignedOrder.makerAssetAmount,
+  //   stringifiedSignedOrder.signature,
+  // ]);
 
-  console.log(JSON.stringify(encoded, null, 2));
+  // console.log(JSON.stringify(encoded, null, 2));
 
   const result = await fill0xOrder(
     shared.zeroExExchangeAddress,
