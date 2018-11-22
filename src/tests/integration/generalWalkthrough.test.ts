@@ -169,10 +169,7 @@ test(
       makerQuantity: createQuantity(deployment.tokens[0], 0.1),
       takerQuantity: createQuantity(deployment.tokens[1], 2),
     });
-    console.log(
-      'Made order from fund ',
-      JSON.stringify(orderFromFund.events[0].raw),
-    );
+    console.log('Made order from fund ', orderFromFund);
 
     const fundOrder = await getFundOpenOrder(
       settings.tradingAddress,

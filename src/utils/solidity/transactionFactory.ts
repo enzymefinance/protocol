@@ -256,7 +256,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           )}): ${error.message}`,
         );
       });
-
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
 
@@ -268,7 +267,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const decoded = Web3EthAbi.decodeLog(
         eventABI.inputs,
         log.data,
-        log.topics,
+        eventABI.anonymous ? log.topics : log.topics.slice(1),
       );
       const keys = R.map(R.prop('name'), eventABI.inputs);
       const picked = R.pick(keys, decoded);
