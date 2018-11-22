@@ -53,15 +53,7 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
 
   await ensureFundOwner(contractAddress, environment);
 
-  // Ensure fund not shut down.
-  // Ensure exchange method is allowed.
-  // Ensure not buying/selling of own fund token.
-  // Ensure price provided on this asset pair.
-  // Ensure price feed data is not outdated.
-  // Ensure there are no other open orders for the asset.
-
-  // IF MATCHINGMARKET:
-  // Ensure selling quantity is not too low.
+  // TODO: add all preflights
 
   await ensureTakePermitted(
     contractAddress,
