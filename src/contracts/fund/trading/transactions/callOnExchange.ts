@@ -74,13 +74,13 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
       senderAddress.toString(),
     ],
     [
-      makerQuantity.quantity.toString(),
-      takerQuantity.quantity.toString(),
+      makerQuantity.toString(),
+      takerQuantity.toString(),
       makerFee.toString(),
       takerFee.toString(),
       timestamp,
       salt,
-      fillTakerTokenAmount,
+      fillTakerTokenAmount.toString(),
       dexySignatureMode,
     ],
     `0x${Number(identifier)

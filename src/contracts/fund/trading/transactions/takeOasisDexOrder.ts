@@ -29,11 +29,18 @@ export interface TakeOasisDexOrderArgs {
   id: number;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
+  maker: Address;
   fillTakerTokenAmount: QuantityInterface;
 }
 
 const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
-  { id, makerQuantity, takerQuantity, fillTakerTokenAmount = takerQuantity },
+  {
+    id,
+    makerQuantity,
+    takerQuantity,
+    maker,
+    fillTakerTokenAmount = takerQuantity,
+  },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
@@ -67,7 +74,7 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
 };
 
 const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
-  { id, makerQuantity, takerQuantity, fillTakerTokenAmount },
+  { id, makerQuantity, takerQuantity, maker, fillTakerTokenAmount },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
@@ -86,20 +93,20 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
   return {
     exchangeIndex,
     method:
-      'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
-    maker: '0x0000000000000000000000000000000000000000',
+      'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)', // update when function signature changes
+    maker,
     taker: contractAddress,
     makerAsset: makerQuantity.token.address,
     takerAsset: takerQuantity.token.address,
     feeRecipient: '0x0000000000000000000000000000000000000000',
     senderAddress: '0x0000000000000000000000000000000000000000',
-    makerQuantity,
-    takerQuantity,
+    makerQuantity: makerQuantity.quantity,
+    takerQuantity: takerQuantity.quantity,
     makerFee: '0',
     takerFee: '0',
     timestamp: '0',
     salt: '0',
-    fillTakerTokenAmount: fillTakerTokenAmount.quantity.toString(),
+    fillTakerTokenAmount: fillTakerTokenAmount.quantity,
     dexySignatureMode: 0,
     identifier: id,
     makerAssetData: web3Utils.padLeft('0x0', 64),

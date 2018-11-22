@@ -2,7 +2,7 @@ import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem, Address } from '~/utils';
+import { deploySystem, Address, environment } from '~/utils';
 import {
   createComponents,
   continueCreation,
@@ -29,6 +29,8 @@ import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
+import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
+import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 
 const shared: any = {};
 
@@ -167,7 +169,22 @@ test(
       makerQuantity: createQuantity(deployment.tokens[0], 0.1),
       takerQuantity: createQuantity(deployment.tokens[1], 2),
     });
-    console.log(orderFromFund);
+    console.log('Made order from fund');
+
+    const fundOrder = await getFundOpenOrder(
+      settings.tradingAddress,
+      0,
+      environment,
+    );
+
+    const canceled = await cancelOasisDexOrder(settings.tradingAddress, {
+      id: fundOrder.id,
+      makerAsset: fundOrder.makerAsset,
+      takerAsset: fundOrder.takerAsset,
+      maker: settings.tradingAddress,
+    });
+
+    console.log(`Canceled order ${fundOrder.id} from fund `);
 
     const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
       buy: createQuantity(deployment.tokens[0], 0.1),
@@ -177,14 +194,15 @@ test(
     expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
     console.log(`Made order from account with id ${order3.id}`);
 
-    // const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
-    //   id: order3.id,
-    //   makerQuantity: order3.sell,
-    //   takerQuantity: order3.buy,
-    //   fillTakerTokenAmount: order3.buy,
-    // });
+    const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
+      id: order3.id,
+      makerQuantity: order3.sell,
+      takerQuantity: order3.buy,
+      maker: order3.maker,
+      fillTakerTokenAmount: order3.buy,
+    });
 
-    // console.log('----- ', fundTakenOrder);
+    console.log(`Took order from fund with id ${order3.id}`);
 
     const shutDown = await shutDownFund(hubAddress);
 
