@@ -203,6 +203,8 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
     const melonTransaction = {
       amguInEth,
+      contract,
+      name,
       params,
       rawTransaction: {
         data: prepared.encoded,
