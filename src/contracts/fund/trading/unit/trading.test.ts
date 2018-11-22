@@ -5,7 +5,13 @@ import { deploy, getContract } from '~/utils/solidity';
 import { emptyAddress } from '~/utils/constants';
 import { randomAddress } from '~/utils/helpers';
 import { share } from 'rxjs/operators';
-import { BigNumber } from 'bignumber.js';
+import {
+  subtract,
+  add,
+  greaterThan,
+  isEqual,
+  BigInteger,
+} from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
 
@@ -72,24 +78,25 @@ test('Exchanges cant be initialized without its adapter', async () => {
 });
 
 test('returnToVault sends back token balances to the vault', async () => {
-  const tokenQuantity = new BigNumber(10 ** 20);
+  const tokenQuantity = new BigInteger(10 ** 20);
+
   await shared.mln.methods
-    .transfer(shared.trading.options.address, new BigNumber(10 ** 20).toFixed())
+    .transfer(shared.trading.options.address, `${tokenQuantity}`)
     .send({ from: shared.user, gas: 8000000 });
   await shared.weth.methods
-    .transfer(shared.trading.options.address, new BigNumber(10 ** 20).toFixed())
+    .transfer(shared.trading.options.address, `${tokenQuantity}`)
     .send({ from: shared.user, gas: 8000000 });
 
-  const preMlnTrading = new BigNumber(
+  const preMlnTrading = new BigInteger(
     await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
   );
-  const preWethTrading = new BigNumber(
+  const preWethTrading = new BigInteger(
     await shared.weth.methods.balanceOf(shared.trading.options.address).call(),
   );
-  const preMlnVault = new BigNumber(
+  const preMlnVault = new BigInteger(
     await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
   );
-  const preWethVault = new BigNumber(
+  const preWethVault = new BigInteger(
     await shared.weth.methods.balanceOf(shared.vault.options.address).call(),
   );
 
@@ -97,21 +104,21 @@ test('returnToVault sends back token balances to the vault', async () => {
     .returnToVault([shared.mln.options.address, shared.weth.options.address])
     .send({ from: shared.user, gas: 8000000 });
 
-  const postMlnTrading = new BigNumber(
+  const postMlnTrading = new BigInteger(
     await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
   );
-  const postWethTrading = new BigNumber(
+  const postWethTrading = new BigInteger(
     await shared.weth.methods.balanceOf(shared.trading.options.address).call(),
   );
-  const postMlnVault = new BigNumber(
+  const postMlnVault = new BigInteger(
     await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
   );
-  const postWethVault = new BigNumber(
+  const postWethVault = new BigInteger(
     await shared.weth.methods.balanceOf(shared.vault.options.address).call(),
   );
 
-  expect(postMlnTrading).toEqual(new BigNumber(0));
-  expect(postWethTrading).toEqual(new BigNumber(0));
-  expect(postMlnVault).toEqual(preMlnVault.add(tokenQuantity));
-  expect(postWethVault).toEqual(preWethVault.add(tokenQuantity));
+  expect(isEqual(postMlnTrading, new BigInteger(0))).toBe(true);
+  expect(isEqual(postWethTrading, new BigInteger(0))).toBe(true);
+  expect(isEqual(postMlnVault, add(preMlnVault, tokenQuantity))).toBe(true);
+  expect(isEqual(postWethVault, add(preWethVault, tokenQuantity))).toBe(true);
 });
