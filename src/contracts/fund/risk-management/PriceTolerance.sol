@@ -88,7 +88,5 @@ contract PriceTolerance is DSMath, Policy {
         revert("Signature was neither MakeOrder nor TakeOrder");
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }

@@ -6,7 +6,7 @@ import "./AssetList.sol";
 /// @notice Assets can be added but not removed from blacklist
 contract AssetBlacklist is AssetList, Policy {
     function addToBlacklist(address _asset) external auth {
-        require(!isMember(_asset));
+        require(!isMember(_asset), "Asset already in blacklist");
         list[_asset] = true;
         mirror.push(_asset);
     }
@@ -15,7 +15,5 @@ contract AssetBlacklist is AssetList, Policy {
         return !isMember(addresses[3]);
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }

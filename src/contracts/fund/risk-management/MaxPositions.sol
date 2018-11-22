@@ -25,5 +25,5 @@ contract MaxPositions is Policy {
         return accounting.getFundHoldingsLength() <= maxPositions;
     }
 
-    function position() external view returns (uint) { return 1; }
+    function position() external view returns (Applied) { return Applied.post; }
 }

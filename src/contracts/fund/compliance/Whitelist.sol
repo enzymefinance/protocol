@@ -1,8 +1,7 @@
 pragma solidity ^0.4.21;
 
-
-import "../policies/Policy.sol";
 import "../../dependencies/auth.sol";
+import "../policies/Policy.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change thigns)
 contract Whitelist is Policy, DSAuth {
@@ -36,8 +35,6 @@ contract Whitelist is Policy, DSAuth {
         return whitelisted[addresses[0]];
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }
 

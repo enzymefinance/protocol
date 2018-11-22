@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./Policy.sol";
-import "../hub/Spoke.sol";
 import "../../factory/Factory.sol";
+import "../hub/Spoke.sol";
+import "./Policy.sol";
 
 // TODO: permissioning
 contract PolicyManager is Spoke {
@@ -23,15 +23,13 @@ contract PolicyManager is Spoke {
     }
 
     function register(bytes4 sign, address ofPolicy) public {
-        uint position = Policy(ofPolicy).position();
-        if (position == 0) {
-            // Pre condition
+        Policy.Applied position = Policy(ofPolicy).position();
+        if (position == Policy.Applied.pre) {
             policies[sign].pre.push(Policy(ofPolicy));
-        } else if (position == 1) {
-            // Post condition
+        } else if (position == Policy.Applied.post) {
             policies[sign].post.push(Policy(ofPolicy));
         } else {
-            revert("Only 0 or 1 allowed");
+            revert("Only pre and post allowed");
         }
     }
 

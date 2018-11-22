@@ -11,7 +11,10 @@ contract MaxConcentration is DSMath, Policy {
     uint public maxConcentration;
 
     constructor(uint _maxConcentration) {
-        require(_maxConcentration <= ONE_HUNDRED_PERCENT); // must be 100% or less
+        require(
+            _maxConcentration <= ONE_HUNDRED_PERCENT,
+            "Max concentration cannot exceed 100%"
+        );
         maxConcentration = _maxConcentration;
     }
 
@@ -32,5 +35,5 @@ contract MaxConcentration is DSMath, Policy {
         return concentration <= maxConcentration;
     }
 
-    function position() external view returns (uint) { return 1; }
+    function position() external view returns (Applied) { return Applied.post; }
 }

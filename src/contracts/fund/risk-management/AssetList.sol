@@ -4,7 +4,6 @@ import "../../dependencies/auth.sol";
 
 /// @notice Generic AssetList
 contract AssetList is DSAuth {
-
     mapping(address => bool) internal list;
     address[] internal mirror;
 
