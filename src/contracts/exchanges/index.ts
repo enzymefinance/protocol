@@ -4,3 +4,4 @@
 export * from './transactions/addTokenPairWhitelist';
 export * from './transactions/deployMatchingMarket';
 export * from './transactions/deployMatchingMarketAdapter';
+export * from './transactions/make0xOrder';
