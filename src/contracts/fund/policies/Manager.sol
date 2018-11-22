@@ -17,7 +17,7 @@ contract PolicyManager is Spoke {
 
     function registerBatch(bytes4[] sign, address[] ofPolicies) public {
         require(sign.length == ofPolicies.length, "Arrays lengths unequal");
-        for (uint i = 0; i < sign.length; ++i) {
+        for (uint i = 0; i < sign.length; i++) {
             register(sign[i], ofPolicies[i]);
         }
     }
@@ -35,7 +35,7 @@ contract PolicyManager is Spoke {
 
     function PoliciesToAddresses(Policy[] storage _policies) internal view returns (address[]) {
         address[] memory res = new address[](_policies.length);
-        for(uint i = 0; i < _policies.length; ++i) {
+        for(uint i = 0; i < _policies.length; i++) {
             res[i] = address(_policies[i]);
         }
         return res;
@@ -66,7 +66,7 @@ contract PolicyManager is Spoke {
     }
 
     function validate(Policy[] storage aux, bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
-        for(uint i = 0; i < aux.length; ++i) {
+        for(uint i = 0; i < aux.length; i++) {
             require(
                 aux[i].rule(sig, addresses, values, identifier),
                 "Rule evaluated to false"
