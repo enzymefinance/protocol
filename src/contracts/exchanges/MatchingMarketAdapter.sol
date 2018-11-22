@@ -14,6 +14,8 @@ import "../dependencies/math.sol";
 /// @notice Adapter between Melon and OasisDex Matching Market
 contract MatchingMarketAdapter is DSMath {
 
+    event OrderCreated(uint id);
+
     //  METHODS
 
     //  PUBLIC METHODS
@@ -78,6 +80,7 @@ contract MatchingMarketAdapter is DSMath {
             [makerQuantity, takerQuantity, uint(0)]
         );
         Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        emit OrderCreated(orderId);
     }
 
     // Responsibilities of takeOrder are:
