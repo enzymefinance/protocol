@@ -1,10 +1,6 @@
 import { getGlobalEnvironment } from '~/utils/environment';
 import { Contracts } from '~/Contracts';
-import {
-  deploy as deployToken,
-  getToken,
-} from '~/contracts/dependencies/token';
-import { deploy as deployEngine } from '~/contracts/engine';
+import { deployToken, getToken } from '~/contracts/dependencies/token';
 import {
   deployMatchingMarket,
   addTokenPairWhitelist,

@@ -90,4 +90,4 @@ test('Vault-held assets can be redeemed', async () => {
   const postShares = await shared.shares.methods.balanceOf(shared.user).call();
 
   expect(postShares).toBe('0');
-});
+}, 100000);

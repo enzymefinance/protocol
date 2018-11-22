@@ -1,9 +1,6 @@
 import { getGlobalEnvironment } from '~/utils/environment';
 
-import {
-  deploy as deployToken,
-  getToken,
-} from '~/contracts/dependencies/token';
+import { deployToken, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployPriceFeed } from '~/contracts/prices';
 import {
   deployMatchingMarket,
@@ -36,7 +33,7 @@ export const deploySystem = async () => {
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);
-  const quoteTokenAddress = await deployToken('ETH');
+  const quoteTokenAddress = await deployToken('WETH');
   const mlnTokenAddress = await deployToken('MLN');
   const baseTokenAddress = mlnTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);

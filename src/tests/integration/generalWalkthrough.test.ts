@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
@@ -34,7 +35,7 @@ const randomString = (length = 4) =>
     .toString(36)
     .substr(2, length);
 
-test.skip(
+test(
   'Happy path',
   async () => {
     const fundName = `test-fund-${randomString()}`;
@@ -50,6 +51,10 @@ test.skip(
     const [quoteToken, baseToken] = tokens;
 
     const defaultTokens = [quoteToken, baseToken];
+
+    const amguToken = await getAmguToken(fundFactory);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(version, amguPrice);
 
     await createComponents(fundFactory, {
       defaultTokens,
@@ -78,8 +83,8 @@ test.skip(
     });
 
     const newPrice = getPrice(
-      createQuantity(baseToken, 1),
-      createQuantity(quoteToken, 0.34),
+      createQuantity(baseToken, '1'),
+      createQuantity(quoteToken, '2'),
     );
 
     await update(priceSource, [newPrice]);
@@ -91,10 +96,6 @@ test.skip(
         setIsFund(version, { address }),
       ),
     );
-
-    const amguToken = await getAmguToken(fundFactory);
-    const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice(version, amguPrice);
 
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
