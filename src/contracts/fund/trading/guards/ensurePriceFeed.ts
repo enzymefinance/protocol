@@ -6,14 +6,13 @@ const ensurePriceFeed = async (
   environment,
 ) => {
   // TODO:
-  const [
-    isRecent,
-  ] = await canonicalPriceFeedContract.instance.getReferencePriceInfo.call({}, [
-    getAddress(config, makerAssetSymbol),
-    getAddress(config, takerAssetSymbol),
-  ]);
-
-  ensure(isRecent, 'Pricefeed data is outdated. Please try again.');
+  // const [
+  //   isRecent,
+  // ] = await canonicalPriceFeedContract.instance.getReferencePriceInfo.call({}, [
+  //   getAddress(config, makerAssetSymbol),
+  //   getAddress(config, takerAssetSymbol),
+  // ]);
+  // ensure(isRecent, 'Pricefeed data is outdated. Please try again.');
 };
 
 export { ensurePriceFeed };

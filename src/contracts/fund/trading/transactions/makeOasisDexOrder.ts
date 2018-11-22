@@ -16,7 +16,10 @@ import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
 import { getGlobalEnvironment } from '~/utils/environment';
-import { ensureSufficientBalance } from '~/contracts/dependencies/token';
+import {
+  ensureSufficientBalance,
+  getToken,
+} from '~/contracts/dependencies/token';
 import { getSettings, getHub, ensureIsNotShutDown } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
@@ -106,7 +109,18 @@ const postProcess: PostProcessFunction<
   MakeOasisDexOrderArgs,
   MakeOasisDexOrderResult
 > = async receipt => {
-  return receipt;
+  const sellToken = await getToken(receipt.events.LogMake.returnValues.pay_gem);
+  const buyToken = await getToken(receipt.events.LogMake.returnValues.buy_gem);
+  return {
+    id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
+    maker: receipt.events.LogMake.returnValues.maker,
+    sell: createQuantity(
+      sellToken,
+      receipt.events.LogMake.returnValues.pay_amt,
+    ),
+    buy: createQuantity(sellToken, receipt.events.LogMake.returnValues.buy_amt),
+    timestamp: receipt.events.LogMake.returnValues.timestamp,
+  };
 };
 
 const options = { gas: '8000000' };

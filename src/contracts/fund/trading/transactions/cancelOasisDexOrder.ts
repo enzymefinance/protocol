@@ -89,7 +89,9 @@ const postProcess: PostProcessFunction<
   CancelOasisDexOrderArgs,
   CancelOasisDexOrderResult
 > = async receipt => {
-  return receipt;
+  return {
+    id: web3Utils.toDecimal(receipt.events.LogKill.returnValues.id),
+  };
 };
 
 const options = { gas: '8000000' };

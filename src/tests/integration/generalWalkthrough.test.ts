@@ -66,7 +66,7 @@ test(
 
     const amguToken = await getAmguToken(fundFactory);
     const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice(version, amguPrice);
+    // await setAmguPrice(version, amguPrice);
 
     await createComponents(fundFactory, {
       defaultTokens,
@@ -184,7 +184,7 @@ test(
       maker: settings.tradingAddress,
     });
 
-    console.log(`Canceled order ${fundOrder.id} from fund `, canceled);
+    console.log(`Canceled order ${fundOrder.id} from fund `);
 
     const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
       buy: createQuantity(deployment.tokens[0], 0.1),
@@ -202,7 +202,10 @@ test(
       fillTakerTokenAmount: order3.buy,
     });
 
-    console.log(`Took order from fund with id ${order3.id} `, fundTakenOrder);
+    console.log(
+      `Took order from fund with id ${order3.id} `,
+      fundTakenOrder.events,
+    );
 
     const shutDown = await shutDownFund(hubAddress);
 
