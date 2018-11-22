@@ -9,9 +9,6 @@ import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 const debug = require('./getDebug').default(__filename);
 
-const deployAndGet = async (contract: Contracts, args = []) =>
-  await getContract(contract, await deployContract(`${contract}.sol`, args));
-
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
  * Arguments can be overriden to deploy mock or real contracts as needed.
@@ -42,7 +39,7 @@ export const deployMockSystem = async (
   const mln = await getContract(Contracts.StandardToken, mlnTokenAddress);
   const weth = await getContract(Contracts.StandardToken, wethTokenAddress);
 
-  const priceSource = await deployAndGet(priceSourceContract, [
+  const priceSource = await deployAndGetContract(priceSourceContract, [
     quoteToken.address,
     quoteToken.decimals,
   ]);
@@ -50,44 +47,48 @@ export const deployMockSystem = async (
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
-  const matchingMarketAdapter = await deployAndGet(
+  const matchingMarketAdapter = await deployAndGetContract(
     Contracts.MatchingMarketAdapter,
   );
 
-  const version = await deployAndGet(versionContract);
+  const version = await deployAndGetContract(versionContract);
 
-  const hub = await deployAndGet(hubContract);
+  const hub = await deployAndGetContract(hubContract);
   await hub.methods
     .setManager(environment.wallet.address)
     .send({ from: environment.wallet.address });
   await hub.methods.setName('Mock').send({ from: environment.wallet.address });
 
-  const accounting = await deployAndGet(accountingContract, [
+  const accounting = await deployAndGetContract(accountingContract, [
     hub.options.address,
     quoteToken.address,
     [quoteToken.address, baseToken.address],
   ]);
-  const feeManager = await deployAndGet(feeManagerContract, [
+  const feeManager = await deployAndGetContract(feeManagerContract, [
     hub.options.address,
   ]);
-  const policyManager = await deployAndGet(policyManagerContract, [
+  const policyManager = await deployAndGetContract(policyManagerContract, [
     hub.options.address,
   ]);
-  const participation = await deployAndGet(participationContract, [
+  const participation = await deployAndGetContract(participationContract, [
     hub.options.address,
     [quoteToken.address, baseToken.address],
   ]);
-  const shares = await deployAndGet(sharesContract, [hub.options.address]);
-  const trading = await deployAndGet(tradingContract, [
+  const shares = await deployAndGetContract(sharesContract, [
+    hub.options.address,
+  ]);
+  const trading = await deployAndGetContract(tradingContract, [
     hub.options.address,
     [matchingMarketAddress],
     [matchingMarketAdapter.options.address],
     [true],
   ]);
-  const vault = await deployAndGet(vaultContract, [hub.options.address]);
+  const vault = await deployAndGetContract(vaultContract, [
+    hub.options.address,
+  ]);
 
   // TODO: replace with raw function when MockEngine is available
-  const engine = await deployAndGet(engineContract, [
+  const engine = await deployAndGetContract(engineContract, [
     version.options.address,
     priceSource.options.address,
     30 * 24 * 60 * 60, // month
