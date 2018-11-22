@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/math.sol";
-import "../fund/accounting/Accounting.sol";
-import "../fund/trading/Trading.sol";
+import "../../dependencies/math.sol";
+import "../../prices/PriceSource.i.sol";
+import "../accounting/Accounting.sol";
+import "../trading/Trading.sol";
 import "../policies/Policy.sol";
-import "../pricefeeds/PriceSource.i.sol";
 
 contract MaxConcentration is DSMath, Policy {
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
@@ -21,16 +21,15 @@ contract MaxConcentration is DSMath, Policy {
         returns (bool)
     {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
-        address quoteAsset = PriceSource(pricefeed).getQuoteAsset();
+        address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Max concentration is only checked for non-quote assets
         if (quoteAsset == addresses[3]) { return true; }
-        address accounting = Hub(Trading(msg.sender).hub()).accounting();
-        return (
-            mul(
-                accounting.calcAssetGAV(addresses[3]),
-                ONE_HUNDRED_PERCENT
-            ) / accounting.calcGav() <= maxConcentration;
-        );
+        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        uint concentration = mul(
+            accounting.calcAssetGAV(addresses[3]),
+            ONE_HUNDRED_PERCENT
+        ) / accounting.calcGav();
+        return concentration <= maxConcentration;
     }
 
     function position() external view returns (uint) { return 1; }

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "../fund/accounting/Accounting.sol";
-import "../fund/trading/Trading.sol";
+import "../../prices/PriceSource.i.sol";
+import "../accounting/Accounting.sol";
 import "../policies/Policy.sol";
-import "../prices/PriceSource.i.sol";
+import "../trading/Trading.sol";
 
 contract MaxPositions is Policy {
     uint public maxPositions;
@@ -18,10 +18,10 @@ contract MaxPositions is Policy {
         returns (bool)
     {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
-        address quoteAsset = PriceSource(pricefeed).getQuoteAsset();
+        address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Always allow a trade INTO the quote asset
         if (quoteAsset == addresses[3]) { return true; }
-        address accounting = Hub(Trading(msg.sender).hub()).accounting();
+        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         return accounting.getFundHoldingsLength() <= maxPositions;
     }
 

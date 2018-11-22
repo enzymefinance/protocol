@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/auth.sol";
+import "../../dependencies/auth.sol";
 
 /// @notice Generic AssetList
 contract AssetList is DSAuth {
