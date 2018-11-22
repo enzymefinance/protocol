@@ -24,7 +24,6 @@ export const deployMockSystem = async (
   hubContract = Contracts.MockHub,
   policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
-  policyManagerContract = Contracts.PolicyManager,
   priceSourceContract = Contracts.TestingPriceFeed,
   sharesContract = Contracts.MockShares,
   tradingContract = Contracts.Trading,
