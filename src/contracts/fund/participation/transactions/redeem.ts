@@ -17,7 +17,7 @@ const guard = async (params, contractAddress, environment) => {
     greaterThan(balance, createQuantity(fundToken, '0')),
     `Address ${
       environment.wallet.address
-    } doesn't own shares of the fund ${hub}`,
+    } does not own shares of the fund ${hub}`,
   );
 };
 

@@ -2,7 +2,7 @@ pragma solidity ^0.4.21;
 
 import "../dependencies/math.sol";
 import "../dependencies/token/ERC20.i.sol";
-import "../prices/PriceSource.sol";
+import "../prices/PriceSource.i.sol";
 import "../version/Version.i.sol";
 import "./Engine.sol";
 
@@ -19,11 +19,11 @@ contract AmguConsumer is DSMath {
         _;
         uint mlnPerAmgu = VersionInterface(version()).getAmguPrice();
         uint ethPerMln;
-        (ethPerMln,) = PriceSource(priceSource()).getPrice(mlnAddress());
+        (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnAddress());
         uint ethToPay = mul(
             sub(initialGas, gasleft()),
             mul(mlnPerAmgu, ethPerMln)
-        );
+        ) / 1 ether;
         require(msg.value >= ethToPay, "Insufficent amgu");
         Engine(engine()).payAmguInEther.value(ethToPay)();
         msg.sender.transfer(sub(msg.value, ethToPay));

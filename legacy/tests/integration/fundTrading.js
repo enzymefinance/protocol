@@ -66,7 +66,7 @@ test.before(async t => {
     [deployed.MatchingMarketAdapter.options.address],
     deployed.EthToken.options.address,
     [deployed.EthToken.options.address, deployed.MlnToken.options.address],
-    [false],
+    [true],
     deployed.TestingPriceFeed.options.address
   ).send({from: manager, gasPrice: config.gasPrice});
   await deployed.FundFactory.methods.continueCreation().send({from: manager, gasPrice: config.gasPrice});
@@ -279,10 +279,7 @@ exchangeIndexes.forEach(i => {
       pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
     );
     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
-    t.deepEqual(
-      post.fund.EthToken,
-      pre.fund.EthToken.minus(trade1.sellQuantity),
-    );
+    t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
     t.deepEqual(post.fund.ether, pre.fund.ether);
   });
   
@@ -341,7 +338,7 @@ exchangeIndexes.forEach(i => {
         post.fund.MlnToken,
         pre.fund.MlnToken.add(trade1.buyQuantity),
       );
-      t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+      t.deepEqual(post.fund.EthToken, pre.fund.EthToken.sub(trade1.sellQuantity));
       t.deepEqual(post.fund.ether, pre.fund.ether);
     },
   );
@@ -838,7 +835,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
   t.deepEqual(post.investor.ether, pre.investor.ether);
   t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
   t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken);
   t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
   t.deepEqual(post.fund.ether, pre.fund.ether);
 });

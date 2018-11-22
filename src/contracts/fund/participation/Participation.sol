@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../accounting/Accounting.sol";
@@ -10,9 +9,10 @@ import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";
 import "../../../engine/AmguConsumer.sol";
+import "./Participation.i.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is DSMath, AmguConsumer, Spoke {
+contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     event RequestExecuted (
         address investmentAsset,
@@ -35,9 +35,28 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     }
 
     mapping (address => Request) public requests;
-    uint public SHARES_DECIMALS;
+    mapping (address => bool) public investAllowed;
+    uint public SHARES_DECIMALS = 18;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub, address[] _defaultAssets) Spoke(_hub) {
+        enableInvestment(_defaultAssets);
+    }
+
+    function enableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            // require(
+            //     modules.pricefeed.assetIsRegistered(_assets[i]),
+            //     "Asset not registered"
+            // ); // TODO: re-enable
+            investAllowed[_assets[i]] = true;
+        }
+    }
+
+    function disableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            investAllowed[_assets[i]] = false;
+        }
+    }
 
     function requestInvestment(
         uint requestedShares,
@@ -45,11 +64,16 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         address investmentAsset
     )
         external
+        payable
         amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
+        require(
+            investAllowed[investmentAsset],
+            "Investment not allowed in this asset"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -57,19 +81,19 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             timestamp: block.timestamp,
             atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
-        SHARES_DECIMALS = 18;
     }
 
     function cancelRequest() external {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public {
+    function executeRequest() public payable {
         executeRequestFor(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)
         public
+        payable
         amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(
@@ -80,12 +104,19 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         //     )
         // )
     {
-        require(!hub.isShutDown(), "Hub must not be shut down");
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
+        require(!hub.isShutDown(), "Cannot invest in shut down fund");
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0, "Trying to redeem zero shares");
+        require(
+            hasRequest(requestOwner),
+            "No request for this address"
+        );
+        require(
+            investAllowed[request.investmentAsset],
+            "Investment not allowed in this asset"
+        );
         bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
+        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
         require(isRecent, "Price not recent");
 
         FeeManager(routes.feeManager).rewardManagementFee();
@@ -104,11 +135,6 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
-        // TODO: re-enable
-        // require(
-        //     isInvestAllowed[request.investmentAsset],
-        //     "Investment not allowed in this asset"
-        // );
         require(
             costQuantity <= request.investmentAmount,
             "Invested amount too low"
@@ -129,6 +155,18 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
     }
 
+    function getOwedPerformanceFees(uint shareQuantity)
+        view
+        returns (uint remainingShareQuantity)
+    {
+        Shares shares = Shares(routes.shares);
+        uint performanceFeePortion = mul(
+            FeeManager(routes.feeManager).performanceFeeAmount(),
+            shareQuantity
+        ) / shares.totalSupply();
+        return performanceFeePortion;
+    }
+
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares and across all assets
     function redeem() public {
@@ -143,26 +181,15 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         redeemWithConstraints(shareQuantity, assetList); //TODO: assetList from another module
     }
 
-    function getOwedPerformanceFees(uint shareQuantity)
-        view
-        returns (uint remainingShareQuantity)
-    {
-        Shares shares = Shares(routes.shares);
-        uint performanceFeePortion = mul(
-            FeeManager(routes.feeManager).performanceFeeAmount(),
-            shareQuantity
-        ) / shares.totalSupply();
-        return performanceFeePortion;
-    }
-
     // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     // TODO: readjust with calls and changed variable names where needed
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
         Shares shares = Shares(routes.shares);
         require(
-            shares.balanceOf(msg.sender) >= shareQuantity,
-            "Sender does not enough shares to fulfill request"
+            shares.balanceOf(msg.sender) >= shareQuantity &&
+            shares.balanceOf(msg.sender) > 0,
+            "Sender does not have enough shares to fulfill request"
         );
 
         FeeManager(routes.feeManager).rewardManagementFee();
@@ -214,11 +241,18 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         }
         emit SuccessfulRedemption(remainingShareQuantity);
     }
+
+    function hasRequest(address _who) view returns (bool) {
+        return requests[_who].requestedShares > 0;
+    }
 }
 
 contract ParticipationFactory is Factory {
-    function createInstance(address _hub) public returns (address) {
-        address participation = new Participation(_hub);
+    function createInstance(address _hub, address[] _defaultAssets)
+        public
+        returns (address)
+    {
+        address participation = new Participation(_hub, _defaultAssets);
         childExists[participation] = true;
         return participation;
     }

@@ -1,12 +1,12 @@
 import { initTestEnvironment } from '~/utils/environment';
 
-import { deploy } from './deploy';
+import { deployToken } from './deploy';
 
 beforeAll(async () => {
   await initTestEnvironment();
 });
 
 test('deploy', async () => {
-  const address = await deploy();
+  const address = await deployToken();
   expect(address).toBeTruthy();
 });

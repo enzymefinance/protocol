@@ -23,6 +23,7 @@ const guard = async (params, contractAddress, environment) => {
     greaterThan(request.requestedShares, createQuantity(fundToken, '0')),
     'Amount of requested shares is null',
   );
+
   // TODO: remaining pre flights
   // ensure isRecent
   // ensure isPriceRecent
@@ -38,6 +39,7 @@ const postProcess = async (receipt, params, contractAddress, environment) => {
   const hub = await getHub(contractAddress, environment);
   const settings = await getSettings(hub, environment);
   const fundToken = await getToken(settings.sharesAddress, environment);
+
   return {
     shareQuantity: createQuantity(
       fundToken,
@@ -52,6 +54,7 @@ const executeRequestFor = transactionFactory(
   guard,
   prepareArgs,
   postProcess,
+  { amguPayable: true },
 );
 
 export { executeRequestFor };

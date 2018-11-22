@@ -2,7 +2,7 @@ pragma solidity ^0.4.21;
 
 import "../dependencies/math.sol";
 import "../dependencies/token/BurnableToken.sol";
-import "../prices/PriceSource.sol";
+import "../prices/PriceSource.i.sol";
 import "../version/Version.i.sol";
 
 // TODO: integrate so we do not need all of the constructor params
@@ -13,7 +13,7 @@ contract Engine is DSMath {
     uint public lastThaw;
     uint public THAWING_DELAY;
     BurnableToken public mlnToken;
-    PriceSource public priceSource;
+    PriceSourceInterface public priceSource;
     VersionInterface public version;
     uint public MLN_DECIMALS = 18;
 
@@ -24,7 +24,7 @@ contract Engine is DSMath {
         address _mlnAddress
     ) {
         version = VersionInterface(_version);
-        priceSource = PriceSource(_priceSource);
+        priceSource = PriceSourceInterface(_priceSource);
         lastThaw = block.timestamp;
         THAWING_DELAY = _delay;
         mlnToken = BurnableToken(_mlnAddress);

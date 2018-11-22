@@ -10,11 +10,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/utils/environment';
 import { deploy as deployEngine, sellAndBurnMln } from '..';
-import {
-  deploy as deployToken,
-  approve,
-  getToken,
-} from '~/contracts/dependencies/token';
+import { deployToken, approve, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
 import {
   increaseTime,
@@ -22,6 +18,7 @@ import {
   deploy as deployContract,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import { thaw } from './thaw';
 
 const shared: any = {};
 
@@ -138,9 +135,11 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   ).rejects.toThrow('revert');
 
   const enginePrice = await shared.engine.methods.enginePrice().call();
+
   const premiumPercent = new BigInteger(
     await shared.engine.methods.premiumPercent().call(),
   );
+
   const ethPerMln = new BigInteger(
     (await shared.feed.methods
       .getPrice(shared.mln.options.address)
@@ -161,6 +160,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
       premiumPrice,
     ),
   );
+
   await approve({
     howMuch: sendMln,
     spender: shared.engine.options.address,
@@ -171,8 +171,9 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     sellAndBurnMln(shared.engine.options.address, { quantity: sendMln }),
   ).rejects.toThrow('revert');
 
-  increaseTime(shared.delay);
-  await shared.engine.methods.thaw().send({ from: shared.accounts[1] });
+  await increaseTime(shared.delay);
+
+  await thaw(shared.engine.options.address);
   const frozenEthPost = await shared.engine.methods.frozenEther().call();
   const liquidEthPost = await shared.engine.methods.liquidEther().call();
 
@@ -192,6 +193,7 @@ test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   const receipt = await sellAndBurnMln(shared.engine.options.address, {
     quantity: sendMln,
   });
+
   const gasUsed = receipt.gasUsed;
   const burnerPostMln = await shared.mln.methods.balanceOf(sender).call();
   const burnerPostEth = await shared.env.eth.getBalance(sender);

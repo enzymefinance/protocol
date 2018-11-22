@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 import { deploy, getContract } from '~/utils/solidity';
-import { deploy as deployToken } from '~/contracts/dependencies/token';
+import { deployToken } from '~/contracts/dependencies/token';
 import { createVaultInstance, deployVaultFactory } from '..';
 import { Contracts } from '~/Contracts';
 
@@ -31,7 +31,7 @@ test('withdraw token that is not present', async () => {
       .withdraw(shared.token.options.address, 100)
       .send({ from: shared.env.wallet.address }),
   ).rejects.toThrow();
-});
+}, 10000);
 
 test('withdraw available token', async () => {
   const amount = 100000;

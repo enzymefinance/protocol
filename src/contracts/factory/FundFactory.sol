@@ -103,7 +103,7 @@ contract FundFactory is AmguConsumer {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) public step(1) amguPayable {
+    ) public payable step(1) amguPayable {
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
@@ -116,16 +116,16 @@ contract FundFactory is AmguConsumer {
         );
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
     }
 
     // TODO: improve naming
-    function continueCreation() public step(2) amguPayable {
+    function continueCreation() public payable step(2) amguPayable {
         Hub hub = Hub(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].trading = tradingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].exchanges, managersToSettings[msg.sender].adapters, managersToSettings[msg.sender].takesCustody);
-        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]); 
+        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
         managersToComponents[msg.sender].registrar = managersToSettings[msg.sender].priceSource;
         managersToComponents[msg.sender].version = version;
@@ -134,7 +134,7 @@ contract FundFactory is AmguConsumer {
     }
 
     // TODO: improve naming
-    function setupFund() public step(3) amguPayable {
+    function setupFund() public payable step(3) amguPayable {
 
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);

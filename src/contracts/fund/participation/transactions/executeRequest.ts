@@ -1,46 +1,38 @@
-import { transactionFactory } from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
-import { getRequest } from '../calls/getRequest';
-import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
-import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
-import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
+import { executeRequestFor } from './executeRequestFor';
+import { getGlobalEnvironment } from '~/utils/environment';
+import { Address } from '@melonproject/token-math/address';
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
-  const request = await getRequest(contractAddress, {
-    of: environment.wallet.address,
-  });
-  ensure(
-    greaterThan(request.requestedShares, createQuantity(fundToken, '0')),
-    'Amount of requested shares is null',
+const prepare = async (
+  contractAddress: Address,
+  options = { amguPayable: true },
+  environment = getGlobalEnvironment(),
+) =>
+  executeRequestFor.prepare(
+    contractAddress,
+    { who: environment.wallet.address },
+    options,
+    environment,
   );
-  // TODO: remaining pre flights
-  // ensure isRecent
-  // ensure isPriceRecent
-};
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
-  return {
-    shareQuantity: createQuantity(
-      fundToken,
-      receipt.events.RequestExecuted.returnValues.requestedShares,
-    ),
-  };
-};
-
-const executeRequest = transactionFactory(
-  'executeRequest',
-  Contracts.Participation,
-  guard,
+const send = async (
+  contractAddress: Address,
+  prepared,
   undefined,
-  postProcess,
-);
+  environment = getGlobalEnvironment(),
+) =>
+  executeRequestFor.send(contractAddress, prepared, {}, undefined, environment);
 
-export { executeRequest };
+const execute = async (
+  contractAddress: Address,
+  options = { amguPayable: true },
+  environment = getGlobalEnvironment(),
+) => {
+  const prepared = await prepare(contractAddress, options, environment);
+  const result = await send(contractAddress, prepared, undefined, environment);
+  return result;
+};
+
+execute.prepare = prepare;
+execute.send = send;
+
+export { execute as executeRequest };

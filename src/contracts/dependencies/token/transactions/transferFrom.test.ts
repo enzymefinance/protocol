@@ -4,13 +4,13 @@ import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
 import { Address } from '~/utils/types';
 
-import { approve, transferFrom, deploy, getToken } from '..';
+import { approve, transferFrom, deployToken, getToken } from '..';
 
 const shared: any = {};
 
 beforeAll(async () => {
   await initTestEnvironment();
-  shared.address = await deploy();
+  shared.address = await deployToken();
   shared.token = await getToken(shared.address);
 });
 

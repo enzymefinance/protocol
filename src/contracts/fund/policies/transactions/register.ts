@@ -1,9 +1,9 @@
 import { Address } from '~/utils/types';
 import { getFunctionSignature } from '~/utils/abi';
 import {
-  prepareTransaction,
-  sendTransaction,
-  getContract,
+  transactionFactory,
+  PrepareArgsFunction,
+  EnhancedExecute,
 } from '~/utils/solidity';
 import { Contracts, requireMap } from '~/Contracts';
 
@@ -23,38 +23,16 @@ interface RegisterArgs {
   policy: Address;
 }
 
-export const guards = async (contractAddress: Address, environment) => {
-  // TODO
-};
+const prepareArgs: PrepareArgsFunction<RegisterArgs> = async ({
+  method,
+  policy,
+}: RegisterArgs) => [method, `${policy}`];
 
-export const prepare = async (
-  contractAddress: Address,
-  { method, policy },
-  environment,
-) => {
-  const contract = getContract(Contracts.PolicyManager, contractAddress);
-  const transaction = contract.methods.register(method, policy.toString());
-  transaction.name = 'register';
-  const prepared = await prepareTransaction(transaction, environment);
-  return prepared;
-};
+const register: EnhancedExecute<RegisterArgs, boolean> = transactionFactory(
+  'register',
+  Contracts.PolicyManager,
+  undefined,
+  prepareArgs,
+);
 
-export const validateReceipt = receipt => {
-  return true;
-};
-
-export const register = async (
-  contractAddress: Address,
-  { method, policy }: RegisterArgs,
-  environment?,
-) => {
-  await guards(contractAddress, environment);
-  const transaction = await prepare(
-    contractAddress,
-    { method, policy },
-    environment,
-  );
-  const receipt = await sendTransaction(transaction, environment);
-  const result = validateReceipt(receipt);
-  return result;
-};
+export { register };

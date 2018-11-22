@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
@@ -15,9 +16,11 @@ import {
   requestInvestment,
   executeRequest,
 } from '~/contracts/fund/participation';
-import { getAmguPrice, setIsFund } from '~/contracts/version';
+import { setIsFund, setAmguPrice } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
+// tslint:disable-next-line:max-line-length
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
@@ -61,6 +64,10 @@ test(
 
     const defaultTokens = [quoteToken, baseToken];
 
+    const amguToken = await getAmguToken(fundFactory);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(version, amguPrice);
+
     await createComponents(fundFactory, {
       defaultTokens,
       exchangeConfigs,
@@ -88,16 +95,11 @@ test(
     });
 
     const newPrice = getPrice(
-      createQuantity(baseToken, 1),
-      createQuantity(quoteToken, 0.34),
+      createQuantity(baseToken, '1'),
+      createQuantity(quoteToken, '2'),
     );
 
     await update(priceSource, [newPrice]);
-
-    // await approve({
-    //   howMuch: createQuantity(quoteToken, 1),
-    //   spender: new Address(shared.accounts[1]),
-    // });
 
     const components = componentsFromSettings(settings);
 
@@ -106,8 +108,6 @@ test(
         setIsFund(version, { address }),
       ),
     );
-
-    const amguPrice = await getAmguPrice(version);
 
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
