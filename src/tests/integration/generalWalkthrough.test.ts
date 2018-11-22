@@ -1,4 +1,3 @@
-import 'babel-polyfill';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 

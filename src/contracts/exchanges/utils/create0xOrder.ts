@@ -7,8 +7,6 @@ ReferenceError: regeneratorRuntime is not defined
   at Object.<anonymous> (node_modules/@0xproject/subproviders/src/index.ts:2:1)
 */
 // tslint:enable:max-line-length
-import 'babel-polyfill';
-
 import {
   assetDataUtils,
   BigNumber,
