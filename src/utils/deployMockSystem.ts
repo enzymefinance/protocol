@@ -4,6 +4,7 @@ import {
   deploy as deployToken,
   getToken,
 } from '~/contracts/dependencies/token';
+import { deploy as deployEngine } from '~/contracts/engine';
 import {
   deployMatchingMarket,
   addTokenPairWhitelist,
@@ -22,10 +23,12 @@ const deployAndGet = async (contract: Contracts, args = []) =>
  */
 export const deployMockSystem = async (
   accountingContract = Contracts.Accounting,
+  engineContract = Contracts.Engine,
   feeManagerContract = Contracts.MockFeeManager,
   hubContract = Contracts.MockHub,
   policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
+  policyManagerContract = Contracts.PolicyManager,
   priceSourceContract = Contracts.TestingPriceFeed,
   sharesContract = Contracts.MockShares,
   tradingContract = Contracts.Trading,
@@ -78,6 +81,7 @@ export const deployMockSystem = async (
   ]);
   const participation = await deployAndGet(participationContract, [
     hub.options.address,
+    [quoteToken.address, baseToken.address],
   ]);
   const shares = await deployAndGet(sharesContract, [hub.options.address]);
   const trading = await deployAndGet(tradingContract, [
@@ -88,19 +92,27 @@ export const deployMockSystem = async (
   ]);
   const vault = await deployAndGet(vaultContract, [hub.options.address]);
 
+  // TODO: replace with raw function when MockEngine is available
+  const engine = await deployAndGet(engineContract, [
+    version.options.address,
+    priceSource.options.address,
+    30 * 24 * 60 * 60, // month
+    mlnTokenAddress,
+  ]);
+
   await hub.methods
     .setSpokes([
       accounting.options.address,
       feeManager.options.address,
       participation.options.address,
-      policyManager.options.address, // policyManager
+      policyManager.options.address,
       shares.options.address,
       trading.options.address,
       vault.options.address,
       priceSource.options.address,
       priceSource.options.address, // registrar
       version.options.address,
-      randomAddress().toString(), // engine
+      engine.options.address,
       mlnTokenAddress,
     ])
     .send({ from: environment.wallet.address, gas: 8000000 });
@@ -115,16 +127,9 @@ export const deployMockSystem = async (
     .setPermissions()
     .send({ from: environment.wallet.address, gas: 8000000 });
 
-  // const monthInSeconds = 30 * 24 * 60 * 60;
-  // const engineAddress = await deployEngine(
-  //   versionAddress,
-  //   priceFeedAddress,
-  //   monthInSeconds,
-  //   mlnTokenAddress,
-  // );
-
-  return {
+  const contracts = {
     accounting,
+    engine,
     feeManager,
     hub,
     mln,
@@ -137,4 +142,6 @@ export const deployMockSystem = async (
     version,
     weth,
   };
+
+  return contracts;
 };

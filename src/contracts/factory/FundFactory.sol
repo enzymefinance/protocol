@@ -116,7 +116,7 @@ contract FundFactory is AmguConsumer {
         );
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
     }
 

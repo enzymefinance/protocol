@@ -66,7 +66,7 @@ export const requireMap = {
   [Contracts.MatchingMarketAdapter]:
   require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
-    require('../out/fund/participation/ParticipationInterface.abi.json'),
+    require('../out/fund/participation/Participation.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:

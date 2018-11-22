@@ -9,9 +9,10 @@ import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../prices/CanonicalPriceFeed.sol";
 import "../../../engine/AmguConsumer.sol";
+import "./Participation.i.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is DSMath, AmguConsumer, Spoke {
+contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     event RequestExecuted (
         address investmentAsset,
@@ -34,9 +35,28 @@ contract Participation is DSMath, AmguConsumer, Spoke {
     }
 
     mapping (address => Request) public requests;
+    mapping (address => bool) public investAllowed;
     uint public SHARES_DECIMALS = 18;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub, address[] _defaultAssets) Spoke(_hub) {
+        enableInvestment(_defaultAssets);
+    }
+
+    function enableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            // require(
+            //     modules.pricefeed.assetIsRegistered(_assets[i]),
+            //     "Asset not registered"
+            // ); // TODO: re-enable
+            investAllowed[_assets[i]] = true;
+        }
+    }
+
+    function disableInvestment(address[] _assets) public auth {
+        for (uint i = 0; i < _assets.length; ++i) {
+            investAllowed[_assets[i]] = false;
+        }
+    }
 
     function requestInvestment(
         uint requestedShares,
@@ -50,6 +70,10 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
+        require(
+            investAllowed[investmentAsset],
+            "Investment not allowed in this asset"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
@@ -63,7 +87,7 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public payable amguPayable {
+    function executeRequest() public payable {
         executeRequestFor(msg.sender);
     }
 
@@ -81,11 +105,18 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         // )
     {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], "0x0");
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
-        require(request.requestedShares > 0, "Trying to buy zero shares");
+        require(
+            hasRequest(requestOwner),
+            "No request for this address"
+        );
+        require(
+            investAllowed[request.investmentAsset],
+            "Investment not allowed in this asset"
+        );
         bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(address(request.investmentAsset));
+        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
         require(isRecent, "Price not recent");
 
         FeeManager(routes.feeManager).rewardManagementFee();
@@ -104,11 +135,6 @@ contract Participation is DSMath, AmguConsumer, Spoke {
             costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
-        // TODO: re-enable
-        // require(
-        //     isInvestAllowed[request.investmentAsset],
-        //     "Investment not allowed in this asset"
-        // );
         require(
             costQuantity <= request.investmentAmount,
             "Invested amount too low"
@@ -215,11 +241,18 @@ contract Participation is DSMath, AmguConsumer, Spoke {
         }
         emit SuccessfulRedemption(remainingShareQuantity);
     }
+
+    function hasRequest(address _who) view returns (bool) {
+        return requests[_who].requestedShares > 0;
+    }
 }
 
 contract ParticipationFactory is Factory {
-    function createInstance(address _hub) public returns (address) {
-        address participation = new Participation(_hub);
+    function createInstance(address _hub, address[] _defaultAssets)
+        public
+        returns (address)
+    {
+        address participation = new Participation(_hub, _defaultAssets);
         childExists[participation] = true;
         return participation;
     }
