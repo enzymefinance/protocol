@@ -12,7 +12,7 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.user = shared.env.wallet.address;
   shared.opts = { from: shared.user, gas: 8000000 };
-  shared.testBlacklist = Web3Utils.sha3('func()').substring(0, 10);
+  shared.testWhitelist = Web3Utils.sha3('func()').substring(0, 10);
   shared.assetArray = [
     `${randomAddress()}`,
     `${randomAddress()}`,
@@ -22,46 +22,51 @@ beforeAll(async () => {
   ];
 });
 
-test('Create blacklist', async () => {
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+test('Create whitelist', async () => {
+  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
 
-  expect(await blacklist.methods.getMembers().call()).toEqual(
+  expect(await whitelist.methods.getMembers().call()).toEqual(
     shared.assetArray,
   );
 });
 
-test('Add asset to blacklist', async () => {
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+test('Remove asset from whitelist', async () => {
+  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
   const mockAsset = `${randomAddress()}`;
 
-  expect(await blacklist.methods.getMembers().call()).toEqual(
+  expect(await whitelist.methods.getMembers().call()).toEqual(
     shared.assetArray,
   );
   await expect(
-    blacklist.methods
-      .addToBlacklist(shared.assetArray[0])
+    whitelist.methods
+      .removeFromWhitelist(mockAsset)
       .send({ from: shared.user }),
-  ).rejects.toThrow('Asset already in blacklist');
-  expect(await blacklist.methods.getMembers().call()).toEqual(
+  ).rejects.toThrow('Asset not in whitelist');
+  expect(await whitelist.methods.getMembers().call()).toEqual(
     shared.assetArray,
   );
   await expect(
-    blacklist.methods.addToBlacklist(mockAsset).send({ from: shared.user }),
+    whitelist.methods
+      .removeFromWhitelist(shared.assetArray[0])
+      .send({ from: shared.user }),
   ).resolves.not.toThrow();
-  expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
+  expect(await whitelist.methods.isMember(shared.assetArray[0]).call()).toBe(
+    false,
+  );
 });
 
-test('Policy manager with blacklist', async () => {
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+test('Policy manager with whitelist', async () => {
+  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
   const manager = await deploy(Contracts.PolicyManager, [emptyAddress]);
   const mockAsset = `${randomAddress()}`;
+  const asset = shared.assetArray[1];
   await manager.methods
-    .register(shared.testBlacklist, blacklist.options.address)
+    .register(shared.testWhitelist, whitelist.options.address)
     .send({ from: shared.user });
 
   const validateArgs = [
-    shared.testBlacklist,
-    [emptyAddress, emptyAddress, emptyAddress, mockAsset, emptyAddress],
+    shared.testWhitelist,
+    [emptyAddress, emptyAddress, emptyAddress, asset, emptyAddress],
     [0, 0, 0],
     '0x0',
   ];
@@ -69,9 +74,11 @@ test('Policy manager with blacklist', async () => {
     manager.methods.preValidate(...validateArgs).call(),
   ).resolves.not.toThrow();
 
-  await blacklist.methods.addToBlacklist(mockAsset).send({ from: shared.user });
+  await whitelist.methods
+    .removeFromWhitelist(asset)
+    .send({ from: shared.user });
 
-  expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
+  expect(await whitelist.methods.isMember(asset).call()).toBe(false);
   await expect(
     manager.methods.preValidate(...validateArgs).call(),
   ).rejects.toThrow('Rule evaluated to false');
