@@ -1,11 +1,12 @@
 pragma solidity ^0.4.21;
 
-
+import "./PriceSource.i.sol";
+import "./UpdatableFeed.i.sol";
 import "../dependencies/math.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
-contract TestingPriceFeed is DSMath {
+contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMath {
 
     struct Data {
         uint price;
@@ -16,6 +17,7 @@ contract TestingPriceFeed is DSMath {
     uint public updateId;
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
+    bool mockIsRecent = true;
 
     constructor(address _quoteAsset, uint _quoteDecimals) {
         QUOTE_ASSET = _quoteAsset;
@@ -28,7 +30,7 @@ contract TestingPriceFeed is DSMath {
      *  and let EUR-T decimals == 8.
      *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
      */
-    function update(address[] _assets, uint[] _prices) {
+    function update(address[] _assets, uint[] _prices) external {
         require(_assets.length == _prices.length, "Array lengths unequal");
         updateId++;
         for (uint i = 0; i < _assets.length; ++i) {
@@ -61,7 +63,7 @@ contract TestingPriceFeed is DSMath {
         view
         returns (bool isRecent, uint price, uint assetDecimals)
     {
-        isRecent = true;    // NB: mock value, always recent
+        isRecent = mockIsRecent;
         (price, ) = getPrice(ofAsset);
         assetDecimals = assetsToDecimals[ofAsset];
     }
@@ -82,6 +84,10 @@ contract TestingPriceFeed is DSMath {
             mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
             quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
         );
+    }
+
+    function setIsRecent(bool _state) {
+        mockIsRecent = _state;
     }
 
     // NB: not permissioned; anyone can change this in a test
@@ -121,5 +127,8 @@ contract TestingPriceFeed is DSMath {
     {
         return mul(buyQuantity, 10 ** assetsToDecimals[sellAsset]) / sellQuantity;
     }
+
+    function getLastUpdateId() public view returns (uint) { return updateId; }
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
 }
 

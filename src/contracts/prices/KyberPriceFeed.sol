@@ -1,6 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "./SimplePriceFeed.sol";
+import "./PriceSource.i.sol";
+import "../dependencies/thing.sol";
 import "../exchanges/thirdparty/kyber/KyberNetworkProxy.sol";
 
 /// @title Price Feed Template
@@ -9,7 +10,7 @@ import "../exchanges/thirdparty/kyber/KyberNetworkProxy.sol";
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 /// @notice TODO: ERC20Clone inconsistency
-contract KyberPriceFeed is SimplePriceFeed {
+contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     // FIELDS
     address public KYBER_NETWORK_PROXY;
@@ -37,9 +38,7 @@ contract KyberPriceFeed is SimplePriceFeed {
         uint[] quoteAssetStandards,
         bytes4[] quoteAssetFunctionSignatures,
         address ofGovernance
-    )        
-        SimplePriceFeed(address(this), ofQuoteAsset, address(0))
-    {
+    ) {
         // TODO
         // registerAsset(
         //     ofQuoteAsset,
@@ -69,18 +68,32 @@ contract KyberPriceFeed is SimplePriceFeed {
     /**
     @notice Gets price of an asset multiplied by ten to the power of assetDecimals
     @dev Asset has been registered
-    @param ofAsset Asset for which price should be returned
+    @param _asset Asset for which price should be returned
     @return {
       "price": "Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers",
       "timestamp": "When the asset's price was updated"
     }
     */
-    function getPrice(address ofAsset)
+    function getPrice(address _asset)
         view
         returns (uint price, uint timestamp)
     {
-        (, price, ) =  getReferencePriceInfo(ofAsset, QUOTE_ASSET);
+        (, price, ) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
         timestamp = now;
+    }
+
+    function getPrices(address[] _assets)
+        view
+        returns (uint[], uint[])
+    {
+        uint[] memory prices = new uint[](_assets.length);
+        uint[] memory timestamps = new uint[](_assets.length);
+        for (uint i; i < _assets.length; i++) {
+            var (price, timestamp) = getPrice(_assets[i]);
+            prices[i] = price;
+            timestamps[i] = timestamp;
+        }
+        return (prices, timestamps);
     }
 
 

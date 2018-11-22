@@ -21,7 +21,7 @@ contract PolicyManager is Spoke {
             register(sign[i], ofPolicies[i]);
         }
     }
-    
+
     function register(bytes4 sign, address ofPolicy) public {
         uint position = Policy(ofPolicy).position();
         if (position == 0) {
@@ -46,7 +46,7 @@ contract PolicyManager is Spoke {
     function getPoliciesBySig(bytes4 sig) public view returns (address[], address[]) {
         return (PoliciesToAddresses(policies[sig].pre), PoliciesToAddresses(policies[sig].post));
     }
-    
+
     modifier isValidPolicyBySig(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) {
         preValidate(sig, addresses, values, identifier);
         _;
@@ -58,7 +58,7 @@ contract PolicyManager is Spoke {
         _;
         postValidate(msg.sig, addresses, values, identifier);
     }
-    
+
     function preValidate(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view public {
         validate(policies[sig].pre, sig, addresses, values, identifier);
     }
