@@ -16,16 +16,16 @@ contract AssetList is DSAuth {
         }
     }
 
-    /// @returns whether an asset is in the list
+    /// @return whether an asset is in the list
     function isMember(address _asset) public view returns (bool) {
         return list[_asset];
     }
 
-    /// @returns number of assets specified in the list
+    /// @return number of assets specified in the list
     function getMemberCount() external view returns (uint) {
         return mirror.length;
     }
 
-    /// @returns array of all listed asset addresses
+    /// @return array of all listed asset addresses
     function getMembers() external view returns (address[]) { return mirror; }
 }

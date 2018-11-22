@@ -22,6 +22,9 @@ export enum Contracts {
   KyberReserve = 'exchanges/KyberReserve',
   ConversionRates = 'exchanges/ConversionRates',
   KyberWhiteList = 'exchanges/KyberWhiteList',
+  MaxPositions = 'fund/risk-management/MaxPositions',
+  MaxConcentration = 'fund/risk-management/MaxConcentration',
+  MockAccounting = 'fund/accounting/MockAccounting',
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockFee = 'fund/fees/MockFee',
   MockHub = 'fund/hub/MockHub',
@@ -86,6 +89,12 @@ export const requireMap = {
     require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
   [Contracts.KyberWhiteList]:
     require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
+  [Contracts.MaxPositions]:
+    require('../out/fund/risk-management/MaxPositions.abi.json'),
+  [Contracts.MaxConcentration]:
+    require('../out/fund/risk-management/MaxConcentration.abi.json'),
+  [Contracts.MockAccounting]:
+    require('../out/fund/accounting/MockAccounting.abi.json'),
   [Contracts.MockFeeManager]:
     require('../out/fund/fees/MockFeeManager.abi.json'),
   [Contracts.MockFee]:
