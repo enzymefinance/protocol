@@ -7,4 +7,5 @@ export * from './transactions/deploy0xExchange';
 export * from './transactions/deployMatchingMarket';
 export * from './transactions/deployMatchingMarketAdapter';
 export * from './transactions/fill0xOrder';
+export * from './transactions/make0xOrder';
 export * from './utils/create0xOrder';
