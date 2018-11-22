@@ -36,7 +36,7 @@ export const deploySystem = async () => {
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);
-  const quoteTokenAddress = await deployToken('ETH');
+  const quoteTokenAddress = await deployToken('WETH');
   const mlnTokenAddress = await deployToken('MLN');
   const baseTokenAddress = mlnTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);

@@ -3,6 +3,7 @@ import { TokenInterface } from '@melonproject/token-math/token';
 import { Environment } from '~/utils/environment';
 import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import { getToken } from '~/contracts/dependencies/token';
 
 export const getQuoteToken = async (
   contractAddress: string,
@@ -13,12 +14,7 @@ export const getQuoteToken = async (
     contractAddress,
     environment,
   );
-  const result = await contract.methods.QUOTE_ASSET().call();
-
-  // TODO: Lookup symbol / decimals
-  return {
-    address: result,
-    decimals: 18,
-    symbol: 'ETH',
-  };
+  const quoteTokenAddress = await contract.methods.QUOTE_ASSET().call();
+  const token = await getToken(quoteTokenAddress, environment);
+  return token;
 };
