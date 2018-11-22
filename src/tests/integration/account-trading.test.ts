@@ -172,13 +172,13 @@ test(
 
     console.log(`Canceled order from account with id ${order2.id}`);
 
-    const kyberSwap = await swapTokensFromAccount(kyberAddress, {
-      srcQuantity: createQuantity(deployment.tokens[1], 0.00001),
-      destQuantity: createQuantity(deployment.tokens[2], 0.06),
-      minConversionRate: 0,
-    });
+    // const kyberSwap = await swapTokensFromAccount(kyberAddress, {
+    //   srcQuantity: createQuantity(deployment.tokens[1], 0.00001),
+    //   destQuantity: createQuantity(deployment.tokens[2], 0.06),
+    //   minConversionRate: 0,
+    // });
 
-    console.log(kyberSwap);
+    // console.log(kyberSwap);
   },
   30 * 1000,
 );

@@ -20,6 +20,7 @@ import { deployVaultFactory } from '~/contracts/fund/vault';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
 import { deployFundFactory } from '~/contracts/factory';
 import { deployMockVersion, setFundFactory } from '~/contracts/version';
+// tslint:disable-next-line:max-line-length
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 
 export const sessionDeployments = {};

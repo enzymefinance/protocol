@@ -16,7 +16,10 @@ import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
 import { getGlobalEnvironment } from '~/utils/environment';
-import { ensureSufficientBalance } from '~/contracts/dependencies/token';
+import {
+  ensureSufficientBalance,
+  getToken,
+} from '~/contracts/dependencies/token';
 import { getSettings, getHub } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
@@ -111,7 +114,10 @@ const postProcess: PostProcessFunction<
   TakeOasisDexOrderArgs,
   TakeOasisDexOrderResult
 > = async receipt => {
-  return receipt;
+  return {
+    id: web3Utils.toDecimal(receipt.events.LogTake.returnValues.id),
+    timestamp: receipt.events.LogTake.returnValues.timestamp,
+  };
 };
 
 const options = { gas: '8000000' };

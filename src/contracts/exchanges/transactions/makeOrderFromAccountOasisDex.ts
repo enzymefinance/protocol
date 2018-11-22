@@ -63,7 +63,6 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
 };
 
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  console.log(receipt.events.LogMake.returnValues);
   return {
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,

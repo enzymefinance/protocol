@@ -66,7 +66,7 @@ test(
 
     const amguToken = await getAmguToken(fundFactory);
     const amguPrice = createQuantity(amguToken, '1000000000');
-    // await setAmguPrice(version, amguPrice);
+    await setAmguPrice(version, amguPrice);
 
     await createComponents(fundFactory, {
       defaultTokens,
@@ -169,7 +169,7 @@ test(
       makerQuantity: createQuantity(deployment.tokens[0], 0.1),
       takerQuantity: createQuantity(deployment.tokens[1], 2),
     });
-    console.log('Made order from fund ', orderFromFund);
+    console.log(`Made order from fund with id ${orderFromFund.id}`);
 
     const fundOrder = await getFundOpenOrder(
       settings.tradingAddress,
@@ -202,10 +202,7 @@ test(
       fillTakerTokenAmount: order3.buy,
     });
 
-    console.log(
-      `Took order from fund with id ${order3.id} `,
-      fundTakenOrder.events,
-    );
+    console.log(`Took order from fund with id ${order3.id} `);
 
     const shutDown = await shutDownFund(hubAddress);
 

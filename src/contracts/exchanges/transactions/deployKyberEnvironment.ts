@@ -6,7 +6,7 @@ import { Contracts } from '~/Contracts';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
 function bytesToHex(byteArray) {
-  const strNum = Array.from(byteArray, byte =>
+  const strNum = Array.from(byteArray, (byte: any) =>
     `0${(byte & 0xff).toString(16)}`.slice(-2),
   ).join('');
   const num = `0x${strNum}`;
@@ -279,10 +279,7 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
 
   // Melon Fund env
-  const KyberAdapterAddress = await deployContract(
-    'exchanges/KyberAdapter',
-    opts,
-  );
+  const KyberAdapterAddress = await deployContract('exchanges/KyberAdapter');
   // TODO
   // await governanceAction(
   //   { from: deployer },
