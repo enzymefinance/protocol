@@ -2,18 +2,47 @@ import { Observable } from 'zen-observable-ts';
 import * as R from 'ramda';
 
 import { getContract } from './getContract';
-import { getGlobalEnvironment } from '../environment';
+import { getGlobalEnvironment, Environment } from '../environment';
+import { TransactionArgs } from './transactionFactory';
 
-const defaultPrepareArgs = (params, contractAddress, environment) =>
-  Object.values(params || {}).map(v => v.toString());
-const defaultPostProcess = (result, prepared, environment) => result;
+export type PrepareCallArgsFunction = (
+  params,
+  contractAddress?,
+  environment?: Environment,
+) => TransactionArgs;
+
+export type PostProcessCallFunction = (
+  result,
+  prepared?,
+  environment?: Environment,
+) => any;
+
+export interface Processors {
+  prepareArgs?: PrepareCallArgsFunction;
+  postProcess?: PostProcessCallFunction;
+}
+
+const defaultPrepareArgs: PrepareCallArgsFunction = (
+  params,
+  contractAddress,
+  environment,
+) => Object.values(params || {}).map(v => v.toString());
+const defaultPostProcess: PostProcessCallFunction = (
+  result,
+  prepared,
+  environment,
+) => result;
 
 const defaultProcessors = {
   postProcess: defaultPostProcess,
   prepareArgs: defaultPrepareArgs,
 };
 
-const callFactory = (name, contract, processors = defaultProcessors) => {
+const callFactory = (
+  name,
+  contract,
+  processors: Processors = defaultProcessors,
+) => {
   const { postProcess, prepareArgs } = {
     ...defaultProcessors,
     ...processors,

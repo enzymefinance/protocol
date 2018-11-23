@@ -67,5 +67,5 @@ test('Happy path', async () => {
     shared.environmentTaker,
   );
 
-  expect(result).toBe(true);
+  expect(result).toBeTruthy();
 });

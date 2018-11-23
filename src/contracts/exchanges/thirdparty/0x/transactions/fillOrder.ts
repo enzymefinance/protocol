@@ -13,6 +13,7 @@ import {
   PrepareArgsFunction,
   GuardFunction,
   stringifyStruct,
+  PostProcessFunction,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import {
@@ -24,6 +25,7 @@ import { ensure } from '~/utils/guards';
 import { isValidSignature } from '../calls/isValidSignature';
 import { getToken, approve } from '~/contracts/dependencies/token';
 import { getAssetProxy } from '../calls/getAssetProxy';
+import { getFeeToken } from '../calls/getFeeToken';
 
 interface FillOrderArgs {
   signedOrder: SignedOrder;
@@ -100,6 +102,36 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
   ];
 };
 
+const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
+  receipt,
+  params,
+  contractAddress,
+) => {
+  const fillValues = receipt.events.Fill.returnValues;
+  const feeToken = await getFeeToken(contractAddress);
+  const makerToken = await getToken(
+    assetDataUtils.decodeERC20AssetData(fillValues.makerAssetData).tokenAddress,
+  );
+  const takerToken = await getToken(
+    assetDataUtils.decodeERC20AssetData(fillValues.takerAssetData).tokenAddress,
+  );
+
+  const result = {
+    makerFeePaid: createQuantity(feeToken, fillValues.makerFeePaid),
+    makerFilledAmount: createQuantity(
+      makerToken,
+      fillValues.makerAssetFilledAmount.toString(),
+    ),
+    takerFeePaid: createQuantity(feeToken, fillValues.takerFeePaid),
+    takerFilledAmount: createQuantity(
+      takerToken,
+      fillValues.takerAssetFilledAmount.toString(),
+    ),
+  };
+
+  return result;
+};
+
 const fillOrder: EnhancedExecute<
   FillOrderArgs,
   FillOrderResult
@@ -108,6 +140,7 @@ const fillOrder: EnhancedExecute<
   Contracts.ZeroExExchange,
   guard,
   prepareArgs,
+  postProcess,
 );
 
 export { fillOrder };
