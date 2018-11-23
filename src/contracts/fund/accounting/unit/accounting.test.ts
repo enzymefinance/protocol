@@ -1,6 +1,9 @@
 import { Contracts } from '~/Contracts';
 
-import { initTestEnvironment } from '~/utils/environment';
+import {
+  initTestEnvironment,
+  initGlobalEnvironment,
+} from '~/utils/environment';
 import { deployMockSystem } from '~/utils';
 import { deploy, getContract } from '~/utils/solidity';
 import { emptyAddress } from '~/utils/constants';
@@ -20,7 +23,10 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = Object.assign(shared, await deployMockSystem());
   shared.user = shared.env.wallet.address;
-  shared.mockDefaultAssets = [shared.weth.options.address];
+  shared.mockDefaultAssets = [
+    shared.weth.options.address,
+    shared.mln.options.address,
+  ];
   shared.mockQuoteAsset = shared.weth.options.address;
   shared.accounting = getContract(
     Contracts.Accounting,
@@ -76,4 +82,24 @@ test('Accounting is properly initialized', async () => {
   expect(initialCalculations.feesShareQuantity).toBe('0');
   expect(initialCalculations.nav).toBe('0');
   expect(initialCalculations.sharePrice).toBe(`${new BigInteger(10 ** 18)}`);
+});
+
+test('updateOwnedAssets removes zero balance assets', async () => {
+  const fundHoldings = await shared.accounting.methods.getFundHoldings().call();
+  expect(fundHoldings[0]).toEqual(
+    Array.from(Array(shared.mockDefaultAssets.length), () => '0'),
+  );
+
+  await shared.accounting.methods
+    .updateOwnedAssets()
+    .send({ from: shared.user, gas: 8000000 });
+
+  for (const i of Array.from(Array(shared.mockDefaultAssets.length).keys())) {
+    if (shared.mockDefaultAssets[i] === shared.mockQuoteAsset) continue;
+    await expect(
+      shared.accounting.methods
+        .isInAssetList(shared.mockDefaultAssets[i])
+        .call(),
+    ).resolves.toBeFalsy();
+  }
 });
