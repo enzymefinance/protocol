@@ -18,7 +18,7 @@ export const managersToHubs = async (
     .managersToHubs(managerAddress.toString())
     .call();
   if (!isAddress(hubAddress) || isEmptyAddress(hubAddress)) {
-    throw new Error(`No hub for manager ${managerAddress}`);
+    return null;
   }
   return hubAddress;
 };
