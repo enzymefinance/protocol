@@ -12,6 +12,7 @@ export enum Contracts {
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
+  MockAdapter = 'exchanges/MockAdapter',
   KyberNetwork = 'exchanges/KyberNetwork',
   KyberNetworkProxy = 'exchanges/KyberNetworkProxy',
   KyberAdapter = 'exchanges/KyberAdapter',
@@ -56,6 +57,8 @@ export const requireMap = {
     require('../out/exchanges/GenericExchangeInterface.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
+  [Contracts.MockAdapter]:
+    require('../out/exchanges/MockAdapter.abi.json'),
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:

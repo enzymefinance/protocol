@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
