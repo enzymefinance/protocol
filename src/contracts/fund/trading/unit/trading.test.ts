@@ -16,9 +16,12 @@ import {
 let shared: any = {};
 
 // Mock data
-const mockExchanges = [randomAddress(), randomAddress()];
+const mockExchanges = [randomAddress().toString(), randomAddress().toString()];
 
-const mockExchangeAdapters = [randomAddress(), randomAddress()];
+const mockExchangeAdapters = [
+  randomAddress().toString(),
+  randomAddress().toString(),
+];
 
 const takesCustodyMasks = [true, false];
 
@@ -56,8 +59,8 @@ beforeAll(async () => {
 test('Exchanges are properly initialized', async () => {
   for (const i of Array.from(Array(mockExchanges.length).keys())) {
     const exchangeObject = await shared.trading.methods.exchanges(i).call();
-    expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
-    expect(exchangeObject.adapter.toLowerCase()).toBe(mockExchangeAdapters[i]);
+    expect(exchangeObject.exchange).toBe(mockExchanges[i]);
+    expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
     expect(exchangeObject.takesCustody).toBe(takesCustodyMasks[i]);
     await expect(
       shared.trading.methods.exchangeIsAdded(mockExchanges[i]).call(),

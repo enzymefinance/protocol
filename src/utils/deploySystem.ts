@@ -20,6 +20,8 @@ import { deployVaultFactory } from '~/contracts/fund/vault';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
 import { deployFundFactory } from '~/contracts/factory';
 import { deployMockVersion, setFundFactory } from '~/contracts/version';
+// tslint:disable-next-line:max-line-length
+import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 
 export const sessionDeployments = {};
 
@@ -35,11 +37,24 @@ export const deploySystem = async () => {
   debug('Deploying system from', accounts[0]);
   const quoteTokenAddress = await deployToken('WETH');
   const mlnTokenAddress = await deployToken('MLN');
+  const eurTokenAddress = await deployToken('EUR');
   const baseTokenAddress = mlnTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
+  const eurToken = await getToken(eurTokenAddress);
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
+  const {
+    kyberNetworkAddress,
+    kyberNetworkProxyAddress,
+    KyberAdapterAddress,
+  } = await deployKyberEnvironment(
+    accounts[0],
+    quoteToken,
+    baseToken,
+    eurToken,
+    environment,
+  );
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
@@ -85,6 +100,12 @@ export const deploySystem = async () => {
       name: 'MatchingMarket',
       takesCustody: false,
     },
+    {
+      adapterAddress: KyberAdapterAddress,
+      exchangeAddress: kyberNetworkProxyAddress,
+      name: 'KyberNetwork',
+      takesCustody: false,
+    },
   ];
 
   const priceSource = priceFeedAddress;
@@ -98,7 +119,7 @@ export const deploySystem = async () => {
       whitelist: whitelistAddress,
     },
     priceSource,
-    tokens: [quoteToken, baseToken],
+    tokens: [quoteToken, baseToken, eurToken],
     version: versionAddress,
   };
 

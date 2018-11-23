@@ -24,5 +24,5 @@ beforeAll(async () => {
 test('Manger with no hub ', async () => {
   await expect(
     managersToHubs(shared.fundFactoryAddress, randomAddress()),
-  ).rejects.toThrow();
+  ).resolves.toBeNull();
 });

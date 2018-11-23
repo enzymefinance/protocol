@@ -122,8 +122,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
         //         // bytes4(keccak256(methodSignature)),
         //         exchanges[exchangeIndex].exchange,
         //         orderAddresses,
-        //         orderValues, 
-        //         identifier, 
+        //         orderValues,
+        //         identifier,
         //         makerAssetData,
         //         takerAssetData,
         //         signature
@@ -135,8 +135,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
                     methodSignature,
                     exchanges[exchangeIndex].exchange,
                     orderAddresses,
-                    orderValues, 
-                    identifier, 
+                    orderValues,
+                    identifier,
                     makerAssetData,
                     takerAssetData,
                     signature

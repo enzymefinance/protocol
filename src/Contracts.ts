@@ -13,6 +13,12 @@ export enum Contracts {
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
   MockAdapter = 'exchanges/MockAdapter',
+  KyberNetwork = 'exchanges/KyberNetwork',
+  KyberNetworkProxy = 'exchanges/KyberNetworkProxy',
+  KyberAdapter = 'exchanges/KyberAdapter',
+  KyberReserve = 'exchanges/KyberReserve',
+  ConversionRates = 'exchanges/ConversionRates',
+  KyberWhiteList = 'exchanges/KyberWhiteList',
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockHub = 'fund/hub/MockHub',
   MockShares = 'fund/shares/MockShares',
@@ -53,6 +59,22 @@ export const requireMap = {
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MockAdapter]:
     require('../out/exchanges/MockAdapter.abi.json'),
+  [Contracts.MatchingMarket]:
+    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+  [Contracts.MatchingMarketAdapter]:
+  require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+  [Contracts.KyberNetwork]:
+  require('../out/exchanges/thirdparty/kyber/KyberNetwork.abi.json'),
+  [Contracts.KyberReserve]:
+  require('../out/exchanges/thirdparty/kyber/KyberReserve.abi.json'),
+  [Contracts.KyberNetworkProxy]:
+  require('../out/exchanges/thirdparty/kyber/KyberNetworkProxy.abi.json'),
+  [Contracts.KyberAdapter]:
+  require('../out/exchanges/KyberAdapter.abi.json'),
+  [Contracts.ConversionRates]:
+  require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
+  [Contracts.KyberWhiteList]:
+  require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
   [Contracts.MockFeeManager]:
     require('../out/fund/fees/MockFeeManager.abi.json'),
   [Contracts.MockHub]:

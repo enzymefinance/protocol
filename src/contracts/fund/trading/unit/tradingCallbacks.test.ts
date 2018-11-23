@@ -11,7 +11,7 @@ import { randomAddress } from '~/utils/helpers';
 
 let shared: any = {};
 
-const mockExchange = randomAddress();
+const mockExchange = randomAddress().toString();
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
@@ -73,6 +73,7 @@ test('Make order associated callbacks add data to Trading spoke', async () => {
       '0x0',
     )
     .send({ from: shared.user, gas: 8000000 });
+
   expect(
     await shared.trading.methods
       .isInOpenMakeOrder(shared.mln.options.address)
