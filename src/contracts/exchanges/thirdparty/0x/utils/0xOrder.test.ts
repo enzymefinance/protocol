@@ -25,8 +25,6 @@ beforeAll(async () => {
   shared.zeroExAddresses = await deploy0xExchange({
     zrxToken: shared.zrxToken,
   });
-
-  console.log(shared.accounts);
 });
 
 test('Happy path', async () => {
