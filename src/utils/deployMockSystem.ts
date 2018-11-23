@@ -13,8 +13,8 @@ const debug = require('./getDebug').default(__filename);
  * Deploys a fresh set of (potentially) mocked contracts.
  * Arguments can be overriden to deploy mock or real contracts as needed.
  */
-export const deployMockSystem = async (
-  accountingContract = Contracts.Accounting,
+export const deployMockSystem = async ({
+  accountingContract = Contracts.MockAccounting,
   engineContract = Contracts.Engine,
   feeManagerContract = Contracts.MockFeeManager,
   hubContract = Contracts.MockHub,
@@ -25,7 +25,7 @@ export const deployMockSystem = async (
   tradingContract = Contracts.Trading,
   vaultContract = Contracts.Vault,
   versionContract = Contracts.MockVersion,
-) => {
+} = {}) => {
   const environment = getGlobalEnvironment();
   const accounts = await environment.eth.getAccounts();
 

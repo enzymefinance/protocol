@@ -6,7 +6,12 @@ let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(
+    shared,
+    await deployMockSystem({
+      accountingContract: Contracts.Accounting,
+    }),
+  );
   shared.user = shared.env.wallet.address;
   await shared.version.methods
     .setIsFund(shared.participation.options.address)

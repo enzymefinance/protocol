@@ -21,18 +21,16 @@ contract MockAccounting is Spoke {
     constructor(address _hub, address _quoteAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
-        for (uint i = 0; i < _defaultAssets.length; i++) {
-            addAssetToOwnedAssets(_defaultAssets[i]);
-        }
+        setOwnedAssets(_defaultAssets);
         QUOTE_ASSET = _quoteAsset;
         SHARES_DECIMALS = 18;
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
+    function setOwnedAssets(address[] _assets) { ownedAssets = _assets; }
     function setGav(uint _gav) { gav = _gav; }
     function setNav(uint _nav) { nav = _nav; }
     function setAssetGAV(address _asset, uint _amt) { assetGav[_asset] = _amt; }
-
     function setFundHoldings(uint[] _amounts, address[] _assets) {
         for (uint i = 0; i < _assets.length; i++) {
             held[_assets[i]] = _amounts[i];
@@ -79,25 +77,5 @@ contract MockAccounting is Spoke {
     function calcSharePrice() view returns (uint sharePrice) {
         (,,,,sharePrice) = performCalculations();
         return sharePrice;
-    }
-
-    function addAssetToOwnedAssets(address _asset) {
-        if (!isInAssetList[_asset]) {
-            isInAssetList[_asset] = true;
-            ownedAssets.push(_asset);
-        }
-    }
-
-    function removeFromOwnedAssets(address _asset) {
-        if (isInAssetList[_asset]) {
-            isInAssetList[_asset] = false;
-            for (uint i; i < ownedAssets.length; i++) {
-                if (ownedAssets[i] == _asset) {
-                    ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
-                    ownedAssets.length--;
-                    break;
-                }
-            }
-        }
     }
 }
