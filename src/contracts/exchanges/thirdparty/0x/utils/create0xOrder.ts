@@ -88,6 +88,7 @@ const sign0xOrder = async (
   environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
   const providerEngine = new Web3ProviderEngine();
+  console.warn('We need to fix this somehow to the environments provider');
   providerEngine.addProvider(new RPCSubprovider('http://localhost:8545'));
   providerEngine.start();
   // tslint:disable-next-line:max-line-length

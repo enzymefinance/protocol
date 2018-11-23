@@ -6,9 +6,10 @@ import {
   deployMatchingMarket,
   deployMatchingMarketAdapter,
   addTokenPairWhitelist,
+  deploy0xExchange,
 } from '~/contracts/exchanges';
 import { deploy as deployEngine } from '~/contracts/engine';
-// tslint:disable-next-line:max-line-length
+// tslint:disable:max-line-length
 import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
 import { deployWhitelist } from '~/contracts/fund/compliance';
 import { deployAccountingFactory } from '~/contracts/fund/accounting';
@@ -20,8 +21,9 @@ import { deployVaultFactory } from '~/contracts/fund/vault';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
 import { deployFundFactory } from '~/contracts/factory';
 import { deployMockVersion, setFundFactory } from '~/contracts/version';
-// tslint:disable-next-line:max-line-length
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
+import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
+// tslint:enable:max-line-length
 
 export const sessionDeployments = {};
 
@@ -35,13 +37,11 @@ export const deploySystem = async () => {
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);
-  const quoteTokenAddress = await deployToken('WETH');
   const mlnTokenAddress = await deployToken('MLN');
-  const eurTokenAddress = await deployToken('EUR');
-  const baseTokenAddress = mlnTokenAddress;
-  const quoteToken = await getToken(quoteTokenAddress);
-  const baseToken = await getToken(baseTokenAddress);
-  const eurToken = await getToken(eurTokenAddress);
+  const quoteToken = await getToken(await deployToken('WETH'));
+  const baseToken = await getToken(mlnTokenAddress);
+  const eurToken = await getToken(await deployToken('EUR'));
+  const zrxToken = await getToken(await deployToken('ZRX'));
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
   const {
@@ -55,6 +55,9 @@ export const deploySystem = async () => {
     eurToken,
     environment,
   );
+
+  const zeroExAddress = await deploy0xExchange({ zrxToken });
+  const zeroExAdapterAddress = await deploy0xAdapter();
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
@@ -106,6 +109,12 @@ export const deploySystem = async () => {
       name: 'KyberNetwork',
       takesCustody: false,
     },
+    {
+      adapterAddress: zeroExAdapterAddress,
+      exchangeAddress: zeroExAddress,
+      name: 'ZeroEx',
+      takesCustody: false,
+    },
   ];
 
   const priceSource = priceFeedAddress;
@@ -119,7 +128,7 @@ export const deploySystem = async () => {
       whitelist: whitelistAddress,
     },
     priceSource,
-    tokens: [quoteToken, baseToken, eurToken],
+    tokens: [quoteToken, baseToken, eurToken, zrxToken],
     version: versionAddress,
   };
 

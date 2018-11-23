@@ -10,6 +10,7 @@ export * from './thirdparty/0x/transactions/fillOrder';
 export * from './thirdparty/0x/utils/create0xOrder';
 export * from './transactions/addTokenPairWhitelist';
 export * from './transactions/cancelOrderFromAccountOasisDex';
+export * from './transactions/deploy0xAdapter';
 export * from './transactions/deploy0xExchange';
 export * from './transactions/deployKyberEnvironment';
 export * from './transactions/deployMatchingMarket';

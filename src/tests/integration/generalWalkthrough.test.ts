@@ -34,6 +34,7 @@ import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/c
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
+import { randomString } from '~/utils/helpers/randomString';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -42,11 +43,6 @@ beforeAll(async () => {
   shared.environment = await initTestEnvironment();
   shared.accounts = await shared.environment.eth.getAccounts();
 });
-
-const randomString = (length = 4) =>
-  Math.random()
-    .toString(36)
-    .substr(2, length);
 
 test(
   'Happy path',
