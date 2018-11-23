@@ -1,9 +1,8 @@
-import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem } from '~/utils';
+import { deploySystem, environment } from '~/utils';
 import {
   createComponents,
   continueCreation,
@@ -16,11 +15,9 @@ import {
   requestInvestment,
   executeRequest,
 } from '~/contracts/fund/participation';
-import { setIsFund, setAmguPrice } from '~/contracts/version';
+import { getAmguPrice, setIsFund } from '~/contracts/version';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
-import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
-// tslint:disable:max-line-length
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
@@ -34,7 +31,8 @@ import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/c
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
-// tslint:enable:max-line-length
+import { swapTokensFromAccount } from '~/contracts/exchanges/transactions/swapTokensFromAccount';
+import { Address } from '@melonproject/token-math/address';
 
 const shared: any = {};
 
@@ -61,13 +59,12 @@ test(
       policies,
       version,
     } = deployment;
+
+    console.log(deployment);
+
     const [quoteToken, baseToken] = tokens;
 
     const defaultTokens = [quoteToken, baseToken];
-
-    const amguToken = await getAmguToken(fundFactory);
-    const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice(version, amguPrice);
 
     await createComponents(fundFactory, {
       defaultTokens,
@@ -96,11 +93,16 @@ test(
     });
 
     const newPrice = getPrice(
-      createQuantity(baseToken, '1'),
-      createQuantity(quoteToken, '2'),
+      createQuantity(baseToken, 1),
+      createQuantity(quoteToken, 0.34),
     );
 
     await update(priceSource, [newPrice]);
+
+    // await approve({
+    //   howMuch: createQuantity(quoteToken, 1),
+    //   spender: new Address(shared.accounts[1]),
+    // });
 
     const components = componentsFromSettings(settings);
 
@@ -109,6 +111,8 @@ test(
         setIsFund(version, { address }),
       ),
     );
+
+    const amguPrice = await getAmguPrice(version);
 
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
@@ -128,9 +132,13 @@ test(
       o => o.name === 'MatchingMarket',
     ).exchangeAddress;
 
+    const kyberAddress = deployment.exchangeConfigs.find(
+      o => o.name === 'KyberNetwork',
+    ).exchangeAddress;
+
     const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-      buy: createQuantity(deployment.tokens[1], 2),
       sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(deployment.tokens[1], 2),
     });
     expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
     expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
@@ -139,9 +147,9 @@ test(
     const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
       matchingMarketAddress,
       {
-        buy: order1.buy,
         id: order1.id,
         maxTakeAmount: order1.sell,
+        buy: order1.buy,
         sell: order1.sell,
       },
     );
@@ -165,55 +173,13 @@ test(
 
     console.log(`Canceled order from account with id ${order2.id}`);
 
-    const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
-      maker: settings.tradingAddress,
-      makerQuantity: createQuantity(deployment.tokens[0], 0.1),
-      takerQuantity: createQuantity(deployment.tokens[1], 2),
-    });
-    console.log(`Made order from fund with id ${orderFromFund.id}`);
+    // const kyberSwap = await swapTokensFromAccount(kyberAddress, {
+    //   srcQuantity: createQuantity(deployment.tokens[1], 0.00001),
+    //   destQuantity: createQuantity(deployment.tokens[2], 0.06),
+    //   minConversionRate: 0,
+    // });
 
-    const fundOrder = await getFundOpenOrder(
-      settings.tradingAddress,
-      0,
-      shared.environment,
-    );
-
-    const canceled = await cancelOasisDexOrder(settings.tradingAddress, {
-      id: fundOrder.id,
-      maker: settings.tradingAddress,
-      makerAsset: fundOrder.makerAsset,
-      takerAsset: fundOrder.takerAsset,
-    });
-
-    console.log(`Canceled order ${fundOrder.id} from fund `);
-
-    const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-      buy: createQuantity(deployment.tokens[0], 0.1),
-      sell: createQuantity(deployment.tokens[1], 2),
-    });
-    expect(order3.sell).toEqual(createQuantity(deployment.tokens[1], 2));
-    expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
-    console.log(`Made order from account with id ${order3.id}`);
-
-    const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
-      fillTakerTokenAmount: order3.buy,
-      id: order3.id,
-      maker: order3.maker,
-      makerQuantity: order3.sell,
-      takerQuantity: order3.buy,
-    });
-
-    console.log(`Took order from fund with id ${order3.id} `);
-
-    const shutDown = await shutDownFund(hubAddress);
-
-    console.log('Shut down fund');
-
-    await expect(
-      requestInvestment(settings.participationAddress, {
-        investmentAmount: createQuantity(quoteToken, 1),
-      }),
-    ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
+    // console.log(kyberSwap);
   },
   30 * 1000,
 );

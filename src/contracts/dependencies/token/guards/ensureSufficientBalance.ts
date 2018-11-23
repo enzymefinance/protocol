@@ -4,14 +4,16 @@ import {
   toFixed,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 
 import { balanceOf } from '..';
 import { ensure } from '~/utils/guards';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const ensureSufficientBalance = async (
   minBalance: QuantityInterface,
-  who,
-  environment,
+  who: Address,
+  environment = getGlobalEnvironment(),
 ) => {
   const balance = await balanceOf(
     minBalance.token.address,

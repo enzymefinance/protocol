@@ -122,8 +122,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
         //         // bytes4(keccak256(methodSignature)),
         //         exchanges[exchangeIndex].exchange,
         //         orderAddresses,
-        //         orderValues, 
-        //         identifier, 
+        //         orderValues,
+        //         identifier,
         //         makerAssetData,
         //         takerAssetData,
         //         signature
@@ -135,8 +135,8 @@ contract Trading is DSMath, Spoke, TradingInterface {
                     methodSignature,
                     exchanges[exchangeIndex].exchange,
                     orderAddresses,
-                    orderValues, 
-                    identifier, 
+                    orderValues,
+                    identifier,
                     makerAssetData,
                     takerAssetData,
                     signature
@@ -237,6 +237,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     /// @notice Payable function to get back ETH from WETH
     function() public payable { }
+
+    function getExchangeInfo() view returns (address[], address[], bool[]) {
+        address[] memory ofExchanges = new address[](exchanges.length);
+        address[] memory ofAdapters = new address[](exchanges.length);
+        bool[] memory takesCustody = new bool[](exchanges.length);
+        for (uint i = 0; i < exchanges.length; i++) {
+            ofExchanges[i] = exchanges[i].exchange;
+            ofAdapters[i] = exchanges[i].adapter;
+            takesCustody[i] = exchanges[i].takesCustody;
+        }
+        return (ofExchanges, ofAdapters, takesCustody);
+    }
 
     function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];

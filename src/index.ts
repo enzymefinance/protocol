@@ -10,11 +10,11 @@ export const token = tokenExport;
 import * as engineExport from './contracts/engine';
 export const engine = engineExport;
 
-import * as zeroExExport from './contracts/exchanges/thirdparty/0x';
-export const zeroEx = zeroExExport;
-
 import * as exchangesExport from './contracts/exchanges';
 export const exchanges = exchangesExport;
+
+import * as zeroExExport from './contracts/exchanges/thirdparty/0x';
+export const zeroEx = zeroExExport;
 
 import * as factoryExport from './contracts/factory';
 export const factory = factoryExport;

@@ -15,9 +15,11 @@ import {
   Options,
 } from '../solidity';
 import { Address } from '@melonproject/token-math/address';
+import { ensure } from '../guards';
 
 export type TransactionArg = number | number[] | string | string[];
-export type TransactionArgs = TransactionArg[];
+// TODO: Remove this any!
+export type TransactionArgs = TransactionArg[] | any;
 
 // The raw unsigned transaction object from web3
 // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
@@ -123,6 +125,18 @@ export type WithContractAddressQuery = <Args, Result>(
   transaction: EnhancedExecute<Args, Result>,
 ) => ImplicitExecute<Args, Result>;
 
+export interface WithTransactionDecoratorOptions<Args, Result> {
+  guard?: GuardFunction<Args>;
+  prepareArgs?: PrepareArgsFunction<Args>;
+  postProcess?: PostProcessFunction<Args, Result>;
+  options?: OptionsOrCallback;
+}
+
+export type WithTransactionDecorator = <Args, Result>(
+  transaction: EnhancedExecute<Args, Result>,
+  decorator: WithTransactionDecoratorOptions<Args, Result>,
+) => EnhancedExecute<Args, Result>;
+
 export const defaultGuard: GuardFunction<any> = async () => {};
 
 export const defaultPrepareArgs = async (
@@ -130,6 +144,7 @@ export const defaultPrepareArgs = async (
   contractAddress,
   environment,
 ) => Object.values(params || {}).map(v => v.toString());
+
 export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
   true;
 
@@ -183,6 +198,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       contract,
       contractAddress,
       environment,
+    );
+    ensure(
+      !!contractInstance.methods[name],
+      `Method ${name} does not exist on contract ${contract}`,
     );
     const transaction = contractInstance.methods[name](...args);
 
@@ -241,7 +260,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           )}): ${error.message}`,
         );
       });
-
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
 
@@ -253,7 +271,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const decoded = Web3EthAbi.decodeLog(
         eventABI.inputs,
         log.data,
-        log.topics,
+        eventABI.anonymous ? log.topics : log.topics.slice(1),
       );
       const keys = R.map(R.prop('name'), eventABI.inputs);
       const picked = R.pick(keys, decoded);
@@ -278,7 +296,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     return postprocessed;
   };
 
-  const execute: EnhancedExecute<Args, Result> = async (
+  const execute: ExecuteFunction<Args, Result> = async (
     contractAddress,
     params,
     environment = getGlobalEnvironment(),
@@ -299,10 +317,94 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     return result;
   };
 
-  execute.prepare = prepare;
-  execute.send = send;
+  (execute as EnhancedExecute<Args, Result>).prepare = prepare;
+  (execute as EnhancedExecute<Args, Result>).send = send;
 
-  return execute;
+  return execute as EnhancedExecute<Args, Result>;
+};
+
+const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
+  transaction,
+  decorator,
+) => {
+  const prepare: PrepareFunction<Args> = async (
+    contractAddress,
+    params,
+    options = decorator.options,
+    environment: Environment = getGlobalEnvironment(),
+  ) => {
+    if (typeof decorator.guard !== 'undefined') {
+      await decorator.guard(params, contractAddress, environment);
+    }
+
+    let processedParams = params;
+    if (typeof decorator.prepareArgs !== 'undefined') {
+      processedParams = await decorator.prepareArgs(
+        params,
+        contractAddress,
+        environment,
+      );
+    }
+
+    return transaction.prepare(
+      contractAddress,
+      processedParams,
+      options,
+      environment,
+    );
+  };
+
+  const send: SendFunction<Args> = async (
+    contractAddress,
+    prepared,
+    params,
+    options = decorator.options,
+    environment = getGlobalEnvironment(),
+  ) => {
+    const result = await transaction.send(
+      contractAddress,
+      prepared,
+      params,
+      options,
+      environment,
+    );
+    if (typeof decorator.postProcess !== 'undefined') {
+      return decorator.postProcess(
+        result,
+        params,
+        contractAddress,
+        environment,
+      );
+    }
+
+    return result;
+  };
+
+  const execute: ExecuteFunction<Args, Result> = async (
+    contractAddress,
+    params,
+    environment = getGlobalEnvironment(),
+  ) => {
+    const prepared = await prepare(
+      contractAddress,
+      params,
+      decorator.options,
+      environment,
+    );
+    const result = await send(
+      contractAddress,
+      prepared,
+      params,
+      decorator.options,
+      environment,
+    );
+    return result;
+  };
+
+  (execute as EnhancedExecute<Args, Result>).prepare = prepare;
+  (execute as EnhancedExecute<Args, Result>).send = send;
+
+  return execute as EnhancedExecute<Args, Result>;
 };
 
 /**
@@ -352,4 +454,8 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
   return execute;
 };
 
-export { transactionFactory, withContractAddressQuery };
+export {
+  transactionFactory,
+  withTransactionDecorator,
+  withContractAddressQuery,
+};

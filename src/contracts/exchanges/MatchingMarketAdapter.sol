@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
@@ -13,6 +12,8 @@ import "../dependencies/math.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
 contract MatchingMarketAdapter is DSMath {
+
+    event OrderCreated(uint id);
 
     //  METHODS
 
@@ -78,6 +79,7 @@ contract MatchingMarketAdapter is DSMath {
             [makerQuantity, takerQuantity, uint(0)]
         );
         Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        emit OrderCreated(orderId);
     }
 
     // Responsibilities of takeOrder are:
