@@ -7,11 +7,13 @@ import {
 
 import { balanceOf } from '..';
 import { ensure } from '~/utils/guards';
+import { Address } from '~/utils';
+import { getGlobalEnvironment } from '~/utils/environment';
 
 const ensureSufficientBalance = async (
   minBalance: QuantityInterface,
-  who,
-  environment,
+  who: Address,
+  environment = getGlobalEnvironment(),
 ) => {
   const balance = await balanceOf(
     minBalance.token.address,

@@ -1,6 +1,12 @@
 import { isAddress } from './checks';
 import * as Web3Utils from 'web3-utils';
 
+export interface Signature {
+  r: string;
+  s: string;
+  v: string;
+}
+
 /**
  * Dummy classes to achieve typesafety.
  * DO NOT ADD METHODS
