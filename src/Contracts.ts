@@ -4,8 +4,8 @@ import * as web3EthAbi from 'web3-eth-abi';
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
   AmguConsumer = 'engine/AmguConsumer',
-  AssetBlacklist = 'fund/risk-management/AssetBlacklist',
-  AssetWhitelist = 'fund/risk-management/AssetWhitelist',
+  AssetBlacklist = 'fund/policies/risk-management/AssetBlacklist',
+  AssetWhitelist = 'fund/policies/risk-management/AssetWhitelist',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
   FalsePolicy = 'fund/policies/FalsePolicy',
@@ -22,8 +22,8 @@ export enum Contracts {
   KyberReserve = 'exchanges/KyberReserve',
   ConversionRates = 'exchanges/ConversionRates',
   KyberWhiteList = 'exchanges/KyberWhiteList',
-  MaxPositions = 'fund/risk-management/MaxPositions',
-  MaxConcentration = 'fund/risk-management/MaxConcentration',
+  MaxPositions = 'fund/policies/risk-management/MaxPositions',
+  MaxConcentration = 'fund/policies/risk-management/MaxConcentration',
   MockAccounting = 'fund/accounting/MockAccounting',
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockFee = 'fund/fees/MockFee',
@@ -54,9 +54,9 @@ export const requireMap = {
   [Contracts.AmguConsumer]:
     require('../out/engine/AmguConsumer.abi.json'),
   [Contracts.AssetBlacklist]:
-    require('../out/fund/risk-management/AssetBlacklist.abi.json'),
+    require('../out/fund/policies/risk-management/AssetBlacklist.abi.json'),
   [Contracts.AssetWhitelist]:
-    require('../out/fund/risk-management/AssetWhitelist.abi.json'),
+    require('../out/fund/policies/risk-management/AssetWhitelist.abi.json'),
   [Contracts.BurnableToken]:
     require('../out/dependencies/token/BurnableToken.abi.json'),
   [Contracts.Engine]:
@@ -90,9 +90,9 @@ export const requireMap = {
   [Contracts.KyberWhiteList]:
     require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
   [Contracts.MaxPositions]:
-    require('../out/fund/risk-management/MaxPositions.abi.json'),
+    require('../out/fund/policies/risk-management/MaxPositions.abi.json'),
   [Contracts.MaxConcentration]:
-    require('../out/fund/risk-management/MaxConcentration.abi.json'),
+    require('../out/fund/policies/risk-management/MaxConcentration.abi.json'),
   [Contracts.MockAccounting]:
     require('../out/fund/accounting/MockAccounting.abi.json'),
   [Contracts.MockFeeManager]:
