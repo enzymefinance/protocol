@@ -103,3 +103,26 @@ test('updateOwnedAssets removes zero balance assets', async () => {
     ).resolves.toBeFalsy();
   }
 });
+
+test('Balance in vault reflects in accounting', async () => {
+  const tokenQuantity = `${new BigInteger(10 ** 19)}`;
+  await shared.weth.methods
+    .transfer(shared.vault.options.address, tokenQuantity)
+    .send({ from: shared.user, gas: 8000000 });
+  const fundHoldings = await shared.accounting.methods.getFundHoldings().call();
+  expect(fundHoldings[0][0]).toEqual(tokenQuantity);
+
+  await shared.priceSource.methods
+    .update([shared.weth.options.address], [`${new BigInteger(10 ** 18)}`])
+    .send({ from: shared.user, gas: 8000000 });
+  const initialCalculations = await shared.accounting.methods
+    .performCalculations()
+    .call();
+
+  expect(initialCalculations.gav).toBe(tokenQuantity);
+  expect(initialCalculations.unclaimedFees).toBe('0');
+  expect(initialCalculations.feesShareQuantity).toBe('0');
+  expect(initialCalculations.nav).toBe(tokenQuantity);
+  // Since there is no investment yet
+  expect(initialCalculations.sharePrice).toBe(`${new BigInteger(10 ** 18)}`);
+});
