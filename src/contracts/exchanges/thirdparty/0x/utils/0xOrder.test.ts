@@ -3,7 +3,11 @@
 
 import { initTestEnvironment, withDifferentAccount } from '~/utils/environment';
 import { deploy0xExchange } from '../../../transactions/deploy0xExchange';
-import { deployToken, getToken } from '~/contracts/dependencies/token';
+import {
+  deployToken,
+  getToken,
+  transfer,
+} from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { create0xOrder, sign0xOrder } from './create0xOrder';
 import { fillOrder } from '../transactions/fillOrder';
@@ -21,6 +25,11 @@ beforeAll(async () => {
   shared.wethToken = await getToken(await deployToken('WETH'));
   shared.mlnToken = await getToken(await deployToken('MLN'));
   shared.zrxToken = await getToken(await deployToken('ZRX'));
+
+  await transfer({
+    howMuch: createQuantity(shared.wethToken, 100),
+    to: shared.environmentTaker.wallet.address,
+  });
 
   shared.zeroExAddresses = await deploy0xExchange({
     zrxToken: shared.zrxToken,
@@ -49,28 +58,6 @@ test('Happy path', async () => {
     makerQuantity.quantity.toString(),
   );
 
-  // const signedOrderPairs = R.toPairs(signedOrder);
-  // const stringified = R.map(
-  //   ([key, value]) => [key, value.toString()],
-  //   signedOrderPairs,
-  // );
-  // const stringifiedSignedOrder = R.fromPairs(stringified);
-
-  // console.log(
-  //   stringifiedSignedOrder.expirationTimeSeconds,
-  //   Math.floor(Date.now() / 1000),
-  // );
-
-  // const exchangeAbi = requireMap[Contracts.ZeroExExchange];
-  // const fillOrderAbi = exchangeAbi.filter(a => a.name === 'fillOrder')[0];
-  // const encoded = web3EthAbi.encodeFunctionCall(fillOrderAbi, [
-  //   stringifiedSignedOrder,
-  //   stringifiedSignedOrder.makerAssetAmount,
-  //   stringifiedSignedOrder.signature,
-  // ]);
-
-  // console.log(JSON.stringify(encoded, null, 2));
-
   const result = await fillOrder(
     shared.zeroExAddresses.exchange,
     {
@@ -80,15 +67,5 @@ test('Happy path', async () => {
     shared.environmentTaker,
   );
 
-  console.log(result);
-
-  //
-  /*
-  - makerQuantity
-  - takerQuantity
-
-
-  - sign0xOrder
-  - fill0xOrder
-   */
+  expect(result).toBe(true);
 });
