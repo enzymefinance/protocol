@@ -12,13 +12,10 @@ import { initTestEnvironment } from '~/utils/environment';
 import { deploy as deployEngine, sellAndBurnMln } from '..';
 import { deployToken, approve, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
-import {
-  increaseTime,
-  getContract,
-  deploy as deployContract,
-} from '~/utils/solidity';
+import { getContract, deploy as deployContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import { thaw } from './thaw';
+import { increaseTime } from '~/utils/evm';
 
 const shared: any = {};
 

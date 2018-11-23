@@ -1,4 +1,4 @@
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
 import { Environment } from '~/utils/environment';
 
 import { deploy as deployContract } from '~/utils/solidity';

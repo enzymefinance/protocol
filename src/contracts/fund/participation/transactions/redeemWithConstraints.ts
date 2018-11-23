@@ -1,16 +1,16 @@
-import {
-  transactionFactory,
-  PrepareArgsFunction,
-  PostProcessFunction,
-} from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
 import {
   createQuantity,
   greaterThan,
   isEqual,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
+import {
+  transactionFactory,
+  PrepareArgsFunction,
+  PostProcessFunction,
+} from '~/utils/solidity';
+import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';
 import { getToken, balanceOf } from '~/contracts/dependencies/token';
 import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';

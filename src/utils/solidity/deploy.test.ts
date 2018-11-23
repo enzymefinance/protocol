@@ -7,16 +7,18 @@ import {
 import { isAddress } from '../checks';
 import { deploy } from './deploy';
 
+let environment;
+
 beforeAll(async () => {
-  await initTestEnvironment();
+  environment = await initTestEnvironment();
 });
 
 test('Happy path', async () => {
-  const address = await deploy('dependencies/token/PreminedToken.sol', [
-    'TEST',
-    18,
-    'Test Token',
-  ]);
+  const address = await deploy(
+    'dependencies/token/PreminedToken.sol',
+    ['TEST', 18, 'Test Token'],
+    environment,
+  );
 
   expect(isAddress(address)).toBe(true);
 });

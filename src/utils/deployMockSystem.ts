@@ -10,8 +10,16 @@ import { deploy as deployContract, getContract } from '~/utils/solidity';
 
 const debug = require('./getDebug').default(__filename);
 
-const deployAndGet = async (contract: Contracts, args = []) =>
-  await getContract(contract, await deployContract(`${contract}.sol`, args));
+const deployAndGet = async (
+  contract: Contracts,
+  args = [],
+  environment = getGlobalEnvironment(),
+) =>
+  await getContract(
+    contract,
+    await deployContract(`${contract}.sol`, args, environment),
+    environment,
+  );
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
@@ -40,8 +48,16 @@ export const deployMockSystem = async (
   const quoteTokenAddress = wethTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
-  const mln = await getContract(Contracts.StandardToken, mlnTokenAddress);
-  const weth = await getContract(Contracts.StandardToken, wethTokenAddress);
+  const mln = await getContract(
+    Contracts.StandardToken,
+    mlnTokenAddress,
+    environment,
+  );
+  const weth = await getContract(
+    Contracts.StandardToken,
+    wethTokenAddress,
+    environment,
+  );
 
   const priceSource = await deployAndGet(priceSourceContract, [
     quoteToken.address,

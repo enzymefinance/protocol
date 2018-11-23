@@ -1,7 +1,7 @@
 import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 
 import { ensure } from '~/utils/guards';
-import { Address } from '~/utils/types';
 import { isAddress } from '~/utils/checks';
 import { ensureAccountAddress } from '~/utils/environment';
 

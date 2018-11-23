@@ -14,10 +14,10 @@ import {
   OptionsOrCallback,
   Options,
 } from '../solidity';
-import { Address } from '../types';
+import { Address } from '@melonproject/token-math/address';
 
-type TransactionArg = number | number[] | string | string[];
-type TransactionArgs = TransactionArg[];
+export type TransactionArg = number | number[] | string | string[];
+export type TransactionArgs = TransactionArg[];
 
 // The raw unsigned transaction object from web3
 // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
@@ -174,7 +174,11 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   ) => {
     await guard(params, contractAddress, environment);
     const args = await prepareArgs(params, contractAddress, environment);
-    const contractInstance = getContract(contract, contractAddress);
+    const contractInstance = getContract(
+      contract,
+      contractAddress,
+      environment,
+    );
     const transaction = contractInstance.methods[name](...args);
 
     transaction.name = name;

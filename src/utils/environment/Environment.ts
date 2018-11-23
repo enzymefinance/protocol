@@ -1,6 +1,6 @@
 import * as Eth from 'web3-eth';
 
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
 
 export interface Wallet {
   // TODO: Rename this to currentAccount

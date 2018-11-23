@@ -1,3 +1,4 @@
+import { Address } from '@melonproject/token-math/address';
 import {
   isEqual,
   PriceInterface,
@@ -66,7 +67,7 @@ const postProcess = async (
 };
 
 export const update = async (
-  contractAddress: string,
+  contractAddress: Address,
   prices: PriceInterface[],
   preventCancelDown: boolean = false,
   environment = getGlobalEnvironment(),

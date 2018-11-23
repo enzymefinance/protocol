@@ -1,5 +1,5 @@
+import { Address } from '@melonproject/token-math/address';
 import { Environment } from '~/utils/environment';
-import { Address } from '~/utils/types';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deploy = async (

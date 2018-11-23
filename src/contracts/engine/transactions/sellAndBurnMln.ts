@@ -1,6 +1,6 @@
+import { Address } from '@melonproject/token-math/address';
 import { isSameToken } from '@melonproject/token-math/token';
 import { isEqual, greaterThan } from '@melonproject/token-math/quantity';
-import { Address } from '~/utils/types';
 import { getContract, transactionFactory } from '~/utils/solidity';
 import { getToken, allowance } from '~/contracts/dependencies/token';
 import { ensure } from '~/utils/guards';

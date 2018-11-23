@@ -6,7 +6,6 @@ export * from './deployMockSystem';
 export * from './deploySystem';
 export * from './getDebug';
 export * from './scratchpad';
-export * from './types';
 
 import * as abiExport from './abi';
 export const abi = abiExport;

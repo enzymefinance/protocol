@@ -1,3 +1,4 @@
+import { Address } from '@melonproject/token-math/address';
 import {
   isToken,
   hasAddress,
@@ -17,7 +18,7 @@ interface IAddTokenPairWhitelist {
 }
 
 export const guards = async (
-  contractAddress: string,
+  contractAddress: Address,
   { quoteToken, baseToken },
   environment,
 ) => {
@@ -32,10 +33,15 @@ export const guards = async (
 };
 
 export const prepare = async (
-  contractAddress: string,
+  contractAddress: Address,
   { quoteToken, baseToken },
+  environment,
 ) => {
-  const contract = getContract(Contracts.MatchingMarket, contractAddress);
+  const contract = getContract(
+    Contracts.MatchingMarket,
+    contractAddress,
+    environment,
+  );
   const transaction = contract.methods.addTokenPairWhitelist(
     quoteToken.address,
     baseToken.address,
@@ -60,12 +66,12 @@ export const validateReceipt = (receipt, params) => {
 };
 
 export const addTokenPairWhitelist = async (
-  contractAddress: string,
+  contractAddress: Address,
   params: IAddTokenPairWhitelist,
-  environment?,
+  environment = getGlobalEnvironment(),
 ) => {
   await guards(contractAddress, params, environment);
-  const transaction = await prepare(contractAddress, params);
+  const transaction = await prepare(contractAddress, params, environment);
   const receipt = await send(transaction, environment);
   const result = validateReceipt(receipt, params);
   return result;

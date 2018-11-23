@@ -1,3 +1,4 @@
+import { Address } from '@melonproject/token-math/address';
 import { transactionFactory, PrepareArgsFunction } from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { getRequest } from '../calls/getRequest';
@@ -5,7 +6,6 @@ import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token';
 import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
-import { Address } from '~/utils';
 
 export interface ExecuteRequestForArgs {
   who: Address;

@@ -1,5 +1,5 @@
+import { Address } from '@melonproject/token-math/address';
 import { getGlobalEnvironment } from '~/utils/environment';
-import { Address } from '~/utils/types';
 import { getContract } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 

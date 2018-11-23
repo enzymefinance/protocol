@@ -1,12 +1,11 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 
 import {
   initTestEnvironment,
   getGlobalEnvironment,
   constructEnvironment,
 } from '~/utils/environment';
-
-import { Address } from '~/utils/types';
 
 import { transfer, deployToken, getToken } from '..';
 

@@ -2,7 +2,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
 
 import { increaseApproval, deployToken, getToken } from '..';
 

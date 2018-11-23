@@ -1,4 +1,4 @@
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
 import { getContract, transactionFactory } from '~/utils/solidity';
 import { ensure } from '~/utils/guards';
 import { Contracts } from '~/Contracts';

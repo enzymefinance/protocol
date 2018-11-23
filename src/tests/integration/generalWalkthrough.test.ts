@@ -1,8 +1,9 @@
+import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem, Address } from '~/utils';
+import { deploySystem } from '~/utils';
 import {
   createComponents,
   continueCreation,

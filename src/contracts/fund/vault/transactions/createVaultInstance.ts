@@ -1,5 +1,5 @@
+import { Address } from '@melonproject/token-math/address';
 import { transactionFactory } from '~/utils/solidity';
-import { Address } from '~/utils/types';
 import { Contracts } from '~/Contracts';
 
 export interface CreateInstanceArgs {
