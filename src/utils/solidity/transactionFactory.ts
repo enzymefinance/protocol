@@ -50,6 +50,7 @@ export type GuardFunction<Args> = (
   params?: Args,
   contractAddress?: Address,
   environment?: Environment,
+  options?: Options,
 ) => Promise<void>;
 
 // Translates JavaScript/TypeScript params into the form that the EVM
@@ -110,6 +111,7 @@ export type EnhancedExecute<Args, Result> = ExecuteFunction<Args, Result> &
 
 export type ExecuteFunctionWithoutContractAddress<Args, Result> = (
   params?: Args,
+  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<Result>;
 
@@ -172,7 +174,12 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     optionsOrCallback = defaultOptions,
     environment: Environment = getGlobalEnvironment(),
   ) => {
-    await guard(params, contractAddress, environment);
+    const options: Options =
+      typeof optionsOrCallback === 'function'
+        ? optionsOrCallback(environment)
+        : optionsOrCallback;
+
+    await guard(params, contractAddress, environment, options);
     const args = await prepareArgs(params, contractAddress, environment);
     const contractInstance = getContract(
       contract,
@@ -187,10 +194,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       optionsOrCallback,
       environment,
     );
-    const options: Options =
-      typeof optionsOrCallback === 'function'
-        ? optionsOrCallback(environment)
-        : optionsOrCallback;
 
     // HACK: To avoid circular dependencies (?)
     const {
@@ -338,10 +341,11 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
       environment,
     );
 
-  const execute = async (params: Args, environment?) => {
+  const execute = async (params: Args, options, environment?) => {
     return await transaction(
       R.path(contractAddressQuery, params).toString(),
       params,
+      options,
       environment,
     );
   };

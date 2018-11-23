@@ -24,11 +24,9 @@ import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { approve } from '~/contracts/dependencies/token';
 import { getLatestBlock } from '~/utils/evm';
 import { add, toBI } from '@melonproject/token-math/bigInteger';
+import { getAssetProxy } from '../calls/getAssetProxy';
 
 interface Create0xOrderArgs {
-  erc20Proxy: Address;
-  exchange: Address;
-  from: Address;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   duration?: number;
@@ -40,16 +38,12 @@ interface Sign0xOrderArgs {
 }
 
 const create0xOrder = async (
-  {
-    erc20Proxy,
-    exchange,
-    from,
-    makerQuantity,
-    takerQuantity,
-    duration = 24 * 60 * 60,
-  }: Create0xOrderArgs,
+  exchange: Address,
+  { makerQuantity, takerQuantity, duration = 24 * 60 * 60 }: Create0xOrderArgs,
   environment = getGlobalEnvironment(),
 ): Promise<Sign0xOrderArgs> => {
+  const erc20Proxy = await getAssetProxy(exchange);
+
   await approve({ howMuch: makerQuantity, spender: erc20Proxy });
 
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
@@ -64,7 +58,7 @@ const create0xOrder = async (
   // tslint:disable:object-literal-sort-keys
   const order: Order = {
     exchangeAddress: `${exchange.toLowerCase()}`,
-    makerAddress: `${from.toLowerCase()}`,
+    makerAddress: `${environment.wallet.address.toLowerCase()}`,
     takerAddress: constants.NULL_ADDRESS,
     senderAddress: constants.NULL_ADDRESS,
     feeRecipientAddress: constants.NULL_ADDRESS,

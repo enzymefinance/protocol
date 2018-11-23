@@ -14,7 +14,6 @@ const prepareArgs = ({ signedOrder }: IsValidSignatureArgs) => {
 };
 
 const postProcess = async result => {
-  console.log(result);
   return result;
 };
 

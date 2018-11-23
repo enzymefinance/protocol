@@ -1,5 +1,13 @@
 import * as R from 'ramda';
 import {
+  OrderStatus,
+  signatureUtils,
+  orderHashUtils,
+  assetDataUtils,
+} from '0x.js';
+import { SignedOrder } from '@0x/types';
+
+import {
   transactionFactory,
   EnhancedExecute,
   PrepareArgsFunction,
@@ -7,12 +15,15 @@ import {
   stringifyStruct,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
-import { SignedOrder } from '@0x/types';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
 import { getOrderInfo } from '../calls/getOrderInfo';
-import { OrderStatus, signatureUtils, orderHashUtils } from '0x.js';
 import { ensure } from '~/utils/guards';
 import { isValidSignature } from '../calls/isValidSignature';
+import { getToken, approve } from '~/contracts/dependencies/token';
+import { getAssetProxy } from '../calls/getAssetProxy';
 
 interface FillOrderArgs {
   signedOrder: SignedOrder;
@@ -27,7 +38,7 @@ interface FillOrderResult {
 }
 
 const guard: GuardFunction<FillOrderArgs> = async (
-  { signedOrder },
+  { signedOrder, takerQuantity: providedTakerQuantity },
   contractAddress,
   environment,
 ) => {
@@ -46,12 +57,24 @@ const guard: GuardFunction<FillOrderArgs> = async (
     signedOrder.makerAddress,
   );
 
-  console.log(offChainCheck);
-
   const validSignature = await isValidSignature(contractAddress, {
     signedOrder,
   });
-  ensure(validSignature, 'Signature invalid');
+  ensure(validSignature && offChainCheck, 'Signature invalid');
+
+  const { tokenAddress } = assetDataUtils.decodeERC20AssetData(
+    signedOrder.takerAssetData,
+  );
+
+  const takerToken = await getToken(tokenAddress, environment);
+
+  const takerQuantity =
+    providedTakerQuantity ||
+    createQuantity(takerToken, signedOrder.takerAssetAmount.toString());
+
+  const erc20Proxy = await getAssetProxy(contractAddress);
+
+  await approve({ howMuch: takerQuantity, spender: erc20Proxy });
 };
 
 const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
@@ -65,8 +88,6 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
     : stringifiedSignedOrder.takerAssetAmount;
 
   const signature = stringifiedSignedOrder.signature;
-
-  console.log(takerAssetAmount);
 
   return [
     R.omit(['signature'], stringifiedSignedOrder),

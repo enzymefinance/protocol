@@ -85,7 +85,7 @@ export const prepareTransaction = async (
     throw new Error(
       `Gas estimation (preflight) failed for ${
         transaction.name
-      }(${transaction.arguments.join(', ')}): ${e.message}`,
+      }(${transaction.arguments.map(JSON.stringify).join(', ')}): ${e.message}`,
     );
   }
 

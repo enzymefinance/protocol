@@ -1,7 +1,7 @@
-import * as web3EthAbi from 'web3-eth-abi';
-import * as R from 'ramda';
+// import * as web3EthAbi from 'web3-eth-abi';
+// import * as R from 'ramda';
 
-import { initTestEnvironment } from '~/utils/environment';
+import { initTestEnvironment, withDifferentAccount } from '~/utils/environment';
 import { deploy0xExchange } from '../../../transactions/deploy0xExchange';
 import { deployToken, getToken } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
@@ -13,6 +13,10 @@ const shared: any = {};
 beforeAll(async () => {
   shared.environment = await initTestEnvironment();
   shared.accounts = await shared.environment.eth.getAccounts();
+  shared.environmentTaker = withDifferentAccount(
+    shared.accounts[1],
+    shared.environment,
+  );
 
   shared.wethToken = await getToken(await deployToken('WETH'));
   shared.mlnToken = await getToken(await deployToken('MLN'));
@@ -21,6 +25,8 @@ beforeAll(async () => {
   shared.zeroExAddresses = await deploy0xExchange({
     zrxToken: shared.zrxToken,
   });
+
+  console.log(shared.accounts);
 });
 
 test('Happy path', async () => {
@@ -28,10 +34,8 @@ test('Happy path', async () => {
   const takerQuantity = createQuantity(shared.wethToken, 0.05);
 
   const unsigned0xOrder = await create0xOrder(
+    shared.zeroExAddresses.exchange,
     {
-      erc20Proxy: shared.zeroExAddresses.erc20Proxy,
-      exchange: shared.zeroExAddresses.exchange,
-      from: shared.accounts[0],
       makerQuantity,
       takerQuantity,
     },
@@ -71,8 +75,11 @@ test('Happy path', async () => {
 
   const result = await fillOrder(
     shared.zeroExAddresses.exchange,
-    { signedOrder },
-    { from: shared.accounts[1] },
+    {
+      signedOrder,
+    },
+    undefined,
+    shared.environmentTaker,
   );
 
   console.log(result);

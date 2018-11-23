@@ -21,7 +21,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
 
   const prepare = (
     contractAddress,
-    params,
+    params = {},
     environment = getGlobalEnvironment(),
   ) => {
     const args = prepareArgs(params, contractAddress, environment);
@@ -88,7 +88,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
 
   const execute = async (
     contractAddress,
-    params,
+    params = {},
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = prepare(contractAddress, params, environment);
