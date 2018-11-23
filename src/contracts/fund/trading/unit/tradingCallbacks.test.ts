@@ -11,7 +11,7 @@ import { randomAddress } from '~/utils/helpers';
 
 let shared: any = {};
 
-const mockExchange = randomAddress();
+const mockExchange = randomAddress().toString();
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
