@@ -43,7 +43,7 @@ const writeExportAs = (
 ) => {
   absoluteSourcePaths.forEach(src => {
     const relativePath = path.relative(directory, src);
-    const basename = camelCase(path.basename(src));
+    const basename = camelCase(path.basename(src).replace('0x', 'zeroEx'));
 
     fs.appendFileSync(
       df,

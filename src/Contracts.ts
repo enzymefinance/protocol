@@ -7,6 +7,7 @@ export enum Contracts {
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
   FeeManager = 'fund/fees/FeeManager',
+  ERC20Proxy = 'exchanges/thirdparty/0x/ERC20Proxy',
   FundFactory = 'factory/FundFactory',
   GenericExchange = 'exchanges/GenericExchange',
   Hub = 'fund/hub/Hub',
@@ -42,6 +43,8 @@ export const requireMap = {
     require('../out/engine/AmguConsumer.abi.json'),
   [Contracts.BurnableToken]:
     require('../out/dependencies/token/BurnableToken.abi.json'),
+  [Contracts.ERC20Proxy]:
+    require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/engine/Engine.abi.json'),
   [Contracts.FeeManager]:

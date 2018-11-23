@@ -26,6 +26,8 @@ import { getLatestBlock } from '~/utils/evm';
 import { add, toBI } from '@melonproject/token-math/bigInteger';
 
 interface Create0xOrderArgs {
+  erc20Proxy: Address;
+  exchange: Address;
   from: Address;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
@@ -38,8 +40,9 @@ interface Sign0xOrderArgs {
 }
 
 const create0xOrder = async (
-  exchangeAddress: Address,
   {
+    erc20Proxy,
+    exchange,
     from,
     makerQuantity,
     takerQuantity,
@@ -47,7 +50,7 @@ const create0xOrder = async (
   }: Create0xOrderArgs,
   environment = getGlobalEnvironment(),
 ): Promise<Sign0xOrderArgs> => {
-  await approve({ howMuch: makerQuantity, spender: exchangeAddress });
+  await approve({ howMuch: makerQuantity, spender: erc20Proxy });
 
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
     makerQuantity.token.address,
@@ -60,7 +63,7 @@ const create0xOrder = async (
 
   // tslint:disable:object-literal-sort-keys
   const order: Order = {
-    exchangeAddress: `${exchangeAddress.toLowerCase()}`,
+    exchangeAddress: `${exchange.toLowerCase()}`,
     makerAddress: `${from.toLowerCase()}`,
     takerAddress: constants.NULL_ADDRESS,
     senderAddress: constants.NULL_ADDRESS,
@@ -104,9 +107,9 @@ const sign0xOrder = async (
     order.makerAddress,
   );
 
-  console.log('orderHash', orderHash);
-  console.log('signature    ', signature);
-  console.log('web3signature', web3signature);
+  // console.log('orderHash', orderHash);
+  // console.log('signature    ', signature);
+  // console.log('web3signature', web3signature);
   const signedOrder = { ...order, signature };
   return signedOrder;
 };

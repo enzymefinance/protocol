@@ -14,9 +14,9 @@ interface OrderInfo {
   takerFilled: QuantityInterface;
 }
 
-const prepareArgs = ({ signedOrder }: { signedOrder: SignedOrder }) => [
-  stringifyStruct(signedOrder),
-];
+const prepareArgs = ({ signedOrder }: { signedOrder: SignedOrder }) => {
+  return [stringifyStruct(signedOrder)];
+};
 
 const postProcess = async (result, { params }): Promise<OrderInfo> => {
   const takerTokenAddress = assetDataUtils.decodeERC20AssetData(
@@ -32,9 +32,9 @@ const postProcess = async (result, { params }): Promise<OrderInfo> => {
   return info;
 };
 
-const get0xOrderInfo = callFactory('getOrderInfo', Contracts.ZeroExExchange, {
+const getOrderInfo = callFactory('getOrderInfo', Contracts.ZeroExExchange, {
   postProcess,
   prepareArgs,
 });
 
-export { get0xOrderInfo };
+export { getOrderInfo };

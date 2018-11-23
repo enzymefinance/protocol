@@ -9,29 +9,30 @@ import {
 import { Contracts } from '~/Contracts';
 import { SignedOrder } from '@0x/types';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
-import { get0xOrderInfo } from '../calls/get0xOrderInfo';
+import { getOrderInfo } from '../calls/getOrderInfo';
 import { OrderStatus, signatureUtils, orderHashUtils } from '0x.js';
 import { ensure } from '~/utils/guards';
 import { isValidSignature } from '../calls/isValidSignature';
 
-interface Fill0xOrderArgs {
+interface FillOrderArgs {
   signedOrder: SignedOrder;
   takerQuantity?: QuantityInterface;
 }
 
-interface Fill0xOrderResult {
+interface FillOrderResult {
   makerFilledAmount: QuantityInterface;
   takerFilledAmount: QuantityInterface;
   makerFeePaid: QuantityInterface;
   takerFeePaid: QuantityInterface;
 }
 
-const guard: GuardFunction<Fill0xOrderArgs> = async (
+const guard: GuardFunction<FillOrderArgs> = async (
   { signedOrder },
   contractAddress,
   environment,
 ) => {
-  const orderInfo = await get0xOrderInfo(contractAddress, { signedOrder });
+  const orderInfo = await getOrderInfo(contractAddress, { signedOrder });
+
   ensure(
     orderInfo.status === `${OrderStatus.FILLABLE}`,
     `Order is not fillable. Got status: ${OrderStatus[orderInfo.status]}`,
@@ -53,7 +54,7 @@ const guard: GuardFunction<Fill0xOrderArgs> = async (
   ensure(validSignature, 'Signature invalid');
 };
 
-const prepareArgs: PrepareArgsFunction<Fill0xOrderArgs> = async ({
+const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
   signedOrder,
   takerQuantity,
 }) => {
@@ -74,9 +75,9 @@ const prepareArgs: PrepareArgsFunction<Fill0xOrderArgs> = async ({
   ];
 };
 
-const fill0xOrder: EnhancedExecute<
-  Fill0xOrderArgs,
-  Fill0xOrderResult
+const fillOrder: EnhancedExecute<
+  FillOrderArgs,
+  FillOrderResult
 > = transactionFactory(
   'fillOrder',
   Contracts.ZeroExExchange,
@@ -84,4 +85,4 @@ const fill0xOrder: EnhancedExecute<
   prepareArgs,
 );
 
-export { fill0xOrder };
+export { fillOrder };

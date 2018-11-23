@@ -1,13 +1,53 @@
-import { Environment } from '~/utils/environment/Environment';
+import { assetDataUtils } from '0x.js';
 
-import { deploy as deployContract } from '~/utils/solidity';
+import { deploy as deployContract, getContract } from '~/utils/solidity';
+import { TokenInterface } from '@melonproject/token-math/token';
+import { Contracts } from '~/Contracts';
+import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
 
-export const deploy0xExchange = async (environment?: Environment) => {
-  const address = await deployContract(
-    'exchanges/thirdparty/0x/Exchange.sol',
+interface Deploy0xExchangeArgs {
+  zrxToken: TokenInterface;
+}
+
+export const deploy0xExchange = async (
+  { zrxToken }: Deploy0xExchangeArgs,
+  environment = getGlobalEnvironment(),
+) => {
+  const exchange = await deployContract(
+    Contracts.ZeroExExchange,
     [],
     environment,
   );
 
-  return address;
+  const exchangeContract = await getContract(
+    Contracts.ZeroExExchange,
+    exchange,
+    environment,
+  );
+
+  const erc20Proxy = await deployContract(
+    Contracts.ERC20Proxy,
+    [],
+    environment,
+  );
+
+  const erc20ProxyContract = await getContract(
+    Contracts.ERC20Proxy,
+    erc20Proxy,
+    environment,
+  );
+
+  const options = getWeb3Options(environment);
+
+  await erc20ProxyContract.methods.addAuthorizedAddress(exchange).send(options);
+  await exchangeContract.methods.registerAssetProxy(erc20Proxy).send(options);
+  const zrxAssetData = assetDataUtils.encodeERC20AssetData(
+    zrxToken.address.toString(),
+  );
+  await exchangeContract.methods.changeZRXAssetData(zrxAssetData).send(options);
+
+  return {
+    erc20Proxy,
+    exchange,
+  };
 };
