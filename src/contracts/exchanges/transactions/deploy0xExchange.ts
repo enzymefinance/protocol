@@ -46,8 +46,5 @@ export const deploy0xExchange = async (
   );
   await exchangeContract.methods.changeZRXAssetData(zrxAssetData).send(options);
 
-  return {
-    erc20Proxy,
-    exchange,
-  };
+  return exchange;
 };

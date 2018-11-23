@@ -1,16 +1,18 @@
-// import * as web3EthAbi from 'web3-eth-abi';
-// import * as R from 'ramda';
-
+// tslint:disable:max-line-length
 import { initTestEnvironment, withDifferentAccount } from '~/utils/environment';
-import { deploy0xExchange } from '../../../transactions/deploy0xExchange';
+import { deploy0xExchange } from '../../contracts/exchanges/transactions/deploy0xExchange';
 import {
   deployToken,
   getToken,
   transfer,
 } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { create0xOrder, sign0xOrder } from './create0xOrder';
-import { fillOrder } from '../transactions/fillOrder';
+import {
+  create0xOrder,
+  sign0xOrder,
+} from '../../contracts/exchanges/thirdparty/0x/utils/create0xOrder';
+import { fillOrder } from '../../contracts/exchanges/thirdparty/0x/transactions/fillOrder';
+// tslint:enable:max-line-length
 
 const shared: any = {};
 
@@ -31,7 +33,7 @@ beforeAll(async () => {
     to: shared.environmentTaker.wallet.address,
   });
 
-  shared.zeroExAddresses = await deploy0xExchange({
+  shared.zeroExAddress = await deploy0xExchange({
     zrxToken: shared.zrxToken,
   });
 });
@@ -41,7 +43,7 @@ test('Happy path', async () => {
   const takerQuantity = createQuantity(shared.wethToken, 0.05);
 
   const unsigned0xOrder = await create0xOrder(
-    shared.zeroExAddresses.exchange,
+    shared.zeroExAddress,
     {
       makerQuantity,
       takerQuantity,
@@ -50,16 +52,14 @@ test('Happy path', async () => {
   );
 
   const signedOrder = await sign0xOrder(unsigned0xOrder, shared.environment);
-  expect(signedOrder.exchangeAddress).toBe(
-    shared.zeroExAddresses.exchange.toLowerCase(),
-  );
+  expect(signedOrder.exchangeAddress).toBe(shared.zeroExAddress.toLowerCase());
   expect(signedOrder.makerAddress).toBe(shared.accounts[0].toLowerCase());
   expect(signedOrder.makerAssetAmount.toString()).toBe(
     makerQuantity.quantity.toString(),
   );
 
   const result = await fillOrder(
-    shared.zeroExAddresses.exchange,
+    shared.zeroExAddress,
     {
       signedOrder,
     },
