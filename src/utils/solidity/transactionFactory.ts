@@ -97,7 +97,6 @@ type PrepareFunction<Args> = (
 type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
   params?: Args,
-  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<Result>;
 
@@ -111,7 +110,6 @@ export type EnhancedExecute<Args, Result> = ExecuteFunction<Args, Result> &
 
 export type ExecuteFunctionWithoutContractAddress<Args, Result> = (
   params?: Args,
-  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<Result>;
 
@@ -283,20 +281,19 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   const execute: EnhancedExecute<Args, Result> = async (
     contractAddress,
     params,
-    options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(
       contractAddress,
       params,
-      options,
+      defaultOptions,
       environment,
     );
     const result = await send(
       contractAddress,
       prepared,
       params,
-      options,
+      defaultOptions,
       environment,
     );
     return result;
@@ -341,11 +338,10 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
       environment,
     );
 
-  const execute = async (params: Args, options, environment?) => {
+  const execute = async (params: Args, environment?) => {
     return await transaction(
       R.path(contractAddressQuery, params).toString(),
       params,
-      options,
       environment,
     );
   };

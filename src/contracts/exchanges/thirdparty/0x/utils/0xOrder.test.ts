@@ -63,7 +63,6 @@ test('Happy path', async () => {
     {
       signedOrder,
     },
-    undefined,
     shared.environmentTaker,
   );
 

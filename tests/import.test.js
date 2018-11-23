@@ -4,6 +4,7 @@ test('Import this package from node', () => {
     'utils',
     'token',
     'engine',
+    'zeroEx',
     'exchanges',
     'factory',
     'accounting',

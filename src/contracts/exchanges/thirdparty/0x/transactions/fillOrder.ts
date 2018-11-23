@@ -76,11 +76,7 @@ const guard: GuardFunction<FillOrderArgs> = async (
 
   const erc20Proxy = await getAssetProxy(contractAddress);
 
-  await approve(
-    { howMuch: takerQuantity, spender: erc20Proxy },
-    undefined,
-    environment,
-  );
+  await approve({ howMuch: takerQuantity, spender: erc20Proxy }, environment);
 };
 
 const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
