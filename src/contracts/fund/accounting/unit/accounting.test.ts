@@ -126,3 +126,23 @@ test('Balance in vault reflects in accounting', async () => {
   // Since there is no investment yet
   expect(initialCalculations.sharePrice).toBe(`${new BigInteger(10 ** 18)}`);
 });
+
+// Deployer is an authorized module because it has been directly deployed
+test('Add and remove assets by an authorized module', async () => {
+  await expect(
+    shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
+  ).resolves.toBeFalsy();
+  await shared.accounting.methods
+    .addAssetToOwnedAssets(shared.mln.options.address)
+    .send({ from: shared.user, gas: 8000000 });
+  await expect(
+    shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
+  ).resolves.toBeTruthy();
+
+  await shared.accounting.methods
+    .removeFromOwnedAssets(shared.mln.options.address)
+    .send({ from: shared.user, gas: 8000000 });
+  await expect(
+    shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
+  ).resolves.toBeFalsy();
+});
