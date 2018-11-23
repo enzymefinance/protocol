@@ -1,12 +1,12 @@
 import { initTestEnvironment } from '~/utils/environment';
 
-import { getInfo, deploy } from '..';
+import { getInfo, deployToken } from '..';
 
 const shared: any = {};
 
 beforeAll(async () => {
   await initTestEnvironment();
-  shared.address = await deploy();
+  shared.address = await deployToken();
 });
 
 test('getInfo', async () => {

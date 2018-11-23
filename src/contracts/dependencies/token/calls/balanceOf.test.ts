@@ -6,7 +6,7 @@ import {
 
 import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
 
-import { deploy, balanceOf, getToken } from '..';
+import { deployToken, balanceOf, getToken } from '..';
 import { Address } from '~/utils';
 import { transfer } from '../transactions/transfer';
 
@@ -18,7 +18,7 @@ beforeAll(async () => {
   await initTestEnvironment();
   const environment = getGlobalEnvironment();
 
-  shared.address = await deploy();
+  shared.address = await deployToken();
   shared.token = await getToken(shared.address);
   shared.accounts = (await environment.eth.getAccounts()).map(
     account => new Address(account),
