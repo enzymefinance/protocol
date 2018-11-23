@@ -27,12 +27,12 @@ import { getToken, approve } from '~/contracts/dependencies/token';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getFeeToken } from '../calls/getFeeToken';
 
-interface FillOrderArgs {
+export interface FillOrderArgs {
   signedOrder: SignedOrder;
   takerQuantity?: QuantityInterface;
 }
 
-interface FillOrderResult {
+export interface FillOrderResult {
   makerFilledAmount: QuantityInterface;
   takerFilledAmount: QuantityInterface;
   makerFeePaid: QuantityInterface;
