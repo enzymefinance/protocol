@@ -6,7 +6,7 @@ export const deploy = async (
   environment?: Environment,
 ) => {
   const address = await deployContract(
-    'fund/risk-management/PriceTolerance.sol',
+    'fund/policies/risk-management/PriceTolerance.sol',
     [tolerancePercent],
     environment,
   );

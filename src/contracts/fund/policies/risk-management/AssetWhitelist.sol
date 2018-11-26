@@ -1,11 +1,11 @@
 pragma solidity ^0.4.21;
 
-import "../policies/Policy.sol";
-import "./AssetList.sol";
+import "../Policy.sol";
+import "../AddressList.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
-contract AssetWhitelist is AssetList, Policy {
-    constructor(address[] _assets) AssetList(_assets) {}
+contract AssetWhitelist is AddressList, Policy {
+    constructor(address[] _assets) AddressList(_assets) {}
 
     function removeFromWhitelist(address _asset) external auth {
         require(isMember(_asset), "Asset not in whitelist");

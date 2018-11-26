@@ -2,8 +2,8 @@ pragma solidity ^0.4.21;
 
 import "../../dependencies/auth.sol";
 
-/// @notice Generic AssetList
-contract AssetList is DSAuth {
+/// @notice Generic AddressList
+contract AddressList is DSAuth {
     mapping(address => bool) internal list;
     address[] internal mirror;
 

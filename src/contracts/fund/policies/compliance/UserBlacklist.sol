@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "../../dependencies/auth.sol";
-import "../policies/Policy.sol";
+import "../../../dependencies/auth.sol";
+import "../Policy.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change things)
 // TODO: template rule; remove this one if not useful

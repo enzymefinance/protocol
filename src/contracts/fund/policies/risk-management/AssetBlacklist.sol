@@ -1,11 +1,11 @@
 pragma solidity ^0.4.21;
 
-import "../policies/Policy.sol";
-import "./AssetList.sol";
+import "../Policy.sol";
+import "../AddressList.sol";
 
 /// @notice Assets can be added but not removed from blacklist
-contract AssetBlacklist is AssetList, Policy {
-    constructor(address[] _assets) AssetList(_assets) {}
+contract AssetBlacklist is AddressList, Policy {
+    constructor(address[] _assets) AddressList(_assets) {}
 
     function addToBlacklist(address _asset) external auth {
         require(!isMember(_asset), "Asset already in blacklist");

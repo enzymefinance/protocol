@@ -10,7 +10,7 @@ export const deployWhitelist = async (
   const preapprovedStrings = preapproved.map(p => p.toString());
 
   const address = await deployContract(
-    'fund/compliance/Whitelist.sol',
+    'fund/policies/compliance/Whitelist.sol',
     [preapprovedStrings],
     environment,
   );
