@@ -43,7 +43,7 @@ test('Fee Manager is properly initialized', async () => {
     const feeAddress = await shared.feeManager.methods.fees(i).call();
     expect(feeAddress).toBe(shared.feeArray[i]);
   }
-}, 100000);
+});
 
 test('Total fee amount aggregates individual accumulated fee', async () => {
   const feeAmount = new BigInteger(10 ** 18);
@@ -95,7 +95,6 @@ test('Reward all fee allocates shares to the manager', async () => {
   await shared.feeB.methods
     .setFeeAmount(`${feeAmount}`)
     .send({ from: shared.user, gas: 8000000 });
-
   await shared.feeManager.methods
     .rewardAllFees()
     .send({ from: shared.user, gas: 8000000 });
