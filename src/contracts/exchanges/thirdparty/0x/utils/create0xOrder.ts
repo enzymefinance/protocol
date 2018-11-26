@@ -87,24 +87,17 @@ const sign0xOrder = async (
   { order, orderHash }: Sign0xOrderArgs,
   environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
-  const providerEngine = new Web3ProviderEngine();
-  console.warn('We need to fix this somehow to the environments provider');
-  providerEngine.addProvider(new RPCSubprovider('http://localhost:8545'));
-  providerEngine.start();
-  // tslint:disable-next-line:max-line-length
-  const web3signature = await environment.eth.sign(
-    orderHash,
-    order.makerAddress,
-  );
+  // const web3signature = await environment.eth.sign(
+  //   orderHash,
+  //   order.makerAddress,
+  // );
+
   const signature = await signatureUtils.ecSignHashAsync(
-    providerEngine,
+    environment.eth.currentProvider,
     orderHash,
     order.makerAddress,
   );
 
-  // console.log('orderHash', orderHash);
-  // console.log('signature    ', signature);
-  // console.log('web3signature', web3signature);
   const signedOrder = { ...order, signature };
   return signedOrder;
 };
