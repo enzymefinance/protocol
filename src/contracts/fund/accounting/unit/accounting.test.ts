@@ -10,37 +10,18 @@ let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(
+    shared,
+    await deployMockSystem({
+      accountingContract: Contracts.Accounting,
+    }),
+  );
   shared.user = shared.env.wallet.address;
   shared.mockDefaultAssets = [
     shared.weth.options.address,
     shared.mln.options.address,
   ];
   shared.mockQuoteAsset = shared.weth.options.address;
-  shared.accounting = getContract(
-    Contracts.Accounting,
-    await deploy(Contracts.Accounting, [
-      shared.hub.options.address,
-      shared.mockQuoteAsset,
-      shared.mockDefaultAssets,
-    ]),
-  );
-  await shared.accounting.methods
-    .initialize([
-      shared.accounting.options.address,
-      shared.feeManager.options.address,
-      emptyAddress,
-      emptyAddress,
-      shared.shares.options.address,
-      shared.trading.options.address,
-      shared.vault.options.address,
-      shared.priceSource.options.address,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-    ])
-    .send({ from: shared.user, gas: 8000000 });
   shared.exaUnit = new BigInteger('1000000000000000000');
 });
 
@@ -136,4 +117,3 @@ test('Add and remove assets by an authorized module', async () => {
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
   ).resolves.toBe(false);
 });
-
