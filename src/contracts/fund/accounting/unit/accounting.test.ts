@@ -52,6 +52,7 @@ beforeAll(async () => {
       emptyAddress,
     ])
     .send({ from: shared.user, gas: 8000000 });
+  shared.exaUnit = new BigInteger('1000000000000000000');
 });
 
 test('Accounting is properly initialized', async () => {
@@ -62,14 +63,14 @@ test('Accounting is properly initialized', async () => {
       shared.accounting.methods
         .isInAssetList(shared.mockDefaultAssets[i])
         .call(),
-    ).resolves.toBeTruthy();
+    ).resolves.toBe(true);
   }
 
   await expect(shared.accounting.methods.QUOTE_ASSET().call()).resolves.toBe(
     shared.mockQuoteAsset,
   );
   await expect(shared.accounting.methods.calcSharePrice().call()).resolves.toBe(
-    `${new BigInteger(10 ** 18)}`,
+    `${shared.exaUnit}`,
   );
   await expect(shared.accounting.methods.calcGav().call()).resolves.toBe('0');
 
@@ -81,7 +82,7 @@ test('Accounting is properly initialized', async () => {
   expect(initialCalculations.unclaimedFees).toBe('0');
   expect(initialCalculations.feesShareQuantity).toBe('0');
   expect(initialCalculations.nav).toBe('0');
-  expect(initialCalculations.sharePrice).toBe(`${new BigInteger(10 ** 18)}`);
+  expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
 });
 
 test('updateOwnedAssets removes zero balance assets', async () => {
@@ -100,12 +101,12 @@ test('updateOwnedAssets removes zero balance assets', async () => {
       shared.accounting.methods
         .isInAssetList(shared.mockDefaultAssets[i])
         .call(),
-    ).resolves.toBeFalsy();
+    ).resolves.toBe(false);
   }
 });
 
 test('Balance in vault reflects in accounting', async () => {
-  const tokenQuantity = `${new BigInteger(10 ** 19)}`;
+  const tokenQuantity = `${'10000000000000000000'}`;
   await shared.weth.methods
     .transfer(shared.vault.options.address, tokenQuantity)
     .send({ from: shared.user, gas: 8000000 });
@@ -113,7 +114,7 @@ test('Balance in vault reflects in accounting', async () => {
   expect(fundHoldings[0][0]).toEqual(tokenQuantity);
 
   await shared.priceSource.methods
-    .update([shared.weth.options.address], [`${new BigInteger(10 ** 18)}`])
+    .update([shared.weth.options.address], [`${shared.exaUnit}`])
     .send({ from: shared.user, gas: 8000000 });
   const initialCalculations = await shared.accounting.methods
     .performCalculations()
@@ -124,25 +125,25 @@ test('Balance in vault reflects in accounting', async () => {
   expect(initialCalculations.feesShareQuantity).toBe('0');
   expect(initialCalculations.nav).toBe(tokenQuantity);
   // Since there is no investment yet
-  expect(initialCalculations.sharePrice).toBe(`${new BigInteger(10 ** 18)}`);
+  expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
 });
 
 // Deployer is an authorized module because it has been directly deployed
 test('Add and remove assets by an authorized module', async () => {
   await expect(
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
-  ).resolves.toBeFalsy();
+  ).resolves.toBe(false);
   await shared.accounting.methods
     .addAssetToOwnedAssets(shared.mln.options.address)
     .send({ from: shared.user, gas: 8000000 });
   await expect(
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
-  ).resolves.toBeTruthy();
+  ).resolves.toBe(true);
 
   await shared.accounting.methods
     .removeFromOwnedAssets(shared.mln.options.address)
     .send({ from: shared.user, gas: 8000000 });
   await expect(
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
-  ).resolves.toBeFalsy();
+  ).resolves.toBe(false);
 });
