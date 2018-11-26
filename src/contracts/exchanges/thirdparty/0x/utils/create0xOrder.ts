@@ -24,7 +24,7 @@ import { getLatestBlock } from '~/utils/evm';
 import { add, toBI } from '@melonproject/token-math/bigInteger';
 import { getAssetProxy } from '../calls/getAssetProxy';
 
-interface Create0xOrderArgs {
+export interface Create0xOrderArgs {
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   duration?: number;

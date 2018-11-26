@@ -16,6 +16,7 @@ export * from './guards/ensureTakePermitted';
 export * from './transactions/callOnExchange';
 export * from './transactions/cancelOasisDexOrder';
 export * from './transactions/deployTradingFactory';
+export * from './transactions/make0xOrder';
 export * from './transactions/makeOasisDexOrder';
 export * from './transactions/take0xOrder';
 export * from './transactions/takeOasisDexOrder';

@@ -15,7 +15,6 @@ export * from './transactions/deploy0xExchange';
 export * from './transactions/deployKyberEnvironment';
 export * from './transactions/deployMatchingMarket';
 export * from './transactions/deployMatchingMarketAdapter';
-export * from './transactions/make0xOrder';
 export * from './transactions/makeOrderFromAccountOasisDex';
 export * from './transactions/swapTokensFromAccount';
 export * from './transactions/takeOrderFromAccountOasisDex';
