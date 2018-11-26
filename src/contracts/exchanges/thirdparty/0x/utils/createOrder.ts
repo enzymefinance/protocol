@@ -11,7 +11,6 @@ import {
   assetDataUtils,
   BigNumber,
   generatePseudoRandomSalt,
-  orderHashUtils,
   signatureUtils,
 } from '0x.js';
 import { Order, SignedOrder } from '@0x/types';
@@ -31,18 +30,19 @@ export interface CreateOrderArgs {
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   duration?: number;
-}
-
-interface SignOrderArgs {
-  order: Order;
-  orderHash: string;
+  makerAddress?: Address;
 }
 
 const createOrder = async (
   exchange: Address,
-  { makerQuantity, takerQuantity, duration = 24 * 60 * 60 }: CreateOrderArgs,
+  {
+    makerQuantity,
+    takerQuantity,
+    duration = 24 * 60 * 60,
+    makerAddress: givenMakerAddress,
+  }: CreateOrderArgs,
   environment = getGlobalEnvironment(),
-): Promise<SignOrderArgs> => {
+): Promise<Order> => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
     makerQuantity.token.address,
   );
@@ -52,10 +52,12 @@ const createOrder = async (
 
   const latestBlock = await getLatestBlock(environment);
 
+  const makerAddress = givenMakerAddress || environment.wallet.address;
+
   // tslint:disable:object-literal-sort-keys
   const order: Order = {
     exchangeAddress: `${exchange.toLowerCase()}`,
-    makerAddress: `${environment.wallet.address.toLowerCase()}`,
+    makerAddress: `${makerAddress.toLowerCase()}`,
     takerAddress: constants.NULL_ADDRESS,
     senderAddress: constants.NULL_ADDRESS,
     feeRecipientAddress: constants.NULL_ADDRESS,
@@ -71,12 +73,7 @@ const createOrder = async (
     takerFee: constants.ZERO_AMOUNT,
   };
 
-  const orderHash = orderHashUtils.getOrderHashHex(order);
-
-  return {
-    order,
-    orderHash,
-  };
+  return order;
 };
 
 const approveOrder = async (
@@ -101,7 +98,7 @@ const approveOrder = async (
 
 // This is just a reference implementation
 const signOrder = async (
-  { order, orderHash }: SignOrderArgs,
+  order: Order,
   environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
   // const web3signature = await environment.eth.sign(
@@ -109,13 +106,12 @@ const signOrder = async (
   //   order.makerAddress,
   // );
 
-  const signature = await signatureUtils.ecSignHashAsync(
+  const signedOrder = await signatureUtils.ecSignOrderAsync(
     environment.eth.currentProvider,
-    orderHash,
+    order,
     order.makerAddress,
   );
 
-  const signedOrder = { ...order, signature };
   return signedOrder;
 };
 

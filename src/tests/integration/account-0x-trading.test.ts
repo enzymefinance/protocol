@@ -52,11 +52,7 @@ test('Happy path', async () => {
     shared.environment,
   );
 
-  await approveOrder(
-    shared.zeroExAddress,
-    unsignedOrder.order,
-    shared.environment,
-  );
+  await approveOrder(shared.zeroExAddress, unsignedOrder, shared.environment);
 
   const signedOrder = await signOrder(unsignedOrder, shared.environment);
   expect(signedOrder.exchangeAddress).toBe(shared.zeroExAddress.toLowerCase());
