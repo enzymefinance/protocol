@@ -21,12 +21,12 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
 ) => {
   const deployment = await getDeployment();
 
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
+  const zeroExAddress = deployment.exchangeConfigs.find(
     o => o.name === 'ZeroEx',
   ).exchangeAddress;
 
   const exchangeIndex = await getExchangeIndex(
-    matchingMarketAddress,
+    zeroExAddress,
     contractAddress,
     environment,
   );
@@ -35,7 +35,7 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
     signedOrder.makerAssetData,
   ).tokenAddress;
   const takerTokenAddress = assetDataUtils.decodeERC20AssetData(
-    signedOrder.makerAssetData,
+    signedOrder.takerAssetData,
   ).tokenAddress;
 
   const takerToken = await getToken(takerTokenAddress, environment);

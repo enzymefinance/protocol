@@ -13,8 +13,6 @@ import {
   generatePseudoRandomSalt,
   orderHashUtils,
   signatureUtils,
-  Web3ProviderEngine,
-  RPCSubprovider,
 } from '0x.js';
 import { Order, SignedOrder } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
