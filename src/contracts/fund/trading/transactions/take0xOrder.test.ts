@@ -13,7 +13,7 @@ import {
 } from '~/contracts/fund/participation';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { randomString } from '~/utils/helpers/randomString';
-import { create0xOrder, sign0xOrder } from '~/contracts/exchanges';
+import { createOrder, signOrder } from '~/contracts/exchanges';
 import { take0xOrder } from './take0xOrder';
 import { setIsFund } from '~/contracts/version';
 import { Address } from '@melonproject/token-math/address';
@@ -70,7 +70,7 @@ beforeAll(async () => {
   const makerQuantity = createQuantity(mlnToken, 1);
   const takerQuantity = createQuantity(quoteToken, 0.05);
 
-  const unsigned0xOrder = await create0xOrder(
+  const unsigned0xOrder = await createOrder(
     shared.zeroExAddress,
     {
       makerQuantity,
@@ -79,7 +79,7 @@ beforeAll(async () => {
     shared.environment,
   );
 
-  shared.signedOrder = await sign0xOrder(unsigned0xOrder, shared.environment);
+  shared.signedOrder = await signOrder(unsigned0xOrder, shared.environment);
 });
 
 test('Take off-chain order from fund', async () => {

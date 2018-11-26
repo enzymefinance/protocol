@@ -8,9 +8,10 @@ import {
 } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
-  create0xOrder,
-  sign0xOrder,
-} from '../../contracts/exchanges/thirdparty/0x/utils/create0xOrder';
+  createOrder,
+  signOrder,
+  approveOrder,
+} from '../../contracts/exchanges/thirdparty/0x/utils/createOrder';
 import { fillOrder } from '../../contracts/exchanges/thirdparty/0x/transactions/fillOrder';
 // tslint:enable:max-line-length
 
@@ -42,7 +43,7 @@ test('Happy path', async () => {
   const makerQuantity = createQuantity(shared.mlnToken, 1);
   const takerQuantity = createQuantity(shared.wethToken, 0.05);
 
-  const unsigned0xOrder = await create0xOrder(
+  const unsignedOrder = await createOrder(
     shared.zeroExAddress,
     {
       makerQuantity,
@@ -51,7 +52,13 @@ test('Happy path', async () => {
     shared.environment,
   );
 
-  const signedOrder = await sign0xOrder(unsigned0xOrder, shared.environment);
+  await approveOrder(
+    shared.zeroExAddress,
+    unsignedOrder.order,
+    shared.environment,
+  );
+
+  const signedOrder = await signOrder(unsignedOrder, shared.environment);
   expect(signedOrder.exchangeAddress).toBe(shared.zeroExAddress.toLowerCase());
   expect(signedOrder.makerAddress).toBe(shared.accounts[0].toLowerCase());
   expect(signedOrder.makerAssetAmount.toString()).toBe(

@@ -1,8 +1,8 @@
 import { PrepareArgsFunction, transactionFactory } from '~/utils/solidity';
-import { Create0xOrderArgs } from '~/contracts/exchanges';
+import { CreateOrderArgs } from '~/contracts/exchanges';
 import { Contracts } from '~/Contracts';
 
-const prepareArgs: PrepareArgsFunction<Create0xOrderArgs> = async (
+const prepareArgs: PrepareArgsFunction<CreateOrderArgs> = async (
   { makerQuantity, takerQuantity },
   contractAddress,
   environment,

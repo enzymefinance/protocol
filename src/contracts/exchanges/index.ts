@@ -7,7 +7,7 @@ export * from './thirdparty/0x/calls/getFeeToken';
 export * from './thirdparty/0x/calls/getOrderInfo';
 export * from './thirdparty/0x/calls/isValidSignature';
 export * from './thirdparty/0x/transactions/fillOrder';
-export * from './thirdparty/0x/utils/create0xOrder';
+export * from './thirdparty/0x/utils/createOrder';
 export * from './transactions/addTokenPairWhitelist';
 export * from './transactions/cancelOrderFromAccountOasisDex';
 export * from './transactions/deploy0xAdapter';
