@@ -109,7 +109,7 @@ const signOrder = async (
   const signedOrder = await signatureUtils.ecSignOrderAsync(
     environment.eth.currentProvider,
     order,
-    order.makerAddress,
+    environment.wallet.address.toString(),
   );
 
   return signedOrder;

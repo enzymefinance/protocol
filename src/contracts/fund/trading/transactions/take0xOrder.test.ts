@@ -9,7 +9,7 @@ import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 
 const shared: any = {};
 
-const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
+export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
   R.find(R.propEq('symbol', symbol), tokens);
 
 beforeAll(async () => {

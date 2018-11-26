@@ -19,7 +19,7 @@ import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
+export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const guard: GuardFunction<FillOrderArgs> = async () => {
   /* TODO:
@@ -35,7 +35,7 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const deployment = await getDeployment();
+  const deployment = await getDeployment(environment);
 
   const zeroExAddress = deployment.exchangeConfigs.find(
     o => o.name === 'ZeroEx',
