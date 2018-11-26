@@ -1,17 +1,11 @@
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment';
 import { deployMockSystem } from '~/utils';
-import { deploy, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { deploy } from '~/utils/solidity/deploy';
 import { emptyAddress } from '~/utils/constants';
 import { randomAddress } from '~/utils/helpers';
-import { share } from 'rxjs/operators';
-import {
-  subtract,
-  add,
-  greaterThan,
-  isEqual,
-  BigInteger,
-} from '@melonproject/token-math/bigInteger';
+import { add, isEqual, BigInteger } from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
 

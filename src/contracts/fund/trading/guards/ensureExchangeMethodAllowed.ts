@@ -1,5 +1,3 @@
-import { ensure } from '~/utils/guards';
-
 const ensureExchangeMethodAllowed = async (address, method, environment) => {
   // TODO:
   // const signature = await getMethodNameSignature(environment, method);

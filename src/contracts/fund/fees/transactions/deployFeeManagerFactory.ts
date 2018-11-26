@@ -1,6 +1,6 @@
 import { Environment } from '~/utils/environment';
 
-import { deploy as deployContract } from '~/utils/solidity';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deployFeeManagerFactory = async (environment?: Environment) => {
   const address = await deployContract(

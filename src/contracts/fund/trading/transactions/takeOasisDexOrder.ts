@@ -5,26 +5,16 @@ import {
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
+import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
-import { Contracts, requireMap } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
-import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
 import { getGlobalEnvironment } from '~/utils/environment';
-import {
-  ensureSufficientBalance,
-  getToken,
-} from '~/contracts/dependencies/token';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token';
 import { getSettings, getHub } from '~/contracts/fund/hub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
-import { ensure } from '~/utils/guards';
 
 export type TakeOasisDexOrderResult = any;
 

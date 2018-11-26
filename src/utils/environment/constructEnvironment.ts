@@ -1,9 +1,7 @@
 import * as Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
-
 import getDebug from '~/utils/getDebug';
-
 import { tracks } from '../constants/tracks';
 import { Environment, Options } from './Environment';
 
@@ -15,19 +13,17 @@ export const defaultOptions: Options = {
 };
 
 const checkIpc = endpoint => {
-  const fs = require('fs');
+  const fs =
+    typeof module !== 'undefined' && module.exports && require('f' + 's');
 
   try {
     fs.accessSync(endpoint, fs.constants.W_OK);
     return true;
   } catch (e) {
-    throw new Error(
-      [
-        `Can not construct provider from endpoint: ${endpoint}`,
-        'HTTP, WS and IPC failed',
-      ].join(''),
-    );
+    // Swallow any potential error.
   }
+
+  return false;
 };
 
 const makeWsProvider = endpoint =>
@@ -54,6 +50,14 @@ const constructProvider = endpoint => {
     .isValid(endpoint);
 
   const provider = selectProvider(endpoint);
+  if (!provider) {
+    throw new Error(
+      [
+        `Can not construct provider from endpoint: ${endpoint}`,
+        'HTTP, WS and IPC failed',
+      ].join(''),
+    );
+  }
 
   debug('Provider constructed', endpoint);
 

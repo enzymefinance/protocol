@@ -1,5 +1,3 @@
-import { ensure } from '~/utils/guards';
-
 const ensureNoOpenOrderForAsset = async (
   fund,
   makerAssetSymbol,

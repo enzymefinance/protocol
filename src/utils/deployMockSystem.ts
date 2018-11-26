@@ -1,12 +1,11 @@
 import { getGlobalEnvironment } from '~/utils/environment';
 import { Contracts } from '~/Contracts';
-import { deployToken, getToken } from '~/contracts/dependencies/token';
-import {
-  deployMatchingMarket,
-  addTokenPairWhitelist,
-} from '~/contracts/exchanges';
-import { randomAddress } from '~/utils/helpers';
-import { deploy as deployContract, getContract } from '~/utils/solidity';
+import { getToken } from '~/contracts/dependencies/token';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { addTokenPairWhitelist } from '~/contracts/exchanges';
+import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
+import { getContract } from '~/utils/solidity';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 const debug = require('./getDebug').default(__filename);
 

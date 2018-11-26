@@ -1,7 +1,7 @@
 import { Address } from '~/utils/types';
 import { Environment } from '~/utils/environment';
 
-import { deploy as deployContract } from '~/utils/solidity';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 interface FundComponentAddresses {
   accountingFactoryAddress: Address;

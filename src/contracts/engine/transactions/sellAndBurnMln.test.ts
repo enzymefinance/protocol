@@ -9,14 +9,12 @@ import {
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/utils/environment';
-import { deploy as deployEngine, sellAndBurnMln } from '..';
+import { sellAndBurnMln } from './sellAndBurnMln';
+import { deploy as deployEngine } from './deploy';
 import { deployToken, approve, getToken } from '~/contracts/dependencies/token';
 import { deploy as deployFeed, update } from '~/contracts/prices';
-import {
-  increaseTime,
-  getContract,
-  deploy as deployContract,
-} from '~/utils/solidity';
+import { increaseTime, getContract } from '~/utils/solidity';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { Contracts } from '~/Contracts';
 import { thaw } from './thaw';
 

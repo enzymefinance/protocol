@@ -9,9 +9,6 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
-import { Contracts, requireMap } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
@@ -110,7 +107,7 @@ const postProcess: PostProcessFunction<
   MakeOasisDexOrderResult
 > = async receipt => {
   const sellToken = await getToken(receipt.events.LogMake.returnValues.pay_gem);
-  const buyToken = await getToken(receipt.events.LogMake.returnValues.buy_gem);
+  // const buyToken = await getToken(receipt.events.LogMake.returnValues.buy_gem);
   return {
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,

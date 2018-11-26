@@ -5,7 +5,7 @@ const debug = require('~/utils/getDebug').default(__filename);
 const getGanache = () => {
   debug('Setting Ganache up');
   // tslint:disable-next-line:variable-name
-  const Ganache = require('ganache-cli');
+  const Ganache = require('@melonproject/ganache-cli');
   const provider = Ganache.provider();
   debug('Ganache setup finished');
   return provider;

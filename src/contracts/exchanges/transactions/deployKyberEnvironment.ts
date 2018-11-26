@@ -1,6 +1,7 @@
 import { Environment } from '~/utils/environment/Environment';
 
-import { deploy as deployContract, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 import BigNumber from 'bignumber.js';
 import { Contracts } from '~/Contracts';
 
@@ -28,11 +29,11 @@ export const deployKyberEnvironment = async (
 
   // return address;
 
-  const opts = {
-    from: deployer,
-    gas: 8000000,
-    gasPrice: 10,
-  };
+  // const opts = {
+  //   from: deployer,
+  //   gas: 8000000,
+  //   gasPrice: 10,
+  // };
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();

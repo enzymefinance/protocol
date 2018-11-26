@@ -8,7 +8,6 @@ import {
   createQuantity,
 } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import * as web3Utils from 'web3-utils';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 export interface TakeOrderFromAccountOasisDexArgs {
