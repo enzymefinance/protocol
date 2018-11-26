@@ -11,7 +11,7 @@ import {
   requestInvestment,
   executeRequest,
 } from '~/contracts/fund/participation';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { randomString } from '~/utils/helpers/randomString';
 import { create0xOrder, sign0xOrder } from '~/contracts/exchanges';
 import { take0xOrder } from './take0xOrder';
@@ -40,7 +40,7 @@ beforeAll(async () => {
   } = deployment;
   const [quoteToken, mlnToken] = tokens;
   const defaultTokens = [quoteToken, mlnToken];
-  // shared.tokens = tokens;
+  shared.quoteToken = quoteToken;
 
   await createComponents(fundFactory, {
     defaultTokens,
@@ -83,9 +83,13 @@ beforeAll(async () => {
 });
 
 test('Take off-chain order from fund', async () => {
+  // console.log(shared.signedOrder);
+  const takerQuantity = createQuantity(shared.quoteToken, 0.02);
+
   const order = await take0xOrder(shared.settings.tradingAddress, {
     signedOrder: shared.signedOrder,
+    takerQuantity,
   });
 
-  console.log(order);
+  expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
 });

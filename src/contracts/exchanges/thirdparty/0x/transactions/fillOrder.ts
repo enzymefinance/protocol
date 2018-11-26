@@ -8,6 +8,12 @@ import {
 import { SignedOrder } from '@0x/types';
 
 import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
+import { TokenInterface } from '@melonproject/token-math/token';
+
+import {
   transactionFactory,
   EnhancedExecute,
   PrepareArgsFunction,
@@ -16,10 +22,6 @@ import {
   PostProcessFunction,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
 import { getOrderInfo } from '../calls/getOrderInfo';
 import { ensure } from '~/utils/guards';
 import { isValidSignature } from '../calls/isValidSignature';
@@ -98,18 +100,17 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
   ];
 };
 
-const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
-  receipt,
-  params,
-  contractAddress,
+const parse0xFillReceipt = async (
+  { fillValues, feeToken }: { fillValues: any; feeToken: TokenInterface },
+  environment,
 ) => {
-  const fillValues = receipt.events.Fill.returnValues;
-  const feeToken = await getFeeToken(contractAddress);
   const makerToken = await getToken(
     assetDataUtils.decodeERC20AssetData(fillValues.makerAssetData).tokenAddress,
+    environment,
   );
   const takerToken = await getToken(
     assetDataUtils.decodeERC20AssetData(fillValues.takerAssetData).tokenAddress,
+    environment,
   );
 
   const result = {
@@ -128,6 +129,22 @@ const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
   return result;
 };
 
+const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
+  receipt,
+  params,
+  contractAddress,
+  environment,
+) => {
+  const fillValues = receipt.events.Fill.returnValues;
+  const feeToken = await getFeeToken(contractAddress, undefined, environment);
+
+  const result = await parse0xFillReceipt(
+    { fillValues, feeToken },
+    environment,
+  );
+  return result;
+};
+
 const fillOrder: EnhancedExecute<
   FillOrderArgs,
   FillOrderResult
@@ -139,4 +156,4 @@ const fillOrder: EnhancedExecute<
   postProcess,
 );
 
-export { fillOrder };
+export { fillOrder, parse0xFillReceipt };

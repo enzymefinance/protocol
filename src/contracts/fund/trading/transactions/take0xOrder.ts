@@ -5,8 +5,14 @@ import {
   transactionFactory,
   PrepareArgsFunction,
   getDeployment,
+  PostProcessFunction,
 } from '~/utils/solidity';
-import { FillOrderArgs } from '~/contracts/exchanges';
+import {
+  FillOrderArgs,
+  parse0xFillReceipt,
+  FillOrderResult,
+  getFeeToken,
+} from '~/contracts/exchanges';
 import { Contracts } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token';
@@ -74,11 +80,35 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
   return args;
 };
 
+const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
+  receipt,
+  _,
+  __,
+  environment,
+) => {
+  const deployment = await getDeployment();
+
+  const zeroExAddress = deployment.exchangeConfigs.find(
+    o => o.name === 'ZeroEx',
+  ).exchangeAddress;
+
+  const feeToken = await getFeeToken(zeroExAddress, undefined, environment);
+  const fillValues = receipt.events.Fill.returnValues;
+
+  const result = await parse0xFillReceipt(
+    { fillValues, feeToken },
+    environment,
+  );
+
+  return result;
+};
+
 const take0xOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
   undefined,
   prepareArgs,
+  postProcess,
 );
 
 export { take0xOrder };
