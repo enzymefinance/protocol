@@ -6,6 +6,7 @@ import {
   PrepareArgsFunction,
   getDeployment,
   PostProcessFunction,
+  GuardFunction,
 } from '~/utils/solidity';
 import {
   FillOrderArgs,
@@ -19,6 +20,15 @@ import { getToken } from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const guard: GuardFunction<FillOrderArgs> = async () => {
+  /* TODO:
+  - [ ] Check if takerQuantity is the token in signedOrder
+  - [ ] Check policy (policyManager.methods.preValidate)
+
+  See: makeOasisDexOrder.ts
+  */
+};
 
 const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
   { signedOrder, takerQuantity: providedTakerQuantity },
