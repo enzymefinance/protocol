@@ -36,9 +36,7 @@ it('balanceOf', async () => {
   expect(isEqual(balance, expected)).toBe(true);
 });
 
-// TODO: We are currently using http:// because the ws:// endpoint
-// causes Jest to fail, hence let's disable this test for now.
-xit('balanceOf.observable', async () => {
+it('balanceOf.observable', async () => {
   let counter = 0;
   const observable = balanceOf.observable(shared.address, {
     address: shared.accounts[1],

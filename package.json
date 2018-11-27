@@ -40,7 +40,7 @@
     "postbuild": "yarn bundle",
     "bundle": "rollup -c",
     "dev": "tsc -w -p tsconfig.json & rollup -c -w",
-    "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest",
+    "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit",
     "format": "prettier --write src/**/*.ts",
     "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
     "lint:eslint": "eslint .",
