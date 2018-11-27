@@ -5,7 +5,7 @@ const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 
-const { initTestEnvironment } = require('../build/utils/environment/initTestEnvironment');
+const { initTestEnvironment } = require('../lib/utils/environment/initTestEnvironment');
 
 program
   .version(pkg.version, '-v, --version')
@@ -31,7 +31,7 @@ program
   .command('deploy')
   .description('Deploy the Melon smart contracts')
   .action(async (dir, cmd) => {
-    const { deploySystem } = require('../build/utils/deploySystem');
+    const { deploySystem } = require('../lib/utils/deploySystem');
     const environment = await initTestEnvironment();
     const thisDeployment = await deploySystem();
     const deploymentsPath = path.join(

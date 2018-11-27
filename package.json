@@ -2,9 +2,9 @@
   "name": "@melonproject/protocol",
   "version": "0.9.0-alpha.19",
   "description": "Technology Regulated and Operated Investment Funds",
-  "main": "build/index.umd.js",
-  "module": "build/index.js",
-  "typings": "build/index.d.ts",
+  "main": "lib/index.umd.js",
+  "module": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "author": "Melonport AG <team@melonport.com>",
   "license": "GPL-3.0",
   "homepage": "https://github.com/melonproject/protocol#readme",
@@ -24,7 +24,7 @@
   ],
   "files": [
     "bin/",
-    "build/",
+    "lib/",
     "out/"
   ],
   "bin": {
@@ -35,12 +35,13 @@
     "compile": "node bin/melon.js compile",
     "deploy": "JSON_RPC_ENDPOINT=http://localhost:8545 node bin/melon.js deploy",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
-    "prebuild": "rimraf build",
-    "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./build > /dev/null",
+    "prebuild": "rimraf lib",
+    "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "postbuild": "yarn bundle",
     "bundle": "rollup -c",
     "dev": "tsc -w -p tsconfig.json & rollup -c -w",
     "test": "JSON_RPC_ENDPOINT=http://localhost:8545 yarn jest",
+    "oyente": "oyente -s src/Fund.sol",
     "format": "prettier --write src/**/*.ts",
     "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
     "lint:eslint": "eslint .",
@@ -48,12 +49,10 @@
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir .",
     "lint": "yarn lint:tslint && yarn lint:prettier",
-    "clean": "rimraf build && rimraf out"
+    "clean": "rimraf lib && rimraf out"
   },
   "devDependencies": {
     "0x.js": "1.0.7",
-    "@babel/core": "^7.1.6",
-    "@babel/preset-env": "^7.1.6",
     "@parity/api": "^2.1.20",
     "@types/jest": "^23.3.9",
     "@types/node": "^10.12.10",

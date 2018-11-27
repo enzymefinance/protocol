@@ -16,7 +16,7 @@
     "noUnusedLocals": true,
     "skipLibCheck": true,
     "rootDir": "src",
-    "outDir": "build",
+    "outDir": "lib",
     "baseUrl": ".",
     "paths": {
       "~/*": ["src/*"]

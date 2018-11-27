@@ -1,10 +1,7 @@
 node_modules/
-npm-debug.log
+*.log
 *.orig
 *.swp
-build
-
-yarn-error.log
 
 .env
 
@@ -16,12 +13,8 @@ scripts/
 
 # ignore built code
 out/
-utils/build
 build/
-
-# ignore old development addressBook
-addressBook.json
-out/deployments.json
+lib/
 
 # ignore generated coverage data
 coverage.json

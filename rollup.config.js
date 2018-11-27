@@ -11,7 +11,7 @@ function onwarn(message) {
 
 export default [
 	{
-		input: 'build/index.js',
+		input: 'lib/index.js',
 		onwarn,
 		output: [
 			{
