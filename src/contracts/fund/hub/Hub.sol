@@ -93,13 +93,16 @@ contract Hub is DSGuard {
         permit(settings.trading, settings.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(settings.participation, settings.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(settings.participation, settings.shares, bytes4(keccak256('destroyFor(address,uint256)')));
-        permit(settings.participation, settings.feeManager, bytes4(keccak256('')));
         permit(settings.feeManager, settings.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(settings.participation, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(settings.participation, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(settings.trading, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
+        permit(manager, settings.feeManager, bytes4(keccak256('register(address)')));
+        permit(manager, settings.feeManager, bytes4(keccak256('batchRegister(address[]))')));
+        permit(manager, settings.policyManager, bytes4(keccak256('register(address)')));
+        permit(manager, settings.policyManager, bytes4(keccak256('batchRegsiter(address[]))')));
         permit(manager, settings.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, settings.participation, bytes4(keccak256('disableInvestment(address[])')));
         permissionsSet = true;

@@ -26,18 +26,13 @@ contract Spoke is DSAuth {
     Routes public routes;
     bool public initialized;
 
-    modifier onlyManager() {
-        require(msg.sender == hub.manager(), "Only manager can call this");
-        _;
-    }
-
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
         // TODO: remove "owner" authority?
     }
 
-    function initialize(address[12] _spokes) {  //TODO: onlyInitialized modifier?
+    function initialize(address[12] _spokes) {  // TODO: onlyInitialized modifier?
         require(!initialized, "Already initialized");
         routes = Routes(
             _spokes[0],

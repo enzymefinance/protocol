@@ -17,14 +17,14 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function register(address feeAddress) public {
+    function register(address feeAddress) public auth {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
         Fee(feeAddress).updateState();  // initialize state
     }
 
-    function batchRegister(address[] feeAddresses) public {
+    function batchRegister(address[] feeAddresses) public auth {
         for (uint i = 0; i < feeAddresses.length; i++) {
             register(feeAddresses[i]);
         }
