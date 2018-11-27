@@ -1,7 +1,7 @@
 import { constructEnvironment } from './constructEnvironment';
 import { setGlobalEnvironment } from './globalEnvironment';
 
-const debug = require('~/utils/getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils:environment');
 
 const getGanache = () => {
   debug('Setting Ganache up');

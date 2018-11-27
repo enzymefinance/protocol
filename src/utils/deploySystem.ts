@@ -19,12 +19,11 @@ import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactio
 import { deployFundFactory } from '~/contracts/factory/transactions/deployFundFactory';
 import { deployMockVersion } from '~/contracts/version/transactions/deployMockVersion';
 import { setFundFactory } from '~/contracts/version/transactions/setFundFactory';
+import { setSessionDeployment } from './sessionDeployments';
 // tslint:disable-next-line:max-line-length
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 
-export const sessionDeployments = {};
-
-const debug = require('./getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils');
 
 /**
  * Deploys all contracts and checks their health
@@ -127,7 +126,7 @@ export const deploySystem = async () => {
 
   debug('Deployed:', deploymentId, addresses);
 
-  sessionDeployments[deploymentId] = addresses;
+  setSessionDeployment(deploymentId, addresses);
 
   return addresses;
 };

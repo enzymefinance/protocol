@@ -7,7 +7,7 @@ import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployM
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 
-const debug = require('./getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils');
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.

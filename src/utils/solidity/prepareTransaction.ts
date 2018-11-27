@@ -18,7 +18,7 @@ export type OptionsCallback = (environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
 
-const debug = require('~/utils/getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils:solidity');
 
 export interface PreparedTransaction {
   encoded: string;

@@ -1,11 +1,10 @@
 import * as Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
-import getDebug from '~/utils/getDebug';
 import { tracks } from '../constants/tracks';
 import { Environment, Options } from './Environment';
 
-const debug = getDebug(__filename);
+const debug = require('debug')('melon:protocol:utils:environment');
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -13,8 +12,8 @@ export const defaultOptions: Options = {
 };
 
 const checkIpc = endpoint => {
-  const fs =
-    typeof module !== 'undefined' && module.exports && require('f' + 's');
+  const name = 'fs';
+  const fs = typeof module !== 'undefined' && module.exports && require(name);
 
   try {
     fs.accessSync(endpoint, fs.constants.W_OK);
