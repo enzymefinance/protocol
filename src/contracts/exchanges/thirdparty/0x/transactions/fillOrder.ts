@@ -1,10 +1,5 @@
 import * as R from 'ramda';
-import {
-  OrderStatus,
-  signatureUtils,
-  orderHashUtils,
-  assetDataUtils,
-} from '0x.js';
+import { OrderStatus, assetDataUtils } from '0x.js';
 import { SignedOrder } from '@0x/types';
 
 import {
@@ -53,18 +48,15 @@ const guard: GuardFunction<FillOrderArgs> = async (
     `Order is not fillable. Got status: ${OrderStatus[orderInfo.status]}`,
   );
 
-  const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
-  const offChainCheck = await signatureUtils.isValidSignatureAsync(
-    environment.eth.currentProvider,
-    orderHash,
-    signedOrder.signature,
-    signedOrder.makerAddress,
+  const validSignature = await isValidSignature(
+    contractAddress,
+    {
+      signedOrder,
+    },
+    environment,
   );
 
-  const validSignature = await isValidSignature(contractAddress, {
-    signedOrder,
-  });
-  ensure(validSignature && offChainCheck, 'Signature invalid');
+  ensure(validSignature, 'Signature invalid');
 
   const { tokenAddress } = assetDataUtils.decodeERC20AssetData(
     signedOrder.takerAssetData,

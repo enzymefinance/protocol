@@ -8,13 +8,6 @@ import {
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 
-/*
- function preSign(
-        bytes32 hash,
-        address signerAddress,
-        bytes signature
-    )
-*/
 interface PreSignArgs {
   signedOrder: SignedOrder;
   signerAddress?: Address;

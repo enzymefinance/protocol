@@ -6,6 +6,7 @@ import {
   transactionFactory,
   getDeployment,
   GuardFunction,
+  PostProcessFunction,
 } from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
@@ -97,11 +98,20 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
   return args;
 };
 
+const postProcess: PostProcessFunction<
+  Make0xOrderArgs,
+  boolean
+> = async receipt => {
+  // console.log(JSON.stringify(receipt, null, 2));
+  return true;
+};
+
 const make0xOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
   guard,
   prepareArgs,
+  postProcess,
 );
 
 export { make0xOrder };

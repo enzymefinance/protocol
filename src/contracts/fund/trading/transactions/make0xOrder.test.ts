@@ -5,7 +5,7 @@ import { initTestEnvironment } from '~/utils/environment';
 import { deploySystem } from '~/utils';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { createOrder, signOrder } from '~/contracts/exchanges';
+import { createOrder, signOrder, fillOrder } from '~/contracts/exchanges';
 import { make0xOrder } from './make0xOrder';
 
 const shared: any = {};
@@ -29,7 +29,7 @@ beforeAll(async () => {
   shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
 });
 
-test('Make 0x order from fund', async () => {
+test('Make 0x order from fund and take it from account', async () => {
   const makerQuantity = createQuantity(shared.weth, 0.05);
   const takerQuantity = createQuantity(shared.mln, 1);
 
@@ -51,5 +51,15 @@ test('Make 0x order from fund', async () => {
     shared.environment,
   );
 
-  console.log(result);
+  expect(result).toBe(true);
+
+  const filled = await fillOrder(
+    shared.zeroExAddress,
+    {
+      signedOrder,
+    },
+    shared.environment,
+  );
+
+  expect(result).toBeTruthy();
 });
