@@ -26,6 +26,11 @@ contract Spoke is DSAuth {
     Routes public routes;
     bool public initialized;
 
+    modifier onlyManager() {
+        require(msg.sender == hub.manager(), "Only manager can call this");
+        _;
+    }
+
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
