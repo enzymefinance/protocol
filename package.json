@@ -33,7 +33,7 @@
   "scripts": {
     "precompile": "rimraf out",
     "compile": "node bin/melon.js compile",
-    "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
+    "deploy": "JSON_RPC_ENDPOINT=http://localhost:8545 node bin/melon.js deploy",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
     "prebuild": "rimraf build",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./build > /dev/null",
