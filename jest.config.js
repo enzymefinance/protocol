@@ -1,4 +1,5 @@
 module.exports = {
+  roots: ['<rootDir>/src'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.ts$': 'ts-jest',
@@ -8,5 +9,10 @@ module.exports = {
   setupTestFrameworkScriptFile: './jest.setup.js',
   moduleNameMapper: {
     '~/(.*)': '<rootDir>/src/$1',
+  },
+  globals: {
+    "ts-jest": {
+      diagnostics: false
+    }
   }
 };
