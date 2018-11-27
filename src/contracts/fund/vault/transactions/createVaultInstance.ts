@@ -1,4 +1,4 @@
-import { transactionFactory } from '~/utils/solidity';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { Address } from '~/utils/types';
 import { Contracts } from '~/Contracts';
 

@@ -1,5 +1,4 @@
-import { ensure } from '~/utils/guards';
-
+import { ensure } from '~/utils/guards/ensure';
 import { Environment } from './Environment';
 
 export const hasAccountAddress = (environment: Environment): boolean =>

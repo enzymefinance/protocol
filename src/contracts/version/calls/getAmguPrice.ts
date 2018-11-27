@@ -1,7 +1,7 @@
-import { callFactoryWithoutParams } from '~/utils/solidity';
+import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getFundFactory } from './getFundFactory';
-import { getAmguToken } from '~/contracts/engine';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 const postProcess = async (result, prepared, environment) => {

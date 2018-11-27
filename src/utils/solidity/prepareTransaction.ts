@@ -1,14 +1,11 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-
-import {
-  getGlobalEnvironment,
-  Environment,
-  isEnvironment,
-  defaultOptions,
-} from '~/utils/environment';
-
+import { Environment } from '~/utils/environment/Environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { isEnvironment } from '~/utils/environment/isEnvironment';
+import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
+
 export interface Options {
   amguPayable?: boolean;
   from?: string;

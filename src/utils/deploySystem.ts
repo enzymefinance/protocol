@@ -1,8 +1,7 @@
-import { getGlobalEnvironment } from '~/utils/environment';
-
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { getToken } from '~/contracts/dependencies/token';
-import { addTokenPairWhitelist } from '~/contracts/exchanges';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
 import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deploy';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
@@ -19,7 +18,7 @@ import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVa
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deployFundFactory } from '~/contracts/factory/transactions/deployFundFactory';
 import { deployMockVersion } from '~/contracts/version/transactions/deployMockVersion';
-import { setFundFactory } from '~/contracts/version';
+import { setFundFactory } from '~/contracts/version/transactions/setFundFactory';
 // tslint:disable-next-line:max-line-length
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 

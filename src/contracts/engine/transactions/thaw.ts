@@ -1,6 +1,7 @@
 import { Address } from '~/utils/types';
-import { getContract, transactionFactory } from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import { getContract } from '~/utils/solidity/getContract';
+import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
 import {
   BigInteger,

@@ -1,11 +1,16 @@
-import { transactionFactory, PrepareArgsFunction } from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
+import {
+  transactionFactory,
+  PrepareArgsFunction,
+} from '~/utils/solidity/transactionFactory';
+import { ensure } from '~/utils/guards/ensure';
 import { getRequest } from '../calls/getRequest';
 import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
-import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
-import { Address } from '~/utils';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { Address } from '~/utils/types';
 
 export interface ExecuteRequestForArgs {
   who: Address;

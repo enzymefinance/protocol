@@ -1,14 +1,14 @@
 import {
   PrepareArgsFunction,
   withTransactionDecorator,
-  getDeployment,
   GuardFunction,
   PostProcessFunction,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
+import { getDeployment } from '~/utils/solidity/getDeployment';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
 

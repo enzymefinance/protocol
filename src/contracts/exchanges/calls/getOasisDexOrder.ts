@@ -1,7 +1,7 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { callFactory } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import * as web3Utils from 'web3-utils';
 
 const prepareArgs = ({ id }) => [id];

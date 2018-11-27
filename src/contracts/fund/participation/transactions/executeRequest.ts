@@ -1,5 +1,5 @@
 import { executeRequestFor } from './executeRequestFor';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Address } from '@melonproject/token-math/address';
 
 const prepare = async (

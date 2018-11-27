@@ -2,7 +2,7 @@ import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';

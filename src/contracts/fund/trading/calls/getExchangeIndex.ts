@@ -1,4 +1,4 @@
-import { getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { ensure } from '~/utils/guards/ensure';
 

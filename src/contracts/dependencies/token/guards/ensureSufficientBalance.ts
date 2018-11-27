@@ -5,10 +5,10 @@ import {
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 
-import { balanceOf } from '..';
-import { ensure } from '~/utils/guards';
-import { Address } from '~/utils';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { balanceOf } from '../calls/balanceOf';
+import { ensure } from '~/utils/guards/ensure';
+import { Address } from '~/utils/types';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 const ensureSufficientBalance = async (
   minBalance: QuantityInterface,

@@ -1,7 +1,7 @@
 import { Address } from '@melonproject/token-math/address';
-import { isShutDown } from '..';
-import { ensure } from '~/utils/guards';
-import { Environment } from '~/utils/environment';
+import { isShutDown } from '../calls/isShutDown';
+import { ensure } from '~/utils/guards/ensure';
+import { Environment } from '~/utils/environment/Environment';
 
 const ensureIsNotShutDown = async (
   address: Address,

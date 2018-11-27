@@ -2,11 +2,12 @@ import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getHub, ensureIsNotShutDown } from '../../hub';
-import { Address } from '~/utils';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { Address } from '~/utils/types';
 
 export interface CallOnExchangeArgs {
   exchangeIndex: number;

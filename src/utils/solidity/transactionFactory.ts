@@ -4,18 +4,17 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
-
-import { Environment, getGlobalEnvironment } from '../environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
+import { getContract } from '~/utils/solidity/getContract';
 import {
-  getContract,
   prepareTransaction,
   OptionsOrCallback,
   Options,
-} from '../solidity';
-import { Address } from '../types';
-import { ensure } from '../guards';
+} from '~/utils/solidity/prepareTransaction';
+import { Address } from '~/utils/types';
+import { ensure } from '~/utils/guards/ensure';
 
 // TODO: Fix the types here once the transaction factory decorators are
 // properly implemented.

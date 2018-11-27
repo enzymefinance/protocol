@@ -1,6 +1,5 @@
 import { Environment } from '~/utils/environment/Environment';
-
-import { getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity/getContract';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 import BigNumber from 'bignumber.js';
 import { Contracts } from '~/Contracts';

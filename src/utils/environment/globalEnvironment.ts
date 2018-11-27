@@ -1,4 +1,4 @@
-import { Environment } from '.';
+import { Environment } from './Environment';
 
 let globalEnvironment: Environment;
 

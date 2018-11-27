@@ -1,5 +1,5 @@
-import { ensure } from '~/utils/guards';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { ensure } from '~/utils/guards/ensure';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 const ensureFundNotShutdown = async (
   tradingContractAddress,

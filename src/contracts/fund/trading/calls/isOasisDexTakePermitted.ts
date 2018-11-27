@@ -1,8 +1,10 @@
-import { getGlobalEnvironment } from '~/utils/environment';
-import { getContract, getDeployment } from '~/utils/solidity';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getDeployment } from '~/utils/solidity/getDeployment';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts, requireMap } from '~/Contracts';
-import { getHub, getSettings } from '~/contracts/fund/hub';
-import { getFunctionSignature } from '~/utils/abi';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
 
 const isOasisDexTakePermitted = async (
   tradingContractAddress,

@@ -1,4 +1,4 @@
-import { getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import * as web3Utils from 'web3-utils';

@@ -1,7 +1,7 @@
 import { Address } from '@melonproject/token-math/address';
-import { ensure } from '~/utils/guards';
-import { Environment } from '~/utils/environment';
-import { getContract } from '~/utils/solidity';
+import { ensure } from '~/utils/guards/ensure';
+import { Environment } from '~/utils/environment/Environment';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 const ensureIsManager = async (address: Address, environment: Environment) => {

@@ -1,4 +1,4 @@
-import { ensure } from '~/utils/guards';
+import { ensure } from '~/utils/guards/ensure';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { isOasisDexTakePermitted } from '../calls/isOasisDexTakePermitted';
 

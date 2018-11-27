@@ -3,7 +3,8 @@ import * as path from 'path';
 import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
 import { solidityCompileTarget } from '~/settings';
-import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 
 const debug = require('~/utils/getDebug').default(__filename);
 type ConstructorArg = number | string | boolean;

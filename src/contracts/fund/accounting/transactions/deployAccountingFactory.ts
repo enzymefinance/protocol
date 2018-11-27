@@ -1,5 +1,4 @@
-import { Environment } from '~/utils/environment';
-
+import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deployAccountingFactory = async (environment?: Environment) => {
