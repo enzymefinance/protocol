@@ -6,11 +6,18 @@ import { orderHashUtils } from '0x.js';
 
 interface IsValidSignatureArgs {
   signedOrder: SignedOrder;
+  signerAddress?: Address;
 }
 
-const prepareArgs = ({ signedOrder }: IsValidSignatureArgs) => {
+const prepareArgs = (
+  { signedOrder, signerAddress: providedSignerAddress }: IsValidSignatureArgs,
+  _,
+  environment,
+) => {
+  const signerAddress = providedSignerAddress || environment.wallet.address;
   const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
-  return [orderHash, signedOrder.makerAddress, signedOrder.signature];
+  const args = [orderHash, signerAddress.toLowerCase(), signedOrder.signature];
+  return args;
 };
 
 const postProcess = async result => {

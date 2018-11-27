@@ -2,6 +2,7 @@ import * as web3Utils from 'web3-utils';
 import {
   signatureUtils,
   assetDataUtils,
+  orderHashUtils,
   SignedOrder,
   SignatureType,
 } from '0x.js';
@@ -10,16 +11,37 @@ import {
   PrepareArgsFunction,
   transactionFactory,
   getDeployment,
+  GuardFunction,
 } from '~/utils/solidity';
-import { CreateOrderArgs, createOrder } from '~/contracts/exchanges';
+import {
+  CreateOrderArgs,
+  createOrder,
+  isValidSignature,
+} from '~/contracts/exchanges';
 import { Contracts } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { NULL_ADDRESS } from './take0xOrder';
+import { ensure } from '~/utils/guards';
 
 // The order needs to be signed by the manager
 interface Make0xOrderArgs {
   signedOrder: SignedOrder;
 }
+
+const guard: GuardFunction<Make0xOrderArgs> = async (
+  { signedOrder },
+  contractAddress,
+  environment,
+) => {
+  const deployment = await getDeployment(environment);
+
+  const zeroExAddress = deployment.exchangeConfigs.find(
+    o => o.name === 'ZeroEx',
+  ).exchangeAddress;
+
+  const validSignature = await isValidSignature(zeroExAddress, { signedOrder });
+  ensure(validSignature, 'Signature invalid');
+};
 
 const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
   { signedOrder },
@@ -77,6 +99,15 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     // ),
   ];
 
+  // console.log(environment.wallet.address.toLowerCase(), '\n\n\n');
+
+  // const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
+  // const isValid = await signatureUtils.isValidPresignedSignatureAsync(
+  //   environment.eth.currentProvider,
+  //   orderHash,
+  //   contractAddress.toLowerCase(), // environment.wallet.address.toLowerCase(),
+  // );
+
   console.log(
     signedOrder.signature,
     `${signedOrder.signature.slice(0, -1)}${SignatureType.PreSigned}`,
@@ -90,7 +121,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
 const make0xOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
-  undefined,
+  guard,
   prepareArgs,
 );
 
