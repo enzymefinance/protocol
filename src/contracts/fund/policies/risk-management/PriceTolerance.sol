@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
-import "../hub/Hub.sol";
-import "../policies/Policy.sol";
-import "../../exchanges/MatchingMarketAdapter.sol";
-import "../../prices/CanonicalPriceFeed.sol";
-import "../../dependencies/math.sol";
+import "../../hub/Hub.sol";
+import "../../policies/Policy.sol";
+import "../../../exchanges/MatchingMarketAdapter.sol";
+import "../../../prices/CanonicalPriceFeed.sol";
+import "../../../dependencies/math.sol";
 
 contract PriceTolerance is DSMath, Policy {
     uint tolerance;
@@ -88,7 +88,5 @@ contract PriceTolerance is DSMath, Policy {
         revert("Signature was neither MakeOrder nor TakeOrder");
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }

@@ -4,8 +4,11 @@ import * as web3EthAbi from 'web3-eth-abi';
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',
   AmguConsumer = 'engine/AmguConsumer',
+  AssetBlacklist = 'fund/policies/risk-management/AssetBlacklist',
+  AssetWhitelist = 'fund/policies/risk-management/AssetWhitelist',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
+  FalsePolicy = 'fund/policies/FalsePolicy',
   FeeManager = 'fund/fees/FeeManager',
   FundFactory = 'factory/FundFactory',
   GenericExchange = 'exchanges/GenericExchange',
@@ -19,6 +22,9 @@ export enum Contracts {
   KyberReserve = 'exchanges/KyberReserve',
   ConversionRates = 'exchanges/ConversionRates',
   KyberWhiteList = 'exchanges/KyberWhiteList',
+  MaxPositions = 'fund/policies/risk-management/MaxPositions',
+  MaxConcentration = 'fund/policies/risk-management/MaxConcentration',
+  MockAccounting = 'fund/accounting/MockAccounting',
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockFee = 'fund/fees/MockFee',
   MockHub = 'fund/hub/MockHub',
@@ -33,6 +39,7 @@ export enum Contracts {
   StandardToken = 'dependencies/token/StandardToken',
   TestingPriceFeed = 'prices/TestingPriceFeed',
   Trading = 'fund/trading/Trading',
+  TruePolicy = 'fund/policies/TruePolicy',
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
   Version = 'version/VersionInterface',
@@ -46,10 +53,16 @@ export const requireMap = {
     require('../out/fund/accounting/Accounting.abi.json'),
   [Contracts.AmguConsumer]:
     require('../out/engine/AmguConsumer.abi.json'),
+  [Contracts.AssetBlacklist]:
+    require('../out/fund/policies/risk-management/AssetBlacklist.abi.json'),
+  [Contracts.AssetWhitelist]:
+    require('../out/fund/policies/risk-management/AssetWhitelist.abi.json'),
   [Contracts.BurnableToken]:
     require('../out/dependencies/token/BurnableToken.abi.json'),
   [Contracts.Engine]:
     require('../out/engine/Engine.abi.json'),
+  [Contracts.FalsePolicy]:
+    require('../out/fund/policies/FalsePolicy.abi.json'),
   [Contracts.FeeManager]:
     require('../out/fund/fees/FeeManager.abi.json'),
   [Contracts.FundFactory]:
@@ -76,6 +89,12 @@ export const requireMap = {
     require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
   [Contracts.KyberWhiteList]:
     require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
+  [Contracts.MaxPositions]:
+    require('../out/fund/policies/risk-management/MaxPositions.abi.json'),
+  [Contracts.MaxConcentration]:
+    require('../out/fund/policies/risk-management/MaxConcentration.abi.json'),
+  [Contracts.MockAccounting]:
+    require('../out/fund/accounting/MockAccounting.abi.json'),
   [Contracts.MockFeeManager]:
     require('../out/fund/fees/MockFeeManager.abi.json'),
   [Contracts.MockFee]:
@@ -108,6 +127,8 @@ export const requireMap = {
     require('../out/prices/TestingPriceFeed.abi.json'),
   [Contracts.Trading]:
     require('../out/fund/trading/Trading.abi.json'),
+  [Contracts.TruePolicy]:
+    require('../out/fund/policies/TruePolicy.abi.json'),
   [Contracts.Vault]:
     require('../out/fund/vault/Vault.abi.json'),
   [Contracts.VaultFactory]:

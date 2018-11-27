@@ -1,10 +1,9 @@
 pragma solidity ^0.4.21;
 
+import "../../../dependencies/auth.sol";
+import "../Policy.sol";
 
-import "../policies/Policy.sol";
-import "../../dependencies/auth.sol";
-
-// TODO: permissioning details when integrated with fund (which entities can change thigns)
+// TODO: permissioning details when integrated with fund (which entities can change things)
 // TODO: template rule; remove this one if not useful
 contract Blacklist is Policy, DSAuth {
     mapping (address => bool) blacklisted;
@@ -37,9 +36,6 @@ contract Blacklist is Policy, DSAuth {
         return !blacklisted[addresses[0]];
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }
-
 

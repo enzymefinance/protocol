@@ -1,17 +1,13 @@
 import { Environment } from '~/utils/environment/Environment';
-import { Address } from '~/utils/types';
-
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
-export const deployWhitelist = async (
-  preapproved: [Address],
+export const deploy = async (
+  tolerancePercent: number,
   environment?: Environment,
 ) => {
-  const preapprovedStrings = preapproved.map(p => p.toString());
-
   const address = await deployContract(
-    'fund/compliance/Whitelist.sol',
-    [preapprovedStrings],
+    'fund/policies/risk-management/PriceTolerance.sol',
+    [tolerancePercent],
     environment,
   );
 
