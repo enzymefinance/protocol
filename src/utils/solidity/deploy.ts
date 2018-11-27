@@ -6,7 +6,8 @@ import { solidityCompileTarget } from '~/settings';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 
-const debug = require('~/utils/getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils:solidity');
+
 type ConstructorArg = number | string | boolean;
 type ConstructorArgs = ConstructorArg | ConstructorArg[];
 

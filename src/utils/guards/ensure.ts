@@ -1,8 +1,6 @@
-import getDebug from '~/utils/getDebug';
-
 import { EnsureError } from './EnsureError';
 
-const debug = getDebug(__filename);
+const debug = require('debug')('melon:protocol:utils');
 
 /**
  * Similar to asset but throws on runtime if `condition` isn't met.

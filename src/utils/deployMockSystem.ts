@@ -7,7 +7,7 @@ import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployM
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
-const debug = require('./getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils');
 
 const deployAndGet = async (contract: Contracts, args = []) =>
   await getContract(contract, await deployContract(`${contract}.sol`, args));
