@@ -13,7 +13,7 @@ import {
   generatePseudoRandomSalt,
   signatureUtils,
 } from '0x.js';
-import { Order, SignedOrder } from '@0x/types';
+import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '@melonproject/token-math/address';
@@ -101,9 +101,10 @@ const signOrder = async (
   order: Order,
   environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
+  // const orderHash = orderHashUtils.getOrderHashHex(order);
   // const web3signature = await environment.eth.sign(
   //   orderHash,
-  //   order.makerAddress,
+  //   environment.wallet.address.toString(),
   // );
 
   const signedOrder = await signatureUtils.ecSignOrderAsync(
@@ -112,7 +113,18 @@ const signOrder = async (
     environment.wallet.address.toString(),
   );
 
-  return signedOrder;
+  const signatureTyped =
+    signedOrder.makerAddress.toLowerCase() ===
+    environment.wallet.address.toLowerCase()
+      ? signedOrder
+      : {
+          ...signedOrder,
+          signature: `${signedOrder.signature.slice(0, -1)}${
+            SignatureType.PreSigned
+          }`,
+        };
+
+  return signatureTyped;
 };
 
 export { createOrder, signOrder, approveOrder };

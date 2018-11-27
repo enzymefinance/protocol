@@ -7,7 +7,6 @@ import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { createOrder, signOrder } from '~/contracts/exchanges';
 import { make0xOrder } from './make0xOrder';
-import { preSign } from '~/contracts/exchanges/thirdparty/0x/transactions/preSign';
 
 const shared: any = {};
 
@@ -31,8 +30,8 @@ beforeAll(async () => {
 });
 
 test('Make 0x order from fund', async () => {
-  const makerQuantity = createQuantity(shared.mln, 1);
-  const takerQuantity = createQuantity(shared.weth, 0.05);
+  const makerQuantity = createQuantity(shared.weth, 0.05);
+  const takerQuantity = createQuantity(shared.mln, 1);
 
   const unsigned0xOrder = await createOrder(
     shared.zeroExAddress,
@@ -45,8 +44,6 @@ test('Make 0x order from fund', async () => {
   );
 
   const signedOrder = await signOrder(unsigned0xOrder, shared.environment);
-
-  await preSign(shared.zeroExAddress, { signedOrder });
 
   const result = await make0xOrder(
     shared.settings.tradingAddress,

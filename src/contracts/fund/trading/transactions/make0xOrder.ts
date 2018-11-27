@@ -1,11 +1,5 @@
 import * as web3Utils from 'web3-utils';
-import {
-  signatureUtils,
-  assetDataUtils,
-  orderHashUtils,
-  SignedOrder,
-  SignatureType,
-} from '0x.js';
+import { assetDataUtils, SignedOrder } from '0x.js';
 
 import {
   PrepareArgsFunction,
@@ -13,15 +7,16 @@ import {
   getDeployment,
   GuardFunction,
 } from '~/utils/solidity';
-import {
-  CreateOrderArgs,
-  createOrder,
-  isValidSignature,
-} from '~/contracts/exchanges';
 import { Contracts } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { NULL_ADDRESS } from './take0xOrder';
 import { ensure } from '~/utils/guards';
+import { getHub, getSettings } from '../../hub';
+import {
+  ensureSufficientBalance,
+  getToken,
+} from '~/contracts/dependencies/token';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
 // The order needs to be signed by the manager
 interface Make0xOrderArgs {
@@ -33,14 +28,19 @@ const guard: GuardFunction<Make0xOrderArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const deployment = await getDeployment(environment);
+  const hubAddress = await getHub(contractAddress, environment);
+  const { vaultAddress } = await getSettings(hubAddress);
+  const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
+    signedOrder.makerAssetData,
+  ).tokenAddress;
+  const makerToken = await getToken(makerTokenAddress);
 
-  const zeroExAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'ZeroEx',
-  ).exchangeAddress;
+  const makerQuantity = createQuantity(
+    makerToken,
+    signedOrder.makerAssetAmount.toString(),
+  );
 
-  const validSignature = await isValidSignature(zeroExAddress, { signedOrder });
-  ensure(validSignature, 'Signature invalid');
+  await ensureSufficientBalance(makerQuantity, vaultAddress, environment);
 };
 
 const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
@@ -91,29 +91,8 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     web3Utils.padLeft('0x0', 64),
     signedOrder.makerAssetData,
     signedOrder.takerAssetData,
-    `${signedOrder.signature.slice(0, -1)}${SignatureType.PreSigned}`,
-
-    // signatureUtils.convertToSignatureWithType(
-    //   signedOrder.signature.substring(0, signedOrder.signature.length - 1),
-    //   SignatureType.PreSigned,
-    // ),
+    `${signedOrder.signature}`,
   ];
-
-  // console.log(environment.wallet.address.toLowerCase(), '\n\n\n');
-
-  // const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
-  // const isValid = await signatureUtils.isValidPresignedSignatureAsync(
-  //   environment.eth.currentProvider,
-  //   orderHash,
-  //   contractAddress.toLowerCase(), // environment.wallet.address.toLowerCase(),
-  // );
-
-  console.log(
-    signedOrder.signature,
-    `${signedOrder.signature.slice(0, -1)}${SignatureType.PreSigned}`,
-    SignatureType.PreSigned,
-    args,
-  );
 
   return args;
 };
