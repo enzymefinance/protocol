@@ -1,7 +1,8 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { deploy, getContract } from '~/utils/solidity';
-import { randomAddress } from '~/utils/helpers';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deploy } from '~/utils/solidity/deploy';
+import { getContract } from '~/utils/solidity/getContract';
+import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
