@@ -1,10 +1,10 @@
 import { Contracts } from '~/Contracts';
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { getContract } from '~/utils/solidity';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { getContract } from '~/utils/solidity/getContract';
 import { deploy } from '~/utils/solidity/deploy';
-import { emptyAddress } from '~/utils/constants';
-import { randomAddress } from '~/utils/helpers';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { randomAddress } from '~/utils/helpers/randomAddress';
 import { add, isEqual, BigInteger } from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
@@ -84,12 +84,13 @@ test('returnToVault sends back token balances to the vault', async () => {
     .transfer(shared.trading.options.address, `${tokenQuantity}`)
     .send({ from: shared.user, gas: 8000000 });
 
-  const preMlnTrading = new BigInteger(
-    await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
-  );
-  const preWethTrading = new BigInteger(
-    await shared.weth.methods.balanceOf(shared.trading.options.address).call(),
-  );
+  // const preMlnTrading = new BigInteger(
+  //   await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
+  // );
+  // const preWethTrading = new BigInteger(
+  //   await shared.weth.methods.balanceOf(shared.trading.options.address).call(),
+  // );
+
   const preMlnVault = new BigInteger(
     await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
   );

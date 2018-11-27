@@ -1,5 +1,4 @@
-import { initTestEnvironment } from '~/utils/environment';
-
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from './deploySystem';
 
 beforeAll(async () => await initTestEnvironment());

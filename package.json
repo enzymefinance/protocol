@@ -38,7 +38,7 @@
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./build > /dev/null",
     "postbuild": "yarn bundle",
     "bundle": "rollup -c",
-    "dev": "tsc -w -p tsconfig.json. & rollup -c -w",
+    "dev": "tsc -w -p tsconfig.json & rollup -c -w",
     "test": "yarn jest",
     "format": "prettier --write src/**/*.ts",
     "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",

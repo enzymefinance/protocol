@@ -1,11 +1,10 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice, isEqual } from '@melonproject/token-math/price';
-
-import { initTestEnvironment } from '~/utils/environment';
-
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { update } from './update';
 import { deploy } from './deploy';
-import { deployToken, getToken } from '~/contracts/dependencies/token';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 const shared: any = {};
 

@@ -1,8 +1,11 @@
 import * as path from 'path';
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-import { deploy, getContract } from '~/utils/solidity';
-import { deployToken } from '~/contracts/dependencies/token';
-import { createVaultInstance, deployVaultFactory } from '..';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getContract } from '~/utils/solidity/getContract';
+import { deploy } from '~/utils/solidity/deploy';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { deployVaultFactory } from '../transactions/deployVaultFactory';
+import { createVaultInstance } from '../transactions/createVaultInstance';
 import { Contracts } from '~/Contracts';
 
 const shared: any = {};

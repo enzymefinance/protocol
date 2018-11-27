@@ -1,6 +1,6 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { randomAddress } from '~/utils/helpers';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { randomAddress } from '~/utils/helpers/randomAddress';
 
 let shared: any = {};
 
