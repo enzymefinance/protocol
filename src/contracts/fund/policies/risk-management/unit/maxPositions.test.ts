@@ -1,9 +1,9 @@
-import { deployAndGetContract as deploy } from '~/utils/solidity';
-import { deployMockSystem } from '~/utils';
+import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
+import { deployMockSystem } from '~/utils/deployMockSystem';
 import { Contracts } from '~/Contracts';
-import { initTestEnvironment } from '~/utils/environment';
-import { randomAddress } from '~/utils/helpers';
-import { emptyAddress } from '~/utils/constants';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { randomAddress } from '~/utils/helpers/randomAddress';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';
 
 let shared: any = {};

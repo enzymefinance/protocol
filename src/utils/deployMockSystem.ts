@@ -5,7 +5,7 @@ import { deployToken } from '~/contracts/dependencies/token/transactions/deploy'
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 
 const debug = require('./getDebug').default(__filename);
 

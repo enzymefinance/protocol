@@ -1,9 +1,8 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { Contracts } from '~/Contracts';
-import { randomAddress } from '~/utils/helpers';
-import { deployAndGetContract } from '~/utils/solidity';
-import { emptyAddress } from '~/utils/constants';
+import { randomAddress } from '~/utils/helpers/randomAddress';
+import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';
 
 jest.setTimeout(30000);

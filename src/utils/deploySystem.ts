@@ -7,8 +7,8 @@ import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployM
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
 // tslint:disable-next-line:max-line-length
-import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management/transactions/deploy';
-import { deployWhitelist } from '~/contracts/fund/compliance/transactions/deployWhitelist';
+import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
+import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
 import { deployParticipationFactory } from '~/contracts/fund/participation/transactions/deployParticipationFactory';

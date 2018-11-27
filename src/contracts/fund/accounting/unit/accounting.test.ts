@@ -1,9 +1,6 @@
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deployMockSystem';
-import { getContract } from '~/utils/solidity/getContract';
-import { deploy } from '~/utils/solidity/deploy';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
