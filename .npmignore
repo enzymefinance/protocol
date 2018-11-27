@@ -1,2 +1,14 @@
 out/compilerMessages.txt
 out/compilerResult.json
+
+# Ignore binaries and abi files.
+out/**/*.bin
+out/**/*.abi
+
+# Ignore tests.
+src/tests/
+src/**/*.test.ts
+
+# Ignore solidity code.
+src/**/*.sol
+src/settings.ts
