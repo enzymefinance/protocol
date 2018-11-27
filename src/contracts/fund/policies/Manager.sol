@@ -15,14 +15,14 @@ contract PolicyManager is Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function registerBatch(bytes4[] sign, address[] ofPolicies) public {
+    function registerBatch(bytes4[] sign, address[] ofPolicies) onlyManager {
         require(sign.length == ofPolicies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sign.length; i++) {
             register(sign[i], ofPolicies[i]);
         }
     }
 
-    function register(bytes4 sign, address ofPolicy) public {
+    function register(bytes4 sign, address ofPolicy) onlyManager {
         Policy.Applied position = Policy(ofPolicy).position();
         if (position == Policy.Applied.pre) {
             policies[sign].pre.push(Policy(ofPolicy));

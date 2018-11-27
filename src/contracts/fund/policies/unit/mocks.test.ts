@@ -27,7 +27,9 @@ beforeAll(async () => {
 });
 
 const createManagerAndRegister = async (contract, policy) => {
-  const manager = await deployAndGetContract(contract, [`${randomAddress()}`]);
+  const hub = await deployAndGetContract(Contracts.MockHub);
+  await hub.methods.setManager(shared.user).send({ from: shared.user });
+  const manager = await deployAndGetContract(contract, [hub.options.address]);
   await manager.methods
     .register(shared.testPolicy, policy)
     .send({ from: shared.user, gas: 8000000 });

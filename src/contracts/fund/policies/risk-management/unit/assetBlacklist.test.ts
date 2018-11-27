@@ -51,8 +51,10 @@ test('Add asset to blacklist', async () => {
 });
 
 test('Policy manager with blacklist', async () => {
+  const hub = await deploy(Contracts.MockHub);
+  await hub.methods.setManager(shared.user).send({ from: shared.user });
   const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
-  const manager = await deploy(Contracts.PolicyManager, [emptyAddress]);
+  const manager = await deploy(Contracts.PolicyManager, [hub.options.address]);
   const mockAsset = `${randomAddress()}`;
   await manager.methods
     .register(shared.testBlacklist, blacklist.options.address)

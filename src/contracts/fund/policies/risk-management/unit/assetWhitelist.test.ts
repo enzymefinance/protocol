@@ -55,8 +55,10 @@ test('Remove asset from whitelist', async () => {
 });
 
 test('Policy manager with whitelist', async () => {
+  const hub = await deploy(Contracts.MockHub);
+  await hub.methods.setManager(shared.user).send({ from: shared.user });
   const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
-  const manager = await deploy(Contracts.PolicyManager, [emptyAddress]);
+  const manager = await deploy(Contracts.PolicyManager, [hub.options.address]);
   const asset = shared.assetArray[1];
   await manager.methods
     .register(shared.testWhitelist, whitelist.options.address)
