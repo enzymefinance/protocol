@@ -5,7 +5,7 @@ const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 
-const { initTestEnvironment } = require('../build/utils/environment');
+const { initTestEnvironment } = require('../build/utils/environment/initTestEnvironment');
 
 program
   .version(pkg.version, '-v, --version')
