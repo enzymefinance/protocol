@@ -3,7 +3,7 @@ import { deployMockSystem } from '~/utils';
 import { deploy, getContract } from '~/utils/solidity';
 import { randomAddress } from '~/utils/helpers';
 import { Contracts } from '~/Contracts';
-import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
+import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
 
@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 test('Shares contract is properly initialized', async () => {
-  const hubName = shared.hub.methods.name().call();
+  const hubName = await shared.hub.methods.name().call();
   await expect(shared.shares.methods.name().call()).resolves.toEqual(hubName);
   await expect(shared.shares.methods.symbol().call()).resolves.toBe('MLNF');
   await expect(shared.shares.methods.decimals().call()).resolves.toBe('18');
@@ -26,21 +26,20 @@ test('Shares contract is properly initialized', async () => {
 
 test('Create and destroy shares (auth)', async () => {
   const mockAccount = randomAddress().toString();
-  const amount = `${new BigInteger(10000000000000000)}`;
-  console.log(amount);
+  const amount = new BigInteger(1000000000);
   await expect(
     shared.shares.methods.balanceOf(mockAccount).call(),
   ).resolves.toEqual('0');
 
   await shared.shares.methods
-    .createFor(mockAccount, amount)
+    .createFor(mockAccount, `${amount}`)
     .send({ from: shared.user });
   await expect(
     shared.shares.methods.balanceOf(mockAccount).call(),
   ).resolves.toEqual(amount);
 
   await shared.shares.methods
-    .destroyFor(shared.vault.options.address, amount)
+    .destroyFor(mockAccount, `${amount}`)
     .send({ from: shared.user });
   await expect(
     shared.shares.methods.balanceOf(mockAccount).call(),
