@@ -1,10 +1,10 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { deploy, getContract } from '~/utils/solidity';
-import { randomAddress } from '~/utils/helpers';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deploy } from '~/utils/solidity/deploy';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
-import { emptyAddress } from '~/utils/constants';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 let shared: any = {};
 
