@@ -4,25 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
-const tsConfig = require('../tsconfig.json');
 
-const project = path.join(__dirname, '..', 'tsconfig.json');
-
-require('dotenv').config({
-  path: require('find-up').sync(['.env', '.env.defaults']),
-});
-// require('ts-node').register({ project, skipIgnore: true });
-
-const tsconfigPaths = require('tsconfig-paths');
-tsconfigPaths.register({
-  baseUrl: path.dirname(project),
-  paths: R.map(
-    value => value.map(p => p.replace('src/', 'build/')),
-    tsConfig.compilerOptions.paths,
-  ),
-});
-
-const { initTestEnvironment } = require('../build/utils/environment');
+const { initTestEnvironment } = require('../lib/utils/environment/initTestEnvironment');
 
 program
   .version(pkg.version, '-v, --version')
@@ -46,11 +29,9 @@ program
 
 program
   .command('deploy')
-  .description(
-    `Deploy the Melon Smart Contracts to ${process.env.JSON_RPC_ENDPOINT}`,
-  )
+  .description('Deploy the Melon smart contracts')
   .action(async (dir, cmd) => {
-    const { deploySystem } = require('../build/utils/deploySystem');
+    const { deploySystem } = require('../lib/utils/deploySystem');
     const environment = await initTestEnvironment();
     const thisDeployment = await deploySystem();
     const deploymentsPath = path.join(

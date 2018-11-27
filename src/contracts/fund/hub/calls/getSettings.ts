@@ -1,6 +1,6 @@
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Address } from '~/utils/types';
-import { getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 // TODO: Share interfaces between .sol and .ts?

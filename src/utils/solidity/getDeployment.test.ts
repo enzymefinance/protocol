@@ -1,6 +1,6 @@
-import { initTestEnvironment } from '../environment';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getDeployment } from './getDeployment';
-import { deploySystem } from '../deploySystem';
+import { deploySystem } from '~/utils/deploySystem';
 
 beforeAll(async () => {
   await initTestEnvironment();
@@ -20,4 +20,4 @@ test('Happy path', async () => {
       'version',
     ]),
   );
-}, 10000);
+});

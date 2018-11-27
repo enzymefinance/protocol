@@ -1,12 +1,12 @@
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Address } from '@melonproject/token-math/address';
 import { multiply, BigInteger } from '@melonproject/token-math/bigInteger';
 import { toAtomic } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-
-import { getAmguPrice } from '~/contracts/version';
-import { getPrices } from '~/contracts/prices';
-import { getVersion, getPriceSource } from '..';
+import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
+import { getPrices } from '~/contracts/prices/calls/getPrices';
+import { getPriceSource } from './getPriceSource';
+import { getVersion } from './getVersion';
 import { getAmguToken } from './getAmguToken';
 
 const calcAmguInEth = async (

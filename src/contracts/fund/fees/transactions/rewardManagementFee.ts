@@ -1,8 +1,10 @@
-import { transactionFactory } from '~/utils/solidity';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
-import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 
 const guard = async (params, contractAddress, environment) => {
   const hub = await getHub(contractAddress, environment);

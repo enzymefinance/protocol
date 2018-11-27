@@ -1,27 +1,16 @@
 import {
   PrepareArgsFunction,
   withTransactionDecorator,
-  getDeployment,
   GuardFunction,
   PostProcessFunction,
-} from '~/utils/solidity';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
+} from '~/utils/solidity/transactionFactory';
+import { getDeployment } from '~/utils/solidity/getDeployment';
 import { Address } from '@melonproject/token-math/address';
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
-import { Contracts, requireMap } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
-import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
-import { getGlobalEnvironment } from '~/utils/environment';
-import { ensureSufficientBalance } from '~/contracts/dependencies/token';
-import { getSettings, getHub } from '~/contracts/fund/hub';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
-import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
-import { ensure } from '~/utils/guards';
 
 export type CancelOasisDexOrderResult = any;
 
@@ -37,8 +26,8 @@ const guard: GuardFunction<CancelOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const hubAddress = await getHub(contractAddress, environment);
-  const { vaultAddress } = await getSettings(hubAddress);
+  // const hubAddress = await getHub(contractAddress, environment);
+  // const { vaultAddress } = await getSettings(hubAddress);
 
   await ensureFundOwner(contractAddress, environment);
 };

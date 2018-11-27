@@ -1,6 +1,5 @@
 import * as web3Utils from 'web3-utils';
-
-import { ensure } from '../guards';
+import { ensure } from '~/utils/guards/ensure';
 
 export const isAddress = (address: string): boolean =>
   address.length === 42 &&

@@ -1,11 +1,12 @@
-import 'babel-polyfill';
-import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem } from '~/utils';
-import { createComponents } from '~/contracts/factory';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deploySystem } from '~/utils/deploySystem';
+import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
-import { update, getPrices } from '~/contracts/prices';
-import { getAmguPrice, setAmguPrice } from '~/contracts/version';
+import { getPrices } from '~/contracts/prices/calls/getPrices';
+import { update } from '~/contracts/prices/transactions/update';
+import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
+import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import {
   subtract,
   greaterThan,

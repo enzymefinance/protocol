@@ -1,4 +1,4 @@
-import { Environment } from '~/utils/environment';
+import { Environment } from '~/utils/environment/Environment';
 import { Address } from '~/utils/types';
 
 import { deploy as deployContract } from '~/utils/solidity/deploy';

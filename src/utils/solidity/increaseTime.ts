@@ -1,4 +1,5 @@
-import { getGlobalEnvironment, Environment } from '../environment';
+import { Environment } from '~/utils/environment/Environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 export const increaseTime = async (
   seconds: number,

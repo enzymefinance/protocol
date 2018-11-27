@@ -1,14 +1,12 @@
 import { QuantityInterface } from '@melonproject/token-math/quantity';
-
-import { ensure } from '~/utils/guards';
+import { ensure } from '~/utils/guards/ensure';
 import { Address } from '~/utils/types';
-import { isAddress } from '~/utils/checks';
-
+import { isAddress } from '~/utils/checks/isAddress';
 import {
   transactionFactory,
   withContractAddressQuery,
   ImplicitExecute,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
 const guard = async ({ howMuch, spender }, environment) => {

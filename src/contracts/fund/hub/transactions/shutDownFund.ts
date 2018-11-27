@@ -1,7 +1,9 @@
-import { transactionFactory } from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
-import { ensureIsNotShutDown, isShutDown, ensureIsManager } from '../../hub';
+import { ensureIsManager } from '~/contracts/fund/hub/guards/ensureIsManager';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 
 const guard = async (params, contractAddress, environment) => {
   await ensureIsNotShutDown(contractAddress, environment);

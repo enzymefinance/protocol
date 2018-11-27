@@ -1,4 +1,4 @@
-import { isAddress } from './checks';
+import { isAddress } from './checks/isAddress';
 import * as Web3Utils from 'web3-utils';
 
 export interface Signature {

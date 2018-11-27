@@ -1,4 +1,4 @@
-import { getGlobalEnvironment } from '../environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 const ensureDeployments = () => {
   try {

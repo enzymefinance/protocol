@@ -1,10 +1,10 @@
 import { Address } from '~/utils/types';
-import { getFunctionSignature } from '~/utils/abi';
+import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
 import {
   transactionFactory,
   PrepareArgsFunction,
   EnhancedExecute,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { Contracts, requireMap } from '~/Contracts';
 
 const genericExchangeInterfaceABI = requireMap[Contracts.GenericExchange];

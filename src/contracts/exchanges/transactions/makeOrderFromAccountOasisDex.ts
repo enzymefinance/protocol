@@ -1,9 +1,9 @@
+import { getContract } from '~/utils/solidity/getContract';
 import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
-  getContract,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import {
   QuantityInterface,
   createQuantity,
@@ -11,8 +11,8 @@ import {
 } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { ensure } from '~/utils/guards';
-import { ensureSufficientBalance } from '~/contracts/dependencies/token';
+import { ensure } from '~/utils/guards/ensure';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import * as web3Utils from 'web3-utils';
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;

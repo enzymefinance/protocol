@@ -8,15 +8,17 @@ import {
 } from '@melonproject/token-math/bigInteger';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
-import { initTestEnvironment } from '~/utils/environment';
-import { deploy as deployEngine, sellAndBurnMln } from '..';
-import { deployToken, approve, getToken } from '~/contracts/dependencies/token';
-import { deploy as deployFeed, update } from '~/contracts/prices';
-import {
-  increaseTime,
-  getContract,
-  deploy as deployContract,
-} from '~/utils/solidity';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { sellAndBurnMln } from './sellAndBurnMln';
+import { deploy as deployEngine } from './deploy';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { deploy as deployFeed } from '~/contracts/prices/transactions/deploy';
+import { update } from '~/contracts/prices/transactions/update';
+import { increaseTime } from '~/utils/solidity/increaseTime';
+import { getContract } from '~/utils/solidity/getContract';
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { Contracts } from '~/Contracts';
 import { thaw } from './thaw';
 
@@ -111,7 +113,7 @@ test('AMGU payment fails when sender not fund', async () => {
   ).rejects.toThrow('revert');
 });
 
-test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
+it('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   const sender = shared.env.wallet.address;
   const sendEth = new BigInteger('100000');
   await shared.version.methods.setIsFund(sender).send({ from: sender });

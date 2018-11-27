@@ -3,12 +3,13 @@ import {
   GuardFunction,
   PrepareArgsFunction,
   PostProcessFunction,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getHub, ensureIsNotShutDown } from '../../hub';
-import { approve } from '~/contracts/dependencies/token';
-import { getRequest, RequestInvestmentResult } from '..';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { getRequest, RequestInvestmentResult } from '../calls/getRequest';
 
 export interface RequestInvestmentArgs {
   investmentAmount: QuantityInterface;

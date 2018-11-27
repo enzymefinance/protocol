@@ -1,6 +1,6 @@
-import { callFactoryWithoutParams } from '~/utils/solidity';
+import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 const postProcess = async (result, _, environment) => {
   const token = await getToken(result, environment);

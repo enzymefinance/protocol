@@ -1,10 +1,11 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
-
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Address } from '~/utils/types';
-
-import { approve, transferFrom, deployToken, getToken } from '..';
+import { approve } from '../transactions/approve';
+import { transferFrom } from '../transactions/transferFrom';
+import { deployToken } from '../transactions/deploy';
+import { getToken } from '../calls/getToken';
 
 const shared: any = {};
 

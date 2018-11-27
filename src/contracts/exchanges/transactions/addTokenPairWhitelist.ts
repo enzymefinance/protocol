@@ -4,11 +4,9 @@ import {
   log,
   TokenInterface,
 } from '@melonproject/token-math/token';
-
-import { getGlobalEnvironment } from '~/utils/environment';
-import { ensure } from '~/utils/guards';
-
-import { getContract } from '~/utils/solidity';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { ensure } from '~/utils/guards/ensure';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 interface IAddTokenPairWhitelist {

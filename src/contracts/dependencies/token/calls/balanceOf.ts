@@ -1,9 +1,7 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
-
-import { callFactory } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-
-import { getToken } from '..';
+import { getToken } from './getToken';
 
 const prepareArgs = ({ address }) => [address.toString()];
 const postProcess = async (result, prepared, environment) => {

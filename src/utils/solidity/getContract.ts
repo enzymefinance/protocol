@@ -1,7 +1,8 @@
 import * as Eth from 'web3-eth';
 import * as R from 'ramda';
 import { Address } from '~/utils/types';
-import { getGlobalEnvironment, Environment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
 import { requireMap, Contracts } from '~/Contracts';
 
 export type GetContractFunction = (

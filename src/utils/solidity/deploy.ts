@@ -3,7 +3,8 @@ import * as path from 'path';
 import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
 import { solidityCompileTarget } from '~/settings';
-import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 
 const debug = require('~/utils/getDebug').default(__filename);
 type ConstructorArg = number | string | boolean;
@@ -61,10 +62,11 @@ export const deploy = async (
       throw error;
     })
     .on('transactionHash', txHash => debug('transactionHash', txHash))
-    .on('receipt', rc => debug('receipt', rc))
-    .on('confirmation', (cn, r) =>
-      debug('confirmation', cn, r.transactionHash),
-    );
+    .on('receipt', rc => debug('receipt', rc));
+  // TODO: This currently causes Jest to fail.
+  // .on('confirmation', (cn, r) => {}
+  //   // debug('confirmation', cn, r.transactionHash),
+  // );
 
   debug('Deployed: ', pathToSolidityFile, instance.options.address);
   return instance.options.address;
