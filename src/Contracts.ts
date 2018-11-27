@@ -20,6 +20,7 @@ export enum Contracts {
   ConversionRates = 'exchanges/ConversionRates',
   KyberWhiteList = 'exchanges/KyberWhiteList',
   MockFeeManager = 'fund/fees/MockFeeManager',
+  MockFee = 'fund/fees/MockFee',
   MockHub = 'fund/hub/MockHub',
   MockShares = 'fund/shares/MockShares',
   MockVersion = 'version/MockVersion',
@@ -62,21 +63,23 @@ export const requireMap = {
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
-  require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+    require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.KyberNetwork]:
-  require('../out/exchanges/thirdparty/kyber/KyberNetwork.abi.json'),
+    require('../out/exchanges/thirdparty/kyber/KyberNetwork.abi.json'),
   [Contracts.KyberReserve]:
-  require('../out/exchanges/thirdparty/kyber/KyberReserve.abi.json'),
+    require('../out/exchanges/thirdparty/kyber/KyberReserve.abi.json'),
   [Contracts.KyberNetworkProxy]:
-  require('../out/exchanges/thirdparty/kyber/KyberNetworkProxy.abi.json'),
+    require('../out/exchanges/thirdparty/kyber/KyberNetworkProxy.abi.json'),
   [Contracts.KyberAdapter]:
-  require('../out/exchanges/KyberAdapter.abi.json'),
+    require('../out/exchanges/KyberAdapter.abi.json'),
   [Contracts.ConversionRates]:
-  require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
+    require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
   [Contracts.KyberWhiteList]:
-  require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
+    require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
   [Contracts.MockFeeManager]:
     require('../out/fund/fees/MockFeeManager.abi.json'),
+  [Contracts.MockFee]:
+    require('../out/fund/fees/MockFee.abi.json'),
   [Contracts.MockHub]:
     require('../out/fund/hub/MockHub.abi.json'),
   [Contracts.MockShares]:
@@ -86,7 +89,7 @@ export const requireMap = {
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
-  require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+    require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
     require('../out/fund/participation/Participation.abi.json'),
   [Contracts.PolicyManager]:
@@ -111,7 +114,7 @@ export const requireMap = {
     require('../out/fund/vault/VaultFactory.abi.json'),
   // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
   [Contracts.Version]:
-      require('../out/version/MockVersion.abi.json'),
+    require('../out/version/MockVersion.abi.json'),
 };
 
 const allAbis = R.toPairs(requireMap);

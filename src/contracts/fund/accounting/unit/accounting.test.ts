@@ -136,3 +136,4 @@ test('Add and remove assets by an authorized module', async () => {
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
   ).resolves.toBe(false);
 });
+
