@@ -29,9 +29,7 @@ program
 
 program
   .command('deploy')
-  .description(
-    `Deploy the Melon Smart Contracts to ${process.env.JSON_RPC_ENDPOINT}`,
-  )
+  .description('Deploy the Melon smart contracts')
   .action(async (dir, cmd) => {
     const { deploySystem } = require('../build/utils/deploySystem');
     const environment = await initTestEnvironment();

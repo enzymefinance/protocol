@@ -34,16 +34,6 @@ cd protocol
 # Install dependencies
 yarn install
 ```
-
-_Recommended but not necessary_:
-Create a .env file. You could either get inspired in [.env.example](.env.example) or just use this:
-
-```env
-JSON_RPC_ENDPOINT = ws://localhost:8545
-DEBUG=melon:protocol:*
-CHAIN_ENV=development
-```
-
 If you don't set `JSON_RPC_ENDPOINT`, the test will load ganache in-memory which works but is much slower.
 
 ### Deployment and testing

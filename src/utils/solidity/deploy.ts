@@ -62,10 +62,11 @@ export const deploy = async (
       throw error;
     })
     .on('transactionHash', txHash => debug('transactionHash', txHash))
-    .on('receipt', rc => debug('receipt', rc))
-    .on('confirmation', (cn, r) =>
-      debug('confirmation', cn, r.transactionHash),
-    );
+    .on('receipt', rc => debug('receipt', rc));
+  // TODO: This currently causes Jest to fail.
+  // .on('confirmation', (cn, r) => {}
+  //   // debug('confirmation', cn, r.transactionHash),
+  // );
 
   debug('Deployed: ', pathToSolidityFile, instance.options.address);
   return instance.options.address;

@@ -35,7 +35,7 @@ const makeIpcProvider = endpoint => new Eth.providers.IpcProvider(endpoint);
 
 const selectProvider = R.cond([
   [R.startsWith('ws'), makeWsProvider],
-  [R.startsWith('http', makeHttpProvider)],
+  [R.startsWith('http'), makeHttpProvider],
   [checkIpc, makeIpcProvider],
 ]);
 
