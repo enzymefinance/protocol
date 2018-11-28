@@ -85,6 +85,10 @@ test.before(async () => {
   }));
 });
 
+test.beforeEach(async () => {
+  await updateKyberPriceFeed(deployed);
+});
+
 const initialTokenAmount = new BigNumber(10 ** 19).toFixed();
 test.serial("investor receives initial ethToken for testing", async t => {
   const pre = await getAllBalances(deployed, accounts, fund);
@@ -100,8 +104,8 @@ test.serial("investor receives initial ethToken for testing", async t => {
 });
 
 // mock data
-const offeredValue = new BigNumber(10 ** 19).toFixed();
-const wantedShares = new BigNumber(10 ** 19).toFixed();
+const offeredValue = new BigNumber(10 ** 18).toFixed();
+const wantedShares = new BigNumber(10 ** 18).toFixed();
 test.serial(
   "fund receives ETH from a investment (request & execute)",
   async t => {
