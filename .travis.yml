@@ -25,6 +25,6 @@ install:
 script:
   - yarn devchain > ganache.log &
   - sleep 10
-  - yarn build && yarn compile && yarn test
+  - yarn allchecks
 after_script:
   - cat ganache.log
