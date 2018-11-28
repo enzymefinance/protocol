@@ -46,8 +46,6 @@ test(
 
     const deployment = await deploySystem();
 
-    console.log('asdf');
-
     const {
       exchangeConfigs,
       fundFactory,

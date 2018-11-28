@@ -62,7 +62,13 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
 };
 
 const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
-  { id, makerQuantity, takerQuantity, maker, fillTakerTokenAmount },
+  {
+    id,
+    makerQuantity,
+    takerQuantity,
+    maker,
+    fillTakerTokenAmount = takerQuantity,
+  },
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
