@@ -26,7 +26,7 @@ contract PolicyManager is Spoke {
         }
     }
 
-    function batchRegsiter(bytes4[] sign, address[] ofPolicies) auth {
+    function batchRegister(bytes4[] sign, address[] ofPolicies) auth {
         require(sign.length == ofPolicies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sign.length; i++) {
             register(sign[i], ofPolicies[i]);
