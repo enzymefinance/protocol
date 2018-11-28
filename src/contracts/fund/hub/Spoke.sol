@@ -28,12 +28,12 @@ contract Spoke is DSAuth {
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
-        setOwner(hub);  // allow hub to initialize
     }
 
+    // TODO: remove owner?
     // TODO: onlyInitialized modifier?
-    function initialize(address[12] _spokes) public auth {
-        // setOwner(address(0));
+    function initialize(address[12] _spokes) public {
+        require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = Routes(
             _spokes[0],

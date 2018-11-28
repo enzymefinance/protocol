@@ -26,7 +26,7 @@ beforeAll(async () => {
   shared.trading = getContract(
     Contracts.Trading,
     await deploy(Contracts.Trading, [
-      shared.hub.options.address,
+      shared.user, // faked for testing
       mockExchanges,
       mockExchangeAdapters,
       takesCustodyMasks,
@@ -56,9 +56,10 @@ test('Exchanges are properly initialized', async () => {
     expect(exchangeObject.exchange).toBe(mockExchanges[i]);
     expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
     expect(exchangeObject.takesCustody).toBe(takesCustodyMasks[i]);
-    await expect(
-      shared.trading.methods.exchangeIsAdded(mockExchanges[i]).call(),
-    ).toBeTruthy();
+    const exchangeAdded = await shared.trading.methods
+      .exchangeIsAdded(mockExchanges[i])
+      .call();
+    expect(exchangeAdded).toBe(true);
   }
 });
 
