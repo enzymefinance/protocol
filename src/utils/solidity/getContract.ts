@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 

@@ -43,7 +43,11 @@ test(
   'Happy path',
   async () => {
     const fundName = `test-fund-${randomString()}`;
+
     const deployment = await deploySystem();
+
+    console.log('asdf');
+
     const {
       exchangeConfigs,
       fundFactory,
@@ -199,5 +203,5 @@ test(
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   },
-  30 * 1000,
+  60 * 1000,
 );

@@ -1,18 +1,18 @@
 // tslint:disable:max-line-length
-import { initTestEnvironment, withDifferentAccount } from '~/utils/environment';
-import { deploy0xExchange } from '../../contracts/exchanges/transactions/deploy0xExchange';
-import {
-  deployToken,
-  getToken,
-  transfer,
-} from '~/contracts/dependencies/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
+
+import { deploy0xExchange } from '../../contracts/exchanges/transactions/deploy0xExchange';
 import {
   createOrder,
   signOrder,
   approveOrder,
 } from '../../contracts/exchanges/thirdparty/0x/utils/createOrder';
 import { fillOrder } from '../../contracts/exchanges/thirdparty/0x/transactions/fillOrder';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 // tslint:enable:max-line-length
 
 const shared: any = {};

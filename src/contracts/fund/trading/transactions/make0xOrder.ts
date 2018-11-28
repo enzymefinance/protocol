@@ -1,23 +1,24 @@
 import * as web3Utils from 'web3-utils';
 import { assetDataUtils, SignedOrder } from '0x.js';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
-import {
-  PrepareArgsFunction,
-  transactionFactory,
-  getDeployment,
-  GuardFunction,
-  PostProcessFunction,
-} from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+
+// tslint:disable:max-line-length
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { NULL_ADDRESS } from './take0xOrder';
-import { ensure } from '~/utils/guards';
-import { getHub, getSettings } from '../../hub';
 import {
-  ensureSufficientBalance,
-  getToken,
-} from '~/contracts/dependencies/token';
-import { createQuantity } from '@melonproject/token-math/quantity';
+  GuardFunction,
+  PrepareArgsFunction,
+  PostProcessFunction,
+  transactionFactory,
+} from '~/utils/solidity/transactionFactory';
+import { getHub } from '../../hub/calls/getHub';
+import { getSettings } from '../../hub/calls/getSettings';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
+import { getDeployment } from '~/utils/solidity/getDeployment';
+// tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
 interface Make0xOrderArgs {

@@ -8,19 +8,21 @@ import {
 } from '@melonproject/token-math/quantity';
 import { TokenInterface } from '@melonproject/token-math/token';
 
-import {
-  transactionFactory,
-  EnhancedExecute,
-  PrepareArgsFunction,
-  GuardFunction,
-  stringifyStruct,
-  PostProcessFunction,
-} from '~/utils/solidity';
 import { Contracts } from '~/Contracts';
+import {
+  GuardFunction,
+  PrepareArgsFunction,
+  PostProcessFunction,
+  EnhancedExecute,
+  transactionFactory,
+} from '~/utils/solidity/transactionFactory';
+import { ensure } from '~/utils/guards/ensure';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+
 import { getOrderInfo } from '../calls/getOrderInfo';
-import { ensure } from '~/utils/guards';
 import { isValidSignature } from '../calls/isValidSignature';
-import { getToken, approve } from '~/contracts/dependencies/token';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getFeeToken } from '../calls/getFeeToken';
 

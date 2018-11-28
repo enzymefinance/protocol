@@ -1,9 +1,11 @@
 import { assetDataUtils } from '0x.js';
-
-import { deploy as deployContract, getContract } from '~/utils/solidity';
 import { TokenInterface } from '@melonproject/token-math/token';
+
 import { Contracts } from '~/Contracts';
-import { getGlobalEnvironment, getWeb3Options } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { deploy } from '~/utils/solidity/deploy';
+import { getContract } from '~/utils/solidity/getContract';
+import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 
 interface Deploy0xExchangeArgs {
   zrxToken: TokenInterface;
@@ -13,11 +15,7 @@ export const deploy0xExchange = async (
   { zrxToken }: Deploy0xExchangeArgs,
   environment = getGlobalEnvironment(),
 ) => {
-  const exchange = await deployContract(
-    Contracts.ZeroExExchange,
-    [],
-    environment,
-  );
+  const exchange = await deploy(Contracts.ZeroExExchange, [], environment);
 
   const exchangeContract = await getContract(
     Contracts.ZeroExExchange,
@@ -25,11 +23,7 @@ export const deploy0xExchange = async (
     environment,
   );
 
-  const erc20Proxy = await deployContract(
-    Contracts.ERC20Proxy,
-    [],
-    environment,
-  );
+  const erc20Proxy = await deploy(Contracts.ERC20Proxy, [], environment);
 
   const erc20ProxyContract = await getContract(
     Contracts.ERC20Proxy,

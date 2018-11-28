@@ -1,12 +1,14 @@
-import { Contracts } from '~/Contracts';
-import { callFactory, stringifyStruct } from '~/utils/solidity';
 import { SignedOrder } from '@0x/types';
 import { OrderStatus, assetDataUtils } from '0x.js';
 import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-import { getToken } from '~/contracts/dependencies/token';
+
+import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { callFactory } from '~/utils/solidity/callFactory';
+import { Contracts } from '~/Contracts';
 
 interface OrderInfo {
   status: OrderStatus;

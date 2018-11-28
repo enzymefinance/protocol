@@ -1,11 +1,16 @@
 import * as R from 'ramda';
 import { TokenInterface } from '@melonproject/token-math/token';
-
-import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem } from '~/utils';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { createOrder, signOrder, fillOrder } from '~/contracts/exchanges';
+
+import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deploySystem } from '~/utils/deploySystem';
+import {
+  createOrder,
+  signOrder,
+  fillOrder,
+} from '~/contracts/exchanges/thirdparty/0x';
+
 import { make0xOrder } from './make0xOrder';
 
 const shared: any = {};
@@ -61,5 +66,5 @@ test('Make 0x order from fund and take it from account', async () => {
     shared.environment,
   );
 
-  expect(result).toBeTruthy();
+  expect(filled).toBeTruthy();
 });

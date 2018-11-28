@@ -2,7 +2,7 @@ import { TokenInterface } from '@melonproject/token-math/token';
 import { getInfo } from './getInfo';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 export const getToken = async (
   contractAddress,

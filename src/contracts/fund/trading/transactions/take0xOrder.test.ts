@@ -1,11 +1,17 @@
 import * as R from 'ramda';
-import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem } from '~/utils';
+
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
-import { createOrder, signOrder, approveOrder } from '~/contracts/exchanges';
+
 import { take0xOrder } from './take0xOrder';
 import { TokenInterface } from '@melonproject/token-math/token';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deploySystem } from '~/utils/deploySystem';
+import {
+  createOrder,
+  signOrder,
+  approveOrder,
+} from '~/contracts/exchanges/thirdparty/0x';
 
 const shared: any = {};
 

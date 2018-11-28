@@ -1,23 +1,22 @@
 import { assetDataUtils } from '0x.js';
 import * as web3Utils from 'web3-utils';
-
+import { createQuantity } from '@melonproject/token-math/quantity';
 import {
-  transactionFactory,
-  PrepareArgsFunction,
-  getDeployment,
-  PostProcessFunction,
   GuardFunction,
-} from '~/utils/solidity';
+  PrepareArgsFunction,
+  PostProcessFunction,
+  transactionFactory,
+} from '~/utils/solidity/transactionFactory';
 import {
   FillOrderArgs,
-  parse0xFillReceipt,
   FillOrderResult,
   getFeeToken,
-} from '~/contracts/exchanges';
-import { Contracts } from '~/Contracts';
+  parse0xFillReceipt,
+} from '~/contracts/exchanges/thirdparty/0x';
+import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { getToken } from '~/contracts/dependencies/token';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { Contracts } from '~/Contracts';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -116,7 +115,7 @@ const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
 const take0xOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
-  undefined,
+  guard,
   prepareArgs,
   postProcess,
 );

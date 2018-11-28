@@ -15,16 +15,18 @@ import {
 } from '0x.js';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
-import { getGlobalEnvironment } from '~/utils/environment';
 import { Address } from '@melonproject/token-math/address';
 import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-import { approve, getToken } from '~/contracts/dependencies/token';
+
 import { getLatestBlock } from '~/utils/evm';
 import { add, toBI } from '@melonproject/token-math/bigInteger';
 import { getAssetProxy } from '../calls/getAssetProxy';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 export interface CreateOrderArgs {
   makerQuantity: QuantityInterface;
