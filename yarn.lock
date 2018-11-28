@@ -1890,6 +1890,15 @@ babel-plugin-transform-strict-mode@^6.24.1:
     babel-runtime "^6.22.0"
     babel-types "^6.24.1"
 
+babel-polyfill@^6.26.0:
+  version "6.26.0"
+  resolved "https://registry.yarnpkg.com/babel-polyfill/-/babel-polyfill-6.26.0.tgz#379937abc67d7895970adc621f284cd966cf2153"
+  integrity sha1-N5k3q8Z9eJWXCtxiHyhM2WbPIVM=
+  dependencies:
+    babel-runtime "^6.26.0"
+    core-js "^2.5.0"
+    regenerator-runtime "^0.10.5"
+
 babel-preset-env@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/babel-preset-env/-/babel-preset-env-1.7.0.tgz#dea79fa4ebeb883cd35dab07e260c1c9c04df77a"
@@ -6611,7 +6620,7 @@ nan@2.10.0:
   version "2.10.0"
   resolved "http://registry.npmjs.org/nan/-/nan-2.10.0.tgz#96d0cd610ebd58d4b4de9cc0c6828cda99c7548f"
 
-nan@^2.0.8, nan@^2.10.0, nan@^2.2.1, nan@^2.3.3, nan@^2.8.0, nan@^2.9.2:
+nan@^2.0.8, nan@^2.10.0, nan@^2.11.0, nan@^2.2.1, nan@^2.3.3, nan@^2.8.0, nan@^2.9.2:
   version "2.11.1"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.11.1.tgz#90e22bccb8ca57ea4cd37cc83d3819b52eea6766"
 
@@ -7624,6 +7633,11 @@ regenerate-unicode-properties@^7.0.0:
 regenerate@^1.2.1, regenerate@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/regenerate/-/regenerate-1.4.0.tgz#4a856ec4b56e4077c557589cae85e7a4c8869a11"
+
+regenerator-runtime@^0.10.5:
+  version "0.10.5"
+  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.10.5.tgz#336c3efc1220adcedda2c9fab67b5a7955a33658"
+  integrity sha1-M2w+/BIgrc7dosn6tntaeVWjNlg=
 
 regenerator-runtime@^0.11.0, regenerator-runtime@^0.11.1:
   version "0.11.1"
@@ -8965,7 +8979,7 @@ type-is@~1.6.16:
     media-typer "0.3.0"
     mime-types "~2.1.18"
 
-typedarray-to-buffer@^3.1.2:
+typedarray-to-buffer@^3.1.2, typedarray-to-buffer@^3.1.5:
   version "3.1.5"
   resolved "https://registry.yarnpkg.com/typedarray-to-buffer/-/typedarray-to-buffer-3.1.5.tgz#a97ee7a9ff42691b9f783ff1bc5112fe3fca9080"
   dependencies:
