@@ -17,6 +17,7 @@ import { getHub } from '../../hub/calls/getHub';
 import { getSettings } from '../../hub/calls/getSettings';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 // tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
@@ -64,7 +65,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
 
   const args = [
     exchangeIndex,
-    'makeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    FunctionSignatures.makeOrder,
     [
       contractAddress.toString(),
       NULL_ADDRESS,

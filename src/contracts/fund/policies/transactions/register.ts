@@ -1,6 +1,6 @@
 import { Address } from '@melonproject/token-math/address';
 
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
+import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
 import {
   transactionFactory,
   PrepareArgsFunction,
@@ -12,10 +12,13 @@ const genericExchangeInterfaceABI = requireMap[Contracts.GenericExchange];
 const participationABI = requireMap[Contracts.Participation];
 
 export enum PolicedMethods {
-  makeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'makeOrder'),
-  takeOrder = getFunctionSignature(genericExchangeInterfaceABI, 'takeOrder'),
+  makeOrder = getFunctionABISignature(genericExchangeInterfaceABI, 'makeOrder'),
+  takeOrder = getFunctionABISignature(genericExchangeInterfaceABI, 'takeOrder'),
   // tslint:disable-next-line:max-line-length
-  executeRequest = getFunctionSignature(participationABI, 'executeRequestFor'),
+  executeRequest = getFunctionABISignature(
+    participationABI,
+    'executeRequestFor',
+  ),
   // TODO: Add more here
 }
 

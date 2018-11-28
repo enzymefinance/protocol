@@ -17,6 +17,7 @@ import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 // tslint:enable:max-line-length
 
 export type TakeOasisDexOrderResult = any;
@@ -91,8 +92,7 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',
     makerQuantity: makerQuantity.quantity,
-    method:
-      'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    method: FunctionSignatures.takeOrder,
     salt: '0',
     senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),

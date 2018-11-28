@@ -17,6 +17,7 @@ import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Contracts, Exchanges } from '~/Contracts';
 import { getDeployment } from '~/utils/solidity/getDeployment';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -57,7 +58,7 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
 
   const args = [
     exchangeIndex,
-    'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    FunctionSignatures.takeOrder,
     [
       signedOrder.makerAddress.toString(),
       NULL_ADDRESS /*contractAddress.toString() */,

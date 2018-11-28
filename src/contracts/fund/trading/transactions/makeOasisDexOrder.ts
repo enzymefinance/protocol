@@ -22,6 +22,7 @@ import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 // tslint:enable:max-line-length
 
 export type MakeOasisDexOrderResult = any;
@@ -86,8 +87,7 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',
     makerQuantity: makerQuantity.quantity,
-    method:
-      'makeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    method: FunctionSignatures.makeOrder,
     salt: '0',
     senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),
