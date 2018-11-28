@@ -1,6 +1,6 @@
 import { TokenInterface } from '@melonproject/token-math/token';
+import { Address } from '@melonproject/token-math/address';
 
-import { Address } from '~/utils/types';
 import {
   transactionFactory,
   EnhancedExecute,

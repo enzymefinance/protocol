@@ -1,4 +1,5 @@
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
+
 import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
 import {
   transactionFactory,

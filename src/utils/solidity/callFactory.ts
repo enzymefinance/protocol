@@ -1,18 +1,50 @@
 import { Observable } from 'zen-observable-ts';
 import * as R from 'ramda';
-import { getContract } from './getContract';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
-const defaultPrepareArgs = (params, contractAddress, environment) =>
-  Object.values(params || {}).map(v => v.toString());
-const defaultPostProcess = (result, prepared, environment) => result;
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '../environment/Environment';
+
+import { getContract } from './getContract';
+import { TransactionArgs } from './transactionFactory';
+
+export type PrepareCallArgsFunction = (
+  params,
+  contractAddress?,
+  environment?: Environment,
+) => TransactionArgs;
+
+export type PostProcessCallFunction = (
+  result,
+  prepared?,
+  environment?: Environment,
+) => any;
+
+export interface Processors {
+  prepareArgs?: PrepareCallArgsFunction;
+  postProcess?: PostProcessCallFunction;
+}
+
+const defaultPrepareArgs: PrepareCallArgsFunction = (
+  params,
+  contractAddress,
+  environment,
+) => Object.values(params || {}).map(v => v.toString());
+const defaultPostProcess: PostProcessCallFunction = (
+  result,
+  prepared,
+  environment,
+) => result;
 
 const defaultProcessors = {
   postProcess: defaultPostProcess,
   prepareArgs: defaultPrepareArgs,
 };
 
-const callFactory = (name, contract, processors = defaultProcessors) => {
+const callFactory = (
+  name,
+  contract,
+  processors: Processors = defaultProcessors,
+) => {
   const { postProcess, prepareArgs } = {
     ...defaultProcessors,
     ...processors,
@@ -20,7 +52,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
 
   const prepare = (
     contractAddress,
-    params,
+    params = {},
     environment = getGlobalEnvironment(),
   ) => {
     const args = prepareArgs(params, contractAddress, environment);
@@ -32,6 +64,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
     const txObject = contractInstance.methods[name](...args);
     const prepared = {
       contractAddress,
+      params,
       txObject,
     };
     return prepared;
@@ -86,7 +119,7 @@ const callFactory = (name, contract, processors = defaultProcessors) => {
 
   const execute = async (
     contractAddress,
-    params,
+    params = {},
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = prepare(contractAddress, params, environment);

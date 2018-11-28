@@ -1,4 +1,5 @@
-import { Address } from '~/utils/types';
+import { Address } from '@melonproject/token-math/address';
+
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';

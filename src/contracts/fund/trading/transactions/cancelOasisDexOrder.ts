@@ -7,10 +7,12 @@ import {
 import { getDeployment } from '~/utils/solidity/getDeployment';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
+// tslint:disable:max-line-length
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
+// tslint:enable:max-line-length
 
 export type CancelOasisDexOrderResult = any;
 
@@ -50,27 +52,28 @@ const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
   );
 
   return {
-    exchangeIndex,
-    method:
-      'cancelOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)', // update when function signature changes
-    maker,
-    taker: '0x0000000000000000000000000000000000000000',
-    makerAsset,
-    takerAsset,
-    feeRecipient: '0x0000000000000000000000000000000000000000',
-    senderAddress: '0x0000000000000000000000000000000000000000',
-    makerQuantity: '0',
-    takerQuantity: '0',
-    makerFee: '0',
-    takerFee: '0',
-    timestamp: '0',
-    salt: '0',
-    fillTakerTokenAmount: '0',
     dexySignatureMode: 0,
+    exchangeIndex,
+    feeRecipient: '0x0000000000000000000000000000000000000000',
+    fillTakerTokenAmount: '0',
     identifier: id,
+    maker,
+    makerAsset,
     makerAssetData: web3Utils.padLeft('0x0', 64),
-    takerAssetData: web3Utils.padLeft('0x0', 64),
+    makerFee: '0',
+    makerQuantity: '0',
+    method:
+      // update when function signature changes
+      'cancelOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    salt: '0',
+    senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),
+    taker: '0x0000000000000000000000000000000000000000',
+    takerAsset,
+    takerAssetData: web3Utils.padLeft('0x0', 64),
+    takerFee: '0',
+    takerQuantity: '0',
+    timestamp: '0',
   };
 };
 
@@ -86,10 +89,10 @@ const postProcess: PostProcessFunction<
 const options = { gas: '8000000' };
 
 const cancelOasisDexOrder = withTransactionDecorator(callOnExchange, {
-  postProcess,
-  prepareArgs,
   guard,
   options,
+  postProcess,
+  prepareArgs,
 });
 
 export { cancelOasisDexOrder };

@@ -5,15 +5,30 @@ import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 import { solidityCompileTarget } from '~/settings';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getWeb3Options } from '~/utils/environment/getWeb3Options';
+import { Contracts } from '~/Contracts';
+
+import { TransactionArgs } from './transactionFactory';
+import { Environment } from '../environment/Environment';
 
 const debug = require('debug')('melon:protocol:utils:solidity');
 
-type ConstructorArg = number | string | boolean;
-type ConstructorArgs = ConstructorArg | ConstructorArg[];
+// TODO: Refactor all callers to only use the Contract interface
+type Deploy = {
+  (
+    pathToSolidityFile: string,
+    args?: TransactionArgs,
+    environment?: Environment,
+  ): Promise<string>;
+  (
+    contract: Contracts,
+    args: TransactionArgs,
+    environment: Environment,
+  ): Promise<string>;
+};
 
-export const deploy = async (
-  pathToSolidityFile: string,
-  args: ConstructorArgs[] = [],
+export const deploy: Deploy = async (
+  pathToSolidityFile,
+  args = [],
   environment = getGlobalEnvironment(),
 ) => {
   debug('Deploying: ', pathToSolidityFile, args);
@@ -56,6 +71,8 @@ export const deploy = async (
   }
 
   debug('Gas estimation:', gasEstimation);
+
+  // console.log(options, gasEstimation);
 
   const instance = await transaction
     .send(options)
