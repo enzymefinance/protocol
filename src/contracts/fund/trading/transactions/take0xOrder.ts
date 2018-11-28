@@ -13,10 +13,10 @@ import {
   getFeeToken,
   parse0xFillReceipt,
 } from '~/contracts/exchanges/thirdparty/0x';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { Contracts } from '~/Contracts';
+import { Contracts, Exchanges } from '~/Contracts';
+import { getDeployment } from '~/utils/solidity/getDeployment';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -34,15 +34,11 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const deployment = await getDeployment(environment);
-
-  const zeroExAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'ZeroEx',
-  ).exchangeAddress;
-
   const exchangeIndex = await getExchangeIndex(
-    zeroExAddress,
     contractAddress,
+    {
+      exchange: Exchanges.ZeroEx,
+    },
     environment,
   );
 

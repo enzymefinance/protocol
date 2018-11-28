@@ -2,7 +2,7 @@ import * as web3Utils from 'web3-utils';
 import { assetDataUtils, SignedOrder } from '0x.js';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-import { Contracts } from '~/Contracts';
+import { Contracts, Exchanges } from '~/Contracts';
 
 // tslint:disable:max-line-length
 import { getExchangeIndex } from '../calls/getExchangeIndex';
@@ -17,7 +17,6 @@ import { getHub } from '../../hub/calls/getHub';
 import { getSettings } from '../../hub/calls/getSettings';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 // tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
@@ -50,15 +49,9 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
   contractAddress,
   environment,
 ) => {
-  const deployment = await getDeployment(environment);
-
-  const zeroExAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'ZeroEx',
-  ).exchangeAddress;
-
   const exchangeIndex = await getExchangeIndex(
-    zeroExAddress,
     contractAddress,
+    { exchange: Exchanges.ZeroEx },
     environment,
   );
 

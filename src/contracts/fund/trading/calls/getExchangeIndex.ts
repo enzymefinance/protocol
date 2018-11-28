@@ -1,12 +1,20 @@
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts } from '~/Contracts';
+import { Contracts, Exchanges } from '~/Contracts';
 import { ensure } from '~/utils/guards/ensure';
+import { Address } from '@melonproject/token-math/address';
+import { getDeployment } from '~/utils/solidity/getDeployment';
 
 const getExchangeIndex = async (
-  exchangeAddress,
-  tradingAddress,
+  tradingAddress: Address,
+  { exchange }: { exchange: Exchanges },
   environment,
 ) => {
+  const deployment = await getDeployment();
+
+  const exchangeAddress: Address = deployment.exchangeConfigs.find(
+    o => o.name === exchange,
+  ).exchangeAddress;
+
   const tradingContract = getContract(
     Contracts.Trading,
     tradingAddress,

@@ -4,7 +4,6 @@ import {
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 // tslint:disable:max-line-length
@@ -12,6 +11,7 @@ import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExch
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
+import { Exchanges } from '~/Contracts';
 // tslint:enable:max-line-length
 
 export type CancelOasisDexOrderResult = any;
@@ -39,15 +39,9 @@ const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const deployment = await getDeployment();
-
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
-
   const exchangeIndex = await getExchangeIndex(
-    matchingMarketAddress,
     contractAddress,
+    { exchange: Exchanges.MatchingMarket },
     environment,
   );
 
