@@ -7,6 +7,7 @@ import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
+import "../../prices/CanonicalPriceFeed.sol";
 import "../dependencies/DBC.sol";
 
 
@@ -47,22 +48,17 @@ contract KyberAdapter is DBC, DSMath {
         address destToken = orderAddresses[3];
         uint srcAmount = orderValues[0];
         uint destAmount = orderValues[1];
-        uint minRate = 0;
 
-        // If destAmount is non-zero, set a minimum rate for the trade
-        if (destAmount != 0) {
-            minRate = calcMinRate(
-                srcToken,
-                destToken,
-                srcAmount,
-                destAmount
-            );
-        }
+        uint minRate = calcMinRate(
+            srcToken,
+            destToken,
+            srcAmount,
+            destAmount
+        );
 
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, destAmount);
 
-        // TODO: ADD BACK
-        // require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
+        // TODO: Maybe post policy check for PriceTolernance based on actualReceiveAmount (Overkill maybe)
         require(
             Accounting(hub.accounting()).isInAssetList(destToken) ||
             Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS()
@@ -184,9 +180,6 @@ contract KyberAdapter is DBC, DSMath {
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
         WETH9(nativeAsset).withdraw(srcAmount);
-
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(ETH_TOKEN_ADDRESS), ERC20Clone(destToken), srcAmount);
-        // require(isMinPricePermitted(minRate, srcAmount, nativeAsset, destToken));
         receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20Clone(destToken), minRate);
     }
 
@@ -207,8 +200,6 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(srcToken), ERC20Clone(ETH_TOKEN_ADDRESS), srcAmount);
-        // require(isMinPricePermitted(minRate, srcAmount, srcToken, nativeAsset));
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
@@ -236,8 +227,6 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint receivedAmount)
     {
-        if (minRate == 0) (, minRate) = KyberNetworkProxy(targetExchange).getExpectedRate(ERC20Clone(srcToken), ERC20Clone(destToken), srcAmount);
-        // require(isMinPricePermitted(minRate, srcAmount, srcToken, destToken));
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
@@ -260,88 +249,13 @@ contract KyberAdapter is DBC, DSMath {
         view
         returns (uint minRate)
     {
-        // TODO
-        // var (pricefeed, , ,) = Fund(address(this)).modules();
-        // minRate = pricefeed.getOrderPriceInfo(
-        //     srcToken,
-        //     destToken,
-        //     srcAmount,
-        //     destAmount
-        // );
-        minRate = 0;
-    }
-
-    // TODO
-    /*
-    /// @dev Pre trade execution risk management check for minRate
-    /// @param minPrice minPrice parameter to be supplied to Kyber proxy
-    /// @param srcToken Address of src token
-    /// @param destToken Address of dest token
-    function isMinPricePermitted(
-        uint minPrice,
-        uint srcAmount,
-        address srcToken,
-        address destToken
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(srcToken != address(this) && destToken != address(this));
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(srcToken, destToken));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(srcToken, destToken);
-        require(isRecent);
-        uint destAmount = mul(minPrice, srcAmount) / 10 ** pricefeed.getDecimals(destToken);
-        return(
-            riskmgmt.isTakePermitted(
-                minPrice,
-                referencePrice,
-                srcToken,
-                destToken,
-                srcAmount,
-                destAmount
-            )
-        );
-    }
-
-    /// @dev needed to avoid stack too deep error
-    /// @param srcAmount Amount of src token supplied
-    /// @param srcToken Address of src token
-    /// @return destAmount Amount of dest token expected in return
-    /// @param destToken Address of dest token
-    function swapPermitted(
-        uint srcAmount,
-        address srcToken,
-        uint destAmount,
-        address destToken
-    )
-        internal
-        view
-        returns (bool)
-    {
-        require(srcToken != address(this) && destToken != address(this));
-        require(destToken != srcToken);
-        var (pricefeed, , riskmgmt) = Fund(address(this)).modules();
-        require(pricefeed.existsPriceOnAssetPair(srcToken, destToken));
-        var (isRecent, referencePrice, ) = pricefeed.getReferencePriceInfo(srcToken, destToken);
-        require(isRecent);
-        uint orderPrice = pricefeed.getOrderPriceInfo(
+        // TODO: Change to more generic price source interface
+        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(this)).hub()).priceSource());
+        minRate = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,
             srcAmount,
             destAmount
         );
-        return(
-            riskmgmt.isTakePermitted(
-                orderPrice,
-                referencePrice,
-                srcToken,
-                destToken,
-                srcAmount,
-                destAmount
-            )
-        );
     }
-    */
 }
