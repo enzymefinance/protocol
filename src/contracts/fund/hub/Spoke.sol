@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "./Hub.sol";
 import "../../dependencies/auth.sol";
 
@@ -29,10 +28,12 @@ contract Spoke is DSAuth {
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
-        // TODO: remove "owner" authority?
+        setOwner(hub);  // allow hub to initialize
     }
 
-    function initialize(address[12] _spokes) {  // TODO: onlyInitialized modifier?
+    // TODO: onlyInitialized modifier?
+    function initialize(address[12] _spokes) public auth {
+        // setOwner(address(0));
         require(!initialized, "Already initialized");
         routes = Routes(
             _spokes[0],

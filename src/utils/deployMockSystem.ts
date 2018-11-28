@@ -122,7 +122,14 @@ export const deployMockSystem = async ({
     ])
     .send({ from: environment.wallet.address, gas: 8000000 });
 
-  const toInit = [accounting, participation, shares, trading, vault];
+  const toInit = [
+    accounting,
+    participation,
+    shares,
+    trading,
+    vault,
+    feeManager,
+  ];
   for (const contract of toInit) {
     await hub.methods
       .initializeSpoke(contract.options.address)
