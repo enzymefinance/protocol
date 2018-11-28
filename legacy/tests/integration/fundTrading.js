@@ -84,8 +84,8 @@ test.before(async t => {
 
   // Register price tolerance policy
   const priceTolerance = await deployContract('fund/policies/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
-  await t.notThrows(fund.policyManager.methods.register(makeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
-  await t.notThrows(fund.policyManager.methods.register(takeOrderSignatureBytes, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
+  await t.notThrowsAsync(() => fund.policyManager.methods.register(makeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
+  await t.notThrowsAsync(() => fund.policyManager.methods.register(takeOrderSignatureBytes, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
 });
 
 test.beforeEach(async () => {
@@ -458,7 +458,7 @@ test.serial(
     const pre = await getAllBalances(deployed, accounts, fund);
     const exchangePreEthToken = await ethToken.methods.balanceOf(exchanges[0].options.address).call();
     const preOrderId = await exchanges[0].methods.last_offer_id().call();
-    receipt = await t.throws(fund.trading.methods.callOnExchange(
+    receipt = await t.throwsAsync(() => fund.trading.methods.callOnExchange(
       0,
       makeOrderSignature,
       [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, ethToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20)],
@@ -542,7 +542,7 @@ test.serial(
     );
     const orderId = await exchanges[0].methods.last_offer_id().call();
 
-    await t.throws(fund.trading.methods.callOnExchange(
+    await t.throwsAsync(() => fund.trading.methods.callOnExchange(
       0,
       takeOrderSignature,
       [web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
@@ -810,7 +810,7 @@ test.serial("manger opens new order, but not anyone can cancel", async t => {
     { from: manager, gas: config.gas }
   );
   const offerNumber = await exchanges[0].methods.last_offer_id().call();
-  await t.throws(fund.trading.methods.callOnExchange(
+  await t.throwsAsync(() => fund.trading.methods.callOnExchange(
     0,
     cancelOrderSignature,
     [web3.utils.randomHex(20), web3.utils.randomHex(20), mlnToken.options.address, web3.utils.randomHex(20), web3.utils.randomHex(20), web3.utils.randomHex(20)],
