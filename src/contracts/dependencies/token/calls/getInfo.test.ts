@@ -1,6 +1,6 @@
-import { initTestEnvironment } from '~/utils/environment';
-
-import { getInfo, deployToken } from '..';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getInfo } from '../calls/getInfo';
+import { deployToken } from '../transactions/deploy';
 
 const shared: any = {};
 

@@ -1,7 +1,7 @@
+import { Address } from '@melonproject/token-math/address';
 import * as web3Utils from 'web3-utils';
 
-import { ensure } from '../guards';
-import { Address } from '@melonproject/token-math/address';
+import { ensure } from '~/utils/guards/ensure';
 
 export const isAddress = (address: string | Address): boolean =>
   `${address}`.length === 42 &&

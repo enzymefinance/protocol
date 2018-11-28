@@ -1,13 +1,19 @@
-import { transactionFactory, PrepareArgsFunction } from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
+import {
+  transactionFactory,
+  PrepareArgsFunction,
+} from '~/utils/solidity/transactionFactory';
+import { ensure } from '~/utils/guards/ensure';
 import {
   createQuantity,
   greaterThan,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
-import { getToken, balanceOf } from '~/contracts/dependencies/token';
-import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
 export interface RedeemQuantityArgs {
   sharesQuantity: QuantityInterface;

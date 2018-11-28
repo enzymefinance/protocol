@@ -1,12 +1,18 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { randomAddress } from '~/utils/helpers';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { randomAddress } from '~/utils/helpers/randomAddress';
+import { Contracts } from '~/Contracts';
 
 let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(
+    shared,
+    await deployMockSystem({
+      accountingContract: Contracts.Accounting,
+    }),
+  );
   shared.user = shared.env.wallet.address;
   await shared.version.methods
     .setIsFund(shared.participation.options.address)

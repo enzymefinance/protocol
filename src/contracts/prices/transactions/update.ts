@@ -4,15 +4,12 @@ import {
   PriceInterface,
   toAtomic,
 } from '@melonproject/token-math/price';
-
-import {
-  ensureAccountAddress,
-  getGlobalEnvironment,
-} from '~/utils/environment';
+import { ensureAccountAddress } from '~/utils/environment/ensureAccountAddress';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureAddress } from '~/utils/checks/isAddress';
-import { ensure } from '~/utils/guards';
-import { getPrices } from '..';
-import { getContract } from '~/utils/solidity';
+import { ensure } from '~/utils/guards/ensure';
+import { getPrices } from '../calls/getPrices';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 const guards = async (contractAddress, prices, environment) => {

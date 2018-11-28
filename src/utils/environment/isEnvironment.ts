@@ -1,4 +1,4 @@
-import { Environment } from '.';
+import { Environment } from './Environment';
 
 export const isEnvironment = (
   candidate: Environment | any,

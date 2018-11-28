@@ -3,15 +3,14 @@ import * as path from 'path';
 import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
 
 import { solidityCompileTarget } from '~/settings';
-import {
-  getWeb3Options,
-  Environment,
-  getGlobalEnvironment,
-} from '~/utils/environment';
-import { TransactionArgs } from './transactionFactory';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
 
-const debug = require('~/utils/getDebug').default(__filename);
+import { TransactionArgs } from './transactionFactory';
+import { Environment } from '../environment/Environment';
+
+const debug = require('debug')('melon:protocol:utils:solidity');
 
 // TODO: Refactor all callers to only use the Contract interface
 type Deploy = {
@@ -81,10 +80,11 @@ export const deploy: Deploy = async (
       throw error;
     })
     .on('transactionHash', txHash => debug('transactionHash', txHash))
-    .on('receipt', rc => debug('receipt', rc))
-    .on('confirmation', (cn, r) =>
-      debug('confirmation', cn, r.transactionHash),
-    );
+    .on('receipt', rc => debug('receipt', rc));
+  // TODO: This currently causes Jest to fail.
+  // .on('confirmation', (cn, r) => {}
+  //   // debug('confirmation', cn, r.transactionHash),
+  // );
 
   debug('Deployed: ', pathToSolidityFile, instance.options.address);
   return instance.options.address;

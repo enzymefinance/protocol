@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./Policy.sol";
-import "../hub/Spoke.sol";
 import "../../factory/Factory.sol";
+import "../hub/Spoke.sol";
+import "./Policy.sol";
 
 // TODO: permissioning
 contract PolicyManager is Spoke {
@@ -17,27 +17,25 @@ contract PolicyManager is Spoke {
 
     function registerBatch(bytes4[] sign, address[] ofPolicies) public {
         require(sign.length == ofPolicies.length, "Arrays lengths unequal");
-        for (uint i = 0; i < sign.length; ++i) {
+        for (uint i = 0; i < sign.length; i++) {
             register(sign[i], ofPolicies[i]);
         }
     }
 
     function register(bytes4 sign, address ofPolicy) public {
-        uint position = Policy(ofPolicy).position();
-        if (position == 0) {
-            // Pre condition
+        Policy.Applied position = Policy(ofPolicy).position();
+        if (position == Policy.Applied.pre) {
             policies[sign].pre.push(Policy(ofPolicy));
-        } else if (position == 1) {
-            // Post condition
+        } else if (position == Policy.Applied.post) {
             policies[sign].post.push(Policy(ofPolicy));
         } else {
-            revert("Only 0 or 1 allowed");
+            revert("Only pre and post allowed");
         }
     }
 
     function PoliciesToAddresses(Policy[] storage _policies) internal view returns (address[]) {
         address[] memory res = new address[](_policies.length);
-        for(uint i = 0; i < _policies.length; ++i) {
+        for(uint i = 0; i < _policies.length; i++) {
             res[i] = address(_policies[i]);
         }
         return res;
@@ -68,7 +66,7 @@ contract PolicyManager is Spoke {
     }
 
     function validate(Policy[] storage aux, bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) view internal {
-        for(uint i = 0; i < aux.length; ++i) {
+        for(uint i = 0; i < aux.length; i++) {
             require(
                 aux[i].rule(sig, addresses, values, identifier),
                 "Rule evaluated to false"

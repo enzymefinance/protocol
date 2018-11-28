@@ -1,7 +1,7 @@
-import { ensure } from '~/utils/guards';
-import { getHub } from '~/contracts/fund/hub';
-import { getGlobalEnvironment } from '~/utils/environment';
-import { getContract } from '~/utils/solidity';
+import { ensure } from '~/utils/guards/ensure';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 const ensureFundOwner = async (

@@ -1,8 +1,10 @@
 import { Observable } from 'zen-observable-ts';
 import * as R from 'ramda';
 
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '../environment/Environment';
+
 import { getContract } from './getContract';
-import { getGlobalEnvironment, Environment } from '../environment';
 import { TransactionArgs } from './transactionFactory';
 
 export type PrepareCallArgsFunction = (

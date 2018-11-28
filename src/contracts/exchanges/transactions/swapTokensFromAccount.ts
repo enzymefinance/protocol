@@ -2,18 +2,10 @@ import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
-  getContract,
-} from '~/utils/solidity';
-import {
-  QuantityInterface,
-  createQuantity,
-  greaterThan,
-} from '@melonproject/token-math/quantity';
+} from '~/utils/solidity/transactionFactory';
+import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { ensure } from '~/utils/guards';
-import { ensureSufficientBalance } from '~/contracts/dependencies/token';
-import * as web3Utils from 'web3-utils';
 export interface SwapTokensFromAccountArgs {
   srcQuantity: QuantityInterface;
   destQuantity: QuantityInterface;

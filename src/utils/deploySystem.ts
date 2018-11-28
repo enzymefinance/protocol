@@ -1,33 +1,31 @@
-import { getGlobalEnvironment } from '~/utils/environment';
-
-import { deployToken, getToken } from '~/contracts/dependencies/token';
-import { deploy as deployPriceFeed } from '~/contracts/prices';
-import {
-  deployMatchingMarket,
-  deployMatchingMarketAdapter,
-  addTokenPairWhitelist,
-  deploy0xExchange,
-} from '~/contracts/exchanges';
-import { deploy as deployEngine } from '~/contracts/engine';
 // tslint:disable:max-line-length
-import { deploy as deployPriceTolerance } from '~/contracts/fund/risk-management';
-import { deployWhitelist } from '~/contracts/fund/compliance';
-import { deployAccountingFactory } from '~/contracts/fund/accounting';
-import { deployFeeManagerFactory } from '~/contracts/fund/fees';
-import { deployParticipationFactory } from '~/contracts/fund/participation';
-import { deploySharesFactory } from '~/contracts/fund/shares';
-import { deployTradingFactory } from '~/contracts/fund/trading';
-import { deployVaultFactory } from '~/contracts/fund/vault';
-import { deployPolicyManagerFactory } from '~/contracts/fund/policies';
-import { deployFundFactory } from '~/contracts/factory';
-import { deployMockVersion, setFundFactory } from '~/contracts/version';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
+import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deploy';
+import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
+import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
+import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
+import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
+import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
+import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
+import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
+import { deployParticipationFactory } from '~/contracts/fund/participation/transactions/deployParticipationFactory';
+import { deploySharesFactory } from '~/contracts/fund/shares/transactions/deploySharesFactory';
+import { deployTradingFactory } from '~/contracts/fund/trading/transactions/deployTradingFactory';
+import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
+import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
+import { deployFundFactory } from '~/contracts/factory/transactions/deployFundFactory';
+import { deployMockVersion } from '~/contracts/version/transactions/deployMockVersion';
+import { setFundFactory } from '~/contracts/version/transactions/setFundFactory';
+import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
+import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 // tslint:enable:max-line-length
 
-export const sessionDeployments = {};
-
-const debug = require('./getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils');
 
 /**
  * Deploys all contracts and checks their health
@@ -45,7 +43,6 @@ export const deploySystem = async () => {
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
   const {
-    kyberNetworkAddress,
     kyberNetworkProxyAddress,
     KyberAdapterAddress,
   } = await deployKyberEnvironment(
@@ -138,7 +135,7 @@ export const deploySystem = async () => {
 
   debug('Deployed:', deploymentId, addresses);
 
-  sessionDeployments[deploymentId] = addresses;
+  setSessionDeployment(deploymentId, addresses);
 
   return addresses;
 };

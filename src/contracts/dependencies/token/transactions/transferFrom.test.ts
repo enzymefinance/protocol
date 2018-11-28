@@ -1,9 +1,12 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-
-import { approve, transferFrom, deployToken, getToken } from '..';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { approve } from '../transactions/approve';
+import { transferFrom } from '../transactions/transferFrom';
+import { deployToken } from '../transactions/deploy';
+import { getToken } from '../calls/getToken';
 
 const shared: any = {};
 
@@ -21,8 +24,8 @@ test('transferFrom', async () => {
   await approve({ howMuch, spender: new Address(accounts[0]) });
 
   const receipt = await transferFrom({
-    howMuch,
     from: new Address(accounts[0]),
+    howMuch,
     to: new Address(accounts[1]),
   });
 

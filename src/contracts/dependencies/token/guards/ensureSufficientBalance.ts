@@ -6,9 +6,9 @@ import {
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 
-import { balanceOf } from '..';
-import { ensure } from '~/utils/guards';
-import { getGlobalEnvironment } from '~/utils/environment';
+import { balanceOf } from '../calls/balanceOf';
+import { ensure } from '~/utils/guards/ensure';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 const ensureSufficientBalance = async (
   minBalance: QuantityInterface,

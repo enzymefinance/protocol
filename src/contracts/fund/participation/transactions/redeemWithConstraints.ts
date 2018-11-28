@@ -1,19 +1,24 @@
 import { Address } from '@melonproject/token-math/address';
 import {
+  transactionFactory,
+  PrepareArgsFunction,
+  PostProcessFunction,
+} from '~/utils/solidity/transactionFactory';
+import { ensure } from '~/utils/guards/ensure';
+import {
   createQuantity,
   greaterThan,
   isEqual,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
-import {
-  transactionFactory,
-  PrepareArgsFunction,
-  PostProcessFunction,
-} from '~/utils/solidity';
-import { ensure } from '~/utils/guards';
+
 import { Contracts } from '~/Contracts';
-import { getToken, balanceOf } from '~/contracts/dependencies/token';
-import { getHub, getSettings, ensureIsNotShutDown } from '../../hub';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+// tslint:disable-next-line:max-line-length
+import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
 export interface RedeemWithConstraintsArgs {
   sharesQuantity: QuantityInterface;

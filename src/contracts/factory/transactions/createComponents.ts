@@ -1,7 +1,10 @@
 import { TokenInterface } from '@melonproject/token-math/token';
-
 import { Address } from '@melonproject/token-math/address';
-import { transactionFactory, EnhancedExecute } from '~/utils/solidity';
+
+import {
+  transactionFactory,
+  EnhancedExecute,
+} from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
 // import ensure from '~/utils/guards/ensure';

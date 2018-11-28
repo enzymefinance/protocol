@@ -1,7 +1,8 @@
 import { Address } from '@melonproject/token-math/address';
-import { Environment } from '~/utils/environment';
 
-import { deploy as deployContract } from '~/utils/solidity';
+import { Environment } from '~/utils/environment/Environment';
+
+import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 interface FundComponentAddresses {
   accountingFactoryAddress: Address;

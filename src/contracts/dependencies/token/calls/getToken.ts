@@ -1,6 +1,6 @@
 import { TokenInterface } from '@melonproject/token-math/token';
-import { getInfo } from '..';
-import { getContract } from '~/utils/solidity';
+import { getInfo } from './getInfo';
+import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment';
 

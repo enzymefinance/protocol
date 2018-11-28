@@ -1,6 +1,7 @@
-import { initTestEnvironment } from '~/utils/environment';
-import { randomAddress } from '~/utils/helpers';
-import { deployFundFactory, managersToHubs } from '../';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { randomAddress } from '~/utils/helpers/randomAddress';
+import { deployFundFactory } from '../transactions/deployFundFactory';
+import { managersToHubs } from '../calls/managersToHubs';
 
 const shared: any = {};
 

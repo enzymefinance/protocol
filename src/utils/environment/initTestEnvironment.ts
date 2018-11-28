@@ -1,11 +1,12 @@
-import { constructEnvironment, setGlobalEnvironment } from './';
+import { constructEnvironment } from './constructEnvironment';
+import { setGlobalEnvironment } from './globalEnvironment';
 
-const debug = require('~/utils/getDebug').default(__filename);
+const debug = require('debug')('melon:protocol:utils:environment');
 
 const getGanache = () => {
   debug('Setting Ganache up');
   // tslint:disable-next-line:variable-name
-  const Ganache = require('ganache-cli');
+  const Ganache = require('@melonproject/ganache-cli');
   const provider = Ganache.provider();
   debug('Ganache setup finished');
   return provider;

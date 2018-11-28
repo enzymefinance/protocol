@@ -2,10 +2,11 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-import { callFactory } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token';
-import { getHub, getSettings } from '../../hub';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getHub } from '~/contracts/fund/hub/calls/getHub';
 
 export interface RequestInvestmentResult {
   investmentAmount: QuantityInterface;

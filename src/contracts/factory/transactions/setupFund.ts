@@ -1,4 +1,5 @@
-import { transactionFactory, getContract } from '~/utils/solidity';
+import { getContract } from '~/utils/solidity/getContract';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
 const postProcess = async (receipt, params, contractAddress, environment?) => {

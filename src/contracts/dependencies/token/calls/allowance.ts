@@ -2,9 +2,9 @@ import {
   createQuantity,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
-import { callFactory } from '~/utils/solidity';
+import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getToken } from '..';
+import { getToken } from './getToken';
 
 const prepareArgs = ({ owner, spender }) => [`${owner}`, `${spender}`];
 

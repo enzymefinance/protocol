@@ -83,7 +83,7 @@ test.before(async t => {
   }));
 
   // Register price tolerance policy
-  const priceTolerance = await deployContract('fund/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
+  const priceTolerance = await deployContract('fund/policies/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
   await t.notThrows(fund.policyManager.methods.register(makeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));
   await t.notThrows(fund.policyManager.methods.register(takeOrderSignatureBytes, priceTolerance.options.address).send({ from: deployer, gasPrice: config.gasPrice }));
 });

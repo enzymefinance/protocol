@@ -1,4 +1,5 @@
-import { getGlobalEnvironment } from '~/utils/environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deployToken = async (

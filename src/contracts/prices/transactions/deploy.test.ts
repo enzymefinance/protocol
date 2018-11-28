@@ -1,5 +1,4 @@
-import { initTestEnvironment } from '~/utils/environment';
-
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploy } from './deploy';
 
 const shared: any = {};

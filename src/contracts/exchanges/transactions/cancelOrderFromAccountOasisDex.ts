@@ -2,7 +2,7 @@ import {
   transactionFactory,
   GuardFunction,
   PrepareArgsFunction,
-} from '~/utils/solidity';
+} from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import * as web3Utils from 'web3-utils';
 

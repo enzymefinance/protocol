@@ -620,12 +620,12 @@ async function deployEnvironment(environment) {
       )
       .send(clone(opts));
     deployed.PriceTolerance = await deployContract(
-      'fund/risk-management/PriceTolerance',
+      'fund/policies/risk-management/PriceTolerance',
       opts,
       [10],
     );
     deployed.Whitelist = await deployContract(
-      'fund/compliance/Whitelist',
+      'fund/policies/compliance/Whitelist',
       opts,
       [[accounts[0]]],
     );

@@ -1,4 +1,5 @@
-import { getGlobalEnvironment } from '../environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { getSessionDeployment } from '~/utils/sessionDeployments';
 
 const ensureDeployments = () => {
   try {
@@ -13,11 +14,8 @@ const ensureDeployments = () => {
 
 const doGetDeployment = (track, network) => {
   const deploymentId = `${network}:${track}`;
-
-  const { sessionDeployments } = require('../deploySystem');
-
   const deployment =
-    sessionDeployments[deploymentId] || ensureDeployments()[deploymentId];
+    getSessionDeployment(deploymentId) || ensureDeployments()[deploymentId];
 
   if (!deployment) {
     throw new Error(

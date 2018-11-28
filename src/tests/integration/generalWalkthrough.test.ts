@@ -1,35 +1,30 @@
+// tslint:disable:max-line-length
 import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
-import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
-import { initTestEnvironment } from '~/utils/environment';
-import { deploySystem } from '~/utils';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deploySystem } from '~/utils/deploySystem';
+import { setupFund } from '~/contracts/factory/transactions/setupFund';
+import { createComponents } from '~/contracts/factory/transactions/createComponents';
+import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
+import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
 import {
-  createComponents,
-  continueCreation,
-  setupFund,
-} from '~/contracts/factory';
-import { getSettings, componentsFromSettings } from '~/contracts/fund/hub';
-import { register, PolicedMethods } from '~/contracts/fund/policies';
-import { update } from '~/contracts/prices';
-import {
-  requestInvestment,
-  executeRequest,
-} from '~/contracts/fund/participation';
-import { setIsFund, setAmguPrice } from '~/contracts/version';
+  register,
+  PolicedMethods,
+} from '~/contracts/fund/policies/transactions/register';
+import { update } from '~/contracts/prices/transactions/update';
+import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
+import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { setIsFund } from '~/contracts/version/transactions/setIsFund';
+import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { redeem } from '~/contracts/fund/participation/transactions/redeem';
-// tslint:disable:max-line-length
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
-import { addTokenPairWhitelist } from '~/contracts/exchanges';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
-import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
-import { getContract } from '~/utils/solidity';
-import { Contracts } from '~/Contracts';
-import { approve } from '~/contracts/dependencies/token';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
@@ -58,9 +53,7 @@ test(
       version,
     } = deployment;
     const [quoteToken, baseToken] = tokens;
-
     const defaultTokens = [quoteToken, baseToken];
-
     const amguToken = await getAmguToken(fundFactory);
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(version, amguPrice);
@@ -75,17 +68,18 @@ test(
 
     await continueCreation(fundFactory);
     const hubAddress = await setupFund(fundFactory);
-
     const settings = await getSettings(hubAddress);
 
     await register(settings.policyManagerAddress, {
       method: PolicedMethods.makeOrder,
       policy: policies.priceTolerance,
     });
+
     await register(settings.policyManagerAddress, {
       method: PolicedMethods.takeOrder,
       policy: policies.priceTolerance,
     });
+
     await register(settings.policyManagerAddress, {
       method: PolicedMethods.executeRequest,
       policy: policies.whitelist,
@@ -99,26 +93,26 @@ test(
     await update(priceSource, [newPrice]);
 
     const components = componentsFromSettings(settings);
-
     await Promise.all(
       Object.values(components).map((address: Address) =>
         setIsFund(version, { address }),
       ),
     );
 
-    const request = await requestInvestment(settings.participationAddress, {
+    await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
     });
+
     console.log('Requested an investment');
 
-    const executedRequest = await executeRequest(settings.participationAddress);
+    await executeRequest(settings.participationAddress);
 
     console.log('Executed request');
 
     // const redemption = await redeem(settings.participationAddress);
     // console.log('Redeemed');
 
-    const holdings = await getFundHoldings(settings.accountingAddress);
+    await getFundHoldings(settings.accountingAddress);
 
     const matchingMarketAddress = deployment.exchangeConfigs.find(
       o => o.name === 'MatchingMarket',
@@ -132,15 +126,12 @@ test(
     expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
     console.log(`Made order from account with id ${order1.id}`);
 
-    const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
-      matchingMarketAddress,
-      {
-        buy: order1.buy,
-        id: order1.id,
-        maxTakeAmount: order1.sell,
-        sell: order1.sell,
-      },
-    );
+    await takeOrderFromAccountOasisDex(matchingMarketAddress, {
+      id: order1.id,
+      maxTakeAmount: order1.sell,
+      buy: order1.buy,
+      sell: order1.sell,
+    });
 
     console.log(`Took order from account with id ${order1.id}`);
 
@@ -148,16 +139,14 @@ test(
       sell: createQuantity(deployment.tokens[0], 0.1),
       buy: createQuantity(deployment.tokens[1], 2),
     });
+
     expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
     expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
     console.log(`Made order from account with id ${order2.id}`);
 
-    const canceledOrderFromAccount = await cancelOrderFromAccountOasisDex(
-      matchingMarketAddress,
-      {
-        id: order2.id,
-      },
-    );
+    await cancelOrderFromAccountOasisDex(matchingMarketAddress, {
+      id: order2.id,
+    });
 
     console.log(`Canceled order from account with id ${order2.id}`);
 
@@ -174,7 +163,7 @@ test(
       shared.environment,
     );
 
-    const canceled = await cancelOasisDexOrder(settings.tradingAddress, {
+    await cancelOasisDexOrder(settings.tradingAddress, {
       id: fundOrder.id,
       maker: settings.tradingAddress,
       makerAsset: fundOrder.makerAsset,
@@ -191,8 +180,7 @@ test(
     expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
     console.log(`Made order from account with id ${order3.id}`);
 
-    const fundTakenOrder = await takeOasisDexOrder(settings.tradingAddress, {
-      fillTakerTokenAmount: order3.buy,
+    await takeOasisDexOrder(settings.tradingAddress, {
       id: order3.id,
       maker: order3.maker,
       makerQuantity: order3.sell,
@@ -201,7 +189,7 @@ test(
 
     console.log(`Took order from fund with id ${order3.id} `);
 
-    const shutDown = await shutDownFund(hubAddress);
+    await shutDownFund(hubAddress);
 
     console.log('Shut down fund');
 

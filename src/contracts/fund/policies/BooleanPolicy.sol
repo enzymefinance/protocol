@@ -9,19 +9,13 @@ contract BooleanPolicy is Policy {
         return allowed;
     }
 
-    function position() external view returns (uint) {
-        return 0;
-    }
+    function position() external view returns (Applied) { return Applied.pre; }
 }
 
 contract TruePolicy is BooleanPolicy {
-    function TruePolicy() public {
-        allowed = true;
-    }
+    constructor() { allowed = true; }
 }
 
 contract FalsePolicy is BooleanPolicy {
-    function FalsePolicy() public {
-        allowed = false;
-    }
+    constructor() { allowed = false; }
 }

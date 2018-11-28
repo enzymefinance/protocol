@@ -1,9 +1,12 @@
 import { Address } from '@melonproject/token-math/address';
 import { isSameToken } from '@melonproject/token-math/token';
 import { isEqual, greaterThan } from '@melonproject/token-math/quantity';
-import { getContract, transactionFactory } from '~/utils/solidity';
-import { getToken, allowance } from '~/contracts/dependencies/token';
-import { ensure } from '~/utils/guards';
+
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import { getContract } from '~/utils/solidity/getContract';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { allowance } from '~/contracts/dependencies/token/calls/allowance';
+import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
 
 const guard = async ({ quantity }, contractAddress: Address, environment) => {

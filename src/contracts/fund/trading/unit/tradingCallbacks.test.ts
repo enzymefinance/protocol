@@ -1,13 +1,11 @@
 import { Contracts } from '~/Contracts';
-import { initTestEnvironment } from '~/utils/environment';
-import { deployMockSystem } from '~/utils';
-import { deploy, getContract } from '~/utils/solidity';
-import {
-  makeOrderSignature,
-  takeOrderSignature,
-  emptyAddress,
-} from '~/utils/constants';
-import { randomAddress } from '~/utils/helpers';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deploy } from '~/utils/solidity/deploy';
+import { getContract } from '~/utils/solidity/getContract';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { makeOrderSignature } from '~/utils/constants/orderSignatures';
+import { randomAddress } from '~/utils/helpers/randomAddress';
 
 let shared: any = {};
 

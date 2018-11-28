@@ -4,10 +4,11 @@ import {
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
-
-import { initTestEnvironment, getGlobalEnvironment } from '~/utils/environment';
-
-import { deployToken, balanceOf, getToken } from '..';
+import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { balanceOf } from '../calls/balanceOf';
+import { getToken } from '../calls/getToken';
+import { deployToken } from '../transactions/deploy';
 import { transfer } from '../transactions/transfer';
 
 const shared: any = {};
@@ -25,7 +26,7 @@ beforeAll(async () => {
   );
 });
 
-test('balanceOf', async () => {
+it('balanceOf', async () => {
   const balance = await balanceOf(shared.address, {
     address: shared.accounts[0],
   });
@@ -35,7 +36,7 @@ test('balanceOf', async () => {
   expect(isEqual(balance, expected)).toBe(true);
 });
 
-test('balanceOf.observable', async () => {
+it('balanceOf.observable', async () => {
   let counter = 0;
   const observable = balanceOf.observable(shared.address, {
     address: shared.accounts[1],

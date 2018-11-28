@@ -4,18 +4,18 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
-
-import { Environment, getGlobalEnvironment } from '../environment';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
+import { getContract } from '~/utils/solidity/getContract';
 import {
-  getContract,
   prepareTransaction,
   OptionsOrCallback,
   Options,
-} from '../solidity';
-import { Address } from '@melonproject/token-math/address';
-import { ensure } from '../guards';
+} from '~/utils/solidity/prepareTransaction';
+import { ensure } from '~/utils/guards/ensure';
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
