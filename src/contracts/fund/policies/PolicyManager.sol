@@ -4,7 +4,6 @@ import "../../factory/Factory.sol";
 import "../hub/Spoke.sol";
 import "./Policy.sol";
 
-// TODO: permissioning
 contract PolicyManager is Spoke {
     struct Entry {
         Policy[] pre;
@@ -15,7 +14,7 @@ contract PolicyManager is Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function register(bytes4 sign, address ofPolicy) auth {
+    function register(bytes4 sign, address ofPolicy) public auth {
         Policy.Applied position = Policy(ofPolicy).position();
         if (position == Policy.Applied.pre) {
             policies[sign].pre.push(Policy(ofPolicy));
@@ -26,7 +25,7 @@ contract PolicyManager is Spoke {
         }
     }
 
-    function batchRegister(bytes4[] sign, address[] ofPolicies) auth {
+    function batchRegister(bytes4[] sign, address[] ofPolicies) public auth {
         require(sign.length == ofPolicies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sign.length; i++) {
             register(sign[i], ofPolicies[i]);
