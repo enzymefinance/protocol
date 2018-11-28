@@ -22,6 +22,7 @@ contract Accounting is DSMath, Spoke {
         uint timestamp;
     }
 
+    uint constant public MAX_OWNED_ASSETS = 50; // TODO: Analysis
     address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
     mapping (address => bool) public isInAssetList; // TODO: same as above
     address public QUOTE_ASSET;
@@ -38,6 +39,11 @@ contract Accounting is DSMath, Spoke {
         QUOTE_ASSET = _quoteAsset;
         SHARES_DECIMALS = 18;
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
+    }
+
+    /// TODO: Is this redundant?
+    function getOwnedAssetsLength() view returns (uint) {
+        return ownedAssets.length;
     }
 
     /// @dev Returns sparse array

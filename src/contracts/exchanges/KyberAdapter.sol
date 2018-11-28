@@ -63,10 +63,10 @@ contract KyberAdapter is DBC, DSMath {
 
         // TODO: ADD BACK
         // require(swapPermitted(srcAmount, srcToken, actualReceiveAmount, destToken));
-        // require(
-        //     Fund(address(this)).isInAssetList(destToken) ||
-        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(destToken) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS()
+        );
 
         // Add dest token to fund's owned asset list if not already exists and update order hook
         Accounting(hub.accounting()).addAssetToOwnedAssets(destToken);

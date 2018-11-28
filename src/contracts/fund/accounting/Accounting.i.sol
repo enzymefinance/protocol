@@ -3,6 +3,7 @@ pragma solidity ^0.4.21;
 
 /// @notice Gives metrics about a Fund
 interface AccountingInterface {
+    function getOwnedAssetsLength() view returns (uint);
     function getFundHoldings() returns (uint[], address[]);
     function getFundHoldingsLength() view returns (uint);
     function calcAssetGAV(address ofAsset) returns (uint);

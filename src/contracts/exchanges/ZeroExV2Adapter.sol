@@ -61,13 +61,13 @@ contract ZeroExV2Adapter is DSMath, DBC {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        // TODO: ADD back 
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
 
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -137,12 +137,11 @@ contract ZeroExV2Adapter is DSMath, DBC {
             takerAssetFilledAmount == fillTakerQuantity,
             "Filled amount does not match desired fill amount"
         );
-        // TODO: Add it back
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS(),
-        //     "Not in asset list or cannot be added"
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
 
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
         Trading(address(this)).orderUpdateHook(
