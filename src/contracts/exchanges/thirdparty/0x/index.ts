@@ -6,4 +6,5 @@ export * from './calls/getFeeToken';
 export * from './calls/getOrderInfo';
 export * from './calls/isValidSignature';
 export * from './transactions/fillOrder';
+export * from './transactions/preSign';
 export * from './utils/createOrder';

@@ -1,3 +1,4 @@
+// tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 
@@ -33,6 +34,7 @@ import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrde
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 import { swapTokensFromAccount } from '~/contracts/exchanges/transactions/swapTokensFromAccount';
 import { Address } from '@melonproject/token-math/address';
+// tslint:enable:max-line-length
 
 const shared: any = {};
 
@@ -59,8 +61,6 @@ test(
       policies,
       version,
     } = deployment;
-
-    console.log(deployment);
 
     const [quoteToken, baseToken] = tokens;
 
@@ -117,11 +117,8 @@ test(
     const request = await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
     });
-    console.log('Requested an investment');
 
     const executedRequest = await executeRequest(settings.participationAddress);
-
-    console.log('Executed request');
 
     // const redemption = await redeem(settings.participationAddress);
     // console.log('Redeemed');
@@ -142,7 +139,6 @@ test(
     });
     expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
     expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-    console.log(`Made order from account with id ${order1.id}`);
 
     const takenOrderFromAccount = await takeOrderFromAccountOasisDex(
       matchingMarketAddress,
@@ -154,15 +150,12 @@ test(
       },
     );
 
-    console.log(`Took order from account with id ${order1.id}`);
-
     const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
       sell: createQuantity(deployment.tokens[0], 0.1),
       buy: createQuantity(deployment.tokens[1], 2),
     });
     expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
     expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-    console.log(`Made order from account with id ${order2.id}`);
 
     const canceledOrderFromAccount = await cancelOrderFromAccountOasisDex(
       matchingMarketAddress,
@@ -170,8 +163,6 @@ test(
         id: order2.id,
       },
     );
-
-    console.log(`Canceled order from account with id ${order2.id}`);
 
     // const kyberSwap = await swapTokensFromAccount(kyberAddress, {
     //   srcQuantity: createQuantity(deployment.tokens[1], 0.00001),
