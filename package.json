@@ -68,7 +68,6 @@
     "lint-staged": "^7.3.0",
     "prettier": "^1.14.3",
     "prettier-eslint": "^8.2.2",
-    "prettier-plugin-solidity": "^1.0.0-alpha.5",
     "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",

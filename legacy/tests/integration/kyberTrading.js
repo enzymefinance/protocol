@@ -3,7 +3,7 @@ import web3 from "../../utils/lib/web3";
 import deployEnvironment from "../../utils/deploy/contracts";
 import getAllBalances from "../../utils/lib/getAllBalances";
 import { getTermsSignatureParameters } from "../../utils/lib/signing";
-import { swapTokensSignature, swapTokensSignatureBytes } from "../../utils/lib/data";
+import { takeOrderSignature, takeOrderSignatureBytes } from "../../utils/lib/data";
 import { updateKyberPriceFeed } from "../../utils/lib/updatePriceFeed";
 import { deployContract, retrieveContract } from "../../utils/lib/contracts";
 import governanceAction from "../../utils/lib/governanceAction";
@@ -143,7 +143,7 @@ test.serial(
     await fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        takeOrderSignature,
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
@@ -185,7 +185,7 @@ test.serial(
     await fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        takeOrderSignature,
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
@@ -230,7 +230,7 @@ test.serial(
     await fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        takeOrderSignature,
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
@@ -280,7 +280,7 @@ test.serial(
     await fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        takeOrderSignature,
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
@@ -316,14 +316,14 @@ test.serial(
 );
 
 // TODO
-test.serial.skip("swapTokens fails if minPrice is not satisfied", async t => {
+test.serial.skip("takeOrder fails if minPrice is not satisfied", async t => {
   const srcAmount = new BigNumber(10 ** 17);
   const destAmount = srcAmount.mul(mlnPrice * 2).div(precisionUnits);
   await t.throws(
     fund.trading.methods
       .callOnExchange(
         0,
-        swapTokensSignature,
+        takeOrderSignature,
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
@@ -371,7 +371,7 @@ test.serial.skip(
       fund.trading.methods
         .callOnExchange(
           0,
-          swapTokensSignature,
+          takeOrderSignature,
           [
             NULL_ADDRESS,
             NULL_ADDRESS,

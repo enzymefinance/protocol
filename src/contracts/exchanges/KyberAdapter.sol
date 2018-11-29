@@ -17,9 +17,7 @@ contract KyberAdapter is DBC, DSMath {
 
     // NON-CONSTANT METHODS
 
-    // Responsibilities of swapTokens are:
-    // - check price recent
-    // - check risk management passes
+    // Responsibilities of takeOrder are:
     // - approve funds to be traded (if necessary)
     // - perform swap order on the exchange
     // - place asset in ownedAssets if not already tracked
@@ -30,7 +28,7 @@ contract KyberAdapter is DBC, DSMath {
     /// @param orderAddresses [3] Dest token
     /// @param orderValues [0] Src token amount
     /// @param orderValues [1] Dest token amount
-    function swapTokens(
+    function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
@@ -77,19 +75,6 @@ contract KyberAdapter is DBC, DSMath {
 
     /// @dev Dummy function; not implemented on exchange
     function makeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
