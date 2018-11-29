@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "../../dependencies/guard.sol";
 import "./Spoke.sol";
 
@@ -40,8 +39,7 @@ contract Hub is DSGuard {
     }
 
     // TODO: extend this ability to the version (if version shut down and we still need this)
-    function shutDownFund() public {
-        require(msg.sender == manager, "Only manager can shut down fund");
+    function shutDownFund() public auth {
         isShutDown = true;
     }
 
@@ -102,6 +100,7 @@ contract Hub is DSGuard {
         permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(manager, settings.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, settings.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(settings.version, address(this), bytes4(keccak256('shutDownFund()')));
         permissionsSet = true;
     }
 
