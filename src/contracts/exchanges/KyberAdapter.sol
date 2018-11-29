@@ -54,7 +54,7 @@ contract KyberAdapter is DBC, DSMath {
             destAmount
         );
 
-        uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, destAmount);
+        uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
         // TODO: Maybe post policy check for PriceTolernance based on actualReceiveAmount (Overkill maybe)
         require(

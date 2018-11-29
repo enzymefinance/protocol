@@ -70,7 +70,7 @@ test.before(async () => {
     await pricefeed.methods
       .getPrice(mlnToken.options.address)
       .call()
-  ).map(e => new BigNumber(e).toFixed(0));
+  );
   const [r, s, v] = await getTermsSignatureParameters(manager);
   await deployed.FundFactory.methods.createComponents(
     'Test Fund', [deployed.KyberNetworkProxy.options.address], [deployed.KyberAdapter.options.address], deployed.EthToken.options.address, [deployed.EthToken.options.address, deployed.MlnToken.options.address], [false], deployed.KyberPriceFeed.options.address
@@ -131,11 +131,11 @@ test.serial(
 );
 
 test.serial(
-  "swap ethToken for mlnToken",
+  "swap ethToken for mlnToken with specific order price (minRate)",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
-    const srcAmount = new BigNumber(10 ** 18);
-    const destAmount = new BigNumber(srcAmount).mul(precisionUnits).div(mlnPrice);
+    const srcAmount = new BigNumber(10 ** 17);
+    const destAmount = new BigNumber(srcAmount).mul(precisionUnits).div(mlnPrice).div(1.02);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(ethAddress, mlnToken.options.address, srcAmount.toFixed())
@@ -178,12 +178,12 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const srcAmount = new BigNumber(10 ** 17);
-    const destAmount = new BigNumber(srcAmount).mul(mlnPrice).div(precisionUnits);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(mlnToken.options.address, ethAddress, srcAmount.toFixed())
         .call()
     ).map(e => new BigNumber(e));
+    const destAmount = new BigNumber(srcAmount).mul(bestRate).div(precisionUnits);
     await fund.trading.methods
       .callOnExchange(
         0,
@@ -274,7 +274,7 @@ test.serial(
 
 test.serial("takeOrder fails if minPrice is not satisfied", async t => {
   const srcAmount = new BigNumber(10 ** 17);
-  const destAmount = srcAmount.mul(mlnPrice * 2).div(precisionUnits);
+  const destAmount = srcAmount.mul(mlnPrice).div(precisionUnits).mul(2);
   await t.throws(
     fund.trading.methods
       .callOnExchange(
@@ -288,7 +288,7 @@ test.serial("takeOrder fails if minPrice is not satisfied", async t => {
           NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [srcAmount.toFixed(), destAmount.toFixed(), 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -302,9 +302,9 @@ test.serial(
   "risk management prevents swap in the case of bad kyber network price",
   async t => {
     // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
-    baseBuyRate1 = [mlnPrice * 2];
+    baseBuyRate1 = [new BigNumber(mlnPrice).mul(2).toFixed()];
     baseSellRate1 = [
-      precisionUnits
+      new BigNumber(precisionUnits)
         .mul(precisionUnits)
         .div(baseBuyRate1)
         .toFixed(0)
