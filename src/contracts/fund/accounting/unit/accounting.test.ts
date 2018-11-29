@@ -95,18 +95,22 @@ test('Balance in vault reflects in accounting', async () => {
   expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
 });
 
-test('Cannot add or remove assets if not authorized', async () => {
+// Deployer is an authorized module because it has been directly deployed
+test('Add and remove assets by an authorized module', async () => {
   await expect(
     shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
   ).resolves.toBe(false);
+  await shared.accounting.methods
+    .addAssetToOwnedAssets(shared.mln.options.address)
+    .send({ from: shared.user, gas: 8000000 });
   await expect(
-    shared.accounting.methods
-      .addAssetToOwnedAssets(shared.mln.options.address)
-      .send({ from: shared.user, gas: 8000000 }),
-  ).rejects.toThrow();
+    shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
+  ).resolves.toBe(true);
+
+  await shared.accounting.methods
+    .removeFromOwnedAssets(shared.mln.options.address)
+    .send({ from: shared.user, gas: 8000000 });
   await expect(
-    shared.accounting.methods
-      .removeFromOwnedAssets(shared.mln.options.address)
-      .send({ from: shared.user, gas: 8000000 }),
-  ).rejects.toThrow();
+    shared.accounting.methods.isInAssetList(shared.mln.options.address).call(),
+  ).resolves.toBe(false);
 });
