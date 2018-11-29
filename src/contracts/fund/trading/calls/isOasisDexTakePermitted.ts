@@ -1,10 +1,11 @@
+import * as Web3EthAbi from 'web3-eth-abi';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts, requireMap } from '~/Contracts';
+import { Contracts } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 const isOasisDexTakePermitted = async (
   tradingContractAddress,
@@ -41,11 +42,6 @@ const isOasisDexTakePermitted = async (
     environment,
   );
 
-  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const methodSignature = getFunctionABISignature(
-    matchingMarketAdapterAbi,
-    'takeOrder',
-  );
   const deployment = await getDeployment(environment);
   const exchangeAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
@@ -53,7 +49,7 @@ const isOasisDexTakePermitted = async (
 
   const result = await policyManager.methods
     .preValidate(
-      methodSignature, // bytes4(keccak256(methodSignature))
+      Web3EthAbi.encodeFunctionSignature(FunctionSignatures.takeOrder),
       [
         '0x0000000000000000000000000000000000000000', // orderAddresses[0],
         tradingAddress.toString(), // orderAddresses[1],

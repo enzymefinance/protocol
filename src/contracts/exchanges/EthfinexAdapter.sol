@@ -2,9 +2,6 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
-import "./thirdparty/ethfinex/ExchangeEfx.sol";
-import "./thirdparty/ethfinex/WrapperLock.sol";
-import "./thirdparty/ethfinex/WrapperLockEth.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -12,12 +9,16 @@ import "../fund/accounting/Accounting.sol";
 import "../dependencies/token/WETH9.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/math.sol";
+import "./thirdparty/ethfinex/ExchangeEfx.sol";
+import "./thirdparty/ethfinex/WrapperLock.sol";
+import "./thirdparty/ethfinex/WrapperLockEth.sol";
+import "./ExchangeAdapterInterface.sol";
 
 
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract EthfinexAdapter is DSMath, DBC {
+contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
 
     //  METHODS
 
@@ -54,7 +55,7 @@ contract EthfinexAdapter is DSMath, DBC {
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
-        
+
         require(
             ExchangeEfx(targetExchange).isValidSignature(
                 orderInfo.orderHash,
@@ -200,7 +201,7 @@ contract EthfinexAdapter is DSMath, DBC {
         if (makerAsset == nativeAsset) {
             WETH9(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
-        } else { 
+        } else {
             ERC20(makerAsset).approve(wrappedToken, makerQuantity);
             WrapperLock(wrappedToken).deposit(makerQuantity, depositTime);
         }

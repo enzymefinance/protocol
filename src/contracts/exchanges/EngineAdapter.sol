@@ -7,16 +7,17 @@ import "../fund/vault/Vault.sol";
 import "../dependencies/math.sol";
 import "../dependencies/Weth.sol";
 import "../dependencies/token/ERC20.i.sol";
+import "./ExchangeAdapterInterface.sol";
 
 /// @notice Trading adapter between Melon and Melon Engine
-contract EngineAdapter is DSMath {
+contract EngineAdapter is DSMath, ExchangeAdapterInterface {
 
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
     /// @param orderValues [0] MLN quantity
     /// @param orderAddresses [0] MLN token
     /// @param orderAddresses [1] WETH token
-    function sellMlnBuyEth (
+    function takeOrder (
         address targetExchange,
         address[5] orderAddresses,
         uint[8] orderValues,
@@ -47,4 +48,45 @@ contract EngineAdapter is DSMath {
     }
 
     function () payable {}
+
+    /// @dev Dummy function; not implemented on exchange
+    function makeOrder(
+        address targetExchange,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    ) {
+        revert("Unimplemented");
+    }
+
+    /// @dev Dummy function; not implemented on exchange
+    function cancelOrder(
+        address targetExchange,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    )
+    {
+        revert("Unimplemented");
+    }
+
+    // VIEW FUNCTIONS
+
+    /// @dev Dummy function; not implemented on exchange
+    function getOrder(
+        address targetExchange,
+        uint id,
+        address makerAsset
+    )
+        view
+        returns (address, address, uint, uint)
+    {
+        revert("Unimplemented");
+    }
 }

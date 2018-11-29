@@ -1,22 +1,23 @@
 
 pragma solidity ^0.4.21;
 
-import "./thirdparty/kyber/KyberNetworkProxy.sol";
 import "../dependencies/token/WETH9.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DBC.sol";
+import "./thirdparty/kyber/KyberNetworkProxy.sol";
+import "./ExchangeAdapterInterface.sol";
 
 
-contract KyberAdapter is DBC, DSMath {
+contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     // NON-CONSTANT METHODS
 
-    // Responsibilities of swapTokens are:
+    // Responsibilities of takeOrder (Kybers swapToken) are:
     // - check price recent
     // - check risk management passes
     // - approve funds to be traded (if necessary)
@@ -29,7 +30,7 @@ contract KyberAdapter is DBC, DSMath {
     /// @param orderAddresses [3] Dest token
     /// @param orderValues [0] Src token amount
     /// @param orderValues [1] Dest token amount
-    function swapTokens(
+    function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
@@ -93,19 +94,6 @@ contract KyberAdapter is DBC, DSMath {
     }
 
     /// @dev Dummy function; not implemented on exchange
-    function takeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
-    /// @dev Dummy function; not implemented on exchange
     function cancelOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -146,11 +134,11 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint actualReceiveAmount)
     {
-        
+
         Hub hub = Hub(Trading(address(this)).hub());
         // TODO: Change to Native Asset or Wrapped Native Asset?
         address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
-        
+
         if (srcToken == nativeAsset) {
             actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
         }
