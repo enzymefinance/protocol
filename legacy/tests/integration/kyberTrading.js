@@ -56,7 +56,7 @@ let ethToken;
 let mlnToken;
 let eurToken;
 
-test.before(async () => {
+test.before(async t => {
   accounts = await web3.eth.getAccounts();
   [deployer, manager, investor] = accounts;
   opts = { from: accounts[0], gas: config.gas, gasPrice: config.gasPrice };
@@ -83,6 +83,10 @@ test.before(async () => {
   await Promise.all(Object.values(fund).map(async (component) => {
     await deployed.MockVersion.methods.setIsFund(component.options.address).send({from: manager});
   }));
+
+  // Register price tolerance policy
+  const priceTolerance = await deployContract('fund/policies/risk-management/PriceTolerance', { from: manager, gas: config.gas, gasPrice: config.gasPrice }, [10])
+  await t.notThrows(fund.policyManager.methods.register(takeOrderSignatureBytes, priceTolerance.options.address).send({ from: manager, gasPrice: config.gasPrice }));  
 });
 
 test.beforeEach(async () => {
@@ -135,7 +139,7 @@ test.serial(
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const srcAmount = new BigNumber(10 ** 17);
-    const destAmount = new BigNumber(srcAmount).mul(precisionUnits).div(mlnPrice).div(1.02);
+    const destAmount = new BigNumber(srcAmount).mul(precisionUnits).div(mlnPrice).div(1.05);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(ethAddress, mlnToken.options.address, srcAmount.toFixed())
@@ -153,7 +157,7 @@ test.serial(
           NULL_ADDRESS,
           NULL_ADDRESS        
         ],
-        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, destAmount.toFixed(0), 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -196,7 +200,7 @@ test.serial(
           NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [srcAmount.toFixed(), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(), destAmount.toFixed(0), 0, 0, 0, 0, destAmount.toFixed(0), 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -223,17 +227,18 @@ test.serial(
     const fundPreEur = new BigNumber(
       await eurToken.methods.balanceOf(fund.vault.options.address).call()
     );
-    const srcAmount = new BigNumber(10 ** 17).toFixed();
+    const srcAmount = new BigNumber(10 ** 17);
     const pre = await getAllBalances(deployed, accounts, fund);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(
           mlnToken.options.address,
           eurToken.options.address,
-          srcAmount
+          srcAmount.toFixed(0)
         )
         .call()
     ).map(e => new BigNumber(e));
+    const destAmount = new BigNumber(srcAmount).mul(bestRate).div(precisionUnits);
     await fund.trading.methods
       .callOnExchange(
         0,
@@ -246,7 +251,7 @@ test.serial(
           NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [srcAmount, 0, 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, destAmount.toFixed(0), 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -288,7 +293,7 @@ test.serial("takeOrder fails if minPrice is not satisfied", async t => {
           NULL_ADDRESS,
           NULL_ADDRESS
         ],
-        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, destAmount.toFixed(0), 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),

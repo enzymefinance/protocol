@@ -23,6 +23,7 @@ contract KyberAdapter is DBC, DSMath {
     // - place asset in ownedAssets if not already tracked
     /// @notice Swaps srcAmount of srcToken for destAmount of destToken
     /// @dev Variable naming to be close to Kyber's naming
+    /// @dev For the purpose of PriceTolerance, fillTakerQuantity == takerAssetQuantity = Dest token amount
     /// @param targetExchange Address of the exchange
     /// @param orderAddresses [2] Src token
     /// @param orderAddresses [3] Dest token
@@ -41,6 +42,7 @@ contract KyberAdapter is DBC, DSMath {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager is not sender");
         require(!hub.isShutDown(), "Hub is shut down");
+        require(orderValues[1] == orderValues[6], "fillTakerQuantity must equal takerAssetQuantity");
 
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
