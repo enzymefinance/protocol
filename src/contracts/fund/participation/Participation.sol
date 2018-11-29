@@ -91,10 +91,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         delete requests[msg.sender];
     }
 
-    function executeRequest() public payable {
-        executeRequestFor(msg.sender);
-    }
-
     function executeRequestFor(address requestOwner)
         public
         payable
