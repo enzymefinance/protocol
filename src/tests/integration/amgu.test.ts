@@ -32,78 +32,74 @@ const randomString = (length = 4) =>
     .toString(36)
     .substr(2, length);
 
-test(
-  'Set amgu and check its usage',
-  async () => {
-    const fundName = `test-fund-${randomString()}`;
-    const deployment = await deploySystem();
-    const {
-      exchangeConfigs,
-      fundFactory,
-      priceSource,
-      tokens,
-      // engine,
-      // policies,
-      version,
-    } = deployment;
-    const [quoteToken, baseToken] = tokens;
+test('Set amgu and check its usage', async () => {
+  const fundName = `test-fund-${randomString()}`;
+  const deployment = await deploySystem();
+  const {
+    exchangeConfigs,
+    fundFactory,
+    priceSource,
+    tokens,
+    // engine,
+    // policies,
+    version,
+  } = deployment;
+  const [quoteToken, baseToken] = tokens;
 
-    const defaultTokens = [quoteToken, baseToken];
-    const amguToken = await getAmguToken(fundFactory);
-    const amguPrice = createQuantity(amguToken, '1000000000');
-    const oldAmguPrice = await getAmguPrice(version);
-    const newAmguPrice = await setAmguPrice(version, amguPrice);
+  const defaultTokens = [quoteToken, baseToken];
+  const amguToken = await getAmguToken(fundFactory);
+  const amguPrice = createQuantity(amguToken, '1000000000');
+  const oldAmguPrice = await getAmguPrice(version);
+  const newAmguPrice = await setAmguPrice(version, amguPrice);
 
-    expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
-    expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
+  expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
+  expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
 
-    const args = {
-      defaultTokens,
-      exchangeConfigs,
-      fundName,
-      priceSource,
-      quoteToken,
-    };
+  const args = {
+    defaultTokens,
+    exchangeConfigs,
+    fundName,
+    priceSource,
+    quoteToken,
+  };
 
-    const newPrice = getPrice(
-      createQuantity(baseToken, '1'),
-      createQuantity(quoteToken, '2'),
-    );
+  const newPrice = getPrice(
+    createQuantity(baseToken, '1'),
+    createQuantity(quoteToken, '2'),
+  );
 
-    await update(priceSource, [newPrice]);
+  await update(priceSource, [newPrice]);
 
-    const [price] = await getPrices(priceSource, [baseToken]);
-    expect(isEqualPrice(price, newPrice)).toBe(true);
+  const [price] = await getPrices(priceSource, [baseToken]);
+  expect(isEqualPrice(price, newPrice)).toBe(true);
 
-    const prepared = await createComponents.prepare(fundFactory, args);
+  const prepared = await createComponents.prepare(fundFactory, args);
 
-    const preBalance = await shared.environment.eth.getBalance(
-      shared.accounts[0],
-    );
+  const preBalance = await shared.environment.eth.getBalance(
+    shared.accounts[0],
+  );
 
-    const signedTransactionData = await sign(
-      prepared.rawTransaction,
-      shared.environment,
-    );
+  const signedTransactionData = await sign(
+    prepared.rawTransaction,
+    shared.environment,
+  );
 
-    const result = await createComponents.send(
-      fundFactory,
-      signedTransactionData,
-      args,
-      undefined,
-      shared.environment,
-    );
+  const result = await createComponents.send(
+    fundFactory,
+    signedTransactionData,
+    args,
+    undefined,
+    shared.environment,
+  );
 
-    const postBalance = await shared.environment.eth.getBalance(
-      shared.accounts[0],
-    );
+  const postBalance = await shared.environment.eth.getBalance(
+    shared.accounts[0],
+  );
 
-    const diffQ = subtract(preBalance, postBalance);
+  const diffQ = subtract(preBalance, postBalance);
 
-    expect(result).toBeTruthy();
-    expect(
-      greaterThan(diffQ, new BigInteger(prepared.rawTransaction.gas)),
-    ).toBe(true);
-  },
-  30 * 1000,
-);
+  expect(result).toBeTruthy();
+  expect(greaterThan(diffQ, new BigInteger(prepared.rawTransaction.gas))).toBe(
+    true,
+  );
+});
