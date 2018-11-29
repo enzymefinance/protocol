@@ -131,10 +131,11 @@ test.serial(
 );
 
 test.serial(
-  "swap ethToken for mlnToken without minimum destAmount",
+  "swap ethToken for mlnToken",
   async t => {
     const pre = await getAllBalances(deployed, accounts, fund);
     const srcAmount = new BigNumber(10 ** 18);
+    const destAmount = new BigNumber(srcAmount).mul(precisionUnits).div(mlnPrice);
     const [, bestRate] = Object.values(
       await deployed.KyberNetwork.methods
         .findBestRate(ethAddress, mlnToken.options.address, srcAmount.toFixed())
@@ -152,7 +153,7 @@ test.serial(
           NULL_ADDRESS,
           NULL_ADDRESS        
         ],
-        [srcAmount.toFixed(), 0, 0, 0, 0, 0, 0, 0],
+        [srcAmount.toFixed(0), destAmount.toFixed(0), 0, 0, 0, 0, 0, 0],
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
         web3.utils.padLeft("0x0", 64),
@@ -172,50 +173,6 @@ test.serial(
   }
 );
 
-test.serial(
-  "swap mlnToken for ethToken without mimimum destAmount",
-  async t => {
-    const pre = await getAllBalances(deployed, accounts, fund);
-    const srcAmount = new BigNumber(10 ** 17);
-    const [, bestRate] = Object.values(
-      await deployed.KyberNetwork.methods
-        .findBestRate(mlnToken.options.address, ethAddress, srcAmount.toFixed())
-        .call()
-    ).map(e => new BigNumber(e));
-    await fund.trading.methods
-      .callOnExchange(
-        0,
-        takeOrderSignature,
-        [
-          NULL_ADDRESS,
-          NULL_ADDRESS,
-          mlnToken.options.address,
-          ethToken.options.address,
-          NULL_ADDRESS,
-          NULL_ADDRESS
-        ],
-        [srcAmount.toFixed(), 0, 0, 0, 0, 0, 0, 0],
-        web3.utils.padLeft("0x0", 64),
-        web3.utils.padLeft("0x0", 64),
-        web3.utils.padLeft("0x0", 64),
-        web3.utils.padLeft("0x0", 64)
-      )
-      .send({ from: manager, gas: config.gas });
-    const expectedEthToken = srcAmount
-      .mul(bestRate)
-      .div(new BigNumber(10 ** 18));
-    const post = await getAllBalances(deployed, accounts, fund);
-    t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
-    t.deepEqual(post.fund.EthToken, pre.fund.EthToken.add(expectedEthToken));
-    t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-    t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-    t.deepEqual(post.investor.ether, pre.investor.ether);
-    t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-    t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  }
-);
-
-// minPrice is basically set if srcAmount is non-zero (Otherwise it's just executes at market price)
 test.serial(
   "swap mlnToken for ethToken with specific order price (minRate)",
   async t => {
@@ -315,8 +272,7 @@ test.serial(
   }
 );
 
-// TODO
-test.serial.skip("takeOrder fails if minPrice is not satisfied", async t => {
+test.serial("takeOrder fails if minPrice is not satisfied", async t => {
   const srcAmount = new BigNumber(10 ** 17);
   const destAmount = srcAmount.mul(mlnPrice * 2).div(precisionUnits);
   await t.throws(
@@ -342,8 +298,7 @@ test.serial.skip("takeOrder fails if minPrice is not satisfied", async t => {
   );
 });
 
-// TODO: Get back
-test.serial.skip(
+test.serial(
   "risk management prevents swap in the case of bad kyber network price",
   async t => {
     // Inflate price of mln price by 100%, RMMakeOrders only tolerates 10% deviation
