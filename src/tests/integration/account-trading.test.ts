@@ -23,6 +23,7 @@ import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldin
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
+import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -94,8 +95,8 @@ test(
 
     const components = componentsFromSettings(settings);
 
-    await Promise.all(
-      Object.values(components).map((address: Address) =>
+    await promisesSerial(
+      Object.values(components).map((address: Address) => () =>
         setIsFund(version, { address }),
       ),
     );

@@ -7,6 +7,7 @@ const withDifferentAccount = (
 ) => ({
   ...environment,
   wallet: {
+    ...environment.wallet,
     address: account,
   },
 });

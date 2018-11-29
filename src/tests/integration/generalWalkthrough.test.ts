@@ -30,6 +30,7 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 import { randomString } from '~/utils/helpers/randomString';
+import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -95,8 +96,9 @@ test(
     await update(priceSource, [newPrice]);
 
     const components = componentsFromSettings(settings);
-    await Promise.all(
-      Object.values(components).map((address: Address) =>
+
+    await promisesSerial(
+      Object.values(components).map((address: Address) => () =>
         setIsFund(version, { address }),
       ),
     );
