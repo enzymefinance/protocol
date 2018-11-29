@@ -23,6 +23,7 @@ import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
+import { Exchanges } from '~/Contracts';
 // tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
@@ -97,19 +98,19 @@ export const deploySystem = async () => {
     {
       adapterAddress: matchingMarketAdapterAddress,
       exchangeAddress: matchingMarketAddress,
-      name: 'MatchingMarket',
+      name: Exchanges.MatchingMarket,
       takesCustody: false,
     },
     {
       adapterAddress: KyberAdapterAddress,
       exchangeAddress: kyberNetworkProxyAddress,
-      name: 'KyberNetwork',
+      name: Exchanges.KyberNetwork,
       takesCustody: false,
     },
     {
       adapterAddress: zeroExAdapterAddress,
       exchangeAddress: zeroExAddress,
-      name: 'ZeroEx',
+      name: Exchanges.ZeroEx,
       takesCustody: false,
     },
   ];

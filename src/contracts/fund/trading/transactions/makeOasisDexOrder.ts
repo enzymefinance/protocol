@@ -1,14 +1,16 @@
+// tslint:disable:max-line-length
+import * as web3Utils from 'web3-utils';
+import {
+  QuantityInterface,
+  createQuantity,
+} from '@melonproject/token-math/quantity';
+
 import {
   PrepareArgsFunction,
   withTransactionDecorator,
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
-import { getDeployment } from '~/utils/solidity/getDeployment';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
@@ -19,7 +21,9 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
-import * as web3Utils from 'web3-utils';
+import { Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
+// tslint:enable:max-line-length
 
 export type MakeOasisDexOrderResult = any;
 
@@ -66,39 +70,33 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const deployment = await getDeployment();
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
-
   const exchangeIndex = await getExchangeIndex(
-    matchingMarketAddress,
     contractAddress,
+    { exchange: Exchanges.MatchingMarket },
     environment,
   );
 
   return {
-    exchangeIndex,
-    method:
-      'makeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)', // update when function signature changes
-    maker: contractAddress,
-    taker: '0x0000000000000000000000000000000000000000',
-    makerAsset: makerQuantity.token.address,
-    takerAsset: takerQuantity.token.address,
-    feeRecipient: '0x0000000000000000000000000000000000000000',
-    senderAddress: '0x0000000000000000000000000000000000000000',
-    makerQuantity: makerQuantity.quantity,
-    takerQuantity: takerQuantity.quantity,
-    makerFee: '0',
-    takerFee: '0',
-    timestamp: '0',
-    salt: '0',
-    fillTakerTokenAmount: '0',
     dexySignatureMode: 0,
+    exchangeIndex,
+    feeRecipient: '0x0000000000000000000000000000000000000000',
+    fillTakerTokenAmount: '0',
     identifier: web3Utils.padLeft('0x0', 64),
+    maker: contractAddress,
+    makerAsset: makerQuantity.token.address,
     makerAssetData: web3Utils.padLeft('0x0', 64),
-    takerAssetData: web3Utils.padLeft('0x0', 64),
+    makerFee: '0',
+    makerQuantity: makerQuantity.quantity,
+    method: FunctionSignatures.makeOrder,
+    salt: '0',
+    senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),
+    taker: '0x0000000000000000000000000000000000000000',
+    takerAsset: takerQuantity.token.address,
+    takerAssetData: web3Utils.padLeft('0x0', 64),
+    takerFee: '0',
+    takerQuantity: takerQuantity.quantity,
+    timestamp: '0',
   };
 };
 
@@ -107,15 +105,14 @@ const postProcess: PostProcessFunction<
   MakeOasisDexOrderResult
 > = async receipt => {
   const sellToken = await getToken(receipt.events.LogMake.returnValues.pay_gem);
-  // const buyToken = await getToken(receipt.events.LogMake.returnValues.buy_gem);
   return {
+    buy: createQuantity(sellToken, receipt.events.LogMake.returnValues.buy_amt),
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,
     sell: createQuantity(
       sellToken,
       receipt.events.LogMake.returnValues.pay_amt,
     ),
-    buy: createQuantity(sellToken, receipt.events.LogMake.returnValues.buy_amt),
     timestamp: receipt.events.LogMake.returnValues.timestamp,
   };
 };
@@ -123,10 +120,10 @@ const postProcess: PostProcessFunction<
 const options = { gas: '8000000' };
 
 const makeOasisDexOrder = withTransactionDecorator(callOnExchange, {
-  postProcess,
-  prepareArgs,
   guard,
   options,
+  postProcess,
+  prepareArgs,
 });
 
 export { makeOasisDexOrder };

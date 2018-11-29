@@ -4,7 +4,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { Contracts, requireMap } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
+import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
 
 const isOasisDexTakePermitted = async (
   tradingContractAddress,
@@ -42,7 +42,7 @@ const isOasisDexTakePermitted = async (
   );
 
   const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const methodSignature = getFunctionSignature(
+  const methodSignature = getFunctionABISignature(
     matchingMarketAdapterAbi,
     'takeOrder',
   );

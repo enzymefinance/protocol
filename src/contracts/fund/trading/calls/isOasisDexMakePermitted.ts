@@ -5,7 +5,7 @@ import { Contracts, requireMap } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
-import { getFunctionSignature } from '~/utils/abi/getFunctionSignature';
+import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
 
 const isOasisDexMakePermitted = async (
   tradingContractAddress,
@@ -41,7 +41,7 @@ const isOasisDexMakePermitted = async (
   );
 
   const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const methodSignature = getFunctionSignature(
+  const methodSignature = getFunctionABISignature(
     matchingMarketAdapterAbi,
     'makeOrder',
   );

@@ -188,3 +188,10 @@ export const eventSignatureABIMap: EventSignatureABIMap = allAbis.reduce(
   },
   {},
 );
+
+// Note: We need this as a string enum to have a readable export to JSON
+export enum Exchanges {
+  MatchingMarket = 'MatchingMarket',
+  KyberNetwork = 'KyberNetwork',
+  ZeroEx = 'ZeroEx',
+}

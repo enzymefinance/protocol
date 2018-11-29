@@ -5,7 +5,6 @@ import {
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
@@ -17,6 +16,8 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
+import { Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 // tslint:enable:max-line-length
 
 export type TakeOasisDexOrderResult = any;
@@ -72,19 +73,13 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
   contractAddress,
   environment = getGlobalEnvironment(),
 ) => {
-  const deployment = await getDeployment();
-
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
-
   const exchangeIndex = await getExchangeIndex(
-    matchingMarketAddress,
     contractAddress,
+    {
+      exchange: Exchanges.MatchingMarket,
+    },
     environment,
   );
-
-  console.log(makerQuantity, takerQuantity, fillTakerTokenAmount);
 
   return {
     dexySignatureMode: 0,
@@ -97,8 +92,7 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',
     makerQuantity: makerQuantity.quantity,
-    method:
-      'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    method: FunctionSignatures.takeOrder,
     salt: '0',
     senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),
@@ -124,10 +118,10 @@ const postProcess: PostProcessFunction<
 const options = { gas: '8000000' };
 
 const takeOasisDexOrder = withTransactionDecorator(callOnExchange, {
-  postProcess,
-  prepareArgs,
   guard,
   options,
+  postProcess,
+  prepareArgs,
 });
 
 export { takeOasisDexOrder };
