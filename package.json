@@ -52,7 +52,6 @@
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit"
   },
   "devDependencies": {
-    "0x.js": "1.0.7",
     "@0x/types": "^1.3.0",
     "@babel/core": "^7.1.6",
     "@babel/polyfill": "^7.0.0",
