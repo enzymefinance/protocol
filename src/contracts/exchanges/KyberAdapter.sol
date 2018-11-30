@@ -1,7 +1,6 @@
 
 pragma solidity ^0.4.21;
 
-import "./thirdparty/kyber/KyberNetworkProxy.sol";
 import "../dependencies/token/WETH9.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
@@ -9,15 +8,19 @@ import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../../prices/PriceSource.i.sol";
 import "../dependencies/DBC.sol";
+import "./thirdparty/kyber/KyberNetworkProxy.sol";
+import "./ExchangeAdapterInterface.sol";
 
 
-contract KyberAdapter is DBC, DSMath {
+contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     // NON-CONSTANT METHODS
 
-    // Responsibilities of takeOrder are:
+    // Responsibilities of takeOrder (Kybers swapToken) are:
+    // - check price recent
+    // - check risk management passes
     // - approve funds to be traded (if necessary)
     // - perform swap order on the exchange
     // - place asset in ownedAssets if not already tracked
@@ -129,7 +132,7 @@ contract KyberAdapter is DBC, DSMath {
         internal
         returns (uint actualReceiveAmount)
     {
-        
+
         Hub hub = Hub(Trading(address(this)).hub());
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         

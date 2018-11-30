@@ -4,8 +4,8 @@ import { deployMockSystem } from '~/utils/deployMockSystem';
 import { deploy } from '~/utils/solidity/deploy';
 import { getContract } from '~/utils/solidity/getContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { randomAddress } from '~/utils/helpers/randomAddress';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 let shared: any = {};
 
@@ -53,7 +53,7 @@ test('Make order associated callbacks add data to Trading spoke', async () => {
   await shared.trading.methods
     .callOnExchange(
       0,
-      makeOrderSignature,
+      FunctionSignatures.makeOrder,
       [
         emptyAddress,
         emptyAddress,

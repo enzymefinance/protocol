@@ -48,6 +48,7 @@
     "prebuild": "rimraf lib",
     "precompile": "rimraf out",
     "publish:alpha": "yarn check && yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
+    "snyk": "synk test",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit"
   },
@@ -72,6 +73,8 @@
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
+    "snyk": "^1.110.2",
+    "solidity-cli": "^1.0.3",
     "solium": "^1.1.0",
     "ts-jest": "^23.10.4",
     "tsc-watch": "^1.0.31",

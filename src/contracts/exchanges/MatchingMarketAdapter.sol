@@ -1,16 +1,17 @@
 pragma solidity ^0.4.21;
 
-import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/math.sol";
+import "./thirdparty/oasisdex/MatchingMarket.sol";
+import "./ExchangeAdapterInterface.sol";
 
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract MatchingMarketAdapter is DSMath {
+contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
 
     event OrderCreated(uint id);
 
