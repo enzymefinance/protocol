@@ -32,10 +32,12 @@ contract Hub is DSGuard {
     bool public spokesSet;
     bool public routingSet;
     bool public permissionsSet;
+    uint public creationTime;
 
     constructor(address _manager, string _name) {
         manager = _manager;
         name = _name;
+        creationTime = block.timestamp;
     }
 
     function shutDownFund() public {
