@@ -11,6 +11,8 @@ export enum Contracts {
   CanonicalPriceFeed = 'CanonicalPriceFeed',
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
+  EthfinexExchangeEfx = 'ExchangeEfx',
+  EthfinexAdapter = 'EthfinexAdapter',
   ERC20Proxy = 'ERC20Proxy',
   EthfinexAdapter = 'EthfinexAdapter',
   ExchangeAdapter = 'ExchangeAdapter',
@@ -68,6 +70,8 @@ export enum Contracts {
   WrapperLockEth = 'WrapperLockEth',
   WrapperRegistryEFX = 'WrapperRegistryEFX',
   Weth = 'WETH',
+  WrapperLock = 'Wrapperlock',
+  WrapperlockEth = 'WrapperlockEth',
   ZeroExAdapter = 'ZeroExV2Adapter',
   ZeroExExchange = 'Exchange',
 }
@@ -212,6 +216,10 @@ export const requireMap = {
     require(`../out/${Contracts.WrapperRegistryEFX}.abi.json`),
   [Contracts.Weth]:
     require('../out/WETH9.abi.json'),
+  [Contracts.WrapperLock]:
+    require(`../out/${Contracts.WrapperLock}.abi.json`),
+  [Contracts.WrapperlockEth]:
+    require(`../out/${Contracts.WrapperlockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
