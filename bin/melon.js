@@ -6,21 +6,20 @@ const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 
-const { initTestEnvironment } = require('../lib/utils/environment/initTestEnvironment');
-
 program
   .version(pkg.version, '-v, --version')
   .description('The Melon Protocol CLI');
 
 program
-  .command('compile')
+  .command('compile [<glob>]')
   .description('Compile the Melon Smart Contracts.')
-  .action(async () => {
-    console.log('Compiling all contracts');
+  .action(async glob => {
+    console.log(glob ? 'Compiling all contracts' : `Compiling ${glob}`);
+
     try {
-      const { compileAll } = require('./compile');
-      await initTestEnvironment();
-      await compileAll();
+      const { compileGlob } = require('./compile');
+      // await initTestEnvironment();
+      await compileGlob(glob);
     } catch (e) {
       console.error(e);
     } finally {
@@ -32,6 +31,9 @@ program
   .command('deploy')
   .description('Deploy the Melon smart contracts')
   .action(async (dir, cmd) => {
+    const {
+      initTestEnvironment,
+    } = require('../lib/utils/environment/initTestEnvironment');
     const { deploySystem } = require('../lib/utils/deploySystem');
     const environment = await initTestEnvironment();
     const thisDeployment = await deploySystem();
