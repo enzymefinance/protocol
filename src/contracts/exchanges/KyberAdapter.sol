@@ -7,7 +7,7 @@ import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
-import "../../prices/CanonicalPriceFeed.sol";
+import "../../prices/PriceSource.i.sol";
 import "../dependencies/DBC.sol";
 
 
@@ -235,8 +235,7 @@ contract KyberAdapter is DBC, DSMath {
         view
         returns (uint minRate)
     {
-        // TODO: Change to more generic price source interface
-        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(this)).hub()).priceSource());
+        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(this)).hub()).priceSource());
         minRate = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,

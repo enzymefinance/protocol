@@ -10,7 +10,7 @@ import "./OperatorStaking.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract CanonicalPriceFeed is OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
+contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
     // EVENTS
     event SetupPriceFeed(address ofPriceFeed);

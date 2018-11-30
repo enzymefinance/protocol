@@ -68,7 +68,6 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
-    // TODO: who can add exchanges? should they just be set at creation?
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
         // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange], "Exchange already added");

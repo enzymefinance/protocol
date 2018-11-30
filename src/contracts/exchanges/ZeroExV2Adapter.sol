@@ -185,15 +185,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
         );
     }
 
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        revert("Unimplemented");
-    }
-
-    // TODO: Get order details
+    /// @dev Get order details
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
