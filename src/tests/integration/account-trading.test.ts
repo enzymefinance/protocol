@@ -74,7 +74,7 @@ test(
     });
 
     await register(settings.policyManagerAddress, {
-      method: FunctionSignatures.executeRequest,
+      method: FunctionSignatures.executeRequestFor,
       policy: policies.whitelist,
     });
 
