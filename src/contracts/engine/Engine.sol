@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+import "../dependencies/auth.sol";
 import "../dependencies/math.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../prices/PriceSource.i.sol";
@@ -7,7 +8,7 @@ import "../version/Version.i.sol";
 
 // TODO: integrate so we do not need all of the constructor params
 /// @notice Liquidity contract and token sink
-contract Engine is DSMath {
+contract Engine is DSMath, DSAuth {
     uint public frozenEther;
     uint public liquidEther;
     uint public lastThaw;
@@ -18,16 +19,19 @@ contract Engine is DSMath {
     uint public MLN_DECIMALS = 18;
 
     constructor(
-        address _version,
         address _priceSource,
         uint _delay,
         address _mlnAddress
     ) {
-        version = VersionInterface(_version);
         priceSource = PriceSourceInterface(_priceSource);
         lastThaw = block.timestamp;
         THAWING_DELAY = _delay;
         mlnToken = BurnableToken(_mlnAddress);
+    }
+
+    /// @dev only callable by deployer
+    function setVersion(address _version) auth {
+        version = VersionInterface(_version);
     }
 
     // TODO: convert to a continuous function
