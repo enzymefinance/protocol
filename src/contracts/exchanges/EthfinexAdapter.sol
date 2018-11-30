@@ -135,8 +135,7 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        // TODO: Change to Native Asset or Wrapped Native Asset?
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
             // Check if the input token address is null address
@@ -196,7 +195,7 @@ contract EthfinexAdapter is DSMath, DBC {
         uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
 
         // Handle case for WETH
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
             WETH9(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
