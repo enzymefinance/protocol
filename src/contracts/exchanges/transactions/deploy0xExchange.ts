@@ -1,44 +1,31 @@
-import { assetDataUtils } from '0x.js';
 import { TokenInterface } from '@melonproject/token-math/token';
 
+// tslint:disable:max-line-length
 import { Contracts } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deploy } from '~/utils/solidity/deploy';
-import { getContract } from '~/utils/solidity/getContract';
-import { getWeb3Options } from '~/utils/environment/getWeb3Options';
+import { Address } from '@melonproject/token-math/address';
+import { deployErc20Proxy } from './deployErc20Proxy';
+import { addAuthorizedAddress } from '../thirdparty/0x/transactions/addAuthorizedAddress';
+import { registerAssetProxy } from '../thirdparty/0x/transactions/registerAssetProxy';
+import { changeZRXAsset } from '../thirdparty/0x/transactions/changeZRXAsset';
+// tslint:enable:max-line-length
 
 interface Deploy0xExchangeArgs {
   zrxToken: TokenInterface;
+  erc20Proxy?: Address;
 }
 
 export const deploy0xExchange = async (
-  { zrxToken }: Deploy0xExchangeArgs,
+  { zrxToken, erc20Proxy: givenErc20Proxy }: Deploy0xExchangeArgs,
   environment = getGlobalEnvironment(),
 ) => {
   const exchange = await deploy(Contracts.ZeroExExchange, [], environment);
+  const erc20Proxy = givenErc20Proxy || (await deployErc20Proxy(environment));
 
-  const exchangeContract = await getContract(
-    Contracts.ZeroExExchange,
-    exchange,
-    environment,
-  );
-
-  const erc20Proxy = await deploy(Contracts.ERC20Proxy, [], environment);
-
-  const erc20ProxyContract = await getContract(
-    Contracts.ERC20Proxy,
-    erc20Proxy,
-    environment,
-  );
-
-  const options = getWeb3Options(environment);
-
-  await erc20ProxyContract.methods.addAuthorizedAddress(exchange).send(options);
-  await exchangeContract.methods.registerAssetProxy(erc20Proxy).send(options);
-  const zrxAssetData = assetDataUtils.encodeERC20AssetData(
-    zrxToken.address.toString(),
-  );
-  await exchangeContract.methods.changeZRXAssetData(zrxAssetData).send(options);
+  await addAuthorizedAddress(erc20Proxy, { exchange }, environment);
+  await registerAssetProxy(exchange, { assetProxy: erc20Proxy }, environment);
+  await changeZRXAsset(exchange, { zrxToken }, environment);
 
   return exchange;
 };
