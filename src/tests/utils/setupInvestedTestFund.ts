@@ -36,6 +36,7 @@ const setupInvestedTestFund = async (
       defaultTokens: [weth, mln],
       exchangeConfigs,
       fundName,
+      nativeToken: weth,
       priceSource,
       quoteToken: weth,
     },
