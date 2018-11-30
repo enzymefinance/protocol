@@ -8,7 +8,6 @@ import "../dependencies/math.sol";
 import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "./ExchangeAdapterInterface.sol";
 
-// TODO: re-enable all checks when routing sorted, and adding assets to lists
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
@@ -112,7 +111,6 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         require(hub.manager() == msg.sender, "Manager is not sender");
         require(!hub.isShutDown(), "Hub is shut down");
 
-        // TODO: address pricefeed = Hub(Trading(address(this)).hub()).priceSource();
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -126,7 +124,6 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             address(makerAsset) != address(takerAsset),
             "Maker and taker assets cannot be the same"
         );
-        // TODO: require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
@@ -200,15 +197,6 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
 
     // VIEW METHODS
 
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        return MatchingMarket(targetExchange).last_offer_id();
-    }
-
-    // TODO: delete this function if possible
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)

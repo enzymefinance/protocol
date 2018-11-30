@@ -55,6 +55,7 @@ test(
       defaultTokens,
       exchangeConfigs,
       fundName,
+      nativeToken: quoteToken,
       priceSource,
       quoteToken,
     });

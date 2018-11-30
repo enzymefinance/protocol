@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-require('babel-polyfill');
+// require('babel-polyfill');
 const R = require('ramda');
 const path = require('path');
 const fs = require('fs');

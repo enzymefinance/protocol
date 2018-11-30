@@ -13,6 +13,7 @@ import "../exchanges/thirdparty/kyber/KyberNetworkProxy.sol";
 contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     // FIELDS
+    uint constant public updateId = 1; // TODO: Hardcode for now
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
     uint public MAX_SPREAD;
