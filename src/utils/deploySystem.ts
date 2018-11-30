@@ -24,6 +24,7 @@ import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deplo
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { Exchanges } from '~/Contracts';
+import { deployEthfinex } from '~/contracts/exchanges/transactions/deployEthfinex';
 // tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
@@ -54,8 +55,13 @@ export const deploySystem = async () => {
     environment,
   );
 
+  const tokens = [quoteToken, baseToken, eurToken, zrxToken];
+
   const zeroExAddress = await deploy0xExchange({ zrxToken });
   const zeroExAdapterAddress = await deploy0xAdapter();
+
+  const ethfinexAddress = await deployEthfinex({ tokens }, environment);
+  console.log(ethfinexAddress);
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
@@ -126,7 +132,7 @@ export const deploySystem = async () => {
       whitelist: whitelistAddress,
     },
     priceSource,
-    tokens: [quoteToken, baseToken, eurToken, zrxToken],
+    tokens,
     version: versionAddress,
   };
 
