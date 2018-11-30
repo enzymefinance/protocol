@@ -1,8 +1,10 @@
+// tslint:disable:max-line-length
+import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
+
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
-import { Address } from '~/utils/types';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
@@ -19,7 +21,6 @@ import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-// tslint:disable-next-line:max-line-length
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
@@ -28,6 +29,8 @@ import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/c
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
+import { randomString } from '~/utils/helpers/randomString';
+// tslint:enable:max-line-length
 
 const shared: any = {};
 
@@ -36,16 +39,13 @@ beforeAll(async () => {
   shared.accounts = await shared.environment.eth.getAccounts();
 });
 
-const randomString = (length = 4) =>
-  Math.random()
-    .toString(36)
-    .substr(2, length);
-
 test(
   'Happy path',
   async () => {
     const fundName = `test-fund-${randomString()}`;
+
     const deployment = await deploySystem();
+
     const {
       exchangeConfigs,
       fundFactory,
@@ -122,8 +122,8 @@ test(
     ).exchangeAddress;
 
     const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-      sell: createQuantity(deployment.tokens[0], 0.1),
       buy: createQuantity(deployment.tokens[1], 2),
+      sell: createQuantity(deployment.tokens[0], 0.1),
     });
     expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
     expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
@@ -168,9 +168,9 @@ test(
 
     await cancelOasisDexOrder(settings.tradingAddress, {
       id: fundOrder.id,
+      maker: settings.tradingAddress,
       makerAsset: fundOrder.makerAsset,
       takerAsset: fundOrder.takerAsset,
-      maker: settings.tradingAddress,
     });
 
     console.log(`Canceled order ${fundOrder.id} from fund `);
@@ -185,10 +185,9 @@ test(
 
     await takeOasisDexOrder(settings.tradingAddress, {
       id: order3.id,
+      maker: order3.maker,
       makerQuantity: order3.sell,
       takerQuantity: order3.buy,
-      maker: order3.maker,
-      fillTakerTokenAmount: order3.buy,
     });
 
     console.log(`Took order from fund with id ${order3.id} `);
@@ -203,5 +202,5 @@ test(
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   },
-  30 * 1000,
+  60 * 1000,
 );

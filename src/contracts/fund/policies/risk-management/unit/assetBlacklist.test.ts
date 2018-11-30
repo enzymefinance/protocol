@@ -1,6 +1,7 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deployMockSystem';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';
@@ -51,12 +52,12 @@ test('Add asset to blacklist', async () => {
 });
 
 test('Policy manager with blacklist', async () => {
-  const hub = await deploy(Contracts.MockHub);
-  await hub.methods.setManager(shared.user).send({ from: shared.user });
+  const contracts = await deployMockSystem({
+    policyManagerContract: Contracts.PolicyManager,
+  });
   const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
-  const manager = await deploy(Contracts.PolicyManager, [hub.options.address]);
   const mockAsset = `${randomAddress()}`;
-  await manager.methods
+  await contracts.policyManager.methods
     .register(shared.testBlacklist, blacklist.options.address)
     .send({ from: shared.user });
 
@@ -67,13 +68,13 @@ test('Policy manager with blacklist', async () => {
     '0x0',
   ];
   await expect(
-    manager.methods.preValidate(...validateArgs).call(),
+    contracts.policyManager.methods.preValidate(...validateArgs).call(),
   ).resolves.not.toThrow();
 
   await blacklist.methods.addToBlacklist(mockAsset).send({ from: shared.user });
 
   expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
   await expect(
-    manager.methods.preValidate(...validateArgs).call(),
+    contracts.policyManager.methods.preValidate(...validateArgs).call(),
   ).rejects.toThrow('Rule evaluated to false');
 });

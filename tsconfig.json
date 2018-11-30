@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2015",
-    "lib":[
-      "es2015",
-      "es2017.object",
-      "es2017.string"
-    ],
+    "lib": ["dom", "es2015", "es2017.object", "es2017.string"],
     "module": "commonjs",
     "moduleResolution": "node",
     "removeComments": false,
@@ -22,8 +18,5 @@
       "~/*": ["src/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "out/**/*"
-  ]
+  "include": ["src/**/*", "out/**/*"]
 }

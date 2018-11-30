@@ -1,3 +1,5 @@
+import { Address } from '@melonproject/token-math/address';
+
 import {
   transactionFactory,
   PrepareArgsFunction,
@@ -9,8 +11,8 @@ import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+// tslint:disable-next-line:max-line-length
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
-import { Address } from '~/utils/types';
 
 export interface ExecuteRequestForArgs {
   who: Address;

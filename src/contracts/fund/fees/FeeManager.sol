@@ -7,7 +7,6 @@ import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../engine/AmguConsumer.sol";
 
-// TODO: add permissioning to functions as needed
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, AmguConsumer, Spoke {
 
@@ -37,7 +36,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         return total;
     }
 
-    function rewardFee(Fee fee) public {
+    function _rewardFee(Fee fee) internal {
         require(feeIsRegistered[fee], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
@@ -45,20 +44,24 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         emit FeeRewarded(rewardShares);
     }
 
-    function rewardAllFees() public auth {
+    function _rewardAllFees() internal {
         for (uint i = 0; i < fees.length; i++) {
-            rewardFee(fees[i]);
+            _rewardFee(fees[i]);
         }
     }
 
+    /// @dev Used when calling from other components
+    function rewardAllFees() public auth { _rewardAllFees(); } 
+
+    /// @dev Used when calling from outside the fund
     function triggerRewardAllFees() external payable amguPayable {
-        rewardAllFees();
+        _rewardAllFees();
     }
 
-    /// @dev Convenience function
+    /// @dev Convenience function; anyone can reward management fee any time
     /// @dev Convention that management fee is 0
     function rewardManagementFee() public {
-        if (fees.length >= 1) rewardFee(fees[0]);
+        if (fees.length >= 1) _rewardFee(fees[0]);
     }
 
     /// @dev Convenience function

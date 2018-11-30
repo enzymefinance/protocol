@@ -1,13 +1,14 @@
-import { Address } from '~/utils/types';
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
-import { getContract } from '~/utils/solidity/getContract';
-import { ensure } from '~/utils/guards/ensure';
-import { Contracts } from '~/Contracts';
+import { Address } from '@melonproject/token-math/address';
 import {
   BigInteger,
   // add,
   greaterThan,
 } from '@melonproject/token-math/bigInteger';
+
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import { getContract } from '~/utils/solidity/getContract';
+import { ensure } from '~/utils/guards/ensure';
+import { Contracts } from '~/Contracts';
 
 const guard = async (_, engineAddress: Address, environment) => {
   const engine = getContract(Contracts.Engine, engineAddress, environment);

@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "../../dependencies/guard.sol";
 import "./Spoke.sol";
 
@@ -28,6 +27,7 @@ contract Hub is DSGuard {
     }
     Settings public settings;
     address public manager;
+    address public creator;
     string public name;
     bool public isShutDown;
     bool public spokesSet;
@@ -35,8 +35,14 @@ contract Hub is DSGuard {
     bool public permissionsSet;
 
     constructor(address _manager, string _name) {
+        creator = msg.sender;
         manager = _manager;
         name = _name;
+    }
+
+    modifier onlyCreator() {
+        require(msg.sender == creator, "Only creator can do this");
+        _;
     }
 
     // TODO: extend this ability to the version (if version shut down and we still need this)
@@ -45,8 +51,7 @@ contract Hub is DSGuard {
         isShutDown = true;
     }
 
-    // TODO: add permissioning for sender
-    function setSpokes(address[12] _spokes) {
+    function setSpokes(address[12] _spokes) onlyCreator {
         require(!spokesSet, "Spokes already set");
         settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
@@ -63,8 +68,7 @@ contract Hub is DSGuard {
         spokesSet = true;
     }
 
-    // TODO: add permissioning for sender
-    function setRouting() {
+    function setRouting() onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(!routingSet, "Routing already set");
         address[12] memory spokes = [
@@ -83,9 +87,8 @@ contract Hub is DSGuard {
         routingSet = true;
     }
 
-    // TODO: add permissioning for sender
     // TODO: decide how to handle `owner`; should any of the components have an owner? if not then we need to remove owner after everything is initialized.
-    function setPermissions() {
+    function setPermissions() onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(routingSet, "Routing must be set");
         require(!permissionsSet, "Permissioning already set");
@@ -100,7 +103,7 @@ contract Hub is DSGuard {
         permit(settings.trading, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(manager, settings.feeManager, bytes4(keccak256('register(address)')));
-        permit(manager, settings.feeManager, bytes4(keccak256('batchRegister(address[]))')));
+        permit(manager, settings.feeManager, bytes4(keccak256('batchRegister(address[])')));
         permit(manager, settings.policyManager, bytes4(keccak256('register(bytes4,address)')));
         permit(manager, settings.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[]))')));
         permit(manager, settings.participation, bytes4(keccak256('enableInvestment(address[])')));

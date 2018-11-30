@@ -3,12 +3,12 @@ import {
   isEqual,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { balanceOf } from '../calls/balanceOf';
 import { getToken } from '../calls/getToken';
 import { deployToken } from '../transactions/deploy';
-import { Address } from '~/utils/types';
 import { transfer } from '../transactions/transfer';
 
 const shared: any = {};

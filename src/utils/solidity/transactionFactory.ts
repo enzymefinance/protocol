@@ -4,6 +4,8 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
+
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Environment } from '~/utils/environment/Environment';
@@ -13,13 +15,11 @@ import {
   OptionsOrCallback,
   Options,
 } from '~/utils/solidity/prepareTransaction';
-import { Address } from '~/utils/types';
 import { ensure } from '~/utils/guards/ensure';
 
-// TODO: Fix the types here once the transaction factory decorators are
-// properly implemented.
-type TransactionArg = any;
-type TransactionArgs = TransactionArg[] | any;
+export type TransactionArg = number | number[] | string | string[];
+// TODO: Remove this any!
+export type TransactionArgs = TransactionArg[] | any;
 
 // The raw unsigned transaction object from web3
 // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
@@ -52,6 +52,7 @@ export type GuardFunction<Args> = (
   params?: Args,
   contractAddress?: Address,
   environment?: Environment,
+  options?: Options,
 ) => Promise<void>;
 
 // Translates JavaScript/TypeScript params into the form that the EVM
@@ -98,7 +99,6 @@ type PrepareFunction<Args> = (
 type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
   params?: Args,
-  options?: OptionsOrCallback,
   environment?: Environment,
 ) => Promise<Result>;
 
@@ -187,9 +187,18 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     optionsOrCallback = defaultOptions,
     environment: Environment = getGlobalEnvironment(),
   ) => {
-    await guard(params, contractAddress, environment);
+    const options: Options =
+      typeof optionsOrCallback === 'function'
+        ? optionsOrCallback(environment)
+        : optionsOrCallback;
+
+    await guard(params, contractAddress, environment, options);
     const args = await prepareArgs(params, contractAddress, environment);
-    const contractInstance = getContract(contract, contractAddress);
+    const contractInstance = getContract(
+      contract,
+      contractAddress,
+      environment,
+    );
     ensure(
       !!contractInstance.methods[name],
       `Method ${name} does not exist on contract ${contract}`,
@@ -202,10 +211,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       optionsOrCallback,
       environment,
     );
-    const options: Options =
-      typeof optionsOrCallback === 'function'
-        ? optionsOrCallback(environment)
-        : optionsOrCallback;
 
     // HACK: To avoid circular dependencies (?)
     const {
@@ -294,20 +299,19 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   const execute: ExecuteFunction<Args, Result> = async (
     contractAddress,
     params,
-    options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(
       contractAddress,
       params,
-      options,
+      defaultOptions,
       environment,
     );
     const result = await send(
       contractAddress,
       prepared,
       params,
-      options,
+      defaultOptions,
       environment,
     );
     return result;
@@ -379,20 +383,19 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   const execute: ExecuteFunction<Args, Result> = async (
     contractAddress,
     params,
-    options = decorator.options,
     environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(
       contractAddress,
       params,
-      options,
+      decorator.options,
       environment,
     );
     const result = await send(
       contractAddress,
       prepared,
       params,
-      options,
+      decorator.options,
       environment,
     );
     return result;

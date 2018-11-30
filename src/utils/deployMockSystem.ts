@@ -1,3 +1,4 @@
+// tslint:disable:max-line-length
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -6,6 +7,7 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTok
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
+// tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
 
@@ -36,8 +38,16 @@ export const deployMockSystem = async ({
   const quoteTokenAddress = wethTokenAddress;
   const quoteToken = await getToken(quoteTokenAddress);
   const baseToken = await getToken(baseTokenAddress);
-  const mln = await getContract(Contracts.StandardToken, mlnTokenAddress);
-  const weth = await getContract(Contracts.StandardToken, wethTokenAddress);
+  const mln = await getContract(
+    Contracts.StandardToken,
+    mlnTokenAddress,
+    environment,
+  );
+  const weth = await getContract(
+    Contracts.StandardToken,
+    wethTokenAddress,
+    environment,
+  );
 
   const priceSource = await deployAndGetContract(priceSourceContract, [
     quoteToken.address,
@@ -113,7 +123,14 @@ export const deployMockSystem = async ({
     ])
     .send({ from: environment.wallet.address, gas: 8000000 });
 
-  const toInit = [accounting, participation, shares, trading, vault];
+  const toInit = [
+    accounting,
+    participation,
+    shares,
+    trading,
+    vault,
+    feeManager,
+  ];
   for (const contract of toInit) {
     await hub.methods
       .initializeSpoke(contract.options.address)

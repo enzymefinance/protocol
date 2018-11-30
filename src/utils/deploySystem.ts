@@ -1,3 +1,4 @@
+// tslint:disable:max-line-length
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -6,7 +7,6 @@ import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deplo
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
-// tslint:disable-next-line:max-line-length
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
@@ -20,8 +20,11 @@ import { deployFundFactory } from '~/contracts/factory/transactions/deployFundFa
 import { deployMockVersion } from '~/contracts/version/transactions/deployMockVersion';
 import { setFundFactory } from '~/contracts/version/transactions/setFundFactory';
 import { setSessionDeployment } from './sessionDeployments';
-// tslint:disable-next-line:max-line-length
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
+import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
+import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
+import { Exchanges } from '~/Contracts';
+// tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
 
@@ -33,13 +36,11 @@ export const deploySystem = async () => {
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);
-  const quoteTokenAddress = await deployToken('WETH');
   const mlnTokenAddress = await deployToken('MLN');
-  const eurTokenAddress = await deployToken('EUR');
-  const baseTokenAddress = mlnTokenAddress;
-  const quoteToken = await getToken(quoteTokenAddress);
-  const baseToken = await getToken(baseTokenAddress);
-  const eurToken = await getToken(eurTokenAddress);
+  const quoteToken = await getToken(await deployToken('WETH'));
+  const baseToken = await getToken(mlnTokenAddress);
+  const eurToken = await getToken(await deployToken('EUR'));
+  const zrxToken = await getToken(await deployToken('ZRX'));
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
   const {
@@ -52,6 +53,9 @@ export const deploySystem = async () => {
     eurToken,
     environment,
   );
+
+  const zeroExAddress = await deploy0xExchange({ zrxToken });
+  const zeroExAdapterAddress = await deploy0xAdapter();
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
@@ -94,13 +98,19 @@ export const deploySystem = async () => {
     {
       adapterAddress: matchingMarketAdapterAddress,
       exchangeAddress: matchingMarketAddress,
-      name: 'MatchingMarket',
+      name: Exchanges.MatchingMarket,
       takesCustody: false,
     },
     {
       adapterAddress: KyberAdapterAddress,
       exchangeAddress: kyberNetworkProxyAddress,
-      name: 'KyberNetwork',
+      name: Exchanges.KyberNetwork,
+      takesCustody: false,
+    },
+    {
+      adapterAddress: zeroExAdapterAddress,
+      exchangeAddress: zeroExAddress,
+      name: Exchanges.ZeroEx,
       takesCustody: false,
     },
   ];
@@ -116,7 +126,7 @@ export const deploySystem = async () => {
       whitelist: whitelistAddress,
     },
     priceSource,
-    tokens: [quoteToken, baseToken, eurToken],
+    tokens: [quoteToken, baseToken, eurToken, zrxToken],
     version: versionAddress,
   };
 

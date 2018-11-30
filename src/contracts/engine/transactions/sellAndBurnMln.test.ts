@@ -1,3 +1,4 @@
+// tslint:disable:max-line-length
 import {
   BigInteger,
   add,
@@ -8,19 +9,22 @@ import {
 } from '@melonproject/token-math/bigInteger';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
+
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { sellAndBurnMln } from './sellAndBurnMln';
-import { deploy as deployEngine } from './deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { deploy as deployFeed } from '~/contracts/prices/transactions/deploy';
 import { update } from '~/contracts/prices/transactions/update';
-import { increaseTime } from '~/utils/solidity/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { Contracts } from '~/Contracts';
+import { increaseTime } from '~/utils/evm';
+
 import { thaw } from './thaw';
+import { sellAndBurnMln } from './sellAndBurnMln';
+import { deploy as deployEngine } from './deploy';
+// tslint:enable:max-line-length
 
 const shared: any = {};
 

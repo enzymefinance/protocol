@@ -31,28 +31,28 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "precompile": "rimraf out",
+    "allchecks": "yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
+    "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
+    "bundle": "rollup -c",
+    "clean": "rimraf lib && rimraf out",
     "compile": "node bin/melon.js compile",
     "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
-    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
-    "prebuild": "rimraf lib",
-    "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
-    "postbuild": "yarn bundle",
-    "bundle": "rollup -c",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null'\"",
-    "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit",
-    "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
+    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
     "format": "prettier --write src/**/*.ts",
-    "format:sol": "prettier --write src/**/*.sol && solium -d src/ --fix",
-    "lint:eslint": "eslint .",
-    "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir .",
+    "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
     "lint": "yarn lint:tslint && yarn lint:prettier",
-    "clean": "rimraf lib && rimraf out"
+    "postbuild": "yarn bundle",
+    "prebuild": "rimraf lib",
+    "precompile": "rimraf out",
+    "publish:alpha": "yarn check && yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
+    "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
+    "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit"
   },
   "devDependencies": {
-    "0x.js": "1.0.7",
+    "@0x/types": "^1.3.0",
     "@babel/core": "^7.1.6",
     "@babel/polyfill": "^7.0.0",
     "@babel/preset-env": "^7.1.6",
@@ -83,8 +83,11 @@
     "web3": "^1.0.0-beta.34"
   },
   "dependencies": {
+    "0x.js": "2.0.5",
+    "@0x/order-utils": "^3.0.2",
     "@melonproject/ganache-cli": "^6.1.9",
     "@melonproject/token-math": "0.0.20",
+    "ava": "0.25.0",
     "commander": "^2.19.0",
     "debug": "^4.0.1",
     "ramda": "^0.25.0",
@@ -97,7 +100,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn lint"
     }
   },
   "lint-staged": {

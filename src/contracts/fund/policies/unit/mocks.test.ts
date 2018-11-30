@@ -1,5 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { Contracts } from '~/Contracts';
+import { deployMockSystem } from '~/utils/deployMockSystem';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';
@@ -26,13 +27,13 @@ beforeAll(async () => {
 });
 
 const createManagerAndRegister = async (contract, policy) => {
-  const hub = await deployAndGetContract(Contracts.MockHub);
-  await hub.methods.setManager(shared.user).send({ from: shared.user });
-  const manager = await deployAndGetContract(contract, [hub.options.address]);
-  await manager.methods
+  const contracts = await deployMockSystem({
+    policyManagerContract: Contracts.PolicyManager,
+  });
+  await contracts.policyManager.methods
     .register(shared.testPolicy, policy)
     .send({ from: shared.user, gas: 8000000 });
-  return manager;
+  return contracts.policyManager;
 };
 
 test('Boolean policies', async () => {
