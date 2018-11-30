@@ -5,11 +5,11 @@ pragma experimental ABIEncoderV2;
 import "./Trading.i.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
-import "../policies/Manager.sol";
+import "../policies/PolicyManager.sol";
 import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
-import "../../exchanges/GenericExchangeInterface.sol";
+import "../../exchanges/ExchangeAdapterInterface.sol";
 import "../../exchanges/thirdparty/0x/LibOrder.sol";
 import "../../prices/CanonicalRegistrar.sol";
 
@@ -160,7 +160,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
-    
+
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
@@ -214,7 +214,13 @@ contract Trading is DSMath, Spoke, TradingInterface {
             }
             address sellAsset;
             uint sellQuantity;
-            (sellAsset, , sellQuantity, ) = GenericExchangeInterface(exchanges[i].adapter).getOrder(exchanges[i].exchange, exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id, ofAsset);
+            (sellAsset, , sellQuantity, ) =
+                ExchangeAdapterInterface(exchanges[i].adapter)
+                .getOrder(
+                    exchanges[i].exchange,
+                    exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id,
+                    ofAsset
+                );
             if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }

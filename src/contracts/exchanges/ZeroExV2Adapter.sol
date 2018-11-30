@@ -2,19 +2,19 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
-import "./thirdparty/0x/Exchange.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/math.sol";
-
+import "./thirdparty/0x/Exchange.sol";
+import "./ExchangeAdapterInterface.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract ZeroExV2Adapter is DSMath, DBC {
+contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
 
     //  METHODS
 
@@ -52,7 +52,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         Exchange(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
-        
+
         require(
             Exchange(targetExchange).isValidSignature(
                 orderInfo.orderHash,
@@ -61,13 +61,13 @@ contract ZeroExV2Adapter is DSMath, DBC {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        // TODO: ADD back 
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
 
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -128,7 +128,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint fillTakerQuantity = orderValues[6];
-        
+
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
@@ -137,12 +137,11 @@ contract ZeroExV2Adapter is DSMath, DBC {
             takerAssetFilledAmount == fillTakerQuantity,
             "Filled amount does not match desired fill amount"
         );
-        // TODO: Add it back
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-        //     Accounting(hub.accounting()).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS(),
-        //     "Not in asset list or cannot be added"
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
 
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
         Trading(address(this)).orderUpdateHook(
@@ -264,7 +263,7 @@ contract ZeroExV2Adapter is DSMath, DBC {
 
         address makerAsset = getAssetAddress(order.makerAssetData);
         uint preMakerAssetBalance = ERC20(makerAsset).balanceOf(this);
-        
+
         LibFillResults.FillResults memory fillResults = Exchange(targetExchange).fillOrder(
             order,
             takerAssetFillAmount,

@@ -39,7 +39,7 @@ test('Invest fails in shut down fund', async () => {
 
   await expect(
     shared.participation.methods
-      .executeRequest()
+      .executeRequestFor(shared.user)
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 
@@ -58,7 +58,7 @@ test('Request must exist to execute', async () => {
   expect(requestExists).toBe(false);
   await expect(
     shared.participation.methods
-      .executeRequest()
+      .executeRequestFor(shared.user)
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 
@@ -68,12 +68,12 @@ test('Request must exist to execute', async () => {
 
   await expect(
     shared.participation.methods
-      .executeRequest()
+      .executeRequestFor(shared.user)
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 });
 
-test('Need fresh price to executeRequest', async () => {
+test('Need fresh price to execute request', async () => {
   const errorMessage = 'Price not recent';
   const amount = '1000000000000000000';
   await shared.priceSource.methods
@@ -89,7 +89,7 @@ test('Need fresh price to executeRequest', async () => {
   expect(requestExists).toBe(true);
   await expect(
     shared.participation.methods
-      .executeRequest()
+      .executeRequestFor(shared.user)
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 
@@ -146,7 +146,7 @@ test('Invested amount must be above price minimum', async () => {
 
   await expect(
     shared.participation.methods
-      .executeRequest()
+      .executeRequestFor(shared.user)
       .send({ from: shared.user, gas: 8000000 }),
   ).rejects.toThrow(errorMessage);
 
@@ -168,7 +168,7 @@ test('Basic investment works', async () => {
     .requestInvestment(sharesAmount, investAmount, shared.weth.options.address)
     .send({ from: shared.user, gas: 8000000 });
   await shared.participation.methods
-    .executeRequest()
+    .executeRequestFor(shared.user)
     .send({ from: shared.user, gas: 8000000 });
   const postVaultWeth = await shared.weth.methods
     .balanceOf(shared.vault.options.address)

@@ -10,10 +10,7 @@ import { continueCreation } from '~/contracts/factory/transactions/continueCreat
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
-import {
-  register,
-  PolicedMethods,
-} from '~/contracts/fund/policies/transactions/register';
+import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
@@ -23,6 +20,7 @@ import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldin
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
@@ -65,17 +63,17 @@ test('Happy path', async () => {
   const settings = await getSettings(hubAddress);
 
   await register(settings.policyManagerAddress, {
-    method: PolicedMethods.makeOrder,
+    method: FunctionSignatures.makeOrder,
     policy: policies.priceTolerance,
   });
 
   await register(settings.policyManagerAddress, {
-    method: PolicedMethods.takeOrder,
+    method: FunctionSignatures.takeOrder,
     policy: policies.priceTolerance,
   });
 
   await register(settings.policyManagerAddress, {
-    method: PolicedMethods.executeRequest,
+    method: FunctionSignatures.executeRequestFor,
     policy: policies.whitelist,
   });
 
@@ -120,22 +118,22 @@ test('Happy path', async () => {
   // ).exchangeAddress;
 
   const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    sell: createQuantity(deployment.tokens[0], 0.1),
     buy: createQuantity(deployment.tokens[1], 2),
+    sell: createQuantity(deployment.tokens[0], 0.1),
   });
   expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
 
   await takeOrderFromAccountOasisDex(matchingMarketAddress, {
+    buy: order1.buy,
     id: order1.id,
     maxTakeAmount: order1.sell,
-    buy: order1.buy,
     sell: order1.sell,
   });
 
   const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    sell: createQuantity(deployment.tokens[0], 0.1),
     buy: createQuantity(deployment.tokens[1], 2),
+    sell: createQuantity(deployment.tokens[0], 0.1),
   });
 
   expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));

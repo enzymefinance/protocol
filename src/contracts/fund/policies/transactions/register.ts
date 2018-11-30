@@ -1,36 +1,22 @@
+import * as Web3EthAbi from 'web3-eth-abi';
 import { Address } from '@melonproject/token-math/address';
 
-import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
 import {
   transactionFactory,
   PrepareArgsFunction,
   EnhancedExecute,
 } from '~/utils/solidity/transactionFactory';
-import { Contracts, requireMap } from '~/Contracts';
-
-const genericExchangeInterfaceABI = requireMap[Contracts.GenericExchange];
-const participationABI = requireMap[Contracts.Participation];
-
-export enum PolicedMethods {
-  makeOrder = getFunctionABISignature(genericExchangeInterfaceABI, 'makeOrder'),
-  takeOrder = getFunctionABISignature(genericExchangeInterfaceABI, 'takeOrder'),
-  // tslint:disable-next-line:max-line-length
-  executeRequest = getFunctionABISignature(
-    participationABI,
-    'executeRequestFor',
-  ),
-  // TODO: Add more here
-}
-
+import { Contracts } from '~/Contracts';
+import { FunctionSignatures } from '../../trading/utils/FunctionSignatures';
 interface RegisterArgs {
-  method: PolicedMethods;
+  method: FunctionSignatures;
   policy: Address;
 }
 
 const prepareArgs: PrepareArgsFunction<RegisterArgs> = async ({
   method,
   policy,
-}: RegisterArgs) => [method, `${policy}`];
+}: RegisterArgs) => [Web3EthAbi.encodeFunctionSignature(method), `${policy}`];
 
 const register: EnhancedExecute<RegisterArgs, boolean> = transactionFactory(
   'register',
