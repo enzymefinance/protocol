@@ -31,7 +31,7 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "allchecks": "yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
+    "allchecks": "snyk test && yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out",
@@ -81,7 +81,8 @@
     "tslint-config-airbnb": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.1.1",
-    "web3": "^1.0.0-beta.34"
+    "web3": "^1.0.0-beta.34",
+    "snyk": "^1.110.2"
   },
   "dependencies": {
     "0x.js": "2.0.5",
