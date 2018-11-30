@@ -31,7 +31,7 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "allchecks": "snyk test && yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
+    "allchecks": "yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out",
@@ -48,6 +48,7 @@
     "prebuild": "rimraf lib",
     "precompile": "rimraf out",
     "publish:alpha": "yarn check && yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
+    "snyk": "synk test",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit"
   },
