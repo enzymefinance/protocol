@@ -5,7 +5,6 @@ import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
-import "../../prices/PriceSource.i.sol";
 import "../dependencies/math.sol";
 
 /// @title MatchingMarketAdapter Contract
@@ -111,7 +110,6 @@ contract MatchingMarketAdapter is DSMath {
         require(hub.manager() == msg.sender, "Manager is not sender");
         require(!hub.isShutDown(), "Hub is shut down");
 
-        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(this)).hub()).priceSource());
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -125,7 +123,6 @@ contract MatchingMarketAdapter is DSMath {
             address(makerAsset) != address(takerAsset),
             "Maker and taker assets cannot be the same"
         );
-        require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
