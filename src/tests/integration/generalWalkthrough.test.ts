@@ -191,7 +191,7 @@ test(
 
     console.log(`Took order from fund with id ${order3.id} `);
 
-    await shutDownFund(hubAddress);
+    await shutDownFund(version, { hub: hubAddress });
 
     console.log('Shut down fund');
 

@@ -46,12 +46,12 @@ contract Version is FundFactory, DSAuth, VersionInterface {
 
     function shutDown() external auth { isShutDown = true; }
 
-    function shutDownFund(address _fund) external {
+    function shutDownFund(address _hub) external {
         require(
-            isShutDown || managersToHubs[msg.sender] == _fund,
+            isShutDown || managersToHubs[msg.sender] == _hub,
             "Conditions not met for fund shutdown"
         );
-        Hub(_fund).shutDownFund();
+        Hub(_hub).shutDownFund();
     }
 
     function getAmguPrice() returns (uint) { return amguPrice; }
