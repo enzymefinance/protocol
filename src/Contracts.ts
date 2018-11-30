@@ -8,6 +8,8 @@ export enum Contracts {
   AssetWhitelist = 'fund/policies/risk-management/AssetWhitelist',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
+  EthfinexExchangeEfx = 'exchanges/thirdparty/ethfinex/ExchangeEfx',
+  EthfinexAdapter = 'exchanges/EthfinexAdapter',
   ExchangeAdapter = 'exchanges/ExchangeAdapterInterface',
   FalsePolicy = 'fund/policies/FalsePolicy',
   FeeManager = 'fund/fees/FeeManager',
@@ -44,6 +46,8 @@ export enum Contracts {
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
   Version = 'version/VersionInterface',
+  WrapperLock = 'exchanges/thirdparty/ethfinex/Wrapperlock',
+  WrapperlockEth = 'exchanges/thirdparty/ethfinex/WrapperlockEth',
   ZeroExExchange = 'exchanges/thirdparty/0x/Exchange',
   ZeroExAdapter = 'exchanges/ZeroExV2Adapter',
 }
@@ -66,6 +70,10 @@ export const requireMap = {
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/engine/Engine.abi.json'),
+  [Contracts.EthfinexExchangeEfx]:
+    require(`../out/${Contracts.EthfinexExchangeEfx}.abi.json`),
+  [Contracts.EthfinexAdapter]:
+    require(`../out/${Contracts.EthfinexAdapter}.abi.json`),
   [Contracts.ExchangeAdapter]:
       require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:
@@ -142,6 +150,10 @@ export const requireMap = {
   // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
   [Contracts.Version]:
     require('../out/version/MockVersion.abi.json'),
+  [Contracts.WrapperLock]:
+    require(`../out/${Contracts.WrapperLock}.abi.json`),
+  [Contracts.WrapperlockEth]:
+    require(`../out/${Contracts.WrapperlockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
