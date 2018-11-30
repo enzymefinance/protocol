@@ -3,8 +3,10 @@ pragma solidity ^0.4.21;
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/accounting/Accounting.sol";
+import "./ExchangeAdapterInterface.sol";
 
-contract MockAdapter {
+
+contract MockAdapter is ExchangeAdapterInterface {
 
     //  METHODS
 
@@ -82,5 +84,19 @@ contract MockAdapter {
             [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
         );
+    }
+
+    // VIEW FUNCTIONS
+
+    /// @dev Dummy function; not implemented on exchange
+    function getOrder(
+        address targetExchange,
+        uint id,
+        address makerAsset
+    )
+        view
+        returns (address, address, uint, uint)
+    {
+        revert("Unimplemented");
     }
 }

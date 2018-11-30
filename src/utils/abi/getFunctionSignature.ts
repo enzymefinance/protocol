@@ -2,7 +2,7 @@ import { findFunctionDefinition } from './findFunctionDefinition';
 import { MethodAbi } from 'ethereum-protocol';
 
 // this will fail in the case where there is an overload on the abi
-const getFunctionTextSignature = (abi: any, functionName: string): any => {
+const getFunctionSignature = (abi: any, functionName: string): any => {
   const functionDefinition: MethodAbi = findFunctionDefinition(
     abi,
     functionName,
@@ -12,4 +12,4 @@ const getFunctionTextSignature = (abi: any, functionName: string): any => {
     .join(',')})`;
 };
 
-export { getFunctionTextSignature };
+export { getFunctionSignature };

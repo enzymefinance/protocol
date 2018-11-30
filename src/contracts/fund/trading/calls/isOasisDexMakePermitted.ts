@@ -1,11 +1,12 @@
+import * as Web3EthAbi from 'web3-eth-abi';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts, requireMap } from '~/Contracts';
+import { Contracts } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
-import { getFunctionABISignature } from '~/utils/abi/getFunctionABISignature';
+import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 const isOasisDexMakePermitted = async (
   tradingContractAddress,
@@ -40,11 +41,6 @@ const isOasisDexMakePermitted = async (
     environment,
   );
 
-  const matchingMarketAdapterAbi = requireMap[Contracts.MatchingMarketAdapter];
-  const methodSignature = getFunctionABISignature(
-    matchingMarketAdapterAbi,
-    'makeOrder',
-  );
   const deployment = await getDeployment(environment);
   const exchangeAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
@@ -52,7 +48,7 @@ const isOasisDexMakePermitted = async (
 
   const result = await policyManager.methods
     .preValidate(
-      methodSignature, // bytes4(keccak256(methodSignature))
+      Web3EthAbi.encodeFunctionSignature(FunctionSignatures.makeOrder),
       [
         tradingAddress.toString(), // orderAddresses[0],
         '0x0000000000000000000000000000000000000000', // orderAddresses[1],
