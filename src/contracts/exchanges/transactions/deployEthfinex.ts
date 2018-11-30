@@ -1,14 +1,20 @@
 import * as R from 'ramda';
-import { assetDataUtils } from '0x.js';
+
 import { TokenInterface } from '@melonproject/token-math/token';
 import { Address } from '@melonproject/token-math/address';
 
+// tslint:disable:max-line-length
 import { Environment } from '~/utils/environment/Environment';
 import { Contracts } from '~/Contracts';
 import { deploy } from '~/utils/solidity/deploy';
 import { promisesSerial } from '~/utils/helpers/promisesSerial';
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { ensure } from '~/utils/guards/ensure';
+import { deployErc20Proxy } from './deployErc20Proxy';
+import { addAuthorizedAddress } from '../thirdparty/0x/transactions/addAuthorizedAddress';
+import { registerAssetProxy } from '../thirdparty/0x/transactions/registerAssetProxy';
+import { changeZRXAsset } from '../thirdparty/0x/transactions/changeZRXAsset';
+import { addNewWrapperPair } from '../thirdparty/ethfinex/transactions/addNewWrapperPair';
+// tslint:enable:max-line-length
 
 interface DeployEthFinexArgs {
   tokens: TokenInterface[];
@@ -21,8 +27,7 @@ export const deployEthfinex = async (
 ) => {
   const ethfinex = await deploy(Contracts.EthfinexExchangeEfx, [], environment);
 
-  const erc20Proxy =
-    givenErc20Proxy || (await deploy(Contracts.ERC20Proxy, [], environment));
+  const erc20Proxy = givenErc20Proxy || (await deployErc20Proxy(environment));
 
   // const ethWrapper = await deploy(
   // Contracts.WrapperlockEth,
@@ -48,17 +53,8 @@ export const deployEthfinex = async (
 
   const tokenWrappers: Address[] = await promisesSerial(tokenWrappersPromises);
 
-  await transactionFactory('addAuthorizedAddress', Contracts.ERC20Proxy)(
-    erc20Proxy,
-    { exchange: ethfinex },
-    environment,
-  );
-
-  await transactionFactory('registerAssetProxy', Contracts.EthfinexExchangeEfx)(
-    ethfinex,
-    { assetProxy: erc20Proxy },
-    environment,
-  );
+  await addAuthorizedAddress(erc20Proxy, { exchange: ethfinex }, environment);
+  await registerAssetProxy(ethfinex, { assetProxy: erc20Proxy }, environment);
 
   const zrxToken = tokens.find(R.propEq('symbol', 'ZRX'));
   ensure(
@@ -68,25 +64,9 @@ export const deployEthfinex = async (
       .join(', ')}`,
   );
 
-  const zrxAssetData = assetDataUtils.encodeERC20AssetData(
-    zrxToken.address.toString(),
-  );
+  await changeZRXAsset(ethfinex, { zrxToken }, environment);
 
-  await transactionFactory('changeZRXAssetData', Contracts.EthfinexExchangeEfx)(
-    ethfinex,
-    { zrxAssetData },
-    environment,
-  );
-
-  await transactionFactory(
-    'addNewWrapperPair',
-    Contracts.EthfinexExchangeEfx,
-    undefined,
-    async ({ tokens, wrappers }) => [
-      tokens.map(t => t.address.toString()),
-      wrappers.map(w => w.toString()),
-    ],
-  )(
+  await addNewWrapperPair(
     ethfinex,
     {
       tokens,
