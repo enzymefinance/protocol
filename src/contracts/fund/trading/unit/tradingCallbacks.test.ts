@@ -22,7 +22,7 @@ beforeAll(async () => {
   shared.trading = await getContract(
     Contracts.Trading,
     await deploy(Contracts.Trading, [
-      shared.hub.options.address,
+      shared.user, // faked so user can call initialize
       [mockExchange],
       [mockAdapter.options.address],
       [false],
