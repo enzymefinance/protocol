@@ -1,22 +1,48 @@
 import { TokenInterface } from '@melonproject/token-math/token';
 import { Address } from '@melonproject/token-math/address';
 
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import {
+  transactionFactory,
+  GuardFunction,
+} from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
+import { ensure } from '~/utils/guards/ensure';
 
-const prepareArgs = async ({
-  tokens,
-  wrappers,
-}: {
+interface AddNewWrapperPairArgs {
   tokens: TokenInterface[];
   wrappers: Address[];
-}) => [tokens.map(t => t.address.toString()), wrappers.map(w => w.toString())];
+}
+
+const guard: GuardFunction<AddNewWrapperPairArgs> = async params => {
+  ensure(
+    params.tokens.length === params.wrappers.length,
+    `Different length of tokens (${params.tokens.length}) and wrappers (${
+      params.wrappers.length
+    }).`,
+  );
+};
+
+const prepareArgs = async ({ tokens, wrappers }: AddNewWrapperPairArgs) => [
+  tokens.map(t => t.address.toString()),
+  wrappers.map(w => w.toString()),
+];
+
+const postProcess = async (result, params) => {
+  ensure(
+    result.events.AddNewPair.length === params.tokens.length &&
+      result.events.AddNewPair.length === params.wrappers.length,
+    'Not all wrappers added',
+  );
+
+  return result.events.AddNewPair.map(({ returnValues }) => returnValues);
+};
 
 const addNewWrapperPair = transactionFactory(
   'addNewWrapperPair',
   Contracts.EthfinexExchangeEfx,
-  undefined,
+  guard,
   prepareArgs,
+  postProcess,
 );
 
 export { addNewWrapperPair };

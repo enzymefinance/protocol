@@ -25,6 +25,7 @@ import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdap
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { Exchanges } from '~/Contracts';
 import { deployEthfinex } from '~/contracts/exchanges/transactions/deployEthfinex';
+import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
 // tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
@@ -60,8 +61,8 @@ export const deploySystem = async () => {
   const zeroExAddress = await deploy0xExchange({ zrxToken });
   const zeroExAdapterAddress = await deploy0xAdapter();
 
-  const ethfinexAddress = await deployEthfinex({ tokens }, environment);
-  console.log(ethfinexAddress);
+  const ethfinexDeploy = await deployEthfinex({ tokens }, environment);
+  const ethfinexAdapterAddress = await deployEthfinexAdapter();
 
   await addTokenPairWhitelist(matchingMarketAddress, { baseToken, quoteToken });
 
@@ -119,12 +120,19 @@ export const deploySystem = async () => {
       name: Exchanges.ZeroEx,
       takesCustody: false,
     },
+    {
+      adapterAddress: ethfinexAdapterAddress,
+      exchangeAddress: ethfinexDeploy.exchange,
+      name: Exchanges.Ethfinex,
+      takesCustody: true,
+    },
   ];
 
   const priceSource = priceFeedAddress;
 
   const addresses = {
     engine: engineAddress,
+    ethfinex: ethfinexDeploy,
     exchangeConfigs,
     fundFactory: fundFactoryAddress,
     policies: {

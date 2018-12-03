@@ -40,7 +40,7 @@ export const deployEthfinex = async (
       Contracts.WrapperLock,
       [
         token.address.toString(),
-        token.symbol,
+        `W-${token.symbol}`,
         `${token.symbol} Token`,
         token.decimals,
         false,
@@ -66,7 +66,7 @@ export const deployEthfinex = async (
 
   await changeZRXAsset(ethfinex, { zrxToken }, environment);
 
-  await addNewWrapperPair(
+  const wrapperPairs = await addNewWrapperPair(
     ethfinex,
     {
       tokens,
@@ -75,5 +75,9 @@ export const deployEthfinex = async (
     environment,
   );
 
-  return ethfinex;
+  return {
+    erc20Proxy,
+    exchange: ethfinex,
+    wrapperPairs,
+  };
 };
