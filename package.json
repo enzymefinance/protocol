@@ -38,7 +38,7 @@
     "compile": "node bin/melon.js compile",
     "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null'\"",
-    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000",
+    "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir .",
@@ -69,7 +69,6 @@
     "lint-staged": "^7.3.0",
     "prettier": "^1.14.3",
     "prettier-eslint": "^8.2.2",
-    "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
@@ -83,7 +82,8 @@
     "tslint-config-airbnb": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.1.1",
-    "web3": "^1.0.0-beta.34"
+    "web3": "^1.0.0-beta.34",
+    "web3-eth-accounts": "^1.0.0-beta.36"
   },
   "dependencies": {
     "0x.js": "2.0.5",

@@ -3,9 +3,13 @@ import { Address } from '@melonproject/token-math/address';
 
 import {
   transactionFactory,
-  EnhancedExecute,
+  PostProcessFunction,
+  PrepareArgsFunction,
+  GuardFunction,
 } from '~/utils/solidity/transactionFactory';
+import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -24,15 +28,17 @@ interface CreateComponentsArgs {
   priceSource: Address;
 }
 
-interface CreateComponentsResult {
-  success: boolean;
-}
+type CreateComponentsResult = string;
 
-const guard = async (contractAddress: string, params, environment) => {
+const guard: GuardFunction<CreateComponentsArgs> = async (
+  contractAddress,
+  params,
+  environment,
+) => {
   // createComponents
 };
 
-const prepareArgs = async (
+const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   {
     fundName,
     exchangeConfigs,
@@ -68,18 +74,25 @@ const prepareArgs = async (
   return args;
 };
 
-const postProcess = async (receipt, params) => {
-  return { success: true };
-};
-
-export const createComponents: EnhancedExecute<
+const postProcess: PostProcessFunction<
   CreateComponentsArgs,
   CreateComponentsResult
-> = transactionFactory(
-  'createComponents',
-  Contracts.FundFactory,
-  guard,
-  prepareArgs,
-  postProcess,
-  { amguPayable: true },
-);
+> = async (
+  receipt,
+  params,
+  contractAddress,
+  environment = getGlobalEnvironment(),
+) => {
+  return managersToHubs(
+    contractAddress,
+    environment.wallet.address,
+    environment,
+  );
+};
+
+export const createComponents = transactionFactory<
+  CreateComponentsArgs,
+  CreateComponentsResult
+>('createComponents', Contracts.FundFactory, guard, prepareArgs, postProcess, {
+  amguPayable: true,
+});

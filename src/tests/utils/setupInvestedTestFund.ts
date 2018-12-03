@@ -12,6 +12,7 @@ import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFro
 import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
 const setupInvestedTestFund = async (
@@ -46,9 +47,9 @@ const setupInvestedTestFund = async (
   const hubAddress = await setupFund(fundFactory, undefined, environment);
   const settings = await getSettings(hubAddress, environment);
 
-  await Promise.all(
-    Object.values(componentsFromSettings(settings)).map((address: Address) =>
-      setIsFund(version, { address }, environment),
+  await promisesSerial(
+    Object.values(componentsFromSettings(settings)).map(
+      (address: Address) => () => setIsFund(version, { address }, environment),
     ),
   );
 

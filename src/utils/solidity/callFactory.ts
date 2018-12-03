@@ -136,10 +136,12 @@ const callFactory = (
 
 const callFactoryWithoutParams = (name, contract, processors?) => {
   const withParams = callFactory(name, contract, processors);
-  const prepare = (contractAddress, environment?) =>
+
+  const prepare = (contractAddress, environment = getGlobalEnvironment()) =>
     withParams.prepare(contractAddress, {}, environment);
+
   const call = withParams.call;
-  const observable = (contractAddress, environment?) =>
+  const observable = (contractAddress, environment = getGlobalEnvironment()) =>
     withParams.observable(contractAddress, {}, environment);
 
   const execute = async (
