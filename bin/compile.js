@@ -25,29 +25,6 @@ var findImports = function (missingPath, b, c) {
         contents: contents
     };
 };
-// Not used at the moment
-// TODO: Fix this and make it work
-var compile = function (pathToSol) {
-    var _a;
-    debug('Compiling ...', pathToSol);
-    var parsed = path.parse(pathToSol);
-    var source = fs.readFileSync(pathToSol, { encoding: 'utf-8' });
-    var input = {
-        sources: (_a = {},
-            _a[parsed.base] = source,
-            _a)
-    };
-    var output = solc.compile(input, 1, findImports);
-    debug('Compiled', pathToSol);
-    if (output.errors)
-        output.errors.forEach(debug);
-    var targetDir = path.join(solidityCompileTarget, parsed.dir);
-    var targetPath = path.join(targetDir, parsed.name + ".json");
-    debug('Writing to', targetPath);
-    mkdirp.sync(targetDir);
-    fs.writeFileSync(targetPath, JSON.stringify(output, null, 2));
-    return output;
-};
 var writeFiles = function (compileOutput, contract) {
     var _a = contract.split(':'), sourceName = _a[0], contractName = _a[1];
     var parsedPath = path.parse(sourceName);
@@ -65,8 +42,8 @@ var writeFiles = function (compileOutput, contract) {
     fs.writeFileSync(targetBasePath + ".abi", compileOutput.interface);
     fs.writeFileSync(targetBasePath + ".gasEstimates.json", JSON.stringify(compileOutput.gasEstimates, null, 2));
 };
-exports.compileAll = function () {
-    var query = path.join(soliditySourceDirectory, '**', '*.sol');
+exports.compileGlob = function (query) {
+    if (query === void 0) { query = path.join(soliditySourceDirectory, '**', '*.sol'); }
     var candidates = glob.sync(query);
     debug("Compiling " + query + ", " + candidates.length + " files ...");
     var unmerged = candidates.map(function (source) {

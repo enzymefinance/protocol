@@ -19,6 +19,7 @@ beforeAll(async () => {
     shared.mln.options.address,
   ];
   shared.mockQuoteAsset = shared.weth.options.address;
+  shared.mockNativeAsset = shared.weth.options.address;
   shared.exaUnit = new BigInteger('1000000000000000000');
 });
 
@@ -35,6 +36,9 @@ test('Accounting is properly initialized', async () => {
 
   await expect(shared.accounting.methods.QUOTE_ASSET().call()).resolves.toBe(
     shared.mockQuoteAsset,
+  );
+  await expect(shared.accounting.methods.NATIVE_ASSET().call()).resolves.toBe(
+    shared.mockNativeAsset,
   );
   await expect(shared.accounting.methods.calcSharePrice().call()).resolves.toBe(
     `${shared.exaUnit}`,

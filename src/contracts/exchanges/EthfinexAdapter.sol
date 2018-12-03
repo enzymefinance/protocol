@@ -136,8 +136,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        // TODO: Change to Native Asset or Wrapped Native Asset?
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
             // Check if the input token address is null address
@@ -152,15 +151,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         }
     }
 
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        revert();
-    }
-
-    // TODO: Get order details. Minor: Wrapped tokens directly sent to the fund are not accounted
+     /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted
+     // TODO: Check if return values more accurate to their names (E.g if order is filled does it mean maker / taker quantities are 0)
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
@@ -197,7 +189,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
 
         // Handle case for WETH
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
             WETH9(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);

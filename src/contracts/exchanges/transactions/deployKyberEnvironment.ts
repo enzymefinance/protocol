@@ -290,7 +290,7 @@ export const deployKyberEnvironment = async (
   //     KyberNetworkProxy.options.address,
   //     KyberAdapter.options.address,
   //     true,
-  //     [swapTokensSignature],
+  //     [takeOrderSignature],
   //   ],
   // );
   return {

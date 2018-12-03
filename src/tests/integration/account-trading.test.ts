@@ -54,6 +54,7 @@ test('Happy path', async () => {
     defaultTokens,
     exchangeConfigs,
     fundName,
+    nativeToken: quoteToken,
     priceSource,
     quoteToken,
   });

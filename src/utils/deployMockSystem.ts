@@ -72,6 +72,7 @@ export const deployMockSystem = async ({
   const accounting = await deployAndGetContract(accountingContract, [
     hub.options.address,
     quoteToken.address,
+    wethTokenAddress,
     [quoteToken.address, baseToken.address],
   ]);
   const feeManager = await deployAndGetContract(feeManagerContract, [

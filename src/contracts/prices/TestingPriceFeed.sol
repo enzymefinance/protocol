@@ -128,6 +128,33 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         return mul(buyQuantity, 10 ** assetsToDecimals[sellAsset]) / sellQuantity;
     }
 
+    /// @notice Doesn't check validity as TestingPriceFeed has no validity variable
+    /// @param ofAsset Asset in registrar
+    /// @return isRecent Price information ofAsset is recent
+    function hasRecentPrice(address ofAsset)
+        view
+        returns (bool isRecent)
+    {
+        var (price, ) = getPrice(ofAsset);
+        return (price != 0);
+    }
+
+    /// @notice Checks whether data exists for a given asset pair
+    /// @dev Prices are only upated against QUOTE_ASSET
+    /// @param sellAsset Asset for which check to be done if data exists
+    /// @param buyAsset Asset for which check to be done if data exists
+    /// @return Whether assets exist for given asset pair
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset)
+        view
+        returns (bool isExistent)
+    {
+        return
+            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
+            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+    }
+
     function getLastUpdateId() public view returns (uint) { return updateId; }
     function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
 }

@@ -23,6 +23,7 @@ interface CreateComponentsArgs {
   fundName: string;
   exchangeConfigs: ExchangeConfig[];
   quoteToken: TokenInterface;
+  nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
   priceSource: Address;
 }
@@ -38,7 +39,14 @@ const guard: GuardFunction<CreateComponentsArgs> = async (
 };
 
 const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
-  { fundName, exchangeConfigs, quoteToken, defaultTokens, priceSource },
+  {
+    fundName,
+    exchangeConfigs,
+    quoteToken,
+    nativeToken,
+    defaultTokens,
+    priceSource,
+  },
   contractAddress,
 ) => {
   const exchangeAddresses = exchangeConfigs.map(e =>
@@ -50,12 +58,14 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   const takesCustody = exchangeConfigs.map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
+  const nativeTokenAddress = nativeToken.address;
 
   const args = [
     fundName,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
+    nativeTokenAddress,
     defaultTokenAddresses,
     takesCustody,
     priceSource.toString(),

@@ -59,6 +59,7 @@ test('Set amgu and check its usage', async () => {
     defaultTokens,
     exchangeConfigs,
     fundName,
+    nativeToken: quoteToken,
     priceSource,
     quoteToken,
   };
