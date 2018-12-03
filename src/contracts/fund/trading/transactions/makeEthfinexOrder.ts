@@ -1,5 +1,5 @@
 import * as web3Utils from 'web3-utils';
-import { assetDataUtils, SignedOrder } from '0x.js';
+import { assetDataUtils } from '0x.js';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { Contracts, Exchanges } from '~/Contracts';
@@ -15,15 +15,14 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { getHub } from '../../hub/calls/getHub';
 import { getSettings } from '../../hub/calls/getSettings';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { Make0xOrderArgs } from './make0xOrder';
+import { getOriginalToken } from '~/contracts/exchanges/thirdparty/ethfinex/calls/getOriginalToken';
+import { TokenInterface } from '@melonproject/token-math/token';
 // tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
-export interface Make0xOrderArgs {
-  signedOrder: SignedOrder;
-}
 
 const guard: GuardFunction<Make0xOrderArgs> = async (
   { signedOrder },
@@ -32,10 +31,10 @@ const guard: GuardFunction<Make0xOrderArgs> = async (
 ) => {
   const hubAddress = await getHub(contractAddress, environment);
   const { vaultAddress } = await getSettings(hubAddress);
-  const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
+  const makerWrapperLock = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
   ).tokenAddress;
-  const makerToken = await getToken(makerTokenAddress);
+  const makerToken = await getOriginalToken(makerWrapperLock);
 
   const makerQuantity = createQuantity(
     makerToken,
@@ -56,9 +55,11 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     environment,
   );
 
-  const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
+  const makerWrapperLock = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
   ).tokenAddress;
+  const makerToken: TokenInterface = await getOriginalToken(makerWrapperLock);
+
   const takerTokenAddress = assetDataUtils.decodeERC20AssetData(
     signedOrder.takerAssetData,
   ).tokenAddress;
@@ -69,7 +70,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     [
       contractAddress.toString(),
       NULL_ADDRESS,
-      makerTokenAddress,
+      makerToken.address.toString(),
       takerTokenAddress,
       signedOrder.feeRecipientAddress,
       NULL_ADDRESS,
@@ -101,7 +102,7 @@ const postProcess: PostProcessFunction<
   return true;
 };
 
-const make0xOrder = transactionFactory(
+const makeEthfinexOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
   guard,
@@ -109,4 +110,4 @@ const make0xOrder = transactionFactory(
   postProcess,
 );
 
-export { make0xOrder };
+export { makeEthfinexOrder };

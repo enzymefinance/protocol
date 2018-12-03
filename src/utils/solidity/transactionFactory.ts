@@ -276,11 +276,18 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const keys = R.map(R.prop('name'), eventABI.inputs);
       const picked = R.pick(keys, decoded);
 
+      const current = R.cond([
+        [
+          Array.isArray,
+          existingEventLog => [...existingEventLog, { returnValues: picked }],
+        ],
+        [R.isNil, R.always({ returnValues: picked })],
+        [R.T, existingEventLog => [existingEventLog, { returnValues: picked }]],
+      ])(carry[eventABI.name]);
+
       return {
         ...carry,
-        [eventABI.name]: {
-          returnValues: picked,
-        },
+        [eventABI.name]: current,
       };
     }, {});
 

@@ -35,6 +35,10 @@ export interface CreateOrderArgs {
   makerAddress?: Address;
 }
 
+/**
+ * For Ethfinex orders: The makerQuantity.token has to be the
+ * Ethfinex Wrapper contract
+ */
 const createOrder = async (
   exchange: Address,
   {

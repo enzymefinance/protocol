@@ -31,7 +31,7 @@ const setupInvestedTestFund = async (
 
   const [weth, mln] = tokens;
 
-  await createComponents(
+  const hubAddress = await createComponents(
     fundFactory,
     {
       defaultTokens: [weth, mln],
@@ -42,8 +42,9 @@ const setupInvestedTestFund = async (
     },
     environment,
   );
+
   await continueCreation(fundFactory, undefined, environment);
-  const hubAddress = await setupFund(fundFactory, undefined, environment);
+  await setupFund(fundFactory, undefined, environment);
   const settings = await getSettings(hubAddress, environment);
 
   await promisesSerial(
