@@ -29,6 +29,7 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { promisesSerial } from '~/utils/helpers/promisesSerial';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -189,6 +190,8 @@ test('Happy path', async () => {
   });
 
   console.log(`Took order from fund with id ${order3.id} `);
+
+  await performCalculations(settings.accountingAddress);
 
   await shutDownFund(hubAddress);
 
