@@ -37,7 +37,7 @@
     "clean": "rimraf lib && rimraf out",
     "compile": "node bin/melon.js compile",
     "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
-    "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null'\"",
+    "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
