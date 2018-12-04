@@ -45,7 +45,7 @@ beforeAll(async () => {
   shared.feed = await getContract(Contracts.TestingPriceFeed, feedAddress);
   shared.delay = 30 * 24 * 60 * 60;
   shared.engineAddress = await deployEngine(
-    shared.version.options.address,
+    shared.feed.options.address,
     shared.delay,
     shared.mln.options.address,
   );
@@ -54,6 +54,9 @@ beforeAll(async () => {
     feedAddress,
   );
   shared.engine = getContract(Contracts.Engine, shared.engineAddress);
+  await shared.engine.methods
+    .setVersion(shared.version.options.address)
+    .send({ from: shared.accounts[0] });
   const newPrice = getPrice(
     createQuantity(await getToken(shared.mln.options.address), 1),
     createQuantity(await getToken(wethAddress), 2.94),
