@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./Fee.i.sol";
 import "../hub/Spoke.sol";
@@ -10,22 +11,28 @@ import "../../engine/AmguConsumer.sol";
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, AmguConsumer, Spoke {
 
+    struct FeeInfo {
+        address feeAddress;
+        uint feeRate;
+        uint feePeriod;
+    }
+
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
     event FeeRewarded(uint shareQuantity);
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function register(address feeAddress) public auth {
+    function register(address feeAddress, uint feeRate, uint feePeriod) public auth {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
-        Fee(feeAddress).updateState();  // initialize state
+        Fee(feeAddress).initializeForUser(feeRate, feePeriod);  // initialize state
     }
 
-    function batchRegister(address[] feeAddresses) public auth {
-        for (uint i = 0; i < feeAddresses.length; i++) {
-            register(feeAddresses[i]);
+    function batchRegister(FeeInfo[] fees) public auth {
+        for (uint i = 0; i < fees.length; i++) {
+            register(fees[i].feeAddress, fees[i].feeRate, fees[i].feePeriod);
         }
     }
 
