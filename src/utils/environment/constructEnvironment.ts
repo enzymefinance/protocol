@@ -66,6 +66,7 @@ const constructProvider = endpoint => {
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
+  logger = () => {},
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,
@@ -79,6 +80,7 @@ export const constructEnvironment = ({
   return {
     eth: new Eth(provider || constructProvider(endpoint)),
     // tslint:disable-next-line:object-shorthand-properties-first
+    logger,
     options,
     track,
     wallet,

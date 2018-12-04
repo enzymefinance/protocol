@@ -8,6 +8,22 @@ export type SignFunction = (
   from?: Address,
 ) => Promise<string>;
 
+// Same as NPM logging levels
+export enum LogLevels {
+  ERROR,
+  WARN,
+  INFO,
+  VERBOSE,
+  DEBUG,
+  SILLY,
+}
+
+export type LoggerFunction = (
+  namespace: string,
+  level: LogLevels,
+  ...msg: any[]
+) => void;
+
 export interface Wallet {
   // TODO: Rename this to currentAccount
   address: Address;
@@ -25,4 +41,5 @@ export interface Environment {
   readonly track: string;
   readonly wallet?: Wallet;
   readonly options: Options;
+  readonly logger: LoggerFunction;
 }
