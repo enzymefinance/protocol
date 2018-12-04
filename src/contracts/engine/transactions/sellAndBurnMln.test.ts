@@ -46,7 +46,6 @@ beforeAll(async () => {
   shared.delay = 30 * 24 * 60 * 60;
   shared.engineAddress = await deployEngine(
     shared.version.options.address,
-    feedAddress,
     shared.delay,
     shared.mln.options.address,
   );

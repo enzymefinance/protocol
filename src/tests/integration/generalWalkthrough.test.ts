@@ -1,5 +1,4 @@
 // tslint:disable:max-line-length
-import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -9,7 +8,6 @@ import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
 import {
   register,
   PolicedMethods,
@@ -17,7 +15,6 @@ import {
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
@@ -48,7 +45,6 @@ test(
 
     const {
       exchangeConfigs,
-      fundFactory,
       priceSource,
       tokens,
       policies,
@@ -56,11 +52,11 @@ test(
     } = deployment;
     const [quoteToken, baseToken] = tokens;
     const defaultTokens = [quoteToken, baseToken];
-    const amguToken = await getAmguToken(fundFactory);
+    const amguToken = await getAmguToken(version);
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(version, amguPrice);
 
-    await createComponents(fundFactory, {
+    await createComponents(version, {
       defaultTokens,
       exchangeConfigs,
       fundName,
@@ -68,8 +64,8 @@ test(
       quoteToken,
     });
 
-    await continueCreation(fundFactory);
-    const hubAddress = await setupFund(fundFactory);
+    await continueCreation(version);
+    const hubAddress = await setupFund(version);
     const settings = await getSettings(hubAddress);
 
     await register(settings.policyManagerAddress, {
@@ -93,13 +89,6 @@ test(
     );
 
     await update(priceSource, [newPrice]);
-
-    const components = componentsFromSettings(settings);
-    await Promise.all(
-      Object.values(components).map((address: Address) =>
-        setIsFund(version, { address }),
-      ),
-    );
 
     await requestInvestment(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),

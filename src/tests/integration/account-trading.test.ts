@@ -44,7 +44,6 @@ test(
     const deployment = await deploySystem();
     const {
       exchangeConfigs,
-      fundFactory,
       priceSource,
       tokens,
       policies,
@@ -53,7 +52,7 @@ test(
     const [quoteToken, baseToken] = tokens;
     const defaultTokens = [quoteToken, baseToken];
 
-    await createComponents(fundFactory, {
+    await createComponents(version, {
       defaultTokens,
       exchangeConfigs,
       fundName,
@@ -61,8 +60,8 @@ test(
       quoteToken,
     });
 
-    await continueCreation(fundFactory);
-    const hubAddress = await setupFund(fundFactory);
+    await continueCreation(version);
+    const hubAddress = await setupFund(version);
     const settings = await getSettings(hubAddress);
 
     await register(settings.policyManagerAddress, {
