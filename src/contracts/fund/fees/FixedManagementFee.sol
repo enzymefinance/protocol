@@ -9,7 +9,6 @@ import "../../dependencies/math.sol";
 
 contract FixedManagementFee is DSMath, Fee {
 
-    // TODO: FEE Rate as constructor parameter
     uint public DIVISOR = 10 ** 18;
 
     mapping (address => uint) public managementFeeRate;
