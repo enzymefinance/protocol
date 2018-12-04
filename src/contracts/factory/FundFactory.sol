@@ -43,6 +43,7 @@ contract FundFactory is AmguConsumer {
     }
 
     address[] public funds;
+    mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
     mapping (address => Components) public managersToComponents;
     mapping (address => Settings) public managersToSettings;
@@ -137,6 +138,7 @@ contract FundFactory is AmguConsumer {
 
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
+        hubExists[address(hub)] = true;
         hub.setSpokes([
             components.accounting,
             components.feeManager,

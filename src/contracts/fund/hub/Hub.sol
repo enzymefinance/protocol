@@ -33,6 +33,7 @@ contract Hub is DSGuard {
     bool public routingSet;
     bool public permissionsSet;
     uint public creationTime;
+    mapping (address => bool) public isSpoke;
 
     constructor(address _manager, string _name) {
         manager = _manager;
@@ -48,6 +49,9 @@ contract Hub is DSGuard {
     // TODO: add permissioning for sender
     function setSpokes(address[12] _spokes) {
         require(!spokesSet, "Spokes already set");
+        for (uint i = 0; i < _spokes.length; i++) {
+            isSpoke[_spokes[i]] = true;
+        }
         settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
         settings.participation = _spokes[2];

@@ -18,7 +18,6 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         address _tradingFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _version,
         address _engine,
         address _factoryPriceSource,
         address _mlnAddress
@@ -31,7 +30,7 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             _tradingFactory,
             _vaultFactory,
             _policyManagerFactory,
-            _version,
+            address(this),
             _engine,
             _factoryPriceSource,
             _mlnAddress
@@ -44,6 +43,8 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         amguPrice = _price;
     }
 
+    function getAmguPrice() returns (uint) { return amguPrice; }
+
     function shutDown() external auth { isShutDown = true; }
 
     function shutDownFund(address _hub) external {
@@ -54,10 +55,17 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         Hub(_hub).shutDownFund();
     }
 
-    function getAmguPrice() returns (uint) { return amguPrice; }
-
     function isFund(address _who) returns (bool) {
-        return managersToHubs[_who] != 0;
+        if (hubExists[_who]) {
+            return true; // directly from a hub
+        } else {
+            address hub = Hub(Spoke(_who).hub());
+            require(
+                Hub(hub).isSpoke(_who),
+                "Call from either a spoke or hub"
+            );
+            return hubExists[hub];
+        }
     }
 
     function isFundFactory(address _who) returns (bool) {

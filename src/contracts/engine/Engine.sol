@@ -49,8 +49,8 @@ contract Engine is DSMath, DSAuth {
 
     function payAmguInEther() public payable {
         require(
-            version.isFund(msg.sender) ||
-            version.isFundFactory(msg.sender),
+            version.isFundFactory(msg.sender) ||
+            version.isFund(msg.sender),
             "Sender must be a fund or the factory"
         );
         frozenEther = add(frozenEther, msg.value);
