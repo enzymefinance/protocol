@@ -5,6 +5,7 @@ import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
+import { bindLogger } from '../environment/bindLogger';
 
 export interface Options {
   amguPayable?: boolean;
@@ -17,8 +18,6 @@ export interface Options {
 export type OptionsCallback = (environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
-
-const debug = require('debug')('melon:protocol:utils:solidity');
 
 export interface PreparedTransaction {
   encoded: string;
@@ -38,6 +37,11 @@ export const prepareTransaction = async (
   const environment = isEnvironment(optionsOrEnvironment)
     ? optionsOrEnvironment
     : maybeEnvironment;
+
+  const { debug } = bindLogger(
+    environment.logger,
+    'melon:protocol:utils:solidity',
+  );
 
   const options = isEnvironment(optionsOrEnvironment)
     ? {
