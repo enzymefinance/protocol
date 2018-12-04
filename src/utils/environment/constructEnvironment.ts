@@ -3,8 +3,7 @@ import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
 import { Environment, Options } from './Environment';
-
-const debug = require('debug')('melon:protocol:utils:environment');
+import { bindLogger } from './bindLogger';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -38,7 +37,9 @@ const selectProvider = R.cond([
   [checkIpc, makeIpcProvider],
 ]);
 
-const constructProvider = endpoint => {
+const constructProvider = (endpoint, logger) => {
+  const { debug } = bindLogger(logger, 'melon:protocol:utils:environment');
+
   string()
     .url(
       [
@@ -66,7 +67,7 @@ const constructProvider = endpoint => {
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
-  logger = () => {},
+  logger = (..._) => {},
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,
@@ -78,7 +79,7 @@ export const constructEnvironment = ({
   }
 
   return {
-    eth: new Eth(provider || constructProvider(endpoint)),
+    eth: new Eth(provider || constructProvider(endpoint, logger)),
     // tslint:disable-next-line:object-shorthand-properties-first
     logger,
     options,
