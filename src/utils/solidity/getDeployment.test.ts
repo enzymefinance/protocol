@@ -13,7 +13,6 @@ test('Happy path', async () => {
   expect(Object.keys(deployment)).toEqual(
     expect.arrayContaining([
       'exchangeConfigs',
-      'fundFactory',
       'policies',
       'priceSource',
       'tokens',

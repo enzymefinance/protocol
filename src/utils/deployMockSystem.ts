@@ -99,11 +99,13 @@ export const deployMockSystem = async ({
 
   // TODO: replace with raw function when MockEngine is available
   const engine = await deployAndGetContract(engineContract, [
-    version.options.address,
     priceSource.options.address,
     30 * 24 * 60 * 60, // month
     mlnTokenAddress,
   ]);
+  await engine.methods
+    .setVersion(version.options.address)
+    .send({ from: environment.wallet.address });
 
   await hub.methods
     .setSpokes([

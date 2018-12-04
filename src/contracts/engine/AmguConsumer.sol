@@ -17,15 +17,11 @@ contract AmguConsumer is DSMath {
     modifier amguPayable() {
         uint initialGas = gasleft();
         _;
-        payAmguForRemainingGas(initialGas);
-    }
-
-    function payAmguForRemainingGas(uint _initialGas) internal {
         uint mlnPerAmgu = VersionInterface(version()).getAmguPrice();
         uint ethPerMln;
         (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnAddress());
         uint ethToPay = mul(
-            sub(_initialGas, gasleft()),
+            sub(initialGas, gasleft()),
             mul(mlnPerAmgu, ethPerMln)
         ) / 1 ether;
         require(msg.value >= ethToPay, "Insufficent amgu");
