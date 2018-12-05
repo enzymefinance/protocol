@@ -16,6 +16,6 @@ export const getContract: GetContractFunction = (
   environment = getGlobalEnvironment(),
 ) => {
   const abi = requireMap[relativePath];
-  const contract = new environment.eth.Contract(abi, address.toString());
+  const contract = new environment.eth.Contract(abi, `${address}`);
   return contract;
 };

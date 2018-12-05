@@ -33,11 +33,14 @@ contract Hub is DSGuard {
     bool public spokesSet;
     bool public routingSet;
     bool public permissionsSet;
+    uint public creationTime;
+    mapping (address => bool) public isSpoke;
 
     constructor(address _manager, string _name) {
         creator = msg.sender;
         manager = _manager;
         name = _name;
+        creationTime = block.timestamp;
     }
 
     modifier onlyCreator() {
@@ -47,12 +50,15 @@ contract Hub is DSGuard {
 
     // TODO: extend this ability to the version (if version shut down and we still need this)
     function shutDownFund() public {
-        require(msg.sender == manager, "Only manager can shut down fund");
+        require(msg.sender == settings.version);
         isShutDown = true;
     }
 
     function setSpokes(address[12] _spokes) onlyCreator {
         require(!spokesSet, "Spokes already set");
+        for (uint i = 0; i < _spokes.length; i++) {
+            isSpoke[_spokes[i]] = true;
+        }
         settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
         settings.participation = _spokes[2];

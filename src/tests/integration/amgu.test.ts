@@ -37,7 +37,6 @@ test('Set amgu and check its usage', async () => {
   const deployment = await deploySystem();
   const {
     exchangeConfigs,
-    fundFactory,
     priceSource,
     tokens,
     // engine,
@@ -47,7 +46,7 @@ test('Set amgu and check its usage', async () => {
   const [quoteToken, baseToken] = tokens;
 
   const defaultTokens = [quoteToken, baseToken];
-  const amguToken = await getAmguToken(fundFactory);
+  const amguToken = await getAmguToken(version);
   const amguPrice = createQuantity(amguToken, '1000000000');
   const oldAmguPrice = await getAmguPrice(version);
   const newAmguPrice = await setAmguPrice(version, amguPrice);
@@ -74,7 +73,7 @@ test('Set amgu and check its usage', async () => {
   const [price] = await getPrices(priceSource, [baseToken]);
   expect(isEqualPrice(price, newPrice)).toBe(true);
 
-  const prepared = await createComponents.prepare(fundFactory, args);
+  const prepared = await createComponents.prepare(version, args);
 
   const preBalance = await shared.environment.eth.getBalance(
     shared.accounts[0],
@@ -86,7 +85,7 @@ test('Set amgu and check its usage', async () => {
   );
 
   const result = await createComponents.send(
-    fundFactory,
+    version,
     signedTransactionData,
     args,
     undefined,

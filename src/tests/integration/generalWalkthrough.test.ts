@@ -1,20 +1,16 @@
 // tslint:disable:max-line-length
-import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
@@ -27,7 +23,6 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 import { randomString } from '~/utils/helpers/randomString';
-import { promisesSerial } from '~/utils/helpers/promisesSerial';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 // tslint:enable:max-line-length
@@ -46,7 +41,6 @@ test('Happy path', async () => {
 
   const {
     exchangeConfigs,
-    fundFactory,
     priceSource,
     tokens,
     policies,
@@ -54,11 +48,11 @@ test('Happy path', async () => {
   } = deployment;
   const [quoteToken, baseToken] = tokens;
   const defaultTokens = [quoteToken, baseToken];
-  const amguToken = await getAmguToken(fundFactory);
+  const amguToken = await getAmguToken(version);
   const amguPrice = createQuantity(amguToken, '1000000000');
   await setAmguPrice(version, amguPrice);
 
-  await createComponents(fundFactory, {
+  await createComponents(version, {
     defaultTokens,
     exchangeConfigs,
     fundName,
@@ -67,8 +61,8 @@ test('Happy path', async () => {
     quoteToken,
   });
 
-  await continueCreation(fundFactory);
-  const hubAddress = await setupFund(fundFactory);
+  await continueCreation(version);
+  const hubAddress = await setupFund(version);
   const settings = await getSettings(hubAddress);
 
   await register(settings.policyManagerAddress, {
@@ -92,14 +86,6 @@ test('Happy path', async () => {
   );
 
   await update(priceSource, [newPrice]);
-
-  const components = componentsFromSettings(settings);
-
-  await promisesSerial(
-    Object.values(components).map((address: Address) => () =>
-      setIsFund(version, { address }),
-    ),
-  );
 
   await requestInvestment(settings.participationAddress, {
     investmentAmount: createQuantity(quoteToken, 1),
@@ -193,7 +179,7 @@ test('Happy path', async () => {
 
   await performCalculations(settings.accountingAddress);
 
-  await shutDownFund(hubAddress);
+  await shutDownFund(version, { hub: hubAddress });
 
   console.log('Shut down fund');
 

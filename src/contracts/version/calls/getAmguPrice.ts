@@ -1,6 +1,6 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getFundFactory } from './getFundFactory';
+import { getVersion } from '~/contracts/engine/calls/getVersion';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
@@ -10,11 +10,8 @@ const postProcess = async (
   prepared,
   environment = getGlobalEnvironment(),
 ) => {
-  const fundFactoryAddress = await getFundFactory(
-    prepared.contractAddress,
-    environment,
-  );
-  const amguToken = await getAmguToken(fundFactoryAddress, environment);
+  const versionAddress = await getVersion(prepared.contractAddress);
+  const amguToken = await getAmguToken(versionAddress);
   const quantity = createQuantity(amguToken, result);
   return quantity;
 };
