@@ -8,8 +8,7 @@ import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
 
 import { TransactionArgs } from './transactionFactory';
-import { Environment } from '../environment/Environment';
-import { bindLogger } from '../environment/bindLogger';
+import { Environment, LogLevels } from '../environment/Environment';
 
 // TODO: Refactor all callers to only use the Contract interface
 type Deploy = {
@@ -30,9 +29,9 @@ export const deploy: Deploy = async (
   args = [],
   environment = getGlobalEnvironment(),
 ) => {
-  const { debug } = bindLogger(
-    environment.logger,
+  const debug = environment.logger(
     'melon:protocol:utils:solidity',
+    LogLevels.DEBUG,
   );
 
   const parsed = path.parse(pathToSolidityFile);

@@ -23,14 +23,14 @@ import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { bindLogger } from './environment/bindLogger';
+import { LogLevels, LoggerFunction } from './environment/Environment';
 // tslint:enable:max-line-length
 
 /**
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async (environment = getGlobalEnvironment()) => {
-  const { debug } = bindLogger(environment.logger, 'melon:protocol:utils');
+  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
 
   const accounts = await environment.eth.getAccounts();
 

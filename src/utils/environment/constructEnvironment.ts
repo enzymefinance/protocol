@@ -2,8 +2,7 @@ import Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
-import { Environment, Options } from './Environment';
-import { bindLogger } from './bindLogger';
+import { Environment, Options, LogLevels } from './Environment';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -38,7 +37,7 @@ const selectProvider = R.cond([
 ]);
 
 const constructProvider = (endpoint, logger) => {
-  const { debug } = bindLogger(logger, 'melon:protocol:utils:environment');
+  const debug = logger('melon:protocol:utils:environment', LogLevels.DEBUG);
 
   string()
     .url(
@@ -67,7 +66,7 @@ const constructProvider = (endpoint, logger) => {
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
-  logger = (..._) => {},
+  logger = () => () => () => {},
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,

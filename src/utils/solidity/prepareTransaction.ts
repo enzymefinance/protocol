@@ -1,11 +1,10 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
-import { bindLogger } from '../environment/bindLogger';
 
 export interface Options {
   amguPayable?: boolean;
@@ -38,9 +37,9 @@ export const prepareTransaction = async (
     ? optionsOrEnvironment
     : maybeEnvironment;
 
-  const { debug } = bindLogger(
-    environment.logger,
+  const debug = environment.logger(
     'melon:protocol:utils:solidity',
+    LogLevels.DEBUG,
   );
 
   const options = isEnvironment(optionsOrEnvironment)

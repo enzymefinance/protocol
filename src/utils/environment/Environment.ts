@@ -16,11 +16,18 @@ export enum LogLevels {
   DEBUG = 'debug',
 }
 
-export type LoggerFunction = (
-  message: string | any[],
-  level?: LogLevels,
-  namespace?: string,
-) => void;
+export type LoggerFunction = (...messages: any) => void;
+
+export interface LoggerFunctionWithLevel {
+  (level: LogLevels): LoggerFunction;
+  (level: LogLevels, message: void, ...messages: any): void;
+}
+
+export interface CurriedLogger {
+  (namespace: string, level: LogLevels, message: void, ...messages: any): void;
+  (namespace: string, level: LogLevels): LoggerFunction;
+  (namespace: string): LoggerFunctionWithLevel;
+}
 
 export interface Wallet {
   // TODO: Rename this to currentAccount
@@ -39,5 +46,5 @@ export interface Environment {
   readonly track: string;
   readonly wallet?: Wallet;
   readonly options: Options;
-  readonly logger: LoggerFunction;
+  readonly logger: CurriedLogger;
 }

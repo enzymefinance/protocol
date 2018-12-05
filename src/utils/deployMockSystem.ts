@@ -7,7 +7,7 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTok
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
-import { bindLogger } from './environment/bindLogger';
+import { LogLevels } from './environment/Environment';
 // tslint:enable:max-line-length
 
 /**
@@ -30,7 +30,7 @@ export const deployMockSystem = async (
   } = {},
   environment = getGlobalEnvironment(),
 ) => {
-  const { debug } = bindLogger(environment.logger, 'melon:protocol:utils');
+  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
 
   const accounts = await environment.eth.getAccounts();
 
