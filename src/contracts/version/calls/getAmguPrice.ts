@@ -10,8 +10,11 @@ const postProcess = async (
   prepared,
   environment = getGlobalEnvironment(),
 ) => {
-  const versionAddress = await getVersion(prepared.contractAddress);
-  const amguToken = await getAmguToken(versionAddress);
+  const versionAddress = await getVersion(
+    prepared.contractAddress,
+    environment,
+  );
+  const amguToken = await getAmguToken(versionAddress, environment);
   const quantity = createQuantity(amguToken, result);
   return quantity;
 };
