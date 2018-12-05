@@ -110,7 +110,26 @@ const hub = await protocol.factory.managersToHubs(
 
 ## Development Tipps
 
-### Usage of the logger
+### Using the logger
+
+To help debug the system, the test environment has a test logger that logs into `./logs/`. This keeps the terminal clean but also a great possibility to inspect the logs in detail. Here is how it works:
+
+Inside a function that has the environment, the `environment.logger` is a curried function with the following signature:
+
+```ts
+(namespace: string, level: LogLevels, ...messages: any): void;
+
+```
+
+This currying gives a high level of flexibility, but basically we just use this pattern:
+
+```ts
+const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
+
+// and then use debug as you would console.log:
+
+debug('Something happened', interestingObject, ' ... and more ...', whatever);
+```
 
 ## Troubleshooting
 
