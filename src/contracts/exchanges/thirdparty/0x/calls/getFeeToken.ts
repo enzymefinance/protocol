@@ -1,4 +1,4 @@
-import { assetDataUtils } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { callFactory } from '~/utils/solidity/callFactory';

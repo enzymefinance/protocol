@@ -59,6 +59,7 @@
     "@babel/preset-env": "^7.1.6",
     "@babel/register": "^7.0.0",
     "@parity/api": "^3.0.1",
+    "@types/ethereum-protocol": "^1.0.0",
     "@types/jest": "^23.3.9",
     "@types/node": "^10.12.10",
     "ava": "0.25.0",
@@ -75,7 +76,7 @@
     "snyk": "^1.110.2",
     "solidity-cli": "^1.0.3",
     "solium": "^1.1.0",
-    "ts-jest": "^23.10.4",
+    "ts-jest": "^23.10.5",
     "tsc-watch": "^1.0.31",
     "tscpaths": "^0.0.6",
     "tslint": "^5.11.0",
@@ -86,7 +87,7 @@
     "web3-eth-accounts": "^1.0.0-beta.36"
   },
   "dependencies": {
-    "0x.js": "2.0.5",
+    "@0x/contract-wrappers": "^4.1.1",
     "@0x/order-utils": "^3.0.2",
     "@melonproject/ganache-cli": "^6.1.9",
     "@melonproject/token-math": "0.0.20",

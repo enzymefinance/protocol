@@ -1,6 +1,5 @@
 import { Address } from '@melonproject/token-math/address';
-import { AssetProxyId } from '0x.js';
-
+import { AssetProxyId } from '@0x/types';
 import { Contracts } from '~/Contracts';
 import { callFactory } from '~/utils/solidity/callFactory';
 

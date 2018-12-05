@@ -1,4 +1,4 @@
-import * as Web3EthAbi from 'web3-eth-abi';
+import web3EthAbi from 'web3-eth-abi';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getContract } from '~/utils/solidity/getContract';
@@ -48,7 +48,7 @@ const isOasisDexMakePermitted = async (
 
   const result = await policyManager.methods
     .preValidate(
-      Web3EthAbi.encodeFunctionSignature(FunctionSignatures.makeOrder),
+      web3EthAbi.encodeFunctionSignature(FunctionSignatures.makeOrder),
       [
         tradingAddress.toString(), // orderAddresses[0],
         '0x0000000000000000000000000000000000000000', // orderAddresses[1],

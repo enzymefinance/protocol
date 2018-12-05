@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import * as web3EthAbi from 'web3-eth-abi';
+import web3EthAbi from 'web3-eth-abi';
 
 export enum Contracts {
   Accounting = 'fund/accounting/Accounting',

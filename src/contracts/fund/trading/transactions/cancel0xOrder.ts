@@ -1,4 +1,5 @@
-import { SignedOrder, orderHashUtils } from '0x.js';
+import { SignedOrder } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils';
 
 import { Contracts, Exchanges } from '~/Contracts';
 import {

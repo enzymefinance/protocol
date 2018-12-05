@@ -8,11 +8,11 @@ ReferenceError: regeneratorRuntime is not defined
 */
 // tslint:enable:max-line-length
 import {
-  assetDataUtils,
-  BigNumber,
   generatePseudoRandomSalt,
+  assetDataUtils,
   signatureUtils,
-} from '0x.js';
+} from '@0x/order-utils';
+import { BigNumber } from 'bignumber.js';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { Address } from '@melonproject/token-math/address';
