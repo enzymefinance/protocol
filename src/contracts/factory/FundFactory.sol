@@ -119,8 +119,7 @@ contract FundFactory is AmguConsumer {
             _priceSource
         );
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
-        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
-        FeeManager(managersToComponents[msg.sender].feeManager).batchRegister(_fees);
+        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender], _fees);
         managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
     }
 
