@@ -35,15 +35,6 @@ export const cancelOrderSignature = joinSignature('cancelOrder', [
   'bytes',
   'bytes',
 ]);
-export const swapTokensSignature = joinSignature('swapTokens', [
-  'address',
-  'address[6]',
-  'uint256[8]',
-  'bytes32',
-  'bytes',
-  'bytes',
-  'bytes',
-]);
 export const withdrawTokensSignature = joinSignature('withdrawTokens', [
   'address',
   'address[6]',
@@ -57,5 +48,4 @@ export const withdrawTokensSignature = joinSignature('withdrawTokens', [
 export const makeOrderSignatureBytes = abiEncode(makeOrderSignature);
 export const takeOrderSignatureBytes = abiEncode(takeOrderSignature);
 export const cancelOrderSignatureBytes = abiEncode(cancelOrderSignature);
-export const swapTokensSignatureBytes = abiEncode(swapTokensSignature);
 export const withdrawTokensSignatureBytes = abiEncode(withdrawTokensSignature);

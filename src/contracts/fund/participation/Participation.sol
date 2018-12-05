@@ -39,11 +39,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     uint public SHARES_DECIMALS = 18;
 
     constructor(address _hub, address[] _defaultAssets) Spoke(_hub) {
-        enableInvestment(_defaultAssets);
+        _enableInvestment(_defaultAssets);
     }
 
-    function enableInvestment(address[] _assets) public auth {
-        for (uint i = 0; i < _assets.length; ++i) {
+    function _enableInvestment(address[] _assets) internal {
+        for (uint i = 0; i < _assets.length; i++) {
             // require(
             //     modules.pricefeed.assetIsRegistered(_assets[i]),
             //     "Asset not registered"
@@ -52,8 +52,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
     }
 
+    function enableInvestment(address[] _assets) public auth {
+        _enableInvestment(_assets);
+    }
+
     function disableInvestment(address[] _assets) public auth {
-        for (uint i = 0; i < _assets.length; ++i) {
+        for (uint i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
         }
     }
@@ -85,10 +89,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     function cancelRequest() external {
         delete requests[msg.sender];
-    }
-
-    function executeRequest() public payable {
-        executeRequestFor(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)

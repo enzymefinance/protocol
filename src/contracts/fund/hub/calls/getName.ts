@@ -1,6 +1,6 @@
 import { Contracts } from '~/Contracts';
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 
-const getManager = callFactoryWithoutParams('manager', Contracts.Hub);
+const getName = callFactoryWithoutParams('name', Contracts.Hub);
 
-export { getManager };
+export { getName };

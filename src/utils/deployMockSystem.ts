@@ -72,6 +72,7 @@ export const deployMockSystem = async ({
   const accounting = await deployAndGetContract(accountingContract, [
     hub.options.address,
     quoteToken.address,
+    wethTokenAddress,
     [quoteToken.address, baseToken.address],
   ]);
   const feeManager = await deployAndGetContract(feeManagerContract, [
@@ -124,7 +125,14 @@ export const deployMockSystem = async ({
     ])
     .send({ from: environment.wallet.address, gas: 8000000 });
 
-  const toInit = [accounting, participation, shares, trading, vault];
+  const toInit = [
+    accounting,
+    participation,
+    shares,
+    trading,
+    vault,
+    feeManager,
+  ];
   for (const contract of toInit) {
     await hub.methods
       .initializeSpoke(contract.options.address)

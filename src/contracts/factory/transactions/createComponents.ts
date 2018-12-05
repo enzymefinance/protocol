@@ -3,9 +3,13 @@ import { Address } from '@melonproject/token-math/address';
 
 import {
   transactionFactory,
-  EnhancedExecute,
+  PostProcessFunction,
+  PrepareArgsFunction,
+  GuardFunction,
 } from '~/utils/solidity/transactionFactory';
+import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -19,20 +23,30 @@ interface CreateComponentsArgs {
   fundName: string;
   exchangeConfigs: ExchangeConfig[];
   quoteToken: TokenInterface;
+  nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
   priceSource: Address;
 }
 
-interface CreateComponentsResult {
-  success: boolean;
-}
+type CreateComponentsResult = string;
 
-const guard = async (contractAddress: string, params, environment) => {
+const guard: GuardFunction<CreateComponentsArgs> = async (
+  contractAddress,
+  params,
+  environment,
+) => {
   // createComponents
 };
 
-const prepareArgs = async (
-  { fundName, exchangeConfigs, quoteToken, defaultTokens, priceSource },
+const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
+  {
+    fundName,
+    exchangeConfigs,
+    quoteToken,
+    nativeToken,
+    defaultTokens,
+    priceSource,
+  },
   contractAddress,
 ) => {
   const exchangeAddresses = exchangeConfigs.map(e =>
@@ -44,12 +58,14 @@ const prepareArgs = async (
   const takesCustody = exchangeConfigs.map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
+  const nativeTokenAddress = nativeToken.address;
 
   const args = [
     fundName,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
+    nativeTokenAddress,
     defaultTokenAddresses,
     takesCustody,
     priceSource.toString(),
@@ -58,18 +74,25 @@ const prepareArgs = async (
   return args;
 };
 
-const postProcess = async (receipt, params) => {
-  return { success: true };
-};
-
-export const createComponents: EnhancedExecute<
+const postProcess: PostProcessFunction<
   CreateComponentsArgs,
   CreateComponentsResult
-> = transactionFactory(
-  'createComponents',
-  Contracts.FundFactory,
-  guard,
-  prepareArgs,
-  postProcess,
-  { amguPayable: true },
-);
+> = async (
+  receipt,
+  params,
+  contractAddress,
+  environment = getGlobalEnvironment(),
+) => {
+  return managersToHubs(
+    contractAddress,
+    environment.wallet.address,
+    environment,
+  );
+};
+
+export const createComponents = transactionFactory<
+  CreateComponentsArgs,
+  CreateComponentsResult
+>('createComponents', Contracts.FundFactory, guard, prepareArgs, postProcess, {
+  amguPayable: true,
+});

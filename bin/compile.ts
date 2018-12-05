@@ -34,39 +34,6 @@ const findImports = (missingPath: string, b, c) => {
   };
 };
 
-// Not used at the moment
-// TODO: Fix this and make it work
-const compile = (pathToSol: string) => {
-  debug('Compiling ...', pathToSol);
-
-  const parsed = path.parse(pathToSol);
-
-  const source = fs.readFileSync(pathToSol, { encoding: 'utf-8' });
-
-  const input = {
-    sources: {
-      [parsed.base]: source,
-    },
-  };
-
-  const output = solc.compile(input, 1, findImports);
-
-  debug('Compiled', pathToSol);
-
-  if (output.errors) output.errors.forEach(debug);
-
-  const targetDir = path.join(solidityCompileTarget, parsed.dir);
-  const targetPath = path.join(targetDir, `${parsed.name}.json`);
-
-  debug('Writing to', targetPath);
-
-  mkdirp.sync(targetDir);
-
-  fs.writeFileSync(targetPath, JSON.stringify(output, null, 2));
-
-  return output;
-};
-
 const writeFiles = (compileOutput, contract) => {
   const [sourceName, contractName] = contract.split(':');
   const parsedPath = path.parse(sourceName);
@@ -96,8 +63,9 @@ const writeFiles = (compileOutput, contract) => {
   );
 };
 
-export const compileAll = () => {
-  const query = path.join(soliditySourceDirectory, '**', '*.sol');
+export const compileGlob = (
+  query = path.join(soliditySourceDirectory, '**', '*.sol'),
+) => {
   const candidates = glob.sync(query);
 
   debug(`Compiling ${query}, ${candidates.length} files ...`);

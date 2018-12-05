@@ -9,7 +9,7 @@ import "../../dependencies/math.sol";
 
 contract FixedManagementFee is DSMath, Fee {
 
-    uint public PAYMENT_TERM = 1 years;
+    // TODO: FEE Rate as constructor parameter
     uint public MANAGEMENT_FEE_RATE = 10 ** 16; // 0.01*10^18, or 1%
     uint public DIVISOR = 10 ** 18;
 
@@ -19,17 +19,14 @@ contract FixedManagementFee is DSMath, Fee {
         Hub hub = FeeManager(msg.sender).hub();
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
-        uint gav = accounting.calcGav();
-        if (gav == 0) {
+        if (shares.totalSupply() == 0) {
             feeInShares = 0;
         } else {
             uint timePassed = sub(block.timestamp, lastPayoutTime[msg.sender]);
-            uint gavPercentage = mul(timePassed, gav) / 1 years;
-            uint feeInAsset = mul(gavPercentage, MANAGEMENT_FEE_RATE) / DIVISOR;
-            uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
+            uint preDilutionFeeShares = mul(mul(shares.totalSupply(), MANAGEMENT_FEE_RATE) / DIVISOR, timePassed) / 1 years;
             feeInShares =
-                mul(preDilutionFee, shares.totalSupply()) /
-                sub(shares.totalSupply(), preDilutionFee);
+                mul(preDilutionFeeShares, shares.totalSupply()) /
+                sub(shares.totalSupply(), preDilutionFeeShares);
         }
         return feeInShares;
     }

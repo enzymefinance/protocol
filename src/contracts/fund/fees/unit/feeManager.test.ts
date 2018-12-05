@@ -4,13 +4,11 @@ import { deploy } from '~/utils/solidity/deploy';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
   shared.user = shared.env.wallet.address;
 });
 
@@ -24,13 +22,19 @@ beforeEach(async () => {
     await deploy(Contracts.MockFee, []),
   );
   shared.feeArray = [shared.feeA.options.address, shared.feeB.options.address];
-  shared.feeManager = getContract(
-    Contracts.FeeManager,
-    await deploy(Contracts.FeeManager, [shared.hub.options.address]),
+  shared = Object.assign(
+    shared,
+    await deployMockSystem({ feeManagerContract: Contracts.FeeManager }),
   );
   await shared.feeManager.methods
     .batchRegister(shared.feeArray)
     .send({ from: shared.user, gas: 8000000 });
+  await shared.version.methods
+    .setIsFund(
+      // just to pass pay amgu
+      shared.feeManager.options.address,
+    )
+    .send({ from: shared.user });
 });
 
 test('Fee Manager is properly initialized', async () => {
@@ -58,32 +62,7 @@ test('Total fee amount aggregates individual accumulated fee', async () => {
   ).resolves.toEqual(multiply(feeAmount, new BigInteger(2)));
 });
 
-test('Cannot call rewardFee for unregistered fee', async () => {
-  const feeCAddress = await deploy(Contracts.MockFee, []);
-  await expect(
-    shared.feeManager.methods.rewardFee(feeCAddress).call(),
-  ).rejects.toThrow();
-});
-
 test('Reward all fee allocates shares to the manager', async () => {
-  // Add shares contract as a route
-  await shared.feeManager.methods
-    .initialize([
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      shared.shares.options.address,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-      emptyAddress,
-    ])
-    .send({ from: shared.user, gas: 8000000 });
-
   const preManagerShares = new BigInteger(
     await shared.shares.methods.balanceOf(shared.user).call(),
   );
@@ -96,7 +75,7 @@ test('Reward all fee allocates shares to the manager', async () => {
     .setFeeAmount(`${feeAmount}`)
     .send({ from: shared.user, gas: 8000000 });
   await shared.feeManager.methods
-    .rewardAllFees()
+    .triggerRewardAllFees()
     .send({ from: shared.user, gas: 8000000 });
 
   const postManagerShares = new BigInteger(

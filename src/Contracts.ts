@@ -8,11 +8,11 @@ export enum Contracts {
   AssetWhitelist = 'fund/policies/risk-management/AssetWhitelist',
   BurnableToken = 'dependencies/token/BurnableToken',
   Engine = 'engine/Engine',
+  ExchangeAdapter = 'exchanges/ExchangeAdapterInterface',
   FalsePolicy = 'fund/policies/FalsePolicy',
   FeeManager = 'fund/fees/FeeManager',
   ERC20Proxy = 'exchanges/thirdparty/0x/ERC20Proxy',
   FundFactory = 'factory/FundFactory',
-  GenericExchange = 'exchanges/GenericExchange',
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
@@ -66,14 +66,14 @@ export const requireMap = {
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/engine/Engine.abi.json'),
+  [Contracts.ExchangeAdapter]:
+      require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:
     require('../out/fund/policies/FalsePolicy.abi.json'),
   [Contracts.FeeManager]:
     require('../out/fund/fees/FeeManager.abi.json'),
   [Contracts.FundFactory]:
     require('../out/factory/FundFactory.abi.json'),
-  [Contracts.GenericExchange]:
-    require('../out/exchanges/GenericExchangeInterface.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MockAdapter]:

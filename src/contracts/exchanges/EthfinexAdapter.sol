@@ -2,9 +2,6 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/ERC20.i.sol";
-import "./thirdparty/ethfinex/ExchangeEfx.sol";
-import "./thirdparty/ethfinex/WrapperLock.sol";
-import "./thirdparty/ethfinex/WrapperLockEth.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -12,12 +9,16 @@ import "../fund/accounting/Accounting.sol";
 import "../dependencies/token/WETH9.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/math.sol";
+import "./thirdparty/ethfinex/ExchangeEfx.sol";
+import "./thirdparty/ethfinex/WrapperLock.sol";
+import "./thirdparty/ethfinex/WrapperLockEth.sol";
+import "./ExchangeAdapterInterface.sol";
 
 
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract EthfinexAdapter is DSMath, DBC {
+contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
 
     //  METHODS
 
@@ -54,7 +55,7 @@ contract EthfinexAdapter is DSMath, DBC {
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
-        
+
         require(
             ExchangeEfx(targetExchange).isValidSignature(
                 orderInfo.orderHash,
@@ -63,13 +64,13 @@ contract EthfinexAdapter is DSMath, DBC {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        // TODO: ADD back 
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // );
+        require(
+            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
 
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -135,8 +136,7 @@ contract EthfinexAdapter is DSMath, DBC {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        // TODO: Change to Native Asset or Wrapped Native Asset?
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
             // Check if the input token address is null address
@@ -151,15 +151,8 @@ contract EthfinexAdapter is DSMath, DBC {
         }
     }
 
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        revert();
-    }
-
-    // TODO: Get order details. Minor: Wrapped tokens directly sent to the fund are not accounted
+     /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted
+     // TODO: Check if return values more accurate to their names (E.g if order is filled does it mean maker / taker quantities are 0)
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
@@ -196,11 +189,11 @@ contract EthfinexAdapter is DSMath, DBC {
         uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
 
         // Handle case for WETH
-        address nativeAsset = Accounting(hub.accounting()).QUOTE_ASSET();
+        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
             WETH9(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
-        } else { 
+        } else {
             ERC20(makerAsset).approve(wrappedToken, makerQuantity);
             WrapperLock(wrappedToken).deposit(makerQuantity, depositTime);
         }

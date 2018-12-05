@@ -8,6 +8,7 @@ import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
 const setupInvestedTestFund = async (
@@ -26,6 +27,7 @@ const setupInvestedTestFund = async (
       defaultTokens: [weth, mln],
       exchangeConfigs,
       fundName,
+      nativeToken: weth,
       priceSource,
       quoteToken: weth,
     },

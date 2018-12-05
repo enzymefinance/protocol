@@ -3,8 +3,13 @@ import { Contracts } from '~/Contracts';
 import { getVersion } from '~/contracts/engine/calls/getVersion';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity } from '@melonproject/token-math/quantity';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
-const postProcess = async (result, prepared, environment) => {
+const postProcess = async (
+  result,
+  prepared,
+  environment = getGlobalEnvironment(),
+) => {
   const versionAddress = await getVersion(prepared.contractAddress);
   const amguToken = await getAmguToken(versionAddress);
   const quantity = createQuantity(amguToken, result);

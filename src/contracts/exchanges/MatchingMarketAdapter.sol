@@ -1,17 +1,17 @@
 pragma solidity ^0.4.21;
 
-import "./thirdparty/oasisdex/MatchingMarket.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/math.sol";
+import "./thirdparty/oasisdex/MatchingMarket.sol";
+import "./ExchangeAdapterInterface.sol";
 
-// TODO: re-enable all checks when routing sorted, and adding assets to lists
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract MatchingMarketAdapter is DSMath {
+contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
 
     event OrderCreated(uint id);
 
@@ -45,8 +45,8 @@ contract MatchingMarketAdapter is DSMath {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager must be sender");
-        require(hub.isShutDown() == false, "Hub is shut down");
+        require(hub.manager() == msg.sender, "Manager is not sender");
+        require(!hub.isShutDown(), "Hub is shut down");
 
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
@@ -65,11 +65,11 @@ contract MatchingMarketAdapter is DSMath {
         // defines success in MatchingMarket
         require(orderId != 0, "Order ID should not be zero");
 
-        // require(
-        //     Accounting(hub.accounting()).isInAssetList(takerAsset)
-        //     Fund(address(this)).getOwnedAssetsLength() < Fund(address(this)).MAX_FUND_ASSETS()
-        // );
-
+        require(
+            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
         Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -107,14 +107,10 @@ contract MatchingMarketAdapter is DSMath {
         bytes takerAssetData,
         bytes signature
     ) {
-        // require(Fund(address(this)).manager() == msg.sender);
-        // TODO: add check that sender is manager
-        //      require(hub.manager() == msg.sender)
-        require(
-            !Hub(Trading(address(this)).hub()).isShutDown(),
-            "Fund is shut down"
-        );
-        address pricefeed = Hub(Trading(address(this)).hub()).priceSource();
+        Hub hub = Hub(Trading(address(this)).hub());
+        require(hub.manager() == msg.sender, "Manager is not sender");
+        require(!hub.isShutDown(), "Hub is shut down");
+
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -128,7 +124,6 @@ contract MatchingMarketAdapter is DSMath {
             address(makerAsset) != address(takerAsset),
             "Maker and taker assets cannot be the same"
         );
-        // require(pricefeed.existsPriceOnAssetPair(takerAsset, makerAsset));
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
@@ -140,12 +135,12 @@ contract MatchingMarketAdapter is DSMath {
             MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity),
             "Buy on matching market failed"
         );
-        // require(
-        //     Trading(address(this)).isInAssetList(makerAsset) ||
-        //     Trading(address(this)).getOwnedAssetsLength() < Trading(address(this)).MAX_FUND_ASSETS()
-        // );
-
-        // Accounting(address(this)).addAssetToOwnedAssets(makerAsset);
+        require(
+            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
+        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
@@ -173,10 +168,10 @@ contract MatchingMarketAdapter is DSMath {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender ||    // TODO: check that this makes sense (manager)
-                hub.isShutDown(),         //||
-                // hub.orderExpired(targetExchange, orderAddresses[2])
-                "Manager must be sender or fund must be shut down"
+        var (, orderExpirationTime, ) = Trading(address(this)).getOpenOrderInfo(targetExchange, orderAddresses[2]);
+        
+        require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp > orderExpirationTime,
+            "Manager must be sender or fund must be shut down or order must be expired"
         );
         require(uint(identifier) != 0, "ID cannot be zero");
 
@@ -202,15 +197,6 @@ contract MatchingMarketAdapter is DSMath {
 
     // VIEW METHODS
 
-    // TODO: delete this function if possible
-    function getLastOrderId(address targetExchange)
-        view
-        returns (uint)
-    {
-        return MatchingMarket(targetExchange).last_offer_id();
-    }
-
-    // TODO: delete this function if possible
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)

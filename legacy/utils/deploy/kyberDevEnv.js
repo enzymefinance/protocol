@@ -259,7 +259,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
   //     deployed.KyberNetworkProxy.options.address,
   //     deployed.KyberAdapter.options.address,
   //     true,
-  //     [swapTokensSignature],
+  //     [takeOrderSignature],
   //   ],
   // );
   return deployed;

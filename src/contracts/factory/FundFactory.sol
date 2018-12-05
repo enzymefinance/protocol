@@ -3,7 +3,7 @@ pragma solidity ^0.4.21;
 import "../fund/accounting/Accounting.sol";
 import "../fund/fees/FeeManager.sol";
 import "../fund/hub/Hub.sol";
-import "../fund/policies/Manager.sol";
+import "../fund/policies/PolicyManager.sol";
 import "../fund/participation/Participation.sol";
 import "../fund/shares/Shares.sol";
 import "../fund/trading/Trading.sol";
@@ -54,6 +54,7 @@ contract FundFactory is AmguConsumer {
         address[] exchanges;
         address[] adapters;
         address quoteAsset;
+        address nativeAsset;
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
@@ -100,6 +101,7 @@ contract FundFactory is AmguConsumer {
         address[] _exchanges,
         address[] _adapters,
         address _quoteAsset,
+        address _nativeAsset,
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
@@ -110,11 +112,12 @@ contract FundFactory is AmguConsumer {
             _exchanges,
             _adapters,
             _quoteAsset,
+            _nativeAsset,
             _defaultAssets,
             _takesCustody,
             _priceSource
         );
-        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
+        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
     }

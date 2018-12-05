@@ -16,6 +16,7 @@ import {
   Options,
 } from '~/utils/solidity/prepareTransaction';
 import { ensure } from '~/utils/guards/ensure';
+import { sign } from '../environment/sign';
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -30,7 +31,7 @@ export interface UnsignedRawTransaction {
   gas?: string;
   gasPrice?: string;
   data?: string;
-  nonce?: number;
+  nonce?: string;
 }
 
 export interface MelonTransaction<Args> {
@@ -83,7 +84,8 @@ export type TransactionFactory = <Args, Result>(
 
 type SendFunction<Args> = (
   contractAddress: Address,
-  melonTransaction: MelonTransaction<Args>,
+  // prepared: MelonTransaction<Args>,
+  signedTransactionData: string,
   params: Args,
   options?: OptionsOrCallback,
   environment?: Environment,
@@ -246,19 +248,17 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
   const send: SendFunction<Args> = async (
     contractAddress,
-    prepared,
+    signedTransactionData,
+    // prepared,
     params,
     options = defaultOptions,
     environment = getGlobalEnvironment(),
   ) => {
     const receipt = await environment.eth
-      .sendTransaction(prepared.rawTransaction)
+      .sendSignedTransaction(signedTransactionData)
+      // .sendTransaction(prepared.rawTransaction)
       .then(null, error => {
-        throw new Error(
-          `Transaction failed for ${name}(${prepared.transactionArgs.join(
-            ', ',
-          )}): ${error.message}`,
-        );
+        throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
@@ -307,13 +307,21 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       defaultOptions,
       environment,
     );
+
+    const signedTransactionData = await sign(
+      prepared.rawTransaction,
+      environment,
+    );
+
     const result = await send(
       contractAddress,
-      prepared,
+      signedTransactionData,
+      // prepared,
       params,
       defaultOptions,
       environment,
     );
+
     return result;
   };
 
@@ -391,13 +399,21 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
       decorator.options,
       environment,
     );
+
+    const signedTransactionData = await sign(
+      prepared.rawTransaction,
+      environment,
+    );
+
     const result = await send(
       contractAddress,
-      prepared,
+      signedTransactionData,
+      // prepared,
       params,
       decorator.options,
       environment,
     );
+
     return result;
   };
 

@@ -22,22 +22,30 @@ contract Accounting is DSMath, Spoke {
         uint timestamp;
     }
 
+    uint constant public MAX_OWNED_ASSETS = 50; // TODO: Analysis
     address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
     mapping (address => bool) public isInAssetList; // TODO: same as above
     address public QUOTE_ASSET;
+    address public NATIVE_ASSET;
     uint public DEFAULT_SHARE_PRICE;
     uint public SHARES_DECIMALS;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address _quoteAsset, address[] _defaultAssets)
+    constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
             _addAssetToOwnedAssets(_defaultAssets[i]);
         }
         QUOTE_ASSET = _quoteAsset;
+        NATIVE_ASSET = _nativeAsset;
         SHARES_DECIMALS = 18;
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
+    }
+
+    /// TODO: Is this redundant?
+    function getOwnedAssetsLength() view returns (uint) {
+        return ownedAssets.length;
     }
 
     /// @dev Returns sparse array
@@ -222,8 +230,8 @@ contract Accounting is DSMath, Spoke {
 }
 
 contract AccountingFactory is Factory {
-    function createInstance(address _hub, address _quoteAsset, address[] _defaultAssets) public returns (address) {
-        address accounting = new Accounting(_hub, _quoteAsset, _defaultAssets);
+    function createInstance(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
+        address accounting = new Accounting(_hub, _quoteAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
         return accounting;
     }
