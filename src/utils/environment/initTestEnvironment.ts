@@ -1,4 +1,4 @@
-import * as Web3Accounts from 'web3-eth-accounts';
+import Web3Accounts from 'web3-eth-accounts';
 
 import { constructEnvironment } from './constructEnvironment';
 import { setGlobalEnvironment } from './globalEnvironment';

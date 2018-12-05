@@ -1,4 +1,4 @@
-import * as Eth from 'web3-eth';
+import Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';

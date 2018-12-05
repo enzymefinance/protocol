@@ -3,8 +3,7 @@ import {
   assetDataUtils,
   orderHashUtils,
   signatureUtils,
-  SignerType,
-} from '0x.js';
+} from '@0x/order-utils';
 import web3 from '../../utils/lib/web3';
 import deployEnvironment from '../../utils/deploy/contracts';
 import getAllBalances from '../../utils/lib/getAllBalances';

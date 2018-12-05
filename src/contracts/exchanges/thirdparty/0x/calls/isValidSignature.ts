@@ -1,5 +1,5 @@
 import { SignedOrder } from '@0x/types';
-import { orderHashUtils } from '0x.js';
+import { orderHashUtils } from '@0x/order-utils';
 
 import { Contracts } from '~/Contracts';
 import { callFactory } from '~/utils/solidity/callFactory';

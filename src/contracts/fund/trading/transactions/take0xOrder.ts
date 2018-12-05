@@ -1,4 +1,4 @@
-import { assetDataUtils } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
 import * as web3Utils from 'web3-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {

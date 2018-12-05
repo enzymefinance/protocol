@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import * as Web3EthAbi from 'web3-eth-abi';
+import web3EthAbi from 'web3-eth-abi';
 import {
   QuantityInterface,
   createQuantity,
@@ -268,7 +268,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         return carry;
       }
 
-      const decoded = Web3EthAbi.decodeLog(
+      const decoded = web3EthAbi.decodeLog(
         eventABI.inputs,
         log.data,
         eventABI.anonymous ? log.topics : log.topics.slice(1),

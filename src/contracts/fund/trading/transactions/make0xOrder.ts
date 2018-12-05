@@ -1,5 +1,6 @@
 import * as web3Utils from 'web3-utils';
-import { assetDataUtils, SignedOrder } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
+import { SignedOrder } from '@0x/types';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { Contracts, Exchanges } from '~/Contracts';
