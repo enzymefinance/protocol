@@ -56,11 +56,13 @@ test('Happy path', async () => {
   const defaultTokens = [quoteToken, baseToken];
   const amguToken = await getAmguToken(fundFactory);
   const amguPrice = createQuantity(amguToken, '1000000000');
+  const fees = [];
   await setAmguPrice(version, amguPrice);
 
   await createComponents(fundFactory, {
     defaultTokens,
     exchangeConfigs,
+    fees,
     fundName,
     nativeToken: quoteToken,
     priceSource,

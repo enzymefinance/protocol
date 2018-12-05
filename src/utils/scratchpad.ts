@@ -16,6 +16,7 @@ const contract = new eth.Contract(ABI, fundFactoryAddress);
 
 const args = [
   ['0x9a8D6f20b917eA9542EEE886c78fE41C638A3d45'],
+  [],
   ['0x4b1a08B5DBcf3386f22DB1d694beF84d8EF4B340'],
   [
     '0xc0dd7a9D5470216eaf97DD2CEcAc259da1f7Af2E',

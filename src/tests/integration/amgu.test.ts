@@ -47,6 +47,7 @@ test('Set amgu and check its usage', async () => {
   const [quoteToken, baseToken] = tokens;
 
   const defaultTokens = [quoteToken, baseToken];
+  const fees = [];
   const amguToken = await getAmguToken(fundFactory);
   const amguPrice = createQuantity(amguToken, '1000000000');
   const oldAmguPrice = await getAmguPrice(version);
@@ -58,6 +59,7 @@ test('Set amgu and check its usage', async () => {
   const args = {
     defaultTokens,
     exchangeConfigs,
+    fees,
     fundName,
     nativeToken: quoteToken,
     priceSource,

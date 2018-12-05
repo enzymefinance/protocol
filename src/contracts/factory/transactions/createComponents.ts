@@ -18,9 +18,15 @@ interface ExchangeConfig {
   adapterAddress: Address;
   takesCustody: boolean;
 }
+interface FeeConfig {
+  feeAddress: Address;
+  feeRate: BigInteger;
+  feePeriod: BigInteger;
+}
 
 interface CreateComponentsArgs {
   fundName: string;
+  fees: FeeConfig[];
   exchangeConfigs: ExchangeConfig[];
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
@@ -41,6 +47,7 @@ const guard: GuardFunction<CreateComponentsArgs> = async (
 const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   {
     fundName,
+    fees = [],
     exchangeConfigs,
     quoteToken,
     nativeToken,
@@ -62,6 +69,7 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
 
   const args = [
     fundName,
+    fees,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
