@@ -34,6 +34,7 @@ cd protocol
 # Install dependencies
 yarn install
 ```
+
 If you don't set `JSON_RPC_ENDPOINT`, the test will load ganache in-memory which works but is much slower.
 
 ### Deployment and testing
@@ -106,6 +107,10 @@ const hub = await protocol.factory.managersToHubs(
   environment,
 );
 ```
+
+## Development Tipps
+
+### Usage of the logger
 
 ## Troubleshooting
 

@@ -18,16 +18,16 @@ export enum LogLevels {
 
 export type LoggerFunction = (...messages: any) => void;
 
-export interface LoggerFunctionWithLevel {
+export type LoggerFunctionWithLevel = {
   (level: LogLevels): LoggerFunction;
   (level: LogLevels, message: void, ...messages: any): void;
-}
+};
 
-export interface CurriedLogger {
-  (namespace: string, level: LogLevels, message: void, ...messages: any): void;
+export type CurriedLogger = {
+  (namespace: string, level: LogLevels, message: any, ...messages: any): void;
   (namespace: string, level: LogLevels): LoggerFunction;
   (namespace: string): LoggerFunctionWithLevel;
-}
+};
 
 export interface Wallet {
   // TODO: Rename this to currentAccount

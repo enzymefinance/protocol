@@ -2,7 +2,7 @@ import Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
-import { Environment, Options, LogLevels } from './Environment';
+import { Environment, Options, LogLevels, CurriedLogger } from './Environment';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -63,10 +63,12 @@ const constructProvider = (endpoint, logger) => {
   return provider;
 };
 
+const dummyLogger: CurriedLogger = R.curry((namespace, level, ...msgs) => {});
+
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
-  logger = () => () => () => {},
+  logger = dummyLogger,
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,
