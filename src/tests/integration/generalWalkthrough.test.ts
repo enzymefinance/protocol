@@ -23,7 +23,6 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { getFundOpenOrder } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 import { randomString } from '~/utils/helpers/randomString';
-import { promisesSerial } from '~/utils/helpers/promisesSerial';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 // tslint:enable:max-line-length
