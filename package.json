@@ -34,7 +34,7 @@
     "allchecks": "yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
-    "clean": "rimraf lib && rimraf out",
+    "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
     "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
@@ -85,7 +85,8 @@
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.1.1",
     "web3": "^1.0.0-beta.34",
-    "web3-eth-accounts": "^1.0.0-beta.36"
+    "web3-eth-accounts": "^1.0.0-beta.36",
+    "winston": "^3.1.0"
   },
   "dependencies": {
     "@0x/contract-wrappers": "^4.1.1",

@@ -8,14 +8,12 @@ export type SignFunction = (
   from?: Address,
 ) => Promise<string>;
 
-// Same as NPM logging levels
+// Subset of NPM logging levels without numbers
 export enum LogLevels {
-  ERROR,
-  WARN,
-  INFO,
-  VERBOSE,
-  DEBUG,
-  SILLY,
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  DEBUG = 'debug',
 }
 
 export type LoggerFunction = (
