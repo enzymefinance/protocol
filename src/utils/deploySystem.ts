@@ -32,8 +32,6 @@ import { LogLevels } from './environment/Environment';
 export const deploySystem = async (environment = getGlobalEnvironment()) => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
 
-  console.log(debug, environment.logger);
-
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);

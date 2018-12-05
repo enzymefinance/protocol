@@ -1,4 +1,4 @@
-import Eth from 'web3-eth';
+import web3Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
@@ -24,11 +24,12 @@ const checkIpc = endpoint => {
 };
 
 const makeWsProvider = endpoint =>
-  new Eth.providers.WebsocketProvider(endpoint);
+  new web3Eth.providers.WebsocketProvider(endpoint);
 
-const makeHttpProvider = endpoint => new Eth.providers.HttpProvider(endpoint);
+const makeHttpProvider = endpoint =>
+  new web3Eth.providers.HttpProvider(endpoint);
 
-const makeIpcProvider = endpoint => new Eth.providers.IpcProvider(endpoint);
+const makeIpcProvider = endpoint => new web3Eth.providers.IpcProvider(endpoint);
 
 const selectProvider = R.cond([
   [R.startsWith('ws'), makeWsProvider],
@@ -36,7 +37,7 @@ const selectProvider = R.cond([
   [checkIpc, makeIpcProvider],
 ]);
 
-const constructProvider = (endpoint, logger) => {
+const constructProvider = (endpoint, logger: CurriedLogger) => {
   const debug = logger('melon:protocol:utils:environment', LogLevels.DEBUG);
 
   string()
@@ -63,7 +64,10 @@ const constructProvider = (endpoint, logger) => {
   return provider;
 };
 
-const dummyLogger: CurriedLogger = R.curry((namespace, level, ...msgs) => {});
+const dummyLogger: CurriedLogger = R.curryN(
+  3,
+  (namespace, level, ...msgs) => {},
+);
 
 export const constructEnvironment = ({
   endpoint = undefined,
@@ -80,7 +84,7 @@ export const constructEnvironment = ({
   }
 
   return {
-    eth: new Eth(provider || constructProvider(endpoint, logger)),
+    eth: new web3Eth(provider || constructProvider(endpoint, logger)),
     // tslint:disable-next-line:object-shorthand-properties-first
     logger,
     options,

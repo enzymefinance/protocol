@@ -20,7 +20,7 @@ const logger = winston.createLogger({
 
 logger.debug(['melon:protocol:logger', 'init', ...process.argv].join(' '));
 
-const testLogger: CurriedLogger = R.curry((namespace, level, ...msgs) => {
+const testLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
   const message = [
     `${namespace}:`,
     ...msgs.map(msg => JSON.stringify(msg, null, 2)),
