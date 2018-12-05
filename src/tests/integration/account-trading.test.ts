@@ -1,5 +1,4 @@
 // tslint:disable:max-line-length
-import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -9,7 +8,6 @@ import { createComponents } from '~/contracts/factory/transactions/createCompone
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
 import {
   register,
   PolicedMethods,
@@ -17,7 +15,6 @@ import {
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
@@ -90,14 +87,6 @@ test(
     //   howMuch: createQuantity(quoteToken, 1),
     //   spender: new Address(shared.accounts[1]),
     // });
-
-    const components = componentsFromSettings(settings);
-
-    await Promise.all(
-      Object.values(components).map((address: Address) =>
-        setIsFund(version, { address }),
-      ),
-    );
 
     await getAmguPrice(version);
     await requestInvestment(settings.participationAddress, {

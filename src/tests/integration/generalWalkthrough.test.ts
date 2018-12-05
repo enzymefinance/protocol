@@ -1,7 +1,6 @@
 // tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';

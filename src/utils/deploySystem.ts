@@ -1,6 +1,5 @@
 // tslint:disable:max-line-length
-import { Exchanges, Contracts } from '~/Contracts';
-import { getContract } from '~/utils/solidity/getContract';
+import { Exchanges } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -9,6 +8,7 @@ import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deplo
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
+import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
@@ -88,9 +88,7 @@ export const deploySystem = async () => {
     tradingFactoryAddress,
     vaultFactoryAddress,
   });
-  const engine = getContract(Contracts.Engine, engineAddress);
-  await engine.methods.setVersion(versionAddress).send({ from: accounts[0] });
-
+  await setVersion(engineAddress, { versionAddress });
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -133,6 +131,5 @@ export const deploySystem = async () => {
   debug('Deployed:', deploymentId, addresses);
 
   setSessionDeployment(deploymentId, addresses);
-
   return addresses;
 };

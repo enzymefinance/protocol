@@ -138,8 +138,6 @@ export const requireMap = {
     require('../out/fund/vault/Vault.abi.json'),
   [Contracts.VaultFactory]:
     require('../out/fund/vault/VaultFactory.abi.json'),
-  // tslint:disable-next-line:max-line-length
-  // TODO: Don't use mockversion here. Does the real version also have a setFundFactory method?
   [Contracts.Version]:
     require('../out/version/Version.abi.json'),
   [Contracts.ZeroExExchange]:

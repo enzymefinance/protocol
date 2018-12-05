@@ -1,7 +1,5 @@
 import * as R from 'ramda';
-
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
-
 import { take0xOrder } from './take0xOrder';
 import { TokenInterface } from '@melonproject/token-math/token';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
@@ -58,7 +56,6 @@ beforeAll(async () => {
 });
 
 test('Take off-chain order from fund', async () => {
-  // console.log(shared.signedOrder);
   const takerQuantity = createQuantity(shared.weth, 0.02);
 
   const order = await take0xOrder(shared.settings.tradingAddress, {
