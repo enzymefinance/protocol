@@ -30,12 +30,14 @@ const setupInvestedTestFund = async (
   } = deployment;
 
   const [weth, mln] = tokens;
+  const fees = [];
 
   await createComponents(
     fundFactory,
     {
       defaultTokens: [weth, mln],
       exchangeConfigs,
+      fees,
       fundName,
       nativeToken: weth,
       priceSource,

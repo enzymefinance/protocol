@@ -47,7 +47,7 @@ const guard: GuardFunction<CreateComponentsArgs> = async (
 const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   {
     fundName,
-    fees = [],
+    fees,
     exchangeConfigs,
     quoteToken,
     nativeToken,

@@ -43,6 +43,12 @@ beforeEach(async () => {
       fees: shared.feeArray,
     }),
   );
+  await shared.version.methods
+    .setIsFund(
+      // just to pass pay amgu
+      shared.feeManager.options.address,
+    )
+    .send({ from: shared.user });
 });
 
 test('Fee Manager is properly initialized', async () => {
