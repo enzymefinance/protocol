@@ -6,21 +6,23 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 
 const guard = async (params, contractAddress, environment) => {
-  await ensureIsNotShutDown(contractAddress, environment);
-  await ensureIsManager(contractAddress, environment);
+  await ensureIsNotShutDown(`${params.hub}`, environment);
+  await ensureIsManager(`${params.hub}`, environment);
 };
 
+const prepareArgs = async ({ hub }) => [`${hub}`];
+
 const postProcess = async (receipt, params, contractAddress, environment) => {
-  const shutDown = await isShutDown(contractAddress, null, environment);
+  const shutDown = await isShutDown(`${params.hub}`, null, environment);
   ensure(shutDown, 'Fund is not shut down');
   return true;
 };
 
 const shutDownFund = transactionFactory(
   'shutDownFund',
-  Contracts.Hub,
+  Contracts.Version,
   guard,
-  undefined,
+  prepareArgs,
   postProcess,
 );
 

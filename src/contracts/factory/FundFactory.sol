@@ -16,10 +16,9 @@ import "../engine/AmguConsumer.sol";
 // TODO: inherit from Factory
 /// @notice Creates fund components and links them together
 contract FundFactory is AmguConsumer {
-
     address public factoryPriceSource;
     address public mlnAddress;
-    address public version;
+    VersionInterface public version;
     address public engine;
     AccountingFactory public accountingFactory;
     FeeManagerFactory public feeManagerFactory;
@@ -45,6 +44,7 @@ contract FundFactory is AmguConsumer {
     }
 
     address[] public funds;
+    mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
     mapping (address => Components) public managersToComponents;
     mapping (address => Settings) public managersToSettings;
@@ -68,27 +68,27 @@ contract FundFactory is AmguConsumer {
     }
 
     constructor(
-        AccountingFactory _accountingFactory,
-        FeeManagerFactory _feeManagerFactory,
-        ParticipationFactory _participationFactory,
-        SharesFactory _sharesFactory,
-        TradingFactory _tradingFactory,
-        VaultFactory _vaultFactory,
-        PolicyManagerFactory _policyManagerFactory,
-        VersionInterface _version,
-        Engine _engine,
+        address _accountingFactory,
+        address _feeManagerFactory,
+        address _participationFactory,
+        address _sharesFactory,
+        address _tradingFactory,
+        address _vaultFactory,
+        address _policyManagerFactory,
+        address _version,
+        address _engine,
         address _factoryPriceSource,
         address _mlnAddress
     ) {
-        accountingFactory = _accountingFactory;
-        feeManagerFactory = _feeManagerFactory;
-        participationFactory = _participationFactory;
-        sharesFactory = _sharesFactory;
-        tradingFactory = _tradingFactory;
-        vaultFactory = _vaultFactory;
-        policyManagerFactory = _policyManagerFactory;
-        version = address(_version);
-        engine = _engine;
+        accountingFactory = AccountingFactory(_accountingFactory);
+        feeManagerFactory = FeeManagerFactory(_feeManagerFactory);
+        participationFactory = ParticipationFactory(_participationFactory);
+        sharesFactory = SharesFactory(_sharesFactory);
+        tradingFactory = TradingFactory(_tradingFactory);
+        vaultFactory = VaultFactory(_vaultFactory);
+        policyManagerFactory = PolicyManagerFactory(_policyManagerFactory);
+        version = VersionInterface(_version);
+        engine = Engine(_engine);
         factoryPriceSource = _factoryPriceSource;
         mlnAddress = _mlnAddress;
     }
@@ -132,7 +132,7 @@ contract FundFactory is AmguConsumer {
         managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
         managersToComponents[msg.sender].registrar = managersToSettings[msg.sender].priceSource;
-        managersToComponents[msg.sender].version = version;
+        managersToComponents[msg.sender].version = address(version);
         managersToComponents[msg.sender].engine = engine;
         managersToComponents[msg.sender].mlnAddress = mlnAddress;
     }
@@ -142,6 +142,7 @@ contract FundFactory is AmguConsumer {
 
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
+        hubExists[address(hub)] = true;
         hub.setSpokes([
             components.accounting,
             components.feeManager,

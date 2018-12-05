@@ -1,5 +1,4 @@
 // tslint:disable:max-line-length
-import { Address } from '@melonproject/token-math/address';
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -9,19 +8,16 @@ import { createComponents } from '~/contracts/factory/transactions/createCompone
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { componentsFromSettings } from '~/contracts/fund/hub/utils/componentsFromSettings';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { setIsFund } from '~/contracts/version/transactions/setIsFund';
 import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { promisesSerial } from '~/utils/helpers/promisesSerial';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -41,7 +37,6 @@ test('Happy path', async () => {
   const deployment = await deploySystem();
   const {
     exchangeConfigs,
-    fundFactory,
     priceSource,
     tokens,
     policies,
@@ -51,7 +46,7 @@ test('Happy path', async () => {
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];
 
-  await createComponents(fundFactory, {
+  await createComponents(version, {
     defaultTokens,
     exchangeConfigs,
     fees,
@@ -61,8 +56,8 @@ test('Happy path', async () => {
     quoteToken,
   });
 
-  await continueCreation(fundFactory);
-  const hubAddress = await setupFund(fundFactory);
+  await continueCreation(version);
+  const hubAddress = await setupFund(version);
   const settings = await getSettings(hubAddress);
 
   await register(settings.policyManagerAddress, {
@@ -91,14 +86,6 @@ test('Happy path', async () => {
   //   howMuch: createQuantity(quoteToken, 1),
   //   spender: new Address(shared.accounts[1]),
   // });
-
-  const components = componentsFromSettings(settings);
-
-  await promisesSerial(
-    Object.values(components).map((address: Address) => () =>
-      setIsFund(version, { address }),
-    ),
-  );
 
   await getAmguPrice(version);
   await requestInvestment(settings.participationAddress, {

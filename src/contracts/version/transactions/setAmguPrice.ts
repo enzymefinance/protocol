@@ -24,7 +24,7 @@ const setAmguPrice: EnhancedExecute<
   SetAmguPrice
 > = transactionFactory(
   'setAmguPrice',
-  Contracts.MockVersion,
+  Contracts.Version,
   guards,
   prepareArgs,
   postProcess,

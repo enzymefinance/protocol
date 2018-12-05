@@ -1,4 +1,5 @@
 // tslint:disable:max-line-length
+import { Exchanges } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -7,7 +8,9 @@ import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deplo
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
+import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
+import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
@@ -16,14 +19,10 @@ import { deploySharesFactory } from '~/contracts/fund/shares/transactions/deploy
 import { deployTradingFactory } from '~/contracts/fund/trading/transactions/deployTradingFactory';
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
-import { deployFundFactory } from '~/contracts/factory/transactions/deployFundFactory';
-import { deployMockVersion } from '~/contracts/version/transactions/deployMockVersion';
-import { setFundFactory } from '~/contracts/version/transactions/setFundFactory';
 import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { Exchanges } from '~/Contracts';
 // tslint:enable:max-line-length
 
 const debug = require('debug')('melon:protocol:utils');
@@ -61,7 +60,6 @@ export const deploySystem = async () => {
 
   const priceToleranceAddress = await deployPriceTolerance(10);
   const whitelistAddress = await deployWhitelist([accounts[0]]);
-  const versionAddress = await deployMockVersion();
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter();
   const accountingFactoryAddress = await deployAccountingFactory();
   const feeManagerFactoryAddress = await deployFeeManagerFactory();
@@ -71,29 +69,26 @@ export const deploySystem = async () => {
   const vaultFactoryAddress = await deployVaultFactory();
   const policyManagerFactoryAddress = await deployPolicyManagerFactory();
   const monthInSeconds = 30 * 24 * 60 * 60;
+  const governanceAddress = accounts[0];
   const engineAddress = await deployEngine(
-    versionAddress,
     priceFeedAddress,
     monthInSeconds,
     mlnTokenAddress,
   );
-
-  const fundFactoryAddress = await deployFundFactory({
+  const versionAddress = await deployVersion({
     accountingFactoryAddress,
     engineAddress,
     factoryPriceSourceAddress: priceFeedAddress,
     feeManagerFactoryAddress,
+    governanceAddress,
     mlnTokenAddress,
     participationFactoryAddress,
     policyManagerFactoryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
-    versionAddress,
   });
-
-  await setFundFactory(versionAddress, { address: fundFactoryAddress });
-
+  await setVersion(engineAddress, { versionAddress });
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -120,7 +115,6 @@ export const deploySystem = async () => {
   const addresses = {
     engine: engineAddress,
     exchangeConfigs,
-    fundFactory: fundFactoryAddress,
     policies: {
       priceTolerance: priceToleranceAddress,
       whitelist: whitelistAddress,
@@ -137,6 +131,5 @@ export const deploySystem = async () => {
   debug('Deployed:', deploymentId, addresses);
 
   setSessionDeployment(deploymentId, addresses);
-
   return addresses;
 };

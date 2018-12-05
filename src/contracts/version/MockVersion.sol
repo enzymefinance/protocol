@@ -1,6 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "./Version.i.sol";
+import "../fund/hub/Hub.sol";
 
 /// @notice Version contract useful for testing
 contract MockVersion is VersionInterface {
@@ -19,6 +20,8 @@ contract MockVersion is VersionInterface {
     function setIsFund(address _who) {
         fundExists[_who] = true;
     }
+
+    function shutDownFund(address _hub) { Hub(_hub).shutDownFund(); }
 
     function getAmguPrice() returns (uint) {
         return amguPrice;

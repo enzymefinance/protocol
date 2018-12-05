@@ -1,7 +1,6 @@
 import * as R from 'ramda';
 import { OrderStatus, assetDataUtils } from '0x.js';
 import { SignedOrder } from '@0x/types';
-
 import {
   QuantityInterface,
   createQuantity,
@@ -20,7 +19,6 @@ import { ensure } from '~/utils/guards/ensure';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-
 import { getOrderInfo } from '../calls/getOrderInfo';
 import { isValidSignature } from '../calls/isValidSignature';
 import { getAssetProxy } from '../calls/getAssetProxy';
