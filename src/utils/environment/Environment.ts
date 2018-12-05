@@ -17,9 +17,9 @@ export enum LogLevels {
 }
 
 export type LoggerFunction = (
-  namespace: string,
-  level: LogLevels,
-  ...msg: any[]
+  message: string | any[],
+  level?: LogLevels,
+  namespace?: string,
 ) => void;
 
 export interface Wallet {
