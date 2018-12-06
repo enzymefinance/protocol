@@ -6,14 +6,13 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-// tslint:disable:max-line-length
+
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-// tslint:enable:max-line-length
 
 export type CancelOasisDexOrderResult = any;
 

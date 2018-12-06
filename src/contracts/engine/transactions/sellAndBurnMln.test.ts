@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import {
   BigInteger,
   add,
@@ -24,7 +23,6 @@ import { increaseTime } from '~/utils/evm';
 import { thaw } from './thaw';
 import { sellAndBurnMln } from './sellAndBurnMln';
 import { deploy as deployEngine } from './deploy';
-// tslint:enable:max-line-length
 
 const shared: any = {};
 

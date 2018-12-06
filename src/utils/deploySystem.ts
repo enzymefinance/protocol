@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { Exchanges } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
@@ -14,6 +13,7 @@ import { deployRegistry } from '~/contracts/version/transactions/deployRegistry'
 import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
+import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
@@ -98,6 +98,8 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
     vaultFactoryAddress,
   });
   await setVersion(engineAddress, { versionAddress });
+
+  const rankingAddress = await deployFundRanking();
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -152,6 +154,7 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
       whitelist: whitelistAddress,
     },
     priceSource,
+    ranking: rankingAddress,
     tokens: [quoteToken, baseToken, eurToken, zrxToken],
     version: versionAddress,
   };

@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -8,7 +7,6 @@ import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployM
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { LogLevels } from './environment/Environment';
-// tslint:enable:max-line-length
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
@@ -27,6 +25,7 @@ export const deployMockSystem = async ({
   tradingContract = Contracts.Trading,
   vaultContract = Contracts.Vault,
   versionContract = Contracts.MockVersion,
+  rankingContract = Contracts.FundRanking,
 } = {}) => {
   const environment = getGlobalEnvironment();
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
@@ -64,6 +63,7 @@ export const deployMockSystem = async ({
 
   const version = await deployAndGetContract(versionContract);
   const registry = await deployAndGetContract(registryContract);
+  const ranking = await deployAndGetContract(rankingContract);
 
   const hub = await deployAndGetContract(hubContract);
   await hub.methods
@@ -156,6 +156,7 @@ export const deployMockSystem = async ({
     policyManager,
     priceSource,
     registry,
+    ranking,
     shares,
     trading,
     vault,

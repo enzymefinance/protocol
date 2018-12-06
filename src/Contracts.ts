@@ -13,6 +13,7 @@ export enum Contracts {
   FeeManager = 'fund/fees/FeeManager',
   ERC20Proxy = 'exchanges/thirdparty/0x/ERC20Proxy',
   FundFactory = 'factory/FundFactory',
+  FundRanking = 'factory/FundRanking',
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
@@ -36,6 +37,7 @@ export enum Contracts {
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
   Registry = 'version/Registry',
+  PriceSourceInterface = 'prices/PriceSourceInterface',
   SelfDestructing = 'testing/SelfDestructing',
   Shares = 'fund/shares/Shares',
   Spoke = 'fund/shares/Spoke',
@@ -76,6 +78,8 @@ export const requireMap = {
     require('../out/fund/fees/FeeManager.abi.json'),
   [Contracts.FundFactory]:
     require('../out/factory/FundFactory.abi.json'),
+  [Contracts.FundRanking]:
+    require('../out/factory/FundRanking.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MockAdapter]:
@@ -126,6 +130,8 @@ export const requireMap = {
     require('../out/dependencies/token/PreminedToken.abi.json'),
   [Contracts.Registry]:
     require('../out/version/Registry.abi.json'),
+  [Contracts.PriceSourceInterface]:
+    require('../out/prices/PriceSourceInterface.abi.json'),
   [Contracts.SelfDestructing]:
     require('../out/testing/SelfDestructing.abi.json'),
   [Contracts.Shares]:

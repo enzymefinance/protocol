@@ -3,12 +3,12 @@ import { Address } from '@melonproject/token-math/address';
 
 import { ensure } from '~/utils/guards/ensure';
 import { isAddress } from '~/utils/checks/isAddress';
-import {
-  transactionFactory,
-  withContractAddressQuery,
-  ImplicitExecute,
-} from '~/utils/solidity/transactionFactory';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
+import {
+  WithAddressQueryExecute,
+  withContractAddressQuery,
+} from '~/utils/solidity/withContractAddressQuery';
 
 const guard = async ({ howMuch, spender }, environment) => {
   ensure(
@@ -38,7 +38,7 @@ interface IncreaseApprovalArgs {
 
 type IncreaseApprovalResult = boolean;
 
-const increaseApproval: ImplicitExecute<
+const increaseApproval: WithAddressQueryExecute<
   IncreaseApprovalArgs,
   IncreaseApprovalResult
 > = withContractAddressQuery(
