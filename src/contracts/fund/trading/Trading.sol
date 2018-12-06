@@ -116,6 +116,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
         //     )
         // );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        if (bytes4(keccak256(methodSignature)) != bytes4(hex'61346679')) { // cancelOrder signature
+            require(Registry(routes.registry).assetIsRegistered(
+                orderAddresses[2]), 'Maker asset not registered'
+            );
+            require(Registry(routes.registry).assetIsRegistered(
+                orderAddresses[3]), 'Taker asset not registered'
+            );
+        }
         // require(bytes4(hex'79705be7') == bytes4(keccak256(methodSignature)));
         // require(
         //     exchanges[exchangeIndex].adapter.delegatecall(

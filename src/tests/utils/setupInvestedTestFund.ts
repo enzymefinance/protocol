@@ -7,7 +7,6 @@ import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 
 const setupInvestedTestFund = async (
   deployment,

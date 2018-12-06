@@ -39,7 +39,7 @@ beforeAll(async () => {
       emptyAddress,
       emptyAddress,
       emptyAddress,
-      emptyAddress,
+      shared.registry.options.address,
       emptyAddress,
       emptyAddress,
       emptyAddress,
