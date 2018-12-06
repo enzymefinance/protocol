@@ -11,6 +11,7 @@ import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
 import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
+import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
@@ -89,6 +90,8 @@ export const deploySystem = async () => {
     vaultFactoryAddress,
   });
   await setVersion(engineAddress, { versionAddress });
+
+  const rankingAddress = await deployFundRanking();
   const exchangeConfigs = [
     {
       adapterAddress: matchingMarketAdapterAddress,
@@ -120,6 +123,7 @@ export const deploySystem = async () => {
       whitelist: whitelistAddress,
     },
     priceSource,
+    ranking: rankingAddress,
     tokens: [quoteToken, baseToken, eurToken, zrxToken],
     version: versionAddress,
   };

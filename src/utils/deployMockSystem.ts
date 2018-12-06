@@ -27,6 +27,7 @@ export const deployMockSystem = async ({
   tradingContract = Contracts.Trading,
   vaultContract = Contracts.Vault,
   versionContract = Contracts.MockVersion,
+  rankingContract = Contracts.FundRanking,
 } = {}) => {
   const environment = getGlobalEnvironment();
   const accounts = await environment.eth.getAccounts();
@@ -62,6 +63,7 @@ export const deployMockSystem = async ({
   );
 
   const version = await deployAndGetContract(versionContract);
+  const ranking = await deployAndGetContract(rankingContract);
 
   const hub = await deployAndGetContract(hubContract);
   await hub.methods
@@ -151,6 +153,7 @@ export const deployMockSystem = async ({
     participation,
     policyManager,
     priceSource,
+    ranking,
     shares,
     trading,
     vault,
