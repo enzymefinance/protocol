@@ -10,6 +10,9 @@ import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
 import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
+import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
+import { registerAsset } from '~/contracts/version/transactions/registerAsset';
+import { registerExchange } from '~/contracts/version/transactions/registerExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
@@ -24,6 +27,7 @@ import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deplo
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { LogLevels } from './environment/Environment';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 // tslint:enable:max-line-length
 
 /**
@@ -38,8 +42,11 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
   const mlnTokenAddress = await deployToken('MLN');
   const quoteToken = await getToken(await deployToken('WETH'));
   const baseToken = await getToken(mlnTokenAddress);
+  const wethToken = quoteToken;
+  const mlnToken = baseToken;
   const eurToken = await getToken(await deployToken('EUR'));
   const zrxToken = await getToken(await deployToken('ZRX'));
+  const assets = [wethToken, mlnToken, eurToken, zrxToken];
   const priceFeedAddress = await deployPriceFeed(quoteToken);
   const matchingMarketAddress = await deployMatchingMarket();
   const {
@@ -75,6 +82,7 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
     monthInSeconds,
     mlnTokenAddress,
   );
+  const registryAddress = await deployRegistry();
   const versionAddress = await deployVersion({
     accountingFactoryAddress,
     engineAddress,
@@ -84,6 +92,7 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
     mlnTokenAddress,
     participationFactoryAddress,
     policyManagerFactoryAddress,
+    registryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
@@ -109,6 +118,29 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
       takesCustody: false,
     },
   ];
+
+  for (const exchangeConfig of exchangeConfigs) {
+    await registerExchange(registryAddress, {
+      adapter: exchangeConfig.adapterAddress,
+      exchange: exchangeConfig.exchangeAddress,
+      sigs: [],
+      takesCustody: exchangeConfig.takesCustody,
+    });
+  }
+
+  for (const asset of assets) {
+    await registerAsset(registryAddress, {
+      assetAddress: `${asset.address}`,
+      assetSymbol: asset.symbol,
+      breakInBreakOut: [emptyAddress, emptyAddress],
+      decimals: asset.decimals,
+      ipfsHash: '',
+      name: '',
+      sigs: [],
+      standards: [],
+      url: '',
+    });
+  }
 
   const priceSource = priceFeedAddress;
 

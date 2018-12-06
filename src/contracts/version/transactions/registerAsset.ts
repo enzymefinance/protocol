@@ -8,7 +8,7 @@ import {
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 interface RegisterAssetArgs {
-  asset: Address;
+  assetAddress: Address;
   name: String;
   assetSymbol: String; // actually bytes8
   decimals: Number; // actually uint
@@ -20,7 +20,7 @@ interface RegisterAssetArgs {
 }
 
 const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async ({
-  asset,
+  assetAddress,
   name,
   assetSymbol,
   decimals,
@@ -30,13 +30,13 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async ({
   standards,
   sigs,
 }: RegisterAssetArgs) => [
-  `${asset}`,
+  `${assetAddress}`,
   name,
   assetSymbol,
   `${decimals}`,
   url,
   ipfsHash,
-  breakInBreakOut.map(addr => web3EthAbi.encodeFunctionSignature(addr)),
+  breakInBreakOut.map(addr => `${addr}`),
   standards,
   sigs.map(sig => web3EthAbi.encodeFunctionSignature(sig)),
 ];
