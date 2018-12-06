@@ -4,14 +4,14 @@ import { Address } from '@melonproject/token-math/address';
 import { ensure } from '~/utils/guards/ensure';
 import { isAddress } from '~/utils/checks/isAddress';
 import { ensureAccountAddress } from '~/utils/environment/ensureAccountAddress';
-import {
-  transactionFactory,
-  withContractAddressQuery,
-  ImplicitExecute,
-} from '~/utils/solidity/transactionFactory';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
 import { ensureSufficientBalance } from '../guards/ensureSufficientBalance';
+import {
+  withContractAddressQuery,
+  WithAddressQueryExecute,
+} from '~/utils/solidity/withContractAddressQuery';
 
 const guard = async ({ howMuch, to }, contractAddress, environment) => {
   ensureAccountAddress(environment);
@@ -44,7 +44,7 @@ interface TransferArgs {
 
 type TransferResult = boolean;
 
-const transfer: ImplicitExecute<
+const transfer: WithAddressQueryExecute<
   TransferArgs,
   TransferResult
 > = withContractAddressQuery(
