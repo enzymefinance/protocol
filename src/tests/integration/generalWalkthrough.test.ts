@@ -25,6 +25,7 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -87,11 +88,21 @@ test('Happy path', async () => {
 
   await update(priceSource, [newPrice]);
 
-  await requestInvestment(settings.participationAddress, {
-    investmentAmount: createQuantity(quoteToken, 1),
-  });
+  const investmentAmount = createQuantity(quoteToken, 1);
 
-  console.log('Requested an investment');
+  await expect(
+    requestInvestment(settings.participationAddress, {
+      investmentAmount,
+    }),
+  ).rejects.toThrow(`Insufficient allowance`);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+  await requestInvestment(settings.participationAddress, {
+    investmentAmount,
+  });
 
   await executeRequest(settings.participationAddress);
 

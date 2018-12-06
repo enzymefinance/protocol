@@ -8,6 +8,7 @@ import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 // tslint:enable:max-line-length
 
 const setupInvestedTestFund = async (
@@ -36,13 +37,21 @@ const setupInvestedTestFund = async (
   const hubAddress = await setupFund(version, undefined, environment);
   const settings = await getSettings(hubAddress, environment);
 
+  const investmentAmount = createQuantity(weth, 1);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+
   await requestInvestment(
     settings.participationAddress,
     {
-      investmentAmount: createQuantity(weth, 1),
+      investmentAmount,
     },
     environment,
   );
+
   await executeRequest(settings.participationAddress, undefined, environment);
 
   return settings;
