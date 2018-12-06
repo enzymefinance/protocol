@@ -122,7 +122,7 @@ export const deployMockSystem = async ({
       trading.options.address,
       vault.options.address,
       priceSource.options.address,
-      priceSource.options.address, // registrar
+      registry.options.address,
       version.options.address,
       engine.options.address,
       mlnTokenAddress,
@@ -155,6 +155,7 @@ export const deployMockSystem = async ({
     participation,
     policyManager,
     priceSource,
+    registry,
     shares,
     trading,
     vault,
