@@ -13,6 +13,7 @@ export enum Contracts {
   FeeManager = 'fund/fees/FeeManager',
   ERC20Proxy = 'exchanges/thirdparty/0x/ERC20Proxy',
   FundFactory = 'factory/FundFactory',
+  FundRanking = 'factory/FundRanking',
   Hub = 'fund/hub/Hub',
   MatchingMarket = 'exchanges/MatchingMarket',
   MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
@@ -75,6 +76,8 @@ export const requireMap = {
     require('../out/fund/fees/FeeManager.abi.json'),
   [Contracts.FundFactory]:
     require('../out/factory/FundFactory.abi.json'),
+  [Contracts.FundRanking]:
+    require('../out/factory/FundRanking.abi.json'),
   [Contracts.Hub]:
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MockAdapter]:

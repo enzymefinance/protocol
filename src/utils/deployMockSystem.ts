@@ -25,11 +25,11 @@ export const deployMockSystem = async (
     tradingContract = Contracts.Trading,
     vaultContract = Contracts.Vault,
     versionContract = Contracts.MockVersion,
+    rankingContract = Contracts.FundRanking,
   } = {},
   environment = getGlobalEnvironment(),
 ) => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
-
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
@@ -63,6 +63,7 @@ export const deployMockSystem = async (
   );
 
   const version = await deployAndGetContract(versionContract);
+  const ranking = await deployAndGetContract(rankingContract);
 
   const hub = await deployAndGetContract(hubContract);
   await hub.methods
@@ -152,6 +153,7 @@ export const deployMockSystem = async (
     participation,
     policyManager,
     priceSource,
+    ranking,
     shares,
     trading,
     vault,
