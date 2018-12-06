@@ -131,6 +131,56 @@ const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
 debug('Something happened', interestingObject, ' ... and more ...', whatever);
 ```
 
+### Deconstruct a transaction from the transactionFactory
+
+Generally, transactions have a shortcut method called `execute`, which is renamed to the actual transaction name:
+
+```ts
+import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
+
+const params = {
+  howMuch: createQuantity(shared.token, 2000000),
+  to: shared.accounts[1],
+};
+
+await transfer(params);
+```
+
+If one needs to have custom access to the different steps, like a custom signer, the transaction function can be decomposed into a prepare and sign step:
+
+```ts
+import { sign } from '~/utils/environment/sign';
+
+const prepared = await transfer.prepare(params);
+
+const signedTransactionData = await sign(prepared.rawTransaction, environment);
+
+const result = await transfer.send(signedTransactionData, params);
+```
+
+### Skip gas estimation preflight/guards
+
+Sometimes during development, one wants to check if a transaction actually fails without the guards. To do so, there are options inside of the transaction factory. The simplest example would be `transfer`. So here is the minimalistic usage of `transfer`:
+
+```ts
+import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
+
+const params = {
+  howMuch: createQuantity(shared.token, 2000000),
+  to: shared.accounts[1],
+};
+
+await transfer(params, environment, {
+  gas: '8000000',
+  skipGasEstimation: true,
+  skipGuards: true,
+});
+```
+
+In the example above, the `transfer` function actually executes guards that check for balance and they throw a meaningful error message which could be presented to the user.
+
+But if you want to check if the smart contract actually reverts or anything, you may want to pass these checks:
+
 ## Troubleshooting
 
 #### Permission denied (publickey) when cloning the repo

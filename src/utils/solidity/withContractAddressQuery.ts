@@ -19,6 +19,7 @@ type WithAddressQueryPrepareFunction<Args> = (
 export type WithAddressQueryExecuteFunction<Args, Result> = (
   params?: Args,
   environment?: Environment,
+  options?: OptionsOrCallback,
 ) => Promise<Result>;
 
 export interface WithAddressQueryExecuteMixin<Args> {
@@ -70,11 +71,12 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
       environment,
     );
 
-  const execute = async (params: Args, environment?) => {
+  const execute = async (params: Args, environment?, options?) => {
     return await transaction(
       R.path(contractAddressQuery, params).toString(),
       params,
       environment,
+      options,
     );
   };
 

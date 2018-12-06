@@ -102,6 +102,7 @@ type ExecuteFunction<Args, Result> = (
   contractAddress: Address,
   params?: Args,
   environment?: Environment,
+  options?: OptionsOrCallback,
 ) => Promise<Result>;
 
 export interface ExecuteMixin<Args> {
@@ -288,11 +289,12 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     contractAddress,
     params,
     environment = getGlobalEnvironment(),
+    options = defaultOptions,
   ) => {
     const prepared = await prepare(
       contractAddress,
       params,
-      defaultOptions,
+      options,
       environment,
     );
 
@@ -306,7 +308,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       signedTransactionData,
       // prepared,
       params,
-      defaultOptions,
+      options,
       environment,
     );
 

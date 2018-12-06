@@ -17,10 +17,8 @@ beforeAll(async () => {
 });
 
 test('Skip guards and preflight', async () => {
-  const howMuch = createQuantity(shared.token, 2000000);
-
   const params = {
-    howMuch,
+    howMuch: createQuantity(shared.token, 2000000),
     to: shared.accounts[1],
   };
 
@@ -32,7 +30,6 @@ test('Skip guards and preflight', async () => {
 
   await expect(
     transfer.prepare(params, {
-      // gas: '8000000',
       skipGasEstimation: true,
       skipGuards: true,
     }),
@@ -52,4 +49,12 @@ test('Skip guards and preflight', async () => {
   await expect(transfer.send(signedTransactionData, params)).rejects.toThrow(
     'VM Exception while processing transaction: revert',
   );
+
+  await expect(
+    transfer(params, shared.environment, {
+      gas: '8000000',
+      skipGasEstimation: true,
+      skipGuards: true,
+    }),
+  ).rejects.toThrow('VM Exception while processing transaction: revert');
 });
