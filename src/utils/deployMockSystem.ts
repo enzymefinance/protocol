@@ -20,6 +20,7 @@ export const deployMockSystem = async ({
   policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
   priceSourceContract = Contracts.TestingPriceFeed,
+  rankingContract = Contracts.FundRanking,
   registryContract = Contracts.MockRegistry,
   sharesContract = Contracts.MockShares,
   tradingContract = Contracts.Trading,
@@ -61,6 +62,7 @@ export const deployMockSystem = async ({
   );
 
   const version = await deployAndGetContract(versionContract);
+  const ranking = await deployAndGetContract(rankingContract);
   const registry = await deployAndGetContract(registryContract);
 
   const hub = await deployAndGetContract(hubContract);
@@ -153,6 +155,7 @@ export const deployMockSystem = async ({
     participation,
     policyManager,
     priceSource,
+    ranking,
     registry,
     shares,
     trading,
