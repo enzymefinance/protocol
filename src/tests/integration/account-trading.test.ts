@@ -10,8 +10,7 @@ import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
-import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
@@ -70,7 +69,7 @@ test('Happy path', async () => {
   });
 
   await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.executeRequestFor,
+    method: FunctionSignatures.invest,
     policy: policies.whitelist,
   });
 
@@ -95,11 +94,9 @@ test('Happy path', async () => {
     spender: settings.participationAddress,
   });
 
-  await requestInvestment(settings.participationAddress, {
+  await invest(settings.participationAddress, {
     investmentAmount,
   });
-
-  await executeRequest(settings.participationAddress);
 
   // const redemption = await redeem(settings.participationAddress);
   // console.log('Redeemed');

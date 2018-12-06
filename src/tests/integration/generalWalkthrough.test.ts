@@ -9,8 +9,7 @@ import { continueCreation } from '~/contracts/factory/transactions/continueCreat
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
-import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
@@ -77,7 +76,7 @@ test('Happy path', async () => {
   });
 
   await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.executeRequestFor,
+    method: FunctionSignatures.invest,
     policy: policies.whitelist,
   });
 
@@ -91,7 +90,7 @@ test('Happy path', async () => {
   const investmentAmount = createQuantity(quoteToken, 1);
 
   await expect(
-    requestInvestment(settings.participationAddress, {
+    invest(settings.participationAddress, {
       investmentAmount,
     }),
   ).rejects.toThrow(`Insufficient allowance`);
@@ -100,11 +99,9 @@ test('Happy path', async () => {
     howMuch: investmentAmount,
     spender: settings.participationAddress,
   });
-  await requestInvestment(settings.participationAddress, {
+  await invest(settings.participationAddress, {
     investmentAmount,
   });
-
-  await executeRequest(settings.participationAddress);
 
   console.log('Executed request');
 
@@ -195,7 +192,7 @@ test('Happy path', async () => {
   console.log('Shut down fund');
 
   await expect(
-    requestInvestment(settings.participationAddress, {
+    invest(settings.participationAddress, {
       investmentAmount: createQuantity(quoteToken, 1),
     }),
   ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);

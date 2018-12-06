@@ -6,8 +6,7 @@ import { createComponents } from '~/contracts/factory/transactions/createCompone
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 // tslint:enable:max-line-length
 
@@ -44,15 +43,13 @@ const setupInvestedTestFund = async (
     spender: settings.participationAddress,
   });
 
-  await requestInvestment(
+  await invest(
     settings.participationAddress,
     {
       investmentAmount,
     },
     environment,
   );
-
-  await executeRequest(settings.participationAddress, undefined, environment);
 
   return settings;
 };

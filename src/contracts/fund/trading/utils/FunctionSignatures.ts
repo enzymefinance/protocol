@@ -8,8 +8,5 @@ export enum FunctionSignatures {
   makeOrder = getFunctionSignature(adapterABI, 'makeOrder'),
   takeOrder = getFunctionSignature(adapterABI, 'takeOrder'),
   cancelOrder = getFunctionSignature(adapterABI, 'cancelOrder'),
-  executeRequestFor = getFunctionSignature(
-    participationABI,
-    'executeRequestFor',
-  ),
+  invest = getFunctionSignature(participationABI, 'invest'),
 }
