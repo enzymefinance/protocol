@@ -14,6 +14,7 @@ interface VersionArgs {
   engineAddress: Address;
   factoryPriceSourceAddress: Address;
   mlnTokenAddress: Address;
+  registryAddress: Address;
 }
 
 export const deployVersion = async (
@@ -32,6 +33,7 @@ export const deployVersion = async (
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
+    registryAddress,
   } = addresses;
 
   const argsRaw = [
@@ -46,6 +48,7 @@ export const deployVersion = async (
     engineAddress,
     factoryPriceSourceAddress,
     mlnTokenAddress,
+    registryAddress,
   ];
 
   const args = argsRaw.map(a => a.toString());

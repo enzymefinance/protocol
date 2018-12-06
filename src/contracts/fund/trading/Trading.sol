@@ -11,7 +11,7 @@ import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
 import "../../exchanges/ExchangeAdapterInterface.sol";
 import "../../exchanges/thirdparty/0x/LibOrder.sol";
-import "../../prices/CanonicalRegistrar.sol";
+import "../../version/Registry.sol";
 
 contract Trading is DSMath, Spoke, TradingInterface {
 
@@ -59,8 +59,10 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address _hub,
         address[] _exchanges,
         address[] _adapters,
-        bool[] _takesCustody
+        bool[] _takesCustody,
+        address _registry
     ) Spoke(_hub) {
+        routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
         require(_exchanges.length == _takesCustody.length, "Array lengths unequal");
         for (uint i = 0; i < _exchanges.length; i++) {
@@ -69,7 +71,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     }
 
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
-        // require(CanonicalRegistrar(routes.canonicalRegistrar).exchangeIsRegistered(_exchange));
+        require(Registry(routes.registry).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange], "Exchange already added");
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
@@ -271,8 +273,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
 }
 
 contract TradingFactory is Factory {
-    function createInstance(address _hub, address[] _exchanges, address[] _adapters, bool[] _takesCustody) public returns (address) {
-        address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody);
+    function createInstance(
+        address _hub,
+        address[] _exchanges,
+        address[] _adapters,
+        bool[] _takesCustody,
+        address _registry
+    ) public returns (address) {
+        address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody, _registry);
         childExists[trading] = true;
         return trading;
     }

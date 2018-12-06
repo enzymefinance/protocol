@@ -12,7 +12,7 @@ export interface Settings {
   participationAddress: Address;
   policyManagerAddress: Address;
   priceSourceAddress: Address;
-  registrarAddress: Address;
+  registryAddress: Address;
   sharesAddress: Address;
   tradingAddress: Address;
   vaultAddress: Address;
@@ -33,7 +33,7 @@ export const getSettings = async (
     participationAddress: new Address(settings.participation),
     policyManagerAddress: new Address(settings.policyManager),
     priceSourceAddress: new Address(settings.priceSource),
-    registrarAddress: new Address(settings.canonicalRegistrar),
+    registryAddress: new Address(settings.registry),
     sharesAddress: new Address(settings.shares),
     tradingAddress: new Address(settings.trading),
     vaultAddress: new Address(settings.vault),

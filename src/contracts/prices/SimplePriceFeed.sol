@@ -2,10 +2,10 @@ pragma solidity ^0.4.21;
 
 import "./PriceSource.i.sol";
 import "./UpdatableFeed.i.sol";
-import "./CanonicalRegistrar.sol";
 import "./CanonicalPriceFeed.sol";
 import "../dependencies/DBC.sol";
 import "../dependencies/thing.sol";
+import "../version/Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
@@ -27,7 +27,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
 
     // Contract-level variables
     uint public updateId;        // Update counter for this pricefeed; used as a check during investment
-    CanonicalRegistrar public registrar;
+    Registry public registry;
     CanonicalPriceFeed public superFeed;
 
     // METHODS
@@ -42,7 +42,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
         address ofQuoteAsset,
         address ofSuperFeed
     ) {
-        registrar = CanonicalRegistrar(ofRegistrar);
+        registry = Registry(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
         superFeed = CanonicalPriceFeed(ofSuperFeed);
     }
@@ -122,7 +122,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
         updateId++;
         for (uint i = 0; i < ofAssets.length; ++i) {
             require(
-                registrar.assetIsRegistered(ofAssets[i]),
+                registry.assetIsRegistered(ofAssets[i]),
                 "Asset is not registered"
             );
             require(

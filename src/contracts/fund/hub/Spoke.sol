@@ -15,7 +15,7 @@ contract Spoke is DSAuth {
         address trading;
         address vault;
         address priceSource;
-        address canonicalRegistrar;
+        address registry;
         address version;
         address engine;
         address mlnAddress;

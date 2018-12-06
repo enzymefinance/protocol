@@ -11,7 +11,6 @@ import "../fund/vault/Vault.sol";
 import "../version/Version.i.sol";
 import "../engine/AmguConsumer.sol";
 
-// TODO: integrate with existing infrastructure (version, governance, etc.)
 // TODO: inherit from Factory
 /// @notice Creates fund components and links them together
 contract FundFactory is AmguConsumer {
@@ -19,6 +18,7 @@ contract FundFactory is AmguConsumer {
     address public mlnAddress;
     VersionInterface public version;
     address public engine;
+    address public registry;
     AccountingFactory public accountingFactory;
     FeeManagerFactory public feeManagerFactory;
     ParticipationFactory public participationFactory;
@@ -36,7 +36,7 @@ contract FundFactory is AmguConsumer {
         address trading;
         address vault;
         address priceSource;
-        address registrar;
+        address registry;
         address version;
         address engine;
         address mlnAddress;
@@ -119,7 +119,12 @@ contract FundFactory is AmguConsumer {
         );
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].participation = participationFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].defaultAssets);
+        managersToComponents[msg.sender].registry = registry;
+        managersToComponents[msg.sender].participation = participationFactory.createInstance(
+            managersToHubs[msg.sender],
+            managersToSettings[msg.sender].defaultAssets,
+            managersToComponents[msg.sender].registry
+        );
     }
 
     // TODO: improve naming
@@ -127,10 +132,15 @@ contract FundFactory is AmguConsumer {
         Hub hub = Hub(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].trading = tradingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].exchanges, managersToSettings[msg.sender].adapters, managersToSettings[msg.sender].takesCustody);
+        managersToComponents[msg.sender].trading = tradingFactory.createInstance(
+            managersToHubs[msg.sender],
+            managersToSettings[msg.sender].exchanges,
+            managersToSettings[msg.sender].adapters,
+            managersToSettings[msg.sender].takesCustody,
+            managersToComponents[msg.sender].registry
+        );
         managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
         managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
-        managersToComponents[msg.sender].registrar = managersToSettings[msg.sender].priceSource;
         managersToComponents[msg.sender].version = address(version);
         managersToComponents[msg.sender].engine = engine;
         managersToComponents[msg.sender].mlnAddress = mlnAddress;
@@ -151,7 +161,7 @@ contract FundFactory is AmguConsumer {
             components.trading,
             components.vault,
             components.priceSource,
-            components.registrar,
+            components.registry,
             components.version,
             components.engine,
             components.mlnAddress
