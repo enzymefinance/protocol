@@ -24,14 +24,14 @@ export const getFundDetails = async (
     2: creationTimes,
     3: names,
   } = fundDetails;
-  return addresses.reduce((carry, address, key) => ({
-    ...carry,
-    [key]: {
-      address,
-      rank: key,
-      name: names[key],
-      sharePrice: sharePrices[key],
-      creationTime: creationTimes[key],
-    },
+
+  const result = addresses.map((address, index) => ({
+    address,
+    rank: index,
+    name: names[index],
+    sharePrice: sharePrices[index],
+    creationTime: creationTimes[index],
   }));
+
+  return Object.values(result);
 };
