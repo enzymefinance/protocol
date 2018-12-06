@@ -10,6 +10,7 @@ import {
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -18,7 +19,7 @@ interface ExchangeConfig {
   adapterAddress: Address;
   takesCustody: boolean;
 }
-interface FeeConfig {
+export interface FeeConfig {
   feeAddress: Address;
   feeRate: BigInteger;
   feePeriod: BigInteger;

@@ -28,7 +28,11 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
-import { BigInteger } from '@melonproject/token-math/bigInteger';
+import {
+  BigInteger,
+  power,
+  multiply,
+} from '@melonproject/token-math/bigInteger';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -71,12 +75,22 @@ test('Happy path', async () => {
     {
       feeAddress: managementFee.options.address,
       feePeriod: new BigInteger(0),
-      feeRate: new BigInteger(2 * 10 ** 16),
+      feeRate: new BigInteger(
+        multiply(
+          new BigInteger(2),
+          power(new BigInteger(10), new BigInteger(16)),
+        ),
+      ),
     },
     {
       feeAddress: performanceFee.options.address,
       feePeriod: new BigInteger(86400 * 90),
-      feeRate: new BigInteger(20 * 10 ** 16),
+      feeRate: new BigInteger(
+        multiply(
+          new BigInteger(20),
+          power(new BigInteger(10), new BigInteger(16)),
+        ),
+      ),
     },
   ];
 
