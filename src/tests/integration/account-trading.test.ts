@@ -18,6 +18,7 @@ import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -86,8 +87,16 @@ test('Happy path', async () => {
   // });
 
   await getAmguPrice(version);
+
+  const investmentAmount = createQuantity(quoteToken, 1);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+
   await requestInvestment(settings.participationAddress, {
-    investmentAmount: createQuantity(quoteToken, 1),
+    investmentAmount,
   });
 
   await executeRequest(settings.participationAddress);
