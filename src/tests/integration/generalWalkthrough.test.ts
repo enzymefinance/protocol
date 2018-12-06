@@ -90,16 +90,19 @@ test('Happy path', async () => {
 
   const investmentAmount = createQuantity(quoteToken, 1);
 
+  await expect(
+    requestInvestment(settings.participationAddress, {
+      investmentAmount,
+    }),
+  ).rejects.toThrow(`Insufficient allowance`);
+
   await approve({
     howMuch: investmentAmount,
     spender: settings.participationAddress,
   });
-
   await requestInvestment(settings.participationAddress, {
     investmentAmount,
   });
-
-  console.log('Requested an investment');
 
   await executeRequest(settings.participationAddress);
 

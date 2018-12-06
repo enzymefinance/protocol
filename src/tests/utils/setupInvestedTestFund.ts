@@ -51,6 +51,7 @@ const setupInvestedTestFund = async (
     },
     environment,
   );
+
   await executeRequest(settings.participationAddress, undefined, environment);
 
   return settings;

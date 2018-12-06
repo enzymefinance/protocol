@@ -8,8 +8,8 @@ import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
-import { ensureSufficientBalance } from '../../../dependencies/token/guards/ensureSufficientBalance';
 import { getRequest, RequestInvestmentResult } from '../calls/getRequest';
+import { ensureAllowance } from '~/contracts/dependencies/token/guards/ensureAllowance';
 
 export interface RequestInvestmentArgs {
   investmentAmount: QuantityInterface;
@@ -23,11 +23,7 @@ const guard: GuardFunction<RequestInvestmentArgs> = async (
 ) => {
   const hub = await getHub(contractAddress, environment);
   await ensureIsNotShutDown(hub, environment);
-  await ensureSufficientBalance(
-    params.investmentAmount,
-    environment.wallet.address,
-    environment,
-  );
+  await ensureAllowance(params.investmentAmount, contractAddress, environment);
 };
 
 const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async ({
