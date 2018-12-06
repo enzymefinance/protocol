@@ -23,6 +23,7 @@ export enum Contracts {
   KyberReserve = 'exchanges/KyberReserve',
   ConversionRates = 'exchanges/ConversionRates',
   KyberWhiteList = 'exchanges/KyberWhiteList',
+  ManagementFee = 'fund/fees/ManagementFee',
   MaxPositions = 'fund/policies/risk-management/MaxPositions',
   MaxConcentration = 'fund/policies/risk-management/MaxConcentration',
   MockAccounting = 'fund/accounting/MockAccounting',
@@ -32,6 +33,7 @@ export enum Contracts {
   MockShares = 'fund/shares/MockShares',
   MockVersion = 'version/MockVersion',
   Participation = 'fund/participation/Participation',
+  PerformanceFee = 'fund/fees/PerformanceFee',
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
   SelfDestructing = 'testing/SelfDestructing',
@@ -78,6 +80,8 @@ export const requireMap = {
     require('../out/fund/hub/Hub.abi.json'),
   [Contracts.MockAdapter]:
     require('../out/exchanges/MockAdapter.abi.json'),
+  [Contracts.ManagementFee]:
+    require('../out/fund/fees/ManagementFee.abi.json'),
   [Contracts.MatchingMarket]:
     require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
@@ -116,6 +120,8 @@ export const requireMap = {
     require('../out/exchanges/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
     require('../out/fund/participation/Participation.abi.json'),
+  [Contracts.PerformanceFee]:
+    require('../out/fund/fees/PerformanceFee.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:

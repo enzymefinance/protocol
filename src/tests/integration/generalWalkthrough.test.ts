@@ -3,6 +3,9 @@ import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
+import { deploy } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
+import { getContract } from '~/utils/solidity/getContract';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
@@ -25,6 +28,7 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+import { BigInteger } from '@melonproject/token-math/bigInteger';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -50,8 +54,31 @@ test('Happy path', async () => {
   const defaultTokens = [quoteToken, baseToken];
   const amguToken = await getAmguToken(version);
   const amguPrice = createQuantity(amguToken, '1000000000');
-  const fees = [];
   await setAmguPrice(version, amguPrice);
+
+  // Deploy fees
+  const managementFee = getContract(
+    Contracts.ManagementFee,
+    await deploy(Contracts.ManagementFee, []),
+  );
+
+  const performanceFee = getContract(
+    Contracts.PerformanceFee,
+    await deploy(Contracts.PerformanceFee, []),
+  );
+
+  const fees = [
+    {
+      feeAddress: managementFee.options.address,
+      feePeriod: new BigInteger(0),
+      feeRate: new BigInteger(2 * 10 ** 16),
+    },
+    {
+      feeAddress: performanceFee.options.address,
+      feePeriod: new BigInteger(86400 * 90),
+      feeRate: new BigInteger(20 * 10 ** 16),
+    },
+  ];
 
   await createComponents(version, {
     defaultTokens,

@@ -7,7 +7,7 @@ import "../hub/Hub.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/math.sol";
 
-contract FixedManagementFee is DSMath, Fee {
+contract ManagementFee is DSMath, Fee {
 
     uint public DIVISOR = 10 ** 18;
 
