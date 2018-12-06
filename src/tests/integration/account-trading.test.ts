@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -18,7 +17,6 @@ import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/tak
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-// tslint:enable:max-line-length
 
 const shared: any = {};
 

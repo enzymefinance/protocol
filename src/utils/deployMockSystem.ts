@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -8,7 +7,6 @@ import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployM
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { LogLevels } from './environment/Environment';
-// tslint:enable:max-line-length
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.

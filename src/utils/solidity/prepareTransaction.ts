@@ -5,9 +5,12 @@ import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
+import { ensure } from '../guards/ensure';
 
 export interface Options {
   amguPayable?: boolean;
+  skipGuards?: boolean;
+  skipGasEstimation?: boolean;
   from?: string;
   gas?: string;
   gasPrice?: string;
@@ -73,10 +76,17 @@ export const prepareTransaction = async (
       }
     : options;
 
+  ensure(
+    !(options.skipGasEstimation && !options.gas),
+    'Cannot skip gasEstimation if no options.gas is provided',
+  );
+
   try {
-    const gasEstimation = await transaction.estimateGas({
-      ...R.omit(['amguPayable'], amguOptions),
-    });
+    const gasEstimation = options.skipGasEstimation
+      ? 0
+      : await transaction.estimateGas({
+          ...R.omit(['amguPayable'], amguOptions),
+        });
 
     transaction.gasEstimation = Math.ceil(
       Math.min(gasEstimation * 1.1, parseInt(environment.options.gasLimit, 10)),

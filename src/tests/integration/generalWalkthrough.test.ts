@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
@@ -25,7 +24,6 @@ import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-// tslint:enable:max-line-length
 
 const shared: any = {};
 

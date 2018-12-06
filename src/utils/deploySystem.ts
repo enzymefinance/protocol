@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { Exchanges } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
@@ -27,8 +26,6 @@ import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deplo
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { LogLevels } from './environment/Environment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
-// tslint:enable:max-line-length
 
 /**
  * Deploys all contracts and checks their health
