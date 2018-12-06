@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { randomString } from '~/utils/helpers/randomString';
@@ -7,9 +6,8 @@ import { continueCreation } from '~/contracts/factory/transactions/continueCreat
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-// tslint:enable:max-line-length
+import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 
 const setupInvestedTestFund = async (
   deployment,
