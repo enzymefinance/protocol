@@ -29,11 +29,13 @@ export enum Contracts {
   MockFeeManager = 'fund/fees/MockFeeManager',
   MockFee = 'fund/fees/MockFee',
   MockHub = 'fund/hub/MockHub',
+  MockRegistry = 'version/MockRegistry',
   MockShares = 'fund/shares/MockShares',
   MockVersion = 'version/MockVersion',
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
+  Registry = 'version/Registry',
   SelfDestructing = 'testing/SelfDestructing',
   Shares = 'fund/shares/Shares',
   Spoke = 'fund/shares/Spoke',
@@ -106,6 +108,8 @@ export const requireMap = {
     require('../out/fund/fees/MockFee.abi.json'),
   [Contracts.MockHub]:
     require('../out/fund/hub/MockHub.abi.json'),
+  [Contracts.MockRegistry]:
+    require('../out/version/MockRegistry.abi.json'),
   [Contracts.MockShares]:
     require('../out/fund/shares/MockShares.abi.json'),
   [Contracts.MockVersion]:
@@ -120,6 +124,8 @@ export const requireMap = {
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:
     require('../out/dependencies/token/PreminedToken.abi.json'),
+  [Contracts.Registry]:
+    require('../out/version/Registry.abi.json'),
   [Contracts.SelfDestructing]:
     require('../out/testing/SelfDestructing.abi.json'),
   [Contracts.Shares]:
