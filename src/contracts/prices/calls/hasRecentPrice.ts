@@ -9,7 +9,7 @@ export const hasRecentPrice = async (
   environment?: Environment,
 ): Promise<boolean> => {
   const contract = await getContract(
-    Contracts.TestingPriceFeed,
+    Contracts.PriceSourceInterface,
     contractAddress,
     environment,
   );

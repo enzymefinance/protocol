@@ -35,6 +35,7 @@ export enum Contracts {
   Participation = 'fund/participation/Participation',
   PolicyManager = 'fund/policies/PolicyManager',
   PreminedToken = 'dependencies/token/PreminedToken',
+  PriceSourceInterface = 'prices/PriceSourceInterface',
   Registry = 'version/Registry',
   SelfDestructing = 'testing/SelfDestructing',
   Shares = 'fund/shares/Shares',
@@ -124,6 +125,8 @@ export const requireMap = {
     require('../out/fund/policies/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:
     require('../out/dependencies/token/PreminedToken.abi.json'),
+  [Contracts.PriceSourceInterface]:
+    require('../out/prices/PriceSourceInterface.abi.json'),
   [Contracts.Registry]:
     require('../out/version/Registry.abi.json'),
   [Contracts.SelfDestructing]:

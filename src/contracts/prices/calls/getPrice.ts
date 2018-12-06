@@ -17,7 +17,7 @@ export const getPrice = async (
 ): Promise<PriceInterface> => {
   const quoteToken = await getQuoteToken(contractAddress, environment);
   const contract = await getContract(
-    Contracts.TestingPriceFeed,
+    Contracts.PriceSourceInterface,
     contractAddress,
     environment,
   );
