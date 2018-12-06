@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { Exchanges } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
@@ -24,15 +23,14 @@ import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-// tslint:enable:max-line-length
-
-const debug = require('debug')('melon:protocol:utils');
+import { LogLevels } from './environment/Environment';
 
 /**
  * Deploys all contracts and checks their health
  */
-export const deploySystem = async () => {
-  const environment = getGlobalEnvironment();
+export const deploySystem = async (environment = getGlobalEnvironment()) => {
+  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
+
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);

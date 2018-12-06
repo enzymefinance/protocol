@@ -8,9 +8,7 @@ import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
 
 import { TransactionArgs } from './transactionFactory';
-import { Environment } from '../environment/Environment';
-
-const debug = require('debug')('melon:protocol:utils:solidity');
+import { Environment, LogLevels } from '../environment/Environment';
 
 // TODO: Refactor all callers to only use the Contract interface
 type Deploy = {
@@ -31,7 +29,10 @@ export const deploy: Deploy = async (
   args = [],
   environment = getGlobalEnvironment(),
 ) => {
-  debug('Deploying: ', pathToSolidityFile, args);
+  const debug = environment.logger(
+    'melon:protocol:utils:solidity',
+    LogLevels.DEBUG,
+  );
 
   const parsed = path.parse(pathToSolidityFile);
 
@@ -74,13 +75,11 @@ export const deploy: Deploy = async (
 
   // console.log(options, gasEstimation);
 
-  const instance = await transaction
-    .send(options)
-    .on('error', error => {
-      throw error;
-    })
-    .on('transactionHash', txHash => debug('transactionHash', txHash))
-    .on('receipt', rc => debug('receipt', rc));
+  const instance = await transaction.send(options).on('error', error => {
+    throw error;
+  });
+  // .on('transactionHash', txHash => debug('transactionHash', txHash))
+  // .on('receipt', rc => debug('receipt', rc));
   // TODO: This currently causes Jest to fail.
   // .on('confirmation', (cn, r) => {}
   //   // debug('confirmation', cn, r.transactionHash),

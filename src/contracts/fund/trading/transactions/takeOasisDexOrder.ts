@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import {
   PrepareArgsFunction,
   withTransactionDecorator,
@@ -18,7 +17,6 @@ import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-// tslint:enable:max-line-length
 
 export type TakeOasisDexOrderResult = any;
 
