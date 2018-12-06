@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { deploy0xExchange } from '../../contracts/exchanges/transactions/deploy0xExchange';
@@ -13,7 +12,6 @@ import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
-// tslint:enable:max-line-length
 
 const shared: any = {};
 

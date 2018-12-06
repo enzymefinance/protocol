@@ -112,21 +112,6 @@ export interface ExecuteMixin<Args> {
 export type EnhancedExecute<Args, Result> = ExecuteFunction<Args, Result> &
   ExecuteMixin<Args>;
 
-export type ExecuteFunctionWithoutContractAddress<Args, Result> = (
-  params?: Args,
-  environment?: Environment,
-) => Promise<Result>;
-
-export type ImplicitExecute<
-  Args,
-  Result
-> = ExecuteFunctionWithoutContractAddress<Args, Result> & ExecuteMixin<Args>;
-
-export type WithContractAddressQuery = <Args, Result>(
-  contractAddressQuery: string[],
-  transaction: EnhancedExecute<Args, Result>,
-) => ImplicitExecute<Args, Result>;
-
 export interface WithTransactionDecoratorOptions<Args, Result> {
   guard?: GuardFunction<Args>;
   prepareArgs?: PrepareArgsFunction<Args>;
@@ -194,7 +179,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         ? optionsOrCallback(environment)
         : optionsOrCallback;
 
-    await guard(params, contractAddress, environment, options);
+    if (!options.skipGuards) {
+      await guard(params, contractAddress, environment, options);
+    }
+
     const args = await prepareArgs(params, contractAddress, environment);
     const contractInstance = getContract(
       contract,
@@ -423,55 +411,4 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   return execute as EnhancedExecute<Args, Result>;
 };
 
-/**
- * Wraps the result of the transaction factory (EnhancedExecute) in helper
- * functions that do not require to provide contractAddress, but derive this
- * from the params with the contractAddressQuery
- *
- * @param contractAddressQuery
- * @param transaction
- */
-const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
-  contractAddressQuery,
-  transaction,
-) => {
-  const prepare = async (params: Args, environment?) =>
-    await transaction.prepare(
-      R.path(contractAddressQuery, params).toString(),
-      params,
-      environment,
-    );
-
-  const send = async (
-    prepared,
-    params: Args,
-    defaultOptions,
-    environment?,
-  ): Promise<Result> =>
-    await transaction.send(
-      R.path(contractAddressQuery, params).toString(),
-      prepared,
-      params,
-      defaultOptions,
-      environment,
-    );
-
-  const execute = async (params: Args, environment?) => {
-    return await transaction(
-      R.path(contractAddressQuery, params).toString(),
-      params,
-      environment,
-    );
-  };
-
-  execute.prepare = prepare;
-  execute.send = send;
-
-  return execute;
-};
-
-export {
-  transactionFactory,
-  withTransactionDecorator,
-  withContractAddressQuery,
-};
+export { transactionFactory, withTransactionDecorator };
