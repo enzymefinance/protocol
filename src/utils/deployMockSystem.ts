@@ -7,28 +7,31 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTok
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
+import { LogLevels } from './environment/Environment';
 // tslint:enable:max-line-length
-
-const debug = require('debug')('melon:protocol:utils');
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
  * Arguments can be overriden to deploy mock or real contracts as needed.
  */
-export const deployMockSystem = async ({
-  accountingContract = Contracts.MockAccounting,
-  engineContract = Contracts.Engine,
-  feeManagerContract = Contracts.MockFeeManager,
-  hubContract = Contracts.MockHub,
-  policyManagerContract = Contracts.PolicyManager,
-  participationContract = Contracts.Participation,
-  priceSourceContract = Contracts.TestingPriceFeed,
-  sharesContract = Contracts.MockShares,
-  tradingContract = Contracts.Trading,
-  vaultContract = Contracts.Vault,
-  versionContract = Contracts.MockVersion,
-} = {}) => {
-  const environment = getGlobalEnvironment();
+export const deployMockSystem = async (
+  {
+    accountingContract = Contracts.MockAccounting,
+    engineContract = Contracts.Engine,
+    feeManagerContract = Contracts.MockFeeManager,
+    hubContract = Contracts.MockHub,
+    policyManagerContract = Contracts.PolicyManager,
+    participationContract = Contracts.Participation,
+    priceSourceContract = Contracts.TestingPriceFeed,
+    sharesContract = Contracts.MockShares,
+    tradingContract = Contracts.Trading,
+    vaultContract = Contracts.Vault,
+    versionContract = Contracts.MockVersion,
+  } = {},
+  environment = getGlobalEnvironment(),
+) => {
+  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
+
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);

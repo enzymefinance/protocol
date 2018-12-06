@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
@@ -17,8 +17,6 @@ export interface Options {
 export type OptionsCallback = (environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
-
-const debug = require('debug')('melon:protocol:utils:solidity');
 
 export interface PreparedTransaction {
   encoded: string;
@@ -38,6 +36,11 @@ export const prepareTransaction = async (
   const environment = isEnvironment(optionsOrEnvironment)
     ? optionsOrEnvironment
     : maybeEnvironment;
+
+  const debug = environment.logger(
+    'melon:protocol:utils:solidity',
+    LogLevels.DEBUG,
+  );
 
   const options = isEnvironment(optionsOrEnvironment)
     ? {
