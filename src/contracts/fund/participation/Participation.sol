@@ -7,34 +7,24 @@ import "../vault/Vault.sol";
 import "../../dependencies/token/ERC20.i.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/math.sol";
-import "../../prices/CanonicalPriceFeed.sol";
+import "../../prices/KyberPriceFeed.sol";
 import "../../../engine/AmguConsumer.sol";
 import "./Participation.i.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
-    event RequestExecuted (
-        address investmentAsset,
-        uint investmentAmount,
+    event Invested (
+        address investAsset,
+        uint investAmount,
         uint requestedShares,
-        uint timestamp,
-        uint atUpdateId
+        uint timestamp
     );
 
     event SuccessfulRedemption (
         uint quantity
     );
 
-    struct Request {
-        address investmentAsset;
-        uint investmentAmount;
-        uint requestedShares;
-        uint timestamp;
-        uint atUpdateId;
-    }
-
-    mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
     uint public SHARES_DECIMALS = 18;
 
@@ -63,97 +53,71 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
     }
 
-    function requestInvestment(
+    /// @notice Buy shares with a certain asset
+    function invest(
         uint requestedShares,
-        uint investmentAmount,
-        address investmentAsset
+        uint investAmount,
+        address investAsset
     )
         external
         payable
         amguPayable
-        // TODO: implement and use below modifiers
-        // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
+        // TODO: implement and use below modifiers
+        // require(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
         require(
-            investAllowed[investmentAsset],
+            investAllowed[investAsset],
             "Investment not allowed in this asset"
         );
-        requests[msg.sender] = Request({
-            investmentAsset: investmentAsset,
-            investmentAmount: investmentAmount,
-            requestedShares: requestedShares,
-            timestamp: block.timestamp,
-            atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
-        });
-    }
-
-    function cancelRequest() external {
-        delete requests[msg.sender];
-    }
-
-    function executeRequestFor(address requestOwner)
-        public
-        payable
-        amguPayable
         // TODO: implement and use below modifiers
-        // pre_cond(
+        // require(
         //     Shares(routes.shares).totalSupply() == 0 ||
         //     (
         //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
         //         priceSource.updateId() >= add(requests[id].atUpdateId, 2)
         //     )
         // )
-    {
         require(!hub.isShutDown(), "Cannot invest in shut down fund");
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
-        Request memory request = requests[requestOwner];
+        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("invest(address)")), [msg.sender, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         require(
-            hasRequest(requestOwner),
-            "No request for this address"
-        );
-        require(
-            investAllowed[request.investmentAsset],
+            investAllowed[investAsset],
             "Investment not allowed in this asset"
         );
         bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
+        (isRecent, , ) = KyberPriceFeed(routes.priceSource).getPriceInfo(investAsset);
         require(isRecent, "Price not recent");
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
         // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
         uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePrice()) / 10 ** SHARES_DECIMALS;
+        costQuantity = mul(requestedShares, Accounting(routes.accounting).calcSharePrice()) / 10 ** SHARES_DECIMALS;
         // TODO: maybe allocate fees in a separate step (to come later)
-        if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
+        if(investAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
             bool isPriceRecent;
             uint invertedInvestmentAssetPrice;
-            uint investmentAssetDecimal;
-            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
+            uint investAssetDecimal;
+            (isPriceRecent, invertedInvestmentAssetPrice, investAssetDecimal) = KyberPriceFeed(routes.priceSource).getInvertedPriceInfo(investAsset);
             // TODO: is below check needed, given the recency check a few lines above?
             require(isPriceRecent, "Investment asset price not recent");
-            costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
+            costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investAssetDecimal;
         }
 
-        require(
-            costQuantity <= request.investmentAmount,
-            "Invested amount too low"
-        );
+        require(costQuantity <= investAmount, "Invested amount too low");
 
-        delete requests[requestOwner];
         require(
-            ERC20(request.investmentAsset).transferFrom(
-                requestOwner, address(routes.vault), costQuantity
+            ERC20(investAsset).transferFrom(
+                msg.sender, address(routes.vault), costQuantity
             ),
             "Failed to transfer investment asset to vault"
         );
-        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
+        Shares(routes.shares).createFor(msg.sender, requestedShares);
         // // TODO: this should be done somewhere else
-        if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
-            Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
+        if (!Accounting(routes.accounting).isInAssetList(investAsset)) {
+            Accounting(routes.accounting).addAssetToOwnedAssets(investAsset);
         }
-        emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
+        emit Invested(investAsset, investAmount, requestedShares, block.timestamp);
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
@@ -241,10 +205,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             }
         }
         emit SuccessfulRedemption(remainingShareQuantity);
-    }
-
-    function hasRequest(address _who) view returns (bool) {
-        return requests[_who].requestedShares > 0;
     }
 }
 
