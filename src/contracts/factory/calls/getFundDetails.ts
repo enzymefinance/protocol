@@ -33,5 +33,7 @@ export const getFundDetails = async (
     creationTime: creationTimes[index],
   }));
 
-  return Object.values(result);
+  console.log(result);
+
+  return result;
 };

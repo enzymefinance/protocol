@@ -9,11 +9,11 @@ export const getQuoteToken = async (
   environment?: Environment,
 ): Promise<TokenInterface> => {
   const contract = await getContract(
-    Contracts.TestingPriceFeed,
+    Contracts.PriceSourceInterface,
     contractAddress,
     environment,
   );
-  const quoteTokenAddress = await contract.methods.QUOTE_ASSET().call();
+  const quoteTokenAddress = await contract.methods.getQuoteAsset().call();
   const token = await getToken(quoteTokenAddress, environment);
   return token;
 };
