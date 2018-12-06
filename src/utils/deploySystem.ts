@@ -26,6 +26,7 @@ import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { LogLevels } from './environment/Environment';
 
 /**
