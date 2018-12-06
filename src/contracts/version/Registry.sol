@@ -8,7 +8,7 @@ contract Registry is DSAuth {
     struct Asset {
         bool exists;
         string name;
-        bytes8 symbol;
+        string symbol;
         uint decimals;
         string url;
         string ipfsHash;
@@ -54,7 +54,7 @@ contract Registry is DSAuth {
     function registerAsset(
         address _asset,
         string _name,
-        bytes8 _symbol,
+        string _symbol,
         uint _decimals,
         string _url,
         string _ipfsHash,
@@ -115,7 +115,7 @@ contract Registry is DSAuth {
     function updateAsset(
         address _asset,
         string _name,
-        bytes8 _symbol,
+        string _symbol,
         uint _decimals,
         string _url,
         string _ipfsHash,
@@ -191,7 +191,7 @@ contract Registry is DSAuth {
 
     // get asset specific information
     function getName(address _asset) view returns (string) { return assetInformation[_asset].name; }
-    function getSymbol(address _asset) view returns (bytes8) { return assetInformation[_asset].symbol; }
+    function getSymbol(address _asset) view returns (string) { return assetInformation[_asset].symbol; }
     function getDecimals(address _asset) view returns (uint) { return assetInformation[_asset].decimals; }
     function assetIsRegistered(address _asset) view returns (bool) { return assetInformation[_asset].exists; }
     function getRegisteredAssets() view returns (address[]) { return registeredAssets; }

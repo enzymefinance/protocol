@@ -20,7 +20,8 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         address _policyManagerFactory,
         address _engine,
         address _factoryPriceSource,
-        address _mlnAddress
+        address _mlnAddress,
+        address _registry
     ) 
         FundFactory(
             _accountingFactory,
@@ -37,6 +38,7 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         )
     {
         setOwner(_governance);
+        registry = _registry;
     }
 
     function setAmguPrice(uint _price) auth {
