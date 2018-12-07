@@ -3,6 +3,7 @@ import { Address } from '@melonproject/token-math/address';
 import { Environment } from '~/utils/environment/Environment';
 
 import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 interface FundComponentAddresses {
   accountingFactoryAddress: Address;
@@ -53,7 +54,7 @@ export const deployFundFactory = async (
   const args = argsRaw.map(a => a.toString());
 
   const address = await deployContract(
-    'factory/FundFactory.sol',
+    Contracts.FundFactory,
     args,
     environment,
   );

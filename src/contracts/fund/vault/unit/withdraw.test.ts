@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
@@ -16,9 +15,7 @@ beforeAll(async () => {
   const tokenAddress = await deployToken();
   shared.token = getContract(Contracts.PreminedToken, tokenAddress);
   shared.factoryAddress = await deployVaultFactory();
-  shared.authAddress = await deploy(
-    path.join('dependencies', 'PermissiveAuthority'),
-  );
+  shared.authAddress = await deploy(Contracts.PermissiveAuthority);
 });
 
 beforeEach(async () => {

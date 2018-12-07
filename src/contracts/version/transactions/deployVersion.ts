@@ -1,6 +1,7 @@
 import { Address } from '@melonproject/token-math/address';
 import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 interface VersionArgs {
   accountingFactoryAddress: Address;
@@ -50,11 +51,7 @@ export const deployVersion = async (
 
   const args = argsRaw.map(a => a.toString());
 
-  const address = await deployContract(
-    'version/Version.sol',
-    args,
-    environment,
-  );
+  const address = await deployContract(Contracts.Version, args, environment);
 
   return address;
 };

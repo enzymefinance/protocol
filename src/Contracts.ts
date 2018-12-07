@@ -3,6 +3,7 @@ import web3EthAbi from 'web3-eth-abi';
 
 export enum Contracts {
   Accounting = 'Accounting',
+  AccountingFactory = 'AccountingFactory',
   AmguConsumer = 'AmguConsumer',
   AssetBlacklist = 'AssetBlacklist',
   AssetWhitelist = 'AssetWhitelist',
@@ -11,6 +12,7 @@ export enum Contracts {
   ExchangeAdapter = 'ExchangeAdapterInterface',
   FalsePolicy = 'FalsePolicy',
   FeeManager = 'FeeManager',
+  FeeManagerFactory = 'FeeManagerFactory',
   ERC20Proxy = 'ERC20Proxy',
   FundFactory = 'FundFactory',
   FundRanking = 'FundRanking',
@@ -35,17 +37,23 @@ export enum Contracts {
   MockShares = 'MockShares',
   MockVersion = 'MockVersion',
   Participation = 'Participation',
+  ParticipationFactory = 'ParticipationFactory',
   PerformanceFee = 'PerformanceFee',
   PolicyManager = 'PolicyManager',
+  PolicyManagerFactory = 'PolicyManagerFactory',
+  PermissiveAuthority = 'PermissiveAuthority',
   PreminedToken = 'PreminedToken',
+  PriceTolerance = 'PriceTolerance',
   Registry = 'Registry',
   PriceSourceInterface = 'PriceSourceInterface',
   SelfDestructing = 'SelfDestructing',
   Shares = 'Shares',
+  SharesFactory = 'SharesFactory',
   Spoke = 'Spoke',
   StandardToken = 'StandardToken',
   TestingPriceFeed = 'TestingPriceFeed',
   Trading = 'Trading',
+  TradingFactory = 'TradingFactory',
   TruePolicy = 'TruePolicy',
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
@@ -60,6 +68,8 @@ export enum Contracts {
 export const requireMap = {
   [Contracts.Accounting]:
     require('../out/Accounting.abi.json'),
+  [Contracts.AccountingFactory]:
+    require(`../out/${Contracts.AccountingFactory}.abi.json`),
   [Contracts.AmguConsumer]:
     require('../out/AmguConsumer.abi.json'),
   [Contracts.AssetBlacklist]:
@@ -78,6 +88,8 @@ export const requireMap = {
     require('../out/FalsePolicy.abi.json'),
   [Contracts.FeeManager]:
     require('../out/FeeManager.abi.json'),
+  [Contracts.FeeManagerFactory]:
+    require(`../out/${Contracts.FeeManagerFactory}.abi.json`),
   [Contracts.FundFactory]:
     require('../out/FundFactory.abi.json'),
   [Contracts.FundRanking]:
@@ -128,12 +140,20 @@ export const requireMap = {
     require('../out/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
     require('../out/Participation.abi.json'),
+  [Contracts.ParticipationFactory]:
+    require(`../out/${Contracts.ParticipationFactory}.abi.json`),
   [Contracts.PerformanceFee]:
     require('../out/PerformanceFee.abi.json'),
+  [Contracts.PermissiveAuthority]:
+    require(`../out/${Contracts.PermissiveAuthority}.abi.json`),
   [Contracts.PolicyManager]:
     require('../out/PolicyManager.abi.json'),
+  [Contracts.PolicyManagerFactory]:
+    require(`../out/${Contracts.PolicyManagerFactory}.abi.json`),
   [Contracts.PreminedToken]:
     require('../out/PreminedToken.abi.json'),
+  [Contracts.PriceTolerance]:
+    require(`../out/${Contracts.PriceTolerance}.abi.json`),
   [Contracts.Registry]:
     require('../out/Registry.abi.json'),
   [Contracts.PriceSourceInterface]:
@@ -142,6 +162,8 @@ export const requireMap = {
     require('../out/SelfDestructing.abi.json'),
   [Contracts.Shares]:
     require('../out/Shares.abi.json'),
+  [Contracts.SharesFactory]:
+    require(`../out/${Contracts.SharesFactory}.abi.json`),
   [Contracts.Spoke]:
     require('../out/Spoke.abi.json'),
   [Contracts.StandardToken]:
@@ -150,6 +172,8 @@ export const requireMap = {
     require('../out/TestingPriceFeed.abi.json'),
   [Contracts.Trading]:
     require('../out/Trading.abi.json'),
+  [Contracts.TradingFactory]:
+    require(`../out/${Contracts.TradingFactory}.abi.json`),
   [Contracts.TruePolicy]:
     require('../out/TruePolicy.abi.json'),
   [Contracts.Vault]:

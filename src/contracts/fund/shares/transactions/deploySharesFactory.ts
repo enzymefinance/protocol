@@ -1,9 +1,10 @@
 import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 export const deploySharesFactory = async (environment?: Environment) => {
   const address = await deployContract(
-    'fund/shares/SharesFactory.sol',
+    Contracts.SharesFactory,
     null,
     environment,
   );

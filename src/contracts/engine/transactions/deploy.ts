@@ -2,6 +2,7 @@ import { Address } from '@melonproject/token-math/address';
 
 import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 export const deploy = async (
   priceSource: Address,
@@ -10,7 +11,7 @@ export const deploy = async (
   environment?: Environment,
 ) => {
   const address = await deployContract(
-    'engine/Engine.sol',
+    Contracts.Engine,
     [priceSource.toString(), delay, mlnAddress.toString()],
     environment,
   );

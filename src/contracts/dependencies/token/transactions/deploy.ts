@@ -1,6 +1,7 @@
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 export const deployToken = async (
   symbol: string = 'FIXED',
@@ -9,7 +10,7 @@ export const deployToken = async (
   environment = getGlobalEnvironment(),
 ) => {
   const address = await deployContract(
-    'dependencies/token/PreminedToken.sol',
+    Contracts.PreminedToken,
     [symbol, decimals, name],
     environment,
   );
