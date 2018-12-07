@@ -4,6 +4,33 @@ import "../dependencies/auth.sol";
 
 contract Registry is DSAuth {
 
+    event AssetUpsert (
+        address indexed asset,
+        string name,
+        string symbol,
+        uint decimals,
+        string url,
+        string ipfsHash,
+        address[2] breakInBreakOut,
+        uint[] standards,
+        bytes4[] sigs
+    );
+
+    event ExchangeUpsert (
+        address indexed exchange,
+        address indexed adapter,
+        bool takesCustody,
+        bytes4[] sigs
+    );
+
+    event AssetRemoval (
+        address indexed asset
+    );
+
+    event ExchangeRemoval (
+        address indexed exchange
+    );
+
     // TYPES
     struct Asset {
         bool exists;
@@ -134,6 +161,17 @@ contract Registry is DSAuth {
         asset.breakOut = _breakInBreakOut[1];
         asset.standards = _standards;
         asset.sigs = _sigs;
+        emit AssetUpsert(
+            _asset,
+            _name,
+            _symbol,
+            _decimals,
+            _url,
+            _ipfsHash,
+            _breakInBreakOut,
+            _standards,
+            _sigs
+        );
     }
 
     function updateExchange(
@@ -147,6 +185,12 @@ contract Registry is DSAuth {
         exchange.adapter = _adapter;
         exchange.takesCustody = _takesCustody;
         exchange.sigs = _sigs;
+        emit ExchangeUpsert(
+            _exchange,
+            _adapter,
+            _takesCustody,
+            _sigs
+        );
     }
 
     // TODO: check max size of array before remaking this becomes untenable
@@ -166,6 +210,7 @@ contract Registry is DSAuth {
         }
         registeredAssets.length--;
         assert(!assetInformation[_asset].exists);
+        emit AssetRemoval(_asset);
     }
 
     /// @notice Deletes an existing entry
@@ -185,6 +230,7 @@ contract Registry is DSAuth {
         }
         registeredExchanges.length--;
         assert(!exchangeInformation[_exchange].exists);
+        emit ExchangeRemoval(_exchange);
     }
 
     // PUBLIC VIEW METHODS
