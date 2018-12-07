@@ -43,10 +43,12 @@ test('Happy path', async () => {
   } = deployment;
   const [quoteToken, baseToken] = tokens;
   const defaultTokens = [quoteToken, baseToken];
+  const fees = [];
 
   await createComponents(version, {
     defaultTokens,
     exchangeConfigs,
+    fees,
     fundName,
     nativeToken: quoteToken,
     priceSource,

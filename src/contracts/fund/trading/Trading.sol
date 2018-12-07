@@ -149,13 +149,15 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
-        uint orderId
+        uint orderId,
+        uint expiryTime
     ) delegateInternal {
         require(!isInOpenMakeOrder[ofSellAsset], "Sell asset already in open order");
         require(orders.length > 0, "No orders in array");
+        require(expiryTime <= add(block.timestamp, ORDER_LIFESPAN), "Expiry time greater than max order lifespan");
         isInOpenMakeOrder[ofSellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
-        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = add(block.timestamp, ORDER_LIFESPAN);
+        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = (expiryTime == 0) ? add(block.timestamp, ORDER_LIFESPAN) : expiryTime;
         exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
     }
 

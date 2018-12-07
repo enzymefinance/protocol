@@ -3,7 +3,6 @@ import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 interface VersionArgs {
-  governanceAddress: Address;
   accountingFactoryAddress: Address;
   feeManagerFactoryAddress: Address;
   participationFactoryAddress: Address;
@@ -22,7 +21,6 @@ export const deployVersion = async (
   environment?: Environment,
 ) => {
   const {
-    governanceAddress,
     accountingFactoryAddress,
     engineAddress,
     factoryPriceSourceAddress,
@@ -37,7 +35,6 @@ export const deployVersion = async (
   } = addresses;
 
   const argsRaw = [
-    governanceAddress,
     accountingFactoryAddress,
     feeManagerFactoryAddress,
     participationFactoryAddress,

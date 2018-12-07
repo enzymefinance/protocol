@@ -7,6 +7,9 @@ import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
 
 let shared: any = {};
 
+const mockFeeRate = 5000;
+const mockFeePeriod = 1000;
+
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.user = shared.env.wallet.address;
@@ -21,14 +24,25 @@ beforeEach(async () => {
     Contracts.MockFee,
     await deploy(Contracts.MockFee, []),
   );
-  shared.feeArray = [shared.feeA.options.address, shared.feeB.options.address];
+  shared.feeArray = [
+    {
+      feeAddress: shared.feeA.options.address,
+      feePeriod: mockFeePeriod,
+      feeRate: mockFeeRate,
+    },
+    {
+      feeAddress: shared.feeB.options.address,
+      feePeriod: mockFeePeriod,
+      feeRate: mockFeeRate,
+    },
+  ];
   shared = Object.assign(
     shared,
-    await deployMockSystem({ feeManagerContract: Contracts.FeeManager }),
+    await deployMockSystem({
+      feeManagerContract: Contracts.FeeManager,
+      fees: shared.feeArray,
+    }),
   );
-  await shared.feeManager.methods
-    .batchRegister(shared.feeArray)
-    .send({ from: shared.user, gas: 8000000 });
   await shared.version.methods
     .setIsFund(
       // just to pass pay amgu
@@ -38,14 +52,14 @@ beforeEach(async () => {
 });
 
 test('Fee Manager is properly initialized', async () => {
-  for (const feeAddress of shared.feeArray) {
+  for (const fee of shared.feeArray) {
     await expect(
-      shared.feeManager.methods.feeIsRegistered(feeAddress).call(),
+      shared.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
     ).toBeTruthy();
   }
   for (const i of Array.from(Array(shared.feeArray.length).keys())) {
     const feeAddress = await shared.feeManager.methods.fees(i).call();
-    expect(feeAddress).toBe(shared.feeArray[i]);
+    expect(feeAddress).toBe(shared.feeArray[i].feeAddress);
   }
 });
 
@@ -77,7 +91,6 @@ test('Reward all fee allocates shares to the manager', async () => {
   await shared.feeManager.methods
     .triggerRewardAllFees()
     .send({ from: shared.user, gas: 8000000 });
-
   const postManagerShares = new BigInteger(
     await shared.shares.methods.balanceOf(shared.user).call(),
   );

@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./Fee.i.sol";
 import "../hub/Spoke.sol";
@@ -13,23 +14,27 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     event FeeReward(uint shareQuantity);
     event FeeRegistration(address fee);
 
+    struct FeeInfo {
+        address feeAddress;
+        uint feeRate;
+        uint feePeriod;
+    }
+
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub, FeeInfo[] _fees) Spoke(_hub) public {
+        for (uint i = 0; i < _fees.length; i++) {
+            register(_fees[i].feeAddress, _fees[i].feeRate, _fees[i].feePeriod);
+        }
+    }
 
-    function register(address feeAddress) public auth {
+    function register(address feeAddress, uint feeRate, uint feePeriod) internal {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
-        Fee(feeAddress).updateState();  // initialize state
+        Fee(feeAddress).initializeForUser(feeRate, feePeriod);  // initialize state
         emit FeeRegistration(feeAddress);
-    }
-
-    function batchRegister(address[] feeAddresses) public auth {
-        for (uint i = 0; i < feeAddresses.length; i++) {
-            register(feeAddresses[i]);
-        }
     }
 
     function totalFeeAmount() public view returns (uint total) {
@@ -76,8 +81,8 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 }
 
 contract FeeManagerFactory is Factory {
-    function createInstance(address _hub) public returns (address) {
-        address feeManager = new FeeManager(_hub);
+    function createInstance(address _hub, FeeManager.FeeInfo[] _fees) public returns (address) {
+        address feeManager = new FeeManager(_hub, _fees);
         childExists[feeManager] = true;
         emit NewInstance(_hub, feeManager);
         return feeManager;

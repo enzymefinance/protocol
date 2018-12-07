@@ -637,7 +637,6 @@ async function deployEnvironment(environment) {
       'engine/Engine',
       opts,
       [
-        deployed.MockVersion.options.address,
         deployed.TestingPriceFeed.options.address,
         30 * 24 * 60 * 60,
         deployed.MlnToken.options.address

@@ -27,7 +27,8 @@ interface TradingInterface {
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
-        uint orderId
+        uint orderId,
+        uint expiryTime
     );
 
     function removeOpenMakeOrder(

@@ -53,8 +53,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(makerAsset, makerQuantity);
+        Vault(hub.vault()).withdraw(makerAsset, makerQuantity);
         require(
             makerAsset.approve(targetExchange, makerQuantity),
             "Could not approve maker asset"
@@ -78,7 +77,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId);
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId, orderValues[4]);
         emit OrderCreated(orderId);
     }
 
