@@ -10,9 +10,11 @@ import "../../engine/AmguConsumer.sol";
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, AmguConsumer, Spoke {
 
+    event FeeReward(uint shareQuantity);
+    event FeeRegistration(address fee);
+
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
-    event FeeRewarded(uint shareQuantity);
 
     constructor(address _hub) Spoke(_hub) {}
 
@@ -21,6 +23,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
         Fee(feeAddress).updateState();  // initialize state
+        emit FeeRegistration(feeAddress);
     }
 
     function batchRegister(address[] feeAddresses) public auth {
@@ -41,7 +44,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         uint rewardShares = fee.feeAmount();
         fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
-        emit FeeRewarded(rewardShares);
+        emit FeeReward(rewardShares);
     }
 
     function _rewardAllFees() internal {

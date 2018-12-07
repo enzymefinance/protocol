@@ -10,6 +10,8 @@ import "../../dependencies/math.sol";
 // TODO: think about third function on interface that conditionally updates but is also aware of fee amount
 contract FixedPerformanceFee is DSMath, Fee {
 
+    event HighWaterMarkUpdate(uint hwm);
+
     uint public PERFORMANCE_FEE_RATE = 10 ** 16; // 0.01*10^18, or 1%
     uint public DIVISOR = 10 ** 18;
     uint public PERIOD = 90 days;
@@ -61,6 +63,7 @@ contract FixedPerformanceFee is DSMath, Fee {
         );
         lastPayoutTime[msg.sender] = block.timestamp;
         highWaterMark[msg.sender] = currentSharePrice;
+        emit HighWaterMarkUpdate(currentSharePrice);
     }
 }
 
