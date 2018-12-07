@@ -2,56 +2,56 @@ import * as R from 'ramda';
 import web3EthAbi from 'web3-eth-abi';
 
 export enum Contracts {
-  Accounting = 'fund/accounting/Accounting',
-  AmguConsumer = 'engine/AmguConsumer',
-  AssetBlacklist = 'fund/policies/risk-management/AssetBlacklist',
-  AssetWhitelist = 'fund/policies/risk-management/AssetWhitelist',
-  BurnableToken = 'dependencies/token/BurnableToken',
-  Engine = 'engine/Engine',
-  ExchangeAdapter = 'exchanges/ExchangeAdapterInterface',
-  FalsePolicy = 'fund/policies/FalsePolicy',
-  FeeManager = 'fund/fees/FeeManager',
-  ERC20Proxy = 'exchanges/thirdparty/0x/ERC20Proxy',
-  FundFactory = 'factory/FundFactory',
-  FundRanking = 'factory/FundRanking',
-  Hub = 'fund/hub/Hub',
-  MatchingMarket = 'exchanges/MatchingMarket',
-  MatchingMarketAdapter = 'exchanges/MatchingMarketAdapter',
-  MockAdapter = 'exchanges/MockAdapter',
-  KyberNetwork = 'exchanges/KyberNetwork',
-  KyberNetworkProxy = 'exchanges/KyberNetworkProxy',
-  KyberAdapter = 'exchanges/KyberAdapter',
-  KyberReserve = 'exchanges/KyberReserve',
-  ConversionRates = 'exchanges/ConversionRates',
-  KyberWhiteList = 'exchanges/KyberWhiteList',
-  ManagementFee = 'fund/fees/ManagementFee',
-  MaxPositions = 'fund/policies/risk-management/MaxPositions',
-  MaxConcentration = 'fund/policies/risk-management/MaxConcentration',
-  MockAccounting = 'fund/accounting/MockAccounting',
-  MockFeeManager = 'fund/fees/MockFeeManager',
-  MockFee = 'fund/fees/MockFee',
-  MockHub = 'fund/hub/MockHub',
-  MockRegistry = 'version/MockRegistry',
-  MockShares = 'fund/shares/MockShares',
-  MockVersion = 'version/MockVersion',
-  Participation = 'fund/participation/Participation',
-  PerformanceFee = 'fund/fees/PerformanceFee',
-  PolicyManager = 'fund/policies/PolicyManager',
-  PreminedToken = 'dependencies/token/PreminedToken',
-  Registry = 'version/Registry',
-  PriceSourceInterface = 'prices/PriceSourceInterface',
-  SelfDestructing = 'testing/SelfDestructing',
-  Shares = 'fund/shares/Shares',
-  Spoke = 'fund/shares/Spoke',
-  StandardToken = 'dependencies/token/StandardToken',
-  TestingPriceFeed = 'prices/TestingPriceFeed',
-  Trading = 'fund/trading/Trading',
-  TruePolicy = 'fund/policies/TruePolicy',
-  Vault = 'fund/vault/Vault',
-  VaultFactory = 'fund/vault/VaultFactory',
-  Version = 'version/Version',
-  ZeroExExchange = 'exchanges/thirdparty/0x/Exchange',
-  ZeroExAdapter = 'exchanges/ZeroExV2Adapter',
+  Accounting = 'Accounting',
+  AmguConsumer = 'AmguConsumer',
+  AssetBlacklist = 'AssetBlacklist',
+  AssetWhitelist = 'AssetWhitelist',
+  BurnableToken = 'BurnableToken',
+  Engine = 'Engine',
+  ExchangeAdapter = 'ExchangeAdapterInterface',
+  FalsePolicy = 'FalsePolicy',
+  FeeManager = 'FeeManager',
+  ERC20Proxy = 'ERC20Proxy',
+  FundFactory = 'FundFactory',
+  FundRanking = 'FundRanking',
+  Hub = 'Hub',
+  MatchingMarket = 'MatchingMarket',
+  MatchingMarketAdapter = 'MatchingMarketAdapter',
+  MockAdapter = 'MockAdapter',
+  KyberNetwork = 'KyberNetwork',
+  KyberNetworkProxy = 'KyberNetworkProxy',
+  KyberAdapter = 'KyberAdapter',
+  KyberReserve = 'KyberReserve',
+  ConversionRates = 'ConversionRates',
+  KyberWhiteList = 'KyberWhiteList',
+  ManagementFee = 'ManagementFee',
+  MaxPositions = 'MaxPositions',
+  MaxConcentration = 'MaxConcentration',
+  MockAccounting = 'MockAccounting',
+  MockFeeManager = 'MockFeeManager',
+  MockFee = 'MockFee',
+  MockHub = 'MockHub',
+  MockRegistry = 'MockRegistry',
+  MockShares = 'MockShares',
+  MockVersion = 'MockVersion',
+  Participation = 'Participation',
+  PerformanceFee = 'PerformanceFee',
+  PolicyManager = 'PolicyManager',
+  PreminedToken = 'PreminedToken',
+  Registry = 'Registry',
+  PriceSourceInterface = 'PriceSourceInterface',
+  SelfDestructing = 'SelfDestructing',
+  Shares = 'Shares',
+  Spoke = 'Spoke',
+  StandardToken = 'StandardToken',
+  TestingPriceFeed = 'TestingPriceFeed',
+  Trading = 'Trading',
+  TruePolicy = 'TruePolicy',
+  Vault = 'Vault',
+  VaultFactory = 'VaultFactory',
+  Version = 'Version',
+  ZeroExExchange = 'Exchange',
+  ZeroExAdapter = 'ZeroExV2Adapter',
 }
 
 // HINT: Link the interfaces instead of the implementations wherever possible
@@ -59,109 +59,109 @@ export enum Contracts {
 // prettier-ignore
 export const requireMap = {
   [Contracts.Accounting]:
-    require('../out/fund/accounting/Accounting.abi.json'),
+    require('../out/Accounting.abi.json'),
   [Contracts.AmguConsumer]:
-    require('../out/engine/AmguConsumer.abi.json'),
+    require('../out/AmguConsumer.abi.json'),
   [Contracts.AssetBlacklist]:
-    require('../out/fund/policies/risk-management/AssetBlacklist.abi.json'),
+    require('../out/AssetBlacklist.abi.json'),
   [Contracts.AssetWhitelist]:
-    require('../out/fund/policies/risk-management/AssetWhitelist.abi.json'),
+    require('../out/AssetWhitelist.abi.json'),
   [Contracts.BurnableToken]:
-    require('../out/dependencies/token/BurnableToken.abi.json'),
+    require('../out/BurnableToken.abi.json'),
   [Contracts.ERC20Proxy]:
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
-    require('../out/engine/Engine.abi.json'),
+    require('../out/Engine.abi.json'),
   [Contracts.ExchangeAdapter]:
       require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:
-    require('../out/fund/policies/FalsePolicy.abi.json'),
+    require('../out/FalsePolicy.abi.json'),
   [Contracts.FeeManager]:
-    require('../out/fund/fees/FeeManager.abi.json'),
+    require('../out/FeeManager.abi.json'),
   [Contracts.FundFactory]:
-    require('../out/factory/FundFactory.abi.json'),
+    require('../out/FundFactory.abi.json'),
   [Contracts.FundRanking]:
-    require('../out/factory/FundRanking.abi.json'),
+    require('../out/FundRanking.abi.json'),
   [Contracts.Hub]:
-    require('../out/fund/hub/Hub.abi.json'),
+    require('../out/Hub.abi.json'),
   [Contracts.MockAdapter]:
-    require('../out/exchanges/MockAdapter.abi.json'),
+    require('../out/MockAdapter.abi.json'),
   [Contracts.ManagementFee]:
-    require('../out/fund/fees/ManagementFee.abi.json'),
+    require('../out/ManagementFee.abi.json'),
   [Contracts.MatchingMarket]:
-    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+    require('../out/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
-    require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+    require('../out/MatchingMarketAdapter.abi.json'),
   [Contracts.KyberNetwork]:
-    require('../out/exchanges/thirdparty/kyber/KyberNetwork.abi.json'),
+    require('../out/KyberNetwork.abi.json'),
   [Contracts.KyberReserve]:
-    require('../out/exchanges/thirdparty/kyber/KyberReserve.abi.json'),
+    require('../out/KyberReserve.abi.json'),
   [Contracts.KyberNetworkProxy]:
-    require('../out/exchanges/thirdparty/kyber/KyberNetworkProxy.abi.json'),
+    require('../out/KyberNetworkProxy.abi.json'),
   [Contracts.KyberAdapter]:
-    require('../out/exchanges/KyberAdapter.abi.json'),
+    require('../out/KyberAdapter.abi.json'),
   [Contracts.ConversionRates]:
-    require('../out/exchanges/thirdparty/kyber/ConversionRates.abi.json'),
+    require('../out/ConversionRates.abi.json'),
   [Contracts.KyberWhiteList]:
-    require('../out/exchanges/thirdparty/kyber/KyberWhiteList.abi.json'),
+    require('../out/KyberWhiteList.abi.json'),
   [Contracts.MaxPositions]:
-    require('../out/fund/policies/risk-management/MaxPositions.abi.json'),
+    require('../out/MaxPositions.abi.json'),
   [Contracts.MaxConcentration]:
-    require('../out/fund/policies/risk-management/MaxConcentration.abi.json'),
+    require('../out/MaxConcentration.abi.json'),
   [Contracts.MockAccounting]:
-    require('../out/fund/accounting/MockAccounting.abi.json'),
+    require('../out/MockAccounting.abi.json'),
   [Contracts.MockFeeManager]:
-    require('../out/fund/fees/MockFeeManager.abi.json'),
+    require('../out/MockFeeManager.abi.json'),
   [Contracts.MockFee]:
-    require('../out/fund/fees/MockFee.abi.json'),
+    require('../out/MockFee.abi.json'),
   [Contracts.MockHub]:
-    require('../out/fund/hub/MockHub.abi.json'),
+    require('../out/MockHub.abi.json'),
   [Contracts.MockRegistry]:
-    require('../out/version/MockRegistry.abi.json'),
+    require('../out/MockRegistry.abi.json'),
   [Contracts.MockShares]:
-    require('../out/fund/shares/MockShares.abi.json'),
+    require('../out/MockShares.abi.json'),
   [Contracts.MockVersion]:
-    require('../out/version/MockVersion.abi.json'),
+    require('../out/MockVersion.abi.json'),
   [Contracts.MatchingMarket]:
-    require('../out/exchanges/thirdparty/oasisdex/MatchingMarket.abi.json'),
+    require('../out/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
-    require('../out/exchanges/MatchingMarketAdapter.abi.json'),
+    require('../out/MatchingMarketAdapter.abi.json'),
   [Contracts.Participation]:
-    require('../out/fund/participation/Participation.abi.json'),
+    require('../out/Participation.abi.json'),
   [Contracts.PerformanceFee]:
-    require('../out/fund/fees/PerformanceFee.abi.json'),
+    require('../out/PerformanceFee.abi.json'),
   [Contracts.PolicyManager]:
-    require('../out/fund/policies/PolicyManager.abi.json'),
+    require('../out/PolicyManager.abi.json'),
   [Contracts.PreminedToken]:
-    require('../out/dependencies/token/PreminedToken.abi.json'),
+    require('../out/PreminedToken.abi.json'),
   [Contracts.Registry]:
-    require('../out/version/Registry.abi.json'),
+    require('../out/Registry.abi.json'),
   [Contracts.PriceSourceInterface]:
-    require('../out/prices/PriceSourceInterface.abi.json'),
+    require('../out/PriceSourceInterface.abi.json'),
   [Contracts.SelfDestructing]:
-    require('../out/testing/SelfDestructing.abi.json'),
+    require('../out/SelfDestructing.abi.json'),
   [Contracts.Shares]:
-    require('../out/fund/shares/Shares.abi.json'),
+    require('../out/Shares.abi.json'),
   [Contracts.Spoke]:
-    require('../out/fund/hub/Spoke.abi.json'),
+    require('../out/Spoke.abi.json'),
   [Contracts.StandardToken]:
-    require('../out/dependencies/token/StandardToken.abi.json'),
+    require('../out/StandardToken.abi.json'),
   [Contracts.TestingPriceFeed]:
-    require('../out/prices/TestingPriceFeed.abi.json'),
+    require('../out/TestingPriceFeed.abi.json'),
   [Contracts.Trading]:
-    require('../out/fund/trading/Trading.abi.json'),
+    require('../out/Trading.abi.json'),
   [Contracts.TruePolicy]:
-    require('../out/fund/policies/TruePolicy.abi.json'),
+    require('../out/TruePolicy.abi.json'),
   [Contracts.Vault]:
-    require('../out/fund/vault/Vault.abi.json'),
+    require('../out/Vault.abi.json'),
   [Contracts.VaultFactory]:
-    require('../out/fund/vault/VaultFactory.abi.json'),
+    require('../out/VaultFactory.abi.json'),
   [Contracts.Version]:
-    require('../out/version/Version.abi.json'),
+    require('../out/Version.abi.json'),
   [Contracts.ZeroExExchange]:
-    require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
+    require('../out/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
-    require('../out/exchanges/ZeroExV2Adapter.abi.json'),
+    require('../out/ZeroExV2Adapter.abi.json'),
 };
 
 const allAbis = R.toPairs(requireMap);
