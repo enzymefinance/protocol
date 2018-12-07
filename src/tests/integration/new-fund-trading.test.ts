@@ -3,6 +3,9 @@ import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { Contracts } from '~/Contracts';
+import { randomAddress } from '~/utils/helpers/randomAddress';
+import { makeOrderSignature } from '~/utils/constants/orderSignatures';
+import { BigNumber } from 'bignumber.js'; // TODO: BigInteger?
 
 let s: any = {};
 
@@ -16,10 +19,13 @@ beforeAll(async () => {
   [s.deployer, s.manager, s.investor] = s.accounts;
   s.exchanges = [s.matchingMarket]; // , matchingMarket2];
   s.gasPrice = 1;
+  s.numberofExchanges = 1;
+  s.exchanges = [s.matchingMarket];
 
   await s.version.methods
     .createComponents(
       'Test Fund',
+      [],
       [s.matchingMarket.options.address],
       [s.matchingMarketAdapter.options.address],
       s.weth.options.address,
@@ -39,26 +45,49 @@ beforeAll(async () => {
   const hubAddress = await s.version.methods.getFundById(fundId).call();
   s.fund = await getFundComponents(hubAddress);
 
+  // const [, referencePrice] = Object.values(
+  //     await s.priceSource.methods
+  //       .getReferencePriceInfo(s.weth.options.address, s.mln.options.address)
+  //       .call(),
+  //   ).map(e => new BigNumber(e));
+  // const [, invertedReferencePrice] = Object.values(
+  //   await s.pricesSource.methods
+  //     .getReferencePriceInfo(s.mln.options.address, s.weth.options.address)
+  //     .call(),
+  // ).map(e => new BigNumber(e));
+  // const sellQuantity1 = new BigNumber(10 ** 21);
+  // s.trade1 = {
+  //   buyQuantity: new BigNumber(
+  //     Math.floor(referencePrice.div(10 ** 18).times(sellQuantity1)),
+  //   ),
+  //   sellQuantity: sellQuantity1
+  // };
+
+  s.trade1 = {
+    buyQuantity: 10000000000,
+    sellQuantity: 100000000,
+  };
+
   // TODO: Add back later
   // const managementFee = await deployContract('fund/fees/FixedManagementFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
   // const performanceFee = await deployContract('fund/fees/FixedPerformanceFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
   // await fund.feeManager.methods.batchRegister([managementFee.options.address, performanceFee.options.address]).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
 
   // Register price tolerance policy
-  const priceTolerance = await deploy(
-    Contracts.PriceTolerance, // TODO: go here
-    [10],
-  );
-  await expect(
-    fund.policyManager.methods
-      .register(makeOrderSignatureBytes, priceTolerance.options.address)
-      .send({ from: manager, gasPrice: config.gasPrice }),
-  ).resolves.not.toThrow();
-  await expect(
-    fund.policyManager.methods
-      .register(takeOrderSignatureBytes, priceTolerance.options.address)
-      .send({ from: manager, gasPrice: config.gasPrice }),
-  ).resolves.not.toThrow();
+  // const priceTolerance = await deploy(
+  //   Contracts.PriceTolerance, // TODO: go here
+  //   [10],
+  // );
+  // await expect(
+  //   fund.policyManager.methods
+  //     .register(makeOrderSignatureBytes, priceTolerance.options.address)
+  //     .send({ from: manager, gasPrice: config.gasPrice }),
+  // ).resolves.not.toThrow();
+  // await expect(
+  //   fund.policyManager.methods
+  //     .register(takeOrderSignatureBytes, priceTolerance.options.address)
+  //     .send({ from: manager, gasPrice: config.gasPrice }),
+  // ).resolves.not.toThrow();
 });
 
 beforeEach(async () => {
@@ -114,6 +143,68 @@ beforeEach(async () => {
   // };
 });
 
-test('nothing', async () => {
-  expect(true).toBe(true);
+test('Transfer ethToken to the investor', async () => {
+  await s.weth.methods.transfer(s.investor, 10000).send({ from: s.deployer });
+});
+
+const exchangeIndexes = Array.from(
+  new Array(s.numberofExchanges),
+  (val, index) => index,
+);
+
+exchangeIndexes.forEach(i => {
+  test('Request investment', async () => {
+    await s.weth.methods
+      .approve(s.fund.participation.options.address, s.trade1.sellQuantity)
+      .send({ from: s.investor, gas: 8000000 });
+    await s.fund.participation.methods
+      .requestInvestment(1, s.trade1.sellQuantity, s.weth.options.address)
+      .send({ from: s.investor, gas: 8000000 });
+
+    // await updateTestingPriceFeed(deployed);
+    // await updateTestingPriceFeed(deployed);
+
+    const totalSupply = await s.fund.shares.methods.totalSupply().call();
+    await s.fund.participation.methods
+      .executeRequestFor(s.investor)
+      .send({ from: s.investor, gas: 8000000 });
+  });
+
+  test('Manager makes an order', async () => {
+    await s.fund.trading.methods
+      .callOnExchange(
+        i,
+        makeOrderSignature,
+        [
+          `${randomAddress()}`,
+          `${randomAddress()}`,
+          s.weth.options.address,
+          s.mln.options.address,
+          `${randomAddress()}`,
+          `${randomAddress()}`,
+        ],
+        [s.trade1.sellQuantity, s.trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+        `${randomAddress()}`,
+        '0x0',
+        '0x0',
+        '0x0',
+      )
+      .send({ from: s.manager, gas: 8000000 });
+  });
+
+  test('Third party takes the order', async () => {
+    const orderId = await s.exchanges[i].methods.last_offer_id().call();
+    // const exchangePreMln = Number(
+    //   await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
+    // );
+    // const exchangePreEthToken = Number(
+    //   await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    // );
+    await s.mln.methods
+      .approve(s.exchanges[i].options.address, s.trade1.buyQuantity)
+      .send({ from: s.deployer, gasPrice: 8000000 });
+    await s.exchanges[i].methods
+      .buy(orderId, s.trade1.sellQuantity)
+      .send({ from: s.deployer, gas: 8000000 });
+  });
 });
