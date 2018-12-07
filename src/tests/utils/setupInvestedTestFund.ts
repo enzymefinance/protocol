@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { randomString } from '~/utils/helpers/randomString';
@@ -7,8 +6,8 @@ import { continueCreation } from '~/contracts/factory/transactions/continueCreat
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-// tslint:enable:max-line-length
 
 const setupInvestedTestFund = async (
   deployment,
@@ -38,13 +37,21 @@ const setupInvestedTestFund = async (
   const hubAddress = await setupFund(version, undefined, environment);
   const settings = await getSettings(hubAddress, environment);
 
+  const investmentAmount = createQuantity(weth, 1);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+
   await requestInvestment(
     settings.participationAddress,
     {
-      investmentAmount: createQuantity(weth, 1),
+      investmentAmount,
     },
     environment,
   );
+
   await executeRequest(settings.participationAddress, undefined, environment);
 
   return settings;

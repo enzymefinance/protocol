@@ -1,4 +1,4 @@
-import { assetDataUtils } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
 import { TokenInterface } from '@melonproject/token-math/token';
 
 import { Contracts } from '~/Contracts';

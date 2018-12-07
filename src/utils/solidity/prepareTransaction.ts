@@ -1,13 +1,16 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
+import { ensure } from '../guards/ensure';
 
 export interface Options {
   amguPayable?: boolean;
+  skipGuards?: boolean;
+  skipGasEstimation?: boolean;
   from?: string;
   gas?: string;
   gasPrice?: string;
@@ -17,8 +20,6 @@ export interface Options {
 export type OptionsCallback = (environment) => Options;
 
 export type OptionsOrCallback = Options | OptionsCallback;
-
-const debug = require('debug')('melon:protocol:utils:solidity');
 
 export interface PreparedTransaction {
   encoded: string;
@@ -38,6 +39,11 @@ export const prepareTransaction = async (
   const environment = isEnvironment(optionsOrEnvironment)
     ? optionsOrEnvironment
     : maybeEnvironment;
+
+  const debug = environment.logger(
+    'melon:protocol:utils:solidity',
+    LogLevels.DEBUG,
+  );
 
   const options = isEnvironment(optionsOrEnvironment)
     ? {
@@ -70,10 +76,17 @@ export const prepareTransaction = async (
       }
     : options;
 
+  ensure(
+    !(options.skipGasEstimation && !options.gas),
+    'Cannot skip gasEstimation if no options.gas is provided',
+  );
+
   try {
-    const gasEstimation = await transaction.estimateGas({
-      ...R.omit(['amguPayable'], amguOptions),
-    });
+    const gasEstimation = options.skipGasEstimation
+      ? 0
+      : await transaction.estimateGas({
+          ...R.omit(['amguPayable'], amguOptions),
+        });
 
     transaction.gasEstimation = Math.ceil(
       Math.min(gasEstimation * 1.1, parseInt(environment.options.gasLimit, 10)),

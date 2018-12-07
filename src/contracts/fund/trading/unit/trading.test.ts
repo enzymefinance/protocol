@@ -30,6 +30,7 @@ beforeAll(async () => {
       mockExchanges,
       mockExchangeAdapters,
       takesCustodyMasks,
+      shared.registry.options.address,
     ]),
   );
   await shared.trading.methods
@@ -71,6 +72,7 @@ test('Exchanges cant be initialized without its adapter', async () => {
       mockExchanges,
       [mockExchangeAdapters[0]],
       takesCustodyMasks,
+      shared.registry.options.address,
     ]),
   ).rejects.toThrow(errorMessage);
 });

@@ -20,7 +20,7 @@ contract Hub is DSGuard {
         address trading;
         address vault;
         address priceSource;
-        address canonicalRegistrar;
+        address registry;
         address version;
         address engine;
         address mlnAddress;
@@ -67,7 +67,7 @@ contract Hub is DSGuard {
         settings.trading = _spokes[5];
         settings.vault = _spokes[6];
         settings.priceSource = _spokes[7];
-        settings.canonicalRegistrar = _spokes[8];
+        settings.registry = _spokes[8];
         settings.version = _spokes[9];
         settings.engine = _spokes[10];
         settings.mlnAddress = _spokes[11];
@@ -80,7 +80,7 @@ contract Hub is DSGuard {
         address[12] memory spokes = [
             settings.accounting, settings.feeManager, settings.participation,
             settings.policyManager, settings.shares, settings.trading,
-            settings.vault, settings.priceSource, settings.canonicalRegistrar,
+            settings.vault, settings.priceSource, settings.registry,
             settings.version, settings.engine, settings.mlnAddress
         ];
         Spoke(settings.accounting).initialize(spokes);

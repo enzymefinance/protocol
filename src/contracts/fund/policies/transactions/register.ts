@@ -1,6 +1,5 @@
-import * as Web3EthAbi from 'web3-eth-abi';
+import web3EthAbi from 'web3-eth-abi';
 import { Address } from '@melonproject/token-math/address';
-
 import {
   transactionFactory,
   PrepareArgsFunction,
@@ -16,7 +15,7 @@ interface RegisterArgs {
 const prepareArgs: PrepareArgsFunction<RegisterArgs> = async ({
   method,
   policy,
-}: RegisterArgs) => [Web3EthAbi.encodeFunctionSignature(method), `${policy}`];
+}: RegisterArgs) => [web3EthAbi.encodeFunctionSignature(method), `${policy}`];
 
 const register: EnhancedExecute<RegisterArgs, boolean> = transactionFactory(
   'register',

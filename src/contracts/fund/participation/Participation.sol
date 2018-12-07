@@ -38,16 +38,17 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     mapping (address => bool) public investAllowed;
     uint public SHARES_DECIMALS = 18;
 
-    constructor(address _hub, address[] _defaultAssets) Spoke(_hub) {
+    constructor(address _hub, address[] _defaultAssets, address _registry) Spoke(_hub) {
+        routes.registry = _registry;
         _enableInvestment(_defaultAssets);
     }
 
     function _enableInvestment(address[] _assets) internal {
         for (uint i = 0; i < _assets.length; i++) {
-            // require(
-            //     modules.pricefeed.assetIsRegistered(_assets[i]),
-            //     "Asset not registered"
-            // ); // TODO: re-enable
+            require(
+                Registry(routes.registry).assetIsRegistered(_assets[i]),
+                "Asset not registered"
+            );
             investAllowed[_assets[i]] = true;
         }
     }
@@ -248,11 +249,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 }
 
 contract ParticipationFactory is Factory {
-    function createInstance(address _hub, address[] _defaultAssets)
+    function createInstance(address _hub, address[] _defaultAssets, address _registry)
         public
         returns (address)
     {
-        address participation = new Participation(_hub, _defaultAssets);
+        address participation = new Participation(_hub, _defaultAssets, _registry);
         childExists[participation] = true;
         return participation;
     }

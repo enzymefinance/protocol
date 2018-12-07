@@ -1,10 +1,8 @@
-import * as Eth from 'web3-eth';
+import web3Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
-import { Environment, Options } from './Environment';
-
-const debug = require('debug')('melon:protocol:utils:environment');
+import { Environment, Options, LogLevels, CurriedLogger } from './Environment';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -26,11 +24,12 @@ const checkIpc = endpoint => {
 };
 
 const makeWsProvider = endpoint =>
-  new Eth.providers.WebsocketProvider(endpoint);
+  new web3Eth.providers.WebsocketProvider(endpoint);
 
-const makeHttpProvider = endpoint => new Eth.providers.HttpProvider(endpoint);
+const makeHttpProvider = endpoint =>
+  new web3Eth.providers.HttpProvider(endpoint);
 
-const makeIpcProvider = endpoint => new Eth.providers.IpcProvider(endpoint);
+const makeIpcProvider = endpoint => new web3Eth.providers.IpcProvider(endpoint);
 
 const selectProvider = R.cond([
   [R.startsWith('ws'), makeWsProvider],
@@ -38,7 +37,9 @@ const selectProvider = R.cond([
   [checkIpc, makeIpcProvider],
 ]);
 
-const constructProvider = endpoint => {
+const constructProvider = (endpoint, logger: CurriedLogger) => {
+  const debug = logger('melon:protocol:utils:environment', LogLevels.DEBUG);
+
   string()
     .url(
       [
@@ -63,9 +64,15 @@ const constructProvider = endpoint => {
   return provider;
 };
 
+const dummyLogger: CurriedLogger = R.curryN(
+  3,
+  (namespace, level, ...msgs) => {},
+);
+
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
+  logger = dummyLogger,
   wallet = undefined,
   track = tracks.DEMO,
   options = defaultOptions,
@@ -77,8 +84,9 @@ export const constructEnvironment = ({
   }
 
   return {
-    eth: new Eth(provider || constructProvider(endpoint)),
+    eth: new web3Eth(provider || constructProvider(endpoint, logger)),
     // tslint:disable-next-line:object-shorthand-properties-first
+    logger,
     options,
     track,
     wallet,

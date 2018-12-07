@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import * as web3Utils from 'web3-utils';
 import {
   QuantityInterface,
@@ -23,7 +22,6 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-// tslint:enable:max-line-length
 
 export type MakeOasisDexOrderResult = any;
 

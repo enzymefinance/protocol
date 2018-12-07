@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
@@ -34,6 +33,7 @@ import {
   multiply,
 } from '@melonproject/token-math/bigInteger';
 // tslint:enable:max-line-length
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 const shared: any = {};
 
@@ -130,11 +130,21 @@ test('Happy path', async () => {
 
   await update(priceSource, [newPrice]);
 
-  await requestInvestment(settings.participationAddress, {
-    investmentAmount: createQuantity(quoteToken, 1),
-  });
+  const investmentAmount = createQuantity(quoteToken, 1);
 
-  console.log('Requested an investment');
+  await expect(
+    requestInvestment(settings.participationAddress, {
+      investmentAmount,
+    }),
+  ).rejects.toThrow(`Insufficient allowance`);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+  await requestInvestment(settings.participationAddress, {
+    investmentAmount,
+  });
 
   await executeRequest(settings.participationAddress);
 

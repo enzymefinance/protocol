@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
@@ -18,7 +17,6 @@ import {
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
-// tslint:enable:max-line-length
 
 const shared: any = {};
 

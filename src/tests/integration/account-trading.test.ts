@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -18,7 +17,7 @@ import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-// tslint:enable:max-line-length
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 const shared: any = {};
 
@@ -88,8 +87,16 @@ test('Happy path', async () => {
   // });
 
   await getAmguPrice(version);
+
+  const investmentAmount = createQuantity(quoteToken, 1);
+
+  await approve({
+    howMuch: investmentAmount,
+    spender: settings.participationAddress,
+  });
+
   await requestInvestment(settings.participationAddress, {
-    investmentAmount: createQuantity(quoteToken, 1),
+    investmentAmount,
   });
 
   await executeRequest(settings.participationAddress);

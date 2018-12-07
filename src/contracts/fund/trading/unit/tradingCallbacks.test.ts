@@ -26,6 +26,7 @@ beforeAll(async () => {
       [mockExchange],
       [mockAdapter.options.address],
       [false],
+      shared.registry.options.address,
     ]),
   );
   await shared.trading.methods

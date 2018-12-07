@@ -1,10 +1,10 @@
 import * as web3Utils from 'web3-utils';
-import { assetDataUtils, SignedOrder } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
+import { SignedOrder } from '@0x/types';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { Contracts, Exchanges } from '~/Contracts';
 
-// tslint:disable:max-line-length
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { NULL_ADDRESS } from './take0xOrder';
 import {
@@ -18,7 +18,6 @@ import { getSettings } from '../../hub/calls/getSettings';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-// tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
 interface Make0xOrderArgs {

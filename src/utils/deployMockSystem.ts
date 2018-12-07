@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -7,9 +6,7 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTok
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
-// tslint:enable:max-line-length
-
-const debug = require('debug')('melon:protocol:utils');
+import { LogLevels } from './environment/Environment';
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
@@ -24,12 +21,15 @@ export const deployMockSystem = async ({
   policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
   priceSourceContract = Contracts.TestingPriceFeed,
+  registryContract = Contracts.MockRegistry,
   sharesContract = Contracts.MockShares,
   tradingContract = Contracts.Trading,
   vaultContract = Contracts.Vault,
   versionContract = Contracts.MockVersion,
+  rankingContract = Contracts.FundRanking,
 } = {}) => {
   const environment = getGlobalEnvironment();
+  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
@@ -63,6 +63,8 @@ export const deployMockSystem = async ({
   );
 
   const version = await deployAndGetContract(versionContract);
+  const registry = await deployAndGetContract(registryContract);
+  const ranking = await deployAndGetContract(rankingContract);
 
   const hub = await deployAndGetContract(hubContract);
   await hub.methods
@@ -86,6 +88,7 @@ export const deployMockSystem = async ({
   const participation = await deployAndGetContract(participationContract, [
     hub.options.address,
     [quoteToken.address, baseToken.address],
+    registry.options.address,
   ]);
   const shares = await deployAndGetContract(sharesContract, [
     hub.options.address,
@@ -95,6 +98,7 @@ export const deployMockSystem = async ({
     [matchingMarketAddress],
     [matchingMarketAdapter.options.address],
     [true],
+    registry.options.address,
   ]);
   const vault = await deployAndGetContract(vaultContract, [
     hub.options.address,
@@ -120,7 +124,7 @@ export const deployMockSystem = async ({
       trading.options.address,
       vault.options.address,
       priceSource.options.address,
-      priceSource.options.address, // registrar
+      registry.options.address,
       version.options.address,
       engine.options.address,
       mlnTokenAddress,
@@ -153,6 +157,8 @@ export const deployMockSystem = async ({
     participation,
     policyManager,
     priceSource,
+    ranking,
+    registry,
     shares,
     trading,
     vault,

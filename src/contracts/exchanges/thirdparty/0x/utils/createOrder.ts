@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 /*
 "TODO: Remove this
 ReferenceError: regeneratorRuntime is not defined
@@ -6,13 +5,13 @@ ReferenceError: regeneratorRuntime is not defined
   at Object.<anonymous> (node_modules/@ledgerhq/hw-transport-u2f/lib/TransportU2F.js:228:2)
   at Object.<anonymous> (node_modules/@0xproject/subproviders/src/index.ts:2:1)
 */
-// tslint:enable:max-line-length
+
 import {
-  assetDataUtils,
-  BigNumber,
   generatePseudoRandomSalt,
+  assetDataUtils,
   signatureUtils,
-} from '0x.js';
+} from '@0x/order-utils';
+import { BigNumber } from 'bignumber.js';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { Address } from '@melonproject/token-math/address';
