@@ -63,6 +63,7 @@ test.before(async t => {
   await deployed.FundFactory.methods
     .createComponents(
       'Test Fund',
+      [],
       [deployed.MatchingMarket.options.address],
       [deployed.MatchingMarketAdapter.options.address],
       deployed.EthToken.options.address,
@@ -72,6 +73,7 @@ test.before(async t => {
       deployed.TestingPriceFeed.options.address,
     )
     .send({ from: manager, gasPrice: config.gasPrice });
+  console.log('yreah');
   await deployed.FundFactory.methods
     .continueCreation()
     .send({ from: manager, gasPrice: config.gasPrice });
