@@ -4,6 +4,9 @@ import "../../dependencies/auth.sol";
 
 /// @notice Generic AddressList
 contract AddressList is DSAuth {
+
+    event ListAddition(address[] ones);
+
     mapping(address => bool) internal list;
     address[] internal mirror;
 
@@ -14,6 +17,7 @@ contract AddressList is DSAuth {
                 mirror.push(_assets[i]);
             }
         }
+        emit ListAddition(_assets);
     }
 
     /// @return whether an asset is in the list

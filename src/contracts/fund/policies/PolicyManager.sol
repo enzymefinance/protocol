@@ -5,6 +5,13 @@ import "../hub/Spoke.sol";
 import "./Policy.sol";
 
 contract PolicyManager is Spoke {
+
+    event Registration(
+        bytes4 indexed sig,
+        Policy.Applied position,
+        address indexed policy
+    );
+
     struct Entry {
         Policy[] pre;
         Policy[] post;
@@ -14,21 +21,22 @@ contract PolicyManager is Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function register(bytes4 sign, address ofPolicy) public auth {
+    function register(bytes4 sig, address ofPolicy) public auth {
         Policy.Applied position = Policy(ofPolicy).position();
         if (position == Policy.Applied.pre) {
-            policies[sign].pre.push(Policy(ofPolicy));
+            policies[sig].pre.push(Policy(ofPolicy));
         } else if (position == Policy.Applied.post) {
-            policies[sign].post.push(Policy(ofPolicy));
+            policies[sig].post.push(Policy(ofPolicy));
         } else {
             revert("Only pre and post allowed");
         }
+        emit Registration(sig, position, ofPolicy);
     }
 
-    function batchRegister(bytes4[] sign, address[] ofPolicies) public auth {
-        require(sign.length == ofPolicies.length, "Arrays lengths unequal");
-        for (uint i = 0; i < sign.length; i++) {
-            register(sign[i], ofPolicies[i]);
+    function batchRegister(bytes4[] sig, address[] ofPolicies) public auth {
+        require(sig.length == ofPolicies.length, "Arrays lengths unequal");
+        for (uint i = 0; i < sig.length; i++) {
+            register(sig[i], ofPolicies[i]);
         }
     }
 
