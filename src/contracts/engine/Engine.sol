@@ -10,12 +10,6 @@ import "../version/Version.i.sol";
 /// @notice Liquidity contract and token sink
 contract Engine is DSMath, DSAuth {
 
-    event Construction(
-        address priceSource,
-        uint delay,
-        address mlnAddress
-    );
-
     event VersionSet(
         address version
     );
@@ -42,7 +36,6 @@ contract Engine is DSMath, DSAuth {
         lastThaw = block.timestamp;
         THAWING_DELAY = _delay;
         mlnToken = BurnableToken(_mlnAddress);
-        emit Construction(_priceSource, _delay, _mlnAddress);
     }
 
     /// @dev only callable by deployer

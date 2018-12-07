@@ -15,19 +15,6 @@ import "../engine/AmguConsumer.sol";
 // TODO: inherit from Factory
 /// @notice Creates fund components and links them together
 contract FundFactory is AmguConsumer {
-    event Construction(
-        address accountingFactory,
-        address feeManagerFactory,
-        address participationFactory,
-        address sharesFactory,
-        address tradingFactory,
-        address vaultFactory,
-        address policyManagerFactory,
-        address version,
-        address engine,
-        address factoryPriceSource,
-        address mlnAddress
-    );
 
     event NewFund(
         address manager,
@@ -112,20 +99,6 @@ contract FundFactory is AmguConsumer {
         engine = Engine(_engine);
         factoryPriceSource = _factoryPriceSource;
         mlnAddress = _mlnAddress;
-
-        emit Construction(
-            _accountingFactory,
-            _feeManagerFactory,
-            _participationFactory,
-            _sharesFactory,
-            _tradingFactory,
-            _vaultFactory,
-            _policyManagerFactory,
-            _version,
-            _engine,
-            _factoryPriceSource,
-            _mlnAddress
-        );
     }
 
     // TODO: improve naming
