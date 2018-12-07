@@ -16,7 +16,7 @@ export const prepareArgs = async ({ hubAddress }: CreateInstanceArgs) => [
 export const postProcess = async (
   receipt: any,
 ): Promise<CreateInstanceResult> => {
-  const vaultAddress = receipt.events.NewInstance.returnValues.child;
+  const vaultAddress = receipt.events.NewInstance.returnValues.instance;
   return vaultAddress;
 };
 
