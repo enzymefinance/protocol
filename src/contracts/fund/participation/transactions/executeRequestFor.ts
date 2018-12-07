@@ -50,7 +50,7 @@ const postProcess = async (receipt, params, contractAddress, environment) => {
   return {
     shareQuantity: createQuantity(
       fundToken,
-      receipt.events.RequestExecuted.returnValues.requestedShares,
+      receipt.events.RequestExecution.returnValues.requestedShares,
     ),
   };
 };

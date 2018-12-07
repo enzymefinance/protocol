@@ -31,8 +31,8 @@ contract FundFactory is AmguConsumer {
 
     event NewFund(
         address manager,
-        Components components,
-        address hub
+        address hub,
+        address[12] components
     );
 
     address public factoryPriceSource;
@@ -209,8 +209,21 @@ contract FundFactory is AmguConsumer {
 
         emit NewFund(
             msg.sender,
-            components,
-            hub
+            hub,
+            [
+                components.accounting,
+                components.feeManager,
+                components.participation,
+                components.policyManager,
+                components.shares,
+                components.trading,
+                components.vault,
+                components.priceSource,
+                components.registry,
+                components.version,
+                components.engine,
+                components.mlnAddress
+            ]
         );
     }
 
