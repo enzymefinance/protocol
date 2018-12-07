@@ -11,6 +11,9 @@ import "../../engine/AmguConsumer.sol";
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, AmguConsumer, Spoke {
 
+    event FeeReward(uint shareQuantity);
+    event FeeRegistration(address fee);
+
     struct FeeInfo {
         address feeAddress;
         uint feeRate;
@@ -19,7 +22,6 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
-    event FeeRewarded(uint shareQuantity);
 
     constructor(address _hub, FeeInfo[] _fees) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
@@ -32,6 +34,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
         Fee(feeAddress).initializeForUser(feeRate, feePeriod);  // initialize state
+        emit FeeRegistration(feeAddress);
     }
 
     function totalFeeAmount() public view returns (uint total) {
@@ -46,7 +49,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
         uint rewardShares = fee.feeAmount();
         fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
-        emit FeeRewarded(rewardShares);
+        emit FeeReward(rewardShares);
     }
 
     function _rewardAllFees() internal {
@@ -56,7 +59,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     }
 
     /// @dev Used when calling from other components
-    function rewardAllFees() public auth { _rewardAllFees(); } 
+    function rewardAllFees() public auth { _rewardAllFees(); }
 
     /// @dev Used when calling from outside the fund
     function triggerRewardAllFees() external payable amguPayable {
@@ -81,6 +84,7 @@ contract FeeManagerFactory is Factory {
     function createInstance(address _hub, FeeManager.FeeInfo[] _fees) public returns (address) {
         address feeManager = new FeeManager(_hub, _fees);
         childExists[feeManager] = true;
+        emit NewInstance(_hub, feeManager);
         return feeManager;
     }
 }

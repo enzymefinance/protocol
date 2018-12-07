@@ -23,7 +23,7 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         address _factoryPriceSource,
         address _mlnAddress,
         address _registry
-    ) 
+    )
         FundFactory(
             _accountingFactory,
             _feeManagerFactory,
@@ -43,11 +43,15 @@ contract Version is FundFactory, DSAuth, VersionInterface {
 
     function setAmguPrice(uint _price) auth {
         amguPrice = _price;
+        emit SetAmguPrice(_price);
     }
 
     function getAmguPrice() returns (uint) { return amguPrice; }
 
-    function shutDown() external auth { isShutDown = true; }
+    function shutDown() external auth {
+        isShutDown = true;
+        emit ShutDown();
+    }
 
     function shutDownFund(address _hub) external {
         require(

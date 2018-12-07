@@ -9,10 +9,6 @@ pragma solidity ^0.4.21;
 ///   https://github.com/0xProject/contracts/blob/master/contracts/Exchange.sol
 interface ExchangeAdapterInterface {
 
-    // EVENTS
-
-    event OrderUpdated(uint id);
-
     // METHODS
     // EXTERNAL METHODS
 

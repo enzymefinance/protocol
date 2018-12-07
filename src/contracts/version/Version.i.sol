@@ -4,5 +4,10 @@ interface VersionInterface {
     function getAmguPrice() returns (uint);
     function isFund(address) returns (bool);
     function isFundFactory(address) returns (bool);
+
+    event SetAmguPrice(
+        uint amguPrice
+    );
+    event ShutDown();
 }
 

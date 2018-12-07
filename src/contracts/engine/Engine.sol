@@ -9,6 +9,15 @@ import "../version/Version.i.sol";
 // TODO: integrate so we do not need all of the constructor params
 /// @notice Liquidity contract and token sink
 contract Engine is DSMath, DSAuth {
+
+    event VersionSet(
+        address version
+    );
+
+    event Thaw(
+        uint amount
+    );
+
     uint public frozenEther;
     uint public liquidEther;
     uint public lastThaw;
@@ -32,9 +41,9 @@ contract Engine is DSMath, DSAuth {
     /// @dev only callable by deployer
     function setVersion(address _version) auth {
         version = VersionInterface(_version);
+        emit VersionSet(_version);
     }
 
-    // TODO: convert to a continuous function
     function premiumPercent() view returns (uint) {
         if (liquidEther < 1 ether) {
             return 0;
@@ -56,7 +65,6 @@ contract Engine is DSMath, DSAuth {
         frozenEther = add(frozenEther, msg.value);
     }
 
-    // TODO: revisit need for a delay now that only funds can do this
     /// @notice Move frozen ether to liquid pool after delay
     /// @dev Delay only restarts when this function is called
     function thaw() public {
@@ -67,6 +75,7 @@ contract Engine is DSMath, DSAuth {
         require(frozenEther > 0, "No frozen ether to thaw");
         lastThaw = block.timestamp;
         liquidEther = add(liquidEther, frozenEther);
+        emit Thaw(frozenEther);
         frozenEther = 0;
     }
 

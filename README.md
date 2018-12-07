@@ -108,7 +108,7 @@ const hub = await protocol.factory.managersToHubs(
 );
 ```
 
-## Development Tipps
+## Development Tips
 
 ### Using the logger
 
@@ -160,7 +160,7 @@ const result = await transfer.send(signedTransactionData, params);
 
 ### Skip gas estimation preflight/guards
 
-Sometimes during development, one wants to check if a transaction actually fails without the guards. To do so, there are options inside of the transaction factory. The simplest example would be `transfer`. So here is the minimalistic usage of `transfer`:
+Sometimes during development, one wants to check if a transaction actually fails without the guards. To do so, there are options inside of the transaction factory. The simplest example would be `transfer`. So here is the minimalistic usage of `transfer` with skipped guards and transactions:
 
 ```ts
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
@@ -177,21 +177,81 @@ await transfer(params, environment, {
 });
 ```
 
-In the example above, the `transfer` function actually executes guards that check for balance and they throw a meaningful error message which could be presented to the user.
+The same pattern could be applied to the deconstructed execute:
 
-But if you want to check if the smart contract actually reverts or anything, you may want to pass these checks:
+```ts
+import { sign } from '~/utils/environment/sign';
+
+const options = {
+  gas: '8000000',
+  skipGasEstimation: true,
+  skipGuards: true,
+};
+
+const prepared = await transfer.prepare(params, options);
+
+const signedTransactionData = await sign(prepared.rawTransaction, environment);
+
+const result = await transfer.send(signedTransactionData, params);
+```
+
+### Events
+
+**Main principle**: Every smart contract should be seen as an [event-sourced](https://martinfowler.com/eaaDev/EventSourcing.html) entity:
+
+- It has one current state. We can query the current state through calls.
+- This current state is the result of an initial state and a list of transactions that altered that state. When the state of a smart contract changes, it should emit events in a fashion that **an external observer can reproduce the state of the smart contract from every point in history only by observing the emitted events**.
+
+In other words: Events should transport as much information as needed so that an observer can sync for example a database.
+
+#### How to do this:
+
+1. Define the shape of the state of a smart contract
+2. Define possible changes to that state
+3. Emit events when that state changes.
+
+#### Example ERC20
+
+1. Shape of state:
+
+```solidity
+mapping (address => uint256) balances;
+```
+
+2. Possible changes:
+
+- Someone sends somebody an amount: Transfer
+
+3. Emit events:
+   It is obvious for that example, but lets see what an observer can see the following events and reproduce every step in history.
+
+For the sake of simplicity, lets assume that:
+`0x0`: is the null address
+`0x1`: user 1
+`0x2`: user 2
+...and so on
+
+```
+Transfer(0x0, 0x1, 100) // Initial minting: User 1 receives 100 tokens. Total 100 tokens.
+Transfer(0x1, 0x2, 30) // User 1 sends 30 tokens to user 2. New balances: User 1: 70, User 2: 30.
+...
+```
+
+Although we fire events _after_ the action happened, we use nouns in the event names. So: NewFund instead of FundCreated of CreateFund.
+
+Like we communicate to the outside world: Hey, there is a NewFund.
 
 ## Troubleshooting
 
-#### Permission denied (publickey) when cloning the repo
+### Permission denied (publickey) when cloning the repo
 
 Try cloning using `git clone https://github.com/melonproject/smart-contracts.git`
 
-#### Spec json is invalid when running Parity Devchain
+### Spec json is invalid when running Parity Devchain
 
 Update your Parity installation to the latest version or try changing `"instantSeal": null` to `"instantSeal": { "params": {} }` in chainGenesis.json
 
-#### Stuck at deploy step
+### Stuck at deploy step
 
 Deploying contracts may stuck indefinitely in case your parity node is not unlocked for some reason. Locked node requires you to enter password for each transaciton manually.
 

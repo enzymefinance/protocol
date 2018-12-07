@@ -7,6 +7,8 @@ import "./Spoke.sol";
 /// @notice Has one or more Spokes
 contract Hub is DSGuard {
 
+    event FundShutDown();
+
     // TODO: ACL may be better someplace else; evaluate this
     // TODO: make this more generic, and make fund "head" contract a derivative of this
     // TODO: ensure component is not overloaded far beyond routing
@@ -52,6 +54,7 @@ contract Hub is DSGuard {
     function shutDownFund() public {
         require(msg.sender == settings.version);
         isShutDown = true;
+        emit FundShutDown();
     }
 
     function setSpokes(address[12] _spokes) onlyCreator {
@@ -114,10 +117,6 @@ contract Hub is DSGuard {
         permit(manager, settings.participation, bytes4(keccak256('disableInvestment(address[])')));
         permissionsSet = true;
     }
-
-    // function getSettings() view returns (Settings) {
-    //     return settings;
-    // }
 
     // TODO: there must be a better way than having these nominal functions
     function vault() view returns (address) { return settings.vault; }

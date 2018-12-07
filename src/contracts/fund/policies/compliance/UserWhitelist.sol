@@ -5,6 +5,10 @@ import "../Policy.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change things)
 contract Whitelist is Policy, DSAuth {
+
+    event ListAddition(address indexed who);
+    event ListRemoval(address indexed who);
+
     mapping (address => bool) whitelisted;
 
     function Whitelist(address[] _preApproved) public {
@@ -13,10 +17,12 @@ contract Whitelist is Policy, DSAuth {
 
     function addToWhitelist(address _who) public auth {
         whitelisted[_who] = true;
+        emit ListAddition(_who);
     }
 
     function removeFromWhitelist(address _who) public auth {
         whitelisted[_who] = false;
+        emit ListAddition(_who);
     }
 
     function batchAddToWhitelist(address[] _members) public auth {

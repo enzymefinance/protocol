@@ -1,7 +1,6 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-
 import "./Trading.i.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
@@ -21,7 +20,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bool takesCustody;
     }
 
-    enum UpdateType { make, take, cancel, swap }
+    enum UpdateType { make, take, cancel }
 
     struct Order {
         address exchangeAddress;
@@ -110,26 +109,13 @@ contract Trading is DSMath, Spoke, TradingInterface {
     )
         public
     {
+        // TODO: re-enable
         // require(
-        //     modules.pricefeed.exchangeMethodIsAllowed(
+        //     routes.registry.exchangeMethodIsAllowed(
         //         exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
         //     )
         // );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        // require(bytes4(hex'79705be7') == bytes4(keccak256(methodSignature)));
-        // require(
-        //     exchanges[exchangeIndex].adapter.delegatecall(
-        //         hex'79705be7',
-        //         // bytes4(keccak256(methodSignature)),
-        //         exchanges[exchangeIndex].exchange,
-        //         orderAddresses,
-        //         orderValues,
-        //         identifier,
-        //         makerAssetData,
-        //         takerAssetData,
-        //         signature
-        // ));
-
         require(
             exchanges[exchangeIndex].adapter.delegatecall(
                 abi.encodeWithSignature(
@@ -145,7 +131,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
             ),
             "Delegated call to exchange failed"
         );
+        // TODO: re-enable
         // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        emit ExchangeMethodCall(
+            exchanges[exchangeIndex].exchange,
+            methodSignature,
+            orderAddresses,
+            orderValues,
+            identifier,
+            makerAssetData,
+            takerAssetData,
+            signature
+        );
     }
 
     /// @dev Make sure this is called after orderUpdateHook in adapters
@@ -245,7 +242,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     }
 
     /// @notice Payable function to get back ETH from WETH
-    function() public payable { }
+    function() public payable {}
 
     function getExchangeInfo() view returns (address[], address[], bool[]) {
         address[] memory ofExchanges = new address[](exchanges.length);
@@ -275,6 +272,15 @@ contract Trading is DSMath, Spoke, TradingInterface {
 }
 
 contract TradingFactory is Factory {
+    event NewInstance(
+        address indexed hub,
+        address indexed instance,
+        address[] exchanges,
+        address[] adapters,
+        bool[] takesCustody,
+        address registry
+    );
+
     function createInstance(
         address _hub,
         address[] _exchanges,
@@ -284,6 +290,14 @@ contract TradingFactory is Factory {
     ) public returns (address) {
         address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody, _registry);
         childExists[trading] = true;
+        emit NewInstance(
+            _hub,
+            trading,
+            _exchanges,
+            _adapters,
+            _takesCustody,
+            _registry
+        );
         return trading;
     }
 }

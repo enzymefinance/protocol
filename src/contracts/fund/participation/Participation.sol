@@ -13,19 +13,6 @@ import "./Participation.i.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
-
-    event RequestExecuted (
-        address investmentAsset,
-        uint investmentAmount,
-        uint requestedShares,
-        uint timestamp,
-        uint atUpdateId
-    );
-
-    event SuccessfulRedemption (
-        uint quantity
-    );
-
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -50,6 +37,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
                 "Asset not registered"
             );
             investAllowed[_assets[i]] = true;
+            emit EnableInvestment(_assets);
         }
     }
 
@@ -60,6 +48,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     function disableInvestment(address[] _assets) public auth {
         for (uint i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
+            emit DisableInvestment(_assets);
         }
     }
 
@@ -86,10 +75,18 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             timestamp: block.timestamp,
             atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
         });
+
+        emit InvestmentRequest(
+            msg.sender,
+            investmentAsset,
+            requestedShares,
+            investmentAmount
+        );
     }
 
     function cancelRequest() external {
         delete requests[msg.sender];
+        emit CancelRequest(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)
@@ -153,7 +150,14 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
             Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
         }
-        emit RequestExecuted(request.investmentAsset, request.investmentAmount, request.requestedShares, request.timestamp, request.atUpdateId);
+
+        emit RequestExecution(
+            requestOwner,
+            msg.sender,
+            request.investmentAsset,
+            request.investmentAmount,
+            request.requestedShares
+        );
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
@@ -240,7 +244,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
                 );
             }
         }
-        emit SuccessfulRedemption(remainingShareQuantity);
+        emit Redemption(
+            msg.sender,
+            requestedAssets,
+            ownershipQuantities,
+            remainingShareQuantity
+        );
     }
 
     function hasRequest(address _who) view returns (bool) {
@@ -249,12 +258,20 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 }
 
 contract ParticipationFactory is Factory {
+    event NewInstance(
+        address indexed hub,
+        address indexed instance,
+        address[] defaultAssets,
+        address registry
+    );
+
     function createInstance(address _hub, address[] _defaultAssets, address _registry)
         public
         returns (address)
     {
         address participation = new Participation(_hub, _defaultAssets, _registry);
         childExists[participation] = true;
+        emit NewInstance(_hub, participation, _defaultAssets, _registry);
         return participation;
     }
 }

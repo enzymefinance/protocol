@@ -72,7 +72,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),
-            Trading.UpdateType.swap,
+            Trading.UpdateType.take,
             [destToken, srcToken],
             [actualReceiveAmount, srcAmount, srcAmount]
         );
@@ -135,7 +135,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
         Hub hub = Hub(Trading(address(this)).hub());
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
-        
+
         if (srcToken == nativeAsset) {
             actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
         }
