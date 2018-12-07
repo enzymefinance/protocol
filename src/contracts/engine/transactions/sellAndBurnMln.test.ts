@@ -29,38 +29,57 @@ const shared: any = {};
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.accounts = await shared.env.eth.getAccounts();
-  const wethAddress = await deployToken('ETH');
+  const wethAddress = await deployToken(shared.env, 'ETH');
   shared.mln = getContract(
+    shared.env,
     Contracts.BurnableToken,
-    await deployContract(Contracts.BurnableToken, ['MLN', 18, '']),
+    await deployContract(shared.env, Contracts.BurnableToken, ['MLN', 18, '']),
   );
-  shared.weth = await getContract(Contracts.StandardToken, wethAddress);
+  shared.weth = await getContract(
+    shared.env,
+    Contracts.StandardToken,
+    wethAddress,
+  );
   shared.version = getContract(
+    shared.env,
     Contracts.MockVersion,
-    await deployContract(Contracts.MockVersion),
+    await deployContract(shared.env, Contracts.MockVersion),
   );
-  const feedAddress = await deployFeed(await getToken(wethAddress));
-  shared.feed = await getContract(Contracts.TestingPriceFeed, feedAddress);
+  const feedAddress = await deployFeed(
+    shared.env,
+    await getToken(shared.env, wethAddress),
+  );
+  shared.feed = await getContract(
+    shared.env,
+    Contracts.TestingPriceFeed,
+    feedAddress,
+  );
   shared.delay = 30 * 24 * 60 * 60;
   shared.engineAddress = await deployEngine(
+    shared.env,
     shared.feed.options.address,
     shared.delay,
     shared.mln.options.address,
   );
   shared.priceSource = await getContract(
+    shared.env,
     Contracts.TestingPriceFeed,
     feedAddress,
   );
-  shared.engine = getContract(Contracts.Engine, shared.engineAddress);
+  shared.engine = getContract(
+    shared.env,
+    Contracts.Engine,
+    shared.engineAddress,
+  );
   await shared.engine.methods
     .setVersion(shared.version.options.address)
     .send({ from: shared.accounts[0] });
   const newPrice = getPrice(
-    createQuantity(await getToken(shared.mln.options.address), 1),
-    createQuantity(await getToken(wethAddress), 2.94),
+    createQuantity(await getToken(shared.env, shared.mln.options.address), 1),
+    createQuantity(await getToken(shared.env, wethAddress), 2.94),
     true,
   );
-  await update(feedAddress, [newPrice], true);
+  await update(shared.env, feedAddress, [newPrice], true);
 });
 
 test('directly sending eth fails', async () => {
@@ -76,8 +95,9 @@ test('directly sending eth fails', async () => {
 test('eth sent via contract selfdestruct is not tracked', async () => {
   const sendEth = new BigInteger('100000000');
   const destructing = getContract(
+    shared.env,
     Contracts.SelfDestructing,
-    await deployContract(Contracts.SelfDestructing),
+    await deployContract(shared.env, Contracts.SelfDestructing),
   );
   const preHeldEth = await shared.env.eth.getBalance(
     shared.engine.options.address,
@@ -160,26 +180,28 @@ it('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
   expect(`${enginePrice}`).toBe(`${premiumPrice}`);
 
   const sendMln = createQuantity(
-    await getToken(shared.mln.options.address),
+    await getToken(shared.env, shared.mln.options.address),
     divide(
       multiply(sendEth, new BigInteger('1000000000000000000')),
       premiumPrice,
     ),
   );
 
-  await approve({
+  await approve(shared.env, {
     howMuch: sendMln,
     spender: shared.engine.options.address,
   });
 
   await expect(
     // throws when trying to burn without liquid ETH
-    sellAndBurnMln(shared.engine.options.address, { quantity: sendMln }),
+    sellAndBurnMln(shared.env, shared.engine.options.address, {
+      quantity: sendMln,
+    }),
   ).rejects.toThrow('revert');
 
-  await increaseTime(shared.delay);
+  await increaseTime(shared.env, shared.delay);
 
-  await thaw(shared.engine.options.address);
+  await thaw(shared.env, shared.engine.options.address);
   const frozenEthPost = await shared.engine.methods.frozenEther().call();
   const liquidEthPost = await shared.engine.methods.liquidEther().call();
 
@@ -196,9 +218,13 @@ it('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     .ethPayoutForMlnAmount(`${sendMln.quantity}`)
     .call();
 
-  const receipt = await sellAndBurnMln(shared.engine.options.address, {
-    quantity: sendMln,
-  });
+  const receipt = await sellAndBurnMln(
+    shared.env,
+    shared.engine.options.address,
+    {
+      quantity: sendMln,
+    },
+  );
 
   const gasUsed = receipt.gasUsed;
   const burnerPostMln = await shared.mln.methods.balanceOf(sender).call();

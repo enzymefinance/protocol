@@ -22,8 +22,8 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+  shared.env = await initTestEnvironment();
+  shared.accounts = await shared.env.eth.getAccounts();
 });
 
 const randomString = (length = 4) =>
@@ -33,7 +33,7 @@ const randomString = (length = 4) =>
 
 test('Happy path', async () => {
   const fundName = `test-fund-${randomString()}`;
-  const deployment = await deploySystem();
+  const deployment = await deploySystem(shared.env);
   const {
     exchangeConfigs,
     priceSource,
@@ -45,7 +45,7 @@ test('Happy path', async () => {
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];
 
-  await createComponents(version, {
+  await createComponents(shared.env, version, {
     defaultTokens,
     exchangeConfigs,
     fees,
@@ -55,21 +55,21 @@ test('Happy path', async () => {
     quoteToken,
   });
 
-  await continueCreation(version);
-  const hubAddress = await setupFund(version);
-  const settings = await getSettings(hubAddress);
+  await continueCreation(shared.env, version);
+  const hubAddress = await setupFund(shared.env, version);
+  const settings = await getSettings(shared.env, hubAddress);
 
-  await register(settings.policyManagerAddress, {
+  await register(shared.env, settings.policyManagerAddress, {
     method: FunctionSignatures.makeOrder,
     policy: policies.priceTolerance,
   });
 
-  await register(settings.policyManagerAddress, {
+  await register(shared.env, settings.policyManagerAddress, {
     method: FunctionSignatures.takeOrder,
     policy: policies.priceTolerance,
   });
 
-  await register(settings.policyManagerAddress, {
+  await register(shared.env, settings.policyManagerAddress, {
     method: FunctionSignatures.executeRequestFor,
     policy: policies.whitelist,
   });
@@ -79,32 +79,32 @@ test('Happy path', async () => {
     createQuantity(quoteToken, 0.34),
   );
 
-  await update(priceSource, [newPrice]);
+  await update(shared.env, priceSource, [newPrice]);
 
   // await approve({
   //   howMuch: createQuantity(quoteToken, 1),
   //   spender: new Address(shared.accounts[1]),
   // });
 
-  await getAmguPrice(version);
+  await getAmguPrice(shared.env, version);
 
   const investmentAmount = createQuantity(quoteToken, 1);
 
-  await approve({
+  await approve(shared.env, {
     howMuch: investmentAmount,
     spender: settings.participationAddress,
   });
 
-  await requestInvestment(settings.participationAddress, {
+  await requestInvestment(shared.env, settings.participationAddress, {
     investmentAmount,
   });
 
-  await executeRequest(settings.participationAddress);
+  await executeRequest(shared.env, settings.participationAddress);
 
   // const redemption = await redeem(settings.participationAddress);
   // console.log('Redeemed');
 
-  await getFundHoldings(settings.accountingAddress);
+  await getFundHoldings(shared.env, settings.accountingAddress);
 
   const matchingMarketAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
@@ -114,29 +114,37 @@ test('Happy path', async () => {
   //   o => o.name === 'KyberNetwork',
   // ).exchangeAddress;
 
-  const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: createQuantity(deployment.tokens[1], 2),
-    sell: createQuantity(deployment.tokens[0], 0.1),
-  });
+  const order1 = await makeOrderFromAccountOasisDex(
+    shared.env,
+    matchingMarketAddress,
+    {
+      buy: createQuantity(deployment.tokens[1], 2),
+      sell: createQuantity(deployment.tokens[0], 0.1),
+    },
+  );
   expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
 
-  await takeOrderFromAccountOasisDex(matchingMarketAddress, {
+  await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
     buy: order1.buy,
     id: order1.id,
     maxTakeAmount: order1.sell,
     sell: order1.sell,
   });
 
-  const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: createQuantity(deployment.tokens[1], 2),
-    sell: createQuantity(deployment.tokens[0], 0.1),
-  });
+  const order2 = await makeOrderFromAccountOasisDex(
+    shared.env,
+    matchingMarketAddress,
+    {
+      buy: createQuantity(deployment.tokens[1], 2),
+      sell: createQuantity(deployment.tokens[0], 0.1),
+    },
+  );
 
   expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
 
-  await cancelOrderFromAccountOasisDex(matchingMarketAddress, {
+  await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
     id: order2.id,
   });
 

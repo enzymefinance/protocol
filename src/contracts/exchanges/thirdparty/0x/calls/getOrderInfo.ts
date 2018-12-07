@@ -17,15 +17,19 @@ interface OrderInfo {
   takerFilled: QuantityInterface;
 }
 
-const prepareArgs = ({ signedOrder }: { signedOrder: SignedOrder }) => {
+const prepareArgs = (_, { signedOrder }: { signedOrder: SignedOrder }) => {
   return [stringifyStruct(signedOrder)];
 };
 
-const postProcess = async (result, { params }): Promise<OrderInfo> => {
+const postProcess = async (
+  environment,
+  result,
+  { params },
+): Promise<OrderInfo> => {
   const takerTokenAddress = assetDataUtils.decodeERC20AssetData(
     params.signedOrder.takerAssetData,
   ).tokenAddress;
-  const takerToken = await getToken(takerTokenAddress);
+  const takerToken = await getToken(environment, takerTokenAddress);
 
   const info = {
     hash: result.orderHash,

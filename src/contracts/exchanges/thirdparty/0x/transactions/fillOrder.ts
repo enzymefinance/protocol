@@ -24,6 +24,7 @@ import { getOrderInfo } from '../calls/getOrderInfo';
 import { isValidSignature } from '../calls/isValidSignature';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getFeeToken } from '../calls/getFeeToken';
+import { Environment } from '~/utils/environment/Environment';
 
 export interface FillOrderArgs {
   signedOrder: SignedOrder;
@@ -38,24 +39,22 @@ export interface FillOrderResult {
 }
 
 const guard: GuardFunction<FillOrderArgs> = async (
+  environment,
   { signedOrder, takerQuantity: providedTakerQuantity },
   contractAddress,
-  environment,
 ) => {
-  const orderInfo = await getOrderInfo(contractAddress, { signedOrder });
+  const orderInfo = await getOrderInfo(environment, contractAddress, {
+    signedOrder,
+  });
 
   ensure(
     orderInfo.status === `${OrderStatus.FILLABLE}`,
     `Order is not fillable. Got status: ${OrderStatus[orderInfo.status]}`,
   );
 
-  const validSignature = await isValidSignature(
-    contractAddress,
-    {
-      signedOrder,
-    },
-    environment,
-  );
+  const validSignature = await isValidSignature(environment, contractAddress, {
+    signedOrder,
+  });
 
   ensure(validSignature, 'Signature invalid');
 
@@ -63,21 +62,21 @@ const guard: GuardFunction<FillOrderArgs> = async (
     signedOrder.takerAssetData,
   );
 
-  const takerToken = await getToken(tokenAddress, environment);
+  const takerToken = await getToken(environment, tokenAddress);
 
   const takerQuantity =
     providedTakerQuantity ||
     createQuantity(takerToken, signedOrder.takerAssetAmount.toString());
 
-  const erc20Proxy = await getAssetProxy(contractAddress);
+  const erc20Proxy = await getAssetProxy(environment, contractAddress);
 
-  await approve({ howMuch: takerQuantity, spender: erc20Proxy }, environment);
+  await approve(environment, { howMuch: takerQuantity, spender: erc20Proxy });
 };
 
-const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
-  signedOrder,
-  takerQuantity,
-}) => {
+const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
+  _,
+  { signedOrder, takerQuantity },
+) => {
   const stringifiedSignedOrder = stringifyStruct(signedOrder);
 
   const takerAssetAmount = takerQuantity
@@ -94,16 +93,16 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async ({
 };
 
 const parse0xFillReceipt = async (
+  environment: Environment,
   { fillValues, feeToken }: { fillValues: any; feeToken: TokenInterface },
-  environment,
 ) => {
   const makerToken = await getToken(
-    assetDataUtils.decodeERC20AssetData(fillValues.makerAssetData).tokenAddress,
     environment,
+    assetDataUtils.decodeERC20AssetData(fillValues.makerAssetData).tokenAddress,
   );
   const takerToken = await getToken(
-    assetDataUtils.decodeERC20AssetData(fillValues.takerAssetData).tokenAddress,
     environment,
+    assetDataUtils.decodeERC20AssetData(fillValues.takerAssetData).tokenAddress,
   );
 
   const result = {
@@ -123,18 +122,18 @@ const parse0xFillReceipt = async (
 };
 
 const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
+  environment,
   receipt,
   params,
   contractAddress,
-  environment,
 ) => {
   const fillValues = receipt.events.Fill.returnValues;
-  const feeToken = await getFeeToken(contractAddress, undefined, environment);
+  const feeToken = await getFeeToken(environment, contractAddress);
 
-  const result = await parse0xFillReceipt(
-    { fillValues, feeToken },
-    environment,
-  );
+  const result = await parse0xFillReceipt(environment, {
+    fillValues,
+    feeToken,
+  });
   return result;
 };
 

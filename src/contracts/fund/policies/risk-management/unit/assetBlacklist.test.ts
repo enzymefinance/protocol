@@ -23,7 +23,9 @@ beforeAll(async () => {
 });
 
 test('Create blacklist', async () => {
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+  const blacklist = await deploy(shared.env, Contracts.AssetBlacklist, [
+    shared.assetArray,
+  ]);
 
   expect(await blacklist.methods.getMembers().call()).toEqual(
     shared.assetArray,
@@ -31,7 +33,9 @@ test('Create blacklist', async () => {
 });
 
 test('Add asset to blacklist', async () => {
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+  const blacklist = await deploy(shared.env, Contracts.AssetBlacklist, [
+    shared.assetArray,
+  ]);
   const mockAsset = `${randomAddress()}`;
 
   expect(await blacklist.methods.getMembers().call()).toEqual(
@@ -52,10 +56,12 @@ test('Add asset to blacklist', async () => {
 });
 
 test('Policy manager with blacklist', async () => {
-  const contracts = await deployMockSystem({
+  const contracts = await deployMockSystem(shared.env, {
     policyManagerContract: Contracts.PolicyManager,
   });
-  const blacklist = await deploy(Contracts.AssetBlacklist, [shared.assetArray]);
+  const blacklist = await deploy(shared.env, Contracts.AssetBlacklist, [
+    shared.assetArray,
+  ]);
   const mockAsset = `${randomAddress()}`;
   await contracts.policyManager.methods
     .register(shared.testBlacklist, blacklist.options.address)

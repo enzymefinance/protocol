@@ -16,23 +16,29 @@ import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
-  shared.environmentTaker = withDifferentAccount(
-    shared.accounts[1],
-    shared.environment,
+  shared.env = await initTestEnvironment();
+  shared.accounts = await shared.env.eth.getAccounts();
+  shared.envTaker = withDifferentAccount(shared.env, shared.accounts[1]);
+
+  shared.wethToken = await getToken(
+    shared.env,
+    await deployToken(shared.env, 'WETH'),
+  );
+  shared.mlnToken = await getToken(
+    shared.env,
+    await deployToken(shared.env, 'MLN'),
+  );
+  shared.zrxToken = await getToken(
+    shared.env,
+    await deployToken(shared.env, 'ZRX'),
   );
 
-  shared.wethToken = await getToken(await deployToken('WETH'));
-  shared.mlnToken = await getToken(await deployToken('MLN'));
-  shared.zrxToken = await getToken(await deployToken('ZRX'));
-
-  await transfer({
+  await transfer(shared.env, {
     howMuch: createQuantity(shared.wethToken, 100),
-    to: shared.environmentTaker.wallet.address,
+    to: shared.envTaker.wallet.address,
   });
 
-  shared.zeroExAddress = await deploy0xExchange({
+  shared.zeroExAddress = await deploy0xExchange(shared.env, {
     zrxToken: shared.zrxToken,
   });
 });
@@ -41,31 +47,23 @@ test('Happy path', async () => {
   const makerQuantity = createQuantity(shared.mlnToken, 1);
   const takerQuantity = createQuantity(shared.wethToken, 0.05);
 
-  const unsignedOrder = await createOrder(
-    shared.zeroExAddress,
-    {
-      makerQuantity,
-      takerQuantity,
-    },
-    shared.environment,
-  );
+  const unsignedOrder = await createOrder(shared.env, shared.zeroExAddress, {
+    makerQuantity,
+    takerQuantity,
+  });
 
-  await approveOrder(shared.zeroExAddress, unsignedOrder, shared.environment);
+  await approveOrder(shared.env, shared.zeroExAddress, unsignedOrder);
 
-  const signedOrder = await signOrder(unsignedOrder, shared.environment);
+  const signedOrder = await signOrder(shared.env, unsignedOrder);
   expect(signedOrder.exchangeAddress).toBe(shared.zeroExAddress.toLowerCase());
   expect(signedOrder.makerAddress).toBe(shared.accounts[0].toLowerCase());
   expect(signedOrder.makerAssetAmount.toString()).toBe(
     makerQuantity.quantity.toString(),
   );
 
-  const result = await fillOrder(
-    shared.zeroExAddress,
-    {
-      signedOrder,
-    },
-    shared.environmentTaker,
-  );
+  const result = await fillOrder(shared.envTaker, shared.zeroExAddress, {
+    signedOrder,
+  });
 
   expect(result).toBeTruthy();
 });

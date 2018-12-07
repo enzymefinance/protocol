@@ -17,12 +17,14 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   shared.feeA = getContract(
+    shared.env,
     Contracts.MockFee,
-    await deploy(Contracts.MockFee, []),
+    await deploy(shared.env, Contracts.MockFee, []),
   );
   shared.feeB = getContract(
+    shared.env,
     Contracts.MockFee,
-    await deploy(Contracts.MockFee, []),
+    await deploy(shared.env, Contracts.MockFee, []),
   );
   shared.feeArray = [
     {
@@ -38,7 +40,7 @@ beforeEach(async () => {
   ];
   shared = Object.assign(
     shared,
-    await deployMockSystem({
+    await deployMockSystem(shared.env, {
       feeManagerContract: Contracts.FeeManager,
       fees: shared.feeArray,
     }),

@@ -20,18 +20,23 @@ export interface CallOnExchangeArgs {
 }
 
 const guard: GuardFunction<CallOnExchangeArgs> = async (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => {
-  await approve({ howMuch: params.sell, spender: contractAddress });
+  await approve(environment, {
+    howMuch: params.sell,
+    spender: contractAddress,
+  });
   const oasisDexContract = getContract(
+    environment,
     Contracts.MatchingMarket,
     contractAddress,
   );
   const dust = await oasisDexContract.methods
     ._dust(params.sell.token.address)
     .call();
+
   ensure(
     greaterThan(params.sell, createQuantity(params.sell.token, dust)),
     'Selling quantity too low.',
@@ -43,16 +48,16 @@ const guard: GuardFunction<CallOnExchangeArgs> = async (
 
   ensure(isWhitelisted, 'Token pair not whitelisted');
 
-  ensureSufficientBalance(params.sell, environment.wallet.address, environment);
+  ensureSufficientBalance(environment, params.sell, environment.wallet.address);
 
   const isMarketClosed = await oasisDexContract.methods.isClosed().call();
   ensure(!isMarketClosed, 'Market closed');
 };
 
-const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
-  sell,
-  buy,
-}) => {
+const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async (
+  _,
+  { sell, buy },
+) => {
   return [
     sell.quantity.toString(),
     sell.token.address,
@@ -62,7 +67,7 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
   ];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
+const postProcess = async (environment, receipt, params, contractAddress) => {
   return {
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,

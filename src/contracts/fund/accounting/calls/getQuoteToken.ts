@@ -4,11 +4,11 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { TokenInterface } from '@melonproject/token-math/token';
 
 const postProcess = async (
+  environment,
   result,
   prepared,
-  environment,
 ): Promise<TokenInterface> => {
-  const fundToken = await getToken(result, environment);
+  const fundToken = await getToken(environment, result);
   return fundToken;
 };
 

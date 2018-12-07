@@ -30,12 +30,12 @@ export interface RedeemWithConstraintsResult {
   success: boolean;
 }
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
-  const balance = await balanceOf(settings.sharesAddress, {
+const guard = async (environment, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hub);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
+  const balance = await balanceOf(environment, settings.sharesAddress, {
     address: environment.wallet.address,
   });
   const shareQuantity = createQuantity(fundToken, `${params.sharesQuantity}`);
@@ -47,15 +47,15 @@ const guard = async (params, contractAddress, environment) => {
   );
 };
 
-const prepareArgs: PrepareArgsFunction<RedeemWithConstraintsArgs> = async ({
-  sharesQuantity,
-  requestedAssets,
-}) => [`${sharesQuantity}`, requestedAssets.map(asset => `${asset}`)];
+const prepareArgs: PrepareArgsFunction<RedeemWithConstraintsArgs> = async (
+  _,
+  { sharesQuantity, requestedAssets },
+) => [`${sharesQuantity}`, requestedAssets.map(asset => `${asset}`)];
 
 const postProcess: PostProcessFunction<
   RedeemWithConstraintsArgs,
   RedeemWithConstraintsResult
-> = async receipt => {
+> = async () => {
   return { success: true };
 };
 

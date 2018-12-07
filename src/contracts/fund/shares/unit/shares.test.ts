@@ -10,11 +10,12 @@ let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(shared, await deployMockSystem(shared.env));
   shared.user = shared.env.wallet.address;
   shared.shares = getContract(
+    shared.env,
     Contracts.Shares,
-    await deploy(Contracts.Shares, [shared.hub.options.address]),
+    await deploy(shared.env, Contracts.Shares, [shared.hub.options.address]),
   );
 });
 

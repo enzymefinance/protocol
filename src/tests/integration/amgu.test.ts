@@ -21,8 +21,8 @@ import { sign } from '~/utils/environment/sign';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+  shared.env = await initTestEnvironment();
+  shared.accounts = await shared.env.eth.getAccounts();
 });
 
 const randomString = (length = 4) =>
@@ -32,7 +32,7 @@ const randomString = (length = 4) =>
 
 test('Set amgu and check its usage', async () => {
   const fundName = `test-fund-${randomString()}`;
-  const deployment = await deploySystem();
+  const deployment = await deploySystem(shared.env);
   const {
     exchangeConfigs,
     priceSource,
@@ -45,10 +45,10 @@ test('Set amgu and check its usage', async () => {
 
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];
-  const amguToken = await getAmguToken(version);
+  const amguToken = await getAmguToken(shared.env, version);
   const amguPrice = createQuantity(amguToken, '1000000000');
-  const oldAmguPrice = await getAmguPrice(version);
-  const newAmguPrice = await setAmguPrice(version, amguPrice);
+  const oldAmguPrice = await getAmguPrice(shared.env, version);
+  const newAmguPrice = await setAmguPrice(shared.env, version, amguPrice);
 
   expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
   expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
@@ -68,33 +68,25 @@ test('Set amgu and check its usage', async () => {
     createQuantity(quoteToken, '2'),
   );
 
-  await update(priceSource, [newPrice]);
+  await update(shared.env, priceSource, [newPrice]);
 
-  const [price] = await getPrices(priceSource, [baseToken]);
+  const [price] = await getPrices(shared.env, priceSource, [baseToken]);
   expect(isEqualPrice(price, newPrice)).toBe(true);
 
-  const prepared = await createComponents.prepare(version, args);
+  const prepared = await createComponents.prepare(shared.env, version, args);
 
-  const preBalance = await shared.environment.eth.getBalance(
-    shared.accounts[0],
-  );
+  const preBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
-  const signedTransactionData = await sign(
-    prepared.rawTransaction,
-    shared.environment,
-  );
+  const signedTransactionData = await sign(shared.env, prepared.rawTransaction);
 
   const result = await createComponents.send(
+    shared.env,
     version,
     signedTransactionData,
     args,
-    undefined,
-    shared.environment,
   );
 
-  const postBalance = await shared.environment.eth.getBalance(
-    shared.accounts[0],
-  );
+  const postBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
   const diffQ = subtract(preBalance, postBalance);
 

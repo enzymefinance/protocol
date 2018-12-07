@@ -5,12 +5,12 @@ import { deployToken } from '../transactions/deploy';
 const shared: any = {};
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  shared.address = await deployToken();
+  shared.env = await initTestEnvironment();
+  shared.address = await deployToken(shared.env);
 });
 
 test('getInfo', async () => {
-  const info = await getInfo(shared.address);
+  const info = await getInfo(shared.env, shared.address);
 
   expect(info.symbol).toBe('FIXED');
   expect(info.name).toBe('Premined Token');

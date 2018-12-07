@@ -20,12 +20,12 @@ export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
   R.find(R.propEq('symbol', symbol), tokens);
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+  shared.env = await initTestEnvironment();
+  shared.accounts = await shared.env.eth.getAccounts();
 
-  const deployment = await deploySystem();
+  const deployment = await deploySystem(shared.env);
 
-  shared.settings = await setupInvestedTestFund(deployment);
+  shared.settings = await setupInvestedTestFund(shared.env, deployment);
 
   shared.zeroExAddress = deployment.exchangeConfigs.find(
     R.propEq('name', 'ZeroEx'),
@@ -34,23 +34,17 @@ beforeAll(async () => {
   shared.mln = getTokenBySymbol(deployment.tokens, 'MLN');
   shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
 
-  const unsigned0xOrder = await createOrder(
-    shared.zeroExAddress,
-    {
-      makerAddress: shared.settings.tradingAddress,
-      makerQuantity: createQuantity(shared.weth, 0.05),
-      takerQuantity: createQuantity(shared.mln, 1),
-    },
-    shared.environment,
-  );
+  const unsigned0xOrder = await createOrder(shared.env, shared.zeroExAddress, {
+    makerAddress: shared.settings.tradingAddress,
+    makerQuantity: createQuantity(shared.weth, 0.05),
+    takerQuantity: createQuantity(shared.mln, 1),
+  });
 
-  shared.signedOrder = await signOrder(unsigned0xOrder, shared.environment);
+  shared.signedOrder = await signOrder(shared.env, unsigned0xOrder);
 
-  const result = await make0xOrder(
-    shared.settings.tradingAddress,
-    { signedOrder: shared.signedOrder },
-    shared.environment,
-  );
+  const result = await make0xOrder(shared.env, shared.settings.tradingAddress, {
+    signedOrder: shared.signedOrder,
+  });
 
   expect(result).toBe(true);
 });
@@ -58,20 +52,16 @@ beforeAll(async () => {
 // tslint:disable-next-line:max-line-length
 test('Previously made 0x order cancelled and not takeable anymore', async () => {
   const result = await cancel0xOrder(
+    shared.env,
     shared.settings.tradingAddress,
     { signedOrder: shared.signedOrder },
-    shared.environment,
   );
 
   expect(result).toBe(true);
 
   await expect(
-    fillOrder(
-      shared.zeroExAddress,
-      {
-        signedOrder: shared.signedOrder,
-      },
-      shared.environment,
-    ),
+    fillOrder(shared.env, shared.zeroExAddress, {
+      signedOrder: shared.signedOrder,
+    }),
   ).rejects.toThrow('CANCELLED');
 });

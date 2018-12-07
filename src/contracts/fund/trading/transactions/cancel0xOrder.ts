@@ -15,17 +15,13 @@ interface Cancel0xOrderArgs {
 }
 
 const prepareArgs: PrepareArgsFunction<Cancel0xOrderArgs> = async (
+  environment,
   { signedOrder },
   contractAddress,
-  environment,
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    {
-      exchange: Exchanges.ZeroEx,
-    },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.ZeroEx,
+  });
 
   const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
 

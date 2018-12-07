@@ -4,10 +4,10 @@ import { ensure } from '~/utils/guards/ensure';
 import { Environment } from '~/utils/environment/Environment';
 
 const ensureIsNotShutDown = async (
-  address: Address,
   environment: Environment,
+  address: Address,
 ) => {
-  const shutDown = await isShutDown(address, null, environment);
+  const shutDown = await isShutDown(environment, address);
   ensure(!shutDown, `Fund with hub address: ${address} is shut down`);
 };
 

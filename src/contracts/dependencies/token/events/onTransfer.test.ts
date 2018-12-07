@@ -1,6 +1,5 @@
 import { Address } from '@melonproject/token-math/address';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getToken } from '../calls/getToken';
 import { transfer } from '../transactions/transfer';
@@ -10,19 +9,17 @@ import { deployToken } from '../transactions/deploy';
 const shared: any = {};
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  const environment = getGlobalEnvironment();
-
-  shared.address = await deployToken();
-  shared.token = await getToken(shared.address);
-  shared.accounts = (await environment.eth.getAccounts()).map(
+  shared.env = await initTestEnvironment();
+  shared.address = await deployToken(shared.env);
+  shared.token = await getToken(shared.env, shared.address);
+  shared.accounts = (await shared.env.eth.getAccounts()).map(
     account => new Address(account),
   );
 });
 
 it('onTransfer', async () =>
   new Promise(async resolve => {
-    onTransfer(shared.token.address, {
+    onTransfer(shared.env, shared.token.address, {
       from: new Address(shared.accounts[0]),
     }).subscribe(a => {
       expect(a.from).toBe(shared.accounts[0].toString());
@@ -31,7 +28,7 @@ it('onTransfer', async () =>
       resolve();
     });
 
-    await transfer({
+    await transfer(shared.env, {
       howMuch: createQuantity(shared.token, '1000000000000000000'),
       to: shared.accounts[1],
     });

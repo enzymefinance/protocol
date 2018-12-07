@@ -8,12 +8,12 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
-  const balance = await balanceOf(settings.sharesAddress, {
+const guard = async (environment, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hub);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
+  const balance = await balanceOf(environment, settings.sharesAddress, {
     address: environment.wallet.address,
   });
   ensure(
@@ -24,10 +24,10 @@ const guard = async (params, contractAddress, environment) => {
   );
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+const postProcess = async (environment, receipt, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
 
   return {
     shareQuantity: createQuantity(

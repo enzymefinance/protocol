@@ -2,18 +2,20 @@ import { TokenInterface } from '@melonproject/token-math/token';
 import { getInfo } from './getInfo';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
 
 export const getToken = async (
-  contractAddress,
-  environment = getGlobalEnvironment(),
+  environment: Environment,
+  contractAddress: Address,
 ): Promise<TokenInterface> => {
   const contract = getContract(
+    environment,
     Contracts.PreminedToken,
     contractAddress,
-    environment,
   );
-  const info = await getInfo(contractAddress, environment);
+
+  const info = await getInfo(environment, contractAddress);
 
   return {
     address: contract.options.address,

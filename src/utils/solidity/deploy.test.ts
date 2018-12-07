@@ -1,39 +1,35 @@
 import { Environment } from '~/utils/environment/Environment';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
 import { deploy } from './deploy';
 
-let environment;
+const shared: any = {};
 
 beforeAll(async () => {
-  environment = await initTestEnvironment();
+  shared.env = await initTestEnvironment();
 });
 
 test('Happy path', async () => {
   const address = await deploy(
+    shared.env,
     'dependencies/token/PreminedToken.sol',
     ['TEST', 18, 'Test Token'],
-    environment,
   );
 
   expect(isAddress(address)).toBe(true);
 });
 
 test('Throwing error if gasLimit is below gasEstimation', async () => {
-  const globalEnvironment = getGlobalEnvironment();
   const environment: Environment = {
-    ...globalEnvironment,
+    ...shared.env,
     options: {
       gasLimit: '1000',
-      gasPrice: globalEnvironment.options.gasPrice,
+      gasPrice: shared.env.options.gasPrice,
     },
   };
   await expect(
-    deploy(
-      'exchanges/thirdparty/oasisdex/MatchingMarket.sol',
-      [99999999999],
-      environment,
-    ),
+    deploy(environment, 'exchanges/thirdparty/oasisdex/MatchingMarket.sol', [
+      99999999999,
+    ]),
   ).rejects.toThrow('gas limit:');
 });

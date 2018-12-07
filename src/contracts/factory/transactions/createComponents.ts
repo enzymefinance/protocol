@@ -1,6 +1,5 @@
 import { TokenInterface } from '@melonproject/token-math/token';
 import { Address } from '@melonproject/token-math/address';
-
 import {
   transactionFactory,
   PostProcessFunction,
@@ -9,7 +8,6 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
@@ -19,6 +17,7 @@ interface ExchangeConfig {
   adapterAddress: Address;
   takesCustody: boolean;
 }
+
 export interface FeeConfig {
   feeAddress: Address;
   feeRate: BigInteger;
@@ -38,14 +37,15 @@ interface CreateComponentsArgs {
 type CreateComponentsResult = string;
 
 const guard: GuardFunction<CreateComponentsArgs> = async (
+  environment,
   contractAddress,
   params,
-  environment,
 ) => {
   // createComponents
 };
 
 const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
+  _,
   {
     fundName,
     fees,
@@ -86,16 +86,11 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
 const postProcess: PostProcessFunction<
   CreateComponentsArgs,
   CreateComponentsResult
-> = async (
-  receipt,
-  params,
-  contractAddress,
-  environment = getGlobalEnvironment(),
-) => {
+> = async (environment, receipt, params, contractAddress) => {
   return managersToHubs(
+    environment,
     contractAddress,
     environment.wallet.address,
-    environment,
   );
 };
 

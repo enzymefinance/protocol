@@ -6,12 +6,12 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { sign } from '../environment/sign';
 
-const shared: { [propName: string]: any } = {};
+const shared: any = {};
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.token = await getToken(await deployToken());
-  shared.accounts = (await shared.environment.eth.getAccounts()).map(
+  shared.env = await initTestEnvironment();
+  shared.token = await getToken(shared.env, await deployToken(shared.env));
+  shared.accounts = (await shared.env.eth.getAccounts()).map(
     account => new Address(account),
   );
 });
@@ -22,36 +22,35 @@ test('Skip guards and preflight', async () => {
     to: shared.accounts[1],
   };
 
-  await expect(transfer.prepare(params)).rejects.toThrow('Insufficient FIXED');
-
-  await expect(transfer.prepare(params, { skipGuards: true })).rejects.toThrow(
-    'Gas estimation (preflight) failed',
+  await expect(transfer.prepare(shared.env, params)).rejects.toThrow(
+    'Insufficient FIXED',
   );
 
   await expect(
-    transfer.prepare(params, {
+    transfer.prepare(shared.env, params, { skipGuards: true }),
+  ).rejects.toThrow('Gas estimation (preflight) failed');
+
+  await expect(
+    transfer.prepare(shared.env, params, {
       skipGasEstimation: true,
       skipGuards: true,
     }),
   ).rejects.toThrow('Cannot skip gasEstimation if no options.gas is provided');
 
-  const prepared = await transfer.prepare(params, {
+  const prepared = await transfer.prepare(shared.env, params, {
     gas: '8000000',
     skipGasEstimation: true,
     skipGuards: true,
   });
 
-  const signedTransactionData = await sign(
-    prepared.rawTransaction,
-    shared.environment,
-  );
-
-  await expect(transfer.send(signedTransactionData, params)).rejects.toThrow(
-    'VM Exception while processing transaction: revert',
-  );
+  const signedTransactionData = await sign(shared.env, prepared.rawTransaction);
 
   await expect(
-    transfer(params, shared.environment, {
+    transfer.send(shared.env, signedTransactionData, params),
+  ).rejects.toThrow('VM Exception while processing transaction: revert');
+
+  await expect(
+    transfer(shared.env, params, {
       gas: '8000000',
       skipGasEstimation: true,
       skipGuards: true,

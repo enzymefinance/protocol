@@ -10,7 +10,7 @@ import {
   withContractAddressQuery,
 } from '~/utils/solidity/withContractAddressQuery';
 
-const guard = async ({ howMuch, spender }, environment) => {
+const guard = async (_, { howMuch, spender }) => {
   ensure(
     isAddress(spender),
     `Spender is not an address. Got: ${spender}`,
@@ -22,12 +22,12 @@ const guard = async ({ howMuch, spender }, environment) => {
   );
 };
 
-const prepareArgs = async ({ howMuch, spender }) => [
+const prepareArgs = async (_, { howMuch, spender }) => [
   spender.toString(),
   howMuch.quantity.toString(),
 ];
 
-const postProcess = async receipt => {
+const postProcess = async () => {
   return true;
 };
 

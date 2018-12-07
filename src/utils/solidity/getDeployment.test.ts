@@ -2,13 +2,15 @@ import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getDeployment } from './getDeployment';
 import { deploySystem } from '~/utils/deploySystem';
 
+const shared: any = {};
+
 beforeAll(async () => {
-  await initTestEnvironment();
+  shared.env = await initTestEnvironment();
 });
 
 test('Happy path', async () => {
-  await deploySystem();
-  const deployment = await getDeployment();
+  await deploySystem(shared.env);
+  const deployment = await getDeployment(shared.env);
 
   expect(Object.keys(deployment)).toEqual(
     expect.arrayContaining([

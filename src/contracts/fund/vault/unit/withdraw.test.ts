@@ -1,6 +1,5 @@
 import * as path from 'path';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy } from '~/utils/solidity/deploy';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
@@ -11,21 +10,25 @@ import { Contracts } from '~/Contracts';
 const shared: any = {};
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  shared.env = getGlobalEnvironment();
-  const tokenAddress = await deployToken();
-  shared.token = getContract(Contracts.PreminedToken, tokenAddress);
-  shared.factoryAddress = await deployVaultFactory();
+  shared.env = await initTestEnvironment();
+  const tokenAddress = await deployToken(shared.env);
+  shared.token = getContract(shared.env, Contracts.PreminedToken, tokenAddress);
+  shared.factoryAddress = await deployVaultFactory(shared.env);
   shared.authAddress = await deploy(
+    shared.env,
     path.join('dependencies', 'PermissiveAuthority'),
   );
 });
 
 beforeEach(async () => {
-  const vaultAddress = await createVaultInstance(shared.factoryAddress, {
-    hubAddress: shared.authAddress,
-  });
-  shared.vault = getContract(Contracts.Vault, vaultAddress);
+  const vaultAddress = await createVaultInstance(
+    shared.env,
+    shared.factoryAddress,
+    {
+      hubAddress: shared.authAddress,
+    },
+  );
+  shared.vault = getContract(shared.env, Contracts.Vault, vaultAddress);
 });
 
 test('withdraw token that is not present', async () => {

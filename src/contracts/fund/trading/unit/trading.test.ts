@@ -21,11 +21,12 @@ const takesCustodyMasks = [true, false];
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(shared, await deployMockSystem(shared.env));
   shared.user = shared.env.wallet.address;
   shared.trading = getContract(
+    shared.env,
     Contracts.Trading,
-    await deploy(Contracts.Trading, [
+    await deploy(shared.env, Contracts.Trading, [
       shared.user, // faked for testing
       mockExchanges,
       mockExchangeAdapters,
@@ -67,7 +68,7 @@ test('Exchanges are properly initialized', async () => {
 test('Exchanges cant be initialized without its adapter', async () => {
   const errorMessage = 'Array lengths unequal';
   await expect(
-    deploy(Contracts.Trading, [
+    deploy(shared.env, Contracts.Trading, [
       shared.hub.options.address,
       mockExchanges,
       [mockExchangeAdapters[0]],

@@ -19,12 +19,12 @@ export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
   R.find(R.propEq('symbol', symbol), tokens);
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+  shared.env = await initTestEnvironment();
+  shared.accounts = await shared.env.eth.getAccounts();
 
-  const deployment = await deploySystem();
+  const deployment = await deploySystem(shared.env);
 
-  shared.settings = await setupInvestedTestFund(deployment);
+  shared.settings = await setupInvestedTestFund(shared.env, deployment);
 
   shared.zeroExAddress = deployment.exchangeConfigs.find(
     R.propEq('name', 'ZeroEx'),
@@ -38,33 +38,23 @@ test('Make 0x order from fund and take it from account', async () => {
   const makerQuantity = createQuantity(shared.weth, 0.05);
   const takerQuantity = createQuantity(shared.mln, 1);
 
-  const unsigned0xOrder = await createOrder(
-    shared.zeroExAddress,
-    {
-      makerAddress: shared.settings.tradingAddress,
-      makerQuantity,
-      takerQuantity,
-    },
-    shared.environment,
-  );
+  const unsigned0xOrder = await createOrder(shared.env, shared.zeroExAddress, {
+    makerAddress: shared.settings.tradingAddress,
+    makerQuantity,
+    takerQuantity,
+  });
 
-  const signedOrder = await signOrder(unsigned0xOrder, shared.environment);
+  const signedOrder = await signOrder(shared.env, unsigned0xOrder);
 
-  const result = await make0xOrder(
-    shared.settings.tradingAddress,
-    { signedOrder },
-    shared.environment,
-  );
+  const result = await make0xOrder(shared.env, shared.settings.tradingAddress, {
+    signedOrder,
+  });
 
   expect(result).toBe(true);
 
-  const filled = await fillOrder(
-    shared.zeroExAddress,
-    {
-      signedOrder,
-    },
-    shared.environment,
-  );
+  const filled = await fillOrder(shared.env, shared.zeroExAddress, {
+    signedOrder,
+  });
 
   expect(filled).toBeTruthy();
 });

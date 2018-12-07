@@ -5,15 +5,15 @@ import { ensureIsManager } from '~/contracts/fund/hub/guards/ensureIsManager';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 
-const guard = async (params, contractAddress, environment) => {
-  await ensureIsNotShutDown(`${params.hub}`, environment);
-  await ensureIsManager(`${params.hub}`, environment);
+const guard = async (environment, params) => {
+  await ensureIsNotShutDown(environment, `${params.hub}`);
+  await ensureIsManager(environment, `${params.hub}`);
 };
 
-const prepareArgs = async ({ hub }) => [`${hub}`];
+const prepareArgs = async (_, { hub }) => [`${hub}`];
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const shutDown = await isShutDown(`${params.hub}`, null, environment);
+const postProcess = async (environment, receipt, params) => {
+  const shutDown = await isShutDown(environment, `${params.hub}`, null);
   ensure(shutDown, 'Fund is not shut down');
   return true;
 };

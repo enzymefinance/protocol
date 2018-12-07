@@ -9,7 +9,7 @@ let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(shared, await deployMockSystem(shared.env));
   shared.user = shared.env.wallet.address;
   shared.quote = shared.weth.options.address;
   shared.nonQuote = shared.mln.options.address;
@@ -58,7 +58,9 @@ test.each([
   ],
 ])('%s', async (name, trial) => {
   const uniqueSig = Web3Utils.sha3(name).substring(0, 10);
-  const policy = await deploy(Contracts.MaxConcentration, [trial.max]);
+  const policy = await deploy(shared.env, Contracts.MaxConcentration, [
+    trial.max,
+  ]);
   const trialAsset = shared[trial.asset];
 
   expect(await policy.methods.maxConcentration().call()).toBe(trial.max);

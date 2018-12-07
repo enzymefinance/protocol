@@ -10,7 +10,7 @@ let shared: any = {};
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = Object.assign(shared, await deployMockSystem());
+  shared = Object.assign(shared, await deployMockSystem(shared.env));
   shared.user = shared.env.wallet.address;
   shared.opts = { from: shared.user, gas: 8000000 };
   shared.testFunction = Web3Utils.sha3('func()').substring(0, 10);
@@ -19,14 +19,16 @@ beforeAll(async () => {
 test('Create and get max', async () => {
   const positions = ['0', '125', '9999999999'];
   for (const n of positions) {
-    const maxPositions = await deploy(Contracts.MaxPositions, [n]);
+    const maxPositions = await deploy(shared.env, Contracts.MaxPositions, [n]);
     expect(await maxPositions.methods.maxPositions().call()).toEqual(n);
   }
 });
 
 test('Policy manager and mock accounting with maxPositions', async () => {
   const maxPositions = '3';
-  const policy = await deploy(Contracts.MaxPositions, [maxPositions]);
+  const policy = await deploy(shared.env, Contracts.MaxPositions, [
+    maxPositions,
+  ]);
   const nonQuoteAsset = `${randomAddress()}`;
   const quoteAsset = shared.weth.options.address;
   await shared.policyManager.methods

@@ -18,12 +18,12 @@ export interface ExecuteRequestForArgs {
   who: Address;
 }
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
-  const request = await getRequest(contractAddress, {
+const guard = async (environment, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hub);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
+  const request = await getRequest(environment, contractAddress, {
     of: environment.wallet.address,
   });
   ensure(
@@ -36,16 +36,17 @@ const guard = async (params, contractAddress, environment) => {
   // ensure isPriceRecent
 };
 
-const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async ({
-  who,
-}) => {
+const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async (
+  _,
+  { who },
+) => {
   return [who.toString()];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+const postProcess = async (environment, receipt, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
 
   return {
     shareQuantity: createQuantity(

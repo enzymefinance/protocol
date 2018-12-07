@@ -1,8 +1,12 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from './deploySystem';
 
-beforeAll(async () => await initTestEnvironment());
+const shared: any = {};
+
+beforeAll(async () => {
+  shared.env = await initTestEnvironment();
+});
 
 test('Happy path', async () => {
-  await deploySystem();
+  await deploySystem(shared.env);
 });

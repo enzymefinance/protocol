@@ -13,8 +13,14 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared.user = shared.env.wallet.address;
 
-  shared.falsePolicy = await deployAndGetContract(Contracts.FalsePolicy);
-  shared.truePolicy = await deployAndGetContract(Contracts.TruePolicy);
+  shared.falsePolicy = await deployAndGetContract(
+    shared.env,
+    Contracts.FalsePolicy,
+  );
+  shared.truePolicy = await deployAndGetContract(
+    shared.env,
+    Contracts.TruePolicy,
+  );
   shared.testPolicy = Web3Utils.sha3(
     'testPolicy(address[4],uint256[2])',
   ).substring(0, 10);
@@ -27,7 +33,7 @@ beforeAll(async () => {
 });
 
 const createManagerAndRegister = async (contract, policy) => {
-  const contracts = await deployMockSystem({
+  const contracts = await deployMockSystem(shared.env, {
     policyManagerContract: Contracts.PolicyManager,
   });
   await contracts.policyManager.methods

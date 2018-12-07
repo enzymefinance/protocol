@@ -8,16 +8,16 @@ import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 export const getPrices = async (
+  environment: Environment,
   contractAddress: string,
   tokens: TokenInterface[],
   preventCancelDown: boolean = false,
-  environment?: Environment,
 ): Promise<PriceInterface[]> => {
-  const quoteToken = await getQuoteToken(contractAddress, environment);
+  const quoteToken = await getQuoteToken(environment, contractAddress);
   const contract = await getContract(
+    environment,
     Contracts.TestingPriceFeed,
     contractAddress,
-    environment,
   );
 
   const result = await contract.methods

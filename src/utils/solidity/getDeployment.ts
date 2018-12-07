@@ -1,5 +1,5 @@
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getSessionDeployment } from '~/utils/sessionDeployments';
+import { Environment } from '~/utils/environment/Environment';
 
 const ensureDeployments = () => {
   try {
@@ -12,7 +12,7 @@ const ensureDeployments = () => {
   }
 };
 
-const doGetDeployment = (track, network) => {
+const doGetDeployment = (track: string, network: string) => {
   const deploymentId = `${network}:${track}`;
   const deployment =
     getSessionDeployment(deploymentId) || ensureDeployments()[deploymentId];
@@ -27,13 +27,13 @@ const doGetDeployment = (track, network) => {
   return deployment;
 };
 
-const getDeployment = async (environment = getGlobalEnvironment()) => {
+const getDeployment = async (environment: Environment) => {
   const track = environment.track;
   const network = await environment.eth.net.getId();
   return doGetDeployment(track, network);
 };
 
-const getDeploymentSync = (network, environment = getGlobalEnvironment()) => {
+const getDeploymentSync = (environment: Environment, network: string) => {
   const track = environment.track;
   return doGetDeployment(track, network);
 };

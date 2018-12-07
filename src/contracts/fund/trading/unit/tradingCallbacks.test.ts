@@ -13,15 +13,17 @@ const mockExchange = randomAddress().toString();
 
 beforeAll(async () => {
   shared.env = await initTestEnvironment();
-  shared = await Object.assign(shared, await deployMockSystem());
+  shared = await Object.assign(shared, await deployMockSystem(shared.env));
   shared.user = shared.env.wallet.address;
   const mockAdapter = await getContract(
+    shared.env,
     Contracts.MockAdapter,
-    await deploy(Contracts.MockAdapter),
+    await deploy(shared.env, Contracts.MockAdapter),
   );
   shared.trading = await getContract(
+    shared.env,
     Contracts.Trading,
-    await deploy(Contracts.Trading, [
+    await deploy(shared.env, Contracts.Trading, [
       shared.user, // faked so user can call initialize
       [mockExchange],
       [mockAdapter.options.address],

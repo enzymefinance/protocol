@@ -7,11 +7,12 @@ interface GetAssetProxyArgs {
   assetProxyId?: AssetProxyId;
 }
 
-const prepareArgs = ({
-  assetProxyId = AssetProxyId.ERC20,
-}: GetAssetProxyArgs) => [assetProxyId.toString()];
+const prepareArgs = (
+  _,
+  { assetProxyId = AssetProxyId.ERC20 }: GetAssetProxyArgs,
+) => [assetProxyId.toString()];
 
-const postProcess = result => new Address(result);
+const postProcess = (_, result) => new Address(result);
 
 const getAssetProxy = callFactory('getAssetProxy', Contracts.ZeroExExchange, {
   postProcess,

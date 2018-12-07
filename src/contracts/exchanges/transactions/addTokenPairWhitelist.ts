@@ -5,10 +5,10 @@ import {
   log,
   TokenInterface,
 } from '@melonproject/token-math/token';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensure } from '~/utils/guards/ensure';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { Environment } from '~/utils/environment/Environment';
 
 interface IAddTokenPairWhitelist {
   quoteToken: TokenInterface;
@@ -16,9 +16,9 @@ interface IAddTokenPairWhitelist {
 }
 
 export const guards = async (
+  environment: Environment,
   contractAddress: Address,
   { quoteToken, baseToken },
-  environment,
 ) => {
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
@@ -31,26 +31,25 @@ export const guards = async (
 };
 
 export const prepare = async (
+  environment: Environment,
   contractAddress: Address,
   { quoteToken, baseToken },
-  environment,
 ) => {
   const contract = getContract(
+    environment,
     Contracts.MatchingMarket,
     contractAddress,
-    environment,
   );
+
   const transaction = contract.methods.addTokenPairWhitelist(
     quoteToken.address,
     baseToken.address,
   );
+
   return transaction;
 };
 
-export const send = async (
-  transaction,
-  environment = getGlobalEnvironment(),
-) => {
+export const send = async (environment, transaction) => {
   const receipt = await transaction.send({
     from: environment.wallet.address,
   });
@@ -64,13 +63,13 @@ export const validateReceipt = (receipt, params) => {
 };
 
 export const addTokenPairWhitelist = async (
+  environment: Environment,
   contractAddress: Address,
   params: IAddTokenPairWhitelist,
-  environment = getGlobalEnvironment(),
 ) => {
-  await guards(contractAddress, params, environment);
-  const transaction = await prepare(contractAddress, params, environment);
-  const receipt = await send(transaction, environment);
+  await guards(environment, contractAddress, params);
+  const transaction = await prepare(environment, contractAddress, params);
+  const receipt = await send(environment, transaction);
   const result = validateReceipt(receipt, params);
   return result;
 };

@@ -3,7 +3,7 @@ import { Contracts } from '~/Contracts';
 
 const guards = async () => {};
 
-const prepareArgs = async ({ versionAddress }) => [`${versionAddress}`];
+const prepareArgs = async (_, { versionAddress }) => [`${versionAddress}`];
 
 const postProcess = async () => {};
 

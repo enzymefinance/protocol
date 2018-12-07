@@ -5,7 +5,6 @@ import {
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { balanceOf } from '../calls/balanceOf';
 import { getToken } from '../calls/getToken';
 import { deployToken } from '../transactions/deploy';
@@ -16,18 +15,16 @@ const shared: any = {};
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  const environment = getGlobalEnvironment();
-
-  shared.address = await deployToken();
-  shared.token = await getToken(shared.address);
-  shared.accounts = (await environment.eth.getAccounts()).map(
+  shared.env = await initTestEnvironment();
+  shared.address = await deployToken(shared.env);
+  shared.token = await getToken(shared.env, shared.address);
+  shared.accounts = (await shared.env.eth.getAccounts()).map(
     account => new Address(account),
   );
 });
 
 it('balanceOf', async () => {
-  const balance = await balanceOf(shared.address, {
+  const balance = await balanceOf(shared.env, shared.address, {
     address: shared.accounts[0],
   });
 
@@ -38,7 +35,7 @@ it('balanceOf', async () => {
 
 it('balanceOf.observable', async () => {
   let counter = 0;
-  const observable = balanceOf.observable(shared.address, {
+  const observable = balanceOf.observable(shared.env, shared.address, {
     address: shared.accounts[1],
   });
 
@@ -50,17 +47,17 @@ it('balanceOf.observable', async () => {
     }
   });
 
-  await transfer({
+  await transfer(shared.env, {
     howMuch: createQuantity(shared.token, '1000000000000000000'),
     to: shared.accounts[1],
   });
 
-  await transfer({
+  await transfer(shared.env, {
     howMuch: createQuantity(shared.token, '1000000000000000000'),
     to: shared.accounts[1],
   });
 
-  await transfer({
+  await transfer(shared.env, {
     howMuch: createQuantity(shared.token, '1000000000000000000'),
     to: shared.accounts[2],
   });

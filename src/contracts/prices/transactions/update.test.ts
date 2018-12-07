@@ -9,10 +9,16 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 const shared: any = {};
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  shared.quoteToken = await getToken(await deployToken('WETH'));
-  shared.mlnToken = await getToken(await deployToken('MLN'));
-  shared.address = await deploy(shared.quoteToken);
+  shared.env = await initTestEnvironment();
+  shared.quoteToken = await getToken(
+    shared.env,
+    await deployToken(shared.env, 'WETH'),
+  );
+  shared.mlnToken = await getToken(
+    shared.env,
+    await deployToken(shared.env, 'MLN'),
+  );
+  shared.address = await deploy(shared.env, shared.quoteToken);
 });
 
 test('update', async () => {
@@ -21,7 +27,7 @@ test('update', async () => {
     createQuantity(shared.quoteToken, 0.34),
   );
 
-  const receipt = await update(shared.address, [newPrice]);
+  const receipt = await update(shared.env, shared.address, [newPrice]);
 
   expect(isEqual(receipt[0], newPrice)).toBe(true);
 });

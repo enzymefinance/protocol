@@ -1,7 +1,5 @@
 import Web3Accounts from 'web3-eth-accounts';
-
 import { constructEnvironment } from './constructEnvironment';
-import { setGlobalEnvironment } from './globalEnvironment';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
 import { testLogger } from './testLogger';
@@ -103,6 +101,6 @@ export const initTestEnvironment = async () => {
       sign: signer,
     },
   };
-  setGlobalEnvironment(enhancedEnvironment);
+
   return enhancedEnvironment;
 };

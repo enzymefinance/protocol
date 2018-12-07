@@ -23,7 +23,9 @@ beforeAll(async () => {
 });
 
 test('Create whitelist', async () => {
-  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
+  const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
+    shared.assetArray,
+  ]);
 
   expect(await whitelist.methods.getMembers().call()).toEqual(
     shared.assetArray,
@@ -31,7 +33,9 @@ test('Create whitelist', async () => {
 });
 
 test('Remove asset from whitelist', async () => {
-  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
+  const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
+    shared.assetArray,
+  ]);
   const mockAsset = `${randomAddress()}`;
 
   expect(await whitelist.methods.getMembers().call()).toEqual(
@@ -56,10 +60,12 @@ test('Remove asset from whitelist', async () => {
 });
 
 test('Policy manager with whitelist', async () => {
-  const contracts = await deployMockSystem({
+  const contracts = await deployMockSystem(shared.env, {
     policyManagerContract: Contracts.PolicyManager,
   });
-  const whitelist = await deploy(Contracts.AssetWhitelist, [shared.assetArray]);
+  const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
+    shared.assetArray,
+  ]);
   const asset = shared.assetArray[1];
   await contracts.policyManager.methods
     .register(shared.testWhitelist, whitelist.options.address)

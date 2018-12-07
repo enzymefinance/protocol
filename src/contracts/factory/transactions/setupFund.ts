@@ -12,15 +12,15 @@ interface SetupFundArgs {}
 type SetupFundResult = string;
 
 const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
+  environment: Environment,
   receipt,
   params,
   contractAddress: Address,
-  environment: Environment,
 ) => {
   return managersToHubs(
+    environment,
     contractAddress,
     environment.wallet.address,
-    environment,
   );
 };
 

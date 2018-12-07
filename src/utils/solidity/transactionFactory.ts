@@ -5,9 +5,7 @@ import {
   createQuantity,
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
-
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Environment } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import {
@@ -50,27 +48,27 @@ export interface MelonTransaction<Args> {
 // the transaction actually hit the nodes. They should throw Errors with
 // meaningful messages
 export type GuardFunction<Args> = (
+  environment: Environment,
   params?: Args,
   contractAddress?: Address,
-  environment?: Environment,
   options?: Options,
 ) => Promise<void>;
 
 // Translates JavaScript/TypeScript params into the form that the EVM
 // understands: token-math structs, ...
 export type PrepareArgsFunction<Args> = (
+  environment: Environment,
   params: Args,
   contractAddress?: Address,
-  environment?: Environment,
 ) => Promise<TransactionArgs>;
 
 // Takes the transaction receipt from the EVM, checks if everything is as
 // expected and returns a meaningful object
 export type PostProcessFunction<Args, Result> = (
-  receipt,
+  environment: Environment,
+  receipt: any,
   params?: Args,
   contractAddress?: Address,
-  environment?: Environment,
 ) => Promise<Result>;
 
 export type TransactionFactory = <Args, Result>(
@@ -83,25 +81,25 @@ export type TransactionFactory = <Args, Result>(
 ) => EnhancedExecute<Args, Result>;
 
 type SendFunction<Args> = (
+  environment: Environment,
   contractAddress: Address,
   // prepared: MelonTransaction<Args>,
   signedTransactionData: string,
   params: Args,
   options?: OptionsOrCallback,
-  environment?: Environment,
 ) => Promise<any>;
 
 type PrepareFunction<Args> = (
+  environment: Environment,
   contractAddress: Address,
   params?: Args,
   options?: OptionsOrCallback,
-  environment?: Environment,
 ) => Promise<MelonTransaction<Args>>;
 
 type ExecuteFunction<Args, Result> = (
+  environment: Environment,
   contractAddress: Address,
   params?: Args,
-  environment?: Environment,
   options?: OptionsOrCallback,
 ) => Promise<Result>;
 
@@ -127,10 +125,10 @@ export type WithTransactionDecorator = <Args, Result>(
 
 export const defaultGuard: GuardFunction<any> = async () => {};
 
-export const defaultPrepareArgs = async (
+export const defaultPrepareArgs: PrepareArgsFunction<any> = async (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => Object.values(params || {}).map(v => v.toString());
 
 export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
@@ -170,10 +168,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   defaultOptions = {},
 ) => {
   const prepare: PrepareFunction<Args> = async (
+    environment,
     contractAddress,
     params,
     optionsOrCallback = defaultOptions,
-    environment: Environment = getGlobalEnvironment(),
   ) => {
     const options: Options =
       typeof optionsOrCallback === 'function'
@@ -181,14 +179,14 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         : optionsOrCallback;
 
     if (!options.skipGuards) {
-      await guard(params, contractAddress, environment, options);
+      await guard(environment, params, contractAddress, options);
     }
 
-    const args = await prepareArgs(params, contractAddress, environment);
+    const args = await prepareArgs(environment, params, contractAddress);
     const contractInstance = getContract(
+      environment,
       contract,
       contractAddress,
-      environment,
     );
     ensure(
       !!contractInstance.methods[name],
@@ -198,9 +196,9 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
     transaction.name = name;
     const prepared = await prepareTransaction(
-      transaction,
-      optionsOrCallback,
       environment,
+      transaction,
+      options,
     );
 
     // HACK: To avoid circular dependencies (?)
@@ -210,9 +208,9 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
     const amguInEth = options.amguPayable
       ? await calcAmguInEth(
+          environment,
           contractAddress,
           prepared.gasEstimation,
-          environment,
         )
       : createQuantity('eth', '0'); /*;*/
 
@@ -236,12 +234,12 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   };
 
   const send: SendFunction<Args> = async (
+    environment,
     contractAddress,
     signedTransactionData,
     // prepared,
     params,
     options = defaultOptions,
-    environment = getGlobalEnvironment(),
   ) => {
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
@@ -276,40 +274,40 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     receipt.events = events;
 
     const postprocessed = await postProcess(
+      environment,
       receipt,
       params,
       contractAddress,
-      environment,
     );
 
     return postprocessed;
   };
 
   const execute: ExecuteFunction<Args, Result> = async (
+    environment,
     contractAddress,
     params,
-    environment = getGlobalEnvironment(),
     options = defaultOptions,
   ) => {
     const prepared = await prepare(
+      environment,
       contractAddress,
       params,
       options,
-      environment,
     );
 
     const signedTransactionData = await sign(
-      prepared.rawTransaction,
       environment,
+      prepared.rawTransaction,
     );
 
     const result = await send(
+      environment,
       contractAddress,
       signedTransactionData,
       // prepared,
       params,
       options,
-      environment,
     );
 
     return result;
@@ -326,52 +324,52 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   decorator,
 ) => {
   const prepare: PrepareFunction<Args> = async (
+    environment,
     contractAddress,
     params,
     options = decorator.options,
-    environment: Environment = getGlobalEnvironment(),
   ) => {
     if (typeof decorator.guard !== 'undefined') {
-      await decorator.guard(params, contractAddress, environment);
+      await decorator.guard(environment, params, contractAddress);
     }
 
     let processedParams = params;
     if (typeof decorator.prepareArgs !== 'undefined') {
       processedParams = await decorator.prepareArgs(
+        environment,
         params,
         contractAddress,
-        environment,
       );
     }
 
     return transaction.prepare(
+      environment,
       contractAddress,
       processedParams,
       options,
-      environment,
     );
   };
 
   const send: SendFunction<Args> = async (
+    environment,
     contractAddress,
     prepared,
     params,
     options = decorator.options,
-    environment = getGlobalEnvironment(),
   ) => {
     const result = await transaction.send(
+      environment,
       contractAddress,
       prepared,
       params,
       options,
-      environment,
     );
     if (typeof decorator.postProcess !== 'undefined') {
       return decorator.postProcess(
+        environment,
         result,
         params,
         contractAddress,
-        environment,
       );
     }
 
@@ -379,29 +377,29 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
   };
 
   const execute: ExecuteFunction<Args, Result> = async (
+    environment,
     contractAddress,
     params,
-    environment = getGlobalEnvironment(),
   ) => {
     const prepared = await prepare(
+      environment,
       contractAddress,
       params,
       decorator.options,
-      environment,
     );
 
     const signedTransactionData = await sign(
-      prepared.rawTransaction,
       environment,
+      prepared.rawTransaction,
     );
 
     const result = await send(
+      environment,
       contractAddress,
       signedTransactionData,
       // prepared,
       params,
       decorator.options,
-      environment,
     );
 
     return result;

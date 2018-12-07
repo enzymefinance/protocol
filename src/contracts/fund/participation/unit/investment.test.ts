@@ -9,7 +9,7 @@ beforeAll(async () => {
   shared.env = await initTestEnvironment();
   shared = Object.assign(
     shared,
-    await deployMockSystem({
+    await deployMockSystem(shared.env, {
       accountingContract: Contracts.Accounting,
     }),
   );

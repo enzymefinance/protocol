@@ -6,8 +6,8 @@ import { managersToHubs } from '../calls/managersToHubs';
 const shared: any = {};
 
 beforeAll(async () => {
-  await initTestEnvironment();
-  shared.fundFactoryAddress = await deployFundFactory({
+  shared.env = await initTestEnvironment();
+  shared.fundFactoryAddress = await deployFundFactory(shared.env, {
     accountingFactoryAddress: randomAddress(),
     engineAddress: randomAddress(),
     factoryPriceSourceAddress: randomAddress(),
@@ -24,6 +24,6 @@ beforeAll(async () => {
 
 test('Manger with no hub ', async () => {
   await expect(
-    managersToHubs(shared.fundFactoryAddress, randomAddress()),
+    managersToHubs(shared.env, shared.fundFactoryAddress, randomAddress()),
   ).resolves.toBeNull();
 });
