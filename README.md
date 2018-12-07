@@ -237,6 +237,10 @@ Transfer(0x1, 0x2, 30) // User 1 sends 30 tokens to user 2. New balances: User 1
 ...
 ```
 
+Although we fire events _after_ the action happened, we use nouns in the event names. So: NewFund instead of FundCreated of CreateFund.
+
+Like we communicate to the outside world: Hey, there is a NewFund.
+
 ## Troubleshooting
 
 ### Permission denied (publickey) when cloning the repo

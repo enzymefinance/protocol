@@ -51,7 +51,7 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     }
 
     /// @dev Used when calling from other components
-    function rewardAllFees() public auth { _rewardAllFees(); } 
+    function rewardAllFees() public auth { _rewardAllFees(); }
 
     /// @dev Used when calling from outside the fund
     function triggerRewardAllFees() external payable amguPayable {
@@ -76,6 +76,7 @@ contract FeeManagerFactory is Factory {
     function createInstance(address _hub) public returns (address) {
         address feeManager = new FeeManager(_hub);
         childExists[feeManager] = true;
+        emit NewInstance(_hub, feeManager);
         return feeManager;
     }
 }

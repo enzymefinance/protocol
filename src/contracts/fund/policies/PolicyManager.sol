@@ -78,6 +78,7 @@ contract PolicyManagerFactory is Factory {
     function createInstance(address _hub) public returns (address) {
         address policyManager = new PolicyManager(_hub);
         childExists[policyManager] = true;
+        emit NewInstance(_hub, policyManager);
         return policyManager;
     }
 }

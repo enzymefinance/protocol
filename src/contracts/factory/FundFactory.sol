@@ -14,6 +14,26 @@ import "../engine/AmguConsumer.sol";
 // TODO: inherit from Factory
 /// @notice Creates fund components and links them together
 contract FundFactory is AmguConsumer {
+    event Construction(
+        address accountingFactory,
+        address feeManagerFactory,
+        address participationFactory,
+        address sharesFactory,
+        address tradingFactory,
+        address vaultFactory,
+        address policyManagerFactory,
+        address version,
+        address engine,
+        address factoryPriceSource,
+        address mlnAddress
+    );
+
+    event NewFund(
+        address manager,
+        Components components,
+        address hub
+    );
+
     address public factoryPriceSource;
     address public mlnAddress;
     VersionInterface public version;
@@ -46,6 +66,7 @@ contract FundFactory is AmguConsumer {
     mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
     mapping (address => Components) public managersToComponents;
+    // Only used internally
     mapping (address => Settings) public managersToSettings;
     mapping (address => uint8) public stepFor;
 
@@ -90,6 +111,20 @@ contract FundFactory is AmguConsumer {
         engine = Engine(_engine);
         factoryPriceSource = _factoryPriceSource;
         mlnAddress = _mlnAddress;
+
+        emit Construction(
+            _accountingFactory,
+            _feeManagerFactory,
+            _participationFactory,
+            _sharesFactory,
+            _tradingFactory,
+            _vaultFactory,
+            _policyManagerFactory,
+            _version,
+            _engine,
+            _factoryPriceSource,
+            _mlnAddress
+        );
     }
 
     // TODO: improve naming
@@ -148,7 +183,6 @@ contract FundFactory is AmguConsumer {
 
     // TODO: improve naming
     function setupFund() public payable step(3) amguPayable {
-
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         hubExists[address(hub)] = true;
@@ -169,6 +203,14 @@ contract FundFactory is AmguConsumer {
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
+
+        delete managersToSettings[msg.sender];
+
+        emit NewFund(
+            msg.sender,
+            components,
+            hub
+        );
     }
 
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }

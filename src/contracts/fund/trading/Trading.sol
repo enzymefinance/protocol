@@ -273,6 +273,15 @@ contract Trading is DSMath, Spoke, TradingInterface {
 }
 
 contract TradingFactory is Factory {
+    event NewInstance(
+        address indexed hub,
+        address indexed instance,
+        address[] exchanges,
+        address[] adapters,
+        bool[] takesCustody,
+        address registry
+    );
+
     function createInstance(
         address _hub,
         address[] _exchanges,
@@ -282,6 +291,14 @@ contract TradingFactory is Factory {
     ) public returns (address) {
         address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody, _registry);
         childExists[trading] = true;
+        emit NewInstance(
+            _hub,
+            trading,
+            _exchanges,
+            _adapters,
+            _takesCustody,
+            _registry
+        );
         return trading;
     }
 }
