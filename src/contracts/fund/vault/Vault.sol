@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "./Vault.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/token/ERC20.i.sol";
@@ -8,6 +7,8 @@ import "../../factory/Factory.sol";
 
 /// @notice Dumb custody component
 contract Vault is Spoke, VaultInterface {
+
+    event Lock(bool status);
 
     bool public locked;
 
@@ -20,10 +21,12 @@ contract Vault is Spoke, VaultInterface {
 
     function lockdown() auth {
         locked = true;
+        emit Lock(true);
     }
 
     function unlock() auth {
         locked = false;
+        emit Lock(false);
     }
 
     // TODO: evaluate whether we need this function, or can just deposit as normal
