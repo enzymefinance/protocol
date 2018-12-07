@@ -49,7 +49,7 @@ exports.compileGlob = function (query) {
     var unmerged = candidates.map(function (source) {
         var _a;
         return (_a = {},
-            _a[path.relative(path.join(soliditySourceDirectory), source)] = fs.readFileSync(source, {
+            _a[path.basename(source)] = fs.readFileSync(source, {
                 encoding: 'utf-8'
             }),
             _a);

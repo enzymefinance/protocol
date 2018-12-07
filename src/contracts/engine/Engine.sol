@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/auth.sol";
-import "../dependencies/math.sol";
-import "../dependencies/token/BurnableToken.sol";
-import "../prices/PriceSource.i.sol";
-import "../version/Version.i.sol";
+import "auth.sol";
+import "math.sol";
+import "BurnableToken.sol";
+import "PriceSource.i.sol";
+import "Version.i.sol";
 
 // TODO: integrate so we do not need all of the constructor params
 /// @notice Liquidity contract and token sink

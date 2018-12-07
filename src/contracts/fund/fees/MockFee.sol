@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "./Fee.i.sol";
+import "Fee.i.sol";
 
 contract MockFee is Fee {
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "../0x/Exchange.sol";
+import "Exchange.sol";
 
 contract ExchangeEfx is Exchange {
     mapping (address => address) public wrapper2TokenLookup;

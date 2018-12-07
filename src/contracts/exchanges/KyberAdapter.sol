@@ -1,15 +1,15 @@
 
 pragma solidity ^0.4.21;
 
-import "../dependencies/token/WETH9.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
-import "../../prices/PriceSource.i.sol";
-import "../dependencies/DBC.sol";
-import "./thirdparty/kyber/KyberNetworkProxy.sol";
-import "./ExchangeAdapterInterface.sol";
+import "WETH9.sol";
+import "Trading.sol";
+import "Hub.sol";
+import "Vault.sol";
+import "Accounting.sol";
+import "PriceSource.i.sol";
+import "DBC.sol";
+import "KyberNetworkProxy.sol";
+import "ExchangeAdapterInterface.sol";
 
 
 contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {

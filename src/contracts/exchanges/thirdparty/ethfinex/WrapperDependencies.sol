@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "../../../dependencies/SafeMath.sol";
+import "SafeMath.sol";
 
 /**
  * @title ERC20Basic

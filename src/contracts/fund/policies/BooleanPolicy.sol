@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "./Policy.sol";
+import "Policy.sol";
 
 contract BooleanPolicy is Policy {
     bool allowed;

@@ -1,16 +1,16 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "../fund/accounting/Accounting.sol";
-import "../fund/fees/FeeManager.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/policies/PolicyManager.sol";
-import "../fund/participation/Participation.sol";
-import "../fund/shares/Shares.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
-import "../version/Version.i.sol";
-import "../engine/AmguConsumer.sol";
+import "Accounting.sol";
+import "FeeManager.sol";
+import "Hub.sol";
+import "PolicyManager.sol";
+import "Participation.sol";
+import "Shares.sol";
+import "Trading.sol";
+import "Vault.sol";
+import "Version.i.sol";
+import "AmguConsumer.sol";
 
 // TODO: inherit from Factory
 /// @notice Creates fund components and links them together

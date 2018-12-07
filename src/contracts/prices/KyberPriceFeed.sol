@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./PriceSource.i.sol";
-import "../dependencies/thing.sol";
-import "../exchanges/thirdparty/kyber/KyberNetworkProxy.sol";
+import "PriceSource.i.sol";
+import "thing.sol";
+import "KyberNetworkProxy.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
@@ -177,7 +177,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         var (bidRate, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_baseAsset), ERC20Clone(_quoteAsset), 10 ** 10);
         var (bidRateOfReversePair, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_quoteAsset), ERC20Clone(_baseAsset), 10 ** 10);
         uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
-        
+
         // Check the the spread and average the price on both sides
         uint spreadFromKyber = mul(sub(askRate, bidRate), 10 ** KYBER_PRECISION) / bidRate;
         require (spreadFromKyber <= MAX_SPREAD);

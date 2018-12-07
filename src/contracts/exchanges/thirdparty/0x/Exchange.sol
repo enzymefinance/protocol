@@ -19,9 +19,9 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "../../../dependencies/token/StandardToken.sol";
-import "./LibOrder.sol";
-import "./Ownable.sol";
+import "StandardToken.sol";
+import "LibOrder.sol";
+import "Ownable.sol";
 
 library LibBytes {
 
@@ -42,7 +42,7 @@ library LibBytes {
         }
         return memoryAddress;
     }
-    
+
     /// @dev Gets the memory address for the contents of a byte array.
     /// @param input Byte array to lookup.
     /// @return memoryAddress Memory address of the contents of the byte array.
@@ -125,7 +125,7 @@ library LibBytes {
                         source := add(source, 32)
                         dest := add(dest, 32)
                     }
-                    
+
                     // Write the last 32 bytes
                     mstore(dEnd, last)
                 }
@@ -156,7 +156,7 @@ library LibBytes {
                         sEnd := sub(sEnd, 32)
                         dEnd := sub(dEnd, 32)
                     }
-                    
+
                     // Write the first 32 bytes
                     mstore(dest, first)
                 }
@@ -186,7 +186,7 @@ library LibBytes {
             to < b.length,
             "TO_LESS_THAN_LENGTH_REQUIRED"
         );
-        
+
         // Create a new bytes structure and copy contents
         result = new bytes(to - from);
         memCopy(
@@ -196,7 +196,7 @@ library LibBytes {
         );
         return result;
     }
-    
+
     /// @dev Returns a slice from a byte array without preserving the input.
     /// @param b The byte array to take a slice from. Will be destroyed in the process.
     /// @param from The starting index for the slice (inclusive).
@@ -220,7 +220,7 @@ library LibBytes {
             to < b.length,
             "TO_LESS_THAN_LENGTH_REQUIRED"
         );
-        
+
         // Create a new bytes structure around [from, to) in-place.
         assembly {
             result := add(b, from)
@@ -363,7 +363,7 @@ library LibBytes {
                 mload(add(b, index)),
                 0xffffffffffffffffffffffff0000000000000000000000000000000000000000
             )
-            
+
             // Make sure input address is clean.
             // (Solidity does not guarantee this)
             input := and(input, 0xffffffffffffffffffffffffffffffffffffffff)
@@ -511,7 +511,7 @@ library LibBytes {
             b.length >= index + nestedBytesLength,
             "GREATER_OR_EQUAL_TO_NESTED_BYTES_LENGTH_REQUIRED"
         );
-        
+
         // Return a pointer to the byte array as it exists inside `b`
         assembly {
             result := add(b, index)
@@ -682,19 +682,19 @@ contract SafeMathClone {
 
 // solhint-disable max-line-length
 contract LibConstants {
-   
+
     // Asset data for ZRX token. Used for fee transfers.
 
     // The proxyId for ZRX_ASSET_DATA is bytes4(keccak256("ERC20Token(address)")) = 0xf47261b0
-    
+
     // Kovan ZRX address is 0x6ff6c0ff1d68b964901f986d4c9fa3ac68346570.
     // The ABI encoded proxyId and address is 0xf47261b00000000000000000000000006ff6c0ff1d68b964901f986d4c9fa3ac68346570
     // bytes constant public ZRX_ASSET_DATA = "\xf4\x72\x61\xb0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x6f\xf6\xc0\xff\x1d\x68\xb9\x64\x90\x1f\x98\x6d\x4c\x9f\xa3\xac\x68\x34\x65\x70";
-    
+
     // Mainnet ZRX address is 0xe41d2489571d322189246dafa5ebde1f4699f498.
     // The ABI encoded proxyId and address is 0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498
     bytes public ZRX_ASSET_DATA = "\xf4\x72\x61\xb0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe4\x1d\x24\x89\x57\x1d\x32\x21\x89\x24\x6d\xaf\xa5\xeb\xde\x1f\x46\x99\xf4\x98";
-    
+
     // For easier testing
     function changeZRXAssetData(bytes newData) public {
         ZRX_ASSET_DATA = newData;
@@ -764,7 +764,7 @@ contract LibMath is
             ),
             "ROUNDING_ERROR"
         );
-        
+
         partialAmount = safeDiv(
             safeMul(numerator, target),
             denominator
@@ -800,7 +800,7 @@ contract LibMath is
             ),
             "ROUNDING_ERROR"
         );
-        
+
         // safeDiv computes `floor(a / b)`. We use the identity (a, b integer):
         //       ceil(a / b) = floor((a + b - 1) / b)
         // To implement `ceil(a / b)` using safeDiv.
@@ -839,7 +839,7 @@ contract LibMath is
         );
         return partialAmount;
     }
-    
+
     /// @dev Calculates partial value given a numerator and denominator rounded down.
     /// @param numerator Numerator.
     /// @param denominator Denominator.
@@ -871,7 +871,7 @@ contract LibMath is
         );
         return partialAmount;
     }
-    
+
     /// @dev Checks if rounding error >= 0.1% when rounding down.
     /// @param numerator Numerator.
     /// @param denominator Denominator.
@@ -890,7 +890,7 @@ contract LibMath is
             denominator > 0,
             "DIVISION_BY_ZERO"
         );
-        
+
         // The absolute rounding error is the difference between the rounded
         // value and the ideal value. The relative rounding error is the
         // absolute rounding error divided by the absolute value of the
@@ -903,11 +903,11 @@ contract LibMath is
         // When the ideal value is zero, we require the absolute error to
         // be zero. Fortunately, this is always the case. The ideal value is
         // zero iff `numerator == 0` and/or `target == 0`. In this case the
-        // remainder and absolute error are also zero. 
+        // remainder and absolute error are also zero.
         if (target == 0 || numerator == 0) {
             return false;
         }
-        
+
         // Otherwise, we want the relative rounding error to be strictly
         // less than 0.1%.
         // The relative error is `remainder / (numerator * target)`.
@@ -925,7 +925,7 @@ contract LibMath is
         isError = safeMul(1000, remainder) >= safeMul(numerator, target);
         return isError;
     }
-    
+
     /// @dev Checks if rounding error >= 0.1% when rounding up.
     /// @param numerator Numerator.
     /// @param denominator Denominator.
@@ -944,7 +944,7 @@ contract LibMath is
             denominator > 0,
             "DIVISION_BY_ZERO"
         );
-        
+
         // See the comments in `isRoundingError`.
         if (target == 0 || numerator == 0) {
             // When either is zero, the ideal value and rounded value are zero
@@ -1177,7 +1177,7 @@ contract IAuthorizable is
         uint256 index
     )
         external;
-    
+
     /// @dev Gets all authorized addresses.
     /// @return Array of authorized addresses.
     function getAuthorizedAddresses()
@@ -1201,7 +1201,7 @@ contract IAssetProxy is
         uint256 amount
     )
         external;
-    
+
     /// @dev Gets the proxy id associated with the proxy address.
     /// @return Proxy id.
     function getProxyId()
@@ -1328,7 +1328,7 @@ contract ISignatureValidator {
         bytes signature
     )
         external;
-    
+
     /// @dev Approves/unnapproves a Validator contract to verify signatures on signer's behalf.
     /// @param validatorAddress Address of Validator contract.
     /// @param approval Approval or disapproval of  Validator contract.
@@ -1520,26 +1520,26 @@ contract MExchangeCore is
 {
     // Fill event is emitted whenever an order is filled.
     event Fill(
-        address indexed makerAddress,         // Address that created the order.      
+        address indexed makerAddress,         // Address that created the order.
         address indexed feeRecipientAddress,  // Address that received fees.
         address takerAddress,                 // Address that filled the order.
         address senderAddress,                // Address that called the Exchange contract (msg.sender).
-        uint256 makerAssetFilledAmount,       // Amount of makerAsset sold by maker and bought by taker. 
+        uint256 makerAssetFilledAmount,       // Amount of makerAsset sold by maker and bought by taker.
         uint256 takerAssetFilledAmount,       // Amount of takerAsset sold by taker and bought by maker.
         uint256 makerFeePaid,                 // Amount of ZRX paid to feeRecipient by maker.
         uint256 takerFeePaid,                 // Amount of ZRX paid to feeRecipient by taker.
         bytes32 indexed orderHash,            // EIP712 hash of order (see LibOrder.getOrderHash).
-        bytes makerAssetData,                 // Encoded data specific to makerAsset. 
+        bytes makerAssetData,                 // Encoded data specific to makerAsset.
         bytes takerAssetData                  // Encoded data specific to takerAsset.
     );
 
     // Cancel event is emitted whenever an individual order is cancelled.
     event Cancel(
-        address indexed makerAddress,         // Address that created the order.      
-        address indexed feeRecipientAddress,  // Address that would have recieved fees if order was filled.   
+        address indexed makerAddress,         // Address that created the order.
+        address indexed feeRecipientAddress,  // Address that would have recieved fees if order was filled.
         address senderAddress,                // Address that called the Exchange contract (msg.sender).
         bytes32 indexed orderHash,            // EIP712 hash of order (see LibOrder.getOrderHash).
-        bytes makerAssetData,                 // Encoded data specific to makerAsset. 
+        bytes makerAssetData,                 // Encoded data specific to makerAsset.
         bytes takerAssetData                  // Encoded data specific to takerAsset.
     );
 
@@ -1592,7 +1592,7 @@ contract MExchangeCore is
         bytes32 orderHash
     )
         internal;
-    
+
     /// @dev Validates context for fillOrder. Succeeds or throws.
     /// @param order to be filled.
     /// @param orderInfo OrderStatus, orderHash, and amount already filled of order.
@@ -1606,7 +1606,7 @@ contract MExchangeCore is
     )
         internal
         view;
-    
+
     /// @dev Validates context for fillOrder. Succeeds or throws.
     /// @param order to be filled.
     /// @param orderInfo Status, orderHash, and amount already filled of order.
@@ -1794,7 +1794,7 @@ contract MTransactions is
         returns (address);
 }
 
-contract MWrapperFunctions is 
+contract MWrapperFunctions is
     IWrapperFunctions
 {
     /// @dev Fills the input order. Reverts if exact takerAssetFillAmount not filled.
@@ -1844,12 +1844,12 @@ contract MixinExchangeCore is
         address senderAddress = makerAddress == msg.sender ? address(0) : msg.sender;
 
         // orderEpoch is initialized to 0, so to cancelUpTo we need salt + 1
-        uint256 newOrderEpoch = targetOrderEpoch + 1;  
+        uint256 newOrderEpoch = targetOrderEpoch + 1;
         uint256 oldOrderEpoch = orderEpoch[makerAddress][senderAddress];
 
         // Ensure orderEpoch is monotonically increasing
         require(
-            newOrderEpoch > oldOrderEpoch, 
+            newOrderEpoch > oldOrderEpoch,
             "INVALID_NEW_ORDER_EPOCH"
         );
 
@@ -1973,7 +1973,7 @@ contract MixinExchangeCore is
 
         // Fetch taker address
         address takerAddress = getCurrentContextAddress();
-        
+
         // Assert that the order is fillable by taker
         assertFillableOrder(
             order,
@@ -1981,7 +1981,7 @@ contract MixinExchangeCore is
             takerAddress,
             signature
         );
-        
+
         // Get amount of takerAsset to fill
         uint256 remainingTakerAssetAmount = safeSub(order.takerAssetAmount, orderInfo.orderTakerAssetFilledAmount);
         uint256 takerAssetFilledAmount = min256(takerAssetFillAmount, remainingTakerAssetAmount);
@@ -2006,7 +2006,7 @@ contract MixinExchangeCore is
             orderInfo.orderTakerAssetFilledAmount,
             fillResults
         );
-    
+
         // Settle order
         settleOrder(
             order,
@@ -2089,7 +2089,7 @@ contract MixinExchangeCore is
             order.takerAssetData
         );
     }
-    
+
     /// @dev Validates context for fillOrder. Succeeds or throws.
     /// @param order to be filled.
     /// @param orderInfo OrderStatus, orderHash, and amount already filled of order.
@@ -2109,7 +2109,7 @@ contract MixinExchangeCore is
             orderInfo.orderStatus == uint8(OrderStatus.FILLABLE),
             "ORDER_UNFILLABLE"
         );
-        
+
         // Validate sender is allowed to fill this order
         if (order.senderAddress != address(0)) {
             require(
@@ -2117,7 +2117,7 @@ contract MixinExchangeCore is
                 "INVALID_SENDER"
             );
         }
-        
+
         // Validate taker is allowed to fill this order
         if (order.takerAddress != address(0)) {
             require(
@@ -2125,7 +2125,7 @@ contract MixinExchangeCore is
                 "INVALID_TAKER"
             );
         }
-        
+
         // Validate Maker signature (check only if first time seen)
         if (orderInfo.orderTakerAssetFilledAmount == 0) {
             require(
@@ -2138,7 +2138,7 @@ contract MixinExchangeCore is
             );
         }
     }
-    
+
     /// @dev Validates context for fillOrder. Succeeds or throws.
     /// @param order to be filled.
     /// @param orderInfo OrderStatus, orderHash, and amount already filled of order.
@@ -2161,7 +2161,7 @@ contract MixinExchangeCore is
             takerAssetFillAmount != 0,
             "INVALID_TAKER_AMOUNT"
         );
-        
+
         // Make sure taker does not pay more than desired amount
         // NOTE: This assertion should never fail, it is here
         //       as an extra defence against potential bugs.
@@ -2169,7 +2169,7 @@ contract MixinExchangeCore is
             takerAssetFilledAmount <= takerAssetFillAmount,
             "TAKER_OVERPAY"
         );
-        
+
         // Make sure order is not overfilled
         // NOTE: This assertion should never fail, it is here
         //       as an extra defence against potential bugs.
@@ -2177,7 +2177,7 @@ contract MixinExchangeCore is
             safeAdd(orderInfo.orderTakerAssetFilledAmount, takerAssetFilledAmount) <= order.takerAssetAmount,
             "ORDER_OVERFILL"
         );
-        
+
         // Make sure order is filled at acceptable price.
         // The order has an implied price from the makers perspective:
         //    order price = order.makerAssetAmount / order.takerAssetAmount
@@ -2197,7 +2197,7 @@ contract MixinExchangeCore is
         //       as an extra defence against potential bugs.
         require(
             safeMul(makerAssetFilledAmount, order.takerAssetAmount)
-            <= 
+            <=
             safeMul(order.makerAssetAmount, takerAssetFilledAmount),
             "INVALID_FILL_PRICE"
         );
@@ -2314,7 +2314,7 @@ contract MixinSignatureValidator is
     MTransactions
 {
     using LibBytes for bytes;
-    
+
     // Mapping of hash => signer => signed
     mapping (bytes32 => mapping (address => bool)) public preSigned;
 
@@ -2479,7 +2479,7 @@ contract MixinSignatureValidator is
         } else if (signatureType == SignatureType.Validator) {
             // Pop last 20 bytes off of signature byte array.
             address validatorAddress = signature.popLast20Bytes();
-            
+
             // Ensure signer has approved validator.
             if (!allowedValidators[signerAddress][validatorAddress]) {
                 return false;
@@ -2772,7 +2772,7 @@ contract MixinWrapperFunctions is
         returns (FillResults memory totalFillResults)
     {
         bytes memory takerAssetData = orders[0].takerAssetData;
-    
+
         uint256 ordersLength = orders.length;
         for (uint256 i = 0; i != ordersLength; i++) {
 
@@ -3193,7 +3193,7 @@ contract MixinAssetProxyDispatcher is
                 assetData.length > 3,
                 "LENGTH_GREATER_THAN_3_REQUIRED"
             );
-            
+
             // Lookup assetProxy. We do not use `LibBytes.readBytes4` for gas efficiency reasons.
             bytes4 assetProxyId;
             assembly {
@@ -3209,10 +3209,10 @@ contract MixinAssetProxyDispatcher is
                 assetProxy != address(0),
                 "ASSET_PROXY_DOES_NOT_EXIST"
             );
-            
+
             // We construct calldata for the `assetProxy.transferFrom` ABI.
             // The layout of this calldata is in the table below.
-            // 
+            //
             // | Area     | Offset | Length  | Contents                                    |
             // | -------- |--------|---------|-------------------------------------------- |
             // | Header   | 0      | 4       | function selector                           |
@@ -3236,12 +3236,12 @@ contract MixinAssetProxyDispatcher is
                 // `cdEnd` is the end of the calldata for `assetProxy.transferFrom`.
                 let cdEnd := add(cdStart, add(132, dataAreaLength))
 
-                
+
                 /////// Setup Header Area ///////
                 // This area holds the 4-byte `transferFromSelector`.
                 // bytes4(keccak256("transferFrom(bytes,address,address,uint256)")) = 0xa85e59e4
                 mstore(cdStart, 0xa85e59e400000000000000000000000000000000000000000000000000000000)
-                
+
                 /////// Setup Params Area ///////
                 // Each parameter is padded to 32-bytes. The entire Params Area is 128 bytes.
                 // Notes:
@@ -3251,7 +3251,7 @@ contract MixinAssetProxyDispatcher is
                 mstore(add(cdStart, 36), and(from, 0xffffffffffffffffffffffffffffffffffffffff))
                 mstore(add(cdStart, 68), and(to, 0xffffffffffffffffffffffffffffffffffffffff))
                 mstore(add(cdStart, 100), amount)
-                
+
                 /////// Setup Data Area ///////
                 // This area holds `assetData`.
                 let dataArea := add(cdStart, 132)
@@ -3268,7 +3268,7 @@ contract MixinAssetProxyDispatcher is
                     assetProxy,             // call address of asset proxy
                     0,                      // don't send any ETH
                     cdStart,                // pointer to start of input
-                    sub(cdEnd, cdStart),    // length of input  
+                    sub(cdEnd, cdStart),    // length of input
                     cdStart,                // write output over input
                     512                     // reserve 512 bytes for output
                 )
@@ -3319,7 +3319,7 @@ contract MixinMatchOrders is
 
         // Fetch taker address
         address takerAddress = getCurrentContextAddress();
-        
+
         // Either our context is valid or we revert
         assertFillableOrder(
             leftOrder,
@@ -3358,7 +3358,7 @@ contract MixinMatchOrders is
             matchedFillResults.right.takerAssetFilledAmount,
             matchedFillResults.right.makerAssetFilledAmount
         );
-        
+
         // Update exchange state
         updateFilledState(
             leftOrder,
@@ -3458,7 +3458,7 @@ contract MixinMatchOrders is
             matchedFillResults.right.makerAssetFilledAmount = rightMakerAssetAmountRemaining;
             matchedFillResults.right.takerAssetFilledAmount = rightTakerAssetAmountRemaining;
             matchedFillResults.left.takerAssetFilledAmount = matchedFillResults.right.makerAssetFilledAmount;
-            // Round down to ensure the maker's exchange rate does not exceed the price specified by the order. 
+            // Round down to ensure the maker's exchange rate does not exceed the price specified by the order.
             // We favor the maker when the exchange rate must be rounded.
             matchedFillResults.left.makerAssetFilledAmount = safeGetPartialAmountFloor(
                 leftOrder.makerAssetAmount,
@@ -3730,9 +3730,9 @@ contract ERC20Proxy is
 {
     // Id of this proxy.
     bytes4 constant internal PROXY_ID = bytes4(keccak256("ERC20Token(address)"));
-    
+
     // solhint-disable-next-line payable-fallback
-    function () 
+    function ()
         external
     {
         assembly {
@@ -3821,13 +3821,13 @@ contract ERC20Proxy is
                 // * The "token address" is offset 32+4=36 bytes into "assetData" (tables 1 & 2).
                 //   [tokenOffset = assetDataOffsetFromHeader + 36 = calldataload(4) + 4 + 36]
                 let token := calldataload(add(calldataload(4), 40))
-                
+
                 /////// Setup Header Area ///////
                 // This area holds the 4-byte `transferFrom` selector.
                 // Any trailing data in transferFromSelector will be
                 // overwritten in the next `mstore` call.
                 mstore(0, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-                
+
                 /////// Setup Params Area ///////
                 // We copy the fields `from`, `to` and `amount` in bulk
                 // from our own calldata to the new calldata.
@@ -3851,7 +3851,7 @@ contract ERC20Proxy is
                 // If the token does return data, we require that it is a single
                 // nonzero 32 bytes value.
                 // So the transfer succeeded if the call succeeded and either
-                // returned nothing, or returned a non-zero 32 byte value. 
+                // returned nothing, or returned a non-zero 32 byte value.
                 success := and(success, or(
                     iszero(returndatasize),
                     and(
@@ -3862,7 +3862,7 @@ contract ERC20Proxy is
                 if success {
                     return(0, 0)
                 }
-                
+
                 // Revert with `Error("TRANSFER_FAILED")`
                 mstore(0, 0x08c379a000000000000000000000000000000000000000000000000000000000)
                 mstore(32, 0x0000002000000000000000000000000000000000000000000000000000000000)
@@ -3890,7 +3890,7 @@ contract ERC20Proxy is
 contract UnlimitedAllowanceToken is StandardToken {
 
     uint constant MAX_UINT = 2**256 - 1;
-    
+
     /// @dev ERC20 transferFrom, modified such that an allowance of MAX_UINT represents an unlimited allowance.
     /// @param _from Address to transfer from.
     /// @param _to Address to transfer to.

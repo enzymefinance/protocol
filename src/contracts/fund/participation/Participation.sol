@@ -1,15 +1,15 @@
 pragma solidity ^0.4.21;
 
-import "../hub/Spoke.sol";
-import "../shares/Shares.sol";
-import "../accounting/Accounting.sol";
-import "../vault/Vault.sol";
-import "../../dependencies/token/ERC20.i.sol";
-import "../../factory/Factory.sol";
-import "../../dependencies/math.sol";
-import "../../prices/CanonicalPriceFeed.sol";
-import "../../../engine/AmguConsumer.sol";
-import "./Participation.i.sol";
+import "Spoke.sol";
+import "Shares.sol";
+import "Accounting.sol";
+import "Vault.sol";
+import "ERC20.i.sol";
+import "Factory.sol";
+import "math.sol";
+import "CanonicalPriceFeed.sol";
+import "AmguConsumer.sol";
+import "Participation.i.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {

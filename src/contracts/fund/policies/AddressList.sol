@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "../../dependencies/auth.sol";
+import "auth.sol";
 
 /// @notice Generic AddressList
 contract AddressList is DSAuth {

@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./SimplePriceFeed.sol";
-import "./OperatorStaking.sol";
-import "../dependencies/token/ERC20.i.sol";
+import "SimplePriceFeed.sol";
+import "OperatorStaking.sol";
+import "ERC20.i.sol";
 
 /// @title Staking Price Feed
 /// @author Melonport AG <team@melonport.com>
