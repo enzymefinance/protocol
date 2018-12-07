@@ -221,7 +221,6 @@ mapping (address => uint256) balances;
 2. Possible changes:
 
 - Someone sends somebody an amount: Transfer
-- Someone approves somebody an amount to spend: Approval
 
 3. Emit events:
    It is obvious for that example, but lets see what an observer can see the following events and reproduce every step in history.
