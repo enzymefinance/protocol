@@ -1,12 +1,17 @@
 pragma solidity ^0.4.21;
 
-
 /// @notice Mediation between a Fund and exchanges
 interface TradingInterface {
-    // event MakeOrder (
-    //     address ExchangeAddress,
-
-    // )
+    event ExchangeMethodCall(
+        address exchangeAddress,
+        string methodSignature,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    );
 
     function callOnExchange(
         uint exchangeIndex,
