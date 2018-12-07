@@ -240,7 +240,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     }
 
     /// @notice Payable function to get back ETH from WETH
-    function() public payable { }
+    function() public payable {}
 
     function getExchangeInfo() view returns (address[], address[], bool[]) {
         address[] memory ofExchanges = new address[](exchanges.length);

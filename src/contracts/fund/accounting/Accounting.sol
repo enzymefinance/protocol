@@ -9,10 +9,11 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../trading/Trading.sol";
 import "../vault/Vault.sol";
+import "./Accounting.i.sol";
 
 // NB: many functions simplified for now
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down
-contract Accounting is DSMath, Spoke {
+contract Accounting is AccountingInterface, DSMath, Spoke {
 
     struct Calculations {
         uint gav;
@@ -162,6 +163,7 @@ contract Accounting is DSMath, Spoke {
     // calculates several metrics, updates stored calculation object and rewards fees
     // TODO: find a better way to do these things without this exact method
     // TODO: math is off here (need to check fees, when they are calculated, quantity in exchanges and trading module, etc.)
+    // TODO: look at permissioning
     function calcSharePriceAndAllocateFees() public returns (uint) {
         updateOwnedAssets();
         uint gav;
@@ -183,6 +185,7 @@ contract Accounting is DSMath, Spoke {
     }
 
     // TODO: maybe run as a "bump" or "stub" function, every state-changing method call
+    // TODO: run on some state changes (from trading for example)
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
@@ -212,6 +215,7 @@ contract Accounting is DSMath, Spoke {
             isInAssetList[_asset] = true;
             ownedAssets.push(_asset);
         }
+        emit AssetAddition(_asset);
     }
 
     // TODO: ownedAssets length needs upper limit due to iteration here and elsewhere
@@ -226,6 +230,7 @@ contract Accounting is DSMath, Spoke {
                 }
             }
         }
+        emit AssetRemoval(_asset);
     }
 }
 

@@ -3,6 +3,15 @@ pragma solidity ^0.4.21;
 
 /// @notice Gives metrics about a Fund
 interface AccountingInterface {
+
+    event AssetAddition(
+        address indexed asset
+    );
+
+    event AssetRemoval(
+        address indexed asset
+    );
+
     function getOwnedAssetsLength() view returns (uint);
     function getFundHoldings() returns (uint[], address[]);
     function getFundHoldingsLength() view returns (uint);
@@ -13,8 +22,6 @@ interface AccountingInterface {
     function calcValuePerShare(uint totalValue, uint numShares) view returns (uint);
     function performCalculations() view returns (
         uint gav,
-        uint managementFee,
-        uint performanceFee,
         uint unclaimedFees,
         uint feesShareQuantity,
         uint nav,
