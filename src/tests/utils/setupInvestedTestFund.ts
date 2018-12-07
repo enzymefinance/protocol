@@ -18,12 +18,14 @@ const setupInvestedTestFund = async (
   const { exchangeConfigs, priceSource, tokens, version } = deployment;
 
   const [weth, mln] = tokens;
+  const fees = [];
 
   await createComponents(
     version,
     {
       defaultTokens: [weth, mln],
       exchangeConfigs,
+      fees,
       fundName,
       nativeToken: weth,
       priceSource,

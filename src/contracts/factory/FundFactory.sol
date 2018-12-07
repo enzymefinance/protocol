@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/Accounting.sol";
 import "../fund/fees/FeeManager.sol";
@@ -97,7 +98,7 @@ contract FundFactory is AmguConsumer {
         string _name,
         // address _compliance,
         // address[] _policies,
-        // address[] _fees,
+        FeeManager.FeeInfo[] _fees,
         address[] _exchanges,
         address[] _adapters,
         address _quoteAsset,
@@ -118,7 +119,7 @@ contract FundFactory is AmguConsumer {
             _priceSource
         );
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
-        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender]);
+        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender], _fees);
         managersToComponents[msg.sender].registry = registry;
         managersToComponents[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],

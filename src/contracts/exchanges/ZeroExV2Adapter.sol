@@ -39,10 +39,6 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        require(
-            orderValues[4] >= now && orderValues[4] <= add(now, 1 days),
-            "Order time invalid"
-        );
         Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
         require(
             !Trading(address(this)).isInOpenMakeOrder(makerAsset),
@@ -75,7 +71,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash));
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), orderValues[4]);
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 

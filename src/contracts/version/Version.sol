@@ -1,4 +1,5 @@
 pragma solidity ^0.4.21;
+pragma experimental ABIEncoderV2;
 
 import "./Version.i.sol";
 import "../factory/FundFactory.sol";
@@ -9,8 +10,8 @@ contract Version is FundFactory, DSAuth, VersionInterface {
     uint public amguPrice;
     bool public isShutDown;
 
+    /// @notice Assumes governance is the deployer
     constructor(
-        address _governance,
         address _accountingFactory,
         address _feeManagerFactory,
         address _participationFactory,
@@ -37,7 +38,6 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             _mlnAddress
         )
     {
-        setOwner(_governance);
         registry = _registry;
     }
 

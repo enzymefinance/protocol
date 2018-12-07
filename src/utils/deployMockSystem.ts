@@ -16,6 +16,7 @@ export const deployMockSystem = async ({
   accountingContract = Contracts.MockAccounting,
   engineContract = Contracts.Engine,
   feeManagerContract = Contracts.MockFeeManager,
+  fees = [],
   hubContract = Contracts.MockHub,
   policyManagerContract = Contracts.PolicyManager,
   participationContract = Contracts.Participation,
@@ -79,6 +80,7 @@ export const deployMockSystem = async ({
   ]);
   const feeManager = await deployAndGetContract(feeManagerContract, [
     hub.options.address,
+    fees,
   ]);
   const policyManager = await deployAndGetContract(policyManagerContract, [
     hub.options.address,

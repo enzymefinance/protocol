@@ -10,6 +10,7 @@ import {
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 
@@ -18,9 +19,15 @@ interface ExchangeConfig {
   adapterAddress: Address;
   takesCustody: boolean;
 }
+export interface FeeConfig {
+  feeAddress: Address;
+  feeRate: BigInteger;
+  feePeriod: BigInteger;
+}
 
 interface CreateComponentsArgs {
   fundName: string;
+  fees: FeeConfig[];
   exchangeConfigs: ExchangeConfig[];
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
@@ -41,6 +48,7 @@ const guard: GuardFunction<CreateComponentsArgs> = async (
 const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   {
     fundName,
+    fees,
     exchangeConfigs,
     quoteToken,
     nativeToken,
@@ -62,6 +70,7 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
 
   const args = [
     fundName,
+    fees,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,

@@ -97,6 +97,7 @@
     "ava": "0.25.0",
     "commander": "^2.19.0",
     "ramda": "^0.25.0",
+    "request-promise": "^4.2.2",
     "solc": "^0.4.25",
     "web3-eth": "1.0.0-beta.36",
     "web3-eth-abi": "1.0.0-beta.36",

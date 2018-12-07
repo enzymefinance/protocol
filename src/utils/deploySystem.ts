@@ -76,7 +76,8 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
   const vaultFactoryAddress = await deployVaultFactory();
   const policyManagerFactoryAddress = await deployPolicyManagerFactory();
   const monthInSeconds = 30 * 24 * 60 * 60;
-  const governanceAddress = accounts[0];
+  // Not used since deployer is assumed to be governance
+  // const governanceAddress = accounts[0];
   const engineAddress = await deployEngine(
     priceFeedAddress,
     monthInSeconds,
@@ -88,7 +89,6 @@ export const deploySystem = async (environment = getGlobalEnvironment()) => {
     engineAddress,
     factoryPriceSourceAddress: priceFeedAddress,
     feeManagerFactoryAddress,
-    governanceAddress,
     mlnTokenAddress,
     participationFactoryAddress,
     policyManagerFactoryAddress,
