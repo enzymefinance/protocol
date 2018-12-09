@@ -12,7 +12,8 @@ import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 
-interface ExchangeConfig {
+export interface ExchangeConfig {
+  name: string;
   exchangeAddress: Address;
   adapterAddress: Address;
   takesCustody: boolean;

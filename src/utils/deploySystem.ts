@@ -21,7 +21,6 @@ import { deploySharesFactory } from '~/contracts/fund/shares/transactions/deploy
 import { deployTradingFactory } from '~/contracts/fund/trading/transactions/deployTradingFactory';
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
-import { setSessionDeployment } from './sessionDeployments';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
@@ -34,7 +33,6 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
  */
 export const deploySystem = async (environment: Environment) => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
-
   const accounts = await environment.eth.getAccounts();
 
   debug('Deploying system from', accounts[0]);
@@ -183,6 +181,8 @@ export const deploySystem = async (environment: Environment) => {
 
   debug('Deployed:', deploymentId, addresses);
 
-  setSessionDeployment(deploymentId, addresses);
-  return addresses;
+  return {
+    ...environment,
+    deployment: addresses,
+  };
 };

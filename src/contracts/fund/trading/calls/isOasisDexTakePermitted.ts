@@ -1,5 +1,4 @@
 import web3EthAbi from 'web3-eth-abi';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
@@ -44,8 +43,7 @@ const isOasisDexTakePermitted = async (
     policyManagerAddress,
   );
 
-  const deployment = await getDeployment(environment);
-  const exchangeAddress = deployment.exchangeConfigs.find(
+  const exchangeAddress = environment.deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
 

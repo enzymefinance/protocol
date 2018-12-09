@@ -21,7 +21,7 @@ import { sign } from '~/utils/environment/sign';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.env = await initTestEnvironment();
+  shared.env = await deploySystem(await initTestEnvironment());
   shared.accounts = await shared.env.eth.getAccounts();
 });
 
@@ -32,7 +32,6 @@ const randomString = (length = 4) =>
 
 test('Set amgu and check its usage', async () => {
   const fundName = `test-fund-${randomString()}`;
-  const deployment = await deploySystem(shared.env);
   const {
     exchangeConfigs,
     priceSource,
@@ -40,7 +39,7 @@ test('Set amgu and check its usage', async () => {
     // engine,
     // policies,
     version,
-  } = deployment;
+  } = shared.env.deployment;
   const [quoteToken, baseToken] = tokens;
 
   const defaultTokens = [quoteToken, baseToken];

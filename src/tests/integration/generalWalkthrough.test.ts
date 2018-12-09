@@ -38,14 +38,12 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.env = await initTestEnvironment();
+  shared.env = await deploySystem(await initTestEnvironment());
   shared.accounts = await shared.env.eth.getAccounts();
 });
 
 test('Happy path', async () => {
   const fundName = `test-fund-${randomString()}`;
-
-  const deployment = await deploySystem(shared.env);
 
   const {
     exchangeConfigs,
@@ -53,7 +51,7 @@ test('Happy path', async () => {
     tokens,
     policies,
     version,
-  } = deployment;
+  } = shared.env.deployment;
   const [quoteToken, baseToken] = tokens;
   const defaultTokens = [quoteToken, baseToken];
   const amguToken = await getAmguToken(shared.env, version);
@@ -157,7 +155,7 @@ test('Happy path', async () => {
 
   await getFundHoldings(shared.env, settings.accountingAddress);
 
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
+  const matchingMarketAddress = shared.env.deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
 
@@ -165,12 +163,16 @@ test('Happy path', async () => {
     shared.env,
     matchingMarketAddress,
     {
-      buy: createQuantity(deployment.tokens[1], 2),
-      sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(shared.env.deployment.tokens[1], 2),
+      sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
     },
   );
-  expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+  expect(order1.buy).toEqual(
+    createQuantity(shared.env.deployment.tokens[1], 2),
+  );
+  expect(order1.sell).toEqual(
+    createQuantity(shared.env.deployment.tokens[0], 0.1),
+  );
   console.log(`Made order from account with id ${order1.id}`);
 
   await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -186,13 +188,17 @@ test('Happy path', async () => {
     shared.env,
     matchingMarketAddress,
     {
-      buy: createQuantity(deployment.tokens[1], 2),
-      sell: createQuantity(deployment.tokens[0], 0.1),
+      buy: createQuantity(shared.env.deployment.tokens[1], 2),
+      sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
     },
   );
 
-  expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
+  expect(order2.buy).toEqual(
+    createQuantity(shared.env.deployment.tokens[1], 2),
+  );
+  expect(order2.sell).toEqual(
+    createQuantity(shared.env.deployment.tokens[0], 0.1),
+  );
   console.log(`Made order from account with id ${order2.id}`);
 
   await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -206,8 +212,8 @@ test('Happy path', async () => {
     settings.tradingAddress,
     {
       maker: settings.tradingAddress,
-      makerQuantity: createQuantity(deployment.tokens[0], 0.1),
-      takerQuantity: createQuantity(deployment.tokens[1], 2),
+      makerQuantity: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      takerQuantity: createQuantity(shared.env.deployment.tokens[1], 2),
     },
   );
   console.log(`Made order from fund with id ${orderFromFund.id}`);
@@ -231,12 +237,16 @@ test('Happy path', async () => {
     shared.env,
     matchingMarketAddress,
     {
-      buy: createQuantity(deployment.tokens[0], 0.1),
-      sell: createQuantity(deployment.tokens[1], 2),
+      buy: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      sell: createQuantity(shared.env.deployment.tokens[1], 2),
     },
   );
-  expect(order3.sell).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
+  expect(order3.sell).toEqual(
+    createQuantity(shared.env.deployment.tokens[1], 2),
+  );
+  expect(order3.buy).toEqual(
+    createQuantity(shared.env.deployment.tokens[0], 0.1),
+  );
   console.log(`Made order from account with id ${order3.id}`);
 
   await takeOasisDexOrder(shared.env, settings.tradingAddress, {

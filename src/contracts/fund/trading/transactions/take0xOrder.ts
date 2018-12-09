@@ -16,7 +16,6 @@ import {
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Contracts, Exchanges } from '~/Contracts';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -86,8 +85,7 @@ const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
   environment,
   receipt,
 ) => {
-  const deployment = await getDeployment(environment);
-  const zeroExAddress = deployment.exchangeConfigs.find(
+  const zeroExAddress = environment.deployment.exchangeConfigs.find(
     o => o.name === 'ZeroEx',
   ).exchangeAddress;
 

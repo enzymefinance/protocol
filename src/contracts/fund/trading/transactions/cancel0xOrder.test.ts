@@ -20,19 +20,16 @@ export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
   R.find(R.propEq('symbol', symbol), tokens);
 
 beforeAll(async () => {
-  shared.env = await initTestEnvironment();
+  shared.env = await deploySystem(await initTestEnvironment());
   shared.accounts = await shared.env.eth.getAccounts();
+  shared.settings = await setupInvestedTestFund(shared.env);
 
-  const deployment = await deploySystem(shared.env);
-
-  shared.settings = await setupInvestedTestFund(shared.env, deployment);
-
-  shared.zeroExAddress = deployment.exchangeConfigs.find(
+  shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
     R.propEq('name', 'ZeroEx'),
   ).exchangeAddress;
 
-  shared.mln = getTokenBySymbol(deployment.tokens, 'MLN');
-  shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
+  shared.mln = getTokenBySymbol(shared.env.deployment.tokens, 'MLN');
+  shared.weth = getTokenBySymbol(shared.env.deployment.tokens, 'WETH');
 
   const unsigned0xOrder = await createOrder(shared.env, shared.zeroExAddress, {
     makerAddress: shared.settings.tradingAddress,

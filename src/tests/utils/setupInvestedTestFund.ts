@@ -9,10 +9,15 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { Environment } from '~/utils/environment/Environment';
 
-const setupInvestedTestFund = async (environment: Environment, deployment) => {
+const setupInvestedTestFund = async (environment: Environment) => {
   const fundName = `test-fund-${randomString()}`;
 
-  const { exchangeConfigs, priceSource, tokens, version } = deployment;
+  const {
+    exchangeConfigs,
+    priceSource,
+    tokens,
+    version,
+  } = environment.deployment;
 
   const [weth, mln] = tokens;
   const fees = [];
