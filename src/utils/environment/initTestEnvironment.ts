@@ -1,9 +1,11 @@
 import Web3Accounts from 'web3-eth-accounts';
-import * as Ganache from '@melonproject/ganache-cli';
+import memdown from 'memdown';
 import { constructEnvironment } from './constructEnvironment';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
+import * as Ganache from '@melonproject/ganache-cli';
 import { testLogger } from './testLogger';
+import { LogLevels } from './Environment';
 
 // tslint:disable-next-line:max-line-length
 const testMnemonic =
@@ -53,6 +55,7 @@ const keyPairs = new Map([
 ]);
 
 export const initTestEnvironment = async () => {
+  const db = memdown();
   const environment = constructEnvironment({
     logger: testLogger,
     provider: Ganache.provider({
@@ -60,6 +63,10 @@ export const initTestEnvironment = async () => {
       // tslint:disable-next-line:object-literal-sort-keys
       default_balance_ether: 10000000000000,
       mnemonic: testMnemonic,
+      db,
+      logger: {
+        log: testLogger('melon:protocol:ganache', LogLevels.DEBUG),
+      },
     }),
   });
 
