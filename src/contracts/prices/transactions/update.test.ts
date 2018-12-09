@@ -6,28 +6,30 @@ import { deploy } from './deploy';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
-const shared: any = {};
+describe('update', () => {
+  const shared: any = {};
 
-beforeAll(async () => {
-  shared.env = await initTestEnvironment();
-  shared.quoteToken = await getToken(
-    shared.env,
-    await deployToken(shared.env, 'WETH'),
-  );
-  shared.mlnToken = await getToken(
-    shared.env,
-    await deployToken(shared.env, 'MLN'),
-  );
-  shared.address = await deploy(shared.env, shared.quoteToken);
-});
+  beforeAll(async () => {
+    shared.env = await initTestEnvironment();
+    shared.quoteToken = await getToken(
+      shared.env,
+      await deployToken(shared.env, 'WETH'),
+    );
+    shared.mlnToken = await getToken(
+      shared.env,
+      await deployToken(shared.env, 'MLN'),
+    );
+    shared.address = await deploy(shared.env, shared.quoteToken);
+  });
 
-test('update', async () => {
-  const newPrice = getPrice(
-    createQuantity(shared.mlnToken, 1),
-    createQuantity(shared.quoteToken, 0.34),
-  );
+  it('update', async () => {
+    const newPrice = getPrice(
+      createQuantity(shared.mlnToken, 1),
+      createQuantity(shared.quoteToken, 0.34),
+    );
 
-  const receipt = await update(shared.env, shared.address, [newPrice]);
+    const receipt = await update(shared.env, shared.address, [newPrice]);
 
-  expect(isEqual(receipt[0], newPrice)).toBe(true);
+    expect(isEqual(receipt[0], newPrice)).toBe(true);
+  });
 });

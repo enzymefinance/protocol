@@ -2,18 +2,20 @@ import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getInfo } from '../calls/getInfo';
 import { deployToken } from '../transactions/deploy';
 
-const shared: any = {};
+describe('getInfo', () => {
+  const shared: any = {};
 
-beforeAll(async () => {
-  shared.env = await initTestEnvironment();
-  shared.address = await deployToken(shared.env);
-});
+  beforeAll(async () => {
+    shared.env = await initTestEnvironment();
+    shared.address = await deployToken(shared.env);
+  });
 
-test('getInfo', async () => {
-  const info = await getInfo(shared.env, shared.address);
+  it('getInfo', async () => {
+    const info = await getInfo(shared.env, shared.address);
 
-  expect(info.symbol).toBe('FIXED');
-  expect(info.name).toBe('Premined Token');
-  expect(info.decimals).toBe(18);
-  expect(info.totalSupply).toBe(1000000 * 10 ** 18);
+    expect(info.symbol).toBe('FIXED');
+    expect(info.name).toBe('Premined Token');
+    expect(info.decimals).toBe(18);
+    expect(info.totalSupply).toBe(1000000 * 10 ** 18);
+  });
 });

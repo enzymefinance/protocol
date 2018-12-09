@@ -6,54 +6,61 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { sign } from '../environment/sign';
 
-const shared: any = {};
+describe('transactionFactory', () => {
+  const shared: any = {};
 
-beforeAll(async () => {
-  shared.env = await initTestEnvironment();
-  shared.token = await getToken(shared.env, await deployToken(shared.env));
-  shared.accounts = (await shared.env.eth.getAccounts()).map(
-    account => new Address(account),
-  );
-});
-
-test('Skip guards and preflight', async () => {
-  const params = {
-    howMuch: createQuantity(shared.token, 2000000),
-    to: shared.accounts[1],
-  };
-
-  await expect(transfer.prepare(shared.env, params)).rejects.toThrow(
-    'Insufficient FIXED',
-  );
-
-  await expect(
-    transfer.prepare(shared.env, params, { skipGuards: true }),
-  ).rejects.toThrow('Gas estimation (preflight) failed');
-
-  await expect(
-    transfer.prepare(shared.env, params, {
-      skipGasEstimation: true,
-      skipGuards: true,
-    }),
-  ).rejects.toThrow('Cannot skip gasEstimation if no options.gas is provided');
-
-  const prepared = await transfer.prepare(shared.env, params, {
-    gas: '8000000',
-    skipGasEstimation: true,
-    skipGuards: true,
+  beforeAll(async () => {
+    shared.env = await initTestEnvironment();
+    shared.token = await getToken(shared.env, await deployToken(shared.env));
+    shared.accounts = (await shared.env.eth.getAccounts()).map(
+      account => new Address(account),
+    );
   });
 
-  const signedTransactionData = await sign(shared.env, prepared.rawTransaction);
+  it('Skip guards and preflight', async () => {
+    const params = {
+      howMuch: createQuantity(shared.token, 2000000),
+      to: shared.accounts[1],
+    };
 
-  await expect(
-    transfer.send(shared.env, signedTransactionData, params),
-  ).rejects.toThrow('VM Exception while processing transaction: revert');
+    await expect(transfer.prepare(shared.env, params)).rejects.toThrow(
+      'Insufficient FIXED',
+    );
 
-  await expect(
-    transfer(shared.env, params, {
+    await expect(
+      transfer.prepare(shared.env, params, { skipGuards: true }),
+    ).rejects.toThrow('Gas estimation (preflight) failed');
+
+    await expect(
+      transfer.prepare(shared.env, params, {
+        skipGasEstimation: true,
+        skipGuards: true,
+      }),
+    ).rejects.toThrow(
+      'Cannot skip gasEstimation if no options.gas is provided',
+    );
+
+    const prepared = await transfer.prepare(shared.env, params, {
       gas: '8000000',
       skipGasEstimation: true,
       skipGuards: true,
-    }),
-  ).rejects.toThrow('VM Exception while processing transaction: revert');
+    });
+
+    const signedTransactionData = await sign(
+      shared.env,
+      prepared.rawTransaction,
+    );
+
+    await expect(
+      transfer.send(shared.env, signedTransactionData, params),
+    ).rejects.toThrow('VM Exception while processing transaction: revert');
+
+    await expect(
+      transfer(shared.env, params, {
+        gas: '8000000',
+        skipGasEstimation: true,
+        skipGuards: true,
+      }),
+    ).rejects.toThrow('VM Exception while processing transaction: revert');
+  });
 });
