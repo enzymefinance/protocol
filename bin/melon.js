@@ -16,7 +16,7 @@ program
   .command('compile [<glob>]')
   .description('Compile the Melon Smart Contracts.')
   .action(async glob => {
-    console.log(glob ? 'Compiling all contracts' : `Compiling ${glob}`);
+    console.log(glob ? `Compiling ${glob}` : 'Compiling all contracts' );
 
     try {
       const { compileGlob } = require('./compile');
