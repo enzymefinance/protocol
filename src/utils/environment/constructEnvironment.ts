@@ -72,6 +72,7 @@ const dummyLogger: CurriedLogger = R.curryN(
 export const constructEnvironment = ({
   endpoint = undefined,
   provider = undefined,
+  deployment = undefined,
   logger = dummyLogger,
   wallet = undefined,
   track = tracks.DEMO,
@@ -84,6 +85,7 @@ export const constructEnvironment = ({
   }
 
   return {
+    deployment,
     eth: new web3Eth(provider || constructProvider(endpoint, logger)),
     // tslint:disable-next-line:object-shorthand-properties-first
     logger,
