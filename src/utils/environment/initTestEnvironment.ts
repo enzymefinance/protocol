@@ -1,5 +1,4 @@
 import Web3Accounts from 'web3-eth-accounts';
-import memdown from 'memdown';
 import { constructEnvironment } from './constructEnvironment';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
@@ -55,7 +54,6 @@ const keyPairs = new Map([
 ]);
 
 export const initTestEnvironment = async () => {
-  const db = memdown();
   const environment = constructEnvironment({
     logger: testLogger,
     provider: Ganache.provider({
@@ -63,7 +61,6 @@ export const initTestEnvironment = async () => {
       // tslint:disable-next-line:object-literal-sort-keys
       default_balance_ether: 10000000000000,
       mnemonic: testMnemonic,
-      db,
       logger: {
         log: testLogger('melon:protocol:ganache', LogLevels.DEBUG),
       },

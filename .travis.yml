@@ -6,7 +6,7 @@ compiler:
 os:
   - linux
 env:
-  - CXX="g++-4.8" NODE_OPTIONS="--max-old-space-size=2048"
+  - CXX="g++-4.8" NODE_OPTIONS="--max-old-space-size=4096"
 node_js:
   - '10.9'
 addons:
