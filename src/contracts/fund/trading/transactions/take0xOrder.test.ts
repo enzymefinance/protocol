@@ -1,9 +1,9 @@
 import * as R from 'ramda';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { take0xOrder } from './take0xOrder';
-import { TokenInterface } from '@melonproject/token-math/token';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deploySystem } from '~/utils/deploySystem';
 import {
   createOrder,
@@ -12,9 +12,6 @@ import {
 } from '~/contracts/exchanges/thirdparty/0x';
 
 const shared: any = {};
-
-export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
-  R.find(R.propEq('symbol', symbol), tokens);
 
 beforeAll(async () => {
   shared.env = await deploySystem(await initTestEnvironment());
@@ -29,8 +26,8 @@ beforeAll(async () => {
     R.propEq('name', 'ZeroEx'),
   ).exchangeAddress;
 
-  shared.mln = getTokenBySymbol(shared.env.deployment.tokens, 'MLN');
-  shared.weth = getTokenBySymbol(shared.env.deployment.tokens, 'WETH');
+  shared.mln = getTokenBySymbol(shared.env, 'MLN');
+  shared.weth = getTokenBySymbol(shared.env, 'WETH');
 
   const makerQuantity = createQuantity(shared.mln, 1);
   const takerQuantity = createQuantity(shared.weth, 0.05);

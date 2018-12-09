@@ -1,7 +1,7 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deploySystem } from '~/utils/deploySystem';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
@@ -113,20 +113,19 @@ test('Happy path', async () => {
   //   o => o.name === 'KyberNetwork',
   // ).exchangeAddress;
 
+  const mlnToken = getTokenBySymbol(shared.env, 'MLN');
+  const wethToken = getTokenBySymbol(shared.env, 'WETH');
+
   const order1 = await makeOrderFromAccountOasisDex(
     shared.env,
     matchingMarketAddress,
     {
-      buy: createQuantity(shared.env.deployment.tokens[1], 2),
-      sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      buy: createQuantity(mlnToken, 2),
+      sell: createQuantity(wethToken, 0.1),
     },
   );
-  expect(order1.buy).toEqual(
-    createQuantity(shared.env.deployment.tokens[1], 2),
-  );
-  expect(order1.sell).toEqual(
-    createQuantity(shared.env.deployment.tokens[0], 0.1),
-  );
+  expect(order1.buy).toEqual(createQuantity(mlnToken, 2));
+  expect(order1.sell).toEqual(createQuantity(wethToken, 0.1));
 
   await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
     buy: order1.buy,
@@ -139,17 +138,13 @@ test('Happy path', async () => {
     shared.env,
     matchingMarketAddress,
     {
-      buy: createQuantity(shared.env.deployment.tokens[1], 2),
-      sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      buy: createQuantity(mlnToken, 2),
+      sell: createQuantity(wethToken, 0.1),
     },
   );
 
-  expect(order2.buy).toEqual(
-    createQuantity(shared.env.deployment.tokens[1], 2),
-  );
-  expect(order2.sell).toEqual(
-    createQuantity(shared.env.deployment.tokens[0], 0.1),
-  );
+  expect(order2.buy).toEqual(createQuantity(mlnToken, 2));
+  expect(order2.sell).toEqual(createQuantity(wethToken, 0.1));
 
   await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
     id: order2.id,

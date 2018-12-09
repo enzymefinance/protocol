@@ -1,9 +1,9 @@
 import * as R from 'ramda';
-import { TokenInterface } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deploySystem } from '~/utils/deploySystem';
 import {
   createOrder,
@@ -16,9 +16,6 @@ import { cancel0xOrder } from './cancel0xOrder';
 
 const shared: any = {};
 
-export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
-  R.find(R.propEq('symbol', symbol), tokens);
-
 beforeAll(async () => {
   shared.env = await deploySystem(await initTestEnvironment());
   shared.accounts = await shared.env.eth.getAccounts();
@@ -28,8 +25,8 @@ beforeAll(async () => {
     R.propEq('name', 'ZeroEx'),
   ).exchangeAddress;
 
-  shared.mln = getTokenBySymbol(shared.env.deployment.tokens, 'MLN');
-  shared.weth = getTokenBySymbol(shared.env.deployment.tokens, 'WETH');
+  shared.mln = getTokenBySymbol(shared.env, 'MLN');
+  shared.weth = getTokenBySymbol(shared.env, 'WETH');
 
   const unsigned0xOrder = await createOrder(shared.env, shared.zeroExAddress, {
     makerAddress: shared.settings.tradingAddress,

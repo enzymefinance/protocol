@@ -1,9 +1,9 @@
 import Web3Accounts from 'web3-eth-accounts';
+import * as Ganache from '@melonproject/ganache-cli';
 import { constructEnvironment } from './constructEnvironment';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
 import { testLogger } from './testLogger';
-import { LogLevels } from './Environment';
 
 // tslint:disable-next-line:max-line-length
 const testMnemonic =
@@ -52,32 +52,17 @@ const keyPairs = new Map([
   ],
 ]);
 
-const getGanache = () => {
-  // tslint:disable-next-line:variable-name
-  const Ganache = require('@melonproject/ganache-cli');
-  const provider = Ganache.provider({
-    gasLimit: '0x7a1200',
-    // tslint:disable-next-line:object-literal-sort-keys
-    default_balance_ether: 10000000000000,
-    mnemonic: testMnemonic,
-  });
-
-  testLogger(
-    'melon:protocol:utils:environment',
-    LogLevels.DEBUG,
-    'In-memory Ganache',
-  );
-  return provider;
-};
-
 export const initTestEnvironment = async () => {
   const environment = constructEnvironment({
-    // Pass in Ganache.provider but only if
-    // process.env.JSON_RPC_ENDPOINT is not set
-    endpoint: process.env.JSON_RPC_ENDPOINT,
     logger: testLogger,
-    provider: !process.env.JSON_RPC_ENDPOINT && getGanache(),
+    provider: Ganache.provider({
+      gasLimit: '0x7a1200',
+      // tslint:disable-next-line:object-literal-sort-keys
+      default_balance_ether: 10000000000000,
+      mnemonic: testMnemonic,
+    }),
   });
+
   const accounts = await environment.eth.getAccounts();
 
   ensure(
