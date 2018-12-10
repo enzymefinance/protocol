@@ -44,10 +44,7 @@ describe('generalWalkthrough', () => {
   });
 
   it('Happy path', async () => {
-    const debug = shared.environment.logger(
-      'melon:protocol:utils',
-      LogLevels.DEBUG,
-    );
+    const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
     const fundName = `test-fund-${randomString()}`;
 
     const {
