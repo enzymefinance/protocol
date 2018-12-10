@@ -32,8 +32,8 @@ import {
   power,
   multiply,
 } from '@melonproject/token-math/bigInteger';
-// tslint:enable:max-line-length
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { LogLevels } from '~/utils/environment/Environment';
 
 const shared: any = {};
 
@@ -43,6 +43,11 @@ beforeAll(async () => {
 });
 
 test('Happy path', async () => {
+  const debug = shared.environment.logger(
+    'melon:protocol:utils',
+    LogLevels.DEBUG,
+  );
+
   const fundName = `test-fund-${randomString()}`;
 
   const deployment = await deploySystem();
@@ -148,10 +153,10 @@ test('Happy path', async () => {
 
   await executeRequest(settings.participationAddress);
 
-  console.log('Executed request');
+  debug('Executed request');
 
   // const redemption = await redeem(settings.participationAddress);
-  // console.log('Redeemed');
+  // debug('Redeemed');
 
   await getFundHoldings(settings.accountingAddress);
 
@@ -165,7 +170,7 @@ test('Happy path', async () => {
   });
   expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order1.id}`);
+  debug(`Made order from account with id ${order1.id}`);
 
   await takeOrderFromAccountOasisDex(matchingMarketAddress, {
     buy: order1.buy,
@@ -174,7 +179,7 @@ test('Happy path', async () => {
     sell: order1.sell,
   });
 
-  console.log(`Took order from account with id ${order1.id}`);
+  debug(`Took order from account with id ${order1.id}`);
 
   const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
     buy: createQuantity(deployment.tokens[1], 2),
@@ -183,20 +188,20 @@ test('Happy path', async () => {
 
   expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order2.id}`);
+  debug(`Made order from account with id ${order2.id}`);
 
   await cancelOrderFromAccountOasisDex(matchingMarketAddress, {
     id: order2.id,
   });
 
-  console.log(`Canceled order from account with id ${order2.id}`);
+  debug(`Canceled order from account with id ${order2.id}`);
 
   const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
     maker: settings.tradingAddress,
     makerQuantity: createQuantity(deployment.tokens[0], 0.1),
     takerQuantity: createQuantity(deployment.tokens[1], 2),
   });
-  console.log(`Made order from fund with id ${orderFromFund.id}`);
+  debug(`Made order from fund with id ${orderFromFund.id}`);
 
   const fundOrder = await getFundOpenOrder(
     settings.tradingAddress,
@@ -211,7 +216,7 @@ test('Happy path', async () => {
     takerAsset: fundOrder.takerAsset,
   });
 
-  console.log(`Canceled order ${fundOrder.id} from fund `);
+  debug(`Canceled order ${fundOrder.id} from fund `);
 
   const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
     buy: createQuantity(deployment.tokens[0], 0.1),
@@ -219,7 +224,7 @@ test('Happy path', async () => {
   });
   expect(order3.sell).toEqual(createQuantity(deployment.tokens[1], 2));
   expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order3.id}`);
+  debug(`Made order from account with id ${order3.id}`);
 
   await takeOasisDexOrder(settings.tradingAddress, {
     id: order3.id,
@@ -228,13 +233,13 @@ test('Happy path', async () => {
     takerQuantity: order3.buy,
   });
 
-  console.log(`Took order from fund with id ${order3.id} `);
+  debug(`Took order from fund with id ${order3.id} `);
 
   await performCalculations(settings.accountingAddress);
 
   await shutDownFund(version, { hub: hubAddress });
 
-  console.log('Shut down fund');
+  debug('Shut down fund');
 
   await expect(
     requestInvestment(settings.participationAddress, {
