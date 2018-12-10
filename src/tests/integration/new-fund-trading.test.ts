@@ -5,7 +5,13 @@ import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetCon
 import { Contracts } from '~/Contracts';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
-import { BigNumber } from 'bignumber.js'; // TODO: BigInteger?
+import {
+  BigInteger,
+  add,
+  multiply,
+  power,
+} from '@melonproject/token-math/bigInteger';
+import { getAllBalances } from '../utils/getAllBalances';
 
 let s: any = {};
 
@@ -144,15 +150,18 @@ beforeEach(async () => {
 });
 
 test('Transfer ethToken to the investor', async () => {
-  await s.weth.methods.transfer(s.investor, 10000).send({ from: s.deployer });
+  const initialTokenAmount = power(new BigInteger(10), new BigInteger(21));
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  await s.weth.methods
+    .transfer(s.investor, `${initialTokenAmount}`)
+    .send({ from: s.deployer });
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  expect(post.investor.weth).toEqual(
+    add(pre.investor.weth, initialTokenAmount),
+  );
 });
 
-const exchangeIndexes = Array.from(
-  new Array(s.numberofExchanges),
-  (val, index) => index,
-);
-
-exchangeIndexes.forEach(i => {
+Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
   test('Request investment', async () => {
     await s.weth.methods
       .approve(s.fund.participation.options.address, s.trade1.sellQuantity)
