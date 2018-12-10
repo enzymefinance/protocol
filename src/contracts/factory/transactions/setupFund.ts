@@ -1,24 +1,35 @@
-import { getContract } from '~/utils/solidity/getContract';
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import {
+  transactionFactory,
+  PostProcessFunction,
+} from '~/utils/solidity/transactionFactory';
+import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Contracts } from '~/Contracts';
 
-const postProcess = async (receipt, params, contractAddress, environment?) => {
-  const contract = getContract(
-    Contracts.FundFactory,
+interface SetupFundArgs {}
+
+type SetupFundResult = string;
+
+const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
+  receipt,
+  params,
+  contractAddress,
+  environment = getGlobalEnvironment(),
+) => {
+  return managersToHubs(
     contractAddress,
+    environment.wallet.address,
     environment,
   );
-  const hubAddress = await contract.methods
-    .managersToHubs(environment.wallet.address)
-    .call();
-  return hubAddress;
 };
 
-export const setupFund = transactionFactory(
+export const setupFund = transactionFactory<SetupFundArgs, SetupFundResult>(
   'setupFund',
   Contracts.FundFactory,
   undefined,
   undefined,
   postProcess,
-  { amguPayable: true },
+  {
+    amguPayable: true,
+  },
 );
