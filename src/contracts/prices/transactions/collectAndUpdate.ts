@@ -5,15 +5,16 @@ import {
 import { Contracts } from '~/Contracts';
 import { Address } from '@melonproject/token-math/address';
 
-export interface collectAndUpdateArgs {
+export interface CollectAndUpdateArgs {
   ofAssets: Address[];
 }
 
-const prepareArgs: PrepareArgsFunction<collectAndUpdateArgs> = async ({
-  ofAssets,
-}) => [ofAssets.map(ofAsset => ofAsset.toString())];
+const prepareArgs: PrepareArgsFunction<CollectAndUpdateArgs> = async (
+  _,
+  { ofAssets },
+) => [ofAssets.map(ofAsset => ofAsset.toString())];
 
-const postProcess = async receipt => receipt;
+const postProcess = (_, receipt) => receipt;
 
 const collectAndUpdate = transactionFactory(
   'collectAndUpdate',

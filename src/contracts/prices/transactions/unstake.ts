@@ -6,17 +6,17 @@ import {
 import { Contracts } from '~/Contracts';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 
-export interface unstakeArgs {
+export interface UnstakeArgs {
   amount: QuantityInterface;
   data: any;
 }
 
-const prepareArgs: PrepareArgsFunction<unstakeArgs> = async ({
-  amount,
-  data,
-}) => [amount.toString(), data];
+const prepareArgs: PrepareArgsFunction<UnstakeArgs> = async (
+  _,
+  { amount, data },
+) => [amount.toString(), data];
 
-const postProcess = async receipt => receipt;
+const postProcess = async (_, receipt) => receipt;
 
 const unstake = transactionFactory(
   'unstake',
