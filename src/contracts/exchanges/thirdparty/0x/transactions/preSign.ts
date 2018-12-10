@@ -16,9 +16,9 @@ interface PreSignArgs {
 type PreSignResult = boolean;
 
 const prepareArgs: PrepareArgsFunction<PreSignArgs> = async (
+  environment,
   { signedOrder, signerAddress: providedSignerAddress },
   contractAddress,
-  environment,
 ) => {
   const hash = orderHashUtils.getOrderHashHex(signedOrder);
   const signerAddress = providedSignerAddress || environment.wallet.address;

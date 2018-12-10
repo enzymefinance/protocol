@@ -1,6 +1,14 @@
 import { deploy as deployContract } from './deploy';
 import { getContract } from './getContract';
 import { Contracts } from '~/Contracts';
+import { Environment } from '~/utils/environment/Environment';
 
-export const deployAndGetContract = async (contract: Contracts, args = []) =>
-  await getContract(contract, await deployContract(contract, args));
+export const deployAndGetContract = async (
+  environment: Environment,
+  contract: Contracts,
+  args: any = [],
+) => {
+  const deployedContract = await deployContract(environment, contract, args);
+
+  return getContract(environment, contract, deployedContract);
+};

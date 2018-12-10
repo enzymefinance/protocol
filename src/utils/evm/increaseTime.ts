@@ -1,9 +1,8 @@
 import { Environment } from '~/utils/environment/Environment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 
 export const increaseTime = async (
+  environment: Environment,
   seconds: number,
-  environment: Environment = getGlobalEnvironment(),
 ) => {
   await new Promise((resolve, reject) => {
     environment.eth.currentProvider.send(

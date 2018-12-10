@@ -13,11 +13,11 @@ interface PerformCalculationsResult {
 }
 
 const postProcess = async (
+  environment,
   result,
   prepared,
-  environment,
 ): Promise<PerformCalculationsResult> => {
-  const quoteToken = await getQuoteToken(prepared.contractAddress, environment);
+  const quoteToken = await getQuoteToken(environment, prepared.contractAddress);
   const calculations = {
     gav: createQuantity(quoteToken, result.gav),
     nav: createQuantity(quoteToken, result.nav),

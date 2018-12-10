@@ -1,24 +1,25 @@
 import web3EthAbi from 'web3-eth-abi';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { Environment } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
+import { QuantityInterface } from '@melonproject/token-math/quantity';
 
 const isOasisDexTakePermitted = async (
-  tradingContractAddress,
-  id,
-  makerQuantity,
-  takerQuantity,
-  fillTakerTokenAmount,
-  environment = getGlobalEnvironment(),
+  environment: Environment,
+  tradingContractAddress: Address,
+  id: number,
+  makerQuantity: QuantityInterface,
+  takerQuantity: QuantityInterface,
+  fillTakerTokenAmount: QuantityInterface,
 ) => {
-  const hubAddress = await getHub(tradingContractAddress, environment);
+  const hubAddress = await getHub(environment, tradingContractAddress);
   const { policyManagerAddress, tradingAddress } = await getSettings(
-    hubAddress,
     environment,
+    hubAddress,
   );
 
   // TODO: Jenna said we need this later!
@@ -37,13 +38,12 @@ const isOasisDexTakePermitted = async (
   // ).call();
 
   const policyManager = await getContract(
+    environment,
     Contracts.PolicyManager,
     policyManagerAddress,
-    environment,
   );
 
-  const deployment = await getDeployment(environment);
-  const exchangeAddress = deployment.exchangeConfigs.find(
+  const exchangeAddress = environment.deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
 

@@ -9,11 +9,12 @@ export interface CreateInstanceArgs {
 
 export type CreateInstanceResult = Address;
 
-export const prepareArgs = async ({ hubAddress }: CreateInstanceArgs) => [
+export const prepareArgs = async (_, { hubAddress }: CreateInstanceArgs) => [
   `${hubAddress}`,
 ];
 
 export const postProcess = async (
+  _,
   receipt: any,
 ): Promise<CreateInstanceResult> => {
   const vaultAddress = receipt.events.NewInstance.returnValues.instance;

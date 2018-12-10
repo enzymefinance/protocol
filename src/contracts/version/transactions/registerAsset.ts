@@ -19,17 +19,20 @@ interface RegisterAssetArgs {
   sigs: FunctionSignatures[];
 }
 
-const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async ({
-  assetAddress,
-  name,
-  assetSymbol,
-  decimals,
-  url,
-  ipfsHash,
-  breakInBreakOut,
-  standards,
-  sigs,
-}: RegisterAssetArgs) => [
+const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
+  _,
+  {
+    assetAddress,
+    name,
+    assetSymbol,
+    decimals,
+    url,
+    ipfsHash,
+    breakInBreakOut,
+    standards,
+    sigs,
+  }: RegisterAssetArgs,
+) => [
   `${assetAddress}`,
   name,
   assetSymbol,

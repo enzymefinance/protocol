@@ -3,9 +3,9 @@ import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from './getToken';
 
-const prepareArgs = ({ address }) => [address.toString()];
-const postProcess = async (result, prepared, environment) => {
-  const tokenMathToken = await getToken(prepared.contractAddress, environment);
+const prepareArgs = (_, { address }) => [address.toString()];
+const postProcess = async (environment, result, prepared) => {
+  const tokenMathToken = await getToken(environment, prepared.contractAddress);
   const quantity = createQuantity(tokenMathToken, result.toString());
   return quantity;
 };

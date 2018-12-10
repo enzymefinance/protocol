@@ -1,10 +1,9 @@
 import { Address } from '@melonproject/token-math/address';
 import { fromEvent } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { Environment } from '~/utils/environment/Environment';
 
 export interface OnTransferFilter {
   from: Address;
@@ -20,14 +19,14 @@ interface Log {
 }
 
 const onTransfer = (
-  contractAddress,
+  environment: Environment,
+  contractAddress: Address,
   filter: OnTransferFilter,
-  environment = getGlobalEnvironment(),
 ) => {
   const contract = getContract(
+    environment,
     Contracts.PreminedToken,
     contractAddress,
-    environment,
   );
 
   const eventEmitter = contract.events.Transfer({

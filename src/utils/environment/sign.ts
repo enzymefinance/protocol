@@ -4,8 +4,8 @@ import { ensureAccountAddress } from './ensureAccountAddress';
 import { ensure } from '../guards/ensure';
 
 const sign = async (
-  unsignedTransaction: UnsignedRawTransaction,
   environment: Environment,
+  unsignedTransaction: UnsignedRawTransaction,
 ) => {
   ensureAccountAddress(environment);
 

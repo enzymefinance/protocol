@@ -1,70 +1,62 @@
 import * as R from 'ramda';
-import { TokenInterface } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
-
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deploySystem } from '~/utils/deploySystem';
 import {
   createOrder,
   signOrder,
   fillOrder,
 } from '~/contracts/exchanges/thirdparty/0x';
-
 import { make0xOrder } from './make0xOrder';
 
-const shared: any = {};
+describe('make0xOrder', () => {
+  const shared: any = {};
 
-export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
-  R.find(R.propEq('symbol', symbol), tokens);
+  beforeAll(async () => {
+    shared.env = await deploySystem(await initTestEnvironment());
+    shared.accounts = await shared.env.eth.getAccounts();
+    shared.settings = await setupInvestedTestFund(shared.env);
 
-beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+    shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
+      R.propEq('name', 'ZeroEx'),
+    ).exchangeAddress;
 
-  const deployment = await deploySystem();
+    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    shared.weth = getTokenBySymbol(shared.env, 'WETH');
+  });
 
-  shared.settings = await setupInvestedTestFund(deployment);
+  it('Make 0x order from fund and take it from account', async () => {
+    const makerQuantity = createQuantity(shared.weth, 0.05);
+    const takerQuantity = createQuantity(shared.mln, 1);
 
-  shared.zeroExAddress = deployment.exchangeConfigs.find(
-    R.propEq('name', 'ZeroEx'),
-  ).exchangeAddress;
+    const unsigned0xOrder = await createOrder(
+      shared.env,
+      shared.zeroExAddress,
+      {
+        makerAddress: shared.settings.tradingAddress,
+        makerQuantity,
+        takerQuantity,
+      },
+    );
 
-  shared.mln = getTokenBySymbol(deployment.tokens, 'MLN');
-  shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
-});
+    const signedOrder = await signOrder(shared.env, unsigned0xOrder);
 
-test('Make 0x order from fund and take it from account', async () => {
-  const makerQuantity = createQuantity(shared.weth, 0.05);
-  const takerQuantity = createQuantity(shared.mln, 1);
+    const result = await make0xOrder(
+      shared.env,
+      shared.settings.tradingAddress,
+      {
+        signedOrder,
+      },
+    );
 
-  const unsigned0xOrder = await createOrder(
-    shared.zeroExAddress,
-    {
-      makerAddress: shared.settings.tradingAddress,
-      makerQuantity,
-      takerQuantity,
-    },
-    shared.environment,
-  );
+    expect(result).toBe(true);
 
-  const signedOrder = await signOrder(unsigned0xOrder, shared.environment);
-
-  const result = await make0xOrder(
-    shared.settings.tradingAddress,
-    { signedOrder },
-    shared.environment,
-  );
-
-  expect(result).toBe(true);
-
-  const filled = await fillOrder(
-    shared.zeroExAddress,
-    {
+    const filled = await fillOrder(shared.env, shared.zeroExAddress, {
       signedOrder,
-    },
-    shared.environment,
-  );
+    });
 
-  expect(filled).toBeTruthy();
+    expect(filled).toBeTruthy();
+  });
 });

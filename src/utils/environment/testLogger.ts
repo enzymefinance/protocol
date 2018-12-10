@@ -13,7 +13,7 @@ const logger = winston.createLogger({
   level: 'debug',
   transports: [
     new winston.transports.File({
-      filename: `./logs/${new Date().toISOString()}.log`,
+      filename: `./logs/test-${process.pid}.log`,
     }),
   ],
 });

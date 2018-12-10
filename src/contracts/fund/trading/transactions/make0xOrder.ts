@@ -25,35 +25,33 @@ interface Make0xOrderArgs {
 }
 
 const guard: GuardFunction<Make0xOrderArgs> = async (
+  environment,
   { signedOrder },
   contractAddress,
-  environment,
 ) => {
-  const hubAddress = await getHub(contractAddress, environment);
-  const { vaultAddress } = await getSettings(hubAddress);
+  const hubAddress = await getHub(environment, contractAddress);
+  const { vaultAddress } = await getSettings(environment, hubAddress);
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
   ).tokenAddress;
-  const makerToken = await getToken(makerTokenAddress);
+  const makerToken = await getToken(environment, makerTokenAddress);
 
   const makerQuantity = createQuantity(
     makerToken,
     signedOrder.makerAssetAmount.toString(),
   );
 
-  await ensureSufficientBalance(makerQuantity, vaultAddress, environment);
+  await ensureSufficientBalance(environment, makerQuantity, vaultAddress);
 };
 
 const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
+  environment,
   { signedOrder },
   contractAddress,
-  environment,
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    { exchange: Exchanges.ZeroEx },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.ZeroEx,
+  });
 
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
@@ -92,10 +90,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
   return args;
 };
 
-const postProcess: PostProcessFunction<
-  Make0xOrderArgs,
-  boolean
-> = async receipt => {
+const postProcess: PostProcessFunction<Make0xOrderArgs, boolean> = async () => {
   // console.log(JSON.stringify(receipt, null, 2));
   return true;
 };

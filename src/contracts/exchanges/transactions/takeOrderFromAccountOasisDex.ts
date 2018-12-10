@@ -18,22 +18,22 @@ export interface TakeOrderFromAccountOasisDexArgs {
 }
 
 const guard: GuardFunction<TakeOrderFromAccountOasisDexArgs> = async (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => {
   // TODO
 
-  await approve({ howMuch: params.buy, spender: contractAddress });
+  await approve(environment, { howMuch: params.buy, spender: contractAddress });
 };
 
 const prepareArgs: PrepareArgsFunction<
   TakeOrderFromAccountOasisDexArgs
-> = async ({ id, maxTakeAmount }) => {
+> = async (_, { id, maxTakeAmount }) => {
   return [id.toString(), maxTakeAmount.quantity.toString()];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
+const postProcess = async (environment, receipt, params, contractAddress) => {
   return {
     sold: createQuantity(
       params.buy.token,

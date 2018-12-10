@@ -10,12 +10,12 @@ type SetAmguPrice = QuantityInterface;
 
 const guards = async () => {};
 
-const prepareArgs = async params => {
+const prepareArgs = async (_, params) => {
   return [`${params.quantity}`];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const amguPrice = await getAmguPrice(contractAddress, environment);
+const postProcess = async (environment, receipt, params, contractAddress) => {
+  const amguPrice = await getAmguPrice(environment, contractAddress);
   return amguPrice;
 };
 

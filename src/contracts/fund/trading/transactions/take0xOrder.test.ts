@@ -1,9 +1,9 @@
 import * as R from 'ramda';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { take0xOrder } from './take0xOrder';
-import { TokenInterface } from '@melonproject/token-math/token';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deploySystem } from '~/utils/deploySystem';
 import {
   createOrder,
@@ -11,57 +11,53 @@ import {
   approveOrder,
 } from '~/contracts/exchanges/thirdparty/0x';
 
-const shared: any = {};
+describe('take0xOrder', () => {
+  const shared: any = {};
 
-export const getTokenBySymbol = (tokens: TokenInterface[], symbol: string) =>
-  R.find(R.propEq('symbol', symbol), tokens);
+  beforeAll(async () => {
+    shared.env = await deploySystem(await initTestEnvironment());
+    shared.accounts = await shared.env.eth.getAccounts();
+    // shared.envNotManager = withDifferentAccount(
+    //   shared.accounts[1],
+    //   shared.env,
+    // );
 
-beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
-  // shared.environmentNotManager = withDifferentAccount(
-  //   shared.accounts[1],
-  //   shared.environment,
-  // );
+    shared.settings = await setupInvestedTestFund(shared.env);
+    shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
+      R.propEq('name', 'ZeroEx'),
+    ).exchangeAddress;
 
-  const deployment = await deploySystem();
+    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    shared.weth = getTokenBySymbol(shared.env, 'WETH');
 
-  shared.settings = await setupInvestedTestFund(deployment);
+    const makerQuantity = createQuantity(shared.mln, 1);
+    const takerQuantity = createQuantity(shared.weth, 0.05);
 
-  shared.zeroExAddress = deployment.exchangeConfigs.find(
-    R.propEq('name', 'ZeroEx'),
-  ).exchangeAddress;
+    const unsigned0xOrder = await createOrder(
+      shared.env,
+      shared.zeroExAddress,
+      {
+        makerQuantity,
+        takerQuantity,
+      },
+    );
 
-  shared.mln = getTokenBySymbol(deployment.tokens, 'MLN');
-  shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
-
-  const makerQuantity = createQuantity(shared.mln, 1);
-  const takerQuantity = createQuantity(shared.weth, 0.05);
-
-  const unsigned0xOrder = await createOrder(
-    shared.zeroExAddress,
-    {
-      makerQuantity,
-      takerQuantity,
-    },
-    shared.environment,
-  );
-
-  shared.signedOrder = await signOrder(unsigned0xOrder, shared.environment);
-  await approveOrder(
-    shared.zeroExAddress,
-    shared.signedOrder,
-    shared.environment,
-  );
-});
-
-test('Take off-chain order from fund', async () => {
-  const takerQuantity = createQuantity(shared.weth, 0.02);
-
-  const order = await take0xOrder(shared.settings.tradingAddress, {
-    signedOrder: shared.signedOrder,
-    takerQuantity,
+    shared.signedOrder = await signOrder(shared.env, unsigned0xOrder);
+    await approveOrder(shared.env, shared.zeroExAddress, shared.signedOrder);
   });
 
-  expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
+  it('Take off-chain order from fund', async () => {
+    const takerQuantity = createQuantity(shared.weth, 0.02);
+
+    const order = await take0xOrder(
+      shared.env,
+      shared.settings.tradingAddress,
+      {
+        signedOrder: shared.signedOrder,
+        takerQuantity,
+      },
+    );
+
+    expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
+  });
 });

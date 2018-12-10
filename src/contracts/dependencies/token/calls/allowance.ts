@@ -6,14 +6,14 @@ import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from './getToken';
 
-const prepareArgs = ({ owner, spender }) => [`${owner}`, `${spender}`];
+const prepareArgs = (_, { owner, spender }) => [`${owner}`, `${spender}`];
 
 const postProcess = async (
+  environment,
   result,
   prepared,
-  environment,
 ): Promise<QuantityInterface> => {
-  const token = await getToken(prepared.contractAddress, environment);
+  const token = await getToken(environment, prepared.contractAddress);
   const quantity = createQuantity(token, `${result}`);
   return quantity;
 };

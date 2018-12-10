@@ -1,8 +1,6 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-import { Environment, LogLevels } from '~/utils/environment/Environment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
-import { isEnvironment } from '~/utils/environment/isEnvironment';
+import { LogLevels } from '~/utils/environment/Environment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
 import { ensure } from '../guards/ensure';
@@ -30,33 +28,24 @@ export interface PreparedTransaction {
 }
 
 export const prepareTransaction = async (
+  environment,
   transaction,
-  optionsOrEnvironment: OptionsOrCallback | Environment,
-  maybeEnvironment = getGlobalEnvironment(),
+  optionsOrCallback: OptionsOrCallback,
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
-
-  const environment = isEnvironment(optionsOrEnvironment)
-    ? optionsOrEnvironment
-    : maybeEnvironment;
 
   const debug = environment.logger(
     'melon:protocol:utils:solidity',
     LogLevels.DEBUG,
   );
 
-  const options = isEnvironment(optionsOrEnvironment)
-    ? {
-        amguPayable: false,
-        from: environment.wallet.address.toString(),
-      }
-    : {
-        amguPayable: false,
-        from: environment.wallet.address.toString(),
-        ...(typeof optionsOrEnvironment === 'function'
-          ? optionsOrEnvironment(environment)
-          : optionsOrEnvironment),
-      };
+  const options = {
+    amguPayable: false,
+    from: environment.wallet.address.toString(),
+    ...(typeof optionsOrCallback === 'function'
+      ? optionsOrCallback(environment)
+      : optionsOrCallback),
+  };
 
   const maxGasPrice = multiply(
     toBI(defaultOptions.gasLimit),

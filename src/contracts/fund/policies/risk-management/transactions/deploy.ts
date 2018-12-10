@@ -3,14 +3,12 @@ import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { Contracts } from '~/Contracts';
 
 export const deploy = async (
+  environment: Environment,
   tolerancePercent: number,
-  environment?: Environment,
 ) => {
-  const address = await deployContract(
-    Contracts.PriceTolerance,
-    [tolerancePercent],
-    environment,
-  );
+  const address = await deployContract(environment, Contracts.PriceTolerance, [
+    tolerancePercent,
+  ]);
 
   return address;
 };

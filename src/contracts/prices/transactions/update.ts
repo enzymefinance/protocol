@@ -5,25 +5,25 @@ import {
   toAtomic,
 } from '@melonproject/token-math/price';
 import { ensureAccountAddress } from '~/utils/environment/ensureAccountAddress';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { ensure } from '~/utils/guards/ensure';
 import { getPrices } from '../calls/getPrices';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { Environment } from '~/utils/environment/Environment';
 
-const guards = async (contractAddress, prices, environment) => {
+const guards = async (environment: Environment, contractAddress) => {
   ensureAddress(contractAddress);
   ensureAccountAddress(environment);
 
   // TODO: check if given price is against quote
 };
 
-const prepare = async (contractAddress, prices, environment) => {
+const prepare = async (environment: Environment, contractAddress, prices) => {
   const contract = getContract(
+    environment,
     Contracts.TestingPriceFeed,
     contractAddress,
-    environment,
   );
 
   const transaction = contract.methods.update(
@@ -34,7 +34,7 @@ const prepare = async (contractAddress, prices, environment) => {
   return transaction;
 };
 
-const send = async (transaction, environment) => {
+const send = async (environment: Environment, transaction) => {
   const receipt = await transaction.send({
     from: environment.wallet.address.toString(),
   });
@@ -44,12 +44,14 @@ const send = async (transaction, environment) => {
 
 // TODO: Real postprocessing
 const postProcess = async (
+  environment: Environment,
   contractAddress,
   prices,
   preventCancelDown,
   receipt,
 ) => {
   const updatedPrices = await getPrices(
+    environment,
     contractAddress,
     prices.map(p => p.base.token),
     preventCancelDown,
@@ -64,15 +66,16 @@ const postProcess = async (
 };
 
 export const update = async (
+  environment: Environment,
   contractAddress: Address,
   prices: PriceInterface[],
   preventCancelDown: boolean = false,
-  environment = getGlobalEnvironment(),
 ): Promise<PriceInterface[]> => {
-  await guards(contractAddress, prices, environment);
-  const transaction = await prepare(contractAddress, prices, environment);
-  const receipt = await send(transaction, environment);
+  await guards(environment, contractAddress);
+  const transaction = await prepare(environment, contractAddress, prices);
+  const receipt = await send(environment, transaction);
   const result = postProcess(
+    environment,
     contractAddress,
     prices,
     preventCancelDown,

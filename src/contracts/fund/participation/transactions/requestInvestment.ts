@@ -17,19 +17,19 @@ export interface RequestInvestmentArgs {
 }
 
 const guard: GuardFunction<RequestInvestmentArgs> = async (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  await ensureAllowance(params.investmentAmount, contractAddress, environment);
+  const hub = await getHub(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hub);
+  await ensureAllowance(environment, params.investmentAmount, contractAddress);
 };
 
-const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async ({
-  investmentAmount,
-  requestedShares,
-}) => {
+const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
+  _,
+  { investmentAmount, requestedShares },
+) => {
   // TODO: check how many shares the investAmount is worth
   const requestedSharesArg = requestedShares
     ? requestedShares.quantity.toString()
@@ -43,8 +43,8 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async ({
 const postProcess: PostProcessFunction<
   RequestInvestmentArgs,
   RequestInvestmentResult
-> = async (receipt, params, contractAddress, environment) => {
-  const request = await getRequest(contractAddress, {
+> = async (environment, receipt, params, contractAddress) => {
+  const request = await getRequest(environment, contractAddress, {
     of: environment.wallet.address,
   });
   return request;

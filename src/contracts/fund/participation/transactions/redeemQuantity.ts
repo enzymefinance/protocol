@@ -19,11 +19,11 @@ export interface RedeemQuantityArgs {
   sharesQuantity: QuantityInterface;
 }
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
+const guard = async (environment, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
   await ensureIsNotShutDown(hub, environment);
   const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+  const fundToken = await getToken(environment, settings.sharesAddress);
   const balance = await balanceOf(settings.sharesAddress, {
     address: environment.wallet.address,
   });
@@ -35,16 +35,17 @@ const guard = async (params, contractAddress, environment) => {
   );
 };
 
-const PrepareArgsFunction: PrepareArgsFunction<RedeemQuantityArgs> = async ({
-  sharesQuantity,
-}) => {
+const prepareArgs: PrepareArgsFunction<RedeemQuantityArgs> = async (
+  _,
+  { sharesQuantity },
+) => {
   return [sharesQuantity.toString()];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
+const postProcess = async (environment, receipt, params, contractAddress) => {
   const hub = await getHub(contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
 
   return {
     shareQuantity: createQuantity(
@@ -58,7 +59,7 @@ const redeemQuantity = transactionFactory(
   'redeemQuantity',
   Contracts.Participation,
   guard,
-  PrepareArgsFunction,
+  prepareArgs,
   postProcess,
 );
 

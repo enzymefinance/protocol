@@ -1,4 +1,3 @@
-import { Address } from '@melonproject/token-math/address';
 import {
   BigInteger,
   // add,
@@ -10,8 +9,8 @@ import { getContract } from '~/utils/solidity/getContract';
 import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
 
-const guard = async (_, engineAddress: Address, environment) => {
-  const engine = getContract(Contracts.Engine, engineAddress, environment);
+const guard = async (environment, params, engineAddress) => {
+  const engine = getContract(environment, Contracts.Engine, engineAddress);
 
   // // TODO: Fix that check
   // const lastThaw = new BigInteger(await engine.methods.lastThaw().call());

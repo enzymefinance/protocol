@@ -2,8 +2,8 @@ import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
-const postProcess = async (result, _, environment) => {
-  const token = await getToken(result, environment);
+const postProcess = async (environment, result) => {
+  const token = await getToken(environment, result);
   return token;
 };
 

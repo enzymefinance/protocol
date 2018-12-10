@@ -15,11 +15,11 @@ function bytesToHex(byteArray) {
 }
 
 export const deployKyberEnvironment = async (
+  environment: Environment,
   deployer,
   mlnToken,
   ethToken,
   eurToken,
-  environment?: Environment,
 ) => {
   // const address = await deployContract(
   //   'KyberNetwork.sol',
@@ -53,14 +53,20 @@ export const deployKyberEnvironment = async (
   const indices = [0];
 
   const conversionRates = getContract(
+    environment,
     Contracts.ConversionRates,
-    await deployContract(Contracts.ConversionRates, [deployer]),
+    await deployContract(environment, Contracts.ConversionRates, [deployer]),
   );
 
-  const kgtTokenAddress = await deployContract('TestToken', ['KGT', 'KGT', 18]);
+  const kgtTokenAddress = await deployContract(environment, 'TestToken', [
+    'KGT',
+    'KGT',
+    18,
+  ]);
   const kyberNetworkContract = getContract(
+    environment,
     Contracts.KyberNetwork,
-    await deployContract('KyberNetwork', [deployer]),
+    await deployContract(environment, Contracts.KyberNetwork, [deployer]),
   );
 
   await conversionRates.methods
@@ -81,8 +87,9 @@ export const deployKyberEnvironment = async (
     .enableTokenTrade(mlnToken.address)
     .send({ from: deployer, gas: 8000000 });
   const kyberReserveContract = getContract(
+    environment,
     Contracts.KyberReserve,
-    await deployContract('KyberReserve', [
+    await deployContract(environment, Contracts.KyberReserve, [
       kyberNetworkContract.options.address,
       conversionRates.options.address,
       deployer,
@@ -102,9 +109,9 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
 
   const mlnTokenContract = getContract(
+    environment,
     Contracts.PreminedToken,
     mlnToken.address,
-    environment,
   );
 
   // Set pricing for Token
@@ -145,8 +152,12 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
 
   const kyberWhiteListContract = getContract(
+    environment,
     Contracts.KyberWhiteList,
-    await deployContract('KyberWhiteList', [deployer, kgtTokenAddress]),
+    await deployContract(environment, Contracts.KyberWhiteList, [
+      deployer,
+      kgtTokenAddress,
+    ]),
   );
   await kyberWhiteListContract.methods
     .addOperator(deployer)
@@ -158,15 +169,16 @@ export const deployKyberEnvironment = async (
     .setSgdToEthRate(30000)
     .send({ from: deployer, gas: 8000000 });
 
-  const feeBurnerAddress = await deployContract('FeeBurner', [
+  const feeBurnerAddress = await deployContract(environment, 'FeeBurner', [
     deployer,
     mlnToken.address,
     kyberNetworkContract.options.address,
   ]);
-  const expectedRateAddress = await deployContract('ExpectedRate', [
-    kyberNetworkContract.options.address,
-    deployer,
-  ]);
+  const expectedRateAddress = await deployContract(
+    environment,
+    'ExpectedRate',
+    [kyberNetworkContract.options.address, deployer],
+  );
 
   await environment.eth.sendTransaction({
     from: deployer,
@@ -182,8 +194,9 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
 
   const kyberNetworkProxyContract = getContract(
+    environment,
     Contracts.KyberNetworkProxy,
-    await deployContract(Contracts.KyberNetworkProxy, [deployer], environment),
+    await deployContract(environment, Contracts.KyberNetworkProxy, [deployer]),
   );
   await kyberNetworkProxyContract.methods
     .setKyberNetworkContract(kyberNetworkContract.options.address)
@@ -214,9 +227,9 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
   // // Add Eur Token
   const eurTokenContract = getContract(
+    environment,
     Contracts.PreminedToken,
     eurToken.address,
-    environment,
   );
   await conversionRates.methods
     .addToken(eurToken.address)
@@ -275,7 +288,10 @@ export const deployKyberEnvironment = async (
     .send({ from: deployer, gas: 8000000 });
 
   // Melon Fund env
-  const kyberAdapterAddress = await deployContract(Contracts.KyberAdapter);
+  const kyberAdapterAddress = await deployContract(
+    environment,
+    Contracts.KyberAdapter,
+  );
   // TODO
   // await governanceAction(
   //   { from: deployer },

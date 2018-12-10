@@ -19,13 +19,12 @@ import {
   QuantityInterface,
   createQuantity,
 } from '@melonproject/token-math/quantity';
-
 import { getLatestBlock } from '~/utils/evm';
 import { add, toBI } from '@melonproject/token-math/bigInteger';
 import { getAssetProxy } from '../calls/getAssetProxy';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { Environment } from '~/utils/environment/Environment';
 
 export interface CreateOrderArgs {
   makerQuantity: QuantityInterface;
@@ -35,6 +34,7 @@ export interface CreateOrderArgs {
 }
 
 const createOrder = async (
+  environment: Environment,
   exchange: Address,
   {
     makerQuantity,
@@ -42,17 +42,16 @@ const createOrder = async (
     duration = 24 * 60 * 60,
     makerAddress: givenMakerAddress,
   }: CreateOrderArgs,
-  environment = getGlobalEnvironment(),
 ): Promise<Order> => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
     makerQuantity.token.address,
   );
+
   const takerAssetData = assetDataUtils.encodeERC20AssetData(
     takerQuantity.token.address,
   );
 
   const latestBlock = await getLatestBlock(environment);
-
   const makerAddress = givenMakerAddress || environment.wallet.address;
 
   // tslint:disable:object-literal-sort-keys
@@ -78,29 +77,29 @@ const createOrder = async (
 };
 
 const approveOrder = async (
+  environment: Environment,
   exchange: Address,
   order: Order,
-  environment = getGlobalEnvironment(),
 ) => {
-  const erc20Proxy = await getAssetProxy(exchange);
+  const erc20Proxy = await getAssetProxy(environment, exchange);
 
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     order.makerAssetData,
   ).tokenAddress;
 
-  const makerToken = await getToken(makerTokenAddress, environment);
+  const makerToken = await getToken(environment, makerTokenAddress);
   const makerQuantity = createQuantity(
     makerToken,
     order.makerAssetAmount.toString(),
   );
 
-  await approve({ howMuch: makerQuantity, spender: erc20Proxy }, environment);
+  await approve(environment, { howMuch: makerQuantity, spender: erc20Proxy });
 };
 
 // This is just a reference implementation
 const signOrder = async (
+  environment: Environment,
   order: Order,
-  environment = getGlobalEnvironment(),
 ): Promise<SignedOrder> => {
   // const orderHash = orderHashUtils.getOrderHashHex(order);
   // const web3signature = await environment.eth.sign(

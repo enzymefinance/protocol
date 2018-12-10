@@ -18,8 +18,8 @@ interface VersionArgs {
 }
 
 export const deployVersion = async (
+  environment: Environment,
   addresses: VersionArgs,
-  environment?: Environment,
 ) => {
   const {
     accountingFactoryAddress,
@@ -51,7 +51,7 @@ export const deployVersion = async (
 
   const args = argsRaw.map(a => a.toString());
 
-  const address = await deployContract(Contracts.Version, args, environment);
+  const address = await deployContract(environment, Contracts.Version, args);
 
   return address;
 };

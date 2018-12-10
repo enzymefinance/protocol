@@ -4,10 +4,10 @@ import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import * as web3Utils from 'web3-utils';
 
-const prepareArgs = ({ id }) => [id];
-const postProcess = async (result, prepared, environment) => {
-  const sellToken = await getToken(result['1']);
-  const buyToken = await getToken(result['3']);
+const prepareArgs = (_, { id }) => [id];
+const postProcess = async (environment, result, prepared) => {
+  const sellToken = await getToken(environment, result['1']);
+  const buyToken = await getToken(environment, result['3']);
   return {
     id: web3Utils.toDecimal(prepared.txObject.arguments[0]),
     sell: createQuantity(sellToken, result['0']),

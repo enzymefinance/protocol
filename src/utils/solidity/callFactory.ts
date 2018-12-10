@@ -1,22 +1,19 @@
 import { Observable } from 'zen-observable-ts';
 import * as R from 'ramda';
-
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Environment } from '../environment/Environment';
-
 import { getContract } from './getContract';
 import { TransactionArgs } from './transactionFactory';
 
 export type PrepareCallArgsFunction = (
+  environment: Environment,
   params,
   contractAddress?,
-  environment?: Environment,
 ) => TransactionArgs;
 
 export type PostProcessCallFunction = (
+  environment: Environment,
   result,
   prepared?,
-  environment?: Environment,
 ) => any;
 
 export interface Processors {
@@ -25,14 +22,14 @@ export interface Processors {
 }
 
 const defaultPrepareArgs: PrepareCallArgsFunction = (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => Object.values(params || {}).map(v => v.toString());
 const defaultPostProcess: PostProcessCallFunction = (
+  environment,
   result,
   prepared,
-  environment,
 ) => result;
 
 const defaultProcessors = {
@@ -50,16 +47,12 @@ const callFactory = (
     ...processors,
   };
 
-  const prepare = (
-    contractAddress,
-    params = {},
-    environment = getGlobalEnvironment(),
-  ) => {
-    const args = prepareArgs(params, contractAddress, environment);
+  const prepare = (environment, contractAddress, params = {}) => {
+    const args = prepareArgs(environment, params, contractAddress);
     const contractInstance = getContract(
+      environment,
       contract,
       contractAddress,
-      environment,
     );
     const txObject = contractInstance.methods[name](...args);
     const prepared = {
@@ -70,7 +63,7 @@ const callFactory = (
     return prepared;
   };
 
-  const call = async (prepared, environment = getGlobalEnvironment()) => {
+  const call = async (environment, prepared) => {
     let result;
     try {
       result = await prepared.txObject.call();
@@ -81,26 +74,22 @@ const callFactory = (
         }`,
       );
     }
-    const postProcessed = await postProcess(result, prepared, environment);
+    const postProcessed = await postProcess(environment, result, prepared);
     return postProcessed;
   };
 
   // TODO: Possibility to specify custom filters
   // TODO: Check if newBlockHeaders & multiple subscriptions lead to
   // performance problems?
-  const observable = (
-    contractAddress,
-    params,
-    environment = getGlobalEnvironment(),
-  ) =>
+  const observable = (environment, contractAddress, params) =>
     new Observable(observer => {
       let lastResult;
-      const prepared = prepare(contractAddress, params, environment);
+      const prepared = prepare(environment, contractAddress, params);
       const subscription = environment.eth.subscribe('newBlockHeaders');
 
       subscription.on('data', async block => {
         if (block.number) {
-          const result = await call(prepared, environment);
+          const result = await call(environment, prepared);
 
           if (!R.equals(result, lastResult)) {
             observer.next(result);
@@ -117,13 +106,9 @@ const callFactory = (
       return () => subscription.unsubscribe();
     });
 
-  const execute = async (
-    contractAddress,
-    params = {},
-    environment = getGlobalEnvironment(),
-  ) => {
-    const prepared = prepare(contractAddress, params, environment);
-    const result = await call(prepared, environment);
+  const execute = async (environment, contractAddress, params = {}) => {
+    const prepared = prepare(environment, contractAddress, params);
+    const result = await call(environment, prepared);
     return result;
   };
 
@@ -137,19 +122,16 @@ const callFactory = (
 const callFactoryWithoutParams = (name, contract, processors?) => {
   const withParams = callFactory(name, contract, processors);
 
-  const prepare = (contractAddress, environment = getGlobalEnvironment()) =>
-    withParams.prepare(contractAddress, {}, environment);
+  const prepare = (environment, contractAddress) =>
+    withParams.prepare(environment, contractAddress, {});
 
   const call = withParams.call;
-  const observable = (contractAddress, environment = getGlobalEnvironment()) =>
-    withParams.observable(contractAddress, {}, environment);
+  const observable = (environment, contractAddress) =>
+    withParams.observable(environment, contractAddress, {});
 
-  const execute = async (
-    contractAddress,
-    environment = getGlobalEnvironment(),
-  ) => {
-    const prepared = prepare(contractAddress, environment);
-    const result = await call(prepared, environment);
+  const execute = async (environment, contractAddress) => {
+    const prepared = prepare(environment, contractAddress);
+    const result = await call(environment, prepared);
     return result;
   };
 

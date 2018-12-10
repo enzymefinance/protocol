@@ -5,15 +5,15 @@ import { ensureAddress } from '~/utils/checks/isAddress';
 import { Contracts } from '~/Contracts';
 
 export const deploy = async (
+  environment: Environment,
   quoteToken: TokenInterface,
-  environment?: Environment,
 ) => {
   ensureAddress(quoteToken.address);
 
   const address = await deployContract(
+    environment,
     Contracts.TestingPriceFeed,
     [quoteToken.address, quoteToken.decimals],
-    environment,
   );
 
   return address;

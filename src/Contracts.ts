@@ -8,6 +8,7 @@ export enum Contracts {
   AssetBlacklist = 'AssetBlacklist',
   AssetWhitelist = 'AssetWhitelist',
   BurnableToken = 'BurnableToken',
+  CanonicalPriceFeed = 'CanonicalPriceFeed',
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
   ERC20Proxy = 'ERC20Proxy',
@@ -50,6 +51,7 @@ export enum Contracts {
   Shares = 'Shares',
   SharesFactory = 'SharesFactory',
   Spoke = 'Spoke',
+  StakingPriceFeed = 'StakingPriceFeed',
   StandardToken = 'StandardToken',
   TestingPriceFeed = 'TestingPriceFeed',
   Trading = 'Trading',
@@ -79,7 +81,9 @@ export const requireMap = {
   [Contracts.AssetWhitelist]:
     require('../out/AssetWhitelist.abi.json'),
   [Contracts.BurnableToken]:
-    require('../out/BurnableToken.abi.json'),
+    require(`../out/${Contracts.BurnableToken}.abi.json`),
+  [Contracts.CanonicalPriceFeed]:
+    require(`../out/${Contracts.CanonicalPriceFeed}.abi.json`),
   [Contracts.ERC20Proxy]:
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
@@ -167,7 +171,9 @@ export const requireMap = {
   [Contracts.SharesFactory]:
     require(`../out/${Contracts.SharesFactory}.abi.json`),
   [Contracts.Spoke]:
-    require('../out/Spoke.abi.json'),
+    require(`../out/${Contracts.Spoke}.abi.json`),
+  [Contracts.StakingPriceFeed]:
+    require(`../out/${Contracts.StakingPriceFeed}.abi.json`,),
   [Contracts.StandardToken]:
     require('../out/StandardToken.abi.json'),
   [Contracts.TestingPriceFeed]:

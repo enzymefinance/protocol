@@ -35,36 +35,39 @@ export interface CallOnExchangeArgs {
 }
 
 const guard: GuardFunction<CallOnExchangeArgs> = async (
+  environment,
   params,
   contractAddress,
-  environment,
 ) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
+  const hub = await getHub(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hub);
 };
 
-const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
-  exchangeIndex,
-  method,
-  maker,
-  taker,
-  makerAsset,
-  takerAsset,
-  feeRecipient,
-  senderAddress,
-  makerQuantity,
-  takerQuantity,
-  makerFee,
-  takerFee,
-  timestamp,
-  salt,
-  fillTakerTokenAmount,
-  dexySignatureMode,
-  identifier,
-  makerAssetData,
-  takerAssetData,
-  signature,
-}) => {
+const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async (
+  _,
+  {
+    exchangeIndex,
+    method,
+    maker,
+    taker,
+    makerAsset,
+    takerAsset,
+    feeRecipient,
+    senderAddress,
+    makerQuantity,
+    takerQuantity,
+    makerFee,
+    takerFee,
+    timestamp,
+    salt,
+    fillTakerTokenAmount,
+    dexySignatureMode,
+    identifier,
+    makerAssetData,
+    takerAssetData,
+    signature,
+  },
+) => {
   return [
     exchangeIndex,
     method,
@@ -95,7 +98,7 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async ({
   ];
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
+const postProcess = async (_, receipt) => {
   return receipt;
 };
 

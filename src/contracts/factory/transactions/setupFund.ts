@@ -1,24 +1,36 @@
-import { getContract } from '~/utils/solidity/getContract';
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import {
+  transactionFactory,
+  PostProcessFunction,
+} from '~/utils/solidity/transactionFactory';
+import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
+import { Environment } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
 
-const postProcess = async (receipt, params, contractAddress, environment?) => {
-  const contract = getContract(
-    Contracts.FundFactory,
-    contractAddress,
+interface SetupFundArgs {}
+
+type SetupFundResult = string;
+
+const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
+  environment: Environment,
+  receipt,
+  params,
+  contractAddress: Address,
+) => {
+  return managersToHubs(
     environment,
+    contractAddress,
+    environment.wallet.address,
   );
-  const hubAddress = await contract.methods
-    .managersToHubs(environment.wallet.address)
-    .call();
-  return hubAddress;
 };
 
-export const setupFund = transactionFactory(
+export const setupFund = transactionFactory<SetupFundArgs, SetupFundResult>(
   'setupFund',
   Contracts.FundFactory,
   undefined,
   undefined,
   postProcess,
-  { amguPayable: true },
+  {
+    amguPayable: true,
+  },
 );

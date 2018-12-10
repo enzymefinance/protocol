@@ -31,13 +31,11 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "allchecks": "yarn clean && yarn build && yarn compile && yarn deploy && yarn lint && yarn test",
+    "allchecks": "yarn clean && yarn build && yarn compile && yarn lint && yarn test",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
-    "clean": "rimraf lib && rimraf out && yarn clean:logs",
-    "clean:logs": "rimraf logs/*.log",
+    "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
-    "deploy": "JSON_RPC_ENDPOINT=ws://localhost:8545 node bin/melon.js deploy",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",
@@ -50,6 +48,7 @@
     "publish:alpha": "yarn check && yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
     "snyk": "synk test",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
+    "pretest": "rimraf logs/test-*.log",
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit"
   },
   "devDependencies": {

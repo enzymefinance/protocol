@@ -1,17 +1,16 @@
 import { Address } from '@melonproject/token-math/address';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
 export const getFundDetails = async (
+  environment,
   contractAddress: Address,
   versionAddress: Address,
-  environment = getGlobalEnvironment(),
 ) => {
   const contract = getContract(
+    environment,
     Contracts.FundRanking,
     contractAddress,
-    environment,
   );
 
   const fundDetails = await contract.methods
@@ -32,8 +31,6 @@ export const getFundDetails = async (
     sharePrice: sharePrices[index],
     creationTime: creationTimes[index],
   }));
-
-  console.log(result);
 
   return result;
 };

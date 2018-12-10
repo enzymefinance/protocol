@@ -8,18 +8,16 @@ import { Address } from '@melonproject/token-math/address';
 
 import { balanceOf } from '../calls/balanceOf';
 import { ensure } from '~/utils/guards/ensure';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
 
 const ensureSufficientBalance = async (
+  environment: Environment,
   minBalance: QuantityInterface,
   who: Address,
-  environment = getGlobalEnvironment(),
 ) => {
-  const balance = await balanceOf(
-    minBalance.token.address,
-    { address: who },
-    environment,
-  );
+  const balance = await balanceOf(environment, minBalance.token.address, {
+    address: who,
+  });
 
   const hasSufficientBalance =
     greaterThan(balance, minBalance) || isEqual(balance, minBalance);
