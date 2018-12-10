@@ -3,7 +3,8 @@ import {
   PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
 
 interface SetupFundArgs {}
@@ -13,8 +14,8 @@ type SetupFundResult = string;
 const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
   receipt,
   params,
-  contractAddress,
-  environment = getGlobalEnvironment(),
+  contractAddress: Address,
+  environment: Environment,
 ) => {
   return managersToHubs(
     contractAddress,
