@@ -4,16 +4,16 @@ import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 
 export const deploy = async (
+  environment: Environment,
   priceSource: Address,
   delay: number,
   mlnAddress: Address,
-  environment?: Environment,
 ) => {
-  const address = await deployContract(
-    'engine/Engine.sol',
-    [priceSource.toString(), delay, mlnAddress.toString()],
-    environment,
-  );
+  const address = await deployContract(environment, 'engine/Engine.sol', [
+    priceSource.toString(),
+    delay,
+    mlnAddress.toString(),
+  ]);
 
   return address;
 };

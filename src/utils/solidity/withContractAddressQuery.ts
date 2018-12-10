@@ -4,21 +4,21 @@ import { OptionsOrCallback } from './prepareTransaction';
 import { Environment } from '../environment/Environment';
 
 type WithAddressQuerySendFunction<Args> = (
+  environment: Environment,
   signedTransactionData: string,
   params: Args,
   options?: OptionsOrCallback,
-  environment?: Environment,
 ) => Promise<any>;
 
 type WithAddressQueryPrepareFunction<Args> = (
+  environment: Environment,
   params?: Args,
   options?: OptionsOrCallback,
-  environment?: Environment,
 ) => Promise<MelonTransaction<Args>>;
 
 export type WithAddressQueryExecuteFunction<Args, Result> = (
+  environment: Environment,
   params?: Args,
-  environment?: Environment,
   options?: OptionsOrCallback,
 ) => Promise<Result>;
 
@@ -50,32 +50,35 @@ const withContractAddressQuery: WithContractAddressQuery = <Args, Result>(
   contractAddressQuery,
   transaction,
 ) => {
-  const prepare = async (params: Args, environment?) =>
-    await transaction.prepare(
+  const prepare = (environment: Environment, params: Args, options?) => {
+    return transaction.prepare(
+      environment,
       R.path(contractAddressQuery, params).toString(),
       params,
-      environment,
+      options,
     );
+  };
 
-  const send = async (
+  const send = (
+    environment: Environment,
     signedTransactionData,
     params: Args,
-    defaultOptions,
-    environment?,
-  ): Promise<Result> =>
-    await transaction.send(
+    options?,
+  ): Promise<Result> => {
+    return transaction.send(
+      environment,
       R.path(contractAddressQuery, params).toString(),
       signedTransactionData,
       params,
-      defaultOptions,
-      environment,
+      options,
     );
+  };
 
-  const execute = async (params: Args, environment?, options?) => {
+  const execute = async (environment: Environment, params: Args, options?) => {
     return await transaction(
+      environment,
       R.path(contractAddressQuery, params).toString(),
       params,
-      environment,
       options,
     );
   };

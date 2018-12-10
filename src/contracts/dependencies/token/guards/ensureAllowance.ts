@@ -8,18 +8,17 @@ import { Address } from '@melonproject/token-math/address';
 
 import { allowance } from '../calls/allowance';
 import { ensure } from '~/utils/guards/ensure';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
+import { Environment } from '~/utils/environment/Environment';
 
 const ensureAllowance = async (
+  environment: Environment,
   amount: QuantityInterface,
   spender: Address,
-  environment = getGlobalEnvironment(),
 ) => {
-  const balance = await allowance(
-    amount.token.address,
-    { spender, owner: environment.wallet.address },
-    environment,
-  );
+  const balance = await allowance(environment, amount.token.address, {
+    spender,
+    owner: environment.wallet.address,
+  });
 
   const hasSufficientBalance =
     greaterThan(balance, amount) || isEqual(balance, amount);

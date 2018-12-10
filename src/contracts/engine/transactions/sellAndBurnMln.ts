@@ -9,15 +9,15 @@ import { allowance } from '~/contracts/dependencies/token/calls/allowance';
 import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
 
-const guard = async ({ quantity }, contractAddress: Address, environment) => {
-  const engine = getContract(Contracts.Engine, contractAddress);
+const guard = async (environment, { quantity }, contractAddress: Address) => {
+  const engine = getContract(environment, Contracts.Engine, contractAddress);
   const mlnAddress = await engine.methods.mlnToken().call();
-  const mlnToken = await getToken(mlnAddress);
+  const mlnToken = await getToken(environment, mlnAddress);
   ensure(
     isSameToken(quantity.token, mlnToken),
     'It is only possible to burn MLN',
   );
-  const allowedMln = await allowance(mlnAddress, {
+  const allowedMln = await allowance(environment, mlnAddress, {
     owner: environment.wallet.address,
     spender: contractAddress.toString(),
   });
@@ -28,11 +28,11 @@ const guard = async ({ quantity }, contractAddress: Address, environment) => {
   );
 };
 
-const prepareArgs = async ({ quantity }) => {
+const prepareArgs = async (_, { quantity }) => {
   return [`${quantity.quantity}`];
 };
 
-const postProcess = async receipt => receipt;
+const postProcess = async (_, receipt) => receipt;
 
 // Gas behaves kinda weird for this function:
 // Estimation: 88289, Effective usage: 58289

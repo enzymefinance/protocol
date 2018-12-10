@@ -15,16 +15,16 @@ export interface RequestInvestmentResult {
   atUpdateId: number;
 }
 
-const prepareArgs = ({ of }) => [of.toString()];
+const prepareArgs = (_, { of }) => [of.toString()];
 const postProcess = async (
+  environment,
   result,
   prepared,
-  environment,
 ): Promise<RequestInvestmentResult> => {
-  const investToken = await getToken(result.investmentAsset, environment);
-  const hub = await getHub(prepared.contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+  const investToken = await getToken(environment, result.investmentAsset);
+  const hub = await getHub(environment, prepared.contractAddress);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
 
   return {
     atUpdateId: parseInt(result.atUpdateId, 10),

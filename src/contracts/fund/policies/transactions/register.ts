@@ -12,10 +12,10 @@ interface RegisterArgs {
   policy: Address;
 }
 
-const prepareArgs: PrepareArgsFunction<RegisterArgs> = async ({
-  method,
-  policy,
-}: RegisterArgs) => [web3EthAbi.encodeFunctionSignature(method), `${policy}`];
+const prepareArgs: PrepareArgsFunction<RegisterArgs> = async (
+  _,
+  { method, policy }: RegisterArgs,
+) => [web3EthAbi.encodeFunctionSignature(method), `${policy}`];
 
 const register: EnhancedExecute<RegisterArgs, boolean> = transactionFactory(
   'register',

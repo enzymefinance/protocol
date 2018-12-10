@@ -13,7 +13,6 @@ import {
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
@@ -22,28 +21,28 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { Address } from '@melonproject/token-math/address';
 
 export type MakeOasisDexOrderResult = any;
 
 export interface MakeOasisDexOrderArgs {
+  maker: Address;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
 }
 
 const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
+  environment,
   { makerQuantity, takerQuantity },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  const hubAddress = await getHub(contractAddress, environment);
-  const { vaultAddress } = await getSettings(hubAddress);
+  const hubAddress = await getHub(environment, contractAddress);
+  const { vaultAddress } = await getSettings(environment, hubAddress);
 
   const minBalance = makerQuantity;
-  await ensureSufficientBalance(minBalance, vaultAddress, environment);
-
-  await ensureFundOwner(contractAddress, environment);
-
-  await ensureIsNotShutDown(hubAddress, environment);
+  await ensureSufficientBalance(environment, minBalance, vaultAddress);
+  await ensureFundOwner(environment, contractAddress);
+  await ensureIsNotShutDown(environment, hubAddress);
 
   // Ensure fund not shut down.
   // Ensure exchange method is allowed.
@@ -56,23 +55,21 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   // Ensure selling quantity is not too low.
 
   await ensureMakePermitted(
+    environment,
     contractAddress,
     makerQuantity,
     takerQuantity,
-    environment,
   );
 };
 
 const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
+  environment,
   { makerQuantity, takerQuantity },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    { exchange: Exchanges.MatchingMarket },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.MatchingMarket,
+  });
 
   return {
     dexySignatureMode: 0,
@@ -101,8 +98,11 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
 const postProcess: PostProcessFunction<
   MakeOasisDexOrderArgs,
   MakeOasisDexOrderResult
-> = async receipt => {
-  const sellToken = await getToken(receipt.events.LogMake.returnValues.pay_gem);
+> = async (environment, receipt) => {
+  const sellToken = await getToken(
+    environment,
+    receipt.events.LogMake.returnValues.pay_gem,
+  );
   return {
     buy: createQuantity(sellToken, receipt.events.LogMake.returnValues.buy_amt),
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),

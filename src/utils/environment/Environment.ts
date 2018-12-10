@@ -1,7 +1,8 @@
 import * as Eth from 'web3-eth';
-
 import { Address } from '@melonproject/token-math/address';
-import { UnsignedRawTransaction } from '../solidity/transactionFactory';
+import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
+import { ExchangeConfig } from '~/contracts/factory/transactions/createComponents';
+import { TokenInterface } from '@melonproject/token-math/token';
 
 export type SignFunction = (
   unsignedTransaction: UnsignedRawTransaction,
@@ -40,6 +41,21 @@ export interface Options {
   readonly gasPrice: string;
 }
 
+export interface Policies {
+  priceTolerance: Address;
+  whitelist: Address;
+}
+
+export interface Deployment {
+  engine: Address;
+  exchangeConfigs: ExchangeConfig[];
+  policies: Policies;
+  priceSource: Address;
+  ranking: Address;
+  tokens: TokenInterface[];
+  version: Address;
+}
+
 export interface Environment {
   readonly confirmer?: Function;
   readonly eth: Eth;
@@ -47,4 +63,5 @@ export interface Environment {
   readonly wallet?: Wallet;
   readonly options: Options;
   readonly logger: CurriedLogger;
+  readonly deployment?: Deployment;
 }

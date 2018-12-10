@@ -1,6 +1,4 @@
-import { getGlobalEnvironment } from '../environment/globalEnvironment';
-
-const getLatestBlock = async (environment = getGlobalEnvironment()) => {
+const getLatestBlock = async environment => {
   return environment.eth.getBlock('latest');
 };
 

@@ -1,15 +1,16 @@
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { Environment } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
 
 export const getInfo = async (
-  contractAddress,
-  environment = getGlobalEnvironment(),
+  environment: Environment,
+  contractAddress: Address,
 ) => {
   const contract = getContract(
+    environment,
     Contracts.PreminedToken,
     contractAddress,
-    environment,
   );
   const symbol = await contract.methods.symbol().call();
   const name = await contract.methods.name().call();

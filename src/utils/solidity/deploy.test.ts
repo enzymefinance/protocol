@@ -1,39 +1,37 @@
 import { Environment } from '~/utils/environment/Environment';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
 import { deploy } from './deploy';
 
-let environment;
+describe('deploy', () => {
+  const shared: any = {};
 
-beforeAll(async () => {
-  environment = await initTestEnvironment();
-});
+  beforeAll(async () => {
+    shared.env = await initTestEnvironment();
+  });
 
-test('Happy path', async () => {
-  const address = await deploy(
-    'dependencies/token/PreminedToken.sol',
-    ['TEST', 18, 'Test Token'],
-    environment,
-  );
+  it('Happy path', async () => {
+    const address = await deploy(
+      shared.env,
+      'dependencies/token/PreminedToken.sol',
+      ['TEST', 18, 'Test Token'],
+    );
 
-  expect(isAddress(address)).toBe(true);
-});
+    expect(isAddress(address)).toBe(true);
+  });
 
-test('Throwing error if gasLimit is below gasEstimation', async () => {
-  const globalEnvironment = getGlobalEnvironment();
-  const environment: Environment = {
-    ...globalEnvironment,
-    options: {
-      gasLimit: '1000',
-      gasPrice: globalEnvironment.options.gasPrice,
-    },
-  };
-  await expect(
-    deploy(
-      'exchanges/thirdparty/oasisdex/MatchingMarket.sol',
-      [99999999999],
-      environment,
-    ),
-  ).rejects.toThrow('gas limit:');
+  it('Throwing error if gasLimit is below gasEstimation', async () => {
+    const environment: Environment = {
+      ...shared.env,
+      options: {
+        gasLimit: '1000',
+        gasPrice: shared.env.options.gasPrice,
+      },
+    };
+    await expect(
+      deploy(environment, 'exchanges/thirdparty/oasisdex/MatchingMarket.sol', [
+        99999999999,
+      ]),
+    ).rejects.toThrow('gas limit:');
+  });
 });

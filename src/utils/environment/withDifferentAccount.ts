@@ -1,10 +1,6 @@
 import { Address } from '@melonproject/token-math/address';
-import { getGlobalEnvironment } from './globalEnvironment';
 
-const withDifferentAccount = (
-  account: Address,
-  environment = getGlobalEnvironment(),
-) => ({
+const withDifferentAccount = (environment, account: Address) => ({
   ...environment,
   wallet: {
     ...environment.wallet,

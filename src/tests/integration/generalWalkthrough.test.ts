@@ -35,210 +35,240 @@ import {
 // tslint:enable:max-line-length
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
-const shared: any = {};
+describe('generalWalkthrough', () => {
+  const shared: any = {};
 
-beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
-});
+  beforeAll(async () => {
+    shared.env = await deploySystem(await initTestEnvironment());
+    shared.accounts = await shared.env.eth.getAccounts();
+  });
 
-test('Happy path', async () => {
-  const fundName = `test-fund-${randomString()}`;
+  it('Happy path', async () => {
+    const fundName = `test-fund-${randomString()}`;
 
-  const deployment = await deploySystem();
+    const {
+      exchangeConfigs,
+      priceSource,
+      tokens,
+      policies,
+      version,
+    } = shared.env.deployment;
+    const [quoteToken, baseToken] = tokens;
+    const defaultTokens = [quoteToken, baseToken];
+    const amguToken = await getAmguToken(shared.env, version);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(shared.env, version, amguPrice);
 
-  const {
-    exchangeConfigs,
-    priceSource,
-    tokens,
-    policies,
-    version,
-  } = deployment;
-  const [quoteToken, baseToken] = tokens;
-  const defaultTokens = [quoteToken, baseToken];
-  const amguToken = await getAmguToken(version);
-  const amguPrice = createQuantity(amguToken, '1000000000');
-  await setAmguPrice(version, amguPrice);
+    // Deploy fees
+    const managementFee = getContract(
+      shared.env,
+      Contracts.ManagementFee,
+      await deploy(shared.env, Contracts.ManagementFee, []),
+    );
 
-  // Deploy fees
-  const managementFee = getContract(
-    Contracts.ManagementFee,
-    await deploy(Contracts.ManagementFee, []),
-  );
+    const performanceFee = getContract(
+      shared.env,
+      Contracts.PerformanceFee,
+      await deploy(shared.env, Contracts.PerformanceFee, []),
+    );
 
-  const performanceFee = getContract(
-    Contracts.PerformanceFee,
-    await deploy(Contracts.PerformanceFee, []),
-  );
-
-  const fees = [
-    {
-      feeAddress: managementFee.options.address,
-      feePeriod: new BigInteger(0),
-      feeRate: new BigInteger(
-        multiply(
-          new BigInteger(2),
-          power(new BigInteger(10), new BigInteger(16)),
+    const fees = [
+      {
+        feeAddress: managementFee.options.address,
+        feePeriod: new BigInteger(0),
+        feeRate: new BigInteger(
+          multiply(
+            new BigInteger(2),
+            power(new BigInteger(10), new BigInteger(16)),
+          ),
         ),
-      ),
-    },
-    {
-      feeAddress: performanceFee.options.address,
-      feePeriod: new BigInteger(86400 * 90),
-      feeRate: new BigInteger(
-        multiply(
-          new BigInteger(20),
-          power(new BigInteger(10), new BigInteger(16)),
+      },
+      {
+        feeAddress: performanceFee.options.address,
+        feePeriod: new BigInteger(86400 * 90),
+        feeRate: new BigInteger(
+          multiply(
+            new BigInteger(20),
+            power(new BigInteger(10), new BigInteger(16)),
+          ),
         ),
-      ),
-    },
-  ];
+      },
+    ];
 
-  await createComponents(version, {
-    defaultTokens,
-    exchangeConfigs,
-    fees,
-    fundName,
-    nativeToken: quoteToken,
-    priceSource,
-    quoteToken,
-  });
+    await createComponents(shared.env, version, {
+      defaultTokens,
+      exchangeConfigs,
+      fees,
+      fundName,
+      nativeToken: quoteToken,
+      priceSource,
+      quoteToken,
+    });
 
-  await continueCreation(version);
-  const hubAddress = await setupFund(version);
-  const settings = await getSettings(hubAddress);
+    await continueCreation(shared.env, version);
+    const hubAddress = await setupFund(shared.env, version);
+    const settings = await getSettings(shared.env, hubAddress);
 
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.makeOrder,
-    policy: policies.priceTolerance,
-  });
+    await register(shared.env, settings.policyManagerAddress, {
+      method: FunctionSignatures.makeOrder,
+      policy: policies.priceTolerance,
+    });
 
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.takeOrder,
-    policy: policies.priceTolerance,
-  });
+    await register(shared.env, settings.policyManagerAddress, {
+      method: FunctionSignatures.takeOrder,
+      policy: policies.priceTolerance,
+    });
 
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.executeRequestFor,
-    policy: policies.whitelist,
-  });
+    await register(shared.env, settings.policyManagerAddress, {
+      method: FunctionSignatures.executeRequestFor,
+      policy: policies.whitelist,
+    });
 
-  const newPrice = getPrice(
-    createQuantity(baseToken, '1'),
-    createQuantity(quoteToken, '2'),
-  );
+    const newPrice = getPrice(
+      createQuantity(baseToken, '1'),
+      createQuantity(quoteToken, '2'),
+    );
 
-  await update(priceSource, [newPrice]);
+    await update(shared.env, priceSource, [newPrice]);
 
-  const investmentAmount = createQuantity(quoteToken, 1);
+    const investmentAmount = createQuantity(quoteToken, 1);
 
-  await expect(
-    requestInvestment(settings.participationAddress, {
+    await expect(
+      requestInvestment(shared.env, settings.participationAddress, {
+        investmentAmount,
+      }),
+    ).rejects.toThrow(`Insufficient allowance`);
+
+    await approve(shared.env, {
+      howMuch: investmentAmount,
+      spender: settings.participationAddress,
+    });
+    await requestInvestment(shared.env, settings.participationAddress, {
       investmentAmount,
-    }),
-  ).rejects.toThrow(`Insufficient allowance`);
+    });
 
-  await approve({
-    howMuch: investmentAmount,
-    spender: settings.participationAddress,
+    await executeRequest(shared.env, settings.participationAddress);
+
+    console.log('Executed request');
+
+    // const redemption = await redeem(settings.participationAddress);
+    // console.log('Redeemed');
+
+    await getFundHoldings(shared.env, settings.accountingAddress);
+
+    const matchingMarketAddress = shared.env.deployment.exchangeConfigs.find(
+      o => o.name === 'MatchingMarket',
+    ).exchangeAddress;
+
+    const order1 = await makeOrderFromAccountOasisDex(
+      shared.env,
+      matchingMarketAddress,
+      {
+        buy: createQuantity(shared.env.deployment.tokens[1], 2),
+        sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      },
+    );
+    expect(order1.buy).toEqual(
+      createQuantity(shared.env.deployment.tokens[1], 2),
+    );
+    expect(order1.sell).toEqual(
+      createQuantity(shared.env.deployment.tokens[0], 0.1),
+    );
+    console.log(`Made order from account with id ${order1.id}`);
+
+    await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
+      buy: order1.buy,
+      id: order1.id,
+      maxTakeAmount: order1.sell,
+      sell: order1.sell,
+    });
+
+    console.log(`Took order from account with id ${order1.id}`);
+
+    const order2 = await makeOrderFromAccountOasisDex(
+      shared.env,
+      matchingMarketAddress,
+      {
+        buy: createQuantity(shared.env.deployment.tokens[1], 2),
+        sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+      },
+    );
+
+    expect(order2.buy).toEqual(
+      createQuantity(shared.env.deployment.tokens[1], 2),
+    );
+    expect(order2.sell).toEqual(
+      createQuantity(shared.env.deployment.tokens[0], 0.1),
+    );
+    console.log(`Made order from account with id ${order2.id}`);
+
+    await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
+      id: order2.id,
+    });
+
+    console.log(`Canceled order from account with id ${order2.id}`);
+
+    const orderFromFund = await makeOasisDexOrder(
+      shared.env,
+      settings.tradingAddress,
+      {
+        maker: settings.tradingAddress,
+        makerQuantity: createQuantity(shared.env.deployment.tokens[0], 0.1),
+        takerQuantity: createQuantity(shared.env.deployment.tokens[1], 2),
+      },
+    );
+    console.log(`Made order from fund with id ${orderFromFund.id}`);
+
+    const fundOrder = await getFundOpenOrder(
+      shared.env,
+      settings.tradingAddress,
+      0,
+    );
+
+    await cancelOasisDexOrder(shared.env, settings.tradingAddress, {
+      id: fundOrder.id,
+      maker: settings.tradingAddress,
+      makerAsset: fundOrder.makerAsset,
+      takerAsset: fundOrder.takerAsset,
+    });
+
+    console.log(`Canceled order ${fundOrder.id} from fund `);
+
+    const order3 = await makeOrderFromAccountOasisDex(
+      shared.env,
+      matchingMarketAddress,
+      {
+        buy: createQuantity(shared.env.deployment.tokens[0], 0.1),
+        sell: createQuantity(shared.env.deployment.tokens[1], 2),
+      },
+    );
+    expect(order3.sell).toEqual(
+      createQuantity(shared.env.deployment.tokens[1], 2),
+    );
+    expect(order3.buy).toEqual(
+      createQuantity(shared.env.deployment.tokens[0], 0.1),
+    );
+    console.log(`Made order from account with id ${order3.id}`);
+
+    await takeOasisDexOrder(shared.env, settings.tradingAddress, {
+      id: order3.id,
+      maker: order3.maker,
+      makerQuantity: order3.sell,
+      takerQuantity: order3.buy,
+    });
+
+    console.log(`Took order from fund with id ${order3.id} `);
+
+    await performCalculations(shared.env, settings.accountingAddress);
+
+    await shutDownFund(shared.env, version, { hub: hubAddress });
+
+    console.log('Shut down fund');
+
+    await expect(
+      requestInvestment(shared.env, settings.participationAddress, {
+        investmentAmount: createQuantity(quoteToken, 1),
+      }),
+    ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   });
-  await requestInvestment(settings.participationAddress, {
-    investmentAmount,
-  });
-
-  await executeRequest(settings.participationAddress);
-
-  console.log('Executed request');
-
-  // const redemption = await redeem(settings.participationAddress);
-  // console.log('Redeemed');
-
-  await getFundHoldings(settings.accountingAddress);
-
-  const matchingMarketAddress = deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
-
-  const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: createQuantity(deployment.tokens[1], 2),
-    sell: createQuantity(deployment.tokens[0], 0.1),
-  });
-  expect(order1.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order1.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order1.id}`);
-
-  await takeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: order1.buy,
-    id: order1.id,
-    maxTakeAmount: order1.sell,
-    sell: order1.sell,
-  });
-
-  console.log(`Took order from account with id ${order1.id}`);
-
-  const order2 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: createQuantity(deployment.tokens[1], 2),
-    sell: createQuantity(deployment.tokens[0], 0.1),
-  });
-
-  expect(order2.buy).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order2.sell).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order2.id}`);
-
-  await cancelOrderFromAccountOasisDex(matchingMarketAddress, {
-    id: order2.id,
-  });
-
-  console.log(`Canceled order from account with id ${order2.id}`);
-
-  const orderFromFund = await makeOasisDexOrder(settings.tradingAddress, {
-    maker: settings.tradingAddress,
-    makerQuantity: createQuantity(deployment.tokens[0], 0.1),
-    takerQuantity: createQuantity(deployment.tokens[1], 2),
-  });
-  console.log(`Made order from fund with id ${orderFromFund.id}`);
-
-  const fundOrder = await getFundOpenOrder(
-    settings.tradingAddress,
-    0,
-    shared.environment,
-  );
-
-  await cancelOasisDexOrder(settings.tradingAddress, {
-    id: fundOrder.id,
-    maker: settings.tradingAddress,
-    makerAsset: fundOrder.makerAsset,
-    takerAsset: fundOrder.takerAsset,
-  });
-
-  console.log(`Canceled order ${fundOrder.id} from fund `);
-
-  const order3 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
-    buy: createQuantity(deployment.tokens[0], 0.1),
-    sell: createQuantity(deployment.tokens[1], 2),
-  });
-  expect(order3.sell).toEqual(createQuantity(deployment.tokens[1], 2));
-  expect(order3.buy).toEqual(createQuantity(deployment.tokens[0], 0.1));
-  console.log(`Made order from account with id ${order3.id}`);
-
-  await takeOasisDexOrder(settings.tradingAddress, {
-    id: order3.id,
-    maker: order3.maker,
-    makerQuantity: order3.sell,
-    takerQuantity: order3.buy,
-  });
-
-  console.log(`Took order from fund with id ${order3.id} `);
-
-  await performCalculations(settings.accountingAddress);
-
-  await shutDownFund(version, { hub: hubAddress });
-
-  console.log('Shut down fund');
-
-  await expect(
-    requestInvestment(settings.participationAddress, {
-      investmentAmount: createQuantity(quoteToken, 1),
-    }),
-  ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
 });

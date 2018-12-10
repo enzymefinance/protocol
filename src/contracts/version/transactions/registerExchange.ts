@@ -14,12 +14,10 @@ interface RegisterExchangeArgs {
   sigs: FunctionSignatures[];
 }
 
-const prepareArgs: PrepareArgsFunction<RegisterExchangeArgs> = async ({
-  exchange,
-  adapter,
-  takesCustody,
-  sigs,
-}: RegisterExchangeArgs) => [
+const prepareArgs: PrepareArgsFunction<RegisterExchangeArgs> = async (
+  _,
+  { exchange, adapter, takesCustody, sigs }: RegisterExchangeArgs,
+) => [
   `${exchange}`,
   `${adapter}`,
   takesCustody,

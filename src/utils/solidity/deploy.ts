@@ -1,33 +1,30 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
-
 import { solidityCompileTarget } from '~/settings';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
-
 import { TransactionArgs } from './transactionFactory';
-import { Environment, LogLevels } from '../environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 
 // TODO: Refactor all callers to only use the Contract interface
 type Deploy = {
   (
+    environment: Environment,
     pathToSolidityFile: string,
     args?: TransactionArgs,
-    environment?: Environment,
   ): Promise<string>;
   (
+    environment: Environment,
     contract: Contracts,
     args: TransactionArgs,
-    environment: Environment,
   ): Promise<string>;
 };
 
 export const deploy: Deploy = async (
+  environment: Environment,
   pathToSolidityFile,
   args = [],
-  environment = getGlobalEnvironment(),
 ) => {
   const debug = environment.logger(
     'melon:protocol:utils:solidity',

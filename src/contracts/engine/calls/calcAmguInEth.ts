@@ -1,4 +1,3 @@
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { Address } from '@melonproject/token-math/address';
 import { multiply, BigInteger } from '@melonproject/token-math/bigInteger';
 import { toAtomic } from '@melonproject/token-math/price';
@@ -8,21 +7,22 @@ import { getPrices } from '~/contracts/prices/calls/getPrices';
 import { getPriceSource } from './getPriceSource';
 import { getVersion } from './getVersion';
 import { getAmguToken } from './getAmguToken';
+import { Environment } from '~/utils/environment/Environment';
 
 const calcAmguInEth = async (
+  environment: Environment,
   contractAddress: Address,
   gasEstimation: number,
-  environment = getGlobalEnvironment(),
 ) => {
-  const amguToken = await getAmguToken(contractAddress, environment);
-  const versionAddress = await getVersion(contractAddress, environment);
-  const priceSourceAddress = await getPriceSource(contractAddress, environment);
-  const mlnPerAmgu = await getAmguPrice(versionAddress, environment);
+  const amguToken = await getAmguToken(environment, contractAddress);
+  const versionAddress = await getVersion(environment, contractAddress);
+  const priceSourceAddress = await getPriceSource(environment, contractAddress);
+  const mlnPerAmgu = await getAmguPrice(environment, versionAddress);
   const ethPerMln = await getPrices(
+    environment,
     priceSourceAddress,
     [amguToken],
     false,
-    environment,
   );
 
   return createQuantity(

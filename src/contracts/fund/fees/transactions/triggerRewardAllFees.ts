@@ -6,16 +6,16 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 
-const guard = async (params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  await ensureIsNotShutDown(hub, environment);
-  //TODO: check if any other pre flights necessary
+const guard = async (environment, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  // TODO: check if any other pre flights necessary
+  await ensureIsNotShutDown(environment, hub);
 };
 
-const postProcess = async (receipt, params, contractAddress, environment) => {
-  const hub = await getHub(contractAddress, environment);
-  const settings = await getSettings(hub, environment);
-  const fundToken = await getToken(settings.sharesAddress, environment);
+const postProcess = async (environment, receipt, params, contractAddress) => {
+  const hub = await getHub(environment, contractAddress);
+  const settings = await getSettings(environment, hub);
+  const fundToken = await getToken(environment, settings.sharesAddress);
   return {
     receipt,
     shareQuantity: createQuantity(

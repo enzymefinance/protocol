@@ -768,6 +768,7 @@
 "@melonproject/ganache-cli@^6.1.9":
   version "6.1.9"
   resolved "https://registry.yarnpkg.com/@melonproject/ganache-cli/-/ganache-cli-6.1.9.tgz#9ee571a954c2dfb9fb2258e636f576810ce2a18d"
+  integrity sha512-vjBDGXF2OA+gBSZ1AOIxUpzTYl+9Pl1ME1ERGbLx/3r0F1F5yhZJ+9vrQd4jxdNZlQzLt5XXFYY+H9TXH8HlQQ==
   dependencies:
     source-map-support "^0.5.3"
 

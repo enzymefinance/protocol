@@ -19,8 +19,8 @@ interface FundComponentAddresses {
 }
 
 export const deployFundFactory = async (
+  environment: Environment,
   addresses: FundComponentAddresses,
-  environment?: Environment,
 ) => {
   const {
     accountingFactoryAddress,
@@ -53,9 +53,9 @@ export const deployFundFactory = async (
   const args = argsRaw.map(a => a.toString());
 
   const address = await deployContract(
+    environment,
     'factory/FundFactory.sol',
     args,
-    environment,
   );
 
   return address;

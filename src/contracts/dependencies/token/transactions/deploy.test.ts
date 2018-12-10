@@ -1,11 +1,15 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployToken } from './deploy';
 
-beforeAll(async () => {
-  await initTestEnvironment();
-});
+describe('deploy', () => {
+  const shared: any = {};
 
-test('deploy', async () => {
-  const address = await deployToken();
-  expect(address).toBeTruthy();
+  beforeAll(async () => {
+    shared.env = await initTestEnvironment();
+  });
+
+  it('deploy', async () => {
+    const address = await deployToken(shared.env);
+    expect(address).toBeTruthy();
+  });
 });

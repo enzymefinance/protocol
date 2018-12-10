@@ -1,3 +1,4 @@
+import { CancelOasisDexOrderResult } from './cancelOasisDexOrder';
 import {
   PrepareArgsFunction,
   withTransactionDecorator,
@@ -6,9 +7,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Address } from '@melonproject/token-math/address';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
@@ -17,33 +16,31 @@ import { FunctionSignatures } from '../utils/FunctionSignatures';
 export type CancelOasisDexOrderResult = any;
 
 export interface CancelOasisDexOrderArgs {
-  id: number;
+  id?: number;
   maker: Address;
   makerAsset: Address;
   takerAsset: Address;
 }
 
 const guard: GuardFunction<CancelOasisDexOrderArgs> = async (
+  environment,
   { id, maker, makerAsset, takerAsset },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  // const hubAddress = await getHub(contractAddress, environment);
-  // const { vaultAddress } = await getSettings(hubAddress);
+  // const hubAddress = await getHub(environment, contractAddress);
+  // const { vaultAddress } = await getSettings(environment, hubAddress);
 
-  await ensureFundOwner(contractAddress, environment);
+  await ensureFundOwner(environment, contractAddress);
 };
 
 const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
+  environment,
   { id, maker, makerAsset, takerAsset },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    { exchange: Exchanges.MatchingMarket },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.MatchingMarket,
+  });
 
   return {
     dexySignatureMode: 0,
@@ -72,7 +69,7 @@ const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
 const postProcess: PostProcessFunction<
   CancelOasisDexOrderArgs,
   CancelOasisDexOrderResult
-> = async receipt => {
+> = async (_, receipt) => {
   return {
     id: web3Utils.toDecimal(receipt.events.LogKill.returnValues.id),
   };
@@ -80,7 +77,10 @@ const postProcess: PostProcessFunction<
 
 const options = { gas: '8000000' };
 
-const cancelOasisDexOrder = withTransactionDecorator(callOnExchange, {
+const cancelOasisDexOrder = withTransactionDecorator<
+  CancelOasisDexOrderArgs,
+  CancelOasisDexOrderResult
+>(callOnExchange, {
   guard,
   options,
   postProcess,

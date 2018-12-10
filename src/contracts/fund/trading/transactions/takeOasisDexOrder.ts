@@ -1,14 +1,6 @@
-import {
-  PrepareArgsFunction,
-  withTransactionDecorator,
-  GuardFunction,
-  PostProcessFunction,
-} from '~/utils/solidity/transactionFactory';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
+import { withTransactionDecorator } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
@@ -17,18 +9,21 @@ import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { Address } from '@melonproject/token-math/address';
 
 export type TakeOasisDexOrderResult = any;
 
 export interface TakeOasisDexOrderArgs {
-  id: number;
+  id?: number;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   maker: Address;
-  fillTakerTokenAmount: QuantityInterface;
+  fillTakerTokenAmount?: QuantityInterface;
 }
 
-const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
+const guard = async (
+  environment,
   {
     id,
     makerQuantity,
@@ -37,30 +32,29 @@ const guard: GuardFunction<TakeOasisDexOrderArgs> = async (
     fillTakerTokenAmount = takerQuantity,
   },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  const hubAddress = await getHub(contractAddress, environment);
-  const { vaultAddress } = await getSettings(hubAddress);
+  const hubAddress = await getHub(environment, contractAddress);
+  const { vaultAddress } = await getSettings(environment, hubAddress);
 
   const minBalance = fillTakerTokenAmount;
 
-  await ensureSufficientBalance(minBalance, vaultAddress, environment);
-
-  await ensureFundOwner(contractAddress, environment);
+  await ensureSufficientBalance(environment, minBalance, vaultAddress);
+  await ensureFundOwner(environment, contractAddress);
 
   // TODO: add all preflights
 
   await ensureTakePermitted(
+    environment,
     contractAddress,
     id,
     makerQuantity,
     takerQuantity,
     fillTakerTokenAmount,
-    environment,
   );
 };
 
-const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
+const prepareArgs = async (
+  environment,
   {
     id,
     makerQuantity,
@@ -69,15 +63,10 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
     fillTakerTokenAmount = takerQuantity,
   },
   contractAddress,
-  environment = getGlobalEnvironment(),
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    {
-      exchange: Exchanges.MatchingMarket,
-    },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.MatchingMarket,
+  });
 
   return {
     dexySignatureMode: 0,
@@ -103,10 +92,7 @@ const prepareArgs: PrepareArgsFunction<TakeOasisDexOrderArgs> = async (
   };
 };
 
-const postProcess: PostProcessFunction<
-  TakeOasisDexOrderArgs,
-  TakeOasisDexOrderResult
-> = async receipt => {
+const postProcess = async (_, receipt) => {
   return {
     id: web3Utils.toDecimal(receipt.events.LogTake.returnValues.id),
     timestamp: receipt.events.LogTake.returnValues.timestamp,
@@ -115,7 +101,10 @@ const postProcess: PostProcessFunction<
 
 const options = { gas: '8000000' };
 
-const takeOasisDexOrder = withTransactionDecorator(callOnExchange, {
+const takeOasisDexOrder = withTransactionDecorator<
+  TakeOasisDexOrderArgs,
+  TakeOasisDexOrderResult
+>(callOnExchange, {
   guard,
   options,
   postProcess,

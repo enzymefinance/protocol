@@ -16,7 +16,6 @@ import {
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Contracts, Exchanges } from '~/Contracts';
-import { getDeployment } from '~/utils/solidity/getDeployment';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -31,17 +30,13 @@ const guard: GuardFunction<FillOrderArgs> = async () => {
 };
 
 const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
+  environment,
   { signedOrder, takerQuantity: providedTakerQuantity },
   contractAddress,
-  environment,
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    {
-      exchange: Exchanges.ZeroEx,
-    },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.ZeroEx,
+  });
 
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
@@ -50,7 +45,7 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
     signedOrder.takerAssetData,
   ).tokenAddress;
 
-  const takerToken = await getToken(takerTokenAddress, environment);
+  const takerToken = await getToken(environment, takerTokenAddress);
 
   const takerQuantity =
     providedTakerQuantity ||
@@ -87,24 +82,20 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
 };
 
 const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
-  receipt,
-  _,
-  __,
   environment,
+  receipt,
 ) => {
-  const deployment = await getDeployment();
-
-  const zeroExAddress = deployment.exchangeConfigs.find(
+  const zeroExAddress = environment.deployment.exchangeConfigs.find(
     o => o.name === 'ZeroEx',
   ).exchangeAddress;
 
-  const feeToken = await getFeeToken(zeroExAddress, undefined, environment);
+  const feeToken = await getFeeToken(environment, zeroExAddress);
   const fillValues = receipt.events.Fill.returnValues;
 
-  const result = await parse0xFillReceipt(
-    { fillValues, feeToken },
-    environment,
-  );
+  const result = await parse0xFillReceipt(environment, {
+    fillValues,
+    feeToken,
+  });
 
   return result;
 };

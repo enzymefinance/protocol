@@ -8,13 +8,13 @@ interface IsValidSignatureArgs {
   signedOrder: SignedOrder;
 }
 
-const prepareArgs = ({ signedOrder }: IsValidSignatureArgs, _, environment) => {
+const prepareArgs = (environment, { signedOrder }: IsValidSignatureArgs) => {
   const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
   const args = [orderHash, signedOrder.makerAddress, signedOrder.signature];
   return args;
 };
 
-const postProcess = async result => {
+const postProcess = async (_, result) => {
   return result;
 };
 

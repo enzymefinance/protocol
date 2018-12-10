@@ -1,43 +1,41 @@
 import { Address } from '@melonproject/token-math/address';
 import { sign } from '~/utils/environment/sign';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { executeRequestFor } from './executeRequestFor';
+import { Environment } from '~/utils/environment/Environment';
 
 const prepare = async (
+  environment: Environment,
   contractAddress: Address,
   options = { amguPayable: true },
-  environment = getGlobalEnvironment(),
 ) =>
   executeRequestFor.prepare(
+    environment,
     contractAddress,
     { who: environment.wallet.address },
     options,
-    environment,
   );
 
 const send = async (
+  environment: Environment,
   contractAddress: Address,
   prepared,
-  undefined,
-  environment = getGlobalEnvironment(),
 ) =>
-  executeRequestFor.send(contractAddress, prepared, {}, undefined, environment);
+  executeRequestFor.send(environment, contractAddress, prepared, {}, undefined);
 
 const execute = async (
+  environment: Environment,
   contractAddress: Address,
   options = { amguPayable: true },
-  environment = getGlobalEnvironment(),
 ) => {
-  const prepared = await prepare(contractAddress, options, environment);
+  const prepared = await prepare(environment, contractAddress, options);
   const signedTransactionData = await sign(
-    prepared.rawTransaction,
     environment,
+    prepared.rawTransaction,
   );
   const result = await send(
+    environment,
     contractAddress,
     signedTransactionData,
-    undefined,
-    environment,
   );
   return result;
 };
