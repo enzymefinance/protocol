@@ -29,33 +29,11 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     function KyberPriceFeed(
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
-        address ofQuoteAsset,
-        bytes32 quoteAssetName,
-        bytes8 quoteAssetSymbol,
-        uint quoteAssetDecimals,
-        string quoteAssetUrl,
-        string quoteAssetIpfsHash,
-        address[2] quoteAssetBreakInBreakOut,
-        uint[] quoteAssetStandards,
-        bytes4[] quoteAssetFunctionSignatures,
-        address ofGovernance
+        address ofQuoteAsset
     ) {
-        // TODO
-        // registerAsset(
-        //     ofQuoteAsset,
-        //     quoteAssetName,
-        //     quoteAssetSymbol,
-        //     quoteAssetDecimals,
-        //     quoteAssetUrl,
-        //     quoteAssetIpfsHash,
-        //     quoteAssetBreakInBreakOut,
-        //     quoteAssetStandards,
-        //     quoteAssetFunctionSignatures
-        // );
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
-        setOwner(ofGovernance);
     }
 
     // PUBLIC VIEW METHODS
@@ -180,7 +158,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
         // Check the the spread and average the price on both sides
         uint spreadFromKyber = mul(sub(askRate, bidRate), 10 ** KYBER_PRECISION) / bidRate;
-        require (spreadFromKyber <= MAX_SPREAD);
+        require (spreadFromKyber <= MAX_SPREAD, "Kyber spread is higher than allowed");
         uint averagedPriceFromKyber = add(bidRate, askRate) / 2;
 
         referencePrice = mul(averagedPriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;

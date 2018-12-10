@@ -16,11 +16,11 @@ function bytesToHex(byteArray) {
 
 export const deployKyberEnvironment = async (
   environment: Environment,
-  deployer,
   mlnToken,
   ethToken,
   eurToken,
 ) => {
+  const deployer = environment.wallet.address.toString();
   // const address = await deployContract(
   //   'KyberNetwork.sol',
   //   [],
@@ -307,6 +307,7 @@ export const deployKyberEnvironment = async (
   // );
   return {
     kyberAdapterAddress,
+    kyberConversionRate: conversionRates.options.address,
     kyberNetworkAddress: kyberNetworkContract.options.address,
     kyberNetworkProxyAddress: kyberNetworkProxyContract.options.address,
   };
