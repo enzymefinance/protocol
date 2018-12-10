@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "./Version.i.sol";
-import "../fund/hub/Hub.sol";
+import "Version.i.sol";
+import "Hub.sol";
 
 /// @notice Version contract useful for testing
 contract MockVersion is VersionInterface {

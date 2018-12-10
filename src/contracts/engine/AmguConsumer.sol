@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/math.sol";
-import "../dependencies/token/ERC20.i.sol";
-import "../prices/PriceSource.i.sol";
-import "../version/Version.i.sol";
-import "./Engine.sol";
+import "math.sol";
+import "ERC20.i.sol";
+import "PriceSource.i.sol";
+import "Version.i.sol";
+import "Engine.sol";
 
 // cleanup
 // TODO: can function know it is payable?

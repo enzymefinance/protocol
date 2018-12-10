@@ -1,9 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/accounting/Accounting.sol";
-import "./ExchangeAdapterInterface.sol";
+import "Trading.sol";
+import "Hub.sol";
+import "Accounting.sol";
+import "ExchangeAdapterInterface.sol";
 
 
 contract MockAdapter is ExchangeAdapterInterface {

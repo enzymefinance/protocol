@@ -32,8 +32,8 @@ import {
   power,
   multiply,
 } from '@melonproject/token-math/bigInteger';
-// tslint:enable:max-line-length
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { LogLevels } from '~/utils/environment/Environment';
 
 describe('generalWalkthrough', () => {
   const shared: any = {};
@@ -44,6 +44,7 @@ describe('generalWalkthrough', () => {
   });
 
   it('Happy path', async () => {
+    const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
     const fundName = `test-fund-${randomString()}`;
 
     const {
@@ -149,10 +150,10 @@ describe('generalWalkthrough', () => {
 
     await executeRequest(shared.env, settings.participationAddress);
 
-    console.log('Executed request');
+    debug('Executed request');
 
     // const redemption = await redeem(settings.participationAddress);
-    // console.log('Redeemed');
+    // debug('Redeemed');
 
     await getFundHoldings(shared.env, settings.accountingAddress);
 
@@ -174,7 +175,7 @@ describe('generalWalkthrough', () => {
     expect(order1.sell).toEqual(
       createQuantity(shared.env.deployment.tokens[0], 0.1),
     );
-    console.log(`Made order from account with id ${order1.id}`);
+    debug(`Made order from account with id ${order1.id}`);
 
     await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
       buy: order1.buy,
@@ -183,7 +184,7 @@ describe('generalWalkthrough', () => {
       sell: order1.sell,
     });
 
-    console.log(`Took order from account with id ${order1.id}`);
+    debug(`Took order from account with id ${order1.id}`);
 
     const order2 = await makeOrderFromAccountOasisDex(
       shared.env,
@@ -200,13 +201,13 @@ describe('generalWalkthrough', () => {
     expect(order2.sell).toEqual(
       createQuantity(shared.env.deployment.tokens[0], 0.1),
     );
-    console.log(`Made order from account with id ${order2.id}`);
+    debug(`Made order from account with id ${order2.id}`);
 
     await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
       id: order2.id,
     });
 
-    console.log(`Canceled order from account with id ${order2.id}`);
+    debug(`Canceled order from account with id ${order2.id}`);
 
     const orderFromFund = await makeOasisDexOrder(
       shared.env,
@@ -217,7 +218,7 @@ describe('generalWalkthrough', () => {
         takerQuantity: createQuantity(shared.env.deployment.tokens[1], 2),
       },
     );
-    console.log(`Made order from fund with id ${orderFromFund.id}`);
+    debug(`Made order from fund with id ${orderFromFund.id}`);
 
     const fundOrder = await getFundOpenOrder(
       shared.env,
@@ -232,7 +233,7 @@ describe('generalWalkthrough', () => {
       takerAsset: fundOrder.takerAsset,
     });
 
-    console.log(`Canceled order ${fundOrder.id} from fund `);
+    debug(`Canceled order ${fundOrder.id} from fund `);
 
     const order3 = await makeOrderFromAccountOasisDex(
       shared.env,
@@ -248,7 +249,7 @@ describe('generalWalkthrough', () => {
     expect(order3.buy).toEqual(
       createQuantity(shared.env.deployment.tokens[0], 0.1),
     );
-    console.log(`Made order from account with id ${order3.id}`);
+    debug(`Made order from account with id ${order3.id}`);
 
     await takeOasisDexOrder(shared.env, settings.tradingAddress, {
       id: order3.id,
@@ -257,13 +258,13 @@ describe('generalWalkthrough', () => {
       takerQuantity: order3.buy,
     });
 
-    console.log(`Took order from fund with id ${order3.id} `);
+    debug(`Took order from fund with id ${order3.id} `);
 
     await performCalculations(shared.env, settings.accountingAddress);
 
     await shutDownFund(shared.env, version, { hub: hubAddress });
 
-    console.log('Shut down fund');
+    debug('Shut down fund');
 
     await expect(
       requestInvestment(shared.env, settings.participationAddress, {

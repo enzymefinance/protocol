@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "./Hub.sol";
-import "../../dependencies/auth.sol";
+import "Hub.sol";
+import "auth.sol";
 
 // TODO: ACL consumption may be better placed in each component; evaluate this
 /// @notice Has one Hub

@@ -71,10 +71,7 @@ export const compileGlob = (
   debug(`Compiling ${query}, ${candidates.length} files ...`);
 
   const unmerged = candidates.map(source => ({
-    [path.relative(
-      path.join(soliditySourceDirectory),
-      source,
-    )]: fs.readFileSync(source, {
+    [path.basename(source)]: fs.readFileSync(source, {
       encoding: 'utf-8',
     }),
   }));

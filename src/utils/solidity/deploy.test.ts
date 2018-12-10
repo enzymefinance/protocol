@@ -2,6 +2,7 @@ import { Environment } from '~/utils/environment/Environment';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
 import { deploy } from './deploy';
+import { Contracts } from '~/Contracts';
 
 describe('deploy', () => {
   const shared: any = {};
@@ -11,11 +12,11 @@ describe('deploy', () => {
   });
 
   it('Happy path', async () => {
-    const address = await deploy(
-      shared.env,
-      'dependencies/token/PreminedToken.sol',
-      ['TEST', 18, 'Test Token'],
-    );
+    const address = await deploy(shared.env, Contracts.PreminedToken, [
+      'TEST',
+      18,
+      'Test Token',
+    ]);
 
     expect(isAddress(address)).toBe(true);
   });
@@ -29,9 +30,7 @@ describe('deploy', () => {
       },
     };
     await expect(
-      deploy(environment, 'exchanges/thirdparty/oasisdex/MatchingMarket.sol', [
-        99999999999,
-      ]),
+      deploy(environment, Contracts.MatchingMarket, [99999999999]),
     ).rejects.toThrow('gas limit:');
   });
 });

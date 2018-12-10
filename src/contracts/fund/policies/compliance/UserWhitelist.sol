@@ -1,17 +1,17 @@
 pragma solidity ^0.4.21;
 
-import "../../../dependencies/auth.sol";
-import "../Policy.sol";
+import "auth.sol";
+import "Policy.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change things)
-contract Whitelist is Policy, DSAuth {
+contract UserWhitelist is Policy, DSAuth {
 
     event ListAddition(address indexed who);
     event ListRemoval(address indexed who);
 
     mapping (address => bool) whitelisted;
 
-    function Whitelist(address[] _preApproved) public {
+    function UserWhitelist(address[] _preApproved) public {
         batchAddToWhitelist(_preApproved);
     }
 

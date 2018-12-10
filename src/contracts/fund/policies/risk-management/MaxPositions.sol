@@ -1,9 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "../../../prices/PriceSource.i.sol";
-import "../../accounting/Accounting.sol";
-import "../../policies/Policy.sol";
-import "../../trading/Trading.sol";
+import "PriceSource.i.sol";
+import "Accounting.sol";
+import "Policy.sol";
+import "Trading.sol";
 
 contract MaxPositions is Policy {
     uint public maxPositions;

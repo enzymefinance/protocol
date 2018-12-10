@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "../../dependencies/guard.sol";
-import "./Spoke.sol";
+import "guard.sol";
+import "Spoke.sol";
 
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes

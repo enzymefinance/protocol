@@ -1,11 +1,11 @@
 pragma solidity ^0.4.21;
 
-import "./Fee.i.sol";
-import "./FeeManager.sol";
-import "../accounting/Accounting.sol";
-import "../hub/Hub.sol";
-import "../shares/Shares.sol";
-import "../../dependencies/math.sol";
+import "Fee.i.sol";
+import "FeeManager.sol";
+import "Accounting.sol";
+import "Hub.sol";
+import "Shares.sol";
+import "math.sol";
 
 // TODO: think about third function on interface that conditionally updates but is also aware of fee amount
 contract PerformanceFee is DSMath, Fee {

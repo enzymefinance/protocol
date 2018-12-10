@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "../Policy.sol";
-import "../AddressList.sol";
+import "Policy.sol";
+import "AddressList.sol";
 
 /// @notice Assets can be added but not removed from blacklist
 contract AssetBlacklist is AddressList, Policy {
