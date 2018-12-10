@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.9.0-alpha.20",
+  "version": "0.9.0-alpha.21",
   "description": "Technology Regulated and Operated Investment Funds",
   "main": "lib/index.umd.js",
   "module": "lib/index.js",
@@ -45,7 +45,7 @@
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "postbuild": "yarn bundle",
     "prebuild": "rimraf lib",
-    "publish:alpha": "yarn check && yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
+    "publish:alpha": "yarn publish --tag alpha --new-version $(semver $npm_package_version -i prerelease --preid alpha)",
     "snyk": "synk test",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "pretest": "rimraf logs/test-*.log",
