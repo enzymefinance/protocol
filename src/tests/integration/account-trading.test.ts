@@ -32,87 +32,11 @@ const randomString = (length = 4) =>
     .substr(2, length);
 
 test('Happy path', async () => {
-  const fundName = `test-fund-${randomString()}`;
   const deployment = await deploySystem();
-  const {
-    exchangeConfigs,
-    priceSource,
-    tokens,
-    policies,
-    version,
-  } = deployment;
-  const [quoteToken, baseToken] = tokens;
-  const defaultTokens = [quoteToken, baseToken];
-  const fees = [];
-
-  await createComponents(version, {
-    defaultTokens,
-    exchangeConfigs,
-    fees,
-    fundName,
-    nativeToken: quoteToken,
-    priceSource,
-    quoteToken,
-  });
-
-  await continueCreation(version);
-  const hubAddress = await setupFund(version);
-  const settings = await getSettings(hubAddress);
-
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.makeOrder,
-    policy: policies.priceTolerance,
-  });
-
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.takeOrder,
-    policy: policies.priceTolerance,
-  });
-
-  await register(settings.policyManagerAddress, {
-    method: FunctionSignatures.executeRequestFor,
-    policy: policies.whitelist,
-  });
-
-  const newPrice = getPrice(
-    createQuantity(baseToken, 1),
-    createQuantity(quoteToken, 0.34),
-  );
-
-  await update(priceSource, [newPrice]);
-
-  // await approve({
-  //   howMuch: createQuantity(quoteToken, 1),
-  //   spender: new Address(shared.accounts[1]),
-  // });
-
-  await getAmguPrice(version);
-
-  const investmentAmount = createQuantity(quoteToken, 1);
-
-  await approve({
-    howMuch: investmentAmount,
-    spender: settings.participationAddress,
-  });
-
-  await requestInvestment(settings.participationAddress, {
-    investmentAmount,
-  });
-
-  await executeRequest(settings.participationAddress);
-
-  // const redemption = await redeem(settings.participationAddress);
-  // console.log('Redeemed');
-
-  await getFundHoldings(settings.accountingAddress);
 
   const matchingMarketAddress = deployment.exchangeConfigs.find(
     o => o.name === 'MatchingMarket',
   ).exchangeAddress;
-
-  // const kyberAddress = deployment.exchangeConfigs.find(
-  //   o => o.name === 'KyberNetwork',
-  // ).exchangeAddress;
 
   const order1 = await makeOrderFromAccountOasisDex(matchingMarketAddress, {
     buy: createQuantity(deployment.tokens[1], 2),
