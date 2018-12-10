@@ -6,7 +6,7 @@ compiler:
 os:
   - linux
 env:
-  - CXX="g++-4.8" NODE_OPTIONS="--max-old-space-size=4096"
+  - CXX=g++-4.8
 node_js:
   - '10.9'
 addons:
@@ -23,4 +23,8 @@ cache:
 install:
   - yarn install
 script:
+  - yarn devchain > ganache.log &
+  - sleep 10
   - yarn allchecks
+after_script:
+  - cat ganache.log
