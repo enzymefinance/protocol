@@ -1,4 +1,5 @@
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
+import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
@@ -26,6 +27,7 @@ import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdap
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { LogLevels, Environment } from './environment/Environment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { getContract } from '~/utils/solidity/getContract';
 // tslint:enable:max-line-length
 
 /**
@@ -146,6 +148,8 @@ export const deploySystem = async (environment: Environment) => {
     });
   }
 
+  const priceSource = priceFeedAddress;
+
   for (const asset of assets) {
     await registerAsset(environment, registryAddress, {
       assetAddress: `${asset.address}`,
@@ -158,9 +162,14 @@ export const deploySystem = async (environment: Environment) => {
       standards: [],
       url: '',
     });
+    const priceSourceContract = getContract(
+      Contracts.TestingPriceFeed,
+      priceSource,
+    );
+    await priceSourceContract.methods
+      .setDecimals(asset.address, asset.decimals)
+      .send({ from: accounts[0] });
   }
-
-  const priceSource = priceFeedAddress;
 
   const addresses = {
     engine: engineAddress,

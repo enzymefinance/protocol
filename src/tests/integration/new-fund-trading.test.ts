@@ -8,11 +8,15 @@ import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import {
   BigInteger,
   add,
+  subtract,
   multiply,
+  divide,
   power,
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
+
+const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
 let s: any = {};
 
@@ -52,27 +56,19 @@ beforeAll(async () => {
   const hubAddress = await s.version.methods.getFundById(fundId).call();
   s.fund = await getFundComponents(hubAddress);
 
-  // const [, referencePrice] = Object.values(
-  //     await s.priceSource.methods
-  //       .getReferencePriceInfo(s.weth.options.address, s.mln.options.address)
-  //       .call(),
-  //   ).map(e => new BigNumber(e));
-  // const [, invertedReferencePrice] = Object.values(
-  //   await s.pricesSource.methods
-  //     .getReferencePriceInfo(s.mln.options.address, s.weth.options.address)
-  //     .call(),
-  // ).map(e => new BigNumber(e));
-  // const sellQuantity1 = new BigNumber(10 ** 21);
-  // s.trade1 = {
-  //   buyQuantity: new BigNumber(
-  //     Math.floor(referencePrice.div(10 ** 18).times(sellQuantity1)),
-  //   ),
-  //   sellQuantity: sellQuantity1
-  // };
-
+  await updateTestingPriceFeed(s, s.environment);
+  const [, referencePrice] = Object.values(
+    await s.priceSource.methods
+      .getReferencePriceInfo(s.weth.options.address, s.mln.options.address)
+      .call(),
+  ).map(e => new BigInteger(e));
+  const sellQuantity1 = power(new BigInteger(10), new BigInteger(18));
   s.trade1 = {
-    buyQuantity: 10000000000,
-    sellQuantity: 100000000,
+    buyQuantity: divide(
+      multiply(referencePrice, sellQuantity1),
+      precisionUnits,
+    ),
+    sellQuantity: sellQuantity1,
   };
 
   // TODO: Add back later
@@ -97,59 +93,6 @@ beforeAll(async () => {
   // ).resolves.not.toThrow();
 });
 
-beforeEach(async () => {
-  // runningGasTotal = new BigInteger(0);
-  // await updateTestingPriceFeed(s);
-  // const [, referencePrice] = Object.values(
-  //   await pricefeed.methods
-  //     .getReferencePriceInfo(ethToken.options.address, mlnToken.options.address)
-  //     .call(),
-  // ).map(e => new BigInteger(e));
-  // const [, invertedReferencePrice] = Object.values(
-  //   await pricefeed.methods
-  //     .getReferencePriceInfo(mlnToken.options.address, ethToken.options.address)
-  //     .call(),
-  // ).map(e => new BigInteger(e));
-  // const sellQuantity1 = new BigInteger(10 ** 21);
-  // trade1 = {
-  //   sellQuantity: sellQuantity1,
-  //   buyQuantity: new BigInteger(
-  //     Math.floor(referencePrice.div(10 ** 18).times(sellQuantity1)),
-  //   ),
-  // };
-  // const sellQuantity2 = new BigInteger(50 * 10 ** 18);
-  // trade2 = {
-  //   sellQuantity: sellQuantity2,
-  //   buyQuantity: new BigInteger(
-  //     Math.floor(referencePrice.div(10 ** 18).times(sellQuantity2)),
-  //   ),
-  // };
-  // const sellQuantity3 = new BigInteger(5 * 10 ** 18);
-  // trade3 = {
-  //   buyQuantity: new BigInteger(
-  //     Math.floor(
-  //       invertedReferencePrice
-  //         .div(10 ** 18)
-  //         .times(sellQuantity3)
-  //         .div(10),
-  //     ),
-  //   ),
-  //   sellQuantity: sellQuantity3,
-  // };
-  // const sellQuantity4 = new BigInteger(5 * 10 ** 18);
-  // trade4 = {
-  //   buyQuantity: new BigInteger(
-  //     Math.floor(
-  //       invertedReferencePrice
-  //         .div(10 ** 18)
-  //         .times(sellQuantity4)
-  //         .times(1000),
-  //     ),
-  //   ),
-  //   sellQuantity: sellQuantity4,
-  // };
-});
-
 test('Transfer ethToken to the investor', async () => {
   const initialTokenAmount = power(new BigInteger(10), new BigInteger(21));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
@@ -163,8 +106,10 @@ test('Transfer ethToken to the investor', async () => {
 });
 
 Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
-  test('Request investment', async () => {
+  test(`fund gets ETH Token from investment [round ${i + 1}]`, async () => {
     const wantedShares = power(new BigInteger(10), new BigInteger(20));
+    const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
     await s.weth.methods
       .approve(s.fund.participation.options.address, wantedShares)
       .send({ from: s.investor, gas: 8000000 });
@@ -179,13 +124,24 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     await updateTestingPriceFeed(s, s.environment);
     await updateTestingPriceFeed(s, s.environment);
 
-    const totalSupply = await s.fund.shares.methods.totalSupply().call();
     await s.fund.participation.methods
       .executeRequestFor(s.investor)
       .send({ from: s.investor, gas: 8000000 });
+
+    const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
+    expect(postTotalSupply).toEqual(add(preTotalSupply, wantedShares));
   });
 
-  test('Manager makes an order', async () => {
+  test(`Exchange ${i +
+    1}: manager makes order, sellToken sent to exchange`, async () => {
+    const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const exchangePreMln = new BigInteger(
+      await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const exchangePreEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
     await s.fund.trading.methods
       .callOnExchange(
         i,
@@ -198,28 +154,78 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
           `${randomAddress()}`,
           `${randomAddress()}`,
         ],
-        [s.trade1.sellQuantity, s.trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
+        [
+          `${s.trade1.sellQuantity}`,
+          `${s.trade1.buyQuantity}`,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+        ],
         `${randomAddress()}`,
         '0x0',
         '0x0',
         '0x0',
       )
       .send({ from: s.manager, gas: 8000000 });
+
+    const exchangePostMln = new BigInteger(
+      await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const exchangePostEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+    expect(exchangePostMln).toEqual(exchangePreMln);
+    expect(exchangePostEthToken).toEqual(
+      add(exchangePreEthToken, s.trade1.sellQuantity),
+    );
+    expect(post.fund.weth).toEqual(pre.fund.weth);
+    expect(post.deployer.mln).toEqual(pre.deployer.mln);
   });
 
-  test('Third party takes the order', async () => {
+  test(`Exchange ${i +
+    1}: third party takes entire order, allowing fund to receive mlnToken`, async () => {
     const orderId = await s.exchanges[i].methods.last_offer_id().call();
-    // const exchangePreMln = Number(
-    //   await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
-    // );
-    // const exchangePreEthToken = Number(
-    //   await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
-    // );
+    const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const exchangePreMln = new BigInteger(
+      await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const exchangePreEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+
     await s.mln.methods
-      .approve(s.exchanges[i].options.address, s.trade1.buyQuantity)
+      .approve(s.exchanges[i].options.address, `${s.trade1.buyQuantity}`)
       .send({ from: s.deployer, gasPrice: 8000000 });
     await s.exchanges[i].methods
-      .buy(orderId, s.trade1.sellQuantity)
+      .buy(orderId, `${s.trade1.sellQuantity}`)
       .send({ from: s.deployer, gas: 8000000 });
+
+    const exchangePostMln = new BigInteger(
+      await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const exchangePostEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+    expect(exchangePostMln).toEqual(exchangePreMln);
+    expect(exchangePostEthToken).toEqual(
+      subtract(exchangePreEthToken, s.trade1.sellQuantity),
+    );
+    expect(post.fund.weth).toEqual(
+      subtract(pre.fund.weth, s.trade1.sellQuantity),
+    );
+    expect(post.fund.mln).toEqual(add(pre.fund.mln, s.trade1.buyQuantity));
+    expect(post.deployer.weth).toEqual(
+      add(pre.deployer.weth, s.trade1.sellQuantity),
+    );
+    expect(post.deployer.mln).toEqual(
+      subtract(pre.deployer.mln, s.trade1.buyQuantity),
+    );
   });
 });
