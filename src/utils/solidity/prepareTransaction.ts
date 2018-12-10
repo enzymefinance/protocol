@@ -34,11 +34,6 @@ export const prepareTransaction = async (
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
 
-  const debug = environment.logger(
-    'melon:protocol:utils:solidity',
-    LogLevels.DEBUG,
-  );
-
   const options = {
     amguPayable: false,
     from: environment.wallet.address.toString(),
@@ -87,14 +82,6 @@ export const prepareTransaction = async (
       }(${transaction.arguments.map(JSON.stringify).join(', ')}): ${e.message}`,
     );
   }
-
-  debug(
-    'Prepared transaction:',
-    transaction.name,
-    transaction.arguments,
-    transaction.gasEstimation,
-    encoded,
-  );
 
   const prepared = {
     encoded,

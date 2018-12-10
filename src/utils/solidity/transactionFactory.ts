@@ -6,7 +6,7 @@ import {
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import {
   prepareTransaction,
@@ -173,6 +173,11 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     optionsOrCallback = defaultOptions,
   ) => {
+    const debug = environment.logger(
+      'melon:protocol:utils:solidity',
+      LogLevels.DEBUG,
+    );
+
     const options: Options =
       typeof optionsOrCallback === 'function'
         ? optionsOrCallback(environment)
@@ -230,6 +235,8 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       transactionArgs: prepared.transaction.arguments,
     };
 
+    debug('Transaction prepared', melonTransaction);
+
     return melonTransaction;
   };
 
@@ -241,12 +248,20 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     options = defaultOptions,
   ) => {
+    const debug = environment.logger(
+      'melon:protocol:utils:solidity',
+      LogLevels.DEBUG,
+    );
+
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
       // .sendTransaction(prepared.rawTransaction)
       .then(null, error => {
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
+
+    debug(`Receipt for ${name}`, receipt);
+
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
 

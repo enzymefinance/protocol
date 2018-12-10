@@ -1,4 +1,4 @@
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { default as BigNumber } from 'bignumber.js';
@@ -20,6 +20,10 @@ export const deployKyberEnvironment = async (
   ethToken,
   eurToken,
 ) => {
+  const debug = environment.logger(
+    'melon:protocol:exchanges:deploy-kyber',
+    LogLevels.DEBUG,
+  );
   const deployer = environment.wallet.address.toString();
   // const address = await deployContract(
   //   'KyberNetwork.sol',
@@ -133,6 +137,16 @@ export const deployKyberEnvironment = async (
   await conversionRates.methods
     .addOperator(deployer)
     .send({ from: deployer, gas: 8000000 });
+
+  debug('setBaseRate', [
+    [mlnToken.address],
+    baseBuyRate1,
+    baseSellRate1,
+    buys,
+    sells,
+    currentBlock,
+    indices,
+  ]);
   await conversionRates.methods
     .setBaseRate(
       [mlnToken.address],
