@@ -22,9 +22,12 @@ export const getPrice = async (
     contractAddress,
   );
 
-  const { 0: price } = await contract.methods.getPrice(token.address).call();
-
-  const base = createQuantity(token, appendDecimals(token, 1));
-  const quote = createQuantity(quoteToken, price);
-  return getPriceTokenMath(base, quote, preventCancelDown);
+  try {
+    const { 0: price } = await contract.methods.getPrice(token.address).call();
+    const base = createQuantity(token, appendDecimals(token, 1));
+    const quote = createQuantity(quoteToken, price);
+    return getPriceTokenMath(base, quote, preventCancelDown);
+  } catch (e) {
+    console.log('oopsie', e);
+  }
 };

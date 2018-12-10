@@ -83,14 +83,14 @@ describe('kyber-price-feed', () => {
     //   ),
     // );
 
-    // const a = await getPrice(
-    //   shared.env,
-    //   shared.kyberPriceFeed,
-    //   shared.tokens.mln,
-    // );
+    const a = await getPrice(
+      shared.env,
+      shared.kyberPriceFeed,
+      shared.tokens.mln,
+    );
 
-    // debug('Blublu');
+    debug('Blublu');
 
-    // expect(toFixed(a)).toBe('1.000000');
+    expect(toFixed(a)).toBe('1.000000');
   });
 });
