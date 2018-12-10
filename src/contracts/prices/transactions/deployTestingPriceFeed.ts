@@ -4,7 +4,7 @@ import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { Contracts } from '~/Contracts';
 
-export const deploy = async (
+export const deployTestingPriceFeed = async (
   environment: Environment,
   quoteToken: TokenInterface,
 ) => {
