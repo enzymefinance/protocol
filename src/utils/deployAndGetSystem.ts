@@ -37,10 +37,7 @@ export const deployAndGetSystem = async (
       Contracts.StandardToken,
       addresses.tokens.find(t => t.symbol === 'MLN').address,
     ),
-    priceSource: getContract(
-      Contracts.PriceSourceInterface,
-      addresses.priceSource,
-    ),
+    priceSource: getContract(Contracts.TestingPriceFeed, addresses.priceSource),
     version: getContract(Contracts.Version, addresses.version),
     weth: getContract(
       Contracts.StandardToken,

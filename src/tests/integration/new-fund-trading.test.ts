@@ -11,6 +11,7 @@ import {
   multiply,
   power,
 } from '@melonproject/token-math/bigInteger';
+import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 
 let s: any = {};
@@ -163,15 +164,20 @@ test('Transfer ethToken to the investor', async () => {
 
 Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
   test('Request investment', async () => {
+    const wantedShares = power(new BigInteger(10), new BigInteger(20));
     await s.weth.methods
-      .approve(s.fund.participation.options.address, s.trade1.sellQuantity)
+      .approve(s.fund.participation.options.address, wantedShares)
       .send({ from: s.investor, gas: 8000000 });
     await s.fund.participation.methods
-      .requestInvestment(1, s.trade1.sellQuantity, s.weth.options.address)
+      .requestInvestment(
+        `${wantedShares}`,
+        `${wantedShares}`,
+        s.weth.options.address,
+      )
       .send({ from: s.investor, gas: 8000000 });
 
-    // await updateTestingPriceFeed(deployed);
-    // await updateTestingPriceFeed(deployed);
+    await updateTestingPriceFeed(s, s.environment);
+    await updateTestingPriceFeed(s, s.environment);
 
     const totalSupply = await s.fund.shares.methods.totalSupply().call();
     await s.fund.participation.methods
