@@ -5,14 +5,14 @@ import "Policy.sol";
 
 // TODO: permissioning details when integrated with fund (which entities can change things)
 // TODO: template rule; remove this one if not useful
-contract Blacklist is Policy, DSAuth {
+contract UserBlacklist is Policy, DSAuth {
 
     event ListAddition(address indexed who);
     event ListRemoval(address indexed who);
 
     mapping (address => bool) blacklisted;
 
-    function Blacklist(address[] _preBlacklisted) public {
+    function UserBlacklist(address[] _preBlacklisted) public {
         batchAddToBlacklist(_preBlacklisted);
     }
 

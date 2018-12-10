@@ -12,7 +12,7 @@ export const deployWhitelist = async (
   const preapprovedStrings = preapproved.map(p => p.toString());
 
   const address = await deployContract(
-    Contracts.AssetWhitelist,
+    Contracts.UserWhitelist,
     [preapprovedStrings],
     environment,
   );
