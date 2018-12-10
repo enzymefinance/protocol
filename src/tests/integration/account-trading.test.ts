@@ -1,23 +1,10 @@
-import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
-import { createComponents } from '~/contracts/factory/transactions/createComponents';
-import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
-import { setupFund } from '~/contracts/factory/transactions/setupFund';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-import { register } from '~/contracts/fund/policies/transactions/register';
-import { update } from '~/contracts/prices/transactions/update';
-import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
-import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { approve } from '~/contracts/dependencies/token/transactions/approve';
 
 const shared: any = {};
 
@@ -25,11 +12,6 @@ beforeAll(async () => {
   shared.environment = await initTestEnvironment();
   shared.accounts = await shared.environment.eth.getAccounts();
 });
-
-const randomString = (length = 4) =>
-  Math.random()
-    .toString(36)
-    .substr(2, length);
 
 test('Happy path', async () => {
   const deployment = await deploySystem();
