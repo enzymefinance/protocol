@@ -1,5 +1,4 @@
 import { Exchanges, Contracts } from '~/Contracts';
-import { getGlobalEnvironment } from '~/utils/environment/globalEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';

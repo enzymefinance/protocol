@@ -1,5 +1,4 @@
 import { deploySystem } from './deploySystem';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { Environment } from './environment/Environment';

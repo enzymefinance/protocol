@@ -1,8 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
-import { Contracts } from '~/Contracts';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import {
@@ -108,7 +106,7 @@ test('Transfer ethToken to the investor', async () => {
 Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
   test(`fund gets ETH Token from investment [round ${i + 1}]`, async () => {
     const wantedShares = power(new BigInteger(10), new BigInteger(20));
-    const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    // const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
     await s.weth.methods
       .approve(s.fund.participation.options.address, wantedShares)
@@ -128,7 +126,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
       .executeRequestFor(s.investor)
       .send({ from: s.investor, gas: 8000000 });
 
-    const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    // const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
     expect(postTotalSupply).toEqual(add(preTotalSupply, wantedShares));
   });

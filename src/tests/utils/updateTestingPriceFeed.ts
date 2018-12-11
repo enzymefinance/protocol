@@ -37,12 +37,6 @@ async function getConvertedPrices(deployed, fromSymbol) {
   } else if (Object.values(queryResult).indexOf(0) !== -1) {
     throw new Error('API call returned a zero price');
   }
-  let fromTokenSymbol;
-  if (fromSymbol === 'ETH') {
-    fromTokenSymbol = 'WETH';
-  } else {
-    fromTokenSymbol = fromSymbol;
-  }
   const quoteDecimals = 18;
   const ethDecimals = 18;
   const eurDecimals = 18;
