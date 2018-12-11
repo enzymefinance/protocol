@@ -82,7 +82,7 @@ describe('trading', () => {
     ).rejects.toThrow(errorMessage);
   });
 
-  it('returnToVault sends back token balances to the vault', async () => {
+  it('returnBatchToVault sends back token balances to the vault', async () => {
     const tokenQuantity = new BigInteger(10 ** 20);
 
     await shared.mln.methods
@@ -107,7 +107,10 @@ describe('trading', () => {
     );
 
     await shared.trading.methods
-      .returnToVault([shared.mln.options.address, shared.weth.options.address])
+      .returnBatchToVault([
+        shared.mln.options.address,
+        shared.weth.options.address,
+      ])
       .send({ from: shared.user, gas: 8000000 });
 
     const postMlnTrading = new BigInteger(

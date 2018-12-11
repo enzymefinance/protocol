@@ -215,7 +215,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
       .buy(orderId, `${s.trade1.sellQuantity}`)
       .send({ from: s.deployer, gas: s.gas });
     await s.fund.trading.methods
-      .returnToVault([s.mln.options.address, s.weth.options.address])
+      .returnBatchToVault([s.mln.options.address, s.weth.options.address])
       .send({ from: s.manager, gas: s.gas });
 
     const exchangePostMln = new BigInteger(
@@ -290,7 +290,6 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
       await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
     );
     const orderId = await s.exchanges[i].methods.last_offer_id().call();
-    console.log(orderId);
     await s.fund.trading.methods
       .callOnExchange(
         i,
@@ -312,9 +311,6 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
         '0x0',
       )
       .send({ from: s.manager, gas: s.gas });
-    await s.fund.trading.methods
-      .returnToVault([s.mln.options.address, s.weth.options.address])
-      .send({ from: s.manager, gas: s.gas });
     const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const exchangePostMln = new BigInteger(
       await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
@@ -324,34 +320,14 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     );
 
     expect(exchangePostMln).toEqual(exchangePreMln);
-    //       t.deepEqual(exchangePostMln, exchangePreMln);
-    //       t.deepEqual(
-    //         Number(exchangePostEthToken),
-    //         Number(exchangePreEthToken) - trade2.sellQuantity,
-    //       );
-    //       t.deepEqual(
-    //         post.deployer.MlnToken,
-    //         pre.deployer.MlnToken.add(trade2.buyQuantity),
-    //       );
-    //       t.deepEqual(post.deployer.EthToken, pre.deployer.EthToken);
-    //       t.deepEqual(post.deployer.ether, pre.deployer.ether);
-    //       t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-    //       t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-    //       t.deepEqual(post.investor.ether, pre.investor.ether);
-    //       t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-    //       t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-    //       t.deepEqual(
-    //         post.manager.ether,
-    //         pre.manager.ether.minus(runningGasTotal.times(gasPrice)),
-    //       );
-    //       t.deepEqual(
-    //         post.fund.MlnToken,
-    //         pre.fund.MlnToken.minus(trade2.buyQuantity),
-    //       );
-    //       t.deepEqual(
-    //         post.fund.EthToken,
-    //         pre.fund.EthToken.add(trade2.sellQuantity),
-    //       );
-    //       t.deepEqual(post.fund.ether, pre.fund.ether);
+    expect(exchangePostEthToken).toEqual(
+      subtract(exchangePreEthToken, s.trade2.sellQuantity),
+    );
+    expect(post.deployer.mln).toEqual(
+      add(pre.deployer.mln, s.trade2.buyQuantity),
+    );
+    expect(post.fund.mln).toEqual(subtract(pre.fund.mln, s.trade2.buyQuantity));
+    expect(post.fund.weth).toEqual(add(pre.fund.weth, s.trade2.sellQuantity));
+    expect(post.fund.ether).toEqual(pre.fund.ether);
   });
 });

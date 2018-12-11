@@ -69,6 +69,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
         // Add dest token to fund's owned asset list if not already exists and update order hook
         Accounting(hub.accounting()).addAssetToOwnedAssets(destToken);
+        Trading(address(this)).returnAssetToVault(destToken);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),

@@ -403,7 +403,7 @@ test.serial('fund with enough ZRX takes the above order', async t => {
     )
     .send({ from: manager, gas: config.gas });
   await fund.trading.methods
-    .returnToVault([mlnToken.options.address, ethToken.options.address])
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
     .send(opts);
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.trading.methods
@@ -599,7 +599,7 @@ test.serial('Third party fund takes the order made by the fund', async t => {
     )
     .send({ from: accounts[4], gas: config.gas, gasPrice: config.gasPrice });
   await thirdPartyFund.trading.methods
-    .returnToVault([mlnToken.options.address, ethToken.options.address])
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
     .send(opts);
   const postTPFundMln = new BigNumber(
     await mlnToken.methods

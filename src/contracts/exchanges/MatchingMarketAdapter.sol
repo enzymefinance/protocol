@@ -141,6 +141,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             "Max owned asset limit reached"
         );
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),

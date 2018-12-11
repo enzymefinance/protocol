@@ -140,6 +140,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         );
 
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,

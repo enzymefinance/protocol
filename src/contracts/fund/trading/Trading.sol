@@ -235,10 +235,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
-    function returnToVault(ERC20[] _tokens) public {
+    function returnBatchToVault(ERC20[] _tokens) public {
         for (uint i = 0; i < _tokens.length; i++) {
-            _tokens[i].transfer(Vault(routes.vault), _tokens[i].balanceOf(this));
+            returnAssetToVault(_tokens[i]);
         }
+    }
+
+    function returnAssetToVault(ERC20 _token) public {
+        _token.transfer(Vault(routes.vault), _token.balanceOf(this));
     }
 
     /// @notice Payable function to get back ETH from WETH

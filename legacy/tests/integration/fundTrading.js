@@ -514,7 +514,7 @@ exchangeIndexes.forEach(i => {
         .send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
       receipt = await fund.trading.methods
-        .returnToVault([mlnToken.options.address, ethToken.options.address])
+        .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
         .send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
       runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
       const exchangePostMln = await mlnToken.methods
@@ -791,7 +791,7 @@ test.serial('manager makes an order and cancels it', async t => {
     .send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
   receipt = await fund.trading.methods
-    .returnToVault([mlnToken.options.address, ethToken.options.address])
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
     .send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
   runningGasTotal = runningGasTotal.plus(receipt.gasUsed);
 
