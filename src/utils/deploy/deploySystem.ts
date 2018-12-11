@@ -24,7 +24,7 @@ import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactio
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { LogLevels, Environment } from './environment/Environment';
+import { LogLevels, Environment } from '../environment/Environment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 /**

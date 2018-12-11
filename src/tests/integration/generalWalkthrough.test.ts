@@ -1,7 +1,7 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploySystem';
+import { deploySystem } from '~/utils/deploy/deploySystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';

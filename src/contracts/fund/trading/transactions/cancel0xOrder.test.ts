@@ -3,7 +3,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deploySystem } from '~/utils/deploySystem';
+import { deploySystem } from '~/utils/deploy/deploySystem';
 import {
   createOrder,
   signOrder,

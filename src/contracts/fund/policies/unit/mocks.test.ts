@@ -1,6 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { Contracts } from '~/Contracts';
-import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';

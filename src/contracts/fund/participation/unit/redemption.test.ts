@@ -1,6 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { randomAddress } from '~/utils/helpers/randomAddress';
-import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { Contracts } from '~/Contracts';
 
 describe('redemption', () => {

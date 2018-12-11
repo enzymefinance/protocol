@@ -1,5 +1,5 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
-import { deployMockSystem } from '~/utils/deployMockSystem';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';

@@ -1,5 +1,5 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploySystem';
+import { deploySystem } from '~/utils/deploy/deploySystem';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';

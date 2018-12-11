@@ -5,7 +5,7 @@ import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTok
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
-import { LogLevels } from './environment/Environment';
+import { LogLevels } from '../environment/Environment';
 import { Environment } from '~/utils/environment/Environment';
 
 /**
