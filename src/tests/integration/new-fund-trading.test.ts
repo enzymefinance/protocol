@@ -23,7 +23,7 @@ let s: any = {};
 beforeAll(async () => {
   s.environment = await initTestEnvironment();
   s.accounts = await s.environment.eth.getAccounts();
-  const { addresses, contracts } = await deployAndGetSystem();
+  const { addresses, contracts } = await deployAndGetSystem(s.environment);
   s.addresses = addresses;
   s = Object.assign(s, contracts);
 
@@ -54,7 +54,7 @@ beforeAll(async () => {
     .send({ from: s.manager, gasPrice: s.gasPrice, gas: 8000000 });
   const fundId = await s.version.methods.getLastFundId().call();
   const hubAddress = await s.version.methods.getFundById(fundId).call();
-  s.fund = await getFundComponents(hubAddress);
+  s.fund = await getFundComponents(s.environment, hubAddress);
 
   await updateTestingPriceFeed(s, s.environment);
   const [, referencePrice] = Object.values(

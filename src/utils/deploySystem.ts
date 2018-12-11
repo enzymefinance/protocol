@@ -163,6 +163,7 @@ export const deploySystem = async (environment: Environment) => {
       url: '',
     });
     const priceSourceContract = getContract(
+      environment,
       Contracts.TestingPriceFeed,
       priceSource,
     );
