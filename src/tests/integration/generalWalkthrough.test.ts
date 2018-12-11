@@ -2,7 +2,7 @@ import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
-import { deploy } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { setupFund } from '~/contracts/factory/transactions/setupFund';
@@ -64,13 +64,13 @@ describe('generalWalkthrough', () => {
     const managementFee = getContract(
       shared.env,
       Contracts.ManagementFee,
-      await deploy(shared.env, Contracts.ManagementFee, []),
+      await deployContract(shared.env, Contracts.ManagementFee, []),
     );
 
     const performanceFee = getContract(
       shared.env,
       Contracts.PerformanceFee,
-      await deploy(shared.env, Contracts.PerformanceFee, []),
+      await deployContract(shared.env, Contracts.PerformanceFee, []),
     );
 
     const fees = [

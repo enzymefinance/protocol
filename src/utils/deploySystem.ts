@@ -26,7 +26,6 @@ import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdap
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { LogLevels, Environment } from './environment/Environment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-// tslint:enable:max-line-length
 
 /**
  * Deploys all contracts and checks their health

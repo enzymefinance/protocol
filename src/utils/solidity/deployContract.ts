@@ -8,7 +8,7 @@ import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 
 // TODO: Refactor all callers to only use the Contract interface
-type Deploy = {
+type DeployContract = {
   (
     environment: Environment,
     pathToSolidityFile: string,
@@ -21,7 +21,7 @@ type Deploy = {
   ): Promise<string>;
 };
 
-export const deploy: Deploy = async (
+export const deployContract: DeployContract = async (
   environment: Environment,
   pathToSolidityFile,
   args = [],

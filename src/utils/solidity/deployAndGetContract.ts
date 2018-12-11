@@ -1,4 +1,4 @@
-import { deploy as deployContract } from './deploy';
+import { deployContract } from './deployContract';
 import { getContract } from './getContract';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';

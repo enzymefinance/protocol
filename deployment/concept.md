@@ -11,6 +11,13 @@ Flexible tool to deploy to different tracks in different chains.
   - Using contracts by third-parties like exchanges, tokens, ...
   - Only updating some contracts. For example: New version with new FundFactory, but same engine, ...
 - Reproduction of deployment
+- Differentiation between concrete contract and interface: Example: PriceFeed. In deployment we just specify `priceSource`. That could be `KyberPriceFeed` or `CanonicalPriceFeed`.
+
+# Use cases
+
+- Deploy a test system: All contracts
+- Deploy an initial version: Given 3rd party contracts
+- Deploy a new version: Some former contracts are given
 
 # Caveats
 

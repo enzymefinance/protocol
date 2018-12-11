@@ -1,6 +1,6 @@
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { default as BigNumber } from 'bignumber.js';
 1;
 import { Contracts } from '~/Contracts';

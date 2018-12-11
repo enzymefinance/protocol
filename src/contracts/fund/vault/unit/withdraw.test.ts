@@ -1,6 +1,6 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployVaultFactory } from '../transactions/deployVaultFactory';
 import { createVaultInstance } from '../transactions/createVaultInstance';
@@ -18,7 +18,7 @@ describe('withdraw', () => {
       tokenAddress,
     );
     shared.factoryAddress = await deployVaultFactory(shared.env);
-    shared.authAddress = await deploy(
+    shared.authAddress = await deployContract(
       shared.env,
       Contracts.PermissiveAuthority,
     );

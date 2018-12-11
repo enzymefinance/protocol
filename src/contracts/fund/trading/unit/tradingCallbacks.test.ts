@@ -1,7 +1,7 @@
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deployMockSystem';
-import { deploy } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { randomAddress } from '~/utils/helpers/randomAddress';
@@ -19,12 +19,12 @@ describe('tradingCallbacks', () => {
     const mockAdapter = await getContract(
       shared.env,
       Contracts.MockAdapter,
-      await deploy(shared.env, Contracts.MockAdapter),
+      await deployContract(shared.env, Contracts.MockAdapter),
     );
     shared.trading = await getContract(
       shared.env,
       Contracts.Trading,
-      await deploy(shared.env, Contracts.Trading, [
+      await deployContract(shared.env, Contracts.Trading, [
         shared.user, // faked so user can call initialize
         [mockExchange],
         [mockAdapter.options.address],

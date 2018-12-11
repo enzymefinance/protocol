@@ -13,10 +13,10 @@ import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { deployTestingPriceFeed as deployFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
+import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { update } from '~/contracts/prices/transactions/update';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { increaseTime } from '~/utils/evm';
 
@@ -50,7 +50,7 @@ describe('sellAndBurnMln', () => {
       Contracts.MockVersion,
       await deployContract(shared.env, Contracts.MockVersion),
     );
-    const feedAddress = await deployFeed(
+    const feedAddress = await deployTestingPriceFeed(
       shared.env,
       await getToken(shared.env, wethAddress),
     );
