@@ -77,8 +77,6 @@ const setBaseRate: EnhancedExecute<
   Contracts.ConversionRates,
   undefined,
   prepareArgs,
-  undefined,
-  // { gas: '8000000' },
 );
 
 export { setBaseRate };
