@@ -37,6 +37,8 @@ async function getConvertedPrices(deployed, fromSymbol) {
   } else if (Object.values(queryResult).indexOf(0) !== -1) {
     throw new Error('API call returned a zero price');
   }
+
+  // TODO: We used to get decimals from token info file in legacy code
   const quoteDecimals = 18;
   const ethDecimals = 18;
   const eurDecimals = 18;

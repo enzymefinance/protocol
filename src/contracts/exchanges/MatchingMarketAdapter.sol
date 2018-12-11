@@ -126,6 +126,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
+        Vault(hub.vault()).withdraw(takerAsset, fillTakerQuantity);
         require(
             takerAsset.approve(targetExchange, fillTakerQuantity),
             "Taker asset could not be approved"
