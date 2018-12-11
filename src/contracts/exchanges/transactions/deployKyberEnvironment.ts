@@ -4,6 +4,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { default as BigNumber } from 'bignumber.js';
 1;
 import { Contracts } from '~/Contracts';
+import { TokenInterface } from '@melonproject/token-math/token';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
 function bytesToHex(byteArray) {
@@ -14,12 +15,16 @@ function bytesToHex(byteArray) {
   return num;
 }
 
+export interface KyberEnvironment {
+  conversionRates: string;
+  kyberNetwork: string;
+  kyberNetworkProxy: string;
+}
+
 export const deployKyberEnvironment = async (
   environment: Environment,
-  mlnToken,
-  ethToken,
-  eurToken,
-) => {
+  tokens: TokenInterface[],
+): Promise<KyberEnvironment> => {
   const debug = environment.logger(
     'melon:protocol:exchanges:deploy-kyber',
     LogLevels.DEBUG,
@@ -38,6 +43,8 @@ export const deployKyberEnvironment = async (
   //   gas: 8000000,
   //   gasPrice: 10,
   // };
+
+  const [mlnToken, eurToken] = tokens;
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();
@@ -301,11 +308,6 @@ export const deployKyberEnvironment = async (
     )
     .send({ from: deployer, gas: 8000000 });
 
-  // Melon Fund env
-  const kyberAdapterAddress = await deployContract(
-    environment,
-    Contracts.KyberAdapter,
-  );
   // TODO
   // await governanceAction(
   //   { from: deployer },
@@ -320,9 +322,8 @@ export const deployKyberEnvironment = async (
   //   ],
   // );
   return {
-    kyberAdapterAddress,
-    kyberConversionRate: conversionRates.options.address,
-    kyberNetworkAddress: kyberNetworkContract.options.address,
-    kyberNetworkProxyAddress: kyberNetworkProxyContract.options.address,
+    conversionRates: conversionRates.options.address,
+    kyberNetwork: kyberNetworkContract.options.address,
+    kyberNetworkProxy: kyberNetworkProxyContract.options.address,
   };
 };

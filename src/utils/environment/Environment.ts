@@ -9,6 +9,10 @@ export type SignFunction = (
   from?: Address,
 ) => Promise<string>;
 
+export enum Tracks {
+  DEFAULT = 'default',
+}
+
 // Subset of NPM logging levels without numbers
 export enum LogLevels {
   ERROR = 'error',
@@ -59,7 +63,7 @@ export interface Deployment {
 export interface Environment {
   readonly confirmer?: Function;
   readonly eth: Eth;
-  readonly track: string;
+  readonly track: Tracks;
   readonly wallet?: Wallet;
   readonly options: Options;
   readonly logger: CurriedLogger;

@@ -2,7 +2,13 @@ import web3Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import { tracks } from '../constants/tracks';
-import { Environment, Options, LogLevels, CurriedLogger } from './Environment';
+import {
+  Environment,
+  Options,
+  LogLevels,
+  CurriedLogger,
+  Tracks,
+} from './Environment';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -75,7 +81,7 @@ export const constructEnvironment = ({
   deployment = undefined,
   logger = dummyLogger,
   wallet = undefined,
-  track = tracks.DEMO,
+  track = Tracks.DEFAULT,
   options = defaultOptions,
 }): Environment => {
   if (!endpoint && !provider) {

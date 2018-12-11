@@ -1,9 +1,8 @@
+import * as R from 'ramda';
+
 import { Exchanges } from '~/Contracts';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
+
 import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
-import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
 import { setVersion } from '~/contracts/engine/transactions/setVersion';
@@ -13,7 +12,7 @@ import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
-import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
+import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
 import { deployParticipationFactory } from '~/contracts/fund/participation/transactions/deployParticipationFactory';
@@ -21,131 +20,164 @@ import { deploySharesFactory } from '~/contracts/fund/shares/transactions/deploy
 import { deployTradingFactory } from '~/contracts/fund/trading/transactions/deployTradingFactory';
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
-import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
-import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { LogLevels, Environment } from '../environment/Environment';
+import { LogLevels, Environment, Deployment } from '../environment/Environment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
+import { Thirdparty } from './deployThirdparty';
 
+interface MelonContracts {
+  priceSource?: string;
+  engine?: string;
+  version?: string;
+  ranking?: string;
+  registry?: string;
+  adapters?: {
+    kyberAdapter?: string;
+    zeroExAdapter?: string;
+    matchingMarketAdapter?: string;
+  };
+  policies?: {
+    priceTolerance?: string;
+    userWhitelist?: string;
+  };
+  factories?: {
+    accountingFactory?: string;
+    feeManagerFactory?: string;
+    participationFactory?: string;
+    policyManagerFactory?: string;
+    sharesFactory?: string;
+    tradingFactory?: string;
+    vaultFactory?: string;
+  };
+}
 /**
  * Deploys all contracts and checks their health
  */
-export const deploySystem = async (environment: Environment) => {
+export const deploySystem = async (
+  environment: Environment,
+  thirdparty: Thirdparty,
+  adoptedContracts: MelonContracts = {},
+): Promise<Environment> => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
   const accounts = await environment.eth.getAccounts();
 
-  debug('Deploying system from', accounts[0]);
-  const mlnTokenAddress = await deployToken(environment, 'MLN');
-  const quoteToken = await getToken(
-    environment,
-    await deployToken(environment, 'WETH'),
-  );
-  const baseToken = await getToken(environment, mlnTokenAddress);
-  const wethToken = quoteToken;
-  const mlnToken = baseToken;
-  const eurToken = await getToken(
-    environment,
-    await deployToken(environment, 'EUR'),
-  );
-  const zrxToken = await getToken(
-    environment,
-    await deployToken(environment, 'ZRX'),
-  );
-  const assets = [wethToken, mlnToken, eurToken, zrxToken];
-  const priceFeedAddress = await deployPriceFeed(environment, quoteToken);
-  const matchingMarketAddress = await deployMatchingMarket(environment);
-  const {
-    kyberNetworkProxyAddress,
-    kyberAdapterAddress,
-  } = await deployKyberEnvironment(
-    environment,
-    quoteToken,
-    baseToken,
-    eurToken,
-  );
+  debug('Deploying system from', accounts[0], { thirdparty, adoptedContracts });
 
-  const zeroExAddress = await deploy0xExchange(environment, { zrxToken });
-  const zeroExAdapterAddress = await deploy0xAdapter(environment);
+  const wethToken = thirdparty.tokens.find(t => t.symbol === 'WETH');
+  const mlnToken = thirdparty.tokens.find(t => t.symbol === 'MLN');
 
-  await addTokenPairWhitelist(environment, matchingMarketAddress, {
-    baseToken,
-    quoteToken,
-  });
+  const actualContracts: MelonContracts = {};
 
-  const priceToleranceAddress = await deployPriceTolerance(environment, 10);
-  const whitelistAddress = await deployWhitelist(environment, [accounts[0]]);
-  const matchingMarketAdapterAddress = await deployMatchingMarketAdapter(
-    environment,
-  );
-  const accountingFactoryAddress = await deployAccountingFactory(environment);
-  const feeManagerFactoryAddress = await deployFeeManagerFactory(environment);
-  const participationFactoryAddress = await deployParticipationFactory(
-    environment,
-  );
-  const sharesFactoryAddress = await deploySharesFactory(environment);
-  const tradingFactoryAddress = await deployTradingFactory(environment);
-  const vaultFactoryAddress = await deployVaultFactory(environment);
-  const policyManagerFactoryAddress = await deployPolicyManagerFactory(
-    environment,
-  );
+  actualContracts.priceSource =
+    adoptedContracts.priceSource ||
+    (await deployPriceFeed(environment, wethToken));
+
+  /// Exchange Adapters
+  actualContracts.adapters.kyberAdapter =
+    R.path(['adapters', 'kyberAdapter'], adoptedContracts) ||
+    (await deployKyberAdapter(environment));
+  actualContracts.adapters.zeroExAdapter =
+    R.path(['adapters', 'zeroExAdapter'], adoptedContracts) ||
+    (await deploy0xAdapter(environment));
+  actualContracts.adapters.matchingMarketAdapter =
+    R.path(['adapters', 'matchingMarketAdapter'], adoptedContracts) ||
+    (await deployMatchingMarketAdapter(environment));
+
+  // Policies
+  // TODO: Possibility to set policy params?
+  actualContracts.policies.priceTolerance =
+    R.path(['policies', 'priceTolerance'], adoptedContracts) ||
+    (await deployPriceTolerance(environment, 10));
+  actualContracts.policies.userWhitelist =
+    R.path(['policies', 'userWhitelist'], adoptedContracts) ||
+    (await deployUserWhitelist(environment, [accounts[0]]));
+
+  // Factories
+  actualContracts.factories.accountingFactory =
+    R.path(['factories', 'accountingFactory'], adoptedContracts) ||
+    (await deployAccountingFactory(environment));
+  actualContracts.factories.feeManagerFactory =
+    R.path(['factories', 'feeManagerFactory'], adoptedContracts) ||
+    (await deployFeeManagerFactory(environment));
+  actualContracts.factories.participationFactory =
+    R.path(['factories', 'participationFactory'], adoptedContracts) ||
+    (await deployParticipationFactory(environment));
+  actualContracts.factories.sharesFactory =
+    R.path(['factories', 'sharesFactory'], adoptedContracts) ||
+    (await deploySharesFactory(environment));
+  actualContracts.factories.tradingFactory =
+    R.path(['factories', 'tradingFactory'], adoptedContracts) ||
+    (await deployTradingFactory(environment));
+  actualContracts.factories.vaultFactory =
+    R.path(['factories', 'vaultFactory'], adoptedContracts) ||
+    (await deployVaultFactory(environment));
+  actualContracts.factories.policyManagerFactory =
+    R.path(['factories', 'policyManagerFactory'], adoptedContracts) ||
+    (await deployPolicyManagerFactory(environment));
+
   const monthInSeconds = 30 * 24 * 60 * 60;
   // Not used since deployer is assumed to be governance
   // const governanceAddress = accounts[0];
-  const engineAddress = await deployEngine(
-    environment,
-    priceFeedAddress,
-    monthInSeconds,
-    mlnTokenAddress,
-  );
-  const registryAddress = await deployRegistry(environment);
-  const versionAddress = await deployVersion(environment, {
-    accountingFactoryAddress,
-    engineAddress,
-    factoryPriceSourceAddress: priceFeedAddress,
-    feeManagerFactoryAddress,
-    mlnTokenAddress,
-    participationFactoryAddress,
-    policyManagerFactoryAddress,
-    registryAddress,
-    sharesFactoryAddress,
-    tradingFactoryAddress,
-    vaultFactoryAddress,
+
+  actualContracts.engine =
+    adoptedContracts.engine ||
+    (await deployEngine(
+      environment,
+      actualContracts.priceSource,
+      monthInSeconds,
+      mlnToken.address,
+    ));
+
+  actualContracts.registry =
+    adoptedContracts.registry || (await deployRegistry(environment));
+
+  actualContracts.version =
+    adoptedContracts.registry ||
+    (await deployVersion(environment, {
+      factories: actualContracts.factories,
+      engine: actualContracts.engine,
+      priceSource: actualContracts.priceSource,
+      mlnToken,
+      registry: actualContracts.registry,
+    }));
+
+  await setVersion(environment, engineAddress, {
+    version: actualContracts.version,
   });
-  await setVersion(environment, engineAddress, { versionAddress });
 
-  const rankingAddress = await deployFundRanking(environment);
-  const exchangeConfigs = [
-    {
-      adapterAddress: matchingMarketAdapterAddress,
-      exchangeAddress: matchingMarketAddress,
-      name: Exchanges.MatchingMarket,
-      takesCustody: false,
-    },
-    {
-      adapterAddress: kyberAdapterAddress,
-      exchangeAddress: kyberNetworkProxyAddress,
-      name: Exchanges.KyberNetwork,
-      takesCustody: false,
-    },
-    {
-      adapterAddress: zeroExAdapterAddress,
-      exchangeAddress: zeroExAddress,
-      name: Exchanges.ZeroEx,
-      takesCustody: false,
-    },
-  ];
+  actualContracts.ranking =
+    adoptedContracts.ranking || (await deployFundRanking(environment));
 
-  for (const exchangeConfig of exchangeConfigs) {
-    await registerExchange(environment, registryAddress, {
-      adapter: exchangeConfig.adapterAddress,
-      exchange: exchangeConfig.exchangeAddress,
+  const exchangeConfigs = {
+    [Exchanges.MatchingMarket]: {
+      adapter: actualContracts.adapters.matchingMarketAdapter,
+      exchange: thirdparty.exchanges.matchingMarket,
+      takesCustody: false,
+    },
+    [Exchanges.KyberNetwork]: {
+      adapter: actualContracts.adapters.kyberAdapter,
+      exchange: thirdparty.exchanges.kyber.kyberNetworkProxy,
+      takesCustody: false,
+    },
+    [Exchanges.ZeroEx]: {
+      adapter: actualContracts.adapters.zeroExAdapter,
+      exchange: thirdparty.exchanges.zeroEx,
+      takesCustody: false,
+    },
+  };
+
+  for (const exchangeConfig of Object.values(exchangeConfigs)) {
+    await registerExchange(environment, actualContracts.registry, {
+      adapter: exchangeConfig.adapter,
+      exchange: exchangeConfig.exchange,
       sigs: [],
       takesCustody: exchangeConfig.takesCustody,
     });
   }
 
-  for (const asset of assets) {
-    await registerAsset(environment, registryAddress, {
+  for (const asset of thirdparty.tokens) {
+    await registerAsset(environment, actualContracts.registry, {
       assetAddress: `${asset.address}`,
       assetSymbol: asset.symbol,
       breakInBreakOut: [emptyAddress, emptyAddress],
@@ -158,19 +190,10 @@ export const deploySystem = async (environment: Environment) => {
     });
   }
 
-  const priceSource = priceFeedAddress;
-
   const addresses = {
-    engine: engineAddress,
+    ...actualContracts,
     exchangeConfigs,
-    policies: {
-      priceTolerance: priceToleranceAddress,
-      whitelist: whitelistAddress,
-    },
-    priceSource,
-    ranking: rankingAddress,
-    tokens: [quoteToken, baseToken, eurToken, zrxToken],
-    version: versionAddress,
+    tokens: thirdparty.tokens,
   };
 
   const track = environment.track;

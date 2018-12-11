@@ -5,7 +5,7 @@ import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 
-export const deployWhitelist = async (
+export const deployUserWhitelist = async (
   environment: Environment,
   preapproved: [Address],
 ) => {
