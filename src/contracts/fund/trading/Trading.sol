@@ -235,14 +235,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
-    function returnBatchToVault(ERC20[] _tokens) public {
+    function returnBatchToVault(address[] _tokens) public {
         for (uint i = 0; i < _tokens.length; i++) {
             returnAssetToVault(_tokens[i]);
         }
     }
 
-    function returnAssetToVault(ERC20 _token) public {
-        _token.transfer(Vault(routes.vault), _token.balanceOf(this));
+    function returnAssetToVault(address _token) public {
+        require(
+            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(), 
+            "Sender is not this contract or manager"
+        );
+        ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));
     }
 
     /// @notice Payable function to get back ETH from WETH
