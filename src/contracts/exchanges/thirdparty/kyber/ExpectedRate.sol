@@ -57,7 +57,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils {
             expectedRate = expectedRateSmallQty(src, dest);
         }
 
-        require(expectedRate <= MAX_RATE, "Expected rate too high");
+        require(expectedRate <= MAX_RATE);
 
         worstCaseSlippageRate = ((10000 - worstCaseRateFactorInBps) * expectedRate) / 10000;
         if (slippageRate >= worstCaseSlippageRate) {
