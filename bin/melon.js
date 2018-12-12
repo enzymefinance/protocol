@@ -30,11 +30,35 @@ program
   });
 
 program
-  .command('deploy <endpoint>')
-  .description('Deploy the Melon smart contracts')
-  .action(async endpoint => {
-    console.error(
-      'Deployment is currently not implemented. Tests now run on the in-memory devchain.',
+  .command('deploy')
+  .description(
+    'Deploy the Melon smart contracts. By default: A full deploy to the local chain at localhost:8545',
+  )
+  .action(async () => {
+    console.log(`Deploying thirdparty & melon contracts (development setup).`);
+    const {
+      initTestEnvironment,
+    } = require('../lib/tests/utils/initTestEnvironment');
+    const {
+      deployThirdparty,
+    } = require('../lib/utils/deploy/deployThirdparty');
+    const { deploySystem } = require('../lib/utils/deploy/deploySystem');
+
+    const environment = await initTestEnvironment('https://localhost:8545');
+    const thirdpartyContracts = await deployThirdparty(environment);
+    const { deployment } = await deploySystem(environment, thirdpartyContracts);
+    const chainId = await environment.eth.net.getId();
+
+    const chainMap = {
+      1: 'mainnet',
+      42: 'kovan',
+    };
+
+    const chainName = chainMap[chainId] || 'development';
+
+    fs.writeFileSync(
+      `./deployments/${chainName}-${environment.track}.json`,
+      JSON.stringify(deployment, null, 2),
     );
 
     process.exit();
@@ -47,7 +71,7 @@ program
     console.log(`Setting the price for ${symbol} to ${value}`);
     const {
       initTestEnvironment,
-    } = require('../lib/utils/environment/initTestEnvironment');
+    } = require('../lib/tests/utils/initTestEnvironment');
     const { update } = require('../lib/contracts/prices/transactions/update');
     const {
       getQuoteToken,

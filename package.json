@@ -36,6 +36,7 @@
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
+    "deploy": "node bin/melon.js deploy",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",

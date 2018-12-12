@@ -1,10 +1,10 @@
+import { default as BigNumber } from 'bignumber.js';
+import { TokenInterface } from '@melonproject/token-math/token';
+
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { default as BigNumber } from 'bignumber.js';
-1;
 import { Contracts } from '~/Contracts';
-import { TokenInterface } from '@melonproject/token-math/token';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
 function bytesToHex(byteArray) {
