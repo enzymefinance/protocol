@@ -1,6 +1,6 @@
 import web3EthAbi from 'web3-eth-abi';
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts } from '~/Contracts';
+import { Contracts, Exchanges } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
@@ -41,9 +41,8 @@ const isOasisDexMakePermitted = async (
     policyManagerAddress,
   );
 
-  const exchangeAddress = environment.deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
+  const exchangeAddress =
+    environment.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
   const result = await policyManager.methods
     .preValidate(

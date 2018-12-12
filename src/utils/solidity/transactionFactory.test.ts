@@ -1,10 +1,10 @@
-import { initTestEnvironment } from '../environment/initTestEnvironment';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Address } from '@melonproject/token-math/address';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { sign } from '../environment/sign';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 
 describe('transactionFactory', () => {
   const shared: any = {};

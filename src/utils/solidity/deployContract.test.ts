@@ -1,5 +1,5 @@
 import { Environment } from '~/utils/environment/Environment';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
 import { deployContract } from './deployContract';
 import { Contracts } from '~/Contracts';

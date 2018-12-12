@@ -9,9 +9,8 @@ const getExchangeIndex = async (
   tradingAddress: Address,
   { exchange }: { exchange: Exchanges },
 ) => {
-  const exchangeAddress: Address = environment.deployment.exchangeConfigs.find(
-    o => o.name === exchange,
-  ).exchangeAddress;
+  const exchangeAddress: Address =
+    environment.deployment.exchangeConfigs[exchange].exchange;
 
   const tradingContract = getContract(
     environment,

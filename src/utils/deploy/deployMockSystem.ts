@@ -58,7 +58,9 @@ export const deployMockSystem = async (
     [quoteToken.address, quoteToken.decimals],
   );
 
-  const matchingMarketAddress = await deployMatchingMarket(environment);
+  const matchingMarketAddress = await deployMatchingMarket(environment, {
+    tokens: [quoteToken, baseToken],
+  });
   await addTokenPairWhitelist(environment, matchingMarketAddress, {
     baseToken,
     quoteToken,

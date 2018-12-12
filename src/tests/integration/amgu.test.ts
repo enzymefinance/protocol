@@ -1,5 +1,3 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploy/deploySystem';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
@@ -17,12 +15,13 @@ import {
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 
 describe('amgu', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
   });
 

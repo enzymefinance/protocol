@@ -14,25 +14,24 @@ const setupInvestedTestFund = async (environment: Environment) => {
 
   const {
     exchangeConfigs,
-    priceSource,
-    tokens,
-    version,
+    melonContracts,
+    thirdpartyContracts,
   } = environment.deployment;
 
-  const [weth, mln] = tokens;
+  const [weth, mln] = thirdpartyContracts.tokens;
   const fees = [];
 
-  await createComponents(environment, version, {
+  await createComponents(environment, melonContracts.version, {
     defaultTokens: [weth, mln],
     exchangeConfigs,
     fees,
     fundName,
     nativeToken: weth,
-    priceSource,
+    priceSource: melonContracts.priceSource,
     quoteToken: weth,
   });
-  await continueCreation(environment, version);
-  const hubAddress = await setupFund(environment, version);
+  await continueCreation(environment, melonContracts.version);
+  const hubAddress = await setupFund(environment, melonContracts.version);
   const settings = await getSettings(environment, hubAddress);
 
   const investmentAmount = createQuantity(weth, 1);

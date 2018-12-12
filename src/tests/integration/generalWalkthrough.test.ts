@@ -1,7 +1,5 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploy/deploySystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
@@ -34,12 +32,13 @@ import {
 } from '@melonproject/token-math/bigInteger';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { LogLevels } from '~/utils/environment/Environment';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 
 describe('generalWalkthrough', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
   });
 

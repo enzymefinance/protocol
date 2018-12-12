@@ -4,7 +4,7 @@ import {
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { balanceOf } from '../calls/balanceOf';
 import { getToken } from '../calls/getToken';
 import { deployToken } from '../transactions/deploy';

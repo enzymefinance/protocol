@@ -1,4 +1,4 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { Contracts } from '~/Contracts';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';

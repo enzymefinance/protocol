@@ -1,5 +1,5 @@
 import { Contracts } from '~/Contracts';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 

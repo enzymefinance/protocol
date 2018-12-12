@@ -1,4 +1,4 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployTestingPriceFeed } from './deployTestingPriceFeed';
 
 describe('deploy', () => {

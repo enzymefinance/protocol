@@ -1,7 +1,7 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
 
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployToken } from '../transactions/deploy';
 import { getToken } from '../calls/getToken';
 import { approve } from './approve';

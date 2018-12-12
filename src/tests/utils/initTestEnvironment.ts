@@ -1,9 +1,10 @@
 import { default as Web3Accounts } from 'web3-eth-accounts';
-import { constructEnvironment } from './constructEnvironment';
-import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
-import { testLogger } from './testLogger';
-import { LogLevels } from './Environment';
+
+import { testLogger } from '~/utils/environment/testLogger';
+import { constructEnvironment } from '~/utils/environment/constructEnvironment';
+import { LogLevels } from '~/utils/environment/Environment';
+import { ensure } from '~/utils/guards/ensure';
 
 // tslint:disable-next-line:max-line-length
 const testMnemonic =

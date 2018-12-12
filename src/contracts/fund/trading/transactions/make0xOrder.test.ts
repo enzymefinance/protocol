@@ -1,21 +1,20 @@
 import * as R from 'ramda';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deploySystem } from '~/utils/deploy/deploySystem';
 import {
   createOrder,
   signOrder,
   fillOrder,
 } from '~/contracts/exchanges/thirdparty/0x';
 import { make0xOrder } from './make0xOrder';
+import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 
 describe('make0xOrder', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
     shared.settings = await setupInvestedTestFund(shared.env);
 

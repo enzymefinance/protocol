@@ -1,7 +1,6 @@
 import web3Eth from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
-import { tracks } from '../constants/tracks';
 import {
   Environment,
   Options,

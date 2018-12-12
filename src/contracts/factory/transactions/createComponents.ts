@@ -59,13 +59,13 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   },
   contractAddress,
 ) => {
-  const exchangeAddresses = exchangeConfigs.map(e =>
-    e.exchangeAddress.toString(),
+  const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
+    e.exchange.toString(),
   );
-  const adapterAddresses = exchangeConfigs.map(e =>
-    e.adapterAddress.toString(),
+  const adapterAddresses = Object.values(exchangeConfigs).map(e =>
+    e.adapter.toString(),
   );
-  const takesCustody = exchangeConfigs.map(e => e.takesCustody);
+  const takesCustody = Object.values(exchangeConfigs).map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const nativeTokenAddress = nativeToken.address;

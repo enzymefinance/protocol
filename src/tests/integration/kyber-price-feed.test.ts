@@ -1,6 +1,6 @@
 import { toFixed } from '@melonproject/token-math/price';
 
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
@@ -21,12 +21,10 @@ describe('kyber-price-feed', () => {
       mln: await getToken(shared.env, await deployToken(shared.env, 'MLN')),
       weth: await getToken(shared.env, await deployToken(shared.env, 'WETH')),
     };
-    shared.kyberDeploy = await deployKyberEnvironment(
-      shared.env,
+    shared.kyberDeploy = await deployKyberEnvironment(shared.env, [
       shared.tokens.mln,
-      shared.tokens.weth,
       shared.tokens.eur,
-    );
+    ]);
   });
 
   it('Deploy kyber pricefeed', async () => {
