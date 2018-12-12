@@ -1,6 +1,5 @@
 import * as R from 'ramda';
 import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
-import { LogLevels } from '~/utils/environment/Environment';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
 import { ensure } from '../guards/ensure';
@@ -33,11 +32,6 @@ export const prepareTransaction = async (
   optionsOrCallback: OptionsOrCallback,
 ): Promise<PreparedTransaction> => {
   const encoded = transaction.encodeABI();
-
-  const debug = environment.logger(
-    'melon:protocol:utils:solidity',
-    LogLevels.DEBUG,
-  );
 
   const options = {
     amguPayable: false,
@@ -87,14 +81,6 @@ export const prepareTransaction = async (
       }(${transaction.arguments.map(JSON.stringify).join(', ')}): ${e.message}`,
     );
   }
-
-  debug(
-    'Prepared transaction:',
-    transaction.name,
-    transaction.arguments,
-    transaction.gasEstimation,
-    encoded,
-  );
 
   const prepared = {
     encoded,

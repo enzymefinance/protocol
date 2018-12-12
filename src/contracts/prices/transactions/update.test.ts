@@ -2,7 +2,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice, isEqual } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { update } from './update';
-import { deploy } from './deploy';
+import { deployTestingPriceFeed } from './deployTestingPriceFeed';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
@@ -19,7 +19,10 @@ describe('update', () => {
       shared.env,
       await deployToken(shared.env, 'MLN'),
     );
-    shared.address = await deploy(shared.env, shared.quoteToken);
+    shared.address = await deployTestingPriceFeed(
+      shared.env,
+      shared.quoteToken,
+    );
   });
 
   it('update', async () => {

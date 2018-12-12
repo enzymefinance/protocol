@@ -2,7 +2,7 @@ import { Exchanges } from '~/Contracts';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
-import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deploy';
+import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
@@ -60,7 +60,6 @@ export const deploySystem = async (environment: Environment) => {
     kyberAdapterAddress,
   } = await deployKyberEnvironment(
     environment,
-    accounts[0],
     quoteToken,
     baseToken,
     eurToken,
