@@ -23,7 +23,6 @@ export const guards: GuardFunction<AddTokenPairWhitelistArgs> = async (
   environment: Environment,
   { quoteToken, baseToken }: AddTokenPairWhitelistArgs,
 ) => {
-  environment.logger('vbeforeguards', '', 'ASDF');
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
     `Token ${log(quoteToken)} is invalid`,
@@ -32,7 +31,6 @@ export const guards: GuardFunction<AddTokenPairWhitelistArgs> = async (
     isToken(baseToken) && hasAddress(baseToken),
     `Token ${log(baseToken)} is invalid`,
   );
-  environment.logger('afterguards', '', 'ASDF');
 };
 
 export const prepareArgs: PrepareArgsFunction<

@@ -9,18 +9,19 @@ import {
 } from '~/contracts/exchanges/thirdparty/0x';
 import { make0xOrder } from './make0xOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
+import { Exchanges } from '~/Contracts';
 
 describe('make0xOrder', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deployAndInitTestEnv();
+    const env = await deployAndInitTestEnv();
+    shared.env = env;
     shared.accounts = await shared.env.eth.getAccounts();
     shared.settings = await setupInvestedTestFund(shared.env);
 
-    shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
-      R.propEq('name', 'ZeroEx'),
-    ).exchangeAddress;
+    shared.zeroExAddress =
+      env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
     shared.mln = getTokenBySymbol(shared.env, 'MLN');
     shared.weth = getTokenBySymbol(shared.env, 'WETH');
