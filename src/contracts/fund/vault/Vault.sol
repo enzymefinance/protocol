@@ -1,9 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "./Vault.i.sol";
-import "../hub/Spoke.sol";
-import "../../dependencies/token/ERC20.i.sol";
-import "../../factory/Factory.sol";
+import "Vault.i.sol";
+import "Spoke.sol";
+import "ERC20.i.sol";
+import "Factory.sol";
 
 /// @notice Dumb custody component
 contract Vault is Spoke, VaultInterface {

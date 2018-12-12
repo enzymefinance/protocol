@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy } from '~/utils/solidity/deploy';
@@ -21,7 +20,7 @@ describe('withdraw', () => {
     shared.factoryAddress = await deployVaultFactory(shared.env);
     shared.authAddress = await deploy(
       shared.env,
-      path.join('dependencies', 'PermissiveAuthority'),
+      Contracts.PermissiveAuthority,
     );
   });
 

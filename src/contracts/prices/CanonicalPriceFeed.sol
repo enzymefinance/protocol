@@ -1,9 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "./CanonicalRegistrar.sol";
-import "./SimplePriceFeed.sol";
-import "./StakingPriceFeed.sol";
-import "./OperatorStaking.sol";
+import "CanonicalRegistrar.sol";
+import "SimplePriceFeed.sol";
+import "StakingPriceFeed.sol";
+import "OperatorStaking.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>

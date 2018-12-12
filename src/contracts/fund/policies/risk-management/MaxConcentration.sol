@@ -1,10 +1,10 @@
 pragma solidity ^0.4.21;
 
-import "../../../dependencies/math.sol";
-import "../../../prices/PriceSource.i.sol";
-import "../../accounting/Accounting.sol";
-import "../../trading/Trading.sol";
-import "../Policy.sol";
+import "math.sol";
+import "PriceSource.i.sol";
+import "Accounting.sol";
+import "Trading.sol";
+import "Policy.sol";
 
 contract MaxConcentration is DSMath, Policy {
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%

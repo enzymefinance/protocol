@@ -1,13 +1,13 @@
 pragma solidity ^0.4.21;
 
-import "../engine/Engine.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
-import "../dependencies/math.sol";
-import "../dependencies/Weth.sol";
-import "../dependencies/token/ERC20.i.sol";
-import "./ExchangeAdapterInterface.sol";
+import "Engine.sol";
+import "Hub.sol";
+import "Trading.sol";
+import "Vault.sol";
+import "math.sol";
+import "Weth.sol";
+import "ERC20.i.sol";
+import "ExchangeAdapterInterface.sol";
 
 /// @notice Trading adapter between Melon and Melon Engine
 contract EngineAdapter is DSMath, ExchangeAdapterInterface {

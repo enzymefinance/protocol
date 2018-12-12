@@ -58,7 +58,7 @@ export const deploySystem = async (environment: Environment) => {
   const matchingMarketAddress = await deployMatchingMarket(environment);
   const {
     kyberNetworkProxyAddress,
-    KyberAdapterAddress,
+    kyberAdapterAddress,
   } = await deployKyberEnvironment(
     environment,
     accounts[0],
@@ -125,7 +125,7 @@ export const deploySystem = async (environment: Environment) => {
       takesCustody: false,
     },
     {
-      adapterAddress: KyberAdapterAddress,
+      adapterAddress: kyberAdapterAddress,
       exchangeAddress: kyberNetworkProxyAddress,
       name: Exchanges.KyberNetwork,
       takesCustody: false,

@@ -1,15 +1,15 @@
 pragma solidity ^0.4.21;
 
-import "../../dependencies/math.sol";
-import "../../dependencies/token/ERC20.i.sol";
-import "../../factory/Factory.sol";
-import "../../prices/CanonicalPriceFeed.sol";
-import "../fees/FeeManager.sol";
-import "../hub/Spoke.sol";
-import "../shares/Shares.sol";
-import "../trading/Trading.sol";
-import "../vault/Vault.sol";
-import "./Accounting.i.sol";
+import "math.sol";
+import "ERC20.i.sol";
+import "Factory.sol";
+import "CanonicalPriceFeed.sol";
+import "FeeManager.sol";
+import "Spoke.sol";
+import "Shares.sol";
+import "Trading.sol";
+import "Vault.sol";
+import "Accounting.i.sol";
 
 // NB: many functions simplified for now
 // TODO: remove any of these functions we don't use; a lot of this can be trimmed down

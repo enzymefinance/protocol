@@ -1,16 +1,16 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "./Trading.i.sol";
-import "../hub/Spoke.sol";
-import "../vault/Vault.sol";
-import "../policies/PolicyManager.sol";
-import "../../dependencies/token/ERC20.i.sol";
-import "../../factory/Factory.sol";
-import "../../dependencies/math.sol";
-import "../../exchanges/ExchangeAdapterInterface.sol";
-import "../../exchanges/thirdparty/0x/LibOrder.sol";
-import "../../version/Registry.sol";
+import "Trading.i.sol";
+import "Spoke.sol";
+import "Vault.sol";
+import "PolicyManager.sol";
+import "ERC20.i.sol";
+import "Factory.sol";
+import "math.sol";
+import "ExchangeAdapterInterface.sol";
+import "LibOrder.sol";
+import "Registry.sol";
 
 contract Trading is DSMath, Spoke, TradingInterface {
 

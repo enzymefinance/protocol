@@ -1,12 +1,12 @@
 pragma solidity ^0.4.21;
 
-import "../fund/hub/Hub.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
-import "../dependencies/math.sol";
-import "./thirdparty/oasisdex/MatchingMarket.sol";
-import "./ExchangeAdapterInterface.sol";
+import "Hub.sol";
+import "Trading.sol";
+import "Vault.sol";
+import "Accounting.sol";
+import "math.sol";
+import "MatchingMarket.sol";
+import "ExchangeAdapterInterface.sol";
 
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
@@ -170,7 +170,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         var (, orderExpirationTime, ) = Trading(address(this)).getOpenOrderInfo(targetExchange, orderAddresses[2]);
-        
+
         require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp > orderExpirationTime,
             "Manager must be sender or fund must be shut down or order must be expired"
         );

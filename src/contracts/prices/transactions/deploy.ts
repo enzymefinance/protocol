@@ -2,6 +2,7 @@ import { TokenInterface } from '@melonproject/token-math/token';
 import { Environment } from '~/utils/environment/Environment';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
 import { ensureAddress } from '~/utils/checks/isAddress';
+import { Contracts } from '~/Contracts';
 
 export const deploy = async (
   environment: Environment,
@@ -11,7 +12,7 @@ export const deploy = async (
 
   const address = await deployContract(
     environment,
-    'prices/TestingPriceFeed.sol',
+    Contracts.TestingPriceFeed,
     [quoteToken.address, quoteToken.decimals],
   );
 

@@ -8,11 +8,7 @@ export const deployAndGetContract = async (
   contract: Contracts,
   args: any = [],
 ) => {
-  const deployedContract = await deployContract(
-    environment,
-    `${contract}.sol`,
-    args,
-  );
+  const deployedContract = await deployContract(environment, contract, args);
 
   return getContract(environment, contract, deployedContract);
 };

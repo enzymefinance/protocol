@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "./PriceSource.i.sol";
-import "./UpdatableFeed.i.sol";
-import "../dependencies/math.sol";
+import "PriceSource.i.sol";
+import "UpdatableFeed.i.sol";
+import "math.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information

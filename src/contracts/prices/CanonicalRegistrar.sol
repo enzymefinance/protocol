@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "../dependencies/DBC.sol";
-import "../dependencies/thing.sol";
+import "DBC.sol";
+import "thing.sol";
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>

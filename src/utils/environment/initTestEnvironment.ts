@@ -1,4 +1,4 @@
-import Web3Accounts from 'web3-eth-accounts';
+import { default as Web3Accounts } from 'web3-eth-accounts';
 import { constructEnvironment } from './constructEnvironment';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';

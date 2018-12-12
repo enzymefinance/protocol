@@ -16,7 +16,7 @@ program
   .command('compile [<glob>]')
   .description('Compile the Melon Smart Contracts.')
   .action(async glob => {
-    console.log(glob ? `Compiling ${glob}` : 'Compiling all contracts' );
+    console.log(glob ? `Compiling ${glob}` : 'Compiling all contracts');
 
     try {
       const { compileGlob } = require('./compile');
@@ -32,8 +32,10 @@ program
 program
   .command('deploy <endpoint>')
   .description('Deploy the Melon smart contracts')
-  .action(async (endpoint) => {
-    console.error('Deployment is currently not implemented. Tests now run on the in-memory devchain.');
+  .action(async endpoint => {
+    console.error(
+      'Deployment is currently not implemented. Tests now run on the in-memory devchain.',
+    );
 
     process.exit();
   });
@@ -47,12 +49,14 @@ program
       initTestEnvironment,
     } = require('../lib/utils/environment/initTestEnvironment');
     const { update } = require('../lib/contracts/prices/transactions/update');
-    const { getQuoteToken } = require('../lib/contracts/prices/calls/getQuoteToken');
+    const {
+      getQuoteToken,
+    } = require('../lib/contracts/prices/calls/getQuoteToken');
     const { getDeployment } = require('../lib/utils/solidity/getDeployment');
     const environment = await initTestEnvironment();
     const { priceSource, tokens } = await getDeployment(environment);
     const quoteToken = await getQuoteToken(priceSource, environment);
-    const baseToken = tokens.find((token) => {
+    const baseToken = tokens.find(token => {
       return token.symbol === symbol.toUpperCase();
     });
 

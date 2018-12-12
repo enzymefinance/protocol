@@ -1,18 +1,18 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/ERC20.i.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
-import "../dependencies/token/WETH9.sol";
-import "../dependencies/DBC.sol";
-import "../dependencies/math.sol";
-import "./thirdparty/ethfinex/ExchangeEfx.sol";
-import "./thirdparty/ethfinex/WrapperLock.sol";
-import "./thirdparty/ethfinex/WrapperLockEth.sol";
-import "./ExchangeAdapterInterface.sol";
+import "ERC20.i.sol";
+import "Trading.sol";
+import "Hub.sol";
+import "Vault.sol";
+import "Accounting.sol";
+import "WETH9.sol";
+import "DBC.sol";
+import "math.sol";
+import "ExchangeEfx.sol";
+import "WrapperLock.sol";
+import "WrapperLockEth.sol";
+import "ExchangeAdapterInterface.sol";
 
 
 /// @title EthfinexAdapter Contract

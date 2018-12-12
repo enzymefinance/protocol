@@ -40,7 +40,7 @@
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
-    "lint:solium": "solium --dir .",
+    "lint:solium": "solium --dir src/contracts",
     "lint:tslint": "tsc --noEmit && tslint src/**/*.ts",
     "lint": "yarn lint:tslint && yarn lint:prettier",
     "postbuild": "yarn bundle",
