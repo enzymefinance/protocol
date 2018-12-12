@@ -9,6 +9,7 @@ import {
   approveOrder,
 } from '~/contracts/exchanges/thirdparty/0x';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
+import { Exchanges } from '~/Contracts';
 
 describe('take0xOrder', () => {
   const shared: any = {};
@@ -22,9 +23,8 @@ describe('take0xOrder', () => {
     // );
 
     shared.settings = await setupInvestedTestFund(shared.env);
-    shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
-      R.propEq('name', 'ZeroEx'),
-    ).exchangeAddress;
+    shared.zeroExAddress =
+      shared.env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
     shared.mln = getTokenBySymbol(shared.env, 'MLN');
     shared.weth = getTokenBySymbol(shared.env, 'WETH');

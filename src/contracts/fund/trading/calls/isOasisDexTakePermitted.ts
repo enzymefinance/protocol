@@ -52,9 +52,9 @@ const isOasisDexTakePermitted = async (
       [
         '0x0000000000000000000000000000000000000000', // orderAddresses[0],
         tradingAddress.toString(), // orderAddresses[1],
-        makerQuantity.token.address, // orderAddresses[2],
-        takerQuantity.token.address, // orderAddresses[3],
-        exchangeAddress, // exchanges[exchangeIndex].exchange
+        makerQuantity.token.address.toString(), // orderAddresses[2],
+        takerQuantity.token.address.toString(), // orderAddresses[3],
+        exchangeAddress.toString(), // exchanges[exchangeIndex].exchange
       ],
       [
         makerQuantity.quantity.toString(), // orderValues[0],
