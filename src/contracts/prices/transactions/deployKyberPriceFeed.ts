@@ -7,6 +7,7 @@ import { Contracts } from '~/Contracts';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
 interface DeployKyberPriceFeed {
+  registry: Address;
   quoteToken: TokenInterface;
   maxSpread?: number;
   kyberNetworkProxy: Address;
@@ -14,7 +15,12 @@ interface DeployKyberPriceFeed {
 
 const deployKyberPriceFeed = async (
   environment: Environment,
-  { quoteToken, maxSpread = 0.1, kyberNetworkProxy }: DeployKyberPriceFeed,
+  {
+    registry,
+    quoteToken,
+    maxSpread = 0.1,
+    kyberNetworkProxy,
+  }: DeployKyberPriceFeed,
 ) => {
   const maxSpreadInWei = createQuantity(
     quoteToken,
@@ -22,6 +28,7 @@ const deployKyberPriceFeed = async (
   ).quantity.toString();
 
   const address = await deployContract(environment, Contracts.KyberPriceFeed, [
+    registry,
     kyberNetworkProxy.toString(),
     maxSpreadInWei,
     quoteToken.address.toString(),

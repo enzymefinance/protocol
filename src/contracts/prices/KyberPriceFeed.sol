@@ -3,6 +3,7 @@ pragma solidity ^0.4.21;
 import "PriceSource.i.sol";
 import "thing.sol";
 import "KyberNetworkProxy.sol";
+import "Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
@@ -16,6 +17,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     uint constant public updateId = 1; // TODO: Hardcode for now
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
+    Registry public REGISTRY;
     uint public MAX_SPREAD;
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
@@ -27,6 +29,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
     function KyberPriceFeed(
+        address ofRegistrar,
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
         address ofQuoteAsset
@@ -34,6 +37,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
+        REGISTRY = Registry(ofRegistrar);
     }
 
     // PUBLIC VIEW METHODS
@@ -81,9 +85,9 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     /// @return isRecent Price information ofAsset is recent
     function hasRecentPrice(address ofAsset)
         view
-        // TODO Add back: pre_cond(assetIsRegistered(ofAsset))
         returns (bool isRecent)
     {
+        require(REGISTRY.assetIsRegistered(ofAsset), "Asset not registered in the registry");
         if (ofAsset == QUOTE_ASSET) return true;
         var (price, ) = getPrice(ofAsset);
         return price != 0;
@@ -153,7 +157,9 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
         // 10 ** 10 some random value for now TODO
         var (bidRate, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_baseAsset), ERC20Clone(_quoteAsset), 10 ** 10);
-        var (bidRateOfReversePair, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_quoteAsset), ERC20Clone(_baseAsset), 10 ** 10);
+        var (bidRateOfReversePair, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+            ERC20Clone(_quoteAsset), ERC20Clone(_baseAsset), 10 ** 10
+        );
         uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
 
         // Check the the spread and average the price on both sides

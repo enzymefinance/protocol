@@ -8,6 +8,8 @@ import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKybe
 import { isAddress } from '~/utils/checks/isAddress';
 import { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
+import { deploy } from '~/utils/solidity/deploy';
+import { Contracts } from '~/Contracts';
 
 describe('kyber-price-feed', () => {
   const shared: {
@@ -27,10 +29,16 @@ describe('kyber-price-feed', () => {
       shared.tokens.weth,
       shared.tokens.eur,
     );
+    shared.mockRegistryAddress = await deploy(
+      shared.env,
+      Contracts.MockRegistry,
+      null,
+    );
   });
 
   it('Deploy kyber pricefeed', async () => {
     shared.kyberPriceFeed = await deployKyberPriceFeed(shared.env, {
+      registry: shared.mockRegistryAddress,
       kyberNetworkProxy: shared.kyberDeploy.kyberNetworkProxyAddress,
       quoteToken: shared.tokens.weth,
     });
