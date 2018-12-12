@@ -7,6 +7,7 @@ const program = require('commander');
 const pkg = require('../package.json');
 const { getPrice } = require('@melonproject/token-math/price');
 const { createQuantity } = require('@melonproject/token-math/quantity');
+const { createToken } = require('@melonproject/token-math/token');
 
 program
   .version(pkg.version, '-v, --version')
@@ -34,8 +35,19 @@ program
   .description(
     'Deploy the Melon smart contracts. By default: A full deploy to the local chain at localhost:8545',
   )
-  .action(async () => {
+  .option(
+    '-t, --tokens <tokens>',
+    'A comma separated list of tokens to deploy. It always starts with: "WETH,MLN,ZRX". To add decimals, write: "EUR:2"',
+  )
+  .action(async options => {
     console.log(`Deploying thirdparty & melon contracts (development setup).`);
+    const providedTokens = options.tokens ? options.tokens.split(',') : [];
+    const tokens = ['WETH', 'MLN', 'ZRX', ...providedTokens];
+    const tokenInterfaces = tokens.map(token => {
+      const [symbol, decimals] = token.split(':');
+      return createToken(symbol, undefined, decimals && parseInt(decimals, 10));
+    });
+
     const {
       initTestEnvironment,
     } = require('../lib/tests/utils/initTestEnvironment');
@@ -44,8 +56,13 @@ program
     } = require('../lib/utils/deploy/deployThirdparty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
+    console.log(tokens);
+
     const environment = await initTestEnvironment('https://localhost:8545');
-    const thirdpartyContracts = await deployThirdparty(environment);
+    const thirdpartyContracts = await deployThirdparty(
+      environment,
+      tokenInterfaces,
+    );
     const { deployment } = await deploySystem(environment, thirdpartyContracts);
     const chainId = await environment.eth.net.getId();
 
