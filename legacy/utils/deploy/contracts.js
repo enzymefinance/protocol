@@ -593,10 +593,18 @@ async function deployEnvironment(environment) {
     );
     deployed.MockRegistry = await deployContract("MockRegistry", opts);
     deployed.KyberPriceFeed = await deployContract("KyberPriceFeed", opts, [
-      deployed.MockRegistry.options.address,
       deployed.KyberNetworkProxy.options.address,
       new BigNumber(5 * 10 ** 16).toFixed(),
       deployed.EthToken.options.address,
+      web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
+      web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
+      18,
+      'ethereum.org',
+      mockBytes,
+      [mockAddress, mockAddress],
+      [],
+      [],
+      accounts[0]
     ]);
     deployed.MatchingMarket = await deployContract(
       'MatchingMarket',
