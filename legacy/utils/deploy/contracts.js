@@ -561,22 +561,22 @@ async function deployEnvironment(environment) {
   } else if (environment === 'development') {
     console.log(`Deployer: ${accounts[0]}`);
     deployed.EthToken = await deployContract(
-      'dependencies/token/WETH9',
+      'WETH9',
       opts
     );
     await deployed.EthToken.methods.deposit().send({value: new BigNumber(10 ** 25), ...opts});
     deployed.MlnToken = await deployContract(
-      'dependencies/token/PreminedToken',
+      'PreminedToken',
       opts,
       ['MLN-T', 18, 'Mln token'],
     );
     deployed.EurToken = await deployContract(
-      'dependencies/token/PreminedToken',
+      'PreminedToken',
       opts,
       ['EUR-T', 18, 'Euro token'],
     );
     deployed.TestingPriceFeed = await deployContract(
-      'prices/TestingPriceFeed',
+      'TestingPriceFeed',
       opts,
       [deployed.EthToken.options.address, 18],
     );
@@ -587,26 +587,19 @@ async function deployEnvironment(environment) {
       .setDecimals(deployed.EurToken.options.address, 18)
       .send(clone(opts));
     deployed.KyberNetworkProxy = await deployContract(
-      "exchanges/thirdparty/kyber/KyberNetworkProxy",
+      "KyberNetworkProxy",
       opts,
       [accounts[0]]
     );
-    deployed.KyberPriceFeed = await deployContract("prices/KyberPriceFeed", opts, [
+    deployed.MockRegistry = await deployContract("MockRegistry", opts);
+    deployed.KyberPriceFeed = await deployContract("KyberPriceFeed", opts, [
+      deployed.MockRegistry.options.address,
       deployed.KyberNetworkProxy.options.address,
       new BigNumber(5 * 10 ** 16).toFixed(),
       deployed.EthToken.options.address,
-      web3.utils.padLeft(web3.utils.toHex('ETH token'), 34),
-      web3.utils.padLeft(web3.utils.toHex('ETH-T'), 10),
-      18,
-      'ethereum.org',
-      mockBytes,
-      [mockAddress, mockAddress],
-      [],
-      [],
-      accounts[0]
     ]);
     deployed.MatchingMarket = await deployContract(
-      'exchanges/thirdparty/oasisdex/MatchingMarket',
+      'MatchingMarket',
       opts,
       [99999999999],
     );
@@ -620,21 +613,21 @@ async function deployEnvironment(environment) {
       )
       .send(clone(opts));
     deployed.PriceTolerance = await deployContract(
-      'fund/policies/risk-management/PriceTolerance',
+      'PriceTolerance',
       opts,
       [10],
     );
-    deployed.Whitelist = await deployContract(
-      'fund/policies/compliance/Whitelist',
-      opts,
-      [[accounts[0]]],
-    );
+    // deployed.Whitelist = await deployContract(
+    //   'Whitelist',
+    //   opts,
+    //   [[accounts[0]]],
+    // );
     deployed.MockVersion = await deployContract(
-      'version/MockVersion',
+      'MockVersion',
       opts,
     );
     deployed.Engine = await deployContract(
-      'engine/Engine',
+      'Engine',
       opts,
       [
         deployed.TestingPriceFeed.options.address,
@@ -643,38 +636,38 @@ async function deployEnvironment(environment) {
       ]
     );
     deployed.MatchingMarketAdapter = await deployContract(
-      'exchanges/MatchingMarketAdapter',
+      'MatchingMarketAdapter',
       opts,
     );
     deployed.AccountingFactory = await deployContract(
-      'fund/accounting/AccountingFactory',
+      'AccountingFactory',
       opts,
     );
     deployed.FeeManagerFactory = await deployContract(
-      'fund/fees/FeeManagerFactory',
+      'FeeManagerFactory',
       opts,
     );
     deployed.ParticipationFactory = await deployContract(
-      'fund/participation/ParticipationFactory',
+      'ParticipationFactory',
       opts,
     );
     deployed.SharesFactory = await deployContract(
-      'fund/shares/SharesFactory',
+      'SharesFactory',
       opts,
     );
     deployed.TradingFactory = await deployContract(
-      'fund/trading/TradingFactory',
+      'TradingFactory',
       opts,
     );
     deployed.VaultFactory = await deployContract(
-      'fund/vault/VaultFactory',
+      'VaultFactory',
       opts,
     );
     deployed.PolicyManagerFactory = await deployContract(
-      'fund/policies/PolicyManagerFactory',
+      'PolicyManagerFactory',
       opts,
     );
-    deployed.FundFactory = await deployContract('factory/FundFactory', opts, [
+    deployed.Version = await deployContract('Version', opts, [
       deployed.AccountingFactory.options.address,
       deployed.FeeManagerFactory.options.address,
       deployed.ParticipationFactory.options.address,
@@ -682,12 +675,12 @@ async function deployEnvironment(environment) {
       deployed.TradingFactory.options.address,
       deployed.VaultFactory.options.address,
       deployed.PolicyManagerFactory.options.address,
-      deployed.MockVersion.options.address,
       deployed.Engine.options.address,
       deployed.TestingPriceFeed.options.address,
       deployed.MlnToken.options.address,
+      deployed.MockRegistry.options.address
     ]);
-    await deployed.MockVersion.methods.setFundFactory(deployed.FundFactory.options.address).send(opts);
+    await deployed.Engine.methods.setVersion(deployed.Version.options.address).send(opts);
     deployed = setupKyberDevEnv(deployed, accounts, opts);
   } else if (environment === 'development-old') {
     [opts.from] = accounts;
