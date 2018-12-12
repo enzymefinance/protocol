@@ -46,8 +46,8 @@ export enum Contracts {
   Vault = 'fund/vault/Vault',
   VaultFactory = 'fund/vault/VaultFactory',
   Version = 'version/VersionInterface',
-  WrapperLock = 'exchanges/thirdparty/ethfinex/Wrapperlock',
-  WrapperlockEth = 'exchanges/thirdparty/ethfinex/WrapperlockEth',
+  WrapperLock = 'exchanges/thirdparty/ethfinex/WrapperLock',
+  WrapperLockEth = 'exchanges/thirdparty/ethfinex/WrapperLockEth',
   ZeroExExchange = 'exchanges/thirdparty/0x/Exchange',
   ZeroExAdapter = 'exchanges/ZeroExV2Adapter',
 }
@@ -152,8 +152,8 @@ export const requireMap = {
     require('../out/version/MockVersion.abi.json'),
   [Contracts.WrapperLock]:
     require(`../out/${Contracts.WrapperLock}.abi.json`),
-  [Contracts.WrapperlockEth]:
-    require(`../out/${Contracts.WrapperlockEth}.abi.json`),
+  [Contracts.WrapperLock]:
+    require(`../out/${Contracts.WrapperLockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
