@@ -102,7 +102,6 @@ describe('trading', () => {
       await shared.weth.methods.balanceOf(shared.vault.options.address).call(),
     );
 
-    console.log('works');
     await shared.trading.methods
       .returnBatchToVault([
         shared.mln.options.address,

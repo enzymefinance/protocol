@@ -183,10 +183,11 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             "Retrieved and passed assets do not match"
         );
 
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),

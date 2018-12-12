@@ -1,10 +1,11 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { randomAddress } from '~/utils/helpers/randomAddress';
+import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import {
   makeOrderSignature,
   takeOrderSignature,
+  cancelOrderSignature,
 } from '~/utils/constants/orderSignatures';
 import {
   BigInteger,
@@ -157,12 +158,12 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          `${randomAddress()}`,
-          `${randomAddress()}`,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
           s.weth.options.address,
           s.mln.options.address,
-          `${randomAddress()}`,
-          `${randomAddress()}`,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
         ],
         [
           `${s.trade1.sellQuantity}`,
@@ -174,7 +175,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        `${randomAddress()}`,
+        randomHexOfSize(20),
         '0x0',
         '0x0',
         '0x0',
@@ -295,12 +296,12 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
         i,
         takeOrderSignature,
         [
-          `${randomAddress()}`,
-          `${randomAddress()}`,
-          `${randomAddress()}`,
-          `${randomAddress()}`,
-          `${randomAddress()}`,
-          `${randomAddress()}`,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          randomHexOfSize(20),
         ],
         [0, 0, 0, 0, 0, 0, `${s.trade2.buyQuantity}`, 0],
         `0x${Number(orderId)
@@ -329,5 +330,79 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     expect(post.fund.mln).toEqual(subtract(pre.fund.mln, s.trade2.buyQuantity));
     expect(post.fund.weth).toEqual(add(pre.fund.weth, s.trade2.sellQuantity));
     expect(post.fund.ether).toEqual(pre.fund.ether);
+  });
+
+  test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
+    const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const exchangePreEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+    await s.fund.trading.methods
+      .returnBatchToVault([s.mln.options.address, s.weth.options.address])
+      .send({ from: s.manager, gas: s.gas });
+    await s.fund.accounting.methods
+      .updateOwnedAssets()
+      .send({ from: s.manager, gas: s.gas });
+    await s.fund.trading.methods
+      .callOnExchange(
+        i,
+        makeOrderSignature,
+        [
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          s.weth.options.address,
+          s.mln.options.address,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+        ],
+        [
+          `${s.trade2.sellQuantity}`,
+          `${s.trade2.buyQuantity}`,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+        ],
+        randomHexOfSize(20),
+        '0x0',
+        '0x0',
+        '0x0',
+      )
+      .send({ from: s.manager, gas: s.gas });
+    const orderId = await s.exchanges[i].methods.last_offer_id().call();
+    await s.fund.trading.methods
+      .callOnExchange(
+        i,
+        cancelOrderSignature,
+        [
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          s.weth.options.address,
+          s.mln.options.address,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+        ],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        `0x${Number(orderId)
+          .toString(16)
+          .padStart(64, '0')}`,
+        '0x0',
+        '0x0',
+        '0x0',
+      )
+      .send({ from: s.manager, gas: s.gas });
+
+    const orderOpen = await s.exchanges[i].methods.isActive(orderId).call();
+    const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const exchangePostEthToken = new BigInteger(
+      await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
+    );
+
+    expect(orderOpen).toBeFalsy();
+    expect(exchangePostEthToken).toEqual(exchangePreEthToken);
+    expect(post.fund.mln).toEqual(pre.fund.mln);
+    expect(post.fund.weth).toEqual(pre.fund.weth);
   });
 });
