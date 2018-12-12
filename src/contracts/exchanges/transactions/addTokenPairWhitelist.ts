@@ -1,4 +1,3 @@
-import { Address } from '@melonproject/token-math/address';
 import {
   isToken,
   hasAddress,
@@ -6,20 +5,25 @@ import {
   TokenInterface,
 } from '@melonproject/token-math/token';
 import { ensure } from '~/utils/guards/ensure';
-import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
+import {
+  transactionFactory,
+  EnhancedExecute,
+  PrepareArgsFunction,
+  GuardFunction,
+} from '~/utils/solidity/transactionFactory';
 
-interface IAddTokenPairWhitelist {
+interface AddTokenPairWhitelistArgs {
   quoteToken: TokenInterface;
   baseToken: TokenInterface;
 }
 
-export const guards = async (
+export const guards: GuardFunction<AddTokenPairWhitelistArgs> = async (
   environment: Environment,
-  contractAddress: Address,
-  { quoteToken, baseToken },
+  { quoteToken, baseToken }: AddTokenPairWhitelistArgs,
 ) => {
+  environment.logger('vbeforeguards', '', 'ASDF');
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
     `Token ${log(quoteToken)} is invalid`,
@@ -28,48 +32,23 @@ export const guards = async (
     isToken(baseToken) && hasAddress(baseToken),
     `Token ${log(baseToken)} is invalid`,
   );
+  environment.logger('afterguards', '', 'ASDF');
 };
 
-export const prepare = async (
-  environment: Environment,
-  contractAddress: Address,
-  { quoteToken, baseToken },
-) => {
-  const contract = getContract(
-    environment,
-    Contracts.MatchingMarket,
-    contractAddress,
-  );
-
-  const transaction = contract.methods.addTokenPairWhitelist(
-    quoteToken.address,
-    baseToken.address,
-  );
-
-  return transaction;
+export const prepareArgs: PrepareArgsFunction<
+  AddTokenPairWhitelistArgs
+> = async (_, { quoteToken, baseToken }: AddTokenPairWhitelistArgs) => {
+  return [quoteToken.address.toString(), baseToken.address.toString()];
 };
 
-export const send = async (environment, transaction) => {
-  const receipt = await transaction.send({
-    from: environment.wallet.address,
-  });
+const addTokenPairWhitelist: EnhancedExecute<
+  AddTokenPairWhitelistArgs,
+  boolean
+> = transactionFactory(
+  'addTokenPairWhitelist',
+  Contracts.MatchingMarket,
+  guards,
+  prepareArgs,
+);
 
-  return receipt;
-};
-
-export const validateReceipt = (receipt, params) => {
-  // TODO
-  return true;
-};
-
-export const addTokenPairWhitelist = async (
-  environment: Environment,
-  contractAddress: Address,
-  params: IAddTokenPairWhitelist,
-) => {
-  await guards(environment, contractAddress, params);
-  const transaction = await prepare(environment, contractAddress, params);
-  const receipt = await send(environment, transaction);
-  const result = validateReceipt(receipt, params);
-  return result;
-};
+export { addTokenPairWhitelist };

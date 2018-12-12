@@ -9,6 +9,5 @@ export const deployAndGetContract = async (
   args: any = [],
 ) => {
   const deployedContract = await deployContract(environment, contract, args);
-
   return getContract(environment, contract, deployedContract);
 };
