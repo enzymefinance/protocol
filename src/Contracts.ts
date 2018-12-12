@@ -70,8 +70,8 @@ export enum Contracts {
   WrapperLockEth = 'WrapperLockEth',
   WrapperRegistryEFX = 'WrapperRegistryEFX',
   Weth = 'WETH',
-  WrapperLock = 'Wrapperlock',
-  WrapperlockEth = 'WrapperlockEth',
+  WrapperLock = 'WrapperLock',
+  WrapperLockEth = 'WrapperLockEth',
   ZeroExAdapter = 'ZeroExV2Adapter',
   ZeroExExchange = 'Exchange',
 }
@@ -218,8 +218,8 @@ export const requireMap = {
     require('../out/WETH9.abi.json'),
   [Contracts.WrapperLock]:
     require(`../out/${Contracts.WrapperLock}.abi.json`),
-  [Contracts.WrapperlockEth]:
-    require(`../out/${Contracts.WrapperlockEth}.abi.json`),
+  [Contracts.WrapperLock]:
+    require(`../out/${Contracts.WrapperLockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
