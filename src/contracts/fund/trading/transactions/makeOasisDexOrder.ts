@@ -21,7 +21,6 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-import { Address } from '@melonproject/token-math/address';
 
 export type MakeOasisDexOrderResult = any;
 

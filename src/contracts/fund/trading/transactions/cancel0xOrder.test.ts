@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
