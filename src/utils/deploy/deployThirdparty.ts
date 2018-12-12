@@ -9,12 +9,13 @@ import {
 } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { ensure } from '../guards/ensure';
+import { Address } from '@melonproject/token-math/address';
 
-export interface Thirdparty {
+export interface ThirdpartyContracts {
   exchanges: {
     kyber: KyberEnvironment;
-    matchingMarket: string;
-    zeroEx: string;
+    matchingMarket: Address;
+    zeroEx: Address;
   };
   tokens: TokenInterface[];
 }
@@ -26,7 +27,7 @@ const deployThirdparty = async (
     createToken('MLN'),
     createToken('ZRX'),
   ],
-): Promise<Thirdparty> => {
+): Promise<ThirdpartyContracts> => {
   ensure(!!tokens.find(t => t.symbol === 'WETH'), 'WETH Token is required');
   ensure(!!tokens.find(t => t.symbol === 'MLN'), 'MLN Token is required');
   ensure(!!tokens.find(t => t.symbol === 'ZRX'), 'ZRX Token is required');

@@ -12,11 +12,12 @@ import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 
-export interface ExchangeConfig {
-  name: string;
-  exchangeAddress: Address;
-  adapterAddress: Address;
-  takesCustody: boolean;
+export interface ExchangeConfigs {
+  [exchange: string]: {
+    exchange: Address;
+    adapter: Address;
+    takesCustody: boolean;
+  };
 }
 
 export interface FeeConfig {
@@ -28,7 +29,7 @@ export interface FeeConfig {
 interface CreateComponentsArgs {
   fundName: string;
   fees: FeeConfig[];
-  exchangeConfigs: ExchangeConfig[];
+  exchangeConfigs: ExchangeConfigs;
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];

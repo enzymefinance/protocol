@@ -1,8 +1,10 @@
 import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
-import { ExchangeConfig } from '~/contracts/factory/transactions/createComponents';
+import { ExchangeConfigs } from '~/contracts/factory/transactions/createComponents';
 import { TokenInterface } from '@melonproject/token-math/token';
+import { MelonContracts } from '../deploy/deploySystem';
+import { ThirdpartyContracts } from '../deploy/deployThirdparty';
 
 export type SignFunction = (
   unsignedTransaction: UnsignedRawTransaction,
@@ -45,19 +47,10 @@ export interface Options {
   readonly gasPrice: string;
 }
 
-export interface Policies {
-  priceTolerance: Address;
-  whitelist: Address;
-}
-
 export interface Deployment {
-  engine: Address;
-  exchangeConfigs: ExchangeConfig[];
-  policies: Policies;
-  priceSource: Address;
-  ranking: Address;
-  tokens: TokenInterface[];
-  version: Address;
+  exchangeConfigs: ExchangeConfigs;
+  melonContracts: MelonContracts;
+  thirdpartyContracts: ThirdpartyContracts;
 }
 
 export interface Environment {

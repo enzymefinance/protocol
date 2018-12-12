@@ -22,7 +22,7 @@ import { increaseTime } from '~/utils/evm';
 
 import { thaw } from './thaw';
 import { sellAndBurnMln } from './sellAndBurnMln';
-import { deploy as deployEngine } from './deploy';
+import { deployEngine } from './deployEngine';
 
 describe('sellAndBurnMln', () => {
   const shared: any = {};

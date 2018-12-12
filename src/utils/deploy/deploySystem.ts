@@ -4,7 +4,7 @@ import { Exchanges } from '~/Contracts';
 
 import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
-import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
+import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
@@ -21,53 +21,65 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
-import { LogLevels, Environment, Deployment } from '../environment/Environment';
+import { LogLevels, Environment } from '../environment/Environment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
-import { Thirdparty } from './deployThirdparty';
+import { ThirdpartyContracts } from './deployThirdparty';
+import { Address } from '@melonproject/token-math/address';
 
-interface MelonContracts {
-  priceSource?: string;
-  engine?: string;
-  version?: string;
-  ranking?: string;
-  registry?: string;
-  adapters?: {
-    kyberAdapter?: string;
-    zeroExAdapter?: string;
-    matchingMarketAdapter?: string;
-  };
-  policies?: {
-    priceTolerance?: string;
-    userWhitelist?: string;
-  };
-  factories?: {
-    accountingFactory?: string;
-    feeManagerFactory?: string;
-    participationFactory?: string;
-    policyManagerFactory?: string;
-    sharesFactory?: string;
-    tradingFactory?: string;
-    vaultFactory?: string;
-  };
+type Partial<T> = { [P in keyof T]?: T[P] };
+export interface Factories {
+  accountingFactory: Address;
+  feeManagerFactory: Address;
+  participationFactory: Address;
+  policyManagerFactory: Address;
+  sharesFactory: Address;
+  tradingFactory: Address;
+  vaultFactory: Address;
 }
+
+type FactoriesDraft = Partial<Factories>;
+
+export interface MelonContracts {
+  priceSource: Address;
+  engine: Address;
+  version: Address;
+  ranking: Address;
+  registry: Address;
+  adapters: {
+    kyberAdapter: Address;
+    zeroExAdapter: Address;
+    matchingMarketAdapter: Address;
+  };
+  policies: {
+    priceTolerance: Address;
+    userWhitelist: Address;
+  };
+  factories: Factories;
+}
+
+type MelonContractsDraft = Partial<MelonContracts>;
+
 /**
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async (
   environment: Environment,
-  thirdparty: Thirdparty,
-  adoptedContracts: MelonContracts = {},
+  thirdpartyContracts: ThirdpartyContracts,
+  adoptedContracts: MelonContractsDraft = {},
 ): Promise<Environment> => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
   const accounts = await environment.eth.getAccounts();
 
-  debug('Deploying system from', accounts[0], { thirdparty, adoptedContracts });
+  debug('Deploying system from', accounts[0], {
+    adoptedContracts,
+    thirdpartyContracts,
+  });
 
-  const wethToken = thirdparty.tokens.find(t => t.symbol === 'WETH');
-  const mlnToken = thirdparty.tokens.find(t => t.symbol === 'MLN');
+  const wethToken = thirdpartyContracts.tokens.find(t => t.symbol === 'WETH');
+  const mlnToken = thirdpartyContracts.tokens.find(t => t.symbol === 'MLN');
 
-  const actualContracts: MelonContracts = {};
+  const actualContracts: MelonContractsDraft = {};
 
   actualContracts.priceSource =
     adoptedContracts.priceSource ||
@@ -94,27 +106,30 @@ export const deploySystem = async (
     (await deployUserWhitelist(environment, [accounts[0]]));
 
   // Factories
-  actualContracts.factories.accountingFactory =
+  const factories: FactoriesDraft = {};
+  factories.accountingFactory =
     R.path(['factories', 'accountingFactory'], adoptedContracts) ||
     (await deployAccountingFactory(environment));
-  actualContracts.factories.feeManagerFactory =
+  factories.feeManagerFactory =
     R.path(['factories', 'feeManagerFactory'], adoptedContracts) ||
     (await deployFeeManagerFactory(environment));
-  actualContracts.factories.participationFactory =
+  factories.participationFactory =
     R.path(['factories', 'participationFactory'], adoptedContracts) ||
     (await deployParticipationFactory(environment));
-  actualContracts.factories.sharesFactory =
+  factories.sharesFactory =
     R.path(['factories', 'sharesFactory'], adoptedContracts) ||
     (await deploySharesFactory(environment));
-  actualContracts.factories.tradingFactory =
+  factories.tradingFactory =
     R.path(['factories', 'tradingFactory'], adoptedContracts) ||
     (await deployTradingFactory(environment));
-  actualContracts.factories.vaultFactory =
+  factories.vaultFactory =
     R.path(['factories', 'vaultFactory'], adoptedContracts) ||
     (await deployVaultFactory(environment));
-  actualContracts.factories.policyManagerFactory =
+  factories.policyManagerFactory =
     R.path(['factories', 'policyManagerFactory'], adoptedContracts) ||
     (await deployPolicyManagerFactory(environment));
+
+  actualContracts.factories = factories as Factories;
 
   const monthInSeconds = 30 * 24 * 60 * 60;
   // Not used since deployer is assumed to be governance
@@ -122,12 +137,11 @@ export const deploySystem = async (
 
   actualContracts.engine =
     adoptedContracts.engine ||
-    (await deployEngine(
-      environment,
-      actualContracts.priceSource,
-      monthInSeconds,
-      mlnToken.address,
-    ));
+    (await deployEngine(environment, {
+      delay: monthInSeconds,
+      mlnToken,
+      priceSource: actualContracts.priceSource,
+    }));
 
   actualContracts.registry =
     adoptedContracts.registry || (await deployRegistry(environment));
@@ -135,14 +149,14 @@ export const deploySystem = async (
   actualContracts.version =
     adoptedContracts.registry ||
     (await deployVersion(environment, {
-      factories: actualContracts.factories,
       engine: actualContracts.engine,
-      priceSource: actualContracts.priceSource,
+      factories: actualContracts.factories,
       mlnToken,
+      priceSource: actualContracts.priceSource,
       registry: actualContracts.registry,
     }));
 
-  await setVersion(environment, engineAddress, {
+  await setVersion(environment, actualContracts.engine, {
     version: actualContracts.version,
   });
 
@@ -152,17 +166,17 @@ export const deploySystem = async (
   const exchangeConfigs = {
     [Exchanges.MatchingMarket]: {
       adapter: actualContracts.adapters.matchingMarketAdapter,
-      exchange: thirdparty.exchanges.matchingMarket,
+      exchange: thirdpartyContracts.exchanges.matchingMarket,
       takesCustody: false,
     },
     [Exchanges.KyberNetwork]: {
       adapter: actualContracts.adapters.kyberAdapter,
-      exchange: thirdparty.exchanges.kyber.kyberNetworkProxy,
+      exchange: thirdpartyContracts.exchanges.kyber.kyberNetworkProxy,
       takesCustody: false,
     },
     [Exchanges.ZeroEx]: {
       adapter: actualContracts.adapters.zeroExAdapter,
-      exchange: thirdparty.exchanges.zeroEx,
+      exchange: thirdpartyContracts.exchanges.zeroEx,
       takesCustody: false,
     },
   };
@@ -176,7 +190,7 @@ export const deploySystem = async (
     });
   }
 
-  for (const asset of thirdparty.tokens) {
+  for (const asset of thirdpartyContracts.tokens) {
     await registerAsset(environment, actualContracts.registry, {
       assetAddress: `${asset.address}`,
       assetSymbol: asset.symbol,
@@ -191,9 +205,9 @@ export const deploySystem = async (
   }
 
   const addresses = {
-    ...actualContracts,
     exchangeConfigs,
-    tokens: thirdparty.tokens,
+    melonContracts: actualContracts as MelonContracts,
+    thirdpartyContracts,
   };
 
   const track = environment.track;
