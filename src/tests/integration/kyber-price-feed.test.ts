@@ -12,6 +12,8 @@ import { isAddress } from '~/utils/checks/isAddress';
 import { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { Environment } from '~/utils/environment/Environment';
+import { Contracts } from '~/Contracts';
+import { deployContract } from '~/utils/solidity/deployContract';
 
 describe('kyber-price-feed', () => {
   const shared: {
@@ -31,12 +33,18 @@ describe('kyber-price-feed', () => {
       shared.tokens.mln,
       shared.tokens.eur,
     ]);
+    shared.mockRegistryAddress = await deployContract(
+      shared.env,
+      Contracts.MockRegistry,
+      null,
+    );
   });
 
   it('Deploy kyber pricefeed', async () => {
     shared.kyberPriceFeed = await deployKyberPriceFeed(shared.env, {
       kyberNetworkProxy: shared.kyberDeploy.kyberNetworkProxy,
       quoteToken: shared.tokens.weth,
+      registry: shared.mockRegistryAddress,
     });
     expect(isAddress(shared.kyberPriceFeed));
   });
