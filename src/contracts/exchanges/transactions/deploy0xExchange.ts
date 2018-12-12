@@ -40,8 +40,12 @@ export const deploy0xExchange = async (
 
   const options = getWeb3Options(environment);
 
-  await erc20ProxyContract.methods.addAuthorizedAddress(exchange).send(options);
-  await exchangeContract.methods.registerAssetProxy(erc20Proxy).send(options);
+  await erc20ProxyContract.methods
+    .addAuthorizedAddress(exchange.toString())
+    .send(options);
+  await exchangeContract.methods
+    .registerAssetProxy(erc20Proxy.toString())
+    .send(options);
   const zrxAssetData = assetDataUtils.encodeERC20AssetData(
     zrxToken.address.toString(),
   );

@@ -48,7 +48,9 @@ const deployThirdparty = async (
 
   const zrxToken = deployedTokens.find(t => t.symbol === 'ZRX');
 
-  const matchingMarket = await deployMatchingMarket(environment, { tokens });
+  const matchingMarket = await deployMatchingMarket(environment, {
+    tokens: deployedTokens,
+  });
   const kyber = await deployKyberEnvironment(environment, deployedTokens);
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
 

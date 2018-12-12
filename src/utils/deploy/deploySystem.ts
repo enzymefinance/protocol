@@ -38,8 +38,6 @@ export interface Factories {
   vaultFactory: Address;
 }
 
-type FactoriesDraft = Partial<Factories>;
-
 export interface MelonContracts {
   priceSource: Address;
   engine: Address;
@@ -86,50 +84,53 @@ export const deploySystem = async (
     (await deployPriceFeed(environment, wethToken));
 
   /// Exchange Adapters
-  actualContracts.adapters.kyberAdapter =
-    R.path(['adapters', 'kyberAdapter'], adoptedContracts) ||
-    (await deployKyberAdapter(environment));
-  actualContracts.adapters.zeroExAdapter =
-    R.path(['adapters', 'zeroExAdapter'], adoptedContracts) ||
-    (await deploy0xAdapter(environment));
-  actualContracts.adapters.matchingMarketAdapter =
-    R.path(['adapters', 'matchingMarketAdapter'], adoptedContracts) ||
-    (await deployMatchingMarketAdapter(environment));
+  actualContracts.adapters = {
+    kyberAdapter:
+      R.path(['adapters', 'kyberAdapter'], adoptedContracts) ||
+      (await deployKyberAdapter(environment)),
+    matchingMarketAdapter:
+      R.path(['adapters', 'matchingMarketAdapter'], adoptedContracts) ||
+      (await deployMatchingMarketAdapter(environment)),
+    zeroExAdapter:
+      R.path(['adapters', 'zeroExAdapter'], adoptedContracts) ||
+      (await deploy0xAdapter(environment)),
+  };
 
   // Policies
   // TODO: Possibility to set policy params?
-  actualContracts.policies.priceTolerance =
-    R.path(['policies', 'priceTolerance'], adoptedContracts) ||
-    (await deployPriceTolerance(environment, 10));
-  actualContracts.policies.userWhitelist =
-    R.path(['policies', 'userWhitelist'], adoptedContracts) ||
-    (await deployUserWhitelist(environment, [accounts[0]]));
+  actualContracts.policies = {
+    priceTolerance:
+      R.path(['policies', 'priceTolerance'], adoptedContracts) ||
+      (await deployPriceTolerance(environment, 10)),
+    userWhitelist:
+      R.path(['policies', 'userWhitelist'], adoptedContracts) ||
+      (await deployUserWhitelist(environment, [accounts[0]])),
+  };
 
   // Factories
-  const factories: FactoriesDraft = {};
-  factories.accountingFactory =
-    R.path(['factories', 'accountingFactory'], adoptedContracts) ||
-    (await deployAccountingFactory(environment));
-  factories.feeManagerFactory =
-    R.path(['factories', 'feeManagerFactory'], adoptedContracts) ||
-    (await deployFeeManagerFactory(environment));
-  factories.participationFactory =
-    R.path(['factories', 'participationFactory'], adoptedContracts) ||
-    (await deployParticipationFactory(environment));
-  factories.sharesFactory =
-    R.path(['factories', 'sharesFactory'], adoptedContracts) ||
-    (await deploySharesFactory(environment));
-  factories.tradingFactory =
-    R.path(['factories', 'tradingFactory'], adoptedContracts) ||
-    (await deployTradingFactory(environment));
-  factories.vaultFactory =
-    R.path(['factories', 'vaultFactory'], adoptedContracts) ||
-    (await deployVaultFactory(environment));
-  factories.policyManagerFactory =
-    R.path(['factories', 'policyManagerFactory'], adoptedContracts) ||
-    (await deployPolicyManagerFactory(environment));
-
-  actualContracts.factories = factories as Factories;
+  actualContracts.factories = {
+    accountingFactory:
+      R.path(['factories', 'accountingFactory'], adoptedContracts) ||
+      (await deployAccountingFactory(environment)),
+    feeManagerFactory:
+      R.path(['factories', 'feeManagerFactory'], adoptedContracts) ||
+      (await deployFeeManagerFactory(environment)),
+    participationFactory:
+      R.path(['factories', 'participationFactory'], adoptedContracts) ||
+      (await deployParticipationFactory(environment)),
+    policyManagerFactory:
+      R.path(['factories', 'policyManagerFactory'], adoptedContracts) ||
+      (await deployPolicyManagerFactory(environment)),
+    sharesFactory:
+      R.path(['factories', 'sharesFactory'], adoptedContracts) ||
+      (await deploySharesFactory(environment)),
+    tradingFactory:
+      R.path(['factories', 'tradingFactory'], adoptedContracts) ||
+      (await deployTradingFactory(environment)),
+    vaultFactory:
+      R.path(['factories', 'vaultFactory'], adoptedContracts) ||
+      (await deployVaultFactory(environment)),
+  };
 
   const monthInSeconds = 30 * 24 * 60 * 60;
   // Not used since deployer is assumed to be governance

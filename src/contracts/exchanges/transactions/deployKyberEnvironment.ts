@@ -177,7 +177,7 @@ export const deployKyberEnvironment = async (
     Contracts.KyberWhiteList,
     await deployContract(environment, Contracts.KyberWhiteList, [
       deployer,
-      kgtTokenAddress,
+      kgtTokenAddress.toString(),
     ]),
   );
   await kyberWhiteListContract.methods
@@ -226,10 +226,10 @@ export const deployKyberEnvironment = async (
     .setWhiteList(kyberWhiteListContract.options.address)
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
-    .setExpectedRate(expectedRateAddress)
+    .setExpectedRate(expectedRateAddress.toString())
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
-    .setFeeBurner(feeBurnerAddress)
+    .setFeeBurner(feeBurnerAddress.toString())
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
     .setKyberProxy(kyberNetworkProxyContract.options.address)
@@ -240,7 +240,7 @@ export const deployKyberEnvironment = async (
   await kyberNetworkContract.methods
     .listPairForReserve(
       kyberReserveContract.options.address,
-      mlnToken.address,
+      mlnToken.address.toString(),
       true,
       true,
       true,

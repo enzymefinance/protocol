@@ -1,9 +1,9 @@
-import { Environment } from '~/utils/environment/Environment';
+import { TokenInterface } from '@melonproject/token-math/token';
 
+import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { addTokenPairWhitelist } from './addTokenPairWhitelist';
-import { TokenInterface } from '@melonproject/token-math/token';
 
 export interface DeployMatchingMarketArgs {
   tokens: TokenInterface[];
