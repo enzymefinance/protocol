@@ -22,6 +22,7 @@ export enum Contracts {
   KyberAdapter = 'KyberAdapter',
   KyberNetwork = 'KyberNetwork',
   KyberNetworkProxy = 'KyberNetworkProxy',
+  KyberPriceFeed = 'KyberPriceFeed',
   KyberReserve = 'KyberReserve',
   KyberWhiteList = 'KyberWhiteList',
   ManagementFee = 'ManagementFee',
@@ -89,7 +90,7 @@ export const requireMap = {
   [Contracts.Engine]:
     require('../out/Engine.abi.json'),
   [Contracts.ExchangeAdapter]:
-      require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
+    require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:
     require('../out/FalsePolicy.abi.json'),
   [Contracts.FeeManager]:
@@ -112,6 +113,8 @@ export const requireMap = {
     require('../out/MatchingMarketAdapter.abi.json'),
   [Contracts.KyberNetwork]:
     require('../out/KyberNetwork.abi.json'),
+  [Contracts.KyberPriceFeed]:
+    require(`../out/${Contracts.KyberPriceFeed}.abi.json`),
   [Contracts.KyberReserve]:
     require('../out/KyberReserve.abi.json'),
   [Contracts.KyberNetworkProxy]:

@@ -62,7 +62,7 @@ const createOrder = async (
     senderAddress: constants.NULL_ADDRESS,
     feeRecipientAddress: constants.NULL_ADDRESS,
     expirationTimeSeconds: new BigNumber(
-      add(latestBlock.timestamp, toBI(duration)).toString(),
+      add(toBI(latestBlock.timestamp), toBI(duration)).toString(),
     ),
     salt: generatePseudoRandomSalt(),
     makerAssetAmount: new BigNumber(`${makerQuantity.quantity}`),

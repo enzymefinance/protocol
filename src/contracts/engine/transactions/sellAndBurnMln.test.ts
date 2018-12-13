@@ -13,7 +13,7 @@ import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { deploy as deployFeed } from '~/contracts/prices/transactions/deploy';
+import { deployTestingPriceFeed as deployFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { update } from '~/contracts/prices/transactions/update';
 import { getContract } from '~/utils/solidity/getContract';
 import { deploy as deployContract } from '~/utils/solidity/deploy';
