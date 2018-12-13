@@ -46,4 +46,5 @@ export {
 export { createShares } from '~/contracts/factory/transactions/createShares';
 export { createTrading } from '~/contracts/factory/transactions/createTrading';
 export { createVault } from '~/contracts/factory/transactions/createVault';
+export { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 export { update } from '~/contracts/prices/transactions/update';
