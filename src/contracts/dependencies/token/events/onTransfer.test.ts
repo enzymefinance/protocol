@@ -1,6 +1,6 @@
 import { Address } from '@melonproject/token-math/address';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '../calls/getToken';
 import { transfer } from '../transactions/transfer';
 import { onTransfer } from '../events/onTransfer';

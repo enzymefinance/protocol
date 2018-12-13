@@ -1,13 +1,18 @@
 import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
-import { ExchangeConfig } from '~/contracts/factory/transactions/beginSetup';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { MelonContracts } from '../deploy/deploySystem';
+import { ThirdpartyContracts } from '../deploy/deployThirdparty';
+import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
 
 export type SignFunction = (
   unsignedTransaction: UnsignedRawTransaction,
   from?: Address,
 ) => Promise<string>;
+
+export enum Tracks {
+  DEFAULT = 'default',
+}
 
 // Subset of NPM logging levels without numbers
 export enum LogLevels {
@@ -41,27 +46,30 @@ export interface Options {
   readonly gasPrice: string;
 }
 
-export interface Policies {
-  priceTolerance: Address;
-  whitelist: Address;
-}
-
 export interface Deployment {
-  engine: Address;
-  exchangeConfigs: ExchangeConfig[];
-  policies: Policies;
-  priceSource: Address;
-  ranking: Address;
-  tokens: TokenInterface[];
-  version: Address;
+  exchangeConfigs: ExchangeConfigs;
+  melonContracts: MelonContracts;
+  thirdpartyContracts: ThirdpartyContracts;
 }
 
 export interface Environment {
-  readonly confirmer?: Function;
   readonly eth: Eth;
-  readonly track: string;
+  readonly track: Tracks;
   readonly wallet?: Wallet;
   readonly options: Options;
   readonly logger: CurriedLogger;
   readonly deployment?: Deployment;
+}
+
+export interface WithDeployment extends Environment {
+  readonly deployment: Deployment;
+}
+
+export interface WithWallet extends Environment {
+  readonly wallet: Wallet;
+}
+
+export interface WithWalletAndDeployment extends Environment {
+  readonly deployment: Deployment;
+  readonly wallet: Wallet;
 }

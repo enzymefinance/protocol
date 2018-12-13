@@ -1,5 +1,3 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploySystem';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
@@ -17,11 +15,16 @@ import {
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { Environment } from '~/utils/environment/Environment';
 
-const shared: any = {};
+const shared: {
+  env?: Environment;
+  [p: string]: any;
+} = {};
 
 beforeAll(async () => {
-  shared.env = await deploySystem(await initTestEnvironment());
+  shared.env = await deployAndInitTestEnv();
   shared.accounts = await shared.env.eth.getAccounts();
 });
 
@@ -34,19 +37,21 @@ test('Set amgu and check its usage', async () => {
   const fundName = `test-fund-${randomString()}`;
   const {
     exchangeConfigs,
-    priceSource,
-    tokens,
-    engine,
-    version,
+    melonContracts,
+    thirdpartyContracts,
   } = shared.env.deployment;
-  const [quoteToken, baseToken] = tokens;
+  const [quoteToken, baseToken] = thirdpartyContracts.tokens;
 
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];
-  const amguToken = await getAmguToken(shared.env, version);
+  const amguToken = await getAmguToken(shared.env, melonContracts.version);
   const amguPrice = createQuantity(amguToken, '1000000000');
-  const oldAmguPrice = await getAmguPrice(shared.env, engine);
-  const newAmguPrice = await setAmguPrice(shared.env, engine, amguPrice);
+  const oldAmguPrice = await getAmguPrice(shared.env, melonContracts.engine);
+  const newAmguPrice = await setAmguPrice(
+    shared.env,
+    melonContracts.engine,
+    amguPrice,
+  );
 
   expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
   expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
@@ -57,7 +62,7 @@ test('Set amgu and check its usage', async () => {
     fees,
     fundName,
     nativeToken: quoteToken,
-    priceSource,
+    priceSource: melonContracts.priceSource,
     quoteToken,
   };
 
@@ -66,12 +71,18 @@ test('Set amgu and check its usage', async () => {
     createQuantity(quoteToken, '2'),
   );
 
-  await update(shared.env, priceSource, [newPrice]);
+  await update(shared.env, melonContracts.priceSource, [newPrice]);
 
-  const [price] = await getPrices(shared.env, priceSource, [baseToken]);
+  const [price] = await getPrices(shared.env, melonContracts.priceSource, [
+    baseToken,
+  ]);
   expect(isEqualPrice(price, newPrice)).toBe(true);
 
-  const prepared = await beginSetup.prepare(shared.env, version, args);
+  const prepared = await beginSetup.prepare(
+    shared.env,
+    melonContracts.version,
+    args,
+  );
 
   const preBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
@@ -79,7 +90,7 @@ test('Set amgu and check its usage', async () => {
 
   const result = await beginSetup.send(
     shared.env,
-    version,
+    melonContracts.version,
     signedTransactionData,
     args,
     undefined,

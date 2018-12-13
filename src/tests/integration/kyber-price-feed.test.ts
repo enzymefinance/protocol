@@ -1,19 +1,25 @@
 import { toFixed } from '@melonproject/token-math/price';
 
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import {
+  deployKyberEnvironment,
+  KyberEnvironment,
+} from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { isAddress } from '~/utils/checks/isAddress';
 import { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
-import { deploy } from '~/utils/solidity/deploy';
+import { Environment } from '~/utils/environment/Environment';
 import { Contracts } from '~/Contracts';
+import { deployContract } from '~/utils/solidity/deployContract';
 
 describe('kyber-price-feed', () => {
   const shared: {
-    [propName: string]: any;
+    env?: Environment;
+    kyberDeploy?: KyberEnvironment;
+    [p: string]: any;
   } = {};
 
   beforeAll(async () => {
@@ -23,13 +29,11 @@ describe('kyber-price-feed', () => {
       mln: await getToken(shared.env, await deployToken(shared.env, 'MLN')),
       weth: await getToken(shared.env, await deployToken(shared.env, 'WETH')),
     };
-    shared.kyberDeploy = await deployKyberEnvironment(
-      shared.env,
+    shared.kyberDeploy = await deployKyberEnvironment(shared.env, [
       shared.tokens.mln,
-      shared.tokens.weth,
       shared.tokens.eur,
-    );
-    shared.mockRegistryAddress = await deploy(
+    ]);
+    shared.mockRegistryAddress = await deployContract(
       shared.env,
       Contracts.MockRegistry,
       null,
@@ -38,9 +42,9 @@ describe('kyber-price-feed', () => {
 
   it('Deploy kyber pricefeed', async () => {
     shared.kyberPriceFeed = await deployKyberPriceFeed(shared.env, {
-      registry: shared.mockRegistryAddress,
-      kyberNetworkProxy: shared.kyberDeploy.kyberNetworkProxyAddress,
+      kyberNetworkProxy: shared.kyberDeploy.kyberNetworkProxy,
       quoteToken: shared.tokens.weth,
+      registry: shared.mockRegistryAddress,
     });
     expect(isAddress(shared.kyberPriceFeed));
   });

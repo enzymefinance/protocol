@@ -1,9 +1,6 @@
-import * as R from 'ramda';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deploySystem } from '~/utils/deploySystem';
 import {
   createOrder,
   signOrder,
@@ -11,18 +8,19 @@ import {
 } from '~/contracts/exchanges/thirdparty/0x';
 import { make0xOrder } from './make0xOrder';
 import { cancel0xOrder } from './cancel0xOrder';
+import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
+import { Exchanges } from '~/Contracts';
 
 describe('cancel0xOrder', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
     shared.settings = await setupInvestedTestFund(shared.env);
 
-    shared.zeroExAddress = shared.env.deployment.exchangeConfigs.find(
-      R.propEq('name', 'ZeroEx'),
-    ).exchangeAddress;
+    shared.zeroExAddress =
+      shared.env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
     shared.mln = getTokenBySymbol(shared.env, 'MLN');
     shared.weth = getTokenBySymbol(shared.env, 'WETH');

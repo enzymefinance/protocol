@@ -1,6 +1,6 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice, isEqual } from '@melonproject/token-math/price';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { update } from './update';
 import { deployTestingPriceFeed } from './deployTestingPriceFeed';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';

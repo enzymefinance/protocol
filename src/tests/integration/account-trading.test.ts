@@ -1,23 +1,26 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deploySystem } from '~/utils/deploySystem';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { Environment } from '~/utils/environment/Environment';
+import { Exchanges } from '~/Contracts';
 
 describe('account-trading', () => {
-  const shared: any = {};
+  const shared: {
+    env?: Environment;
+    [p: string]: any;
+  } = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
   it('Happy path', async () => {
-    const matchingMarketAddress = shared.env.deployment.exchangeConfigs.find(
-      o => o.name === 'MatchingMarket',
-    ).exchangeAddress;
+    const matchingMarketAddress =
+      shared.env.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     const mlnToken = getTokenBySymbol(shared.env, 'MLN');
     const wethToken = getTokenBySymbol(shared.env, 'WETH');

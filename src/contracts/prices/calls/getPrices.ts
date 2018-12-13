@@ -6,10 +6,11 @@ import { Environment } from '~/utils/environment/Environment';
 import { getQuoteToken } from '../calls/getQuoteToken';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { Address } from '@melonproject/token-math/address';
 
 export const getPrices = async (
   environment: Environment,
-  contractAddress: string,
+  contractAddress: Address,
   tokens: TokenInterface[],
   preventCancelDown: boolean = false,
 ): Promise<PriceInterface[]> => {

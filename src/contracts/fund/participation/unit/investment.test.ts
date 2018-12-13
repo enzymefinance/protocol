@@ -1,5 +1,5 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deployMockSystem';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
 

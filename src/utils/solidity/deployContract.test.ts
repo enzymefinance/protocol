@@ -1,10 +1,10 @@
 import { Environment } from '~/utils/environment/Environment';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
-import { deploy } from './deploy';
+import { deployContract } from './deployContract';
 import { Contracts } from '~/Contracts';
 
-describe('deploy', () => {
+describe('deployContract', () => {
   const shared: any = {};
 
   beforeAll(async () => {
@@ -12,7 +12,7 @@ describe('deploy', () => {
   });
 
   it('Happy path', async () => {
-    const address = await deploy(shared.env, Contracts.PreminedToken, [
+    const address = await deployContract(shared.env, Contracts.PreminedToken, [
       'TEST',
       18,
       'Test Token',
@@ -30,7 +30,7 @@ describe('deploy', () => {
       },
     };
     await expect(
-      deploy(environment, Contracts.MatchingMarket, [99999999999]),
+      deployContract(environment, Contracts.MatchingMarket, [99999999999]),
     ).rejects.toThrow('gas limit:');
   });
 });

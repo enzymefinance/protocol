@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import * as winston from 'winston';
-import { CurriedLogger } from './Environment';
+import { CurriedLogger } from '../../utils/environment/Environment';
 
 const { combine, timestamp, printf } = winston.format;
 

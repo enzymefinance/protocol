@@ -1,9 +1,7 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploySystem';
-import { deploy } from '~/utils/solidity/deploy';
-import { Contracts } from '~/Contracts';
+import { deployContract } from '~/utils/solidity/deployContract';
+import { Contracts, Exchanges } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
@@ -39,13 +37,17 @@ import {
   multiply,
 } from '@melonproject/token-math/bigInteger';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { LogLevels } from '~/utils/environment/Environment';
+import { LogLevels, Environment } from '~/utils/environment/Environment';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 
 describe('generalWalkthrough', () => {
-  const shared: any = {};
+  const shared: {
+    env?: Environment;
+    [p: string]: any;
+  } = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
@@ -53,16 +55,16 @@ describe('generalWalkthrough', () => {
     const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
     const fundName = `test-fund-${randomString()}`;
 
-    const deployment = shared.env.deployment;
-
     const {
-      engine,
       exchangeConfigs,
-      priceSource,
-      tokens,
-      policies,
-      version,
-    } = deployment;
+      melonContracts,
+      thirdpartyContracts,
+    } = shared.env.deployment;
+
+    const { priceSource, policies, version, engine } = melonContracts;
+
+    const tokens = thirdpartyContracts.tokens;
+
     const [quoteToken, baseToken] = tokens;
     const defaultTokens = [quoteToken, baseToken];
     const amguToken = await getAmguToken(shared.env, version);
@@ -73,13 +75,13 @@ describe('generalWalkthrough', () => {
     const managementFee = getContract(
       shared.env,
       Contracts.ManagementFee,
-      await deploy(shared.env, Contracts.ManagementFee, []),
+      await deployContract(shared.env, Contracts.ManagementFee, []),
     );
 
     const performanceFee = getContract(
       shared.env,
       Contracts.PerformanceFee,
-      await deploy(shared.env, Contracts.PerformanceFee, []),
+      await deployContract(shared.env, Contracts.PerformanceFee, []),
     );
 
     const fees = [
@@ -143,7 +145,7 @@ describe('generalWalkthrough', () => {
 
     await register(shared.env, settings.policyManagerAddress, {
       method: FunctionSignatures.executeRequestFor,
-      policy: policies.whitelist,
+      policy: policies.userWhitelist,
     });
 
     const newPrice = getPrice(
@@ -179,24 +181,19 @@ describe('generalWalkthrough', () => {
 
     await getFundHoldings(shared.env, settings.accountingAddress);
 
-    const matchingMarketAddress = shared.env.deployment.exchangeConfigs.find(
-      o => o.name === 'MatchingMarket',
-    ).exchangeAddress;
+    const matchingMarketAddress =
+      shared.env.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     const order1 = await makeOrderFromAccountOasisDex(
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(shared.env.deployment.tokens[1], 2),
-        sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+        buy: createQuantity(tokens[1], 2),
+        sell: createQuantity(tokens[0], 0.1),
       },
     );
-    expect(order1.buy).toEqual(
-      createQuantity(shared.env.deployment.tokens[1], 2),
-    );
-    expect(order1.sell).toEqual(
-      createQuantity(shared.env.deployment.tokens[0], 0.1),
-    );
+    expect(order1.buy).toEqual(createQuantity(tokens[1], 2));
+    expect(order1.sell).toEqual(createQuantity(tokens[0], 0.1));
     debug(`Made order from account with id ${order1.id}`);
 
     await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -212,17 +209,13 @@ describe('generalWalkthrough', () => {
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(shared.env.deployment.tokens[1], 2),
-        sell: createQuantity(shared.env.deployment.tokens[0], 0.1),
+        buy: createQuantity(tokens[1], 2),
+        sell: createQuantity(tokens[0], 0.1),
       },
     );
 
-    expect(order2.buy).toEqual(
-      createQuantity(shared.env.deployment.tokens[1], 2),
-    );
-    expect(order2.sell).toEqual(
-      createQuantity(shared.env.deployment.tokens[0], 0.1),
-    );
+    expect(order2.buy).toEqual(createQuantity(tokens[1], 2));
+    expect(order2.sell).toEqual(createQuantity(tokens[0], 0.1));
     debug(`Made order from account with id ${order2.id}`);
 
     await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -235,9 +228,8 @@ describe('generalWalkthrough', () => {
       shared.env,
       settings.tradingAddress,
       {
-        maker: settings.tradingAddress,
-        makerQuantity: createQuantity(shared.env.deployment.tokens[0], 0.1),
-        takerQuantity: createQuantity(shared.env.deployment.tokens[1], 2),
+        makerQuantity: createQuantity(tokens[0], 0.1),
+        takerQuantity: createQuantity(tokens[1], 2),
       },
     );
     debug(`Made order from fund with id ${orderFromFund.id}`);
@@ -261,16 +253,12 @@ describe('generalWalkthrough', () => {
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(shared.env.deployment.tokens[0], 0.1),
-        sell: createQuantity(shared.env.deployment.tokens[1], 2),
+        buy: createQuantity(tokens[0], 0.1),
+        sell: createQuantity(tokens[1], 2),
       },
     );
-    expect(order3.sell).toEqual(
-      createQuantity(shared.env.deployment.tokens[1], 2),
-    );
-    expect(order3.buy).toEqual(
-      createQuantity(shared.env.deployment.tokens[0], 0.1),
-    );
+    expect(order3.sell).toEqual(createQuantity(tokens[1], 2));
+    expect(order3.buy).toEqual(createQuantity(tokens[0], 0.1));
     debug(`Made order from account with id ${order3.id}`);
 
     await takeOasisDexOrder(shared.env, settings.tradingAddress, {

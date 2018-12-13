@@ -1,6 +1,6 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deployMockSystem';
-import { deploy } from '~/utils/solidity/deploy';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
@@ -20,12 +20,12 @@ describe('feeManager', () => {
     shared.feeA = getContract(
       shared.env,
       Contracts.MockFee,
-      await deploy(shared.env, Contracts.MockFee, []),
+      await deployContract(shared.env, Contracts.MockFee, []),
     );
     shared.feeB = getContract(
       shared.env,
       Contracts.MockFee,
-      await deploy(shared.env, Contracts.MockFee, []),
+      await deployContract(shared.env, Contracts.MockFee, []),
     );
     shared.feeArray = [
       {

@@ -1,6 +1,6 @@
 import web3EthAbi from 'web3-eth-abi';
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts } from '~/Contracts';
+import { Contracts, Exchanges } from '~/Contracts';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
@@ -43,9 +43,8 @@ const isOasisDexTakePermitted = async (
     policyManagerAddress,
   );
 
-  const exchangeAddress = environment.deployment.exchangeConfigs.find(
-    o => o.name === 'MatchingMarket',
-  ).exchangeAddress;
+  const exchangeAddress =
+    environment.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
   const result = await policyManager.methods
     .preValidate(
@@ -53,9 +52,9 @@ const isOasisDexTakePermitted = async (
       [
         '0x0000000000000000000000000000000000000000', // orderAddresses[0],
         tradingAddress.toString(), // orderAddresses[1],
-        makerQuantity.token.address, // orderAddresses[2],
-        takerQuantity.token.address, // orderAddresses[3],
-        exchangeAddress, // exchanges[exchangeIndex].exchange
+        makerQuantity.token.address.toString(), // orderAddresses[2],
+        takerQuantity.token.address.toString(), // orderAddresses[3],
+        exchangeAddress.toString(), // exchanges[exchangeIndex].exchange
       ],
       [
         makerQuantity.quantity.toString(), // orderValues[0],

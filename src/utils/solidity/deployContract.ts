@@ -6,22 +6,23 @@ import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
 import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
+import { Address } from '@melonproject/token-math/address';
 
 // TODO: Refactor all callers to only use the Contract interface
-type Deploy = {
+type DeployContract = {
   (
     environment: Environment,
     pathToSolidityFile: string,
     args?: TransactionArgs,
-  ): Promise<string>;
+  ): Promise<Address>;
   (
     environment: Environment,
     contract: Contracts,
     args: TransactionArgs,
-  ): Promise<string>;
+  ): Promise<Address>;
 };
 
-export const deploy: Deploy = async (
+export const deployContract: DeployContract = async (
   environment: Environment,
   pathToSolidityFile,
   args = [],
@@ -87,5 +88,5 @@ export const deploy: Deploy = async (
   // );
 
   debug('Deployed: ', pathToSolidityFile, instance.options.address);
-  return instance.options.address;
+  return new Address(instance.options.address);
 };

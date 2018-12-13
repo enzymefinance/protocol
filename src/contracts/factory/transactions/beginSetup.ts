@@ -10,11 +10,14 @@ import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
-export interface ExchangeConfig {
-  name: string;
-  exchangeAddress: Address;
-  adapterAddress: Address;
-  takesCustody: boolean;
+// import ensure from '~/utils/guards/ensure';
+
+export interface ExchangeConfigs {
+  [exchange: string]: {
+    exchange: Address;
+    adapter: Address;
+    takesCustody: boolean;
+  };
 }
 
 export interface FeeConfig {
@@ -26,7 +29,7 @@ export interface FeeConfig {
 interface BeginSetupArgs {
   fundName: string;
   fees: FeeConfig[];
-  exchangeConfigs: ExchangeConfig[];
+  exchangeConfigs: ExchangeConfigs;
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
@@ -52,15 +55,14 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
     defaultTokens,
     priceSource,
   },
-  contractAddress,
 ) => {
-  const exchangeAddresses = exchangeConfigs.map(e =>
-    e.exchangeAddress.toString(),
+  const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
+    e.exchange.toString(),
   );
-  const adapterAddresses = exchangeConfigs.map(e =>
-    e.adapterAddress.toString(),
+  const adapterAddresses = Object.values(exchangeConfigs).map(e =>
+    e.adapter.toString(),
   );
-  const takesCustody = exchangeConfigs.map(e => e.takesCustody);
+  const takesCustody = Object.values(exchangeConfigs).map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const nativeTokenAddress = nativeToken.address;

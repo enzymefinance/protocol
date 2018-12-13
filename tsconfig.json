@@ -16,6 +16,7 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "removeComments": false,
+    "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "lib",
     "baseUrl": ".",
