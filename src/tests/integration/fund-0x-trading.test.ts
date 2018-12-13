@@ -12,12 +12,11 @@ import {
 import { fillOrder } from '~/contracts/exchanges/thirdparty/0x';
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
+import { getAssetProxy } from '~/contracts/exchanges/thirdparty/0x/calls/getAssetProxy';
 import {
   BigInteger,
   add,
   subtract,
-  multiply,
-  divide,
   power,
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
@@ -25,13 +24,8 @@ import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { Contracts } from '~/Contracts';
-import { deploy } from '~/utils/solidity/deploy';
-import { sign } from '~/utils/environment/sign';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 // import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 
 // mock data
@@ -53,6 +47,10 @@ beforeAll(async () => {
   s.opts = { from: s.deployer, gas: s.gas };
   s.numberofExchanges = 1;
   s.exchanges = [s.matchingMarket];
+  s.erc20ProxyAddress = await getAssetProxy(
+    s.environment,
+    s.zeroExExchange.options.address,
+  );
 
   await s.version.methods
     .createComponents(
@@ -158,10 +156,7 @@ test('third party makes and validates an off-chain order', async () => {
 
 test('manager takes order (half the total quantity) through 0x adapter', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const fillQuantity = divide(
-    s.signedOrder.takerAssetAmount,
-    new BigInteger(2),
-  );
+  const fillQuantity = s.signedOrder.takerAssetAmount;
   await s.fund.trading.methods
     .callOnExchange(
       0,
@@ -191,27 +186,23 @@ test('manager takes order (half the total quantity) through 0x adapter', async (
     )
     .send({ from: s.manager, gas: s.gas });
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const heldInExchange = await s.fund.trading.methods
+    .updateAndGetQuantityHeldInExchange(s.weth.options.address)
+    .call();
 
-  // t.is(Number(heldInExchange), 0);
-  // t.deepEqual(
-  //   post.deployer.MlnToken,
-  //   pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2)),
-  // );
-  // t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
-  // t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-  // t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-  // t.deepEqual(post.investor.ether, pre.investor.ether);
-  // t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-  // t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  // t.deepEqual(
-  //   post.fund.MlnToken,
-  //   pre.fund.MlnToken.add(trade1.sellQuantity.div(2)),
-  // );
-  // t.deepEqual(
-  //   post.deployer.EthToken,
-  //   pre.deployer.EthToken.plus(fillQuantity),
-  // );
-  // t.deepEqual(post.fund.ether, pre.fund.ether);
+  expect(heldInExchange).toBe('0');
+  expect(post.deployer.mln).toEqual(
+    subtract(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.fund.weth).toEqual(
+    subtract(pre.fund.weth, s.signedOrder.takerAssetAmount),
+  );
+  expect(post.fund.mln).toEqual(
+    add(pre.fund.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.deployer.weth).toEqual(
+    add(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+  );
 });
 
 test('third party makes and validates an off-chain order', async () => {
@@ -257,10 +248,10 @@ test('third party makes and validates an off-chain order', async () => {
 
 test('fund with enough ZRX takes the above order', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const fillQuantity = divide(
-    s.signedOrder.takerAssetAmount,
-    new BigInteger(2),
+  const preFundZrx = new BigInteger(
+    await s.zrx.methods.balanceOf(s.fund.vault.options.address).call(),
   );
+  const fillQuantity = s.signedOrder.takerAssetAmount;
   await s.fund.trading.methods
     .callOnExchange(
       0,
@@ -290,27 +281,27 @@ test('fund with enough ZRX takes the above order', async () => {
     )
     .send({ from: s.manager, gas: s.gas });
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postFundZrx = new BigInteger(
+    await s.zrx.methods.balanceOf(s.fund.vault.options.address).call(),
+  );
+  const heldInExchange = await s.fund.trading.methods
+    .updateAndGetQuantityHeldInExchange(s.weth.options.address)
+    .call();
 
-  // t.is(Number(heldInExchange), 0);
-  // t.deepEqual(
-  //   post.deployer.MlnToken,
-  //   pre.deployer.MlnToken.minus(trade1.sellQuantity.div(2)),
-  // );
-  // t.deepEqual(post.fund.EthToken, pre.fund.EthToken.minus(fillQuantity));
-  // t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-  // t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-  // t.deepEqual(post.investor.ether, pre.investor.ether);
-  // t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-  // t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  // t.deepEqual(
-  //   post.fund.MlnToken,
-  //   pre.fund.MlnToken.add(trade1.sellQuantity.div(2)),
-  // );
-  // t.deepEqual(
-  //   post.deployer.EthToken,
-  //   pre.deployer.EthToken.plus(fillQuantity),
-  // );
-  // t.deepEqual(post.fund.ether, pre.fund.ether);
+  expect(heldInExchange).toBe('0');
+  expect(postFundZrx).toEqual(subtract(preFundZrx, s.signedOrder.takerFee));
+  expect(post.deployer.mln).toEqual(
+    subtract(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.fund.weth).toEqual(
+    subtract(pre.fund.weth, s.signedOrder.takerAssetAmount),
+  );
+  expect(post.fund.mln).toEqual(
+    add(pre.fund.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.deployer.weth).toEqual(
+    add(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+  );
 });
 
 test('Make order through the fund', async () => {
@@ -329,7 +320,6 @@ test('Make order through the fund', async () => {
     s.environment,
     s.zeroExExchange.options.address,
     {
-      feeRecipientAddress: s.investor,
       makerAddress,
       makerQuantity,
       takerQuantity,
@@ -364,12 +354,17 @@ test('Make order through the fund', async () => {
       s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
-  // const makerAssetAllowance = new BigNumber(
-  //   await mlnToken.methods
-  //     .allowance(fund.trading.options.address, erc20Proxy.options.address)
-  //     .call(),
-  // );
-  // t.deepEqual(makerAssetAllowancqe, order.makerAssetAmount);
+  const makerAssetAllowance = new BigInteger(
+    await s.mln.methods
+      .allowance(
+        s.fund.trading.options.address,
+        s.erc20ProxyAddress.toLowerCase(),
+      )
+      .call(),
+  );
+  expect(makerAssetAllowance).toEqual(
+    new BigInteger(s.signedOrder.makerAssetAmount),
+  );
 });
 
 // test.serial(
@@ -409,8 +404,7 @@ test('Make order through the fund', async () => {
 // );
 
 test('Third party takes the order made by the fund', async () => {
-  // s.accounts = await s.environment.eth.getAccounts();
-  // s.envTaker = withDifferentAccount(s.environment, s.accounts[1]);
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const result = await fillOrder(
     s.environment,
     s.zeroExExchange.options.address,
@@ -418,42 +412,27 @@ test('Third party takes the order made by the fund', async () => {
       signedOrder: s.signedOrder,
     },
   );
+  await s.fund.trading.methods
+    .returnBatchToVault([s.mln.options.address, s.weth.options.address])
+    .send({ from: s.manager, gas: s.gas });
+
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+  console.log(pre.fund);
+  console.log(post.fund);
   expect(result).toBeTruthy();
-  // const pre = await getAllBalances(deployed, accounts, fund);
-  // const preTPFundMln = new BigNumber(
-  //   await mlnToken.methods
-  //     .balanceOf(thirdPartyFund.vault.options.address)
-  //     .call(),
-  // );
-  // const preTPFundEthToken = new BigNumber(
-  //   await ethToken.methods
-  //     .balanceOf(thirdPartyFund.vault.options.address)
-  //     .call(),
-  // );
-  // await fund.trading.methods
-  //   .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
-  //   .send({ from: manager, gas: config.gas })
-  // const postTPFundMln = new BigNumber(
-  //   await mlnToken.methods
-  //     .balanceOf(thirdPartyFund.vault.options.address)
-  //     .call(),
-  // );
-  // const postTPFundEthToken = new BigNumber(
-  //   await ethToken.methods
-  //     .balanceOf(thirdPartyFund.vault.options.address)
-  //     .call(),
-  // );
-  // const post = await getAllBalances(deployed, accounts, fund);
-  // t.deepEqual(post.fund.EthToken, pre.fund.EthToken.plus(trade1.buyQuantity));
-  // t.deepEqual(postTPFundEthToken, preTPFundEthToken.minus(trade1.buyQuantity));
-  // t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-  // t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-  // t.deepEqual(post.investor.ether, pre.investor.ether);
-  // t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-  // t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-  // t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.minus(trade1.sellQuantity));
-  // t.deepEqual(postTPFundMln, preTPFundMln.plus(trade1.sellQuantity));
-  // t.deepEqual(post.fund.ether, pre.fund.ether);
+  expect(post.fund.weth).toEqual(
+    add(pre.fund.weth, s.signedOrder.takerAssetAmount),
+  );
+  expect(post.fund.mln).toEqual(
+    subtract(pre.fund.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.deployer.weth).toEqual(
+    subtract(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+  );
+  expect(post.deployer.mln).toEqual(
+    add(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+  );
 });
 
 test("Fund can make another make order for same asset (After it's inactive)", async () => {
@@ -507,6 +486,17 @@ test("Fund can make another make order for same asset (After it's inactive)", as
       s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
+  const makerAssetAllowance = new BigInteger(
+    await s.weth.methods
+      .allowance(
+        s.fund.trading.options.address,
+        s.erc20ProxyAddress.toLowerCase(),
+      )
+      .call(),
+  );
+  expect(makerAssetAllowance).toEqual(
+    new BigInteger(s.signedOrder.makerAssetAmount),
+  );
 });
 
 test('Fund can cancel the order using just the orderId', async () => {
@@ -533,11 +523,15 @@ test('Fund can cancel the order using just the orderId', async () => {
   const isOrderCancelled = await s.zeroExExchange.methods
     .cancelled(orderHashHex)
     .call();
-  // const makerAssetAllowance = new BigInteger(
-  //   await s.mln.methods
-  //     .allowance(s.fund.trading.options.address, erc20Proxy.options.address)
-  //     .call(),
-  // );
+
+  const makerAssetAllowance = new BigInteger(
+    await s.mln.methods
+      .allowance(
+        s.fund.trading.options.address,
+        s.erc20ProxyAddress.toLowerCase(),
+      )
+      .call(),
+  );
+  expect(makerAssetAllowance).toEqual(new BigInteger(0));
   expect(isOrderCancelled).toBeTruthy();
-  // t.deepEqual(makerAssetAllowance, new BigNumber(0));
 });
