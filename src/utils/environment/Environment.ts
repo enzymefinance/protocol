@@ -1,7 +1,7 @@
 import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
-import { ExchangeConfig } from '~/contracts/factory/transactions/createComponents';
+import { ExchangeConfig } from '~/contracts/factory/transactions/beginSetup';
 import { TokenInterface } from '@melonproject/token-math/token';
 
 export type SignFunction = (

@@ -1,8 +1,14 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { randomString } from '~/utils/helpers/randomString';
-import { createComponents } from '~/contracts/factory/transactions/createComponents';
-import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
-import { setupFund } from '~/contracts/factory/transactions/setupFund';
+import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
+import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
+import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
+import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
+import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
+import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
+import { createShares } from '~/contracts/factory/transactions/createShares';
+import { createTrading } from '~/contracts/factory/transactions/createTrading';
+import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
@@ -22,7 +28,7 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const [weth, mln] = tokens;
   const fees = [];
 
-  await createComponents(environment, version, {
+  await beginSetup(environment, version, {
     defaultTokens: [weth, mln],
     exchangeConfigs,
     fees,
@@ -31,8 +37,14 @@ const setupInvestedTestFund = async (environment: Environment) => {
     priceSource,
     quoteToken: weth,
   });
-  await continueCreation(environment, version);
-  const hubAddress = await setupFund(environment, version);
+  await createAccounting(environment, version);
+  await createFeeManager(environment, version);
+  await createParticipation(environment, version);
+  await createPolicyManager(environment, version);
+  await createShares(environment, version);
+  await createTrading(environment, version);
+  await createVault(environment, version);
+  const hubAddress = await completeSetup(environment, version);
   const settings = await getSettings(environment, hubAddress);
 
   const investmentAmount = createQuantity(weth, 1);

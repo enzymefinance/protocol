@@ -1,4 +1,3 @@
-import web3EthAbi from 'web3-eth-abi';
 import { Address } from '@melonproject/token-math/address';
 import {
   transactionFactory,

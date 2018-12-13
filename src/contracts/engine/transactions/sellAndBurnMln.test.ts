@@ -60,12 +60,7 @@ describe('sellAndBurnMln', () => {
       feedAddress,
     );
     shared.delay = 30 * 24 * 60 * 60;
-    shared.engineAddress = await deployEngine(
-      shared.env,
-      shared.feed.options.address,
-      shared.delay,
-      shared.mln.options.address,
-    );
+    shared.engineAddress = await deployEngine(shared.env, shared.delay);
     shared.priceSource = await getContract(
       shared.env,
       Contracts.TestingPriceFeed,

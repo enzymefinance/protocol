@@ -13,7 +13,7 @@ import { Environment } from '~/utils/environment/Environment';
  * Arguments can be overriden to deploy mock or real contracts as needed.
  */
 export const deployMockSystem = async (
-  environment: Environment,
+  env: Environment,
   {
     accountingContract = Contracts.MockAccounting,
     engineContract = Contracts.Engine,
@@ -31,95 +31,83 @@ export const deployMockSystem = async (
     rankingContract = Contracts.FundRanking,
   } = {},
 ) => {
-  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
-  const accounts = await environment.eth.getAccounts();
+  const debug = env.logger('melon:protocol:utils', LogLevels.DEBUG);
+  const accounts = await env.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
-  const wethTokenAddress = await deployToken(environment, 'ETH');
-  const mlnTokenAddress = await deployToken(environment, 'MLN');
+  const wethTokenAddress = await deployToken(env, 'ETH');
+  const mlnTokenAddress = await deployToken(env, 'MLN');
   const baseTokenAddress = mlnTokenAddress;
   const quoteTokenAddress = wethTokenAddress;
-  const quoteToken = await getToken(environment, quoteTokenAddress);
-  const baseToken = await getToken(environment, baseTokenAddress);
-  const mln = await getContract(
-    environment,
-    Contracts.StandardToken,
-    mlnTokenAddress,
-  );
+  const quoteToken = await getToken(env, quoteTokenAddress);
+  const baseToken = await getToken(env, baseTokenAddress);
+  const mln = await getContract(env, Contracts.StandardToken, mlnTokenAddress);
   const weth = await getContract(
-    environment,
+    env,
     Contracts.StandardToken,
     wethTokenAddress,
   );
 
-  const priceSource = await deployAndGetContract(
-    environment,
-    priceSourceContract,
-    [quoteToken.address, quoteToken.decimals],
-  );
+  const priceSource = await deployAndGetContract(env, priceSourceContract, [
+    quoteToken.address,
+    quoteToken.decimals,
+  ]);
 
-  const matchingMarketAddress = await deployMatchingMarket(environment);
-  await addTokenPairWhitelist(environment, matchingMarketAddress, {
+  const matchingMarketAddress = await deployMatchingMarket(env);
+  await addTokenPairWhitelist(env, matchingMarketAddress, {
     baseToken,
     quoteToken,
   });
 
   const matchingMarketAdapter = await deployAndGetContract(
-    environment,
+    env,
     Contracts.MatchingMarketAdapter,
   );
 
-  const version = await deployAndGetContract(versionContract);
-  const registry = await deployAndGetContract(registryContract);
-  await registry.methods.setPriceSource(priceSource.options.address);
-  await registry.methods.setMlnToken(`${mlnTokenAddress}`);
+  const version = await deployAndGetContract(env, versionContract);
+  const registry = await deployAndGetContract(env, registryContract);
+  await registry.methods
+    .setPriceSource(priceSource.options.address)
+    .send({ from: accounts[0] });
+  await registry.methods
+    .setMlnToken(`${mlnTokenAddress}`)
+    .send({ from: accounts[0] });
 
-  const ranking = await deployAndGetContract(rankingContract);
+  const ranking = await deployAndGetContract(env, rankingContract);
 
-  const hub = await deployAndGetContract(environment, hubContract);
+  const hub = await deployAndGetContract(env, hubContract);
   await hub.methods
-    .setManager(environment.wallet.address)
-    .send({ from: environment.wallet.address });
-  await hub.methods.setName('Mock').send({ from: environment.wallet.address });
+    .setManager(env.wallet.address)
+    .send({ from: env.wallet.address });
+  await hub.methods.setName('Mock').send({ from: env.wallet.address });
 
-  const accounting = await deployAndGetContract(
-    environment,
-    accountingContract,
-    [
-      hub.options.address,
-      quoteToken.address,
-      wethTokenAddress,
-      [quoteToken.address, baseToken.address],
-    ],
-  );
+  const accounting = await deployAndGetContract(env, accountingContract, [
+    hub.options.address,
+    quoteToken.address,
+    wethTokenAddress,
+    [quoteToken.address, baseToken.address],
+  ]);
 
-  const feeManager = await deployAndGetContract(
-    environment,
-    feeManagerContract,
-    [hub.options.address, fees],
-  );
+  const feeManager = await deployAndGetContract(env, feeManagerContract, [
+    hub.options.address,
+    fees,
+  ]);
 
-  const policyManager = await deployAndGetContract(
-    environment,
-    policyManagerContract,
-    [hub.options.address],
-  );
-
-  const participation = await deployAndGetContract(
-    environment,
-    participationContract,
-    [
-      hub.options.address,
-      [quoteToken.address, baseToken.address],
-      registry.options.address,
-    ],
-  );
-
-  const shares = await deployAndGetContract(environment, sharesContract, [
+  const policyManager = await deployAndGetContract(env, policyManagerContract, [
     hub.options.address,
   ]);
 
-  const trading = await deployAndGetContract(environment, tradingContract, [
+  const participation = await deployAndGetContract(env, participationContract, [
+    hub.options.address,
+    [quoteToken.address, baseToken.address],
+    registry.options.address,
+  ]);
+
+  const shares = await deployAndGetContract(env, sharesContract, [
+    hub.options.address,
+  ]);
+
+  const trading = await deployAndGetContract(env, tradingContract, [
     hub.options.address,
     [matchingMarketAddress],
     [matchingMarketAdapter.options.address],
@@ -127,18 +115,20 @@ export const deployMockSystem = async (
     registry.options.address,
   ]);
 
-  const vault = await deployAndGetContract(environment, vaultContract, [
+  const vault = await deployAndGetContract(env, vaultContract, [
     hub.options.address,
   ]);
 
   // TODO: replace with raw function when MockEngine is available
-  const engine = await deployAndGetContract(engineContract, [
+  const engine = await deployAndGetContract(env, engineContract, [
     30 * 24 * 60 * 60, // month
   ]);
-  await registry.methods.setEngine(`${engine.options.address}`);
+  await registry.methods
+    .setEngine(engine.options.address)
+    .send({ from: accounts[0] });
   await engine.methods
     .setRegistry(registry.options.address)
-    .send({ from: environment.wallet.address });
+    .send({ from: env.wallet.address });
 
   await hub.methods
     .setSpokes([
@@ -155,7 +145,7 @@ export const deployMockSystem = async (
       engine.options.address,
       mlnTokenAddress,
     ])
-    .send({ from: environment.wallet.address, gas: 8000000 });
+    .send({ from: env.wallet.address, gas: 8000000 });
 
   const toInit = [
     accounting,
@@ -168,11 +158,11 @@ export const deployMockSystem = async (
   for (const contract of toInit) {
     await hub.methods
       .initializeSpoke(contract.options.address)
-      .send({ from: environment.wallet.address, gas: 8000000 });
+      .send({ from: env.wallet.address, gas: 8000000 });
   }
   await hub.methods
     .setPermissions()
-    .send({ from: environment.wallet.address, gas: 8000000 });
+    .send({ from: env.wallet.address, gas: 8000000 });
 
   const contracts = {
     accounting,

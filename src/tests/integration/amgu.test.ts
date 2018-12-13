@@ -1,11 +1,11 @@
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
 import { deploySystem } from '~/utils/deploySystem';
-import { createComponents } from '~/contracts/factory/transactions/createComponents';
+import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { getPrices } from '~/contracts/prices/calls/getPrices';
 import { update } from '~/contracts/prices/transactions/update';
-import { getAmguPrice } from '~/contracts/version/calls/getAmguPrice';
+import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import {
   subtract,
@@ -21,8 +21,8 @@ import { sign } from '~/utils/environment/sign';
 const shared: any = {};
 
 beforeAll(async () => {
-  shared.environment = await initTestEnvironment();
-  shared.accounts = await shared.environment.eth.getAccounts();
+  shared.env = await deploySystem(await initTestEnvironment());
+  shared.accounts = await shared.env.eth.getAccounts();
 });
 
 const randomString = (length = 4) =>
@@ -32,23 +32,21 @@ const randomString = (length = 4) =>
 
 test('Set amgu and check its usage', async () => {
   const fundName = `test-fund-${randomString()}`;
-  const deployment = await deploySystem();
   const {
     exchangeConfigs,
     priceSource,
     tokens,
     engine,
-    // policies,
     version,
-  } = deployment;
+  } = shared.env.deployment;
   const [quoteToken, baseToken] = tokens;
 
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];
-  const amguToken = await getAmguToken(version);
+  const amguToken = await getAmguToken(shared.env, version);
   const amguPrice = createQuantity(amguToken, '1000000000');
-  const oldAmguPrice = await getAmguPrice(engine);
-  const newAmguPrice = await setAmguPrice(engine, amguPrice);
+  const oldAmguPrice = await getAmguPrice(shared.env, engine);
+  const newAmguPrice = await setAmguPrice(shared.env, engine, amguPrice);
 
   expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
   expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
@@ -68,33 +66,26 @@ test('Set amgu and check its usage', async () => {
     createQuantity(quoteToken, '2'),
   );
 
-  await update(priceSource, [newPrice]);
+  await update(shared.env, priceSource, [newPrice]);
 
-  const [price] = await getPrices(priceSource, [baseToken]);
+  const [price] = await getPrices(shared.env, priceSource, [baseToken]);
   expect(isEqualPrice(price, newPrice)).toBe(true);
 
-  const prepared = await createComponents.prepare(version, args);
+  const prepared = await beginSetup.prepare(shared.env, version, args);
 
-  const preBalance = await shared.environment.eth.getBalance(
-    shared.accounts[0],
-  );
+  const preBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
-  const signedTransactionData = await sign(
-    prepared.rawTransaction,
-    shared.environment,
-  );
+  const signedTransactionData = await sign(shared.env, prepared.rawTransaction);
 
-  const result = await createComponents.send(
+  const result = await beginSetup.send(
+    shared.env,
     version,
     signedTransactionData,
     args,
     undefined,
-    shared.environment,
   );
 
-  const postBalance = await shared.environment.eth.getBalance(
-    shared.accounts[0],
-  );
+  const postBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
   const diffQ = subtract(preBalance, postBalance);
 
