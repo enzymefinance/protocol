@@ -30,7 +30,6 @@ import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
-const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
 let s: any = {};
 
@@ -61,7 +60,7 @@ beforeAll(async () => {
       s.weth.options.address,
       s.weth.options.address,
       [s.weth.options.address, s.mln.options.address],
-      [true],
+      [false],
       s.priceSource.options.address,
     )
     .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
@@ -412,14 +411,9 @@ test('Third party takes the order made by the fund', async () => {
       signedOrder: s.signedOrder,
     },
   );
-  await s.fund.trading.methods
-    .returnBatchToVault([s.mln.options.address, s.weth.options.address])
-    .send({ from: s.manager, gas: s.gas });
 
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
 
-  console.log(pre.fund);
-  console.log(post.fund);
   expect(result).toBeTruthy();
   expect(post.fund.weth).toEqual(
     add(pre.fund.weth, s.signedOrder.takerAssetAmount),

@@ -61,7 +61,6 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
-        // TODO: Maybe post policy check for PriceTolernance based on actualReceiveAmount (Overkill maybe)
         require(
             Accounting(hub.accounting()).isInAssetList(destToken) ||
             Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS()
