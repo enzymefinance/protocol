@@ -17,10 +17,22 @@ export const getInfo = async (
   const decimals = parseInt(await contract.methods.decimals().call(), 10);
   const totalSupply = parseInt(await contract.methods.totalSupply().call(), 10);
 
-  return {
+  const fromChain = {
     decimals,
     name,
     symbol,
     totalSupply,
+  };
+
+  const fromDeployment =
+    (environment.deployment &&
+      environment.deployment.thirdpartyContracts.tokens.find(
+        t => t.address.toLowerCase() === contractAddress.toLowerCase(),
+      )) ||
+    {};
+
+  return {
+    ...fromChain,
+    ...fromDeployment,
   };
 };
