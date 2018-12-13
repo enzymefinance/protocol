@@ -152,7 +152,7 @@ export const requireMap = {
     require('../out/version/MockVersion.abi.json'),
   [Contracts.WrapperLock]:
     require(`../out/${Contracts.WrapperLock}.abi.json`),
-  [Contracts.WrapperLock]:
+  [Contracts.WrapperLockEth]:
     require(`../out/${Contracts.WrapperLockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/exchanges/thirdparty/0x/Exchange.abi.json'),
