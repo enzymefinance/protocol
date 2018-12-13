@@ -116,16 +116,15 @@ contract Trading is DSMath, Spoke, TradingInterface {
         //     )
         // );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        // if (bytes4(keccak256(methodSignature)) != bytes4(hex'61346679')) { // cancelOrder signature
-        // if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
-        //     require(Registry(routes.registry).assetIsRegistered(
-        //         orderAddresses[2]), 'Maker asset not registered'
-        //     );
-        // } else if (bytes4(keccak256(methodSignature)) == bytes4(hex'79705be7')) { // make
-        //     require(Registry(routes.registry).assetIsRegistered(
-        //         orderAddresses[3]), 'Taker asset not registered'
-        //     );
-        // }
+        if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
+            require(Registry(routes.registry).assetIsRegistered(
+                orderAddresses[2]), 'Maker asset not registered'
+            );
+        } else if (bytes4(keccak256(methodSignature)) == bytes4(hex'79705be7')) { // make
+            require(Registry(routes.registry).assetIsRegistered(
+                orderAddresses[3]), 'Taker asset not registered'
+            );
+        }
         require(
             exchanges[exchangeIndex].adapter.delegatecall(
                 abi.encodeWithSignature(
