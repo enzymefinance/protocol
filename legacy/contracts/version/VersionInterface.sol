@@ -11,7 +11,7 @@ interface VersionInterface {
 
     // PUBLIC METHODS
 
-    function shutDown() external;
+    function securityShutDown() external;
 
     function setupFund(
         bytes32 ofFundName,
@@ -35,5 +35,4 @@ interface VersionInterface {
     function getLastFundId() view returns (uint);
     function getFundByManager(address ofManager) view returns (address);
     function termsAndConditionsAreSigned(uint8 v, bytes32 r, bytes32 s) view returns (bool signed);
-
 }

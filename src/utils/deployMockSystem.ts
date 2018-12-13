@@ -128,7 +128,7 @@ export const deployMockSystem = async (
     .send({ from: accounts[0] });
   await engine.methods
     .setRegistry(registry.options.address)
-    .send({ from: env.wallet.address });
+    .send({ from: accounts[0], gas: 8000000 });
 
   await hub.methods
     .setSpokes([
