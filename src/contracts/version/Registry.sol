@@ -12,8 +12,6 @@ contract Registry is DSAuth {
         string symbol,
         uint decimals,
         string url,
-        string ipfsHash,
-        address[2] breakInBreakOut,
         uint[] standards,
         bytes4[] sigs
     );
@@ -39,13 +37,8 @@ contract Registry is DSAuth {
         string symbol;
         uint decimals;
         string url;
-        string ipfsHash;
-        address breakIn;
-        address breakOut;
         uint[] standards;
         bytes4[] sigs;
-        uint price;
-        uint timestamp;
     }
 
     struct Exchange {
@@ -96,8 +89,6 @@ contract Registry is DSAuth {
     /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _decimals Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _url Url for extended information of the asset
-    /// @param _ipfsHash Same as url but for ipfs
-    /// @param _breakInBreakOut Address of break in and break out contracts on destination chain
     /// @param _standards Integers of EIP standards this asset adheres to
     /// @param _sigs Function signatures for whitelisted asset functions
     function registerAsset(
@@ -106,8 +97,6 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
-        string _ipfsHash,
-        address[2] _breakInBreakOut,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -120,8 +109,6 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
-            _ipfsHash,
-            _breakInBreakOut,
             _standards,
             _sigs
         );
@@ -189,15 +176,12 @@ contract Registry is DSAuth {
     /// @param _name Human-readable name of the Asset as in ERC223 token standard
     /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _url Url for extended information of the asset
-    /// @param _ipfsHash Same as url but for ipfs
     function updateAsset(
         address _asset,
         string _name,
         string _symbol,
         uint _decimals,
         string _url,
-        string _ipfsHash,
-        address[2] _breakInBreakOut,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -207,9 +191,6 @@ contract Registry is DSAuth {
         asset.symbol = _symbol;
         asset.decimals = _decimals;
         asset.url = _url;
-        asset.ipfsHash = _ipfsHash;
-        asset.breakIn = _breakInBreakOut[0];
-        asset.breakOut = _breakInBreakOut[1];
         asset.standards = _standards;
         asset.sigs = _sigs;
         emit AssetUpsert(
@@ -218,8 +199,6 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
-            _ipfsHash,
-            _breakInBreakOut,
             _standards,
             _sigs
         );

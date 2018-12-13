@@ -102,5 +102,4 @@ export const beginSetup = transactionFactory<BeginSetupArgs, BeginSetupResult>(
   guard,
   prepareArgs,
   postProcess,
-  // { amguPayable: true },
 );

@@ -15,7 +15,7 @@ const calcAmguInEth = async (
   gasEstimation: number,
 ) => {
   const amguToken = await getAmguToken(environment, contractAddress);
-  const engineAddress = await getEngine(environment, environment);
+  const engineAddress = await getEngine(environment, contractAddress);
   const priceSourceAddress = await getPriceSource(environment, contractAddress);
   const mlnPerAmgu = await getAmguPrice(environment, engineAddress);
   const ethPerMln = await getPrices(

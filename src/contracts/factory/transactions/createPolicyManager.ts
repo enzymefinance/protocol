@@ -7,5 +7,5 @@ export const createPolicyManager = transactionFactory(
   undefined,
   undefined,
   undefined,
-  // { amguPayable: true },
+  { amguPayable: true },
 );

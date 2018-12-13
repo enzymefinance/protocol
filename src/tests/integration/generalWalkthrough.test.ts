@@ -117,7 +117,7 @@ describe('generalWalkthrough', () => {
         priceSource,
         quoteToken,
       },
-      { gas: '8000000', skipGasEstimation: true, skipGuards: true },
+      { gas: '8000000' },
     );
 
     await createAccounting(shared.env, version);

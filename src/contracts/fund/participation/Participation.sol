@@ -58,8 +58,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         address investmentAsset
     )
         external
+        amguPayable
         payable
-        // amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
@@ -91,8 +91,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     function executeRequestFor(address requestOwner)
         public
+        amguPayable
         payable
-        // amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(
         //     Shares(routes.shares).totalSupply() == 0 ||

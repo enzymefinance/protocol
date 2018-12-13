@@ -13,8 +13,6 @@ interface RegisterAssetArgs {
   assetSymbol: String; // actually bytes8
   decimals: Number; // actually uint
   url: String;
-  ipfsHash: String;
-  breakInBreakOut: Address[];
   standards: String[]; // actually uint[]
   sigs: FunctionSignatures[];
 }
@@ -27,8 +25,6 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
     assetSymbol,
     decimals,
     url,
-    ipfsHash,
-    breakInBreakOut,
     standards,
     sigs,
   }: RegisterAssetArgs,
@@ -38,8 +34,6 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
   assetSymbol,
   `${decimals}`,
   url,
-  ipfsHash,
-  breakInBreakOut.map(addr => `${addr}`),
   standards,
   sigs.map(sig => web3EthAbi.encodeFunctionSignature(sig)),
 ];

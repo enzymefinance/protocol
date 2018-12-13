@@ -118,7 +118,7 @@ contract FundFactory is AmguConsumer {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) public payable step(1) {
+    ) step(1) {
         require(!version.getShutDownStatus(), "Version cannot be shut down");
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
@@ -141,11 +141,11 @@ contract FundFactory is AmguConsumer {
         managersToComponents[msg.sender].mlnToken = mlnToken;
     }
 
-    function createAccounting() step(2) {
+    function createAccounting() step(2) amguPayable payable {
         managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
     }
 
-    function createFeeManager() step(3) {
+    function createFeeManager() step(3) amguPayable payable {
         managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].fees,
@@ -154,7 +154,7 @@ contract FundFactory is AmguConsumer {
         );
     }
 
-    function createParticipation() step(4) {
+    function createParticipation() step(4) amguPayable payable {
         managersToComponents[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].defaultAssets,
@@ -162,15 +162,15 @@ contract FundFactory is AmguConsumer {
         );
     }
 
-    function createPolicyManager() step(5) {
+    function createPolicyManager() step(5) amguPayable payable {
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
     }
 
-    function createShares() step(6) {
+    function createShares() step(6) amguPayable payable {
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
     }
 
-    function createTrading() step(7) {
+    function createTrading() step(7) amguPayable payable {
            managersToComponents[msg.sender].trading = tradingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].exchanges,
@@ -180,11 +180,11 @@ contract FundFactory is AmguConsumer {
         );
     }
 
-    function createVault() step(8) {
+    function createVault() step(8) amguPayable payable {
         managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
     }
 
-    function completeSetup() public payable step(9) {
+    function completeSetup() step(9) amguPayable payable {
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         hubExists[address(hub)] = true;

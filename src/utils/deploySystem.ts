@@ -29,7 +29,6 @@ import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deplo
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { LogLevels, Environment } from './environment/Environment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 // tslint:enable:max-line-length
 
 /**
@@ -158,9 +157,7 @@ export const deploySystem = async (environment: Environment) => {
     await registerAsset(environment, registryAddress, {
       assetAddress: `${asset.address}`,
       assetSymbol: asset.symbol,
-      breakInBreakOut: [emptyAddress, emptyAddress],
       decimals: asset.decimals,
-      ipfsHash: '',
       name: '',
       sigs: [],
       standards: [],
