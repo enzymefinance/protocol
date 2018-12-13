@@ -27,7 +27,6 @@ contract MockRegistry {
     function exchangeIsRegistered(address _exchange) view returns (bool) {
         return alwaysRegistered || registered[_exchange];
     }
-
     function setPriceSource(address _a) { priceSource = _a; }
     function setMlnToken(address _a) { mlnToken = _a; }
     function setEngine(address _a) { engine = _a; }
