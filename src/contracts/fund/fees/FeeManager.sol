@@ -89,6 +89,7 @@ contract FeeManagerFactory is Factory {
     ) public returns (address) {
         address feeManager = new FeeManager(_hub, _fees, _feeRates, _feePeriods);
         childExists[feeManager] = true;
+        emit NewInstance(_hub, feeManager);
         return feeManager;
     }
 }

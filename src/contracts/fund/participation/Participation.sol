@@ -38,7 +38,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             );
             investAllowed[_assets[i]] = true;
         }
-        // emit EnableInvestment(_assets[0]);
+        emit EnableInvestment(_assets);
     }
 
     function enableInvestment(address[] _assets) public auth {
@@ -258,12 +258,20 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 }
 
 contract ParticipationFactory is Factory {
+    event NewInstance(
+        address indexed hub,
+        address indexed instance,
+        address[] defaultAssets,
+        address registry
+    );
+
     function createInstance(address _hub, address[] _defaultAssets, address _registry)
         public
         returns (address)
     {
         address participation = new Participation(_hub, _defaultAssets, _registry);
         childExists[participation] = true;
+        emit NewInstance(_hub, participation, _defaultAssets, _registry);
         return participation;
     }
 }

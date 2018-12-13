@@ -235,9 +235,18 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
 }
 
 contract AccountingFactory is Factory {
+    event NewInstance(
+        address indexed hub,
+        address indexed instance,
+        address quoteAsset,
+        address nativeAsset,
+        address[] defaultAssets
+    );
+
     function createInstance(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
         address accounting = new Accounting(_hub, _quoteAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
+        emit NewInstance(_hub, accounting, _quoteAsset, _nativeAsset, _defaultAssets);
         return accounting;
     }
 }
