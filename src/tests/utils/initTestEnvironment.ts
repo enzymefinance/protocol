@@ -63,11 +63,7 @@ const getGanache = () => {
     mnemonic: testMnemonic,
   });
 
-  testLogger(
-    'melon:protocol:utils:environment',
-    LogLevels.DEBUG,
-    'In-memory Ganache',
-  );
+  testLogger('melon:protocol:test:utils', LogLevels.DEBUG, 'In-memory Ganache');
 
   return provider;
 };
@@ -75,12 +71,20 @@ const getGanache = () => {
 export const initTestEnvironment = async (endpoint?: string) => {
   const jsonRpcEndpoint = endpoint || process.env.JSON_RPC_ENDPOINT;
 
+  testLogger(
+    'melon:protocol:test:utils',
+    LogLevels.DEBUG,
+    'Endpoint:',
+    jsonRpcEndpoint,
+    endpoint ? 'via function arg' : 'via JSON_RPC_ENDPOINT envvar',
+  );
+
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set
     endpoint: jsonRpcEndpoint,
     logger: testLogger,
-    provider: jsonRpcEndpoint && getGanache(),
+    provider: !jsonRpcEndpoint && getGanache(),
   });
   const accounts = await environment.eth.getAccounts();
 
