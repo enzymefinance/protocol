@@ -6,12 +6,16 @@ import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deplo
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
-import { setVersion } from '~/contracts/engine/transactions/setVersion';
+import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
 import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
+import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
+import { setEngine } from '~/contracts/version/transactions/setEngine';
+import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
+import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
 import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
 import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
@@ -95,11 +99,15 @@ export const deploySystem = async (environment: Environment) => {
   // const governanceAddress = accounts[0];
   const engineAddress = await deployEngine(
     environment,
-    priceFeedAddress,
     monthInSeconds,
-    mlnTokenAddress,
   );
   const registryAddress = await deployRegistry(environment);
+  await setMlnToken(environment, registryAddress, {address: mlnTokenAddress});
+  await setPriceSource(
+    environment, registryAddress, {address: priceFeedAddress}
+  );
+  await setEngine(environment, registryAddress, {address: engineAddress});
+
   const versionAddress = await deployVersion(environment, {
     accountingFactoryAddress,
     engineAddress,
@@ -113,8 +121,14 @@ export const deploySystem = async (environment: Environment) => {
     tradingFactoryAddress,
     vaultFactoryAddress,
   });
-  await setVersion(environment, engineAddress, { versionAddress });
-
+  await registerVersion(environment, registryAddress, {
+    address: versionAddress, name: '0.0.0'
+  });
+  await setRegistry(
+    environment,
+    engineAddress,
+    { address: registryAddress}
+  );
   const rankingAddress = await deployFundRanking(environment);
   const exchangeConfigs = [
     {
@@ -171,6 +185,7 @@ export const deploySystem = async (environment: Environment) => {
     },
     priceSource,
     ranking: rankingAddress,
+    registry: registryAddress,
     tokens: [quoteToken, baseToken, eurToken, zrxToken],
     version: versionAddress,
   };

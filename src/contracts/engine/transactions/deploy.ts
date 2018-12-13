@@ -6,15 +6,13 @@ import { Contracts } from '~/Contracts';
 
 export const deploy = async (
   environment: Environment,
-  priceSource: Address,
   delay: number,
-  mlnAddress: Address,
 ) => {
-  const address = await deployContract(environment, Contracts.Engine, [
-    priceSource.toString(),
-    delay,
-    mlnAddress.toString(),
-  ]);
+  const address = await deployContract(
+    environment,
+    Contracts.Engine,
+    [delay],
+  );
 
   return address;
 };

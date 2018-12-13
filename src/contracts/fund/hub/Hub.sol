@@ -27,6 +27,7 @@ contract Hub is DSGuard {
         address engine;
         address mlnAddress;
     }
+
     Settings public settings;
     address public manager;
     address public creator;

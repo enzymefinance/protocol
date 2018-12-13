@@ -10,8 +10,6 @@ import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
-// import ensure from '~/utils/guards/ensure';
-
 export interface ExchangeConfig {
   name: string;
   exchangeAddress: Address;
@@ -25,7 +23,7 @@ export interface FeeConfig {
   feePeriod: BigInteger;
 }
 
-interface CreateComponentsArgs {
+interface BeginSetupArgs {
   fundName: string;
   fees: FeeConfig[];
   exchangeConfigs: ExchangeConfig[];
@@ -35,17 +33,15 @@ interface CreateComponentsArgs {
   priceSource: Address;
 }
 
-type CreateComponentsResult = string;
+type BeginSetupResult = string;
 
-const guard: GuardFunction<CreateComponentsArgs> = async (
+const guard: GuardFunction<BeginSetupArgs> = async (
   environment,
   contractAddress,
   params,
-) => {
-  // createComponents
-};
+) => {};
 
-const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
+const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   _,
   {
     fundName,
@@ -68,10 +64,15 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const nativeTokenAddress = nativeToken.address;
+  const feeAddresses = fees.map(f => f.feeAddress);
+  const feeRates = fees.map(f => f.feeRate);
+  const feePeriods = fees.map(f => f.feePeriod);
 
   const args = [
     fundName,
-    fees,
+    feeAddresses,
+    feeRates,
+    feePeriods,
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
@@ -85,8 +86,8 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
 };
 
 const postProcess: PostProcessFunction<
-  CreateComponentsArgs,
-  CreateComponentsResult
+  BeginSetupArgs,
+  BeginSetupResult
 > = async (environment, receipt, params, contractAddress) => {
   return managersToHubs(
     environment,
@@ -95,9 +96,9 @@ const postProcess: PostProcessFunction<
   );
 };
 
-export const createComponents = transactionFactory<
-  CreateComponentsArgs,
-  CreateComponentsResult
->('createComponents', Contracts.FundFactory, guard, prepareArgs, postProcess, {
+export const beginSetup = transactionFactory<
+  BeginSetupArgs,
+  BeginSetupResult
+>('beginSetup', Contracts.FundFactory, guard, prepareArgs, postProcess, {
   amguPayable: true,
 });

@@ -37,8 +37,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
                 "Asset not registered"
             );
             investAllowed[_assets[i]] = true;
-            emit EnableInvestment(_assets);
         }
+        // emit EnableInvestment(_assets[0]);
     }
 
     function enableInvestment(address[] _assets) public auth {
@@ -59,7 +59,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     )
         external
         payable
-        amguPayable
+        // amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
@@ -92,7 +92,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     function executeRequestFor(address requestOwner)
         public
         payable
-        amguPayable
+        // amguPayable
         // TODO: implement and use below modifiers
         // pre_cond(
         //     Shares(routes.shares).totalSupply() == 0 ||
@@ -258,20 +258,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 }
 
 contract ParticipationFactory is Factory {
-    event NewInstance(
-        address indexed hub,
-        address indexed instance,
-        address[] defaultAssets,
-        address registry
-    );
-
     function createInstance(address _hub, address[] _defaultAssets, address _registry)
         public
         returns (address)
     {
         address participation = new Participation(_hub, _defaultAssets, _registry);
         childExists[participation] = true;
-        emit NewInstance(_hub, participation, _defaultAssets, _registry);
         return participation;
     }
 }

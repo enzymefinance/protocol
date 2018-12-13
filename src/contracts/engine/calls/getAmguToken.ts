@@ -8,7 +8,7 @@ const postProcess = async (environment, result) => {
 };
 
 const getAmguToken = callFactoryWithoutParams(
-  'mlnAddress',
+  'mlnToken',
   Contracts.AmguConsumer,
   {
     postProcess,

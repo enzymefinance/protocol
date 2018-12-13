@@ -5,7 +5,12 @@ contract MockRegistry {
 
     bool public alwaysRegistered = true;
 
+    address public priceSource;
+    address public mlnToken;
+    address public engine;
+    address public fundFactory;
     mapping (address => bool) public registered;
+    mapping (address => bool) public fundExists;
 
     function register(address _addr) {
         registered[_addr] = true;
@@ -21,6 +26,17 @@ contract MockRegistry {
 
     function exchangeIsRegistered(address _exchange) view returns (bool) {
         return alwaysRegistered || registered[_exchange];
+    }
+
+    function setPriceSource(address _a) { priceSource = _a; }
+    function setMlnToken(address _a) { mlnToken = _a; }
+    function setEngine(address _a) { engine = _a; }
+    function setFundFactory(address _a) { fundFactory = _a; }
+    function setIsFund(address _who) { fundExists[_who] = true; }
+
+    function isFund(address _who) returns (bool) { return fundExists[_who]; }
+    function isFundFactory(address _who) returns (bool) {
+        return _who == fundFactory;
     }
 }
 

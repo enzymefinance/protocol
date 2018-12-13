@@ -10,16 +10,21 @@ import "Engine.sol";
 // TODO: can function know it is payable?
 // TODO: can modifier itself be payable?
 
+// cleanup
+// TODO: can function know it is payable?
+// TODO: can modifier itself be payable?
+
 // TODO: collect AMGU in other contracts
 /// @notice inherit this pay AMGU
 contract AmguConsumer is DSMath {
 
+    // TODO: fix error in here leading to revert
     modifier amguPayable() {
         uint initialGas = gasleft();
         _;
-        uint mlnPerAmgu = VersionInterface(version()).getAmguPrice();
+        uint mlnPerAmgu = Engine(engine()).getAmguPrice();
         uint ethPerMln;
-        (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnAddress());
+        (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnToken());
         uint ethToPay = mul(
             sub(initialGas, gasleft()),
             mul(mlnPerAmgu, ethPerMln)
@@ -30,8 +35,7 @@ contract AmguConsumer is DSMath {
     }
 
     function engine() view returns (address);
-    function mlnAddress() view returns (address);
+    function mlnToken() view returns (address);
     function priceSource() view returns (address);
-    function version() view returns (address);
 }
 

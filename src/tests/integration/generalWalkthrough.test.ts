@@ -5,15 +5,21 @@ import { deploySystem } from '~/utils/deploySystem';
 import { deploy } from '~/utils/solidity/deploy';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
-import { setupFund } from '~/contracts/factory/transactions/setupFund';
-import { createComponents } from '~/contracts/factory/transactions/createComponents';
-import { continueCreation } from '~/contracts/factory/transactions/continueCreation';
+import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
+import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
+import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
+import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
+import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
+import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
+import { createShares } from '~/contracts/factory/transactions/createShares';
+import { createTrading } from '~/contracts/factory/transactions/createTrading';
+import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { setAmguPrice } from '~/contracts/version/transactions/setAmguPrice';
+import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
@@ -43,22 +49,25 @@ describe('generalWalkthrough', () => {
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
-  it('Happy path', async () => {
+  test('Happy path', async () => {
     const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
     const fundName = `test-fund-${randomString()}`;
 
+    const deployment = shared.env.deployment;
+
     const {
+      engine,
       exchangeConfigs,
       priceSource,
       tokens,
       policies,
       version,
-    } = shared.env.deployment;
+    } = deployment;
     const [quoteToken, baseToken] = tokens;
     const defaultTokens = [quoteToken, baseToken];
     const amguToken = await getAmguToken(shared.env, version);
     const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice(shared.env, version, amguPrice);
+    await setAmguPrice(shared.env, engine, amguPrice);
 
     // Deploy fees
     const managementFee = getContract(
@@ -82,9 +91,8 @@ describe('generalWalkthrough', () => {
             new BigInteger(2),
             power(new BigInteger(10), new BigInteger(16)),
           ),
-        ),
-      },
-      {
+        )
+      }, {
         feeAddress: performanceFee.options.address,
         feePeriod: new BigInteger(86400 * 90),
         feeRate: new BigInteger(
@@ -96,7 +104,7 @@ describe('generalWalkthrough', () => {
       },
     ];
 
-    await createComponents(shared.env, version, {
+    await beginSetup(shared.env, version, {
       defaultTokens,
       exchangeConfigs,
       fees,
@@ -104,10 +112,17 @@ describe('generalWalkthrough', () => {
       nativeToken: quoteToken,
       priceSource,
       quoteToken,
-    });
+    }, {gas: '8000000', skipGasEstimation: true, skipGuards: true});
 
-    await continueCreation(shared.env, version);
-    const hubAddress = await setupFund(shared.env, version);
+    await createAccounting(shared.env, version);
+    await createFeeManager(shared.env, version);
+    await createParticipation(shared.env, version);
+    await createPolicyManager(shared.env, version);
+    await createShares(shared.env, version);
+    await createTrading(shared.env, version);
+    await createVault(shared.env, version);
+    const hubAddress = await completeSetup(shared.env, version);
+
     const settings = await getSettings(shared.env, hubAddress);
 
     await register(shared.env, settings.policyManagerAddress, {
@@ -144,6 +159,7 @@ describe('generalWalkthrough', () => {
       howMuch: investmentAmount,
       spender: settings.participationAddress,
     });
+
     await requestInvestment(shared.env, settings.participationAddress, {
       investmentAmount,
     });

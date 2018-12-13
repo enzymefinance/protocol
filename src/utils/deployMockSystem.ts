@@ -69,9 +69,12 @@ export const deployMockSystem = async (
     Contracts.MatchingMarketAdapter,
   );
 
-  const version = await deployAndGetContract(environment, versionContract);
-  const registry = await deployAndGetContract(environment, registryContract);
-  const ranking = await deployAndGetContract(environment, rankingContract);
+  const version = await deployAndGetContract(versionContract);
+  const registry = await deployAndGetContract(registryContract);
+  await registry.methods.setPriceSource(priceSource.options.address);
+  await registry.methods.setMlnToken(`${mlnTokenAddress}`);
+
+  const ranking = await deployAndGetContract(rankingContract);
 
   const hub = await deployAndGetContract(environment, hubContract);
   await hub.methods
@@ -129,14 +132,12 @@ export const deployMockSystem = async (
   ]);
 
   // TODO: replace with raw function when MockEngine is available
-  const engine = await deployAndGetContract(environment, engineContract, [
-    priceSource.options.address,
+  const engine = await deployAndGetContract(engineContract, [
     30 * 24 * 60 * 60, // month
-    mlnTokenAddress,
   ]);
-
+  await registry.methods.setEngine(`${engine.options.address}`);
   await engine.methods
-    .setVersion(version.options.address)
+    .setRegistry(registry.options.address)
     .send({ from: environment.wallet.address });
 
   await hub.methods

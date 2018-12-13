@@ -43,6 +43,10 @@ export const deploy: Deploy = async (
     { encoding: 'utf-8' },
   );
 
+  if(bin.length === 0) {
+    throw new Error(`Binary file for ${pathToSolidityFile} is empty`);
+  }
+
   const parsedABI = JSON.parse(rawABI);
 
   const contract = new environment.eth.Contract(parsedABI);

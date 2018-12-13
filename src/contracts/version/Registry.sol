@@ -1,9 +1,11 @@
 pragma solidity ^0.4.21;
 
 import "auth.sol";
+import "Hub.sol";
 
 contract Registry is DSAuth {
 
+    // EVENTS
     event AssetUpsert (
         address indexed asset,
         string name,
@@ -23,13 +25,12 @@ contract Registry is DSAuth {
         bytes4[] sigs
     );
 
-    event AssetRemoval (
-        address indexed asset
-    );
-
-    event ExchangeRemoval (
-        address indexed exchange
-    );
+    event AssetRemoval (address indexed asset);
+    event ExchangeRemoval (address indexed exchange);
+    event VersionRegistration(address indexed version);
+    event PriceSourceChange(address indexed priceSource);
+    event MlnTokenChange(address indexed mlnToken);
+    event EngineChange(address indexed engine);
 
     // TYPES
     struct Asset {
@@ -54,17 +55,38 @@ contract Registry is DSAuth {
         bytes4[] sigs;
     }
 
+    struct Version {
+        bool exists;
+        string name;
+    }
+
     // FIELDS
-    // Methods fields
     mapping (address => Asset) public assetInformation;
     address[] public registeredAssets;
 
     mapping (address => Exchange) public exchangeInformation;
     address[] public registeredExchanges;
 
+    mapping (address => Version) public versionInformation;
+    address[] public registeredVersions;
+
+    mapping (address => address) public fundsToVersions;
+
+    address public priceSource;
+    address public mlnToken;
+    address public engine;
+
     // METHODS
 
     // PUBLIC METHODS
+
+    function registerFund(address _fund) {
+        require(
+            versionInformation[msg.sender].exists,
+            "Only a Version can register a fund"
+        );
+        fundsToVersions[_fund] = msg.sender;
+    }
 
     /// @notice Registers an Asset information entry
     /// @dev Pre: Only registrar owner should be able to register
@@ -129,6 +151,35 @@ contract Registry is DSAuth {
             _sigs
         );
         assert(exchangeInformation[_exchange].exists);
+    }
+
+    /// @notice Versions cannot be removed from registry
+    /// @param _version Address of the version contract
+    /// @param _name Name of the version
+    function registerVersion(
+        address _version,
+        string _name
+    ) auth {
+        require(!versionInformation[_version].exists);
+        versionInformation[_version].exists = true;
+        registeredVersions.push(_version);
+        assert(versionInformation[_version].exists);
+        emit VersionRegistration(_version);
+    }
+
+    function setPriceSource(address _priceSource) auth {
+        priceSource = _priceSource;
+        emit PriceSourceChange(_priceSource);
+    }
+
+    function setMlnToken(address _mlnToken) auth {
+        mlnToken = _mlnToken;
+        emit MlnTokenChange(_mlnToken);
+    }
+
+    function setEngine(address _engine) auth {
+        engine = _engine;
+        emit EngineChange(_engine);
     }
 
     /// @notice Updates description information of a registered Asset
@@ -284,6 +335,28 @@ contract Registry is DSAuth {
             }
         }
         return false;
+    }
+
+    // get version and fund information
+    function getRegisteredVersions() view returns (address[]) {
+        return registeredVersions;
+    }
+
+    function isFund(address _who) view returns (bool) {
+        if (fundsToVersions[_who] != address(0)) {
+            return true; // directly from a hub
+        } else {
+            address hub = Hub(Spoke(_who).hub());
+            require(
+                Hub(hub).isSpoke(_who),
+                "Call from either a spoke or hub"
+            );
+            return fundsToVersions[hub] != address(0);
+        }
+    }
+
+    function isFundFactory(address _who) view returns (bool) {
+        return versionInformation[_who].exists;
     }
 }
 

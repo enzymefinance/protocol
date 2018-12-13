@@ -25,7 +25,7 @@ const send = async (
 const execute = async (
   environment: Environment,
   contractAddress: Address,
-  options = { amguPayable: true },
+  options = {} // options = { amguPayable: true },
 ) => {
   const prepared = await prepare(environment, contractAddress, options);
   const signedTransactionData = await sign(

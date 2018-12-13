@@ -23,9 +23,9 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub, FeeInfo[] _fees) Spoke(_hub) public {
+    constructor(address _hub, address[] _fees, uint[] _rates, uint[] _periods) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
-            register(_fees[i].feeAddress, _fees[i].feeRate, _fees[i].feePeriod);
+            register(_fees[i], _rates[i], _periods[i]);
         }
     }
 
@@ -81,10 +81,14 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 }
 
 contract FeeManagerFactory is Factory {
-    function createInstance(address _hub, FeeManager.FeeInfo[] _fees) public returns (address) {
-        address feeManager = new FeeManager(_hub, _fees);
+    function createInstance(
+        address _hub,
+        address[] _fees,
+        uint[] _feeRates,
+        uint[] _feePeriods
+    ) public returns (address) {
+        address feeManager = new FeeManager(_hub, _fees, _feeRates, _feePeriods);
         childExists[feeManager] = true;
-        emit NewInstance(_hub, feeManager);
         return feeManager;
     }
 }
