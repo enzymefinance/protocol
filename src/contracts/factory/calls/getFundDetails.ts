@@ -26,10 +26,10 @@ export const getFundDetails = async (
 
   const result = addresses.map((address, index) => ({
     address,
-    rank: index,
+    rank: index + 1,
     name: names[index],
     sharePrice: sharePrices[index],
-    creationTime: creationTimes[index],
+    creationTime: new Date(creationTimes[index] * 1000),
   }));
 
   return result;
