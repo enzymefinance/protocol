@@ -2,7 +2,7 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getInfo } from '../calls/getInfo';
 import { deployToken } from '../transactions/deploy';
 import { Environment } from '~/utils/environment/Environment';
-import testJson from '~/../deployments/test.json';
+import deploymentJson from '~/tests/utils/deployment.json';
 
 describe('getInfo', () => {
   const shared: {
@@ -14,7 +14,7 @@ describe('getInfo', () => {
     const env = await initTestEnvironment();
     shared.env = {
       ...env,
-      deployment: testJson,
+      deployment: deploymentJson,
     };
     shared.address = await deployToken(shared.env);
   });
