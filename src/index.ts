@@ -36,4 +36,5 @@ export {
   requestInvestment,
 } from '~/contracts/fund/participation/transactions/requestInvestment';
 export { setupFund } from '~/contracts/factory/transactions/setupFund';
+export { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 export { update } from '~/contracts/prices/transactions/update';
