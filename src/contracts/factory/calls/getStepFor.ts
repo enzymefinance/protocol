@@ -6,7 +6,7 @@ export const getStepFor = async (environment, managerAddress: Address) => {
   const contract = getContract(
     environment,
     Contracts.FundFactory,
-    environment.deployment.version,
+    environment.deployment.melonContracts.version,
   );
 
   return contract.methods.stepFor(managerAddress.toString()).call();

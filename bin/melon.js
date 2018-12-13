@@ -48,7 +48,7 @@ program
     'The JSON RPC endpoint url. By default: https://localhost:8545',
   )
   .action(async options => {
-    console.log(`Deploying thirdparty & melon contracts (development setup).`);
+    console.log(`Deploying thirdParty & melon contracts (development setup).`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
     const tokens = ['WETH', 'MLN', 'ZRX', ...providedTokens];
     const tokenInterfaces = tokens.map(token => {
@@ -72,12 +72,12 @@ program
       options.endpoint || 'https://localhost:8545',
     );
 
-    const thirdpartyContracts =
-      (config && config.thirdpartyContracts) ||
+    const thirdPartyContracts =
+      (config && config.thirdPartyContracts) ||
       (await deployThirdparty(environment, tokenInterfaces));
     const { deployment } = await deploySystem(
       environment,
-      thirdpartyContracts,
+      thirdPartyContracts,
       config && config.melonContracts,
     );
     const chainId = await environment.eth.net.getId();

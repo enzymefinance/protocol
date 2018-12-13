@@ -6,7 +6,7 @@ import {
   createOrder,
   signOrder,
   approveOrder,
-} from '~/contracts/exchanges/thirdparty/0x';
+} from '~/contracts/exchanges/third-party/0x';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
 

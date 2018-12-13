@@ -38,9 +38,9 @@ test('Set amgu and check its usage', async () => {
   const {
     exchangeConfigs,
     melonContracts,
-    thirdpartyContracts,
+    thirdPartyContracts,
   } = shared.env.deployment;
-  const [quoteToken, baseToken] = thirdpartyContracts.tokens;
+  const [quoteToken, baseToken] = thirdPartyContracts.tokens;
 
   const defaultTokens = [quoteToken, baseToken];
   const fees = [];

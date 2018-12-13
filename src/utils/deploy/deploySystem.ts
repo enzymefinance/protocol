@@ -22,7 +22,7 @@ import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactio
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { LogLevels, Environment } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
-import { ThirdpartyContracts } from './deployThirdparty';
+import { thirdPartyContracts } from './deployThirdParty';
 import { Address } from '@melonproject/token-math/address';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
@@ -69,7 +69,7 @@ type MelonContractsDraft = Partial<MelonContracts>;
  */
 export const deploySystem = async (
   environment: Environment,
-  thirdpartyContracts: ThirdpartyContracts,
+  thirdPartyContracts: thirdPartyContracts,
   adoptedContracts: MelonContractsDraft = {},
 ): Promise<Environment> => {
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
@@ -77,11 +77,11 @@ export const deploySystem = async (
 
   debug('Deploying system from', accounts[0], {
     adoptedContracts,
-    thirdpartyContracts,
+    thirdPartyContracts,
   });
 
-  const wethToken = thirdpartyContracts.tokens.find(t => t.symbol === 'WETH');
-  const mlnToken = thirdpartyContracts.tokens.find(t => t.symbol === 'MLN');
+  const wethToken = thirdPartyContracts.tokens.find(t => t.symbol === 'WETH');
+  const mlnToken = thirdPartyContracts.tokens.find(t => t.symbol === 'MLN');
 
   const contracts: MelonContractsDraft = {};
 
@@ -153,7 +153,7 @@ export const deploySystem = async (
 
   if (!adoptedContracts.registry) {
     await setMlnToken(environment, contracts.registry, {
-      address: thirdpartyContracts.tokens.find(t => t.symbol === 'MLN').address,
+      address: thirdPartyContracts.tokens.find(t => t.symbol === 'MLN').address,
     });
     await setPriceSource(environment, contracts.registry, {
       address: contracts.priceSource,
@@ -195,17 +195,17 @@ export const deploySystem = async (
   const exchangeConfigs = {
     [Exchanges.MatchingMarket]: {
       adapter: contracts.adapters.matchingMarketAdapter,
-      exchange: thirdpartyContracts.exchanges.matchingMarket,
+      exchange: thirdPartyContracts.exchanges.matchingMarket,
       takesCustody: false,
     },
     [Exchanges.KyberNetwork]: {
       adapter: contracts.adapters.kyberAdapter,
-      exchange: thirdpartyContracts.exchanges.kyber.kyberNetworkProxy,
+      exchange: thirdPartyContracts.exchanges.kyber.kyberNetworkProxy,
       takesCustody: false,
     },
     [Exchanges.ZeroEx]: {
       adapter: contracts.adapters.zeroExAdapter,
-      exchange: thirdpartyContracts.exchanges.zeroEx,
+      exchange: thirdPartyContracts.exchanges.zeroEx,
       takesCustody: false,
     },
   };
@@ -219,7 +219,7 @@ export const deploySystem = async (
     });
   }
 
-  for (const asset of thirdpartyContracts.tokens) {
+  for (const asset of thirdPartyContracts.tokens) {
     await registerAsset(environment, contracts.registry, {
       assetAddress: `${asset.address}`,
       assetSymbol: asset.symbol,
@@ -234,7 +234,7 @@ export const deploySystem = async (
   const addresses = {
     exchangeConfigs,
     melonContracts: contracts as MelonContracts,
-    thirdpartyContracts,
+    thirdPartyContracts,
   };
 
   const track = environment.track;

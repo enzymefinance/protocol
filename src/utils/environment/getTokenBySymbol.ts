@@ -8,5 +8,5 @@ export const getTokenBySymbol = (
 ): TokenInterface =>
   R.find(
     R.propEq('symbol', symbol),
-    environment.deployment.thirdpartyContracts.tokens,
+    environment.deployment.thirdPartyContracts.tokens,
   );

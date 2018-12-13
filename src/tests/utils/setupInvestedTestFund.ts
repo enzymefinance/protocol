@@ -21,10 +21,10 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const {
     exchangeConfigs,
     melonContracts: { version, priceSource },
-    thirdpartyContracts,
+    thirdPartyContracts,
   } = environment.deployment;
 
-  const [weth, mln] = thirdpartyContracts.tokens;
+  const [weth, mln] = thirdPartyContracts.tokens;
   const fees = [];
 
   await beginSetup(environment, version, {

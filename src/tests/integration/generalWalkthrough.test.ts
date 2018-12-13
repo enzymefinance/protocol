@@ -58,12 +58,12 @@ describe('generalWalkthrough', () => {
     const {
       exchangeConfigs,
       melonContracts,
-      thirdpartyContracts,
+      thirdPartyContracts,
     } = shared.env.deployment;
 
     const { priceSource, policies, version, engine } = melonContracts;
 
-    const tokens = thirdpartyContracts.tokens;
+    const tokens = thirdPartyContracts.tokens;
 
     const [quoteToken, baseToken] = tokens;
     const defaultTokens = [quoteToken, baseToken];

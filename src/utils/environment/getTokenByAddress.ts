@@ -12,5 +12,5 @@ export const getTokenByAddress = (
     return token.address.toLowerCase() === value;
   };
 
-  return R.find(comparator, environment.deployment.thirdpartyContracts.tokens);
+  return R.find(comparator, environment.deployment.thirdPartyContracts.tokens);
 };
