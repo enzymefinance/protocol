@@ -28,7 +28,7 @@ const deployKyberPriceFeed = async (
   ).quantity.toString();
 
   const address = await deployContract(environment, Contracts.KyberPriceFeed, [
-    registry,
+    registry.toString(),
     kyberNetworkProxy.toString(),
     maxSpreadInWei,
     quoteToken.address.toString(),
