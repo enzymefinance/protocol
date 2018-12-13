@@ -42,7 +42,7 @@ describe('tradingCallbacks', () => {
         emptyAddress,
         emptyAddress,
         emptyAddress,
-        emptyAddress,
+        shared.registry.options.address,
         emptyAddress,
         emptyAddress,
         emptyAddress,
@@ -54,6 +54,7 @@ describe('tradingCallbacks', () => {
     const mockOrderId = 42;
     const makerQuantity = 100;
     const takerQuantity = 200;
+
     await shared.trading.methods
       .callOnExchange(
         0,
