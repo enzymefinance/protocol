@@ -37,8 +37,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
                 "Asset not registered"
             );
             investAllowed[_assets[i]] = true;
-            emit EnableInvestment(_assets);
         }
+        emit EnableInvestment(_assets);
     }
 
     function enableInvestment(address[] _assets) public auth {
@@ -58,8 +58,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         address investmentAsset
     )
         external
-        payable
         amguPayable
+        payable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
@@ -91,8 +91,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     function executeRequestFor(address requestOwner)
         public
-        payable
         amguPayable
+        payable
         // TODO: implement and use below modifiers
         // pre_cond(
         //     Shares(routes.shares).totalSupply() == 0 ||

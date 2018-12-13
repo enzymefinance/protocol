@@ -1,13 +1,9 @@
 pragma solidity ^0.4.21;
 
 interface VersionInterface {
-    function getAmguPrice() returns (uint);
-    function isFund(address) returns (bool);
-    function isFundFactory(address) returns (bool);
-
-    event SetAmguPrice(
-        uint amguPrice
-    );
-    event ShutDown();
+    event ShutDownVersion();
+    function securityShutDown() external;
+    function shutDownFund(address) external;
+    function getShutDownStatus() external returns (bool);
 }
 

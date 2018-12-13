@@ -15,6 +15,7 @@ import {
 } from '~/utils/solidity/prepareTransaction';
 import { ensure } from '~/utils/guards/ensure';
 import { sign } from '../environment/sign';
+import { EnsureError } from '../guards/EnsureError';
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -178,66 +179,80 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       LogLevels.DEBUG,
     );
 
-    const options: Options =
-      typeof optionsOrCallback === 'function'
-        ? optionsOrCallback(environment)
-        : optionsOrCallback;
+    try {
+      const options: Options =
+        typeof optionsOrCallback === 'function'
+          ? optionsOrCallback(environment)
+          : optionsOrCallback;
 
-    if (!options.skipGuards) {
-      await guard(environment, params, contractAddress, options);
+      if (!options.skipGuards) {
+        await guard(environment, params, contractAddress, options);
+      }
+
+      const args = await prepareArgs(environment, params, contractAddress);
+      const contractInstance = getContract(
+        environment,
+        contract,
+        contractAddress,
+      );
+      ensure(
+        !!contractInstance.methods[name],
+        `Method ${name} does not exist on contract ${contract}`,
+      );
+      const transaction = contractInstance.methods[name](...args);
+
+      transaction.name = name;
+      const prepared = await prepareTransaction(
+        environment,
+        transaction,
+        options,
+      );
+
+      // HACK: To avoid circular dependencies (?)
+      const {
+        calcAmguInEth,
+      } = await import('~/contracts/engine/calls/calcAmguInEth');
+
+      const amguInEth = options.amguPayable
+        ? await calcAmguInEth(
+            environment,
+            contractAddress,
+            prepared.gasEstimation,
+          )
+        : createQuantity('eth', '0'); /*;*/
+
+      const melonTransaction = {
+        amguInEth,
+        contract,
+        name,
+        params,
+        rawTransaction: {
+          data: prepared.encoded,
+          from: `${options.from || environment.wallet.address}`,
+          gas: `${options.gas || prepared.gasEstimation}`,
+          gasPrice: `${options.gasPrice || environment.options.gasPrice}`,
+          to: `${contractAddress}`,
+          value: `${options.value || amguInEth.quantity}`,
+        },
+        transactionArgs: prepared.transaction.arguments,
+      };
+
+      debug('Transaction prepared', melonTransaction);
+
+      return melonTransaction;
+    } catch (e) {
+      debug(e, {
+        contract,
+        contractAddress,
+        name,
+      });
+
+      if (e instanceof EnsureError) {
+        throw e;
+      } else {
+        throw new Error(`Error in prepare transaction: ${e.message}`);
+      }
     }
-
-    const args = await prepareArgs(environment, params, contractAddress);
-    const contractInstance = getContract(
-      environment,
-      contract,
-      contractAddress,
-    );
-    ensure(
-      !!contractInstance.methods[name],
-      `Method ${name} does not exist on contract ${contract}`,
-    );
-    const transaction = contractInstance.methods[name](...args);
-
-    transaction.name = name;
-    const prepared = await prepareTransaction(
-      environment,
-      transaction,
-      options,
-    );
-
-    // HACK: To avoid circular dependencies (?)
-    const {
-      calcAmguInEth,
-    } = await import('~/contracts/engine/calls/calcAmguInEth');
-
-    const amguInEth = options.amguPayable
-      ? await calcAmguInEth(
-          environment,
-          contractAddress,
-          prepared.gasEstimation,
-        )
-      : createQuantity('eth', '0'); /*;*/
-
-    const melonTransaction = {
-      amguInEth,
-      contract,
-      name,
-      params,
-      rawTransaction: {
-        data: prepared.encoded,
-        from: `${options.from || environment.wallet.address}`,
-        gas: `${options.gas || prepared.gasEstimation}`,
-        gasPrice: `${options.gasPrice || environment.options.gasPrice}`,
-        to: `${contractAddress}`,
-        value: `${options.value || amguInEth.quantity}`,
-      },
-      transactionArgs: prepared.transaction.arguments,
-    };
-
-    debug('Transaction prepared', melonTransaction);
-
-    return melonTransaction;
   };
 
   const send: SendFunction<Args> = async (
