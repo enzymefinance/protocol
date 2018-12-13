@@ -9,4 +9,3 @@ export const createFeeManager = transactionFactory(
   undefined,
   // { amguPayable: true },
 );
-

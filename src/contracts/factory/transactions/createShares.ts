@@ -9,4 +9,3 @@ export const createShares = transactionFactory(
   undefined,
   // { amguPayable: true },
 );
-

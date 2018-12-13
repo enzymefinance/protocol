@@ -9,4 +9,3 @@ export const createParticipation = transactionFactory(
   undefined,
   // { amguPayable: true },
 );
-

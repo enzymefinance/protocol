@@ -91,8 +91,9 @@ describe('generalWalkthrough', () => {
             new BigInteger(2),
             power(new BigInteger(10), new BigInteger(16)),
           ),
-        )
-      }, {
+        ),
+      },
+      {
         feeAddress: performanceFee.options.address,
         feePeriod: new BigInteger(86400 * 90),
         feeRate: new BigInteger(
@@ -104,15 +105,20 @@ describe('generalWalkthrough', () => {
       },
     ];
 
-    await beginSetup(shared.env, version, {
-      defaultTokens,
-      exchangeConfigs,
-      fees,
-      fundName,
-      nativeToken: quoteToken,
-      priceSource,
-      quoteToken,
-    }, {gas: '8000000', skipGasEstimation: true, skipGuards: true});
+    await beginSetup(
+      shared.env,
+      version,
+      {
+        defaultTokens,
+        exchangeConfigs,
+        fees,
+        fundName,
+        nativeToken: quoteToken,
+        priceSource,
+        quoteToken,
+      },
+      { gas: '8000000', skipGasEstimation: true, skipGuards: true },
+    );
 
     await createAccounting(shared.env, version);
     await createFeeManager(shared.env, version);

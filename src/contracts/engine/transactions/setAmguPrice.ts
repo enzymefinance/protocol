@@ -26,7 +26,7 @@ const setAmguPrice: EnhancedExecute<
   Contracts.Engine,
   undefined,
   prepareArgs,
-  postProcess
+  postProcess,
 );
 
 export { setAmguPrice };

@@ -15,7 +15,7 @@ interface RegisterVersionArgs {
 const prepareArgs: PrepareArgsFunction<RegisterVersionArgs> = async (
   _,
   { address, name }: RegisterVersionArgs,
-) => [ `${address}`, name ];
+) => [`${address}`, name];
 
 const registerVersion: EnhancedExecute<
   RegisterVersionArgs,
@@ -28,4 +28,3 @@ const registerVersion: EnhancedExecute<
 );
 
 export { registerVersion };
-

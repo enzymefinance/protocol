@@ -9,4 +9,3 @@ export const createVault = transactionFactory(
   undefined,
   // { amguPayable: true },
 );
-

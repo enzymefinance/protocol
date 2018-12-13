@@ -4,4 +4,3 @@ import { Contracts } from '~/Contracts';
 const getEngine = callFactoryWithoutParams('engine', Contracts.AmguConsumer);
 
 export { getEngine };
-

@@ -97,16 +97,13 @@ export const deploySystem = async (environment: Environment) => {
   const monthInSeconds = 30 * 24 * 60 * 60;
   // Not used since deployer is assumed to be governance
   // const governanceAddress = accounts[0];
-  const engineAddress = await deployEngine(
-    environment,
-    monthInSeconds,
-  );
+  const engineAddress = await deployEngine(environment, monthInSeconds);
   const registryAddress = await deployRegistry(environment);
-  await setMlnToken(environment, registryAddress, {address: mlnTokenAddress});
-  await setPriceSource(
-    environment, registryAddress, {address: priceFeedAddress}
-  );
-  await setEngine(environment, registryAddress, {address: engineAddress});
+  await setMlnToken(environment, registryAddress, { address: mlnTokenAddress });
+  await setPriceSource(environment, registryAddress, {
+    address: priceFeedAddress,
+  });
+  await setEngine(environment, registryAddress, { address: engineAddress });
 
   const versionAddress = await deployVersion(environment, {
     accountingFactoryAddress,
@@ -122,13 +119,10 @@ export const deploySystem = async (environment: Environment) => {
     vaultFactoryAddress,
   });
   await registerVersion(environment, registryAddress, {
-    address: versionAddress, name: '0.0.0'
+    address: versionAddress,
+    name: '0.0.0',
   });
-  await setRegistry(
-    environment,
-    engineAddress,
-    { address: registryAddress}
-  );
+  await setRegistry(environment, engineAddress, { address: registryAddress });
   const rankingAddress = await deployFundRanking(environment);
   const exchangeConfigs = [
     {

@@ -12,7 +12,8 @@ interface CompleteSetupArgs {}
 type CompleteSetupResult = string;
 
 const postProcess: PostProcessFunction<
-  CompleteSetupArgs, CompleteSetupResult
+  CompleteSetupArgs,
+  CompleteSetupResult
 > = async (
   environment: Environment,
   receipt,
@@ -34,4 +35,3 @@ export const completeSetup = transactionFactory(
   postProcess,
   // { amguPayable: true },
 );
-

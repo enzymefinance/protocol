@@ -3,11 +3,7 @@ import { Contracts } from '~/Contracts';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-const postProcess = async (
-  environment,
-  result,
-  prepared,
-) => {
+const postProcess = async (environment, result, prepared) => {
   const engineAddress = prepared.contractAddress;
   const amguToken = await getAmguToken(environment, engineAddress);
   const quantity = createQuantity(amguToken, result);

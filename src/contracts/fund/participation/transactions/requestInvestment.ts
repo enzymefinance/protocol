@@ -40,7 +40,7 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
   const args = [
     requestedSharesArg,
     investmentAmountArg,
-    `${investmentAssetArg}`
+    `${investmentAssetArg}`,
   ];
   return args;
 };

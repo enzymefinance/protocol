@@ -96,9 +96,13 @@ const postProcess: PostProcessFunction<
   );
 };
 
-export const beginSetup = transactionFactory<
-  BeginSetupArgs,
-  BeginSetupResult
->('beginSetup', Contracts.FundFactory, guard, prepareArgs, postProcess, {
-  amguPayable: true,
-});
+export const beginSetup = transactionFactory<BeginSetupArgs, BeginSetupResult>(
+  'beginSetup',
+  Contracts.FundFactory,
+  guard,
+  prepareArgs,
+  postProcess,
+  {
+    amguPayable: true,
+  },
+);

@@ -9,4 +9,3 @@ export const createPolicyManager = transactionFactory(
   undefined,
   // { amguPayable: true },
 );
-
