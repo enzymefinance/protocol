@@ -15,6 +15,9 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: `./logs/test-${process.pid}.log`,
     }),
+    new winston.transports.File({
+      filename: `./logs/test-latest.log`,
+    }),
   ],
 });
 
