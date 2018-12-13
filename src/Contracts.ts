@@ -218,7 +218,7 @@ export const requireMap = {
     require('../out/WETH9.abi.json'),
   [Contracts.WrapperLock]:
     require(`../out/${Contracts.WrapperLock}.abi.json`),
-  [Contracts.WrapperLock]:
+  [Contracts.WrapperLockEth]:
     require(`../out/${Contracts.WrapperLockEth}.abi.json`),
   [Contracts.ZeroExExchange]:
     require('../out/Exchange.abi.json'),
