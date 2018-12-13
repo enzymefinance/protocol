@@ -24,6 +24,7 @@ export { getPrices } from '~/contracts/prices/calls/getPrices';
 export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
 export { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 export { getStepFor } from '~/contracts/factory/calls/getStepFor';
+export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 export { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
 export { isAddress } from '~/utils/checks/isAddress';
