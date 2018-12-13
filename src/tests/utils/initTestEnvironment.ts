@@ -1,9 +1,10 @@
 import { default as Web3Accounts } from 'web3-eth-accounts';
-import { constructEnvironment } from './constructEnvironment';
-import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
-import { testLogger } from './testLogger';
-import { LogLevels } from './Environment';
+
+import { testLogger } from '~/tests/utils/testLogger';
+import { constructEnvironment } from '~/utils/environment/constructEnvironment';
+import { LogLevels } from '~/utils/environment/Environment';
+import { ensure } from '~/utils/guards/ensure';
 
 // tslint:disable-next-line:max-line-length
 const testMnemonic =
@@ -62,22 +63,28 @@ const getGanache = () => {
     mnemonic: testMnemonic,
   });
 
-  testLogger(
-    'melon:protocol:utils:environment',
-    LogLevels.DEBUG,
-    'In-memory Ganache',
-  );
+  testLogger('melon:protocol:test:utils', LogLevels.DEBUG, 'In-memory Ganache');
 
   return provider;
 };
 
-export const initTestEnvironment = async () => {
+export const initTestEnvironment = async (endpoint?: string) => {
+  const jsonRpcEndpoint = endpoint || process.env.JSON_RPC_ENDPOINT;
+
+  testLogger(
+    'melon:protocol:test:utils',
+    LogLevels.DEBUG,
+    'Endpoint:',
+    jsonRpcEndpoint,
+    endpoint ? 'via function arg' : 'via JSON_RPC_ENDPOINT envvar',
+  );
+
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set
-    endpoint: process.env.JSON_RPC_ENDPOINT,
+    endpoint: jsonRpcEndpoint,
     logger: testLogger,
-    provider: !process.env.JSON_RPC_ENDPOINT && getGanache(),
+    provider: !jsonRpcEndpoint && getGanache(),
   });
   const accounts = await environment.eth.getAccounts();
 

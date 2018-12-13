@@ -6,7 +6,7 @@ import {
   approveOrder,
 } from '~/contracts/exchanges/thirdparty/0x/utils/createOrder';
 import { fillOrder } from '~/contracts/exchanges/thirdparty/0x/transactions/fillOrder';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';

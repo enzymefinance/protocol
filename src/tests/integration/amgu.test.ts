@@ -1,5 +1,3 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploySystem } from '~/utils/deploySystem';
 import { createComponents } from '~/contracts/factory/transactions/createComponents';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
@@ -17,12 +15,17 @@ import {
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
+import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { Environment } from '~/utils/environment/Environment';
 
 describe('amgu', () => {
-  const shared: any = {};
+  const shared: {
+    env?: Environment;
+    [p: string]: any;
+  } = {};
 
   beforeAll(async () => {
-    shared.env = await deploySystem(await initTestEnvironment());
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
@@ -35,20 +38,21 @@ describe('amgu', () => {
     const fundName = `test-fund-${randomString()}`;
     const {
       exchangeConfigs,
-      priceSource,
-      tokens,
-      // engine,
-      // policies,
-      version,
+      melonContracts,
+      thirdpartyContracts,
     } = shared.env.deployment;
-    const [quoteToken, baseToken] = tokens;
+    const [quoteToken, baseToken] = thirdpartyContracts.tokens;
 
     const defaultTokens = [quoteToken, baseToken];
     const fees = [];
-    const amguToken = await getAmguToken(shared.env, version);
+    const amguToken = await getAmguToken(shared.env, melonContracts.version);
     const amguPrice = createQuantity(amguToken, '1000000000');
-    const oldAmguPrice = await getAmguPrice(shared.env, version);
-    const newAmguPrice = await setAmguPrice(shared.env, version, amguPrice);
+    const oldAmguPrice = await getAmguPrice(shared.env, melonContracts.version);
+    const newAmguPrice = await setAmguPrice(
+      shared.env,
+      melonContracts.version,
+      amguPrice,
+    );
 
     expect(isEqual(newAmguPrice, amguPrice)).toBe(true);
     expect(isEqual(newAmguPrice, oldAmguPrice)).toBe(false);
@@ -59,7 +63,7 @@ describe('amgu', () => {
       fees,
       fundName,
       nativeToken: quoteToken,
-      priceSource,
+      priceSource: melonContracts.priceSource,
       quoteToken,
     };
 
@@ -68,12 +72,18 @@ describe('amgu', () => {
       createQuantity(quoteToken, '2'),
     );
 
-    await update(shared.env, priceSource, [newPrice]);
+    await update(shared.env, melonContracts.priceSource, [newPrice]);
 
-    const [price] = await getPrices(shared.env, priceSource, [baseToken]);
+    const [price] = await getPrices(shared.env, melonContracts.priceSource, [
+      baseToken,
+    ]);
     expect(isEqualPrice(price, newPrice)).toBe(true);
 
-    const prepared = await createComponents.prepare(shared.env, version, args);
+    const prepared = await createComponents.prepare(
+      shared.env,
+      melonContracts.version,
+      args,
+    );
 
     const preBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
@@ -84,7 +94,7 @@ describe('amgu', () => {
 
     const result = await createComponents.send(
       shared.env,
-      version,
+      melonContracts.version,
       signedTransactionData,
       args,
     );

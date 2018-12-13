@@ -85,16 +85,15 @@ const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
   environment,
   receipt,
 ) => {
-  const zeroExAddress = environment.deployment.exchangeConfigs.find(
-    o => o.name === 'ZeroEx',
-  ).exchangeAddress;
+  const zeroExAddress =
+    environment.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
   const feeToken = await getFeeToken(environment, zeroExAddress);
   const fillValues = receipt.events.Fill.returnValues;
 
   const result = await parse0xFillReceipt(environment, {
-    fillValues,
     feeToken,
+    fillValues,
   });
 
   return result;

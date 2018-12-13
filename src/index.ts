@@ -7,7 +7,7 @@ export {
 export {
   createComponents,
 } from '~/contracts/factory/transactions/createComponents';
-export { deploySystem } from '~/utils/deploySystem';
+export { deploySystem } from '~/utils/deploy/deploySystem';
 export {
   executeRequest,
 } from '~/contracts/fund/participation/transactions/executeRequest';

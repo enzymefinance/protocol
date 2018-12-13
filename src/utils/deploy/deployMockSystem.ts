@@ -1,11 +1,10 @@
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
-import { LogLevels } from './environment/Environment';
+import { LogLevels } from '../environment/Environment';
 import { Environment } from '~/utils/environment/Environment';
 
 /**
@@ -58,10 +57,8 @@ export const deployMockSystem = async (
     [quoteToken.address, quoteToken.decimals],
   );
 
-  const matchingMarketAddress = await deployMatchingMarket(environment);
-  await addTokenPairWhitelist(environment, matchingMarketAddress, {
-    baseToken,
-    quoteToken,
+  const matchingMarketAddress = await deployMatchingMarket(environment, {
+    tokens: [quoteToken, baseToken],
   });
 
   const matchingMarketAdapter = await deployAndGetContract(
@@ -69,92 +66,94 @@ export const deployMockSystem = async (
     Contracts.MatchingMarketAdapter,
   );
 
+  debug('Adapter', matchingMarketAdapter.options.address);
+
   const version = await deployAndGetContract(environment, versionContract);
   const registry = await deployAndGetContract(environment, registryContract);
   const ranking = await deployAndGetContract(environment, rankingContract);
 
   const hub = await deployAndGetContract(environment, hubContract);
   await hub.methods
-    .setManager(environment.wallet.address)
-    .send({ from: environment.wallet.address });
+    .setManager(environment.wallet.address.toString())
+    .send({ from: environment.wallet.address.toString() });
   await hub.methods.setName('Mock').send({ from: environment.wallet.address });
 
   const accounting = await deployAndGetContract(
     environment,
     accountingContract,
     [
-      hub.options.address,
-      quoteToken.address,
-      wethTokenAddress,
-      [quoteToken.address, baseToken.address],
+      hub.options.address.toString(),
+      quoteToken.address.toString(),
+      wethTokenAddress.toString(),
+      [quoteToken.address.toString(), baseToken.address.toString()],
     ],
   );
 
   const feeManager = await deployAndGetContract(
     environment,
     feeManagerContract,
-    [hub.options.address, fees],
+    [hub.options.address.toString(), fees],
   );
 
   const policyManager = await deployAndGetContract(
     environment,
     policyManagerContract,
-    [hub.options.address],
+    [hub.options.address.toString()],
   );
 
   const participation = await deployAndGetContract(
     environment,
     participationContract,
     [
-      hub.options.address,
-      [quoteToken.address, baseToken.address],
-      registry.options.address,
+      hub.options.address.toString(),
+      [quoteToken.address.toString(), baseToken.address.toString()],
+      registry.options.address.toString(),
     ],
   );
 
   const shares = await deployAndGetContract(environment, sharesContract, [
-    hub.options.address,
+    hub.options.address.toString(),
   ]);
 
   const trading = await deployAndGetContract(environment, tradingContract, [
-    hub.options.address,
-    [matchingMarketAddress],
-    [matchingMarketAdapter.options.address],
+    hub.options.address.toString(),
+    [matchingMarketAddress.toString()],
+    [matchingMarketAdapter.options.address.toString()],
     [true],
-    registry.options.address,
+    registry.options.address.toString(),
   ]);
 
   const vault = await deployAndGetContract(environment, vaultContract, [
-    hub.options.address,
+    hub.options.address.toString(),
   ]);
 
   // TODO: replace with raw function when MockEngine is available
   const engine = await deployAndGetContract(environment, engineContract, [
-    priceSource.options.address,
+    priceSource.options.address.toString(),
     30 * 24 * 60 * 60, // month
-    mlnTokenAddress,
+    mlnTokenAddress.toString(),
   ]);
 
   await engine.methods
-    .setVersion(version.options.address)
-    .send({ from: environment.wallet.address });
+    .setVersion(version.options.address.toString())
+    .send({ from: environment.wallet.address.toString() });
 
   await hub.methods
     .setSpokes([
-      accounting.options.address,
-      feeManager.options.address,
-      participation.options.address,
-      policyManager.options.address,
-      shares.options.address,
-      trading.options.address,
-      vault.options.address,
-      priceSource.options.address,
-      registry.options.address,
-      version.options.address,
-      engine.options.address,
-      mlnTokenAddress,
+      accounting.options.address.toString(),
+      feeManager.options.address.toString(),
+      participation.options.address.toString(),
+      policyManager.options.address.toString(),
+      shares.options.address.toString(),
+      trading.options.address.toString(),
+      vault.options.address.toString(),
+      priceSource.options.address.toString(),
+      registry.options.address.toString(),
+      version.options.address.toString(),
+      engine.options.address.toString(),
+      mlnTokenAddress.toString(),
     ])
-    .send({ from: environment.wallet.address, gas: 8000000 });
+    .send({ from: environment.wallet.address.toString(), gas: 8000000 });
 
   const toInit = [
     accounting,
@@ -166,12 +165,12 @@ export const deployMockSystem = async (
   ];
   for (const contract of toInit) {
     await hub.methods
-      .initializeSpoke(contract.options.address)
-      .send({ from: environment.wallet.address, gas: 8000000 });
+      .initializeSpoke(contract.options.address.toString())
+      .send({ from: environment.wallet.address.toString(), gas: 8000000 });
   }
   await hub.methods
     .setPermissions()
-    .send({ from: environment.wallet.address, gas: 8000000 });
+    .send({ from: environment.wallet.address.toString(), gas: 8000000 });
 
   const contracts = {
     accounting,

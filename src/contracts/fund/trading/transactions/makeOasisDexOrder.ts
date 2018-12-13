@@ -21,12 +21,10 @@ import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShut
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-import { Address } from '@melonproject/token-math/address';
 
 export type MakeOasisDexOrderResult = any;
 
 export interface MakeOasisDexOrderArgs {
-  maker: Address;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
 }
@@ -77,8 +75,8 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     feeRecipient: '0x0000000000000000000000000000000000000000',
     fillTakerTokenAmount: '0',
     identifier: web3Utils.padLeft('0x0', 64),
-    maker: contractAddress,
-    makerAsset: makerQuantity.token.address,
+    maker: contractAddress.toString(),
+    makerAsset: makerQuantity.token.address.toString(),
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',
     makerQuantity: makerQuantity.quantity,
@@ -87,7 +85,7 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     senderAddress: '0x0000000000000000000000000000000000000000',
     signature: web3Utils.padLeft('0x0', 64),
     taker: '0x0000000000000000000000000000000000000000',
-    takerAsset: takerQuantity.token.address,
+    takerAsset: takerQuantity.token.address.toString(),
     takerAssetData: web3Utils.padLeft('0x0', 64),
     takerFee: '0',
     takerQuantity: takerQuantity.quantity,

@@ -12,11 +12,12 @@ import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 
-export interface ExchangeConfig {
-  name: string;
-  exchangeAddress: Address;
-  adapterAddress: Address;
-  takesCustody: boolean;
+export interface ExchangeConfigs {
+  [exchange: string]: {
+    exchange: Address;
+    adapter: Address;
+    takesCustody: boolean;
+  };
 }
 
 export interface FeeConfig {
@@ -28,7 +29,7 @@ export interface FeeConfig {
 interface CreateComponentsArgs {
   fundName: string;
   fees: FeeConfig[];
-  exchangeConfigs: ExchangeConfig[];
+  exchangeConfigs: ExchangeConfigs;
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
@@ -58,13 +59,13 @@ const prepareArgs: PrepareArgsFunction<CreateComponentsArgs> = async (
   },
   contractAddress,
 ) => {
-  const exchangeAddresses = exchangeConfigs.map(e =>
-    e.exchangeAddress.toString(),
+  const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
+    e.exchange.toString(),
   );
-  const adapterAddresses = exchangeConfigs.map(e =>
-    e.adapterAddress.toString(),
+  const adapterAddresses = Object.values(exchangeConfigs).map(e =>
+    e.adapter.toString(),
   );
-  const takesCustody = exchangeConfigs.map(e => e.takesCustody);
+  const takesCustody = Object.values(exchangeConfigs).map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const nativeTokenAddress = nativeToken.address;

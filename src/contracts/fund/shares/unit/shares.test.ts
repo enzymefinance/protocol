@@ -1,6 +1,6 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deployMockSystem';
-import { deploy } from '~/utils/solidity/deploy';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
@@ -16,7 +16,9 @@ describe('shares', () => {
     shared.shares = getContract(
       shared.env,
       Contracts.Shares,
-      await deploy(shared.env, Contracts.Shares, [shared.hub.options.address]),
+      await deployContract(shared.env, Contracts.Shares, [
+        shared.hub.options.address,
+      ]),
     );
   });
 

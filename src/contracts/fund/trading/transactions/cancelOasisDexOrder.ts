@@ -48,7 +48,7 @@ const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
     feeRecipient: '0x0000000000000000000000000000000000000000',
     fillTakerTokenAmount: '0',
     identifier: id,
-    maker,
+    maker: maker.toString(),
     makerAsset,
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',

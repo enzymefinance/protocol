@@ -1,4 +1,4 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getInfo } from '../calls/getInfo';
 import { deployToken } from '../transactions/deploy';
 

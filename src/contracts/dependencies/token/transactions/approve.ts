@@ -27,7 +27,7 @@ const guard = async (environment, { howMuch, spender }) => {
   await ensureSufficientBalance(
     environment,
     howMuch,
-    environment.wallet.address,
+    environment.wallet.address.toString(),
   );
 };
 

@@ -9,20 +9,20 @@ import {
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getPrice } from '@melonproject/token-math/price';
 
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { deployTestingPriceFeed as deployFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
+import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { update } from '~/contracts/prices/transactions/update';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { increaseTime } from '~/utils/evm';
 
 import { thaw } from './thaw';
 import { sellAndBurnMln } from './sellAndBurnMln';
-import { deploy as deployEngine } from './deploy';
+import { deployEngine } from './deployEngine';
 
 describe('sellAndBurnMln', () => {
   const shared: any = {};
@@ -40,6 +40,7 @@ describe('sellAndBurnMln', () => {
         '',
       ]),
     );
+    const mlnToken = await getToken(shared.env, shared.mln.options.address);
     shared.weth = await getContract(
       shared.env,
       Contracts.StandardToken,
@@ -50,7 +51,7 @@ describe('sellAndBurnMln', () => {
       Contracts.MockVersion,
       await deployContract(shared.env, Contracts.MockVersion),
     );
-    const feedAddress = await deployFeed(
+    const feedAddress = await deployTestingPriceFeed(
       shared.env,
       await getToken(shared.env, wethAddress),
     );
@@ -60,12 +61,11 @@ describe('sellAndBurnMln', () => {
       feedAddress,
     );
     shared.delay = 30 * 24 * 60 * 60;
-    shared.engineAddress = await deployEngine(
-      shared.env,
-      shared.feed.options.address,
-      shared.delay,
-      shared.mln.options.address,
-    );
+    shared.engineAddress = await deployEngine(shared.env, {
+      delay: shared.delay,
+      mlnToken,
+      priceSource: shared.feed.options.address,
+    });
     shared.priceSource = await getContract(
       shared.env,
       Contracts.TestingPriceFeed,

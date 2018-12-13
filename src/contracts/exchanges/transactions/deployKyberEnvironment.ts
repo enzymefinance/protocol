@@ -1,8 +1,9 @@
+import { default as BigNumber } from 'bignumber.js';
+import { TokenInterface } from '@melonproject/token-math/token';
+
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy as deployContract } from '~/utils/solidity/deploy';
-import { default as BigNumber } from 'bignumber.js';
-1;
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
@@ -14,12 +15,16 @@ function bytesToHex(byteArray) {
   return num;
 }
 
+export interface KyberEnvironment {
+  conversionRates: string;
+  kyberNetwork: string;
+  kyberNetworkProxy: string;
+}
+
 export const deployKyberEnvironment = async (
   environment: Environment,
-  mlnToken,
-  ethToken,
-  eurToken,
-) => {
+  tokens: TokenInterface[],
+): Promise<KyberEnvironment> => {
   const debug = environment.logger(
     'melon:protocol:exchanges:deploy-kyber',
     LogLevels.DEBUG,
@@ -38,6 +43,8 @@ export const deployKyberEnvironment = async (
   //   gas: 8000000,
   //   gasPrice: 10,
   // };
+
+  const [mlnToken, eurToken] = tokens;
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();
@@ -170,7 +177,7 @@ export const deployKyberEnvironment = async (
     Contracts.KyberWhiteList,
     await deployContract(environment, Contracts.KyberWhiteList, [
       deployer,
-      kgtTokenAddress,
+      kgtTokenAddress.toString(),
     ]),
   );
   await kyberWhiteListContract.methods
@@ -219,10 +226,10 @@ export const deployKyberEnvironment = async (
     .setWhiteList(kyberWhiteListContract.options.address)
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
-    .setExpectedRate(expectedRateAddress)
+    .setExpectedRate(expectedRateAddress.toString())
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
-    .setFeeBurner(feeBurnerAddress)
+    .setFeeBurner(feeBurnerAddress.toString())
     .send({ from: deployer, gas: 8000000 });
   await kyberNetworkContract.methods
     .setKyberProxy(kyberNetworkProxyContract.options.address)
@@ -233,7 +240,7 @@ export const deployKyberEnvironment = async (
   await kyberNetworkContract.methods
     .listPairForReserve(
       kyberReserveContract.options.address,
-      mlnToken.address,
+      mlnToken.address.toString(),
       true,
       true,
       true,
@@ -301,11 +308,6 @@ export const deployKyberEnvironment = async (
     )
     .send({ from: deployer, gas: 8000000 });
 
-  // Melon Fund env
-  const kyberAdapterAddress = await deployContract(
-    environment,
-    Contracts.KyberAdapter,
-  );
   // TODO
   // await governanceAction(
   //   { from: deployer },
@@ -320,9 +322,8 @@ export const deployKyberEnvironment = async (
   //   ],
   // );
   return {
-    kyberAdapterAddress,
-    kyberConversionRate: conversionRates.options.address,
-    kyberNetworkAddress: kyberNetworkContract.options.address,
-    kyberNetworkProxyAddress: kyberNetworkProxyContract.options.address,
+    conversionRates: conversionRates.options.address,
+    kyberNetwork: kyberNetworkContract.options.address,
+    kyberNetworkProxy: kyberNetworkProxyContract.options.address,
   };
 };
