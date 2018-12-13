@@ -12,7 +12,7 @@ import {
   FillOrderResult,
   getFeeToken,
   parse0xFillReceipt,
-} from '~/contracts/exchanges/thirdparty/0x';
+} from '~/contracts/exchanges/third-party/0x';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Contracts, Exchanges } from '~/Contracts';

@@ -1,5 +1,5 @@
 {
-  "thirdpartyContracts": {
+  "thirdPartyContracts": {
     "exchanges": {
       "kyber": {
         "conversionRates": "0xAe49abc7F2874368620a470E8806b083391a4Be2",
