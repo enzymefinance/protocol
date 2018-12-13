@@ -10,6 +10,7 @@ import {
   generatePseudoRandomSalt,
   assetDataUtils,
   signatureUtils,
+  orderHashUtils,
 } from '@0x/order-utils';
 import { BigNumber } from 'bignumber.js';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
@@ -25,6 +26,7 @@ import { getAssetProxy } from '../calls/getAssetProxy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { Environment } from '~/utils/environment/Environment';
+import { Signature } from 'ethers/utils';
 
 export interface CreateOrderArgs {
   makerQuantity: QuantityInterface;
@@ -127,4 +129,20 @@ const signOrder = async (
   return signatureTyped;
 };
 
-export { createOrder, signOrder, approveOrder };
+const isValidSignatureOffChain = async (
+  environment: Environment,
+  order: Order,
+  signature: string,
+  makerAddress?: Address,
+): Promise<boolean> => {
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+
+  return signatureUtils.isValidSignatureAsync(
+    environment.eth.currentProvider,
+    orderHashHex,
+    signature,
+    (makerAddress || environment.wallet.address).toString(),
+  );
+};
+
+export { createOrder, signOrder, approveOrder, isValidSignatureOffChain };

@@ -7,6 +7,7 @@ import {
   createOrder,
   signOrder,
   approveOrder,
+  isValidSignatureOffChain,
 } from '~/contracts/exchanges/thirdparty/0x/utils/createOrder';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
@@ -27,6 +28,7 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Contracts } from '~/Contracts';
 import { deploy } from '~/utils/solidity/deploy';
+import { sign } from '~/utils/environment/sign';
 // import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 
 // mock data
@@ -115,26 +117,40 @@ test('fund receives ETH from investment, and gets ZRX from direct transfer', asy
 
 test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
-  const makerQuantity = createQuantity(s.mln, 1);
-  const takerQuantity = createQuantity(s.weth, 0.05);
+  const mlnTokenInterface = await getToken(
+    s.environment,
+    s.mln.options.address,
+  );
+  const wethTokenInterface = await getToken(
+    s.environment,
+    s.weth.options.address,
+  );
+  const makerQuantity = createQuantity(mlnTokenInterface, 1);
+  const takerQuantity = createQuantity(wethTokenInterface, 0.05);
 
-  const unsignedOrder = await createOrder(s.environment, s.zeroExAddress, {
-    makerAddress,
-    makerQuantity,
-    takerQuantity,
-  });
+  const unsignedOrder = await createOrder(
+    s.environment,
+    s.zeroExExchange.options.address,
+    {
+      makerAddress,
+      makerQuantity,
+      takerQuantity,
+    },
+  );
 
-  await approveOrder(s.environment, s.zeroExAddress, unsignedOrder);
+  await approveOrder(
+    s.environment,
+    s.zeroExExchange.options.address,
+    unsignedOrder,
+  );
   const signedOrder = await signOrder(s.environment, unsignedOrder);
-  console.log(signedOrder);
-  // const signatureValid = await signatureUtils.isValidSignatureAsync(
-  //   web3.currentProvider,
-  //   orderHashHex,
-  //   orderSignature,
-  //   makerAddress,
-  // );
+  const signatureValid = await isValidSignatureOffChain(
+    s.environment,
+    unsignedOrder,
+    signedOrder.signature,
+  );
 
-  // t.true(signatureValid);
+  expect(signatureValid).toBeTruthy();
 });
 
 // test.serial(
@@ -171,7 +187,6 @@ test('third party makes and validates an off-chain order', async () => {
 //       )
 //       .send({ from: manager, gas: config.gas });
 //     const post = await getAllBalances(deployed, accounts, fund);
-//     const heldInExchange = await fund.trading.methods
 //       .updateAndGetQuantityHeldInExchange(ethToken.options.address)
 //       .call();
 
