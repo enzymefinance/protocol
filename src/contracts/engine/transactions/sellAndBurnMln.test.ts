@@ -40,7 +40,7 @@ describe('sellAndBurnMln', () => {
         '',
       ]),
     );
-    const mlnToken = await getToken(shared.env, shared.mln.options.address);
+
     shared.weth = await getContract(
       shared.env,
       Contracts.StandardToken,
@@ -66,7 +66,9 @@ describe('sellAndBurnMln', () => {
       feedAddress,
     );
     shared.delay = 30 * 24 * 60 * 60;
-    shared.engineAddress = await deployEngine(shared.env, shared.delay);
+    shared.engineAddress = await deployEngine(shared.env, {
+      delay: shared.delay,
+    });
     shared.priceSource = await getContract(
       shared.env,
       Contracts.TestingPriceFeed,

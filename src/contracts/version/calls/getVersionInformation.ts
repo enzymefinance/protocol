@@ -1,3 +1,4 @@
+import * as R from 'ramda';
 import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { Address } from '@melonproject/token-math/address';
@@ -11,8 +12,8 @@ const prepareArgs = (_, { version }: GetVersionInformationArgs) => {
 };
 
 const postProcess = async (_, result) => {
-  console.log(result);
-  return result;
+  const picked = R.pick(['exists', 'name'], result);
+  return picked.exists && picked;
 };
 
 const getVersionInformation = callFactory(

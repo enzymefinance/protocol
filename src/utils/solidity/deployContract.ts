@@ -50,7 +50,10 @@ export const deployContract: DeployContract = async (
 
   const parsedABI = JSON.parse(rawABI);
 
+  debug('Setup transaction for deployment of', pathToSolidityFile);
+
   const contract = new environment.eth.Contract(parsedABI);
+
   const transaction = contract.deploy({
     arguments: args,
     data: bin,
