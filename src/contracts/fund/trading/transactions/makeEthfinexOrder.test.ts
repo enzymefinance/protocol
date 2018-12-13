@@ -40,10 +40,14 @@ beforeAll(async () => {
   shared.mlnWrapperLock = await getWrapperLock(shared.ethfinexAddress, {
     token: shared.mln,
   });
+
+  shared.wethWrapperLock = await getWrapperLock(shared.ethfinexAddress, {
+    token: shared.weth,
+  });
 });
 
 test('Make ethfinex order from fund and take it from account', async () => {
-  const makerQuantity = createQuantity(shared.weth, 0.05);
+  const makerQuantity = createQuantity(shared.wethWrapperLock, 0.05);
   const takerQuantity = createQuantity(shared.mlnWrapperLock, 1);
 
   const unsignedEthfinexOrder = await createOrder(
