@@ -13,12 +13,7 @@ import { fillOrder } from '~/contracts/exchanges/thirdparty/0x';
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAssetProxy } from '~/contracts/exchanges/thirdparty/0x/calls/getAssetProxy';
-import {
-  BigInteger,
-  add,
-  subtract,
-  power,
-} from '@melonproject/token-math/bigInteger';
+import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';

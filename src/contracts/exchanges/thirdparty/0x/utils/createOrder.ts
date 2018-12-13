@@ -27,7 +27,6 @@ import { getAssetProxy } from '../calls/getAssetProxy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { Environment } from '~/utils/environment/Environment';
-import { Signature } from 'ethers/utils';
 
 export interface CreateOrderArgs {
   makerQuantity: QuantityInterface;
