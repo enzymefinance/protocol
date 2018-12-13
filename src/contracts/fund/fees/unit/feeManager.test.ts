@@ -39,19 +39,14 @@ describe('feeManager', () => {
         feeRate: mockFeeRate,
       },
     ];
-    shared = {
-      ...shared,
-      ...(await deployMockSystem(shared.env, {
-        feeManagerContract: Contracts.FeeManager,
-        fees: shared.feeArray,
-      })),
-    };
+    const deployment = await deployMockSystem(shared.env, {
+      feeManagerContract: Contracts.FeeManager,
+      fees: shared.feeArray,
+    });
+    shared = Object.assign(shared, deployment);
 
-    await shared.version.methods
-      .setIsFund(
-        // just to pass pay amgu
-        shared.feeManager.options.address,
-      )
+    await shared.registry.methods // just to pass pay amgu
+      .setIsFund(shared.feeManager.options.address)
       .send({ from: shared.user });
   });
 

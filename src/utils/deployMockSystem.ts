@@ -90,7 +90,9 @@ export const deployMockSystem = async (
 
   const feeManager = await deployAndGetContract(env, feeManagerContract, [
     hub.options.address,
-    fees,
+    fees.map(f => f.feeAddress),
+    fees.map(f => f.feePeriod),
+    fees.map(f => f.feeRate),
   ]);
 
   const policyManager = await deployAndGetContract(env, policyManagerContract, [
