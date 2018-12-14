@@ -6,4 +6,7 @@ export const getTokenBySymbol = (
   environment: Environment,
   symbol: string,
 ): TokenInterface =>
-  R.find(R.propEq('symbol', symbol), environment.deployment.tokens);
+  R.find(
+    R.propEq('symbol', symbol),
+    environment.deployment.thirdpartyContracts.tokens,
+  );

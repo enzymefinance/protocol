@@ -2,10 +2,10 @@ import { Exchanges, Contracts } from '~/Contracts';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
-import { deploy as deployPriceFeed } from '~/contracts/prices/transactions/deploy';
+import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
-import { deploy as deployEngine } from '~/contracts/engine/transactions/deploy';
+import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { setVersion } from '~/contracts/engine/transactions/setVersion';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
@@ -13,7 +13,7 @@ import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
-import { deployWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployWhitelist';
+import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
 import { deployAccountingFactory } from '~/contracts/fund/accounting/transactions/deployAccountingFactory';
 import { deployFeeManagerFactory } from '~/contracts/fund/fees/transactions/deployFeeManagerFactory';
 import { deployParticipationFactory } from '~/contracts/fund/participation/transactions/deployParticipationFactory';
@@ -54,18 +54,21 @@ export const deploySystem = async (environment: Environment) => {
     await deployToken(environment, 'ZRX'),
   );
   const assets = [wethToken, mlnToken, eurToken, zrxToken];
-  const priceFeedAddress = await deployPriceFeed(environment, quoteToken);
-  const matchingMarketAddress = await deployMatchingMarket(environment);
+  const priceFeedAddress = await deployTestingPriceFeed(
+    environment,
+    quoteToken,
+  );
+  const matchingMarketAddress = await deployMatchingMarket(environment, {
+    tokens: [],
+  });
   const {
     kyberNetworkProxyAddress,
     kyberAdapterAddress,
-  } = await deployKyberEnvironment(
-    environment,
-    accounts[0],
+  } = await deployKyberEnvironment(environment, [
     quoteToken,
     baseToken,
     eurToken,
-  );
+  ]);
 
   const zeroExAddress = await deploy0xExchange(environment, { zrxToken });
   const zeroExAdapterAddress = await deploy0xAdapter(environment);
@@ -76,7 +79,9 @@ export const deploySystem = async (environment: Environment) => {
   });
 
   const priceToleranceAddress = await deployPriceTolerance(environment, 10);
-  const whitelistAddress = await deployWhitelist(environment, [accounts[0]]);
+  const whitelistAddress = await deployUserWhitelist(environment, [
+    accounts[0],
+  ]);
   const matchingMarketAdapterAddress = await deployMatchingMarketAdapter(
     environment,
   );
@@ -94,12 +99,11 @@ export const deploySystem = async (environment: Environment) => {
   const monthInSeconds = 30 * 24 * 60 * 60;
   // Not used since deployer is assumed to be governance
   // const governanceAddress = accounts[0];
-  const engineAddress = await deployEngine(
-    environment,
-    priceFeedAddress,
-    monthInSeconds,
-    mlnTokenAddress,
-  );
+  const engineAddress = await deployEngine(environment, {
+    delay: monthInSeconds,
+    mlnToken,
+    priceSource: priceFeedAddress,
+  });
   const registryAddress = await deployRegistry(environment);
   const versionAddress = await deployVersion(environment, {
     accountingFactoryAddress,

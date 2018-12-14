@@ -32,3 +32,5 @@ utils/etherscan/concatenated
 
 # ignore devchain snapshot
 legacy/utils/devchain-snapshot/
+
+deployments/development-*.json

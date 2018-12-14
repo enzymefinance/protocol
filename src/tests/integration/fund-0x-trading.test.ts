@@ -16,7 +16,7 @@ import { getAssetProxy } from '~/contracts/exchanges/thirdparty/0x/calls/getAsse
 import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getFundComponents } from '~/utils/getFundComponents';

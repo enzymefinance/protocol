@@ -24,7 +24,10 @@ const guard: GuardFunction<TakeOrderFromAccountOasisDexArgs> = async (
 ) => {
   // TODO
 
-  await approve(environment, { howMuch: params.buy, spender: contractAddress });
+  await approve(environment, {
+    howMuch: params.buy,
+    spender: contractAddress.toString(),
+  });
 };
 
 const prepareArgs: PrepareArgsFunction<
@@ -35,13 +38,13 @@ const prepareArgs: PrepareArgsFunction<
 
 const postProcess = async (environment, receipt, params, contractAddress) => {
   return {
-    sold: createQuantity(
-      params.buy.token,
-      receipt.events.LogTrade.returnValues.buy_amt,
-    ),
     bought: createQuantity(
       params.sell.token,
       receipt.events.LogTrade.returnValues.sell_amt,
+    ),
+    sold: createQuantity(
+      params.buy.token,
+      receipt.events.LogTrade.returnValues.buy_amt,
     ),
   };
 };

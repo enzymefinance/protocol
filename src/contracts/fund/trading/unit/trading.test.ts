@@ -1,8 +1,8 @@
 import { Contracts } from '~/Contracts';
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deployMockSystem';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { getContract } from '~/utils/solidity/getContract';
-import { deploy } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { add, isEqual, BigInteger } from '@melonproject/token-math/bigInteger';
@@ -30,8 +30,8 @@ describe('trading', () => {
     shared.trading = getContract(
       shared.env,
       Contracts.Trading,
-      await deploy(shared.env, Contracts.Trading, [
-        shared.hub.options.address, // faked for testing
+      await deployContract(shared.env, Contracts.Trading, [
+        shared.hub.options.address,
         mockExchanges,
         mockExchangeAdapters,
         takesCustodyMasks,
@@ -75,7 +75,7 @@ describe('trading', () => {
   it('Exchanges cannot be initialized without its adapter', async () => {
     const errorMessage = 'Array lengths unequal';
     await expect(
-      deploy(shared.env, Contracts.Trading, [
+      deployContract(shared.env, Contracts.Trading, [
         shared.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],

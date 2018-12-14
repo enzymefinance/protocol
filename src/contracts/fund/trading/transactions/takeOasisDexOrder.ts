@@ -74,7 +74,7 @@ const prepareArgs = async (
     feeRecipient: '0x0000000000000000000000000000000000000000',
     fillTakerTokenAmount: fillTakerTokenAmount.quantity,
     identifier: id,
-    maker,
+    maker: maker.toString(),
     makerAsset: makerQuantity.token.address,
     makerAssetData: web3Utils.padLeft('0x0', 64),
     makerFee: '0',

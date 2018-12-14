@@ -1,5 +1,5 @@
-import { initTestEnvironment } from '~/utils/environment/initTestEnvironment';
-import { deploy } from './deploy';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
+import { deployTestingPriceFeed } from './deployTestingPriceFeed';
 
 describe('deploy', () => {
   const shared: any = {};
@@ -14,13 +14,17 @@ describe('deploy', () => {
   });
 
   it('deploy', async () => {
-    const address = await deploy(shared.env, shared.quoteToken);
+    const address = await deployTestingPriceFeed(shared.env, shared.quoteToken);
     expect(address).toBeTruthy();
   });
 
   it('deploy with wrong address', async () => {
     await expect(
-      deploy(shared.env, { symbol: 'BADADDR', address: '0xqwer', decimals: 2 }),
+      deployTestingPriceFeed(shared.env, {
+        address: '0xqwer',
+        decimals: 2,
+        symbol: 'BADADDR',
+      }),
     ).rejects.toThrow();
   });
 });

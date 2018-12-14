@@ -1,4 +1,4 @@
-import { deploy as deployContract } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
 
