@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 
 import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
@@ -26,6 +26,7 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdpartyContracts } from './deployThirdparty';
 import { Address } from '@melonproject/token-math/address';
+import { getContract } from '~/utils/solidity/getContract';
 
 type Partial<T> = { [P in keyof T]?: T[P] };
 export interface Factories {
@@ -191,6 +192,11 @@ export const deploySystem = async (
     });
   }
 
+  const priceSourceContract = await getContract(
+    environment,
+    Contracts.TestingPriceFeed,
+    actualContracts.priceSource,
+  );
   for (const asset of thirdpartyContracts.tokens) {
     await registerAsset(environment, actualContracts.registry, {
       assetAddress: `${asset.address}`,
@@ -203,6 +209,9 @@ export const deploySystem = async (
       standards: [],
       url: '',
     });
+    await priceSourceContract.methods
+      .setDecimals(asset.address, asset.decimals)
+      .send({ from: accounts[0] });
   }
 
   const addresses = {
