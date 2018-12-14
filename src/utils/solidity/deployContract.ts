@@ -37,6 +37,7 @@ export const deployContract: DeployContract = async (
     LogLevels.INFO,
   );
 
+  const txIdentifier = `${pathToSolidityFile}(${args.join(',')})`;
   const parsed = path.parse(pathToSolidityFile);
 
   const rawABI = fs.readFileSync(
@@ -55,8 +56,7 @@ export const deployContract: DeployContract = async (
 
   debug(
     'Setup transaction for deployment of',
-    pathToSolidityFile,
-    args,
+    txIdentifier,
     environment.wallet.address,
   );
 
@@ -86,30 +86,31 @@ export const deployContract: DeployContract = async (
     );
   }
 
-  const encodedAbi = transaction.encodeABI();
-  let txHash;
-  const receipt = await environment.eth
-    .sendTransaction({
-      data: encodedAbi,
-      ...options,
-    })
-    .on('error', error => {
-      throw error;
-    })
-    .on('transactionHash', t => {
-      txHash = t;
-      debug('TxHash', pathToSolidityFile, txHash);
-    })
-    .on(
-      'confirmation',
-      c => c < 4 && debug('Confirmation', pathToSolidityFile, c),
+  try {
+    const encodedAbi = transaction.encodeABI();
+    let txHash;
+    const receipt = await environment.eth
+      .sendTransaction({
+        data: encodedAbi,
+        ...options,
+      })
+      .on('error', error => {
+        throw error;
+      })
+      .on('transactionHash', t => {
+        txHash = t;
+        debug('TxHash', txIdentifier, txHash);
+      })
+      .on('confirmation', c => c < 2 && debug('Confirmation', txIdentifier, c));
+    info(
+      'Got receipt',
+      txIdentifier,
+      receipt.contractAddress,
+      `${args.join(', ')}`,
+      txHash,
     );
-  info(
-    'Got receipt',
-    pathToSolidityFile,
-    receipt.contractAddress,
-    `${args.join(', ')}`,
-    txHash,
-  );
-  return new Address(receipt.contractAddress);
+    return new Address(receipt.contractAddress);
+  } catch (e) {
+    throw new Error(`Error with ${txIdentifier}\n${e.message}`);
+  }
 };

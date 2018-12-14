@@ -53,7 +53,7 @@ program
   )
   .option(
     '-p, --gas-price <number>',
-    'Price (in Gwei) of each gas unit',
+    'Price (in wei) of each gas unit',
   )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts (development setup).`);
