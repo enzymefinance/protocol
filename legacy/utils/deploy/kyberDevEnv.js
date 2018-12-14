@@ -39,19 +39,19 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
   const deployed = { ...preKyberDeployed };
 
   deployed.ConversionRates = await deployContract(
-    'exchanges/thirdparty/kyber/ConversionRates',
+    'ConversionRates',
     opts,
     [accounts[0]],
   );
   const mlnToken = deployed.MlnToken;
   const eurToken = deployed.EurToken;
   deployed.KGTToken = await deployContract(
-    'exchanges/thirdparty/kyber/TestToken',
+    'TestToken',
     opts,
     ['KGT', 'KGT', 18],
   );
   deployed.KyberNetwork = await deployContract(
-    'exchanges/thirdparty/kyber/KyberNetwork',
+    'KyberNetwork',
     opts,
     [accounts[0]],
   );
@@ -73,7 +73,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
     .enableTokenTrade(mlnToken.options.address)
     .send();
   deployed.KyberReserve = await deployContract(
-    'exchanges/thirdparty/kyber/KyberReserve',
+    'KyberReserve',
     opts,
     [
       deployed.KyberNetwork.options.address,
@@ -128,7 +128,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
     .send();
 
   deployed.KyberWhiteList = await deployContract(
-    'exchanges/thirdparty/kyber/KyberWhiteList',
+    'KyberWhiteList',
     opts,
     [accounts[0], deployed.KGTToken.options.address],
   );
@@ -139,7 +139,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
   await deployed.KyberWhiteList.methods.setSgdToEthRate(30000).send();
 
   deployed.FeeBurner = await deployContract(
-    'exchanges/thirdparty/kyber/FeeBurner',
+    'FeeBurner',
     opts,
     [
       accounts[0],
@@ -148,7 +148,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
     ],
   );
   deployed.ExpectedRate = await deployContract(
-    'exchanges/thirdparty/kyber/ExpectedRate',
+    'ExpectedRate',
     opts,
     [deployed.KyberNetwork.options.address, accounts[0]],
   );
@@ -248,7 +248,7 @@ async function setupKyberDevEnv(preKyberDeployed, accounts) {
     .send();
 
   // Melon Fund env
-  deployed.KyberAdapter = await deployContract('exchanges/KyberAdapter', opts);
+  deployed.KyberAdapter = await deployContract('KyberAdapter', opts);
   // TODO
   // await governanceAction(
   //   { from: accounts[0] },

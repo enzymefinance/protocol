@@ -25,11 +25,13 @@ const deployThirdParty = async (
   tokens: TokenInterface[] = [
     createToken('WETH'),
     createToken('MLN'),
+    createToken('EUR'),
     createToken('ZRX'),
   ],
 ): Promise<thirdPartyContracts> => {
   ensure(!!tokens.find(t => t.symbol === 'WETH'), 'WETH Token is required');
   ensure(!!tokens.find(t => t.symbol === 'MLN'), 'MLN Token is required');
+  ensure(!!tokens.find(t => t.symbol === 'EUR'), 'EUR Token is required');
   ensure(!!tokens.find(t => t.symbol === 'ZRX'), 'ZRX Token is required');
 
   // : Promise<thirdPartyContracts>

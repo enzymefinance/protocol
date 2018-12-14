@@ -126,6 +126,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
+        Vault(hub.vault()).withdraw(takerAsset, fillTakerQuantity);
         require(
             takerAsset.approve(targetExchange, fillTakerQuantity),
             "Taker asset could not be approved"
@@ -140,6 +141,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             "Max owned asset limit reached"
         );
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),
@@ -181,10 +183,11 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             "Retrieved and passed assets do not match"
         );
 
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[2]);
+        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),

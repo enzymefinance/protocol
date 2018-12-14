@@ -103,7 +103,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(
-            hub.manager() == msg.sender || hub.isShutDown() == false,
+            hub.manager() == msg.sender || hub.isShutDown(),
             "Manager must be sender or fund must be shut down"
         );
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);

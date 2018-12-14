@@ -205,7 +205,7 @@ test.serial(
       )
       .send({ from: manager, gas: config.gas });
     await fund.trading.methods
-      .returnToVault([mlnToken.options.address])
+      .returnBatchToVault([mlnToken.options.address])
       .send({ from: manager, gas: config.gas });
     const expectedMln = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
     const post = await getAllBalances(deployed, accounts, fund);
@@ -326,7 +326,7 @@ test.serial(
       .mul(bestRate)
       .div(new BigNumber(10 ** 18));
     await fund.trading.methods
-      .returnToVault([eurToken.options.address])
+      .returnBatchToVault([eurToken.options.address])
       .send(opts);
     const fundPostEur = new BigNumber(
       await eurToken.methods.balanceOf(fund.vault.options.address).call(),

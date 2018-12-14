@@ -12,7 +12,7 @@ export interface DeployMatchingMarketArgs {
 
 export const deployMatchingMarket = async (
   environment: Environment,
-  { tokens, closeTime = 99999999999 }: DeployMatchingMarketArgs,
+  { tokens, closeTime = 999999999999 }: DeployMatchingMarketArgs,
 ) => {
   const address = await deployContract(environment, Contracts.MatchingMarket, [
     closeTime,

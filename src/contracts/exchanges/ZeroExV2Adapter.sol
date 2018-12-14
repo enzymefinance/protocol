@@ -140,6 +140,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         );
 
         Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -161,7 +162,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(
-            hub.manager() == msg.sender || hub.isShutDown() == false,
+            hub.manager() == msg.sender || hub.isShutDown(),
             "Manager must be sender or fund must be shut down"
         );
 
@@ -172,6 +173,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         // Set the approval back to 0
         approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
         Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             identifier,

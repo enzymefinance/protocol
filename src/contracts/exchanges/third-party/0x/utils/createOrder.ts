@@ -10,8 +10,10 @@ import {
   generatePseudoRandomSalt,
   assetDataUtils,
   signatureUtils,
+  orderHashUtils,
 } from '@0x/order-utils';
 import { BigNumber } from 'bignumber.js';
+import { BigInteger, add, toBI } from '@melonproject/token-math/bigInteger';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { Address } from '@melonproject/token-math/address';
@@ -20,7 +22,6 @@ import {
   createQuantity,
 } from '@melonproject/token-math/quantity';
 import { getLatestBlock } from '~/utils/evm';
-import { add, toBI } from '@melonproject/token-math/bigInteger';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
@@ -31,6 +32,8 @@ export interface CreateOrderArgs {
   takerQuantity: QuantityInterface;
   duration?: number;
   makerAddress?: Address;
+  feeRecipientAddress?: Address;
+  takerFee?: BigInteger;
 }
 
 const createOrder = async (
@@ -41,6 +44,8 @@ const createOrder = async (
     takerQuantity,
     duration = 24 * 60 * 60,
     makerAddress: givenMakerAddress,
+    feeRecipientAddress,
+    takerFee,
   }: CreateOrderArgs,
 ): Promise<Order> => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
@@ -53,6 +58,9 @@ const createOrder = async (
 
   const latestBlock = await getLatestBlock(environment);
   const makerAddress = givenMakerAddress || environment.wallet.address;
+  const formattedTakerFee = takerFee
+    ? new BigNumber(`${takerFee}`)
+    : constants.ZERO_AMOUNT;
 
   // tslint:disable:object-literal-sort-keys
   const order: Order = {
@@ -60,7 +68,9 @@ const createOrder = async (
     makerAddress: `${makerAddress.toLowerCase()}`,
     takerAddress: constants.NULL_ADDRESS,
     senderAddress: constants.NULL_ADDRESS,
-    feeRecipientAddress: constants.NULL_ADDRESS,
+    feeRecipientAddress: (
+      feeRecipientAddress || constants.NULL_ADDRESS
+    ).toLowerCase(),
     expirationTimeSeconds: new BigNumber(
       add(toBI(latestBlock.timestamp), toBI(duration)).toString(),
     ),
@@ -70,7 +80,7 @@ const createOrder = async (
     makerAssetData,
     takerAssetData,
     makerFee: constants.ZERO_AMOUNT,
-    takerFee: constants.ZERO_AMOUNT,
+    takerFee: formattedTakerFee,
   };
 
   return order;
@@ -100,6 +110,7 @@ const approveOrder = async (
 const signOrder = async (
   environment: Environment,
   order: Order,
+  signer?: Address,
 ): Promise<SignedOrder> => {
   // const orderHash = orderHashUtils.getOrderHashHex(order);
   // const web3signature = await environment.eth.sign(
@@ -107,15 +118,15 @@ const signOrder = async (
   //   environment.wallet.address.toString(),
   // );
 
+  const orderSigner = (signer || environment.wallet.address).toLowerCase();
   const signedOrder = await signatureUtils.ecSignOrderAsync(
     environment.eth.currentProvider,
     order,
-    environment.wallet.address.toString(),
+    orderSigner,
   );
 
   const signatureTyped =
-    signedOrder.makerAddress.toLowerCase() ===
-    environment.wallet.address.toLowerCase()
+    signedOrder.makerAddress.toLowerCase() === orderSigner
       ? signedOrder
       : {
           ...signedOrder,
@@ -127,4 +138,20 @@ const signOrder = async (
   return signatureTyped;
 };
 
-export { createOrder, signOrder, approveOrder };
+const isValidSignatureOffChain = async (
+  environment: Environment,
+  order: Order,
+  signature: string,
+  makerAddress?: Address,
+): Promise<boolean> => {
+  const orderHashHex = orderHashUtils.getOrderHashHex(order);
+
+  return signatureUtils.isValidSignatureAsync(
+    environment.eth.currentProvider,
+    orderHashHex,
+    signature,
+    (makerAddress || environment.wallet.address).toString(),
+  );
+};
+
+export { createOrder, signOrder, approveOrder, isValidSignatureOffChain };
