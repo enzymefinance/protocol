@@ -1,26 +1,40 @@
 import { testLogger } from '~/tests/utils/testLogger';
 import { LogLevels } from './Environment';
-import { constructEnvironment } from './constructEnvironment';
+import { constructEnvironment, defaultOptions } from './constructEnvironment';
 import { ensure } from '../guards/ensure';
 
-export const initUnlockedEnvironment = async (endpoint?: string) => {
-  const jsonRpcEndpoint = endpoint || process.env.JSON_RPC_ENDPOINT;
+interface InitUnlockedEnvironmentArgs {
+  endpoint?: string;
+  gasLimit?: string;
+  gasPrice?: string;
+}
 
+export const initUnlockedEnvironment = async ({
+  endpoint = process.env.JSON_RPC_ENDPOINT,
+  gasLimit = defaultOptions.gasLimit,
+  gasPrice = defaultOptions.gasPrice,
+}: InitUnlockedEnvironmentArgs) => {
   testLogger(
     'melon:protocol:test:utils',
     LogLevels.DEBUG,
     'Endpoint:',
-    jsonRpcEndpoint,
+    endpoint,
     endpoint ? 'via function arg' : 'via JSON_RPC_ENDPOINT envvar',
+    'options',
+    { gasLimit, gasPrice },
   );
 
-  ensure(!!jsonRpcEndpoint, 'No JSON rpc endpoint provided.');
+  ensure(!!endpoint, 'No JSON rpc endpoint provided.');
 
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set
-    endpoint: jsonRpcEndpoint,
+    endpoint,
     logger: testLogger,
+    options: {
+      gasLimit,
+      gasPrice,
+    },
   });
   const accounts = await environment.eth.getAccounts();
 

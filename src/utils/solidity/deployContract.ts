@@ -91,9 +91,7 @@ export const deployContract: DeployContract = async (
   const receipt = await environment.eth
     .sendTransaction({
       data: encodedAbi,
-      from: environment.wallet.address.toString(),
-      gas: 8000000,
-      gasPrice: 2000000000,
+      ...options,
     })
     .on('error', error => {
       throw error;

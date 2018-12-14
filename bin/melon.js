@@ -47,6 +47,14 @@ program
     '-e, --endpoint <endpoint>',
     'The JSON RPC endpoint url. By default: https://localhost:8545',
   )
+  .option(
+    '-g, --gas <number>',
+    'Default number of gas units to provide',
+  )
+  .option(
+    '-p, --gas-price <number>',
+    'Price (in Gwei) of each gas unit',
+  )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts (development setup).`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
@@ -69,9 +77,11 @@ program
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
     try {
-      const environment = await initUnlockedEnvironment(
-        options.endpoint || 'http://localhost:8545',
-      );
+      const environment = await initUnlockedEnvironment({
+        endpoint: options.endpoint || 'http://localhost:8545',
+        gasLimit: options.gas || undefined,
+        gasPrice: options.gasPrice || undefined,
+      });
 
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||
