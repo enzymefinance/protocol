@@ -162,7 +162,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(
-            hub.manager() == msg.sender || hub.isShutDown() == false,
+            hub.manager() == msg.sender || hub.isShutDown(),
             "Manager must be sender or fund must be shut down"
         );
 

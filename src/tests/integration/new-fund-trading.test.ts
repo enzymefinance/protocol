@@ -1,6 +1,5 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
-import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import {
   makeOrderSignature,
@@ -20,16 +19,16 @@ import { getAllBalances } from '../utils/getAllBalances';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Exchanges } from '~/Contracts';
-import {
-  createAccounting,
-  createFeeManager,
-  createParticipation,
-  createPolicyManager,
-  createShares,
-  createTrading,
-  createVault,
-  completeSetup,
-} from '~/';
+import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
+import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
+import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
+import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
+import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
+import { createShares } from '~/contracts/factory/transactions/createShares';
+import { createTrading } from '~/contracts/factory/transactions/createTrading';
+import { createVault } from '~/contracts/factory/transactions/createVault';
+import { getFundComponents } from '~/utils/getFundComponents';
+import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -57,7 +56,8 @@ beforeAll(async () => {
       takesCustody: true,
     },
   };
-  await beginSetup(s.environment, s.version.options.address, {
+  const envManager = withDifferentAccount(s.environment, s.manager);
+  await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
     exchangeConfigs,
     fees: [],
@@ -66,18 +66,15 @@ beforeAll(async () => {
     priceSource: s.priceSource.options.address,
     quoteToken: s.wethTokenInterface,
   });
-  await createAccounting(s.environment, s.version.options.address);
-  await createFeeManager(s.environment, s.version.options.address);
-  await createParticipation(s.environment, s.version.options.address);
-  await createPolicyManager(s.environment, s.version.options.address);
-  await createShares(s.environment, s.version.options.address);
-  await createTrading(s.environment, s.version.options.address);
-  await createVault(s.environment, s.version.options.address);
-  const hubAddress = await completeSetup(
-    s.environment,
-    s.version.options.address,
-  );
-  s.fund = await getFundComponents(s.environment, hubAddress);
+  await createAccounting(envManager, s.version.options.address);
+  await createFeeManager(envManager, s.version.options.address);
+  await createParticipation(envManager, s.version.options.address);
+  await createPolicyManager(envManager, s.version.options.address);
+  await createShares(envManager, s.version.options.address);
+  await createTrading(envManager, s.version.options.address);
+  await createVault(envManager, s.version.options.address);
+  const hubAddress = await completeSetup(envManager, s.version.options.address);
+  s.fund = await getFundComponents(envManager, hubAddress);
 
   await updateTestingPriceFeed(s, s.environment);
   const [, referencePrice] = Object.values(
@@ -318,8 +315,8 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
         [
           randomHexOfSize(20),
           randomHexOfSize(20),
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          s.weth.options.address,
+          s.mln.options.address,
           randomHexOfSize(20),
           randomHexOfSize(20),
         ],
