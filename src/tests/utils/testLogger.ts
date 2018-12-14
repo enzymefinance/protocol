@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import * as winston from 'winston';
-import { CurriedLogger } from '../../utils/environment/Environment';
+import { CurriedLogger, LogLevels } from '../../utils/environment/Environment';
 
 const { combine, timestamp, printf } = winston.format;
 
@@ -10,13 +10,16 @@ const myFormat = printf(info => {
 
 const logger = winston.createLogger({
   format: combine(timestamp(), myFormat),
-  level: 'debug',
+  level: LogLevels.DEBUG,
   transports: [
     new winston.transports.File({
       filename: `./logs/test-${process.pid}.log`,
     }),
     new winston.transports.File({
-      filename: `./logs/test-latest.log`,
+      filename: './logs/test-latest.log',
+    }),
+    new winston.transports.Console({
+      level: LogLevels.INFO,
     }),
   ],
 });

@@ -7,6 +7,7 @@ import { Contracts } from '~/Contracts';
 import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { Address } from '@melonproject/token-math/address';
+import { ensure } from '~/utils/guards/ensure';
 
 // TODO: Refactor all callers to only use the Contract interface
 type DeployContract = {
@@ -31,6 +32,10 @@ export const deployContract: DeployContract = async (
     'melon:protocol:utils:solidity',
     LogLevels.DEBUG,
   );
+  const info = environment.logger(
+    'melon:protocol:utils:solidity',
+    LogLevels.INFO,
+  );
 
   const parsed = path.parse(pathToSolidityFile);
 
@@ -44,26 +49,31 @@ export const deployContract: DeployContract = async (
     { encoding: 'utf-8' },
   );
 
-  if (bin.length === 0) {
-    throw new Error(`Binary file for ${pathToSolidityFile} is empty`);
-  }
+  ensure(bin.length !== 0, `Binary file for ${pathToSolidityFile} is empty`);
 
   const parsedABI = JSON.parse(rawABI);
 
-  debug('Setup transaction for deployment of', pathToSolidityFile);
+  debug(
+    'Setup transaction for deployment of',
+    pathToSolidityFile,
+    args,
+    environment.wallet.address,
+  );
 
   const contract = new environment.eth.Contract(parsedABI);
 
   const transaction = contract.deploy({
     arguments: args,
-    data: bin,
+    data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`,
   });
 
   const options = getWeb3Options(environment);
 
   const gasEstimation = await transaction.estimateGas({
-    from: environment.wallet.address,
+    from: environment.wallet.address.toString(),
   });
+
+  debug('Gas estimation:', gasEstimation, options);
 
   if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
     throw new Error(
@@ -76,20 +86,32 @@ export const deployContract: DeployContract = async (
     );
   }
 
-  debug('Gas estimation:', gasEstimation);
-
-  // console.log(options, gasEstimation);
-
-  const instance = await transaction.send(options).on('error', error => {
-    throw error;
-  });
-  // .on('transactionHash', txHash => debug('transactionHash', txHash))
-  // .on('receipt', rc => debug('receipt', rc));
-  // TODO: This currently causes Jest to fail.
-  // .on('confirmation', (cn, r) => {}
-  //   // debug('confirmation', cn, r.transactionHash),
-  // );
-
-  debug('Deployed: ', pathToSolidityFile, instance.options.address);
-  return new Address(instance.options.address);
+  const encodedAbi = transaction.encodeABI();
+  let txHash;
+  const receipt = await environment.eth
+    .sendTransaction({
+      data: encodedAbi,
+      from: environment.wallet.address.toString(),
+      gas: 8000000,
+      gasPrice: 2000000000,
+    })
+    .on('error', error => {
+      throw error;
+    })
+    .on('transactionHash', t => {
+      txHash = t;
+      debug('TxHash', pathToSolidityFile, txHash);
+    })
+    .on(
+      'confirmation',
+      c => c < 4 && debug('Confirmation', pathToSolidityFile, c),
+    );
+  info(
+    'Got receipt',
+    pathToSolidityFile,
+    receipt.contractAddress,
+    `${args.join(', ')}`,
+    txHash,
+  );
+  return new Address(receipt.contractAddress);
 };

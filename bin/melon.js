@@ -61,21 +61,21 @@ program
     if (config) console.log('Loaded config from', `../${options.config}`);
 
     const {
-      initTestEnvironment,
-    } = require('../lib/tests/utils/initTestEnvironment');
+      initUnlockedEnvironment,
+    } = require('../lib/utils/environment/initUnlockedEnvironment');
     const {
-      deployThirdparty,
+      deployThirdParty,
     } = require('../lib/utils/deploy/deployThirdParty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
     try {
-      const environment = await initTestEnvironment(
+      const environment = await initUnlockedEnvironment(
         options.endpoint || 'http://localhost:8545',
       );
 
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||
-        (await deployThirdparty(environment, tokenInterfaces));
+        (await deployThirdParty(environment, tokenInterfaces));
       const { deployment } = await deploySystem(
         environment,
         thirdPartyContracts,
