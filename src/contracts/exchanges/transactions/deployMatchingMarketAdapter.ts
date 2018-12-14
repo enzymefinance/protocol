@@ -6,7 +6,6 @@ export const deployMatchingMarketAdapter = async (environment: Environment) => {
   const address = await deployContract(
     environment,
     Contracts.MatchingMarketAdapter,
-    null,
   );
 
   return address;

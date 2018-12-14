@@ -6,7 +6,6 @@ export const deployAccountingFactory = async (environment: Environment) => {
   const address = await deployContract(
     environment,
     Contracts.AccountingFactory,
-    null,
   );
 
   return address;
