@@ -44,6 +44,7 @@ const selectProvider = R.cond([
 
 const constructProvider = (endpoint, logger: CurriedLogger) => {
   const debug = logger('melon:protocol:utils:environment', LogLevels.DEBUG);
+  debug('Endpoint', endpoint);
 
   string()
     .url(

@@ -101,7 +101,7 @@ export const deployContract: DeployContract = async (
         txHash = t;
         debug('TxHash', txIdentifier, txHash);
       })
-      .on('confirmation', c => c < 2 && debug('Confirmation', txIdentifier, c));
+      .once('confirmation', c => debug('Confirmation', txIdentifier, c));
     info(
       'Got receipt',
       txIdentifier,

@@ -21,7 +21,6 @@ program
 
     try {
       const { compileGlob } = require('./compile');
-      // await initTestEnvironment();
       await compileGlob(glob);
       process.exit();
     } catch (e) {
