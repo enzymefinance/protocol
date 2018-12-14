@@ -4,19 +4,14 @@ import "auth.sol";
 import "math.sol";
 import "BurnableToken.sol";
 import "PriceSource.i.sol";
-import "Version.i.sol";
+import "Registry.sol";
 
-// TODO: integrate so we do not need all of the constructor params
 /// @notice Liquidity contract and token sink
 contract Engine is DSMath, DSAuth {
 
-    event VersionSet(
-        address version
-    );
-
-    event Thaw(
-        uint amount
-    );
+    event RegistryChange(address registry);
+    event SetAmguPrice(uint amguPrice);
+    event Thaw(uint amount);
 
     uint public frozenEther;
     uint public liquidEther;
@@ -24,25 +19,29 @@ contract Engine is DSMath, DSAuth {
     uint public THAWING_DELAY;
     BurnableToken public mlnToken;
     PriceSourceInterface public priceSource;
-    VersionInterface public version;
+    Registry public registry;
     uint public MLN_DECIMALS = 18;
+    uint public amguPrice;
 
-    constructor(
-        address _priceSource,
-        uint _delay,
-        address _mlnAddress
-    ) {
-        priceSource = PriceSourceInterface(_priceSource);
+    constructor(uint _delay) {
         lastThaw = block.timestamp;
         THAWING_DELAY = _delay;
-        mlnToken = BurnableToken(_mlnAddress);
     }
 
     /// @dev only callable by deployer
-    function setVersion(address _version) auth {
-        version = VersionInterface(_version);
-        emit VersionSet(_version);
+    function setRegistry(address _registry) auth {
+        registry = Registry(_registry);
+        priceSource = PriceSourceInterface(registry.priceSource());
+        mlnToken = BurnableToken(registry.mlnToken());
+        emit RegistryChange(registry);
     }
+
+    function setAmguPrice(uint _price) auth {
+        amguPrice = _price;
+        emit SetAmguPrice(_price);
+    }
+
+    function getAmguPrice() view returns (uint) { return amguPrice; }
 
     function premiumPercent() view returns (uint) {
         if (liquidEther < 1 ether) {
@@ -58,8 +57,8 @@ contract Engine is DSMath, DSAuth {
 
     function payAmguInEther() public payable {
         require(
-            version.isFundFactory(msg.sender) ||
-            version.isFund(msg.sender),
+            registry.isFundFactory(msg.sender) ||
+            registry.isFund(msg.sender),
             "Sender must be a fund or the factory"
         );
         frozenEther = add(frozenEther, msg.value);
@@ -93,7 +92,7 @@ contract Engine is DSMath, DSAuth {
 
     /// @notice MLN must be approved first
     function sellAndBurnMln(uint mlnAmount) public {
-        require(version.isFund(msg.sender), "Only funds can use the engine");
+        require(registry.isFund(msg.sender), "Only funds can use the engine");
         require(
             mlnToken.transferFrom(msg.sender, address(this), mlnAmount),
             "MLN transferFrom failed"

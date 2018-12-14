@@ -1,17 +1,17 @@
 pragma solidity ^0.4.21;
 
 import "auth.sol";
+import "Hub.sol";
 
 contract Registry is DSAuth {
 
+    // EVENTS
     event AssetUpsert (
         address indexed asset,
         string name,
         string symbol,
         uint decimals,
         string url,
-        string ipfsHash,
-        address[2] breakInBreakOut,
         uint[] standards,
         bytes4[] sigs
     );
@@ -23,13 +23,12 @@ contract Registry is DSAuth {
         bytes4[] sigs
     );
 
-    event AssetRemoval (
-        address indexed asset
-    );
-
-    event ExchangeRemoval (
-        address indexed exchange
-    );
+    event AssetRemoval (address indexed asset);
+    event ExchangeRemoval (address indexed exchange);
+    event VersionRegistration(address indexed version);
+    event PriceSourceChange(address indexed priceSource);
+    event MlnTokenChange(address indexed mlnToken);
+    event EngineChange(address indexed engine);
 
     // TYPES
     struct Asset {
@@ -38,13 +37,8 @@ contract Registry is DSAuth {
         string symbol;
         uint decimals;
         string url;
-        string ipfsHash;
-        address breakIn;
-        address breakOut;
         uint[] standards;
         bytes4[] sigs;
-        uint price;
-        uint timestamp;
     }
 
     struct Exchange {
@@ -54,17 +48,38 @@ contract Registry is DSAuth {
         bytes4[] sigs;
     }
 
+    struct Version {
+        bool exists;
+        string name;
+    }
+
     // FIELDS
-    // Methods fields
     mapping (address => Asset) public assetInformation;
     address[] public registeredAssets;
 
     mapping (address => Exchange) public exchangeInformation;
     address[] public registeredExchanges;
 
+    mapping (address => Version) public versionInformation;
+    address[] public registeredVersions;
+
+    mapping (address => address) public fundsToVersions;
+
+    address public priceSource;
+    address public mlnToken;
+    address public engine;
+
     // METHODS
 
     // PUBLIC METHODS
+
+    function registerFund(address _fund) {
+        require(
+            versionInformation[msg.sender].exists,
+            "Only a Version can register a fund"
+        );
+        fundsToVersions[_fund] = msg.sender;
+    }
 
     /// @notice Registers an Asset information entry
     /// @dev Pre: Only registrar owner should be able to register
@@ -74,8 +89,6 @@ contract Registry is DSAuth {
     /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _decimals Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _url Url for extended information of the asset
-    /// @param _ipfsHash Same as url but for ipfs
-    /// @param _breakInBreakOut Address of break in and break out contracts on destination chain
     /// @param _standards Integers of EIP standards this asset adheres to
     /// @param _sigs Function signatures for whitelisted asset functions
     function registerAsset(
@@ -84,8 +97,6 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
-        string _ipfsHash,
-        address[2] _breakInBreakOut,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -98,8 +109,6 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
-            _ipfsHash,
-            _breakInBreakOut,
             _standards,
             _sigs
         );
@@ -131,6 +140,35 @@ contract Registry is DSAuth {
         assert(exchangeInformation[_exchange].exists);
     }
 
+    /// @notice Versions cannot be removed from registry
+    /// @param _version Address of the version contract
+    /// @param _name Name of the version
+    function registerVersion(
+        address _version,
+        string _name
+    ) auth {
+        require(!versionInformation[_version].exists);
+        versionInformation[_version].exists = true;
+        registeredVersions.push(_version);
+        assert(versionInformation[_version].exists);
+        emit VersionRegistration(_version);
+    }
+
+    function setPriceSource(address _priceSource) auth {
+        priceSource = _priceSource;
+        emit PriceSourceChange(_priceSource);
+    }
+
+    function setMlnToken(address _mlnToken) auth {
+        mlnToken = _mlnToken;
+        emit MlnTokenChange(_mlnToken);
+    }
+
+    function setEngine(address _engine) auth {
+        engine = _engine;
+        emit EngineChange(_engine);
+    }
+
     /// @notice Updates description information of a registered Asset
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
@@ -138,15 +176,12 @@ contract Registry is DSAuth {
     /// @param _name Human-readable name of the Asset as in ERC223 token standard
     /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
     /// @param _url Url for extended information of the asset
-    /// @param _ipfsHash Same as url but for ipfs
     function updateAsset(
         address _asset,
         string _name,
         string _symbol,
         uint _decimals,
         string _url,
-        string _ipfsHash,
-        address[2] _breakInBreakOut,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -156,9 +191,6 @@ contract Registry is DSAuth {
         asset.symbol = _symbol;
         asset.decimals = _decimals;
         asset.url = _url;
-        asset.ipfsHash = _ipfsHash;
-        asset.breakIn = _breakInBreakOut[0];
-        asset.breakOut = _breakInBreakOut[1];
         asset.standards = _standards;
         asset.sigs = _sigs;
         emit AssetUpsert(
@@ -167,8 +199,6 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
-            _ipfsHash,
-            _breakInBreakOut,
             _standards,
             _sigs
         );
@@ -284,6 +314,28 @@ contract Registry is DSAuth {
             }
         }
         return false;
+    }
+
+    // get version and fund information
+    function getRegisteredVersions() view returns (address[]) {
+        return registeredVersions;
+    }
+
+    function isFund(address _who) view returns (bool) {
+        if (fundsToVersions[_who] != address(0)) {
+            return true; // directly from a hub
+        } else {
+            address hub = Hub(Spoke(_who).hub());
+            require(
+                Hub(hub).isSpoke(_who),
+                "Call from either a spoke or hub"
+            );
+            return fundsToVersions[hub] != address(0);
+        }
+    }
+
+    function isFundFactory(address _who) view returns (bool) {
+        return versionInformation[_who].exists;
     }
 }
 

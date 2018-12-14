@@ -1,8 +1,8 @@
 import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
-export const continueCreation = transactionFactory(
-  'continueCreation',
+export const createAccounting = transactionFactory(
+  'createAccounting',
   Contracts.FundFactory,
   undefined,
   undefined,

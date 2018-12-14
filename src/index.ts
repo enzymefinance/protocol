@@ -1,13 +1,8 @@
 export { approve } from '~/contracts/dependencies/token/transactions/approve';
 export { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 export { constructEnvironment } from '~/utils/environment/constructEnvironment';
-export {
-  continueCreation,
-} from '~/contracts/factory/transactions/continueCreation';
-export {
-  createComponents,
-} from '~/contracts/factory/transactions/createComponents';
 export { deploySystem } from '~/utils/deploy/deploySystem';
+export { deployThirdParty } from '~/utils/deploy/deployThirdParty';
 export {
   executeRequest,
 } from '~/contracts/fund/participation/transactions/executeRequest';
@@ -24,6 +19,7 @@ export { getPrices } from '~/contracts/prices/calls/getPrices';
 export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
 export { getSettings } from '~/contracts/fund/hub/calls/getSettings';
 export { getStepFor } from '~/contracts/factory/calls/getStepFor';
+export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 export { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
 export { isAddress } from '~/utils/checks/isAddress';
@@ -35,6 +31,22 @@ export {
 export {
   requestInvestment,
 } from '~/contracts/fund/participation/transactions/requestInvestment';
-export { setupFund } from '~/contracts/factory/transactions/setupFund';
+export { beginSetup } from '~/contracts/factory/transactions/beginSetup';
+export { completeSetup } from '~/contracts/factory/transactions/completeSetup';
+export {
+  createAccounting,
+} from '~/contracts/factory/transactions/createAccounting';
+export {
+  createFeeManager,
+} from '~/contracts/factory/transactions/createFeeManager';
+export {
+  createParticipation,
+} from '~/contracts/factory/transactions/createParticipation';
+export {
+  createPolicyManager,
+} from '~/contracts/factory/transactions/createPolicyManager';
+export { createShares } from '~/contracts/factory/transactions/createShares';
+export { createTrading } from '~/contracts/factory/transactions/createTrading';
+export { createVault } from '~/contracts/factory/transactions/createVault';
 export { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 export { update } from '~/contracts/prices/transactions/update';

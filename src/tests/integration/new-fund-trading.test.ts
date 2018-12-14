@@ -17,6 +17,19 @@ import {
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
+import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { Exchanges } from '~/Contracts';
+import {
+  createAccounting,
+  createFeeManager,
+  createParticipation,
+  createPolicyManager,
+  createShares,
+  createTrading,
+  createVault,
+  completeSetup,
+} from '~/';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -35,27 +48,35 @@ beforeAll(async () => {
   s.numberofExchanges = 1;
   s.exchanges = [s.matchingMarket];
 
-  await s.version.methods
-    .createComponents(
-      'Test Fund',
-      [],
-      [s.matchingMarket.options.address],
-      [s.matchingMarketAdapter.options.address],
-      s.weth.options.address,
-      s.weth.options.address,
-      [s.weth.options.address, s.mln.options.address],
-      [true],
-      s.priceSource.options.address,
-    )
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  await s.version.methods
-    .continueCreation()
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  await s.version.methods
-    .setupFund()
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  const fundId = await s.version.methods.getLastFundId().call();
-  const hubAddress = await s.version.methods.getFundById(fundId).call();
+  s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
+  s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
+  const exchangeConfigs = {
+    [Exchanges.MatchingMarket]: {
+      adapter: s.matchingMarketAdapter.options.address,
+      exchange: s.matchingMarket.options.address,
+      takesCustody: true,
+    },
+  };
+  await beginSetup(s.environment, s.version.options.address, {
+    defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
+    exchangeConfigs,
+    fees: [],
+    fundName: 'Test fund',
+    nativeToken: s.wethTokenInterface,
+    priceSource: s.priceSource.options.address,
+    quoteToken: s.wethTokenInterface,
+  });
+  await createAccounting(s.environment, s.version.options.address);
+  await createFeeManager(s.environment, s.version.options.address);
+  await createParticipation(s.environment, s.version.options.address);
+  await createPolicyManager(s.environment, s.version.options.address);
+  await createShares(s.environment, s.version.options.address);
+  await createTrading(s.environment, s.version.options.address);
+  await createVault(s.environment, s.version.options.address);
+  const hubAddress = await completeSetup(
+    s.environment,
+    s.version.options.address,
+  );
   s.fund = await getFundComponents(s.environment, hubAddress);
 
   await updateTestingPriceFeed(s, s.environment);
@@ -81,7 +102,6 @@ beforeAll(async () => {
     ),
     sellQuantity: sellQuantity2,
   };
-
   // TODO: Add back later
   // const managementFee = await deployContract('fund/fees/FixedManagementFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
   // const performanceFee = await deployContract('fund/fees/FixedPerformanceFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });

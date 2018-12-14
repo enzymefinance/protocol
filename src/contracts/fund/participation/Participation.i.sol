@@ -1,16 +1,10 @@
 pragma solidity ^0.4.21;
 
-
 /// @notice Investor Fund interactions
 /// @notice Handles redemptions and requests for investment
 interface ParticipationInterface {
-    event DisableInvestment (
-        address[] assets
-    );
-
-    event EnableInvestment (
-        address[] assets
-    );
+    event EnableInvestment (address[] asset);
+    event DisableInvestment (address[] assets);
 
     event InvestmentRequest (
         address indexed requestOwner,

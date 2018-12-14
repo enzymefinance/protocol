@@ -4,8 +4,8 @@ import {
   createOrder,
   signOrder,
   approveOrder,
-} from '~/contracts/exchanges/thirdparty/0x/utils/createOrder';
-import { fillOrder } from '~/contracts/exchanges/thirdparty/0x/transactions/fillOrder';
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';

@@ -8,19 +8,30 @@ import {
   signOrder,
   approveOrder,
   isValidSignatureOffChain,
-} from '~/contracts/exchanges/thirdparty/0x/utils/createOrder';
-import { fillOrder } from '~/contracts/exchanges/thirdparty/0x';
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x';
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getAssetProxy } from '~/contracts/exchanges/thirdparty/0x/calls/getAssetProxy';
+import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
+import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
+import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
+import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
+import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
+import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
+import { createShares } from '~/contracts/factory/transactions/createShares';
+import { createTrading } from '~/contracts/factory/transactions/createTrading';
+import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
+import { Exchanges } from '~/Contracts';
+import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 // import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 
 // mock data
@@ -45,29 +56,34 @@ beforeAll(async () => {
     s.environment,
     s.zeroExExchange.options.address,
   );
-
-  await s.version.methods
-    .createComponents(
-      'Test Fund',
-      [],
-      [s.zeroExExchange.options.address],
-      [s.zeroExAdapter.options.address],
-      s.weth.options.address,
-      s.weth.options.address,
-      [s.weth.options.address, s.mln.options.address],
-      [false],
-      s.priceSource.options.address,
-    )
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  await s.version.methods
-    .continueCreation()
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  await s.version.methods
-    .setupFund()
-    .send({ from: s.manager, gasPrice: s.gasPrice, gas: s.gas });
-  const fundId = await s.version.methods.getLastFundId().call();
-  const hubAddress = await s.version.methods.getFundById(fundId).call();
-  s.fund = await getFundComponents(s.environment, hubAddress);
+  s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
+  s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
+  const exchangeConfigs = {
+    [Exchanges.ZeroEx]: {
+      adapter: s.zeroExAdapter.options.address,
+      exchange: s.zeroExExchange.options.address,
+      takesCustody: false,
+    },
+  };
+  const envManager = withDifferentAccount(s.environment, s.manager);
+  await beginSetup(envManager, s.version.options.address, {
+    defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
+    exchangeConfigs,
+    fees: [],
+    fundName: 'Test fund',
+    nativeToken: s.wethTokenInterface,
+    priceSource: s.priceSource.options.address,
+    quoteToken: s.wethTokenInterface,
+  });
+  await createAccounting(envManager, s.version.options.address);
+  await createFeeManager(envManager, s.version.options.address);
+  await createParticipation(envManager, s.version.options.address);
+  await createPolicyManager(envManager, s.version.options.address);
+  await createShares(envManager, s.version.options.address);
+  await createTrading(envManager, s.version.options.address);
+  await createVault(envManager, s.version.options.address);
+  const hubAddress = await completeSetup(envManager, s.version.options.address);
+  s.fund = await getFundComponents(envManager, hubAddress);
   await updateTestingPriceFeed(s, s.environment);
 });
 
@@ -112,16 +128,8 @@ test('fund receives ETH from investment, and gets ZRX from direct transfer', asy
 
 test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
-  const mlnTokenInterface = await getToken(
-    s.environment,
-    s.mln.options.address,
-  );
-  const wethTokenInterface = await getToken(
-    s.environment,
-    s.weth.options.address,
-  );
-  const makerQuantity = createQuantity(mlnTokenInterface, 1);
-  const takerQuantity = createQuantity(wethTokenInterface, 0.05);
+  const makerQuantity = createQuantity(s.mlnTokenInterface, 1);
+  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
 
   const unsignedOrder = await createOrder(
     s.environment,
@@ -201,16 +209,8 @@ test('manager takes order (half the total quantity) through 0x adapter', async (
 
 test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
-  const mlnTokenInterface = await getToken(
-    s.environment,
-    s.mln.options.address,
-  );
-  const wethTokenInterface = await getToken(
-    s.environment,
-    s.weth.options.address,
-  );
-  const makerQuantity = createQuantity(mlnTokenInterface, 1);
-  const takerQuantity = createQuantity(wethTokenInterface, 0.05);
+  const makerQuantity = createQuantity(s.mlnTokenInterface, 1);
+  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
   const takerFee = new BigInteger(10 ** 14);
 
   const unsignedOrder = await createOrder(
@@ -300,16 +300,8 @@ test('fund with enough ZRX takes the above order', async () => {
 
 test('Make order through the fund', async () => {
   const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const mlnTokenInterface = await getToken(
-    s.environment,
-    s.mln.options.address,
-  );
-  const wethTokenInterface = await getToken(
-    s.environment,
-    s.weth.options.address,
-  );
-  const makerQuantity = createQuantity(mlnTokenInterface, 0.5);
-  const takerQuantity = createQuantity(wethTokenInterface, 0.05);
+  const makerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
+  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
   const unsignedOrder = await createOrder(
     s.environment,
     s.zeroExExchange.options.address,
@@ -426,16 +418,8 @@ test('Third party takes the order made by the fund', async () => {
 
 test("Fund can make another make order for same asset (After it's inactive)", async () => {
   const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const mlnTokenInterface = await getToken(
-    s.environment,
-    s.mln.options.address,
-  );
-  const wethTokenInterface = await getToken(
-    s.environment,
-    s.weth.options.address,
-  );
-  const makerQuantity = createQuantity(wethTokenInterface, 0.05);
-  const takerQuantity = createQuantity(mlnTokenInterface, 0.5);
+  const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
+  const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
   s.unsignedOrder = await createOrder(
     s.environment,
     s.zeroExExchange.options.address,

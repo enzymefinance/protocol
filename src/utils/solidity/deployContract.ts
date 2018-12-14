@@ -44,9 +44,16 @@ export const deployContract: DeployContract = async (
     { encoding: 'utf-8' },
   );
 
+  if (bin.length === 0) {
+    throw new Error(`Binary file for ${pathToSolidityFile} is empty`);
+  }
+
   const parsedABI = JSON.parse(rawABI);
 
+  debug('Setup transaction for deployment of', pathToSolidityFile);
+
   const contract = new environment.eth.Contract(parsedABI);
+
   const transaction = contract.deploy({
     arguments: args,
     data: bin,

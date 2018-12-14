@@ -5,7 +5,7 @@ import {
   createOrder,
   signOrder,
   fillOrder,
-} from '~/contracts/exchanges/thirdparty/0x';
+} from '~/contracts/exchanges/third-party/0x';
 import { make0xOrder } from './make0xOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';

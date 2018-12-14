@@ -8,14 +8,14 @@ describe('investment', () => {
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
-    shared = {
-      ...shared,
-      ...(await deployMockSystem(shared.env, {
+    shared = Object.assign(
+      shared,
+      await deployMockSystem(shared.env, {
         accountingContract: Contracts.Accounting,
-      })),
-    };
+      }),
+    );
     shared.user = shared.env.wallet.address;
-    await shared.version.methods
+    await shared.registry.methods
       .setIsFund(shared.participation.options.address)
       .send({ from: shared.user });
   });

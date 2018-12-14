@@ -3,6 +3,7 @@ import {
   GuardFunction,
   PrepareArgsFunction,
   PostProcessFunction,
+  EnhancedExecute,
 } from '~/utils/solidity/transactionFactory';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
@@ -36,7 +37,11 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
     : investmentAmount.quantity.toString();
   const investmentAmountArg = investmentAmount.quantity.toString();
   const investmentAssetArg = investmentAmount.token.address;
-  const args = [requestedSharesArg, investmentAmountArg, investmentAssetArg];
+  const args = [
+    requestedSharesArg,
+    investmentAmountArg,
+    `${investmentAssetArg}`,
+  ];
   return args;
 };
 
@@ -50,10 +55,10 @@ const postProcess: PostProcessFunction<
   return request;
 };
 
-const requestInvestment = transactionFactory<
+const requestInvestment: EnhancedExecute<
   RequestInvestmentArgs,
   RequestInvestmentResult
->(
+> = transactionFactory(
   'requestInvestment',
   Contracts.Participation,
   guard,

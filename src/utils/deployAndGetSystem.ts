@@ -1,11 +1,11 @@
 import { deploySystem } from './deploy/deploySystem';
-import { deployThirdparty } from './deploy/deployThirdparty';
+import { deployThirdParty } from './deploy/deployThirdparty';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { Environment } from './environment/Environment';
 
 export const deployAndGetSystem = async (environment: Environment) => {
-  const thirdParty = await deployThirdparty(environment);
+  const thirdParty = await deployThirdParty(environment);
   const addresses = (await deploySystem(environment, thirdParty)).deployment;
   const contracts = {
     engine: getContract(
@@ -16,7 +16,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     eur: getContract(
       environment,
       Contracts.StandardToken,
-      addresses.thirdpartyContracts.tokens.find(t => t.symbol === 'EUR')
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'EUR')
         .address,
     ),
     kyberAdapter: getContract(
@@ -42,7 +42,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     mln: getContract(
       environment,
       Contracts.StandardToken,
-      addresses.thirdpartyContracts.tokens.find(t => t.symbol === 'MLN')
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'MLN')
         .address,
     ),
     priceSource: getContract(
@@ -58,7 +58,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     weth: getContract(
       environment,
       Contracts.StandardToken,
-      addresses.thirdpartyContracts.tokens.find(t => t.symbol === 'WETH')
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'WETH')
         .address,
     ),
     zeroExAdapter: getContract(
@@ -74,7 +74,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     zrx: getContract(
       environment,
       Contracts.StandardToken,
-      addresses.thirdpartyContracts.tokens.find(t => t.symbol === 'ZRX')
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'ZRX')
         .address,
     ),
   };

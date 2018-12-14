@@ -40,7 +40,7 @@ describe('sellAndBurnMln', () => {
         '',
       ]),
     );
-    const mlnToken = await getToken(shared.env, shared.mln.options.address);
+
     shared.weth = await getContract(
       shared.env,
       Contracts.StandardToken,
@@ -50,6 +50,11 @@ describe('sellAndBurnMln', () => {
       shared.env,
       Contracts.MockVersion,
       await deployContract(shared.env, Contracts.MockVersion),
+    );
+    shared.registry = getContract(
+      shared.env,
+      Contracts.MockRegistry,
+      await deployContract(shared.env, Contracts.MockRegistry),
     );
     const feedAddress = await deployTestingPriceFeed(
       shared.env,
@@ -63,8 +68,6 @@ describe('sellAndBurnMln', () => {
     shared.delay = 30 * 24 * 60 * 60;
     shared.engineAddress = await deployEngine(shared.env, {
       delay: shared.delay,
-      mlnToken,
-      priceSource: shared.feed.options.address,
     });
     shared.priceSource = await getContract(
       shared.env,
@@ -76,9 +79,15 @@ describe('sellAndBurnMln', () => {
       Contracts.Engine,
       shared.engineAddress,
     );
-    await shared.engine.methods
-      .setVersion(shared.version.options.address)
+    await shared.registry.methods
+      .setPriceSource(shared.priceSource.options.address)
       .send({ from: shared.accounts[0] });
+    await shared.registry.methods
+      .setMlnToken(shared.mln.options.address)
+      .send({ from: shared.accounts[0] });
+    await shared.engine.methods
+      .setRegistry(shared.registry.options.address)
+      .send({ from: shared.accounts[0], gas: 8000000 });
     const newPrice = getPrice(
       createQuantity(await getToken(shared.env, shared.mln.options.address), 1),
       createQuantity(await getToken(shared.env, wethAddress), 2.94),
@@ -131,7 +140,7 @@ describe('sellAndBurnMln', () => {
 
   it('AMGU payment fails when sender not fund', async () => {
     const sender = shared.env.wallet.address;
-    const isFund = await shared.version.methods.isFund(sender).call();
+    const isFund = await shared.registry.methods.isFund(sender).call();
 
     expect(isFund).toBe(false);
 
@@ -145,8 +154,8 @@ describe('sellAndBurnMln', () => {
   it('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     const sender = shared.env.wallet.address;
     const sendEth = new BigInteger('100000');
-    await shared.version.methods.setIsFund(sender).send({ from: sender });
-    const isFund = await shared.version.methods.isFund(sender).call();
+    await shared.registry.methods.setIsFund(sender).send({ from: sender });
+    const isFund = await shared.registry.methods.isFund(sender).call();
 
     expect(isFund).toBe(true);
 

@@ -23,7 +23,7 @@ contract FundFactory is AmguConsumer {
     );
 
     address public factoryPriceSource;
-    address public mlnAddress;
+    address public mlnToken;
     VersionInterface public version;
     address public engine;
     address public registry;
@@ -47,7 +47,7 @@ contract FundFactory is AmguConsumer {
         address registry;
         address version;
         address engine;
-        address mlnAddress;
+        address mlnToken;
     }
 
     address[] public funds;
@@ -67,10 +67,13 @@ contract FundFactory is AmguConsumer {
         address[] defaultAssets;
         bool[] takesCustody;
         address priceSource;
+        address[] fees;
+        uint[] feeRates;
+        uint[] feePeriods;
     }
 
     modifier step(uint8 n) {
-        require(stepFor[msg.sender] == n - 1, "Previous step incomplete");
+        require(stepFor[msg.sender] == n - 1, "Invalid step");
         _;
         stepFor[msg.sender] = n;
     }
@@ -86,7 +89,7 @@ contract FundFactory is AmguConsumer {
         address _version,
         address _engine,
         address _factoryPriceSource,
-        address _mlnAddress
+        address _mlnToken
     ) {
         accountingFactory = AccountingFactory(_accountingFactory);
         feeManagerFactory = FeeManagerFactory(_feeManagerFactory);
@@ -98,15 +101,16 @@ contract FundFactory is AmguConsumer {
         version = VersionInterface(_version);
         engine = Engine(_engine);
         factoryPriceSource = _factoryPriceSource;
-        mlnAddress = _mlnAddress;
+        mlnToken = _mlnToken;
     }
 
-    // TODO: improve naming
-    function createComponents(
+    function beginSetup(
         string _name,
         // address _compliance,
         // address[] _policies,
-        FeeManager.FeeInfo[] _fees,
+        address[] _fees,
+        uint[] _feeRates,
+        uint[] _feePeriods,
         address[] _exchanges,
         address[] _adapters,
         address _quoteAsset,
@@ -114,7 +118,8 @@ contract FundFactory is AmguConsumer {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) public payable step(1) amguPayable {
+    ) step(1) {
+        require(!version.getShutDownStatus(), "Version cannot be shut down");
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
@@ -124,11 +129,32 @@ contract FundFactory is AmguConsumer {
             _nativeAsset,
             _defaultAssets,
             _takesCustody,
-            _priceSource
+            _priceSource,
+            _fees,
+            _feeRates,
+            _feePeriods
         );
-        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
-        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(managersToHubs[msg.sender], _fees);
+        managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
         managersToComponents[msg.sender].registry = registry;
+        managersToComponents[msg.sender].version = address(version);
+        managersToComponents[msg.sender].engine = engine;
+        managersToComponents[msg.sender].mlnToken = mlnToken;
+    }
+
+    function createAccounting() step(2) amguPayable payable {
+        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
+    }
+
+    function createFeeManager() step(3) amguPayable payable {
+        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(
+            managersToHubs[msg.sender],
+            managersToSettings[msg.sender].fees,
+            managersToSettings[msg.sender].feeRates,
+            managersToSettings[msg.sender].feePeriods
+        );
+    }
+
+    function createParticipation() step(4) amguPayable payable {
         managersToComponents[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].defaultAssets,
@@ -136,27 +162,29 @@ contract FundFactory is AmguConsumer {
         );
     }
 
-    // TODO: improve naming
-    function continueCreation() public payable step(2) amguPayable {
-        Hub hub = Hub(managersToHubs[msg.sender]);
+    function createPolicyManager() step(5) amguPayable payable {
         managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
+    }
+
+    function createShares() step(6) amguPayable payable {
         managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].trading = tradingFactory.createInstance(
+    }
+
+    function createTrading() step(7) amguPayable payable {
+           managersToComponents[msg.sender].trading = tradingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].exchanges,
             managersToSettings[msg.sender].adapters,
             managersToSettings[msg.sender].takesCustody,
             managersToComponents[msg.sender].registry
         );
-        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
-        managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
-        managersToComponents[msg.sender].version = address(version);
-        managersToComponents[msg.sender].engine = engine;
-        managersToComponents[msg.sender].mlnAddress = mlnAddress;
     }
 
-    // TODO: improve naming
-    function setupFund() public payable step(3) amguPayable {
+    function createVault() step(8) amguPayable payable {
+        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
+    }
+
+    function completeSetup() step(9) amguPayable payable {
         Components components = managersToComponents[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         hubExists[address(hub)] = true;
@@ -172,11 +200,12 @@ contract FundFactory is AmguConsumer {
             components.registry,
             components.version,
             components.engine,
-            components.mlnAddress
+            components.mlnToken
         ]);
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
+        Registry(registry).registerFund(address(hub));
 
         delete managersToSettings[msg.sender];
 
@@ -195,7 +224,7 @@ contract FundFactory is AmguConsumer {
                 components.registry,
                 components.version,
                 components.engine,
-                components.mlnAddress
+                components.mlnToken
             ]
         );
     }
@@ -204,7 +233,7 @@ contract FundFactory is AmguConsumer {
     function getLastFundId() public view returns (uint) { return funds.length - 1; }
 
     function engine() view returns (address) { return address(engine); }
-    function mlnAddress() view returns (address) { return address(mlnAddress); }
+    function mlnToken() view returns (address) { return address(mlnToken); }
     function priceSource() view returns (address) { return address(factoryPriceSource); }
     function version() view returns (address) { return address(version); }
 }

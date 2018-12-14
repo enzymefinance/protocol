@@ -6,11 +6,10 @@ import { Contracts } from '~/Contracts';
 import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { getAmguPrice } from '../calls/getAmguPrice';
 
-type SetAmguPrice = QuantityInterface;
+type SetAmguPriceArgs = QuantityInterface;
+type SetAmguPriceResult = QuantityInterface;
 
-const guards = async () => {};
-
-const prepareArgs = async (_, params) => {
+const prepareArgs = async (environment, params, contractAddress) => {
   return [`${params.quantity}`];
 };
 
@@ -20,12 +19,12 @@ const postProcess = async (environment, receipt, params, contractAddress) => {
 };
 
 const setAmguPrice: EnhancedExecute<
-  SetAmguPrice,
-  SetAmguPrice
+  SetAmguPriceArgs,
+  SetAmguPriceResult
 > = transactionFactory(
   'setAmguPrice',
-  Contracts.Version,
-  guards,
+  Contracts.Engine,
+  undefined,
   prepareArgs,
   postProcess,
 );

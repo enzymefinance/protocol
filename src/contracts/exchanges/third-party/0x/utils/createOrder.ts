@@ -13,7 +13,7 @@ import {
   orderHashUtils,
 } from '@0x/order-utils';
 import { BigNumber } from 'bignumber.js';
-import { BigInteger } from '@melonproject/token-math/bigInteger';
+import { BigInteger, add, toBI } from '@melonproject/token-math/bigInteger';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { Address } from '@melonproject/token-math/address';
@@ -22,7 +22,6 @@ import {
   createQuantity,
 } from '@melonproject/token-math/quantity';
 import { getLatestBlock } from '~/utils/evm';
-import { add, toBI } from '@melonproject/token-math/bigInteger';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';

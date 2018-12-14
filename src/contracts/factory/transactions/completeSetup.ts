@@ -7,11 +7,14 @@ import { Environment } from '~/utils/environment/Environment';
 import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
 
-interface SetupFundArgs {}
+interface CompleteSetupArgs {}
 
-type SetupFundResult = string;
+type CompleteSetupResult = string;
 
-const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
+const postProcess: PostProcessFunction<
+  CompleteSetupArgs,
+  CompleteSetupResult
+> = async (
   environment: Environment,
   receipt,
   params,
@@ -24,13 +27,11 @@ const postProcess: PostProcessFunction<SetupFundArgs, SetupFundResult> = async (
   );
 };
 
-export const setupFund = transactionFactory<SetupFundArgs, SetupFundResult>(
-  'setupFund',
+export const completeSetup = transactionFactory(
+  'completeSetup',
   Contracts.FundFactory,
   undefined,
   undefined,
   postProcess,
-  {
-    amguPayable: true,
-  },
+  { amguPayable: true },
 );
