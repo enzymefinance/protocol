@@ -69,6 +69,9 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
+    /// @notice Fallback function to receive ETH from WETH
+    function() public payable {}
+
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
         require(Registry(routes.registry).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange], "Exchange already added");
@@ -157,24 +160,27 @@ contract Trading is DSMath, Spoke, TradingInterface {
     /// @dev Make sure this is called after orderUpdateHook in adapters
     function addOpenMakeOrder(
         address ofExchange,
-        address ofSellAsset,
+        address sellAsset,
         uint orderId,
         uint expiryTime
     ) delegateInternal {
-        require(!isInOpenMakeOrder[ofSellAsset], "Sell asset already in open order");
+        require(!isInOpenMakeOrder[sellAsset], "Asset already in open order");
         require(orders.length > 0, "No orders in array");
-        require(expiryTime <= add(block.timestamp, ORDER_LIFESPAN), "Expiry time greater than max order lifespan");
-        isInOpenMakeOrder[ofSellAsset] = true;
-        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].id = orderId;
-        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].expiresAt = (expiryTime == 0) ? add(block.timestamp, ORDER_LIFESPAN) : expiryTime;
-        exchangesToOpenMakeOrders[ofExchange][ofSellAsset].orderIndex = sub(orders.length, 1);
+        require(
+            expiryTime <= add(block.timestamp, ORDER_LIFESPAN),
+            "Expiry time greater than max order lifespan"
+        );
+        isInOpenMakeOrder[sellAsset] = true;
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = (expiryTime == 0) ? add(block.timestamp, ORDER_LIFESPAN) : expiryTime;
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].orderIndex = sub(orders.length, 1);
     }
 
     function removeOpenMakeOrder(
-        address ofExchange,
-        address ofSellAsset
+        address exchange,
+        address sellAsset
     ) delegateInternal {
-        delete exchangesToOpenMakeOrders[ofExchange][ofSellAsset];
+        delete exchangesToOpenMakeOrders[exchange][sellAsset];
     }
 
     /// @dev Bit of Redundancy for now
@@ -250,9 +256,6 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
-    /// @notice Payable function to get back ETH from WETH
-    function() public payable {}
-
     function getExchangeInfo() view returns (address[], address[], bool[]) {
         address[] memory ofExchanges = new address[](exchanges.length);
         address[] memory ofAdapters = new address[](exchanges.length);
@@ -268,6 +271,10 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
         return (order.id, order.expiresAt, order.orderIndex);
+    }
+
+    function isOrderExpired(address exchange, address asset) view returns(bool) {
+        return exchangesToOpenMakeOrders[exchange][asset].expiresAt <= block.timestamp;
     }
 
     function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {

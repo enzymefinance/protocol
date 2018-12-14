@@ -13,7 +13,7 @@ import "ExchangeAdapterInterface.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Adapter between Melon and 0x Exchange Contract (version 1)
+/// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
 
     //  METHODS
@@ -32,7 +32,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager must be sender");
-        require(hub.isShutDown() == false, "Hub is shut down");
+        require(!hub.isShutDown(), "Hub must not be shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -118,7 +118,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager must be sender");
-        require(hub.isShutDown() == false, "Hub is shut down");
+        require(!hub.isShutDown(), "Hub must not be shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -160,8 +160,12 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
+
+        bool expired = Trading(address(this)).isOrderExpired(targetExchange, orderAddresses[2]);
         require(
-            hub.manager() == msg.sender || hub.isShutDown() == false,
+            hub.manager() == msg.sender ||
+            expired ||
+            hub.isShutDown(),
             "Manager must be sender or fund must be shut down"
         );
 
