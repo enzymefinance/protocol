@@ -6,12 +6,14 @@ import "Trading.sol";
 import "Hub.sol";
 import "Vault.sol";
 import "Accounting.sol";
+import "Registry.sol";
 import "WETH9.sol";
 import "DBC.sol";
 import "math.sol";
 import "ExchangeEfx.sol";
 import "WrapperLock.sol";
 import "WrapperLockEth.sol";
+import "WrapperRegistryEFX.sol";
 import "ExchangeAdapterInterface.sol";
 
 
@@ -137,7 +139,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         for (uint i = 0; i < orderAddresses.length; i++) {
             // Check if the input token address is null address
             if (orderAddresses[i] == address(0)) continue;
-            address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(orderAddresses[i]);
+            address wrappedToken = getWrapperToken(orderAddresses[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
@@ -163,7 +165,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         }
 
         // Check if tokens have been withdrawn (cancelled order may still need to be accounted if there is balance)
-        uint balance = WrapperLock(ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset)).balanceOf(msg.sender);
+        uint balance = WrapperLock(getWrapperToken(makerAsset)).balanceOf(msg.sender);
         if (balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
@@ -180,7 +182,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         Hub hub = Hub(Trading(address(this)).hub());
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
-        address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
+        address wrappedToken = getWrapperToken(makerAsset);
         // Deposit to rounded up value of time difference of expiration time and current time (in hours)
         uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
 
@@ -246,5 +248,14 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         assembly {
             assetAddress := mload(add(assetData, 36))
         }
+    }
+
+    function getWrapperToken(address token)
+        internal
+        view
+        returns (address wrapperToken)
+    {
+        address wrapperRegistry = Registry(Trading(address(this)).registry()).ethfinexWrapperRegistry();
+        return WrapperRegistryEFX(wrapperRegistry).wrapper2TokenLookup(token);
     }
 }
