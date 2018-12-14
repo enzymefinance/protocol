@@ -37,7 +37,9 @@ export const deployContract: DeployContract = async (
     LogLevels.INFO,
   );
 
-  const txIdentifier = `${pathToSolidityFile}(${args.join(',')})`;
+  const txIdentifier = `${pathToSolidityFile}(${args &&
+    args.length &&
+    args.join(',')})`;
   const parsed = path.parse(pathToSolidityFile);
 
   const rawABI = fs.readFileSync(
