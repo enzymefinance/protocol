@@ -88,7 +88,11 @@ export const initTestEnvironment = async (endpoint?: string) => {
   });
   const accounts = await environment.eth.getAccounts();
 
-  ensure(accounts.length > 0, 'No unlocked accounts found');
+  ensure(
+    accounts.length > 0,
+    'No accounts found. Are your running a test chain?',
+  );
+
   ensure(
     keyPairs.has(accounts[0].toLowerCase()),
     `Unknown address: ${
