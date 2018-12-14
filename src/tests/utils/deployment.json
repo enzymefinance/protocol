@@ -41,7 +41,7 @@
     "version": "0xf6255d743378490f61dc4E9171a5d3cC4a782AB9",
     "ranking": "0xc99084DD9fc92EBa9dE526d29B0bCFdf82Ae54f3"
   },
-  "thirdpartyContracts": {
+  "thirdPartyContracts": {
     "exchanges": {
       "kyber": {
         "conversionRates": "0xAe49abc7F2874368620a470E8806b083391a4Be2",

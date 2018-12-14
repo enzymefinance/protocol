@@ -26,7 +26,7 @@ export const getInfo = async (
 
   const fromDeployment =
     (environment.deployment &&
-      environment.deployment.thirdpartyContracts.tokens.find(
+      environment.deployment.thirdPartyContracts.tokens.find(
         t => t.address.toLowerCase() === contractAddress.toLowerCase(),
       )) ||
     {};

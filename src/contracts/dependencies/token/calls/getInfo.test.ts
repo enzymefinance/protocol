@@ -35,8 +35,8 @@ describe('getInfo', () => {
       ...shared.env,
       deployment: {
         ...shared.env.deployment,
-        thirdpartyContracts: {
-          ...shared.env.deployment.thirdpartyContracts,
+        thirdPartyContracts: {
+          ...shared.env.deployment.thirdPartyContracts,
           tokens: [
             {
               address: tokenAddress.toString(),
