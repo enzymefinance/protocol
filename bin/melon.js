@@ -23,10 +23,10 @@ program
       const { compileGlob } = require('./compile');
       // await initTestEnvironment();
       await compileGlob(glob);
+      process.exit();
     } catch (e) {
       console.error(e);
-    } finally {
-      process.exit();
+      process.exit(1);
     }
   });
 
@@ -65,36 +65,40 @@ program
     } = require('../lib/tests/utils/initTestEnvironment');
     const {
       deployThirdparty,
-    } = require('../lib/utils/deploy/deployThirdparty');
+    } = require('../lib/utils/deploy/deployThirdParty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
-    const environment = await initTestEnvironment(
-      options.endpoint || 'https://localhost:8545',
-    );
+    try {
+      const environment = await initTestEnvironment(
+        options.endpoint || 'http://localhost:8545',
+      );
 
-    const thirdPartyContracts =
-      (config && config.thirdPartyContracts) ||
-      (await deployThirdparty(environment, tokenInterfaces));
-    const { deployment } = await deploySystem(
-      environment,
-      thirdPartyContracts,
-      config && config.melonContracts,
-    );
-    const chainId = await environment.eth.net.getId();
+      const thirdPartyContracts =
+        (config && config.thirdPartyContracts) ||
+        (await deployThirdparty(environment, tokenInterfaces));
+      const { deployment } = await deploySystem(
+        environment,
+        thirdPartyContracts,
+        config && config.melonContracts,
+      );
+      const chainId = await environment.eth.net.getId();
 
-    const chainMap = {
-      1: 'mainnet',
-      42: 'kovan',
-    };
+      const chainMap = {
+        1: 'mainnet',
+        42: 'kovan',
+      };
 
-    const chainName = chainMap[chainId] || 'development';
+      const chainName = chainMap[chainId] || 'development';
 
-    fs.writeFileSync(
-      `./deployments/${chainName}-${environment.track}.json`,
-      JSON.stringify(deployment, null, 2),
-    );
-
-    process.exit();
+      fs.writeFileSync(
+        `./deployments/${chainName}-${environment.track}.json`,
+        JSON.stringify(deployment, null, 2),
+      );
+      process.exit();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 program
@@ -110,22 +114,27 @@ program
       getQuoteToken,
     } = require('../lib/contracts/prices/calls/getQuoteToken');
     const { getDeployment } = require('../lib/utils/solidity/getDeployment');
-    const environment = await initTestEnvironment();
-    const { priceSource, tokens } = await getDeployment(environment);
-    const quoteToken = await getQuoteToken(priceSource, environment);
-    const baseToken = tokens.find(token => {
-      return token.symbol === symbol.toUpperCase();
-    });
+    try {
+      const environment = await initTestEnvironment();
+      const { priceSource, tokens } = await getDeployment(environment);
+      const quoteToken = await getQuoteToken(priceSource, environment);
+      const baseToken = tokens.find(token => {
+        return token.symbol === symbol.toUpperCase();
+      });
 
-    const newPrice = getPrice(
-      createQuantity(baseToken, 1),
-      createQuantity(quoteToken, value),
-    );
+      const newPrice = getPrice(
+        createQuantity(baseToken, 1),
+        createQuantity(quoteToken, value),
+      );
 
-    await update(priceSource, [newPrice]);
+      await update(priceSource, [newPrice]);
 
-    console.log(`Successfully updated the price for ${symbol}.`);
-    process.exit();
+      console.log(`Successfully updated the price for ${symbol}.`);
+      process.exit();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 program.on('command:*', function() {
