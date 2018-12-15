@@ -50,6 +50,10 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
+        // Order parameter checks
+        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
+        ensureNotInOpenMakeOrder(makerAsset);
+
         Vault(hub.vault()).withdraw(makerAsset, makerQuantity);
         require(
             makerAsset.approve(targetExchange, makerQuantity),

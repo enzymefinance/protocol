@@ -65,6 +65,13 @@ contract ExchangeAdapter {
         getAccounting().addAssetToOwnedAssets(_asset);
     }
 
+    function ensureNotInOpenMakeOrder(address _asset) internal view {
+        require(
+            !getTrading().isInOpenMakeOrder(_asset),
+            "This asset is already in an open make order"
+        );
+    }
+
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
     /// @param orderAddresses [2] Order maker asset

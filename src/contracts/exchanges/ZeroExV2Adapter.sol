@@ -36,11 +36,8 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
-        require(
-            !Trading(address(this)).isInOpenMakeOrder(makerAsset),
-            "This asset is already in an open make order"
-        );
+        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
+        ensureNotInOpenMakeOrder(makerAsset);
 
         approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
@@ -218,7 +215,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         if (takerFee > 0) {
             bytes memory assetData = Exchange(targetExchange).ZRX_ASSET_DATA();
             address zrxProxy = getAssetProxy(targetExchange, assetData);
-            Hub hub = Hub(Trading(address(this)).hub());
+            Hub hub = getHub();
             Vault vault = Vault(hub.vault());
             vault.withdraw(getAssetAddress(assetData), takerFee);
             require(

@@ -40,11 +40,9 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
-        require(
-            !Trading(address(this)).isInOpenMakeOrder(makerAsset),
-            "This asset is already in an open make order"
-        );
+        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
+        ensureNotInOpenMakeOrder(makerAsset);
+
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);

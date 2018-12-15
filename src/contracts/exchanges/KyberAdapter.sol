@@ -84,7 +84,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         returns (uint actualReceiveAmount)
     {
 
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         if (srcToken == nativeAsset) {
@@ -116,7 +116,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         returns (uint receivedAmount)
     {
         // Convert WETH to ETH
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
         WETH9(nativeAsset).withdraw(srcAmount);
@@ -140,7 +140,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
         ERC20Clone(srcToken).approve(targetExchange, srcAmount);
