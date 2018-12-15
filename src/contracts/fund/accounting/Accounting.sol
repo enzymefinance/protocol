@@ -169,14 +169,14 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     /// @dev Check holdings for all assets, and adjust list
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
-            address ofAsset = ownedAssets[i];
+            address asset = ownedAssets[i];
             if (
-                assetHoldings(ofAsset) > 0 ||
+                assetHoldings(asset) > 0 ||
                 ofAsset == address(QUOTE_ASSET)
             ) {
-                _addAssetToOwnedAssets(ofAsset);
+                _addAssetToOwnedAssets(asset);
             } else {
-                _removeFromOwnedAssets(ofAsset);
+                _removeFromOwnedAssets(asset);
             }
         }
     }
@@ -189,29 +189,29 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         _removeFromOwnedAssets(_asset);
     }
 
-    /// @dev Just pass if asset already registered
+    /// @dev Just pass if asset already in list
     function _addAssetToOwnedAssets(address _asset) internal {
+        if (isInAssetList[_asset]) { return; }
+
         require(
-            isInAssetList[_asset] ||
             ownedAssets.length < MAX_OWNED_ASSETS,
             "Max owned asset limit reached"
         );
-        if (!isInAssetList[_asset]) {
-            isInAssetList[_asset] = true;
-            ownedAssets.push(_asset);
-            emit AssetAddition(_asset);
-        }
+        isInAssetList[_asset] = true;
+        ownedAssets.push(_asset);
+        emit AssetAddition(_asset);
     }
 
+    /// @dev Just pass if asset not in list
     function _removeFromOwnedAssets(address _asset) internal {
-        if (isInAssetList[_asset]) {
-            isInAssetList[_asset] = false;
-            for (uint i; i < ownedAssets.length; i++) {
-                if (ownedAssets[i] == _asset) {
-                    ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
-                    ownedAssets.length--;
-                    break;
-                }
+        if (!isInAssetList[_asset]) { return; }
+
+        isInAssetList[_asset] = false;
+        for (uint i; i < ownedAssets.length; i++) {
+            if (ownedAssets[i] == _asset) {
+                ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
+                ownedAssets.length--;
+                break;
             }
         }
         emit AssetRemoval(_asset);
