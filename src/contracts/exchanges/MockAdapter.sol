@@ -5,7 +5,6 @@ import "Hub.sol";
 import "Accounting.sol";
 import "ExchangeAdapterInterface.sol";
 
-
 contract MockAdapter is ExchangeAdapterInterface {
 
     //  METHODS

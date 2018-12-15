@@ -12,6 +12,8 @@ import "ExchangeAdapterInterface.sol";
 /// @notice Trading adapter between Melon and Melon Engine
 contract EngineAdapter is DSMath, ExchangeAdapterInterface {
 
+    function () payable {}
+
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
     /// @param orderValues [0] MLN quantity
@@ -19,12 +21,12 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
     /// @param orderAddresses [1] WETH token
     function takeOrder (
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager is not sender");
@@ -47,8 +49,6 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         WETH(wethAddress).transfer(address(vault), ethToReceive);
     }
 
-    function () payable {}
-
     /// @dev Dummy function; not implemented on exchange
     function makeOrder(
         address targetExchange,
@@ -58,9 +58,7 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        revert("Unimplemented");
-    }
+    ) { revert("Unimplemented"); } 
 
     /// @dev Dummy function; not implemented on exchange
     function cancelOrder(
@@ -71,10 +69,7 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    )
-    {
-        revert("Unimplemented");
-    }
+    ) { revert("Unimplemented"); }
 
     // VIEW FUNCTIONS
 
@@ -83,10 +78,7 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         address targetExchange,
         uint id,
         address makerAsset
-    )
-        view
-        returns (address, address, uint, uint)
-    {
+    ) view returns (address, address, uint, uint) {
         revert("Unimplemented");
     }
 }

@@ -1,4 +1,3 @@
-
 pragma solidity ^0.4.21;
 
 import "WETH9.sol";
@@ -10,7 +9,6 @@ import "PriceSource.i.sol";
 import "DBC.sol";
 import "KyberNetworkProxy.sol";
 import "ExchangeAdapterInterface.sol";
-
 
 contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
@@ -40,12 +38,14 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    )
-    {
+    ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager is not sender");
         require(!hub.isShutDown(), "Hub is shut down");
-        require(orderValues[1] == orderValues[6], "fillTakerQuantity must equal takerAssetQuantity");
+        require(
+            orderValues[1] == orderValues[6],
+            "fillTakerQuantity must equal takerAssetQuantity"
+        );
 
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
@@ -61,10 +61,11 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
-        // TODO: Maybe post policy check for PriceTolernance based on actualReceiveAmount (Overkill maybe)
+        // TODO: Maybe post policy check for PriceTolerance based on actualReceiveAmount (Overkill maybe)
         require(
             Accounting(hub.accounting()).isInAssetList(destToken) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS()
+            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
+            "Too many assets in owned list"
         );
 
         // Add dest token to fund's owned asset list if not already exists and update order hook

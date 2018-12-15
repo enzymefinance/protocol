@@ -14,10 +14,9 @@ import "WrapperLock.sol";
 import "WrapperLockEth.sol";
 import "ExchangeAdapterInterface.sol";
 
-
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Adapter between Melon and 0x Exchange Contract (version 1)
+/// @notice Adapter to EthFinex exchange
 contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
 
     //  METHODS
@@ -36,7 +35,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(hub.manager() == msg.sender, "Manager must be sender");
-        require(hub.isShutDown() == false, "Hub is shut down");
+        require(!hub.isShutDown(), "Hub is shut down");
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -88,7 +87,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes takerAssetData,
         bytes signature
     ) {
-        revert();
+        revert("Unimplemented");
     }
 
     /// @notice Cancel the 0x make order
@@ -103,7 +102,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
     ) {
         Hub hub = Hub(Trading(address(this)).hub());
         require(
-            hub.manager() == msg.sender || hub.isShutDown() == false,
+            hub.manager() == msg.sender ||
+            hub.isShutDown(),
             "Manager must be sender or fund must be shut down"
         );
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
@@ -182,7 +182,9 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);
         // Deposit to rounded up value of time difference of expiration time and current time (in hours)
-        uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
+        uint depositTime = (
+            sub(orderExpirationTime, block.timestamp) / 1 hours
+        ) + 1;
 
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();

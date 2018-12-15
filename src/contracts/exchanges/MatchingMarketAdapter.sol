@@ -169,7 +169,10 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         Hub hub = Hub(Trading(address(this)).hub());
         var (, orderExpirationTime, ) = Trading(address(this)).getOpenOrderInfo(targetExchange, orderAddresses[2]);
 
-        require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp > orderExpirationTime,
+        require(
+            hub.manager() == msg.sender ||
+            hub.isShutDown() ||
+            block.timestamp >= orderExpirationTime,
             "Manager must be sender or fund must be shut down or order must be expired"
         );
         require(uint(identifier) != 0, "ID cannot be zero");
