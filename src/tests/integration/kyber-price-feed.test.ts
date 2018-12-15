@@ -36,7 +36,6 @@ describe('kyber-price-feed', () => {
     shared.mockRegistryAddress = await deployContract(
       shared.env,
       Contracts.MockRegistry,
-      null,
     );
   });
 

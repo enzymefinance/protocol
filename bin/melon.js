@@ -21,12 +21,11 @@ program
 
     try {
       const { compileGlob } = require('./compile');
-      // await initTestEnvironment();
       await compileGlob(glob);
+      process.exit();
     } catch (e) {
       console.error(e);
-    } finally {
-      process.exit();
+      process.exit(1);
     }
   });
 
@@ -47,6 +46,14 @@ program
     '-e, --endpoint <endpoint>',
     'The JSON RPC endpoint url. By default: https://localhost:8545',
   )
+  .option(
+    '-g, --gas <number>',
+    'Default number of gas units to provide',
+  )
+  .option(
+    '-p, --gas-price <number>',
+    'Price (in wei) of each gas unit',
+  )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts (development setup).`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
@@ -61,40 +68,46 @@ program
     if (config) console.log('Loaded config from', `../${options.config}`);
 
     const {
-      initTestEnvironment,
-    } = require('../lib/tests/utils/initTestEnvironment');
+      initUnlockedEnvironment,
+    } = require('../lib/utils/environment/initUnlockedEnvironment');
     const {
-      deployThirdparty,
-    } = require('../lib/utils/deploy/deployThirdparty');
+      deployThirdParty,
+    } = require('../lib/utils/deploy/deployThirdParty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
-    const environment = await initTestEnvironment(
-      options.endpoint || 'https://localhost:8545',
-    );
+    try {
+      const environment = await initUnlockedEnvironment({
+        endpoint: options.endpoint || 'http://localhost:8545',
+        gasLimit: options.gas || undefined,
+        gasPrice: options.gasPrice || undefined,
+      });
 
-    const thirdPartyContracts =
-      (config && config.thirdPartyContracts) ||
-      (await deployThirdparty(environment, tokenInterfaces));
-    const { deployment } = await deploySystem(
-      environment,
-      thirdPartyContracts,
-      config && config.melonContracts,
-    );
-    const chainId = await environment.eth.net.getId();
+      const thirdPartyContracts =
+        (config && config.thirdPartyContracts) ||
+        (await deployThirdParty(environment, tokenInterfaces));
+      const { deployment } = await deploySystem(
+        environment,
+        thirdPartyContracts,
+        config && config.melonContracts,
+      );
+      const chainId = await environment.eth.net.getId();
 
-    const chainMap = {
-      1: 'mainnet',
-      42: 'kovan',
-    };
+      const chainMap = {
+        1: 'mainnet',
+        42: 'kovan',
+      };
 
-    const chainName = chainMap[chainId] || 'development';
+      const chainName = chainMap[chainId] || 'development';
 
-    fs.writeFileSync(
-      `./deployments/${chainName}-${environment.track}.json`,
-      JSON.stringify(deployment, null, 2),
-    );
-
-    process.exit();
+      fs.writeFileSync(
+        `./deployments/${chainName}-${environment.track}.json`,
+        JSON.stringify(deployment, null, 2),
+      );
+      process.exit();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 program
@@ -110,22 +123,27 @@ program
       getQuoteToken,
     } = require('../lib/contracts/prices/calls/getQuoteToken');
     const { getDeployment } = require('../lib/utils/solidity/getDeployment');
-    const environment = await initTestEnvironment();
-    const { priceSource, tokens } = await getDeployment(environment);
-    const quoteToken = await getQuoteToken(priceSource, environment);
-    const baseToken = tokens.find(token => {
-      return token.symbol === symbol.toUpperCase();
-    });
+    try {
+      const environment = await initTestEnvironment();
+      const { priceSource, tokens } = await getDeployment(environment);
+      const quoteToken = await getQuoteToken(priceSource, environment);
+      const baseToken = tokens.find(token => {
+        return token.symbol === symbol.toUpperCase();
+      });
 
-    const newPrice = getPrice(
-      createQuantity(baseToken, 1),
-      createQuantity(quoteToken, value),
-    );
+      const newPrice = getPrice(
+        createQuantity(baseToken, 1),
+        createQuantity(quoteToken, value),
+      );
 
-    await update(priceSource, [newPrice]);
+      await update(priceSource, [newPrice]);
 
-    console.log(`Successfully updated the price for ${symbol}.`);
-    process.exit();
+      console.log(`Successfully updated the price for ${symbol}.`);
+      process.exit();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 program.on('command:*', function() {
