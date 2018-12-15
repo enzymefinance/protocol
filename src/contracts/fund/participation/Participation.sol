@@ -18,12 +18,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         uint investmentAmount;
         uint requestedShares;
         uint timestamp;
-        uint atUpdateId;
     }
 
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
-    uint public SHARES_DECIMALS = 18;
+    uint constant public SHARES_DECIMALS = 18;
+    uint constant public INVEST_DELAY = 10 minutes;
 
     constructor(address _hub, address[] _defaultAssets, address _registry) Spoke(_hub) {
         routes.registry = _registry;
@@ -58,12 +58,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         address investmentAsset
     )
         external
+        notShutDown
         amguPayable
         payable
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {
-        require(!hub.isShutDown(), "Cannot invest in shut down fund");
         require(
             investAllowed[investmentAsset],
             "Investment not allowed in this asset"
@@ -72,8 +72,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
-            timestamp: block.timestamp,
-            atUpdateId: CanonicalPriceFeed(routes.priceSource).updateId() // TODO: can this be abstracted away?
+            timestamp: block.timestamp
         });
 
         emit InvestmentRequest(
@@ -85,24 +84,26 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     function cancelRequest() external {
+        require(
+            requests[msg.sender].timestamp > 0,
+            "No request to cancel"
+        );
         delete requests[msg.sender];
         emit CancelRequest(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)
         public
+        notShutDown
         amguPayable
         payable
-        // TODO: implement and use below modifiers
-        // pre_cond(
-        //     Shares(routes.shares).totalSupply() == 0 ||
-        //     (
-        //         now >= add(requests[id].timestamp, priceSource.getInterval()) &&
-        //         priceSource.updateId() >= add(requests[id].atUpdateId, 2)
-        //     )
-        // )
     {
-        require(!hub.isShutDown(), "Cannot invest in shut down fund");
+        require(
+            Shares(routes.shares).totalSupply() == 0 ||
+            block.timestamp >= add(requests[requestOwner].timestamp, INVEST_DELAY) &&
+            block.timestamp <= add(requests[requestOwner].timestamp, mul(2, INVEST_DELAY)),
+            "Order is not within investment window"
+        );
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
         require(

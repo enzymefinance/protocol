@@ -14,7 +14,6 @@ import "Registry.sol";
 contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     // FIELDS
-    uint constant public updateId = 1; // TODO: Hardcode for now
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
     Registry public REGISTRY;

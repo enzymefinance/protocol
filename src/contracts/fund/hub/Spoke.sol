@@ -25,6 +25,11 @@ contract Spoke is DSAuth {
     Routes public routes;
     bool public initialized;
 
+    modifier notShutDown() {
+        require(!hub.isShutDown(), "Hub is shut down");
+        _;
+    }
+
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
