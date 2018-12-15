@@ -1,10 +1,12 @@
 pragma solidity ^0.4.21;
 
-import "Trading.sol";
+import "Accounting.sol";
 import "Hub.sol";
+import "Trading.sol";
 
-/// @title Exchange Adapter Interface
+/// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
+/// @notice Override the public methods to implement an adapter
 contract ExchangeAdapter {
 
     modifier onlyManager() {
@@ -42,12 +44,25 @@ contract ExchangeAdapter {
         return Hub(getTrading().hub());
     }
 
+    function getAccounting() internal view returns (Accounting) {
+        return Accounting(getHub().accounting());
+    }
+
     function hubShutDown() internal view returns (bool) {
         return getHub().isShutDown();
     }
 
     function getManager() internal view returns (address) {
         return getHub().manager();
+    }
+
+    function safeAddToOwnedAssets(address _asset) internal {
+        require(
+            getAccounting().isInAssetList(_asset) ||
+            getAccounting().getOwnedAssetsLength() < getAccounting().MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
+        getAccounting().addAssetToOwnedAssets(_asset);
     }
 
     /// @param orderAddresses [0] Order maker

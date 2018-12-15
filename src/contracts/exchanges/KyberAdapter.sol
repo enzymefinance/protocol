@@ -60,14 +60,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
         // TODO: Maybe post policy check for PriceTolerance based on actualReceiveAmount (Overkill maybe)
-        require(
-            Accounting(hub.accounting()).isInAssetList(destToken) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Too many assets in owned list"
-        );
-
-        // Add dest token to fund's owned asset list if not already exists and update order hook
-        Accounting(hub.accounting()).addAssetToOwnedAssets(destToken);
+        safeAddToOwnedAssets(destToken);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(0),

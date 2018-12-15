@@ -61,12 +61,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         // defines success in MatchingMarket
         require(orderId != 0, "Order ID should not be zero");
 
-        require(
-            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
+        safeAddToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(orderId),
@@ -128,12 +123,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity),
             "Buy on matching market failed"
         );
-        require(
-            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+
+        safeAddToOwnedAssets(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(identifier),

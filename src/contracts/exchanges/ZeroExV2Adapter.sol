@@ -54,13 +54,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        require(
-            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-
-        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
+        safeAddToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -128,13 +122,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             takerAssetFilledAmount == fillTakerQuantity,
             "Filled amount does not match desired fill amount"
         );
-        require(
-            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+        safeAddToOwnedAssets(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
