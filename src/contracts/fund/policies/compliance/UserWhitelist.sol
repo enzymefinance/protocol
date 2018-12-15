@@ -3,7 +3,6 @@ pragma solidity ^0.4.21;
 import "auth.sol";
 import "Policy.sol";
 
-// TODO: permissioning details when integrated with fund (which entities can change things)
 contract UserWhitelist is Policy, DSAuth {
 
     event ListAddition(address indexed who);

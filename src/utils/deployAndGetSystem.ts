@@ -1,5 +1,5 @@
 import { deploySystem } from './deploy/deploySystem';
-import { deployThirdParty } from './deploy/deployThirdparty';
+import { deployThirdParty } from './deploy/deployThirdParty';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { Environment } from './environment/Environment';
