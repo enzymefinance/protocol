@@ -21,7 +21,7 @@ describe('investment', () => {
   });
 
   it('Invest fails in shut down fund', async () => {
-    const errorMessage = 'Cannot invest in shut down fund';
+    const errorMessage = 'Hub is shut down';
     const amount = '1000000000000000000';
     await shared.hub.methods.setShutDownState(true).send({ from: shared.user });
 
