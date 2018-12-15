@@ -29,11 +29,8 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager must be sender");
-        require(!hub.isShutDown(), "Hub must not be shut down");
-
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -115,10 +112,8 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager must be sender");
-        require(!hub.isShutDown(), "Hub must not be shut down");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -158,17 +153,8 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-
-        bool expired = Trading(address(this)).isOrderExpired(targetExchange, orderAddresses[2]);
-        require(
-            hub.manager() == msg.sender ||
-            expired ||
-            hub.isShutDown(),
-            "Manager must be sender or fund must be shut down"
-        );
-
+    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+        Hub hub = getHub();
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
         Exchange(targetExchange).cancelOrder(order);
@@ -206,7 +192,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     function approveTakerAsset(address targetExchange, address takerAsset, bytes takerAssetData, uint fillTakerQuantity)
         internal
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(takerAsset, fillTakerQuantity);
         address assetProxy = getAssetProxy(targetExchange, takerAssetData);
@@ -220,7 +206,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapterInterface {
     function approveMakerAsset(address targetExchange, address makerAsset, bytes makerAssetData, uint makerQuantity)
         internal
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address assetProxy = getAssetProxy(targetExchange, makerAssetData);

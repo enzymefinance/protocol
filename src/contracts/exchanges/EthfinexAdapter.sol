@@ -32,10 +32,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager must be sender");
-        require(!hub.isShutDown(), "Hub is shut down");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -77,19 +75,6 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
-    /// @notice No Take orders on Ethfinex
-    function takeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
     /// @notice Cancel the 0x make order
     function cancelOrder(
         address targetExchange,
@@ -99,20 +84,16 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(
-            hub.manager() == msg.sender ||
-            hub.isShutDown(),
-            "Manager must be sender or fund must be shut down"
-        );
-        LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
+    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+        Hub hub = getHub();
+
+        LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
         ExchangeEfx(targetExchange).cancelOrder(order);
 
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
         // address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
         // Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getTrading().orderUpdateHook(
             targetExchange,
             identifier,
             Trading.UpdateType.cancel,
@@ -131,7 +112,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes takerAssetData,
         bytes signature
     ) {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
@@ -143,7 +124,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
             if (orderAddresses[i] == nativeAsset) {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
-            Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[i]);
+            getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
         }
     }
 
@@ -177,7 +158,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
     function wrapMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity, uint orderExpirationTime)
         internal
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = ExchangeEfx(targetExchange).wrapper2TokenLookup(makerAsset);

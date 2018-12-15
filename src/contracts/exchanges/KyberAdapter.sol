@@ -38,10 +38,8 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         require(
             orderValues[1] == orderValues[6],
             "fillTakerQuantity must equal takerAssetQuantity"
@@ -77,47 +75,6 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
             [destToken, srcToken],
             [actualReceiveAmount, srcAmount, srcAmount]
         );
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function makeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function cancelOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    )
-    {
-        revert("Unimplemented");
-    }
-
-    // VIEW FUNCTIONS
-
-    /// @dev Dummy function; not implemented on exchange
-    function getOrder(
-        address targetExchange,
-        uint id,
-        address makerAsset
-    )
-        view
-        returns (address, address, uint, uint)
-    {
-        revert("Unimplemented");
     }
 
     // INTERNAL FUNCTIONS
@@ -217,7 +174,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
         ERC20Clone(srcToken).approve(targetExchange, srcAmount);

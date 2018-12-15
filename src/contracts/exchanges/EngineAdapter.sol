@@ -27,10 +27,8 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
 
         address mlnAddress = orderAddresses[0];
         address wethAddress = orderAddresses[1];
@@ -47,38 +45,5 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(wethAddress).deposit.value(ethToReceive)();
         WETH(wethAddress).transfer(address(vault), ethToReceive);
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function makeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) { revert("Unimplemented"); } 
-
-    /// @dev Dummy function; not implemented on exchange
-    function cancelOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) { revert("Unimplemented"); }
-
-    // VIEW FUNCTIONS
-
-    /// @dev Dummy function; not implemented on exchange
-    function getOrder(
-        address targetExchange,
-        uint id,
-        address makerAsset
-    ) view returns (address, address, uint, uint) {
-        revert("Unimplemented");
     }
 }

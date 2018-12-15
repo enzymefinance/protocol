@@ -43,11 +43,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
-
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
@@ -105,11 +102,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
-
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -165,16 +159,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        var (, orderExpirationTime, ) = Trading(address(this)).getOpenOrderInfo(targetExchange, orderAddresses[2]);
-
-        require(
-            hub.manager() == msg.sender ||
-            hub.isShutDown() ||
-            block.timestamp >= orderExpirationTime,
-            "Manager must be sender or fund must be shut down or order must be expired"
-        );
+    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+        Hub hub = getHub();
         require(uint(identifier) != 0, "ID cannot be zero");
 
         var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
