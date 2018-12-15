@@ -11,7 +11,7 @@ import {
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
-  gasPrice: '1000000000',
+  gasPrice: '5000000000',
 };
 
 const checkIpc = endpoint => {
@@ -44,6 +44,7 @@ const selectProvider = R.cond([
 
 const constructProvider = (endpoint, logger: CurriedLogger) => {
   const debug = logger('melon:protocol:utils:environment', LogLevels.DEBUG);
+  debug('Endpoint', endpoint);
 
   string()
     .url(

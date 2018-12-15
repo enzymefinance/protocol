@@ -6,7 +6,6 @@ export const deployFeeManagerFactory = async (environment: Environment) => {
   const address = await deployContract(
     environment,
     Contracts.FeeManagerFactory,
-    null,
   );
 
   return address;

@@ -204,7 +204,7 @@ export const deployKyberEnvironment = async (
   await environment.eth.sendTransaction({
     from: deployer,
     to: kyberReserveContract.options.address,
-    value: new BigNumber(10 ** 24),
+    value: new BigNumber(10 ** 18),
   });
   await kyberReserveContract.methods
     .setContracts(

@@ -1,0 +1,255 @@
+{
+  "exchangeConfigs": {
+    "MatchingMarket": {
+      "adapter": "0x920DeC671D05f85d068D164c100a716B72fdF793",
+      "exchange": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
+      "takesCustody": false
+    },
+    "KyberNetwork": {
+      "adapter": "0xf53e7F94986496308CA1723f9e38869A991824f8",
+      "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
+      "takesCustody": false
+    },
+    "ZeroEx": {
+      "adapter": "0x0bbf2B87e61519cd52AEbE90C33c86997fA48985",
+      "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "takesCustody": false
+    }
+  },
+  "melonContracts": {
+    "priceSource": "0xa9C66a0F14f83ED091cBA89a4B70498679ABa60b",
+    "adapters": {
+      "kyberAdapter": "0xf53e7F94986496308CA1723f9e38869A991824f8",
+      "matchingMarketAdapter": "0x920DeC671D05f85d068D164c100a716B72fdF793",
+      "zeroExAdapter": "0x0bbf2B87e61519cd52AEbE90C33c86997fA48985"
+    },
+    "policies": {
+      "priceTolerance": "0x2Aa3B5Ba414f55a4FDD9e1078ac420a8615a0507",
+      "userWhitelist": "0xcbc0d1E4b69A662197E3F9dAe8706eC86621E69a"
+    },
+    "factories": {
+      "accountingFactory": "0x30564EF26ee2Eb16B843a5ACeb49663861e18270",
+      "feeManagerFactory": "0xc4C69E4A2FC1A223218c87e335d653E88D26E69F",
+      "participationFactory": "0x3Ac1D568F875c20056a27518344309D56Fc561Ad",
+      "policyManagerFactory": "0xB2a3F10679519bC2084BE9dE8f85cf6135D742b6",
+      "sharesFactory": "0x68c07aB044e81aA905c89981ED44FC145561A657",
+      "tradingFactory": "0xF36FF7ff9D00f0151EfC210D08aAFa5bD883825D",
+      "vaultFactory": "0xbF6e2919180D9Db2f3dc39DF1EbBf3101fCBc53C"
+    },
+    "engine": "0xf784ebE53B8fB7f9Ef88b59456fd2d01B35b2d72",
+    "registry": "0x414F8ba0367AF6932Ffa7B48Fa381A48BbeAd5Ad",
+    "version": "0xd7a544372bc35D5E17484a8cFF3367b974F8Cba3",
+    "ranking": "0x9471Ae343CCBcABdE8718aAC6d6D68655D287a3b"
+  },
+  "thirdPartyContracts": {
+    "exchanges": {
+      "kyber": {
+        "conversionRates": "0xEddEeC7f5da5df29722D3252FC542E77D115a378",
+        "kyberNetwork": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA",
+        "kyberNetworkProxy": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df"
+      },
+      "matchingMarket": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
+      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2"
+    },
+    "tokens": [
+      {
+        "address": "0x560848C7a470b9aA87F7283FDb31bD6773771660",
+        "name": "Aragon Network Token",
+        "decimals": 18,
+        "symbol": "ANT"
+      },
+      {
+        "address": "0x3f9cf17C8cC1883B75AE9a532597340564601538",
+        "name": "AventCoin",
+        "decimals": 18,
+        "symbol": "AVT"
+      },
+      {
+        "address": "0x79Fe4882428F457C086Be4584e3E164C13F2017e",
+        "name": "Bancor Network Token",
+        "decimals": 18,
+        "symbol": "BNT"
+      },
+      {
+        "address": "0x47eB525440e976387b80b41cB22CF4dc0A7E9Db0",
+        "name": "Basic Attention Token",
+        "decimals": 18,
+        "symbol": "BAT"
+      },
+      {
+        "address": "0x3824e72d60Ec60f3f02ae172de7c37C59876cC14",
+        "name": "Bitcoin Token",
+        "decimals": 8,
+        "symbol": "BTC"
+      },
+      {
+        "address": "0xe67E7cE765b67AA1Dcd731458eD50C04BfC78d74",
+        "name": "Digix Dao Token",
+        "decimals": 9,
+        "symbol": "DGD"
+      },
+      {
+        "address": "0xc6194A293784FC652488c0570759E2eBb8456104",
+        "name": "Digix Gold Token",
+        "decimals": 9,
+        "symbol": "DGX"
+      },
+      {
+        "address": "0x1cbe9e3FeD97A51BA6bef63C00124aAea8411a78",
+        "name": "Dogecoin Token",
+        "decimals": 8,
+        "symbol": "DOGE"
+      },
+      {
+        "address": "0x8D57263632EFDC077b5417Baa434f8Fa9365A1d7",
+        "name": "Ether Classic Token",
+        "decimals": 18,
+        "symbol": "ETC"
+      },
+      {
+        "address": "0x26bB6da136a71Aa8D62D488BD3C91cC2151F029b",
+        "name": "Ether Token",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      {
+        "address": "0x6d49eB0E3bDef4F907d3952AC4Cab06c3ea9fE6b",
+        "name": "Euro Token",
+        "decimals": 8,
+        "symbol": "EUR"
+      },
+      {
+        "address": "0x89C6dd6A72E2e5838B1CfDc1059Dad22CE4b6A4b",
+        "name": "Gnosis Token",
+        "decimals": 18,
+        "symbol": "GNO"
+      },
+      {
+        "address": "0x3A3c7f4eF0589F18eFEc7EBA767EdAe3e73B95cD",
+        "name": "Golem Network Token",
+        "decimals": 18,
+        "symbol": "GNT"
+      },
+      {
+        "address": "0xAAe7a8C55e31b94A67B411be035573F5dEF419fB",
+        "name": "Iconomi Token",
+        "decimals": 18,
+        "symbol": "ICN"
+      },
+      {
+        "address": "0x38a31aD4F640280d973687C76433276F2817F5C1",
+        "name": "Litecoin Token",
+        "decimals": 8,
+        "symbol": "LTC"
+      },
+      {
+        "address": "0x19044fF4C8f00b16AB660407ABfFFac8FD1cE833",
+        "name": "Rep Token",
+        "decimals": 18,
+        "symbol": "REP"
+      },
+      {
+        "address": "0x664a756CBb64A207cD69BacCb1d153F010Bc02ED",
+        "name": "Ripple Token",
+        "decimals": 6,
+        "symbol": "XRP"
+      },
+      {
+        "address": "0xd466408b253beA8DC07b484c43B5d9690396D0c6",
+        "name": "SingularDTV Token",
+        "decimals": 0,
+        "symbol": "SNGLS"
+      },
+      {
+        "address": "0xc5Ab5219a293426eb60ab0A0091D40FF676816c2",
+        "name": "Status Network Token",
+        "decimals": 18,
+        "symbol": "SNT"
+      },
+      {
+        "address": "0x8925daf23aD19c68fF317038C6c6018cfBB70704",
+        "name": "0x Protocol Token",
+        "decimals": 18,
+        "symbol": "ZRX"
+      },
+      {
+        "address": "0x30C64c8D3e985D91F9c1eFAf4CCDe66b2925ea7C",
+        "name": "Request Network",
+        "decimals": 18,
+        "symbol": "REQ"
+      },
+      {
+        "address": "0x28d1FC38670499E0C439FefC886A91B203139a1f",
+        "name": "FunFair",
+        "decimals": 8,
+        "symbol": "FUN"
+      },
+      {
+        "address": "0x76B614b11afB1474836e5762984fC0445F5F9d70",
+        "name": "Santiment Network Token",
+        "decimals": 18,
+        "symbol": "SAN"
+      },
+      {
+        "address": "0x2d29f5cA0e8d10822552Bf73553E263eE68278d0",
+        "name": "Decentraland",
+        "decimals": 18,
+        "symbol": "MANA"
+      },
+      {
+        "address": "0x57030466f1C62cDF9201EcCa416c68cEB89378da",
+        "name": "Tether",
+        "decimals": 6,
+        "symbol": "USDT"
+      },
+      {
+        "address": "0x3D9Ac387cf69F6F65Aa32EE78A46bEd0C147F6A9",
+        "name": "ZCash",
+        "decimals": 8,
+        "symbol": "ZEC"
+      },
+      {
+        "address": "0xa27Af8713623fCc239d49108B1A7b187c133e88B",
+        "name": "Wrapped Ether Token",
+        "decimals": 18,
+        "symbol": "WETH"
+      },
+      {
+        "address": "0xDC5fC5DaB642f688Bc5BB58bEF6E0d452D7ae123",
+        "name": "Melon Token",
+        "decimals": 18,
+        "symbol": "MLN"
+      },
+      {
+        "address": "0x71BE1386EC4d6d780b208529ABc349Ee69c241Cd",
+        "name": "MakerDao",
+        "decimals": 18,
+        "symbol": "MKR"
+      },
+      {
+        "address": "0x82789d9a0951974E58EbB91DF13b84424e51Acc4",
+        "name": "Dai",
+        "decimals": 18,
+        "symbol": "DAI"
+      },
+      {
+        "address": "0x46c4B65F40f686c3F3738395c36AceA70C06F3C2",
+        "name": "Kyber Network",
+        "decimals": 18,
+        "symbol": "KNC"
+      },
+      {
+        "address": "0xB04985BFaB8550C43C00528D9d06492916cB9df6",
+        "name": "Jibrel Network",
+        "decimals": 18,
+        "symbol": "JNT"
+      },
+      {
+        "address": "0xfdBe0D69a110D1f0dc6aEc8588804da88173B8F0",
+        "name": "Omise-Go",
+        "decimals": 18,
+        "symbol": "OMG"
+      }
+    ]
+  }
+}
