@@ -11,8 +11,6 @@ import "Trading.sol";
 import "Vault.sol";
 import "Accounting.i.sol";
 
-// NB: many functions simplified for now
-// TODO: remove any of these functions we don't use; a lot of this can be trimmed down
 contract Accounting is AccountingInterface, DSMath, Spoke {
 
     struct Calculations {
@@ -24,8 +22,8 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
     }
 
     uint constant public MAX_OWNED_ASSETS = 50; // TODO: Analysis
-    address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
-    mapping (address => bool) public isInAssetList; // TODO: same as above
+    address[] public ownedAssets;
+    mapping (address => bool) public isInAssetList;
     address public QUOTE_ASSET;
     address public NATIVE_ASSET;
     uint public DEFAULT_SHARE_PRICE;
@@ -44,9 +42,15 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
-    /// TODO: Is this redundant?
     function getOwnedAssetsLength() view returns (uint) {
         return ownedAssets.length;
+    }
+
+    function assetHoldings(address _asset) public returns (uint) {
+        return add(
+            uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
+            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
+        );
     }
 
     /// @dev Returns sparse array
@@ -66,14 +70,6 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         return (_quantities, _assets);
     }
 
-    /// TODO: is this needed? can we just return the array?
-    function getFundHoldingsLength() view returns (uint) {
-        address[] memory addresses;
-        (, addresses) = getFundHoldings();
-        return addresses.length;
-    }
-
-    /// TODO: is this needed? can we implement in the policy itself?
     function calcAssetGAV(address ofAsset) returns (uint) {
         uint quantityHeld = assetHoldings(ofAsset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
@@ -83,13 +79,6 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
         require(isRecent, "Price is not recent");
         return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
-    }
-
-    function assetHoldings(address _asset) public returns (uint) {
-        return add(
-            uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
-            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
-        );
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
@@ -114,14 +103,7 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         return gav;
     }
 
-    // TODO: this view function calls a non-view function; adjust accordingly
-    // TODO: this may be redundant, and does not use its input parameter now
-    function calcUnclaimedFees(uint gav) view returns (uint) {
-        return FeeManager(routes.feeManager).totalFeeAmount();
-    }
-
-    // TODO: this view function calls a non-view function; adjust accordingly
-    function calcNav(uint gav, uint unclaimedFees) pure returns (uint) {
+    function calcNav(uint gav, uint unclaimedFees) public pure returns (uint) {
         return sub(gav, unclaimedFees);
     }
 
@@ -131,47 +113,44 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
     }
 
     function performCalculations()
-        view
         returns (
             uint gav,
             uint unclaimedFees,
-            uint feesShareQuantity,
+            uint feesInShares,
             uint nav,
             uint sharePrice
         )
     {
         gav = calcGav();
-        unclaimedFees = calcUnclaimedFees(gav);
+        unclaimedFees = FeeManager(routes.feeManager).totalFeeAmount();
         nav = calcNav(gav, unclaimedFees);
 
         uint totalSupply = Shares(routes.shares).totalSupply();
         // The value of unclaimedFees measured in shares of this fund at current value
-        feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
+        feesInShares = (gav == 0) ?
+            0 :
+            mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-        uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
-        sharePrice = totalSupply > 0 ?
+        uint totalSupplyAccountingForFees = add(totalSupply, feesInShares);
+        sharePrice = (totalSupply > 0) ?
             calcValuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
     }
 
-    // TODO: delete if possible, or revise implementation
-    function calcSharePrice() view returns (uint sharePrice) {
+    function calcSharePrice() returns (uint sharePrice) {
         (,,,,sharePrice) = performCalculations();
         return sharePrice;
     }
 
     // calculates several metrics, updates stored calculation object and rewards fees
-    // TODO: find a better way to do these things without this exact method
-    // TODO: math is off here (need to check fees, when they are calculated, quantity in exchanges and trading module, etc.)
-    // TODO: look at permissioning
     function calcSharePriceAndAllocateFees() public returns (uint) {
         updateOwnedAssets();
         uint gav;
         uint unclaimedFees;
-        uint feesShareQuantity;
+        uint feesInShares;
         uint nav;
         uint sharePrice;
-        (gav, unclaimedFees, feesShareQuantity, nav, sharePrice) = performCalculations();
+        (gav, unclaimedFees, feesInShares, nav, sharePrice) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
@@ -186,13 +165,14 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
 
     // TODO: maybe run as a "bump" or "stub" function, every state-changing method call
     // TODO: run on some state changes (from trading for example)
+    /// @dev Check holdings for all assets, and adjust list
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address ofAsset = ownedAssets[i];
-            // TODO: verify commented condition is redundant and remove if so
-            // (i.e. it is always the case when `assetHoldings > 0` is true)
-            // || Trading(routes.trading).isInOpenMakeOrder(ofAsset)
-            if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
+            if (
+                assetHoldings(ofAsset) > 0 ||
+                ofAsset == address(QUOTE_ASSET)
+            ) {
                 _addAssetToOwnedAssets(ofAsset);
             } else {
                 _removeFromOwnedAssets(ofAsset);
@@ -208,17 +188,19 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         _removeFromOwnedAssets(_asset);
     }
 
-    // needed for constructor to be able to call
-    // TODO: consider redesign of this approach; does it work now that we've introduced auth?
+    /// @dev Just pass if asset already registered
     function _addAssetToOwnedAssets(address _asset) internal {
         if (!isInAssetList[_asset]) {
+            require(
+                ownedAssets.length < MAX_OWNED_ASSETS,
+                "Max owned asset limit reached"
+            );
             isInAssetList[_asset] = true;
             ownedAssets.push(_asset);
+            emit AssetAddition(_asset);
         }
-        emit AssetAddition(_asset);
     }
 
-    // TODO: ownedAssets length needs upper limit due to iteration here and elsewhere
     function _removeFromOwnedAssets(address _asset) internal {
         if (isInAssetList[_asset]) {
             isInAssetList[_asset] = false;

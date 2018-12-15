@@ -22,7 +22,7 @@ contract MaxPositions is Policy {
         // Always allow a trade INTO the quote asset
         if (quoteAsset == addresses[3]) { return true; }
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
-        return accounting.getFundHoldingsLength() <= maxPositions;
+        return accounting.getOwnedAssetsLength() <= maxPositions;
     }
 
     function position() external view returns (Applied) { return Applied.post; }

@@ -30,6 +30,7 @@ contract MockAccounting is Spoke {
     }
 
     function setOwnedAssets(address[] _assets) { ownedAssets = _assets; }
+    function getOwnedAssetsLength() returns (uint) { return ownedAssets.length; }
     function setGav(uint _gav) { gav = _gav; }
     function setNav(uint _nav) { nav = _nav; }
     function setAssetGAV(address _asset, uint _amt) { assetGav[_asset] = _amt; }
@@ -55,18 +56,10 @@ contract MockAccounting is Spoke {
         return (_quantities, _assets);
     }
 
-    function getFundHoldingsLength() view returns (uint) {
-        address[] memory addresses;
-        (, addresses) = getFundHoldings();
-        return addresses.length;
-    }
-
     function calcGav() public returns (uint) { return gav; }
     function calcNav() public returns (uint) { return nav; }
 
     function calcAssetGAV(address _a) returns (uint) { return assetGav[_a]; }
-
-    function calcUnclaimedFees() view returns (uint) { return unclaimedFees; }
 
     function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
         return valuePerShare;
