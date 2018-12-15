@@ -120,6 +120,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             "Filled amount does not match desired fill amount"
         );
         getAccounting().addAssetToOwnedAssets(makerAsset);
+        getAccounting().updateOwnedAssets();
         getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,

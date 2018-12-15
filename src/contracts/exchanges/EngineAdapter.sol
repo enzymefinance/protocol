@@ -45,5 +45,15 @@ contract EngineAdapter is DSMath, ExchangeAdapter {
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(wethAddress).deposit.value(ethToReceive)();
         WETH(wethAddress).transfer(address(vault), ethToReceive);
+
+        getAccounting().addAssetToOwnedAssets(wethAddress);
+        getAccounting().updateOwnedAssets();
+        getTrading().orderUpdateHook(
+            targetExchange,
+            bytes32(0),
+            Trading.UpdateType.take,
+            [mlnAddress, wethAddress],
+            [mlnQuantity, ethToReceive, ethToReceive]
+        );
     }
 }

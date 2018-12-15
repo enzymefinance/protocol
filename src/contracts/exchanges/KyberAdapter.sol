@@ -60,6 +60,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
         getAccounting().addAssetToOwnedAssets(destToken);
+        getAccounting().updateOwnedAssets();
         getTrading().returnAssetToVault(destToken);
         getTrading().orderUpdateHook(
             targetExchange,

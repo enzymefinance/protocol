@@ -172,7 +172,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             address asset = ownedAssets[i];
             if (
                 assetHoldings(asset) > 0 ||
-                ofAsset == address(QUOTE_ASSET)
+                asset == address(QUOTE_ASSET)
             ) {
                 _addAssetToOwnedAssets(asset);
             } else {

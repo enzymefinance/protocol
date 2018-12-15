@@ -199,7 +199,6 @@ contract Trading is DSMath, Spoke, TradingInterface {
         uint[3] orderValues
     ) delegateInternal {
         // only save make/take
-        // TODO: change to more generic datastore when that shift is made generally
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
             orders.push(Order({
                 exchangeAddress: ofExchange,
