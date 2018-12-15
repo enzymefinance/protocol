@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-import "math.sol";
 import "ERC20.i.sol";
 import "Factory.sol";
 import "CanonicalPriceFeed.sol";
@@ -10,8 +9,9 @@ import "Shares.sol";
 import "Trading.sol";
 import "Vault.sol";
 import "Accounting.i.sol";
+import "AmguConsumer.sol";
 
-contract Accounting is AccountingInterface, DSMath, Spoke {
+contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     struct Calculations {
         uint gav;
@@ -21,7 +21,7 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         uint timestamp;
     }
 
-    uint constant public MAX_OWNED_ASSETS = 50; // TODO: Analysis
+    uint constant public MAX_OWNED_ASSETS = 20; // TODO: Analysis
     address[] public ownedAssets;
     mapping (address => bool) public isInAssetList;
     address public QUOTE_ASSET;
@@ -82,7 +82,6 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-    // NB: removed the in-line adding to and removing from ownedAssets so taht it can be a view function
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address ofAsset = ownedAssets[i];
@@ -142,25 +141,29 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         return sharePrice;
     }
 
-    // calculates several metrics, updates stored calculation object and rewards fees
-    function calcSharePriceAndAllocateFees() public returns (uint) {
+    /// @notice Reward all fees and perform some updates
+    /// @dev Anyone can call this
+    function triggerRewardAllFees()
+        public
+        amguPayable
+        payable
+    {
         updateOwnedAssets();
         uint gav;
-        uint unclaimedFees;
+        uint feesInQuote;
         uint feesInShares;
         uint nav;
         uint sharePrice;
-        (gav, unclaimedFees, feesInShares, nav, sharePrice) = performCalculations();
+        (gav, feesInQuote, feesInShares, nav, ) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
             gav: gav,
             nav: nav,
-            allocatedFees: unclaimedFees,
+            allocatedFees: feesInQuote,
             totalSupply: totalSupply,
             timestamp: block.timestamp
         });
-        return sharePrice;
     }
 
     // TODO: maybe run as a "bump" or "stub" function, every state-changing method call

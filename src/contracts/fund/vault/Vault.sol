@@ -6,7 +6,7 @@ import "ERC20.i.sol";
 import "Factory.sol";
 
 /// @notice Dumb custody component
-contract Vault is Spoke, VaultInterface {
+contract Vault is VaultInterface, Spoke {
 
     event Lock(bool status);
 

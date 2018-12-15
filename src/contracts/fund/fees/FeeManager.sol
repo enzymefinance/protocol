@@ -6,10 +6,9 @@ import "Spoke.sol";
 import "Shares.sol";
 import "Factory.sol";
 import "math.sol";
-import "AmguConsumer.sol";
 
 /// @notice Manages and allocates fees for a particular fund
-contract FeeManager is DSMath, AmguConsumer, Spoke {
+contract FeeManager is DSMath, Spoke {
 
     event FeeReward(uint shareQuantity);
     event FeeRegistration(address fee);
@@ -60,11 +59,6 @@ contract FeeManager is DSMath, AmguConsumer, Spoke {
 
     /// @dev Used when calling from other components
     function rewardAllFees() public auth { _rewardAllFees(); }
-
-    /// @dev Used when calling from outside the fund
-    function triggerRewardAllFees() external payable amguPayable {
-        _rewardAllFees();
-    }
 
     /// @dev Convenience function; anyone can reward management fee any time
     /// @dev Convention that management fee is 0

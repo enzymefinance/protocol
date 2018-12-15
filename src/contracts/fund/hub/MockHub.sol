@@ -81,6 +81,15 @@ contract MockHub is DSGuard {
         permit(manager, settings.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[])')));
         permit(manager, settings.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, settings.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(bytes32(bytes20(msg.sender)), ANY, ANY);
+    }
+
+    function permitSomething(address _from, address _to, bytes4 _sig) {
+        permit(
+            bytes32(bytes20(_from)),
+            bytes32(bytes20(_to)),
+            _sig
+        );
     }
 
     function initializeSpoke(address _spoke) {

@@ -27,7 +27,7 @@ const postProcess = async (environment, receipt, params, contractAddress) => {
 
 const triggerRewardAllFees = transactionFactory(
   'triggerRewardAllFees',
-  Contracts.FeeManager,
+  Contracts.Accounting,
   guard,
   undefined,
   postProcess,

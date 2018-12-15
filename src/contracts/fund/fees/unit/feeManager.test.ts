@@ -88,7 +88,7 @@ describe('feeManager', () => {
       .setFeeAmount(`${feeAmount}`)
       .send({ from: shared.user, gas: 8000000 });
     await shared.feeManager.methods
-      .triggerRewardAllFees()
+      .rewardAllFees() // can only call becasue of loose mockhub permissions
       .send({ from: shared.user, gas: 8000000 });
     const postManagerShares = new BigInteger(
       await shared.shares.methods.balanceOf(shared.user).call(),

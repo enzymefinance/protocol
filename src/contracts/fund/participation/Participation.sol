@@ -146,7 +146,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             "Failed to transfer investment asset to vault"
         );
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-        // // TODO: this should be done somewhere else
+        // TODO: make safe
         if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
             Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
         }

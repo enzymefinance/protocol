@@ -24,6 +24,5 @@ interface AccountingInterface {
         uint nav,
         uint sharePrice
     );
-    function calcSharePriceAndAllocateFees() public returns (uint);
     function calcSharePrice() returns (uint);
 }
