@@ -31,15 +31,15 @@ describe('trading', () => {
       shared.env,
       Contracts.Trading,
       await deployContract(shared.env, Contracts.Trading, [
-        shared.user, // faked for testing
+        shared.hub.options.address,
         mockExchanges,
         mockExchangeAdapters,
         takesCustodyMasks,
         shared.registry.options.address,
       ]),
     );
-    await shared.trading.methods
-      .initialize([
+    await shared.hub.methods
+      .setSpokes([
         emptyAddress,
         emptyAddress,
         emptyAddress,
@@ -53,6 +53,9 @@ describe('trading', () => {
         emptyAddress,
         emptyAddress,
       ])
+      .send({ from: shared.user, gas: 8000000 });
+    await shared.hub.methods
+      .initializeSpoke(shared.trading.options.address)
       .send({ from: shared.user, gas: 8000000 });
   });
 
@@ -69,7 +72,7 @@ describe('trading', () => {
     }
   });
 
-  it('Exchanges cant be initialized without its adapter', async () => {
+  it('Exchanges cannot be initialized without its adapter', async () => {
     const errorMessage = 'Array lengths unequal';
     await expect(
       deployContract(shared.env, Contracts.Trading, [
@@ -82,7 +85,7 @@ describe('trading', () => {
     ).rejects.toThrow(errorMessage);
   });
 
-  it('returnToVault sends back token balances to the vault', async () => {
+  it('returnBatchToVault sends back token balances to the vault', async () => {
     const tokenQuantity = new BigInteger(10 ** 20);
 
     await shared.mln.methods
@@ -92,13 +95,6 @@ describe('trading', () => {
       .transfer(shared.trading.options.address, `${tokenQuantity}`)
       .send({ from: shared.user, gas: 8000000 });
 
-    // const preMlnTrading = new BigInteger(
-    //   await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
-    // );
-    // const preWethTrading = new BigInteger(
-    //   await shared.weth.methods.balanceOf(shared.trading.options.address).call(),
-    // );
-
     const preMlnVault = new BigInteger(
       await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
     );
@@ -107,7 +103,10 @@ describe('trading', () => {
     );
 
     await shared.trading.methods
-      .returnToVault([shared.mln.options.address, shared.weth.options.address])
+      .returnBatchToVault([
+        shared.mln.options.address,
+        shared.weth.options.address,
+      ])
       .send({ from: shared.user, gas: 8000000 });
 
     const postMlnTrading = new BigInteger(

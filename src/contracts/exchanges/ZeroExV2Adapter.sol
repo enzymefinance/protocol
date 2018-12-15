@@ -120,6 +120,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             "Filled amount does not match desired fill amount"
         );
         safeAddToOwnedAssets(makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -147,6 +148,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         // Set the approval back to 0
         approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
         Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             identifier,

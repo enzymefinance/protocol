@@ -61,14 +61,14 @@ test.before(async t => {
   pricefeed = await deployed.TestingPriceFeed;
   mlnToken = await deployed.MlnToken;
   ethToken = await deployed.EthToken;
-  zrxToken = await deployContract('exchanges/thirdparty/0x/ZrxToken', opts);
+  zrxToken = await deployContract('ZrxToken', opts);
   zeroExExchange = await deployContract(
-    'exchanges/thirdparty/0x/Exchange',
+    'Exchange',
     opts,
   );
-  erc20Proxy = await deployContract('exchanges/thirdparty/0x/ERC20Proxy', opts);
+  erc20Proxy = await deployContract('ERC20Proxy', opts);
   deployed.ZeroExV2Adapter = await deployContract(
-    'exchanges/ZeroExV2Adapter',
+    'ZeroExV2Adapter',
     opts,
   );
   // TODO
@@ -95,26 +95,27 @@ test.before(async t => {
   );
   await zeroExExchange.methods.changeZRXAssetData(zrxAssetData).send(opts);
   const [r, s, v] = await getTermsSignatureParameters(manager);
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .createComponents(
       'Test Fund',
+      [],
       [zeroExExchange.options.address],
       [deployed.ZeroExV2Adapter.options.address],
       deployed.EthToken.options.address,
       deployed.EthToken.options.address,
       [deployed.EthToken.options.address, deployed.MlnToken.options.address],
-      [false],
+      [true],
       deployed.TestingPriceFeed.options.address,
     )
     .send({ from: manager, gasPrice: config.gasPrice });
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .continueCreation()
     .send({ from: manager, gasPrice: config.gasPrice });
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .setupFund()
     .send({ from: manager, gasPrice: config.gasPrice });
-  const fundId = await deployed.FundFactory.methods.getLastFundId().call();
-  const hubAddress = await deployed.FundFactory.methods
+  const fundId = await deployed.Version.methods.getLastFundId().call();
+  const hubAddress = await deployed.Version.methods
     .getFundById(fundId)
     .call();
   fund = await getFundComponents(hubAddress);
@@ -127,7 +128,7 @@ test.before(async t => {
   );
 
   const priceTolerance = await deployContract(
-    'fund/policies/risk-management/PriceTolerance',
+    'PriceTolerance',
     { from: manager, gas: config.gas, gasPrice: config.gasPrice },
     [10],
   );
@@ -399,12 +400,12 @@ test.serial('fund with enough ZRX takes the above order', async t => {
       web3.utils.padLeft('0x0', 64),
       order.makerAssetData,
       order.takerAssetData,
-      orderSignature,
+      orderSignature, 
     )
     .send({ from: manager, gas: config.gas });
   await fund.trading.methods
-    .returnToVault([mlnToken.options.address, ethToken.options.address])
-    .send(opts);
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
+    .send({ from: manager, gas: config.gas });
   const post = await getAllBalances(deployed, accounts, fund);
   const heldInExchange = await fund.trading.methods
     .updateAndGetQuantityHeldInExchange(ethToken.options.address)
@@ -530,9 +531,10 @@ test.serial(
 );
 
 test.serial('Third party fund takes the order made by the fund', async t => {
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .createComponents(
       'Test Fund',
+      [],
       [zeroExExchange.options.address],
       [deployed.ZeroExV2Adapter.options.address],
       deployed.EthToken.options.address,
@@ -542,14 +544,14 @@ test.serial('Third party fund takes the order made by the fund', async t => {
       deployed.TestingPriceFeed.options.address,
     )
     .send({ from: accounts[4], gasPrice: config.gasPrice });
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .continueCreation()
     .send({ from: accounts[4], gasPrice: config.gasPrice });
-  await deployed.FundFactory.methods
+  await deployed.Version.methods
     .setupFund()
     .send({ from: accounts[4], gasPrice: config.gasPrice });
-  const fundId = await deployed.FundFactory.methods.getLastFundId().call();
-  const hubAddress = await deployed.FundFactory.methods
+  const fundId = await deployed.Version.methods.getLastFundId().call();
+  const hubAddress = await deployed.Version.methods
     .getFundById(fundId)
     .call();
   const thirdPartyFund = await getFundComponents(hubAddress);
@@ -599,8 +601,11 @@ test.serial('Third party fund takes the order made by the fund', async t => {
     )
     .send({ from: accounts[4], gas: config.gas, gasPrice: config.gasPrice });
   await thirdPartyFund.trading.methods
-    .returnToVault([mlnToken.options.address, ethToken.options.address])
-    .send(opts);
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
+    .send({ from: accounts[4], gas: config.gas });
+  await fund.trading.methods
+    .returnBatchToVault([mlnToken.options.address, ethToken.options.address])
+    .send({ from: manager, gas: config.gas })
   const postTPFundMln = new BigNumber(
     await mlnToken.methods
       .balanceOf(thirdPartyFund.vault.options.address)

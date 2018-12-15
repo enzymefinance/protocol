@@ -131,8 +131,8 @@ const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
   const feeToken = await getFeeToken(environment, contractAddress);
 
   const result = await parse0xFillReceipt(environment, {
-    fillValues,
     feeToken,
+    fillValues,
   });
   return result;
 };

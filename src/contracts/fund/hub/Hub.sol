@@ -126,6 +126,7 @@ contract Hub is DSGuard {
     function participation() view returns (address) { return settings.participation; }
     function trading() view returns (address) { return settings.trading; }
     function shares() view returns (address) { return settings.shares; }
+    function registry() view returns (address) { return settings.registry; }
     function policyManager() view returns (address) { return settings.policyManager; }
 }
 
