@@ -1,4 +1,3 @@
-
 pragma solidity ^0.4.21;
 
 import "WETH9.sol";
@@ -9,10 +8,9 @@ import "Accounting.sol";
 import "PriceSource.i.sol";
 import "DBC.sol";
 import "KyberNetworkProxy.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
-
-contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
+contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
@@ -40,12 +38,12 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    )
-    {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
-        require(orderValues[1] == orderValues[6], "fillTakerQuantity must equal takerAssetQuantity");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
+        require(
+            orderValues[1] == orderValues[6],
+            "fillTakerQuantity must equal takerAssetQuantity"
+        );
 
         address srcToken = orderAddresses[2];
         address destToken = orderAddresses[3];
@@ -61,13 +59,8 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
 
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
-        require(
-            Accounting(hub.accounting()).isInAssetList(destToken) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS()
-        );
-
-        // Add dest token to fund's owned asset list if not already exists and update order hook
-        Accounting(hub.accounting()).addAssetToOwnedAssets(destToken);
+        // TODO: Maybe post policy check for PriceTolerance based on actualReceiveAmount (Overkill maybe)
+        safeAddToOwnedAssets(destToken);
         Trading(address(this)).returnAssetToVault(destToken);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -76,47 +69,6 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
             [destToken, srcToken],
             [actualReceiveAmount, srcAmount, srcAmount]
         );
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function makeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function cancelOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    )
-    {
-        revert("Unimplemented");
-    }
-
-    // VIEW FUNCTIONS
-
-    /// @dev Dummy function; not implemented on exchange
-    function getOrder(
-        address targetExchange,
-        uint id,
-        address makerAsset
-    )
-        view
-        returns (address, address, uint, uint)
-    {
-        revert("Unimplemented");
     }
 
     // INTERNAL FUNCTIONS
@@ -133,7 +85,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         returns (uint actualReceiveAmount)
     {
 
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         if (srcToken == nativeAsset) {
@@ -165,7 +117,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         returns (uint receivedAmount)
     {
         // Convert WETH to ETH
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
         WETH9(nativeAsset).withdraw(srcAmount);
@@ -189,7 +141,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
         ERC20Clone(srcToken).approve(targetExchange, srcAmount);
@@ -216,7 +168,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
         ERC20Clone(srcToken).approve(targetExchange, srcAmount);

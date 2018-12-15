@@ -7,10 +7,12 @@ import "Vault.sol";
 import "math.sol";
 import "Weth.sol";
 import "ERC20.i.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
-/// @notice Trading adapter between Melon and Melon Engine
-contract EngineAdapter is DSMath, ExchangeAdapterInterface {
+/// @notice Trading adapter to Melon Engine
+contract EngineAdapter is DSMath, ExchangeAdapter {
+
+    function () payable {}
 
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
@@ -19,16 +21,14 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
     /// @param orderAddresses [1] WETH token
     function takeOrder (
         address targetExchange,
-        address[5] orderAddresses,
+        address[6] orderAddresses,
         uint[8] orderValues,
         bytes32 identifier,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
 
         address mlnAddress = orderAddresses[0];
         address wethAddress = orderAddresses[1];
@@ -45,48 +45,5 @@ contract EngineAdapter is DSMath, ExchangeAdapterInterface {
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(wethAddress).deposit.value(ethToReceive)();
         WETH(wethAddress).transfer(address(vault), ethToReceive);
-    }
-
-    function () payable {}
-
-    /// @dev Dummy function; not implemented on exchange
-    function makeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert("Unimplemented");
-    }
-
-    /// @dev Dummy function; not implemented on exchange
-    function cancelOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    )
-    {
-        revert("Unimplemented");
-    }
-
-    // VIEW FUNCTIONS
-
-    /// @dev Dummy function; not implemented on exchange
-    function getOrder(
-        address targetExchange,
-        uint id,
-        address makerAsset
-    )
-        view
-        returns (address, address, uint, uint)
-    {
-        revert("Unimplemented");
     }
 }

@@ -1,19 +1,77 @@
 pragma solidity ^0.4.21;
 
-/// @title Exchange Adapter Interface
+import "Accounting.sol";
+import "Hub.sol";
+import "Trading.sol";
+
+/// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice This is to be considered as an interface on how to access the underlying Exchange Contract
-/// @notice This interface should work for any fully decentralised exchanges such as OasisDex, Kyber, Bancor, 0x
-/// @notice Interface influenced by
-///   https://github.com/makerdao/maker-otc/blob/master/src/simple_market.sol and
-///   https://github.com/0xProject/contracts/blob/master/contracts/Exchange.sol
-interface ExchangeAdapterInterface {
+/// @notice Override the public methods to implement an adapter
+contract ExchangeAdapter {
 
-    // METHODS
-    // EXTERNAL METHODS
+    modifier onlyManager() {
+        require(
+            getManager() == msg.sender,
+            "Manager must be sender"
+        );
+        _;
+    }
 
-    /// The function signature for makeOrder, takeOrder and cancelOrder
-    /// is always the same:
+    modifier notShutDown() {
+        require(
+            !hubShutDown(),
+            "Hub must not be shut down"
+        );
+        _;
+    }
+
+    /// @dev Either manager sends, fund shut down, or order expired
+    modifier onlyCancelPermitted(address exchange, address asset) {
+        require(
+            getManager() == msg.sender ||
+            hubShutDown() ||
+            getTrading().isOrderExpired(exchange, asset),
+            "No cancellation condition met"
+        );
+        _;
+    }
+
+    function getTrading() internal view returns (Trading) {
+        return Trading(address(this));
+    }
+
+    function getHub() internal view returns (Hub) {
+        return Hub(getTrading().hub());
+    }
+
+    function getAccounting() internal view returns (Accounting) {
+        return Accounting(getHub().accounting());
+    }
+
+    function hubShutDown() internal view returns (bool) {
+        return getHub().isShutDown();
+    }
+
+    function getManager() internal view returns (address) {
+        return getHub().manager();
+    }
+
+    function safeAddToOwnedAssets(address _asset) internal {
+        require(
+            getAccounting().isInAssetList(_asset) ||
+            getAccounting().getOwnedAssetsLength() < getAccounting().MAX_OWNED_ASSETS(),
+            "Max owned asset limit reached"
+        );
+        getAccounting().addAssetToOwnedAssets(_asset);
+    }
+
+    function ensureNotInOpenMakeOrder(address _asset) internal view {
+        require(
+            !getTrading().isInOpenMakeOrder(_asset),
+            "This asset is already in an open make order"
+        );
+    }
+
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
     /// @param orderAddresses [2] Order maker asset
@@ -29,10 +87,9 @@ interface ExchangeAdapterInterface {
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
-    /// @param signature Signature of order maker.
-
+    /// @param makerAssetData Encoded data specific to makerAsset
+    /// @param takerAssetData Encoded data specific to takerAsset
+    /// @param signature Signature of order maker
 
     // Responsibilities of makeOrder are:
     // - check sender
@@ -51,7 +108,7 @@ interface ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    );
+    ) { revert("Unimplemented"); }
 
     // Responsibilities of takeOrder are:
     // - check sender
@@ -64,7 +121,6 @@ interface ExchangeAdapterInterface {
     // - take order from the exchange
     // - check order was taken (if possible)
     // - place asset in ownedAssets if not already tracked
-
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -73,7 +129,7 @@ interface ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    );
+    ) { revert("Unimplemented"); }
 
     // responsibilities of cancelOrder are:
     // - check sender is owner, or that order expired, or that fund shut down
@@ -87,12 +143,10 @@ interface ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    );
-
+    ) { revert("Unimplemented"); }
 
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
-
     function getOrder(
         address onExchange,
         uint id,
@@ -102,5 +156,5 @@ interface ExchangeAdapterInterface {
         address,
         uint,
         uint
-    );
+    ) { revert("Unimplemented"); }
 }

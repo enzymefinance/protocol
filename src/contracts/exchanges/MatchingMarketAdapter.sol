@@ -6,12 +6,12 @@ import "Vault.sol";
 import "Accounting.sol";
 import "math.sol";
 import "MatchingMarket.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
+contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
 
     event OrderCreated(uint id);
 
@@ -43,15 +43,16 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
-
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
+
+        // Order parameter checks
+        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
+        ensureNotInOpenMakeOrder(makerAsset);
 
         Vault(hub.vault()).withdraw(makerAsset, makerQuantity);
         require(
@@ -64,12 +65,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         // defines success in MatchingMarket
         require(orderId != 0, "Order ID should not be zero");
 
-        require(
-            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
+        safeAddToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             bytes32(orderId),
@@ -105,11 +101,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager is not sender");
-        require(!hub.isShutDown(), "Hub is shut down");
-
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
         uint fillTakerQuantity = orderValues[6];
         var (
             maxMakerQuantity,
@@ -135,12 +128,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
             MatchingMarket(targetExchange).buy(uint(identifier), fillMakerQuantity),
             "Buy on matching market failed"
         );
-        require(
-            Accounting(hub.accounting()).isInAssetList(makerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        Accounting(hub.accounting()).addAssetToOwnedAssets(makerAsset);
+
+        safeAddToOwnedAssets(makerAsset);
         Trading(address(this)).returnAssetToVault(makerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
@@ -167,13 +156,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        var (, orderExpirationTime, ) = Trading(address(this)).getOpenOrderInfo(targetExchange, orderAddresses[2]);
-
-        require(hub.manager() == msg.sender || hub.isShutDown() || block.timestamp > orderExpirationTime,
-            "Manager must be sender or fund must be shut down or order must be expired"
-        );
+    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+        Hub hub = getHub();
         require(uint(identifier) != 0, "ID cannot be zero");
 
         var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));

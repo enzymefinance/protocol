@@ -3,10 +3,9 @@ pragma solidity ^0.4.21;
 import "Trading.sol";
 import "Hub.sol";
 import "Accounting.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
-
-contract MockAdapter is ExchangeAdapterInterface {
+contract MockAdapter is ExchangeAdapter {
 
     //  METHODS
 
@@ -22,13 +21,13 @@ contract MockAdapter is ExchangeAdapterInterface {
         bytes takerAssetData,
         bytes signature
     ) {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        Trading(address(this)).orderUpdateHook(
+        getTrading().orderUpdateHook(
             targetExchange,
             identifier,
             Trading.UpdateType.make,
@@ -54,7 +53,7 @@ contract MockAdapter is ExchangeAdapterInterface {
         uint takerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
 
-        Trading(address(this)).orderUpdateHook(
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
@@ -73,30 +72,16 @@ contract MockAdapter is ExchangeAdapterInterface {
         bytes takerAssetData,
         bytes signature
     ) {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address makerAsset = orderAddresses[2];
 
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.cancel,
             [address(0), address(0)],
             [uint(0), uint(0), uint(0)]
         );
-    }
-
-    // VIEW FUNCTIONS
-
-    /// @dev Dummy function; not implemented on exchange
-    function getOrder(
-        address targetExchange,
-        uint id,
-        address makerAsset
-    )
-        view
-        returns (address, address, uint, uint)
-    {
-        revert("Unimplemented");
     }
 }
