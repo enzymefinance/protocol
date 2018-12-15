@@ -12,7 +12,7 @@ export enum Contracts {
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
   ERC20Proxy = 'ERC20Proxy',
-  ExchangeAdapter = 'ExchangeAdapterInterface',
+  ExchangeAdapter = 'ExchangeAdapter',
   FalsePolicy = 'FalsePolicy',
   FeeManager = 'FeeManager',
   FeeManagerFactory = 'FeeManagerFactory',

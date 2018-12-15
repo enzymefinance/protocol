@@ -13,14 +13,13 @@ import "math.sol";
 import "ExchangeEfx.sol";
 import "WrapperLock.sol";
 import "WrapperLockEth.sol";
+import "ExchangeAdapter.sol";
 import "WrapperRegistryEFX.sol";
-import "ExchangeAdapterInterface.sol";
-
 
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Adapter between Melon and 0x Exchange Contract (version 1)
-contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
+/// @notice Adapter to EthFinex exchange
+contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
 
     //  METHODS
 
@@ -35,21 +34,17 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(hub.manager() == msg.sender, "Manager must be sender");
-        require(hub.isShutDown() == false, "Hub is shut down");
+    ) onlyManager notShutDown {
+        Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
 
         // Order parameter checks
-        Trading(address(this)).updateAndGetQuantityBeingTraded(address(makerAsset));
-        require(
-            !Trading(address(this)).isInOpenMakeOrder(makerAsset),
-            "This asset is already in an open make order"
-        );
+        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
+        ensureNotInOpenMakeOrder(makerAsset);
+
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
         LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
         ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
@@ -62,13 +57,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        require(
-            Accounting(hub.accounting()).isInAssetList(takerAsset) ||
-            Accounting(hub.accounting()).getOwnedAssetsLength() < Accounting(hub.accounting()).MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-
-        Accounting(hub.accounting()).addAssetToOwnedAssets(takerAsset);
+        safeAddToOwnedAssets(takerAsset);
         Trading(address(this)).orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
@@ -80,19 +69,6 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
-    /// @notice No Take orders on Ethfinex
-    function takeOrder(
-        address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
-        bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) {
-        revert();
-    }
-
     /// @notice Cancel the 0x make order
     function cancelOrder(
         address targetExchange,
@@ -102,19 +78,16 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
-        Hub hub = Hub(Trading(address(this)).hub());
-        require(
-            hub.manager() == msg.sender || hub.isShutDown(),
-            "Manager must be sender or fund must be shut down"
-        );
-        LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
+    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+        Hub hub = getHub();
+
+        LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
         ExchangeEfx(targetExchange).cancelOrder(order);
 
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
         // address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
         // Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getTrading().orderUpdateHook(
             targetExchange,
             identifier,
             Trading.UpdateType.cancel,
@@ -133,7 +106,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
         bytes takerAssetData,
         bytes signature
     ) {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
@@ -145,7 +118,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
             if (orderAddresses[i] == nativeAsset) {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
-            Trading(address(this)).removeOpenMakeOrder(targetExchange, orderAddresses[i]);
+            getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
         }
     }
 
@@ -179,12 +152,14 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
     function wrapMakerAsset(address targetExchange, address makerAsset, bytes wrappedMakerAssetData, uint makerQuantity, uint orderExpirationTime)
         internal
     {
-        Hub hub = Hub(Trading(address(this)).hub());
+        Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = getWrapperToken(makerAsset);
         // Deposit to rounded up value of time difference of expiration time and current time (in hours)
-        uint depositTime = (sub(orderExpirationTime, now) / 1 hours) + 1;
+        uint depositTime = (
+            sub(orderExpirationTime, block.timestamp) / 1 hours
+        ) + 1;
 
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
