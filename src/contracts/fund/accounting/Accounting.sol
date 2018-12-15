@@ -166,8 +166,6 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         });
     }
 
-    // TODO: maybe run as a "bump" or "stub" function, every state-changing method call
-    // TODO: run on some state changes (from trading for example)
     /// @dev Check holdings for all assets, and adjust list
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
@@ -193,11 +191,12 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     /// @dev Just pass if asset already registered
     function _addAssetToOwnedAssets(address _asset) internal {
+        require(
+            isInAssetList[_asset] ||
+            ownedAssets.length < MAX_OWNED_ASSETS,
+            "Max owned asset limit reached"
+        );
         if (!isInAssetList[_asset]) {
-            require(
-                ownedAssets.length < MAX_OWNED_ASSETS,
-                "Max owned asset limit reached"
-            );
             isInAssetList[_asset] = true;
             ownedAssets.push(_asset);
             emit AssetAddition(_asset);

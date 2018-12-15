@@ -56,15 +56,6 @@ contract ExchangeAdapter {
         return getHub().manager();
     }
 
-    function safeAddToOwnedAssets(address _asset) internal {
-        require(
-            getAccounting().isInAssetList(_asset) ||
-            getAccounting().getOwnedAssetsLength() < getAccounting().MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        getAccounting().addAssetToOwnedAssets(_asset);
-    }
-
     function ensureNotInOpenMakeOrder(address _asset) internal view {
         require(
             !getTrading().isInOpenMakeOrder(_asset),

@@ -65,15 +65,15 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         // defines success in MatchingMarket
         require(orderId != 0, "Order ID should not be zero");
 
-        safeAddToOwnedAssets(takerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(takerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(orderId),
             Trading.UpdateType.make,
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, orderId, orderValues[4]);
+        getTrading().addOpenMakeOrder(targetExchange, makerAsset, orderId, orderValues[4]);
         emit OrderCreated(orderId);
     }
 
@@ -129,9 +129,9 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             "Buy on matching market failed"
         );
 
-        safeAddToOwnedAssets(makerAsset);
-        Trading(address(this)).returnAssetToVault(makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(makerAsset);
+        getTrading().returnAssetToVault(makerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
@@ -167,12 +167,12 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             "Retrieved and passed assets do not match"
         );
 
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
+        getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
         MatchingMarket(targetExchange).cancel(
             uint(identifier)
         );
-        Trading(address(this)).returnAssetToVault(makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getTrading().returnAssetToVault(makerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.cancel,
