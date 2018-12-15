@@ -5,7 +5,7 @@ import "Hub.sol";
 
 /// @title Exchange Adapter Interface
 /// @author Melonport AG <team@melonport.com>
-contract ExchangeAdapterInterface {
+contract ExchangeAdapter {
 
     modifier onlyManager() {
         require(

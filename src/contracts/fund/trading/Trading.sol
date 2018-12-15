@@ -8,7 +8,7 @@ import "PolicyManager.sol";
 import "ERC20.i.sol";
 import "Factory.sol";
 import "math.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 import "LibOrder.sol";
 import "Registry.sol";
 
@@ -230,7 +230,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             address sellAsset;
             uint sellQuantity;
             (sellAsset, , sellQuantity, ) =
-                ExchangeAdapterInterface(exchanges[i].adapter)
+                ExchangeAdapter(exchanges[i].adapter)
                 .getOrder(
                     exchanges[i].exchange,
                     exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id,

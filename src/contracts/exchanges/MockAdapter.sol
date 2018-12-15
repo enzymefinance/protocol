@@ -3,9 +3,9 @@ pragma solidity ^0.4.21;
 import "Trading.sol";
 import "Hub.sol";
 import "Accounting.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
-contract MockAdapter is ExchangeAdapterInterface {
+contract MockAdapter is ExchangeAdapter {
 
     //  METHODS
 

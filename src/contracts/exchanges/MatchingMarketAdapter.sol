@@ -6,12 +6,12 @@ import "Vault.sol";
 import "Accounting.sol";
 import "math.sol";
 import "MatchingMarket.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract MatchingMarketAdapter is DSMath, ExchangeAdapterInterface {
+contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
 
     event OrderCreated(uint id);
 

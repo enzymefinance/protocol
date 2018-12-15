@@ -12,12 +12,12 @@ import "math.sol";
 import "ExchangeEfx.sol";
 import "WrapperLock.sol";
 import "WrapperLockEth.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to EthFinex exchange
-contract EthfinexAdapter is DSMath, DBC, ExchangeAdapterInterface {
+contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
 
     //  METHODS
 

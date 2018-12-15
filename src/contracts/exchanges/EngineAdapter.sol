@@ -7,10 +7,10 @@ import "Vault.sol";
 import "math.sol";
 import "Weth.sol";
 import "ERC20.i.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
 /// @notice Trading adapter between Melon and Melon Engine
-contract EngineAdapter is DSMath, ExchangeAdapterInterface {
+contract EngineAdapter is DSMath, ExchangeAdapter {
 
     function () payable {}
 

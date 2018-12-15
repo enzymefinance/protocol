@@ -8,9 +8,9 @@ import "Accounting.sol";
 import "PriceSource.i.sol";
 import "DBC.sol";
 import "KyberNetworkProxy.sol";
-import "ExchangeAdapterInterface.sol";
+import "ExchangeAdapter.sol";
 
-contract KyberAdapter is DBC, DSMath, ExchangeAdapterInterface {
+contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
 
     address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
