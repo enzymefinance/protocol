@@ -5,10 +5,8 @@ import "SimplePriceFeed.sol";
 import "StakingPriceFeed.sol";
 import "OperatorStaking.sol";
 
-/// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
-/// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePriceFeed, CanonicalRegistrar {
 
@@ -267,6 +265,20 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             }
         }
         return true;
+    }
+
+    function safeGetPrice(address _asset) public view returns (uint) {
+        require(hasRecentPrice(_asset));
+        uint price;
+        (price,) = getPrice(_asset);
+        return price;
+    }
+
+    function safeGetPrices(address[] _assets) public view returns (uint[]) {
+        require(hasRecentPrices(_assets));
+        uint[] memory prices;
+        (prices,) = getPrices(_assets);
+        return prices;
     }
 
     function getPriceInfo(address ofAsset)

@@ -35,7 +35,7 @@ contract PerformanceFee is DSMath, Fee {
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
         uint gav = accounting.calcGav();
-        uint gavPerShare = shares.totalSupply() > 0 ? accounting.calcValuePerShare(gav, shares.totalSupply()) 
+        uint gavPerShare = shares.totalSupply() > 0 ? accounting.valuePerShare(gav, shares.totalSupply())
             : accounting.DEFAULT_SHARE_PRICE();
         if (gavPerShare > highWaterMark[msg.sender] && gav != 0) {
             uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);

@@ -258,7 +258,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     function returnAssetToVault(address _token) public {
         require(
-            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(), 
+            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
         ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));

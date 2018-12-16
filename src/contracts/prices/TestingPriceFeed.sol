@@ -59,6 +59,20 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         return (prices, timestamps);
     }
 
+    /// @dev For testing we don't need these checks
+    function safeGetPrice(address _asset) view returns (uint) {
+        uint price;
+        (price,) = getPrice(_asset);
+        return price;
+    }
+
+    /// @dev For testing we don't need these checks
+    function safeGetPrices(address[] _assets) view returns (uint[]) {
+        uint[] memory prices;
+        (prices,) = getPrices(_assets);
+        return prices;
+    }
+
     function getPriceInfo(address ofAsset)
         view
         returns (bool isRecent, uint price, uint assetDecimals)

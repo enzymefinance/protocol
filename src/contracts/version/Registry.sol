@@ -69,7 +69,7 @@ contract Registry is DSAuth {
     address public mlnToken;
     address public engine;
     address public ethfinexWrapperRegistry;
-    
+
     // METHODS
 
     // PUBLIC METHODS

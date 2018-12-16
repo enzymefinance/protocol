@@ -33,8 +33,8 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) { isShutDown = _state; }
 
-    function setSpokes(address[12] _spokes) { 
-        settings.accounting = _spokes[0]; 
+    function setSpokes(address[12] _spokes) {
+        settings.accounting = _spokes[0];
         settings.feeManager = _spokes[1];
         settings.participation = _spokes[2];
         settings.policyManager = _spokes[3];

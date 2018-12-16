@@ -2,7 +2,7 @@ pragma solidity ^0.4.21;
 
 import "ERC20.i.sol";
 import "Factory.sol";
-import "CanonicalPriceFeed.sol";
+import "PriceSource.i.sol";
 import "FeeManager.sol";
 import "Spoke.sol";
 import "Shares.sol";
@@ -70,34 +70,37 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (_quantities, _assets);
     }
 
-    function calcAssetGAV(address ofAsset) returns (uint) {
-        uint quantityHeld = assetHoldings(ofAsset);
+    function calcAssetGAV(address _asset) returns (uint) {
+        uint quantityHeld = assetHoldings(_asset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
         bool isRecent;
         uint assetPrice;
         uint assetDecimals;
-        (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
+        (isRecent, assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(_asset);
         require(isRecent, "Price is not recent");
-        return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
+        return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
     // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
-            address ofAsset = ownedAssets[i];
+            address asset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint quantityHeld = assetHoldings(ofAsset);
+            uint quantityHeld = assetHoldings(asset);
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
             bool isRecent;
             uint assetPrice;
             uint assetDecimals;
-            (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
-            // NB: should we revert inside this view function, or just calculate it optimistically?
-            //     maybe it should be left to consumers to decide whether to use older prices?
-            //     or perhaps even source's job not to give untrustworthy prices?
+            (isRecent, assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(asset);
             require(isRecent, "Price is not recent");
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            gav = add(gav, mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals)));
+            gav = add(
+                gav,
+                (
+                    mul(quantityHeld, assetPrice) /
+                    (10 ** assetDecimals)
+                )
+            );
         }
         return gav;
     }
@@ -106,7 +109,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return sub(gav, unclaimedFees);
     }
 
-    function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
         require(numShares > 0, "No shares to calculate value for");
         return (totalValue * 10 ** SHARES_DECIMALS) / numShares;
     }
@@ -132,7 +135,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
         uint totalSupplyAccountingForFees = add(totalSupply, feesInShares);
         sharePrice = (totalSupply > 0) ?
-            calcValuePerShare(gav, totalSupplyAccountingForFees) :
+            valuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
     }
 

@@ -16,7 +16,7 @@ interface AccountingInterface {
     function calcAssetGAV(address ofAsset) returns (uint);
     function calcGav() returns (uint gav);
     function calcNav(uint gav, uint unclaimedFees) pure returns (uint);
-    function calcValuePerShare(uint totalValue, uint numShares) view returns (uint);
+    function valuePerShare(uint totalValue, uint numShares) view returns (uint);
     function performCalculations() returns (
         uint gav,
         uint unclaimedFees,

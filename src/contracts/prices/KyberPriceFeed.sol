@@ -79,6 +79,20 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
 
+    function safeGetPrice(address _asset) public view returns (uint) {
+        require(hasRecentPrice(_asset));
+        uint price;
+        (price,) = getPrice(_asset);
+        return price;
+    }
+
+    function safeGetPrices(address[] _assets) public view returns (uint[]) {
+        require(hasRecentPrices(_assets));
+        uint[] memory prices;
+        (prices,) = getPrices(_assets);
+        return prices;
+    }
+
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
     /// @param ofAsset Asset in registrar
     /// @return isRecent Price information ofAsset is recent
@@ -163,7 +177,10 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
         // Check the the spread and average the price on both sides
         uint spreadFromKyber = mul(sub(askRate, bidRate), 10 ** KYBER_PRECISION) / bidRate;
-        require (spreadFromKyber <= MAX_SPREAD, "Kyber spread is higher than allowed");
+        require(
+            spreadFromKyber <= MAX_SPREAD,
+            "Kyber spread is higher than allowed"
+        );
         uint averagedPriceFromKyber = add(bidRate, askRate) / 2;
 
         referencePrice = mul(averagedPriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;

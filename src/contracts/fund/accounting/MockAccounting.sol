@@ -61,7 +61,7 @@ contract MockAccounting is Spoke {
 
     function calcAssetGAV(address _a) returns (uint) { return assetGav[_a]; }
 
-    function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
         return valuePerShare;
     }
 
