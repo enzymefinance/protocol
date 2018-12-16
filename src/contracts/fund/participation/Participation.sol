@@ -60,6 +60,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         external
         amguPayable
         payable
+        onlyInitialized
         // TODO: implement and use below modifiers
         // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
     {

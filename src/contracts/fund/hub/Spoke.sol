@@ -3,7 +3,6 @@ pragma solidity ^0.4.21;
 import "Hub.sol";
 import "auth.sol";
 
-// TODO: ACL consumption may be better placed in each component; evaluate this
 /// @notice Has one Hub
 contract Spoke is DSAuth {
     struct Routes {     // TODO: better naming; also maybe move this to be inherited by Spoke and Hub
@@ -25,14 +24,18 @@ contract Spoke is DSAuth {
     Routes public routes;
     bool public initialized;
 
+    modifier onlyInitialized() {
+        require(initialized, "Component not yet initialized");
+        _;
+    }
+
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
+        setOwner(hub); // temporary, to allow initialization
     }
 
-    // TODO: remove owner?
-    // TODO: onlyInitialized modifier?
-    function initialize(address[12] _spokes) public {
+    function initialize(address[12] _spokes) public auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = Routes(
@@ -50,6 +53,7 @@ contract Spoke is DSAuth {
             _spokes[11]
         );
         initialized = true;
+        setOwner(address(0));
     }
 
     function engine() view returns (address) { return routes.engine; }

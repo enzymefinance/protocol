@@ -111,6 +111,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bytes signature
     )
         public
+        onlyInitialized
     {
         // TODO: re-enable
         // require(

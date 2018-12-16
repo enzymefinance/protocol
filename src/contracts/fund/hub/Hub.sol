@@ -9,10 +9,6 @@ contract Hub is DSGuard {
 
     event FundShutDown();
 
-    // TODO: ACL may be better someplace else; evaluate this
-    // TODO: make this more generic, and make fund "head" contract a derivative of this
-    // TODO: ensure component is not overloaded far beyond routing
-    // TODO: use the contract types instead of generic address (if possible to avoid circular imports)
     struct Settings {     // TODO: improve naming; perhaps inherit from same thing as Spoke
         address accounting;
         address feeManager;
@@ -119,7 +115,6 @@ contract Hub is DSGuard {
         permissionsSet = true;
     }
 
-    // TODO: there must be a better way than having these nominal functions
     function vault() view returns (address) { return settings.vault; }
     function accounting() view returns (address) { return settings.accounting; }
     function priceSource() view returns (address) { return settings.priceSource; }
