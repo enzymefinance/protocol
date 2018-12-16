@@ -12,7 +12,6 @@ export interface RequestInvestmentResult {
   investmentAmount: QuantityInterface;
   requestedShares: QuantityInterface;
   timestamp: number;
-  atUpdateId: number;
 }
 
 const prepareArgs = (_, { of }) => [of.toString()];
@@ -27,7 +26,6 @@ const postProcess = async (
   const fundToken = await getToken(environment, settings.sharesAddress);
 
   return {
-    atUpdateId: parseInt(result.atUpdateId, 10),
     investmentAmount: createQuantity(investToken, result.investmentAmount),
     requestedShares: createQuantity(fundToken, result.requestedShares),
     timestamp: parseInt(result.timestamp, 10),

@@ -26,6 +26,10 @@ contract Spoke is DSAuth {
 
     modifier onlyInitialized() {
         require(initialized, "Component not yet initialized");
+    }
+
+    modifier notShutDown() {
+        require(!hub.isShutDown(), "Hub is shut down");
         _;
     }
 
