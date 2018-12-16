@@ -12,7 +12,6 @@ import "Vault.sol";
 import "Version.i.sol";
 import "AmguConsumer.sol";
 
-// TODO: inherit from Factory
 /// @notice Creates fund routes and links them together
 contract FundFactory is AmguConsumer {
 

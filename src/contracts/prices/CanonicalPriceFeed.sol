@@ -314,7 +314,10 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
 
         return (
             isRecent,
-            mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
+            mul(
+                10 ** uint(quoteDecimals),
+                10 ** uint(assetDecimals)
+            ) / inputPrice,
             quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
         );
     }
@@ -372,8 +375,8 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         returns (bool isExistent)
     {
         return
-            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
+            hasRecentPrice(sellAsset) &&
+            hasRecentPrice(buyAsset) &&
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }
