@@ -4,6 +4,7 @@ pragma solidity ^0.4.21;
 contract MockRegistry {
 
     bool public alwaysRegistered = true;
+    bool public methodAllowed = true;
 
     address public priceSource;
     address public mlnToken;
@@ -34,6 +35,11 @@ contract MockRegistry {
     ) {
         adapterForExchange[_exchange] = _adapter;
     }
+    function exchangeMethodIsAllowed(
+        address _exchange,
+        bytes4 _sig
+    ) view returns (bool) { return methodAllowed; }
+
     function setPriceSource(address _a) { priceSource = _a; }
     function setMlnToken(address _a) { mlnToken = _a; }
     function setEngine(address _a) { engine = _a; }

@@ -31,6 +31,7 @@ import { setEngine } from '~/contracts/version/transactions/setEngine';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 
 const pkg = require('~/../package.json');
 
@@ -215,7 +216,11 @@ export const deploySystem = async (
     await registerExchange(environment, contracts.registry, {
       adapter: exchangeConfig.adapter,
       exchange: exchangeConfig.exchange,
-      sigs: [],
+      sigs: [
+        FunctionSignatures.makeOrder,
+        FunctionSignatures.takeOrder,
+        FunctionSignatures.cancelOrder,
+      ],
       takesCustody: exchangeConfig.takesCustody,
     });
   }

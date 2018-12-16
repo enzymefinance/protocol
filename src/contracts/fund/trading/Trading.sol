@@ -123,12 +123,12 @@ contract Trading is DSMath, Spoke, TradingInterface {
         public
         onlyInitialized
     {
-        // require(
-        //     Registry(routes.registry).exchangeMethodIsAllowed(
-        //         exchanges[exchangeIndex].exchange,
-        //         bytes4(keccak256(methodSignature))
-        //     )
-        // );
+        require(
+            Registry(routes.registry).exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange,
+                bytes4(keccak256(methodSignature))
+            )
+        );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
             require(Registry(routes.registry).assetIsRegistered(
