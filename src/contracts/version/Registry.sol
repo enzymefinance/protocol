@@ -297,6 +297,10 @@ contract Registry is DSAuth {
             exchange.takesCustody
         );
     }
+    function adapterForExchange(address _exchange) view returns (address) {
+        Exchange exchange = exchangeInformation[_exchange];
+        return exchange.adapter;
+    }
     function getExchangeFunctionSignatures(address _exchange)
         view
         returns (bytes4[])

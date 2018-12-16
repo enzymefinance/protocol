@@ -11,6 +11,7 @@ contract MockRegistry {
     address public fundFactory;
     mapping (address => bool) public registered;
     mapping (address => bool) public fundExists;
+    mapping (address => address) public adapterForExchange;
 
     function register(address _addr) {
         registered[_addr] = true;
@@ -26,6 +27,12 @@ contract MockRegistry {
 
     function exchangeIsRegistered(address _exchange) view returns (bool) {
         return alwaysRegistered || registered[_exchange];
+    }
+    function registerAdapterForExchange(
+        address _exchange,
+        address _adapter
+    ) {
+        adapterForExchange[_exchange] = _adapter;
     }
     function setPriceSource(address _a) { priceSource = _a; }
     function setMlnToken(address _a) { mlnToken = _a; }

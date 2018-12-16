@@ -73,8 +73,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function() public payable {}
 
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
-        require(Registry(routes.registry).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange], "Exchange already added");
+        Registry registry = Registry(routes.registry);
+        require(
+            registry.exchangeIsRegistered(_exchange),
+            "Exchange is not registered"
+        );
+        address registeredAdapter;
+        registeredAdapter = registry.adapterForExchange(_exchange);
+        require(
+            registeredAdapter == _adapter,
+            "Exchange and adapter do not match"
+        );
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
@@ -113,10 +123,10 @@ contract Trading is DSMath, Spoke, TradingInterface {
         public
         onlyInitialized
     {
-        // TODO: re-enable
         // require(
-        //     routes.registry.exchangeMethodIsAllowed(
-        //         exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
+        //     Registry(routes.registry).exchangeMethodIsAllowed(
+        //         exchanges[exchangeIndex].exchange,
+        //         bytes4(keccak256(methodSignature))
         //     )
         // );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);

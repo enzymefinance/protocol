@@ -29,11 +29,6 @@ contract Vault is VaultInterface, Spoke {
         emit Lock(false);
     }
 
-    // TODO: evaluate whether we need this function, or can just deposit as normal
-    function deposit(address token, uint amount) auth {
-        ERC20(token).transferFrom(msg.sender, address(this), amount);
-    }
-
     function withdraw(address token, uint amount) onlyUnlocked auth {
         ERC20(token).transfer(msg.sender, amount);
     }
