@@ -9,7 +9,7 @@ contract Hub is DSGuard {
 
     event FundShutDown();
 
-    struct Settings {     // TODO: improve naming; perhaps inherit from same thing as Spoke
+    struct Routes {
         address accounting;
         address feeManager;
         address participation;
@@ -21,10 +21,10 @@ contract Hub is DSGuard {
         address registry;
         address version;
         address engine;
-        address mlnAddress;
+        address mlnToken;
     }
 
-    Settings public settings;
+    Routes public routes;
     address public manager;
     address public creator;
     string public name;
@@ -47,9 +47,8 @@ contract Hub is DSGuard {
         _;
     }
 
-    // TODO: extend this ability to the version (if version shut down and we still need this)
     function shutDownFund() public {
-        require(msg.sender == settings.version);
+        require(msg.sender == routes.version);
         isShutDown = true;
         emit FundShutDown();
     }
@@ -59,18 +58,18 @@ contract Hub is DSGuard {
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
         }
-        settings.accounting = _spokes[0];
-        settings.feeManager = _spokes[1];
-        settings.participation = _spokes[2];
-        settings.policyManager = _spokes[3];
-        settings.shares = _spokes[4];
-        settings.trading = _spokes[5];
-        settings.vault = _spokes[6];
-        settings.priceSource = _spokes[7];
-        settings.registry = _spokes[8];
-        settings.version = _spokes[9];
-        settings.engine = _spokes[10];
-        settings.mlnAddress = _spokes[11];
+        routes.accounting = _spokes[0];
+        routes.feeManager = _spokes[1];
+        routes.participation = _spokes[2];
+        routes.policyManager = _spokes[3];
+        routes.shares = _spokes[4];
+        routes.trading = _spokes[5];
+        routes.vault = _spokes[6];
+        routes.priceSource = _spokes[7];
+        routes.registry = _spokes[8];
+        routes.version = _spokes[9];
+        routes.engine = _spokes[10];
+        routes.mlnToken = _spokes[11];
         spokesSet = true;
     }
 
@@ -78,50 +77,49 @@ contract Hub is DSGuard {
         require(spokesSet, "Spokes must be set");
         require(!routingSet, "Routing already set");
         address[12] memory spokes = [
-            settings.accounting, settings.feeManager, settings.participation,
-            settings.policyManager, settings.shares, settings.trading,
-            settings.vault, settings.priceSource, settings.registry,
-            settings.version, settings.engine, settings.mlnAddress
+            routes.accounting, routes.feeManager, routes.participation,
+            routes.policyManager, routes.shares, routes.trading,
+            routes.vault, routes.priceSource, routes.registry,
+            routes.version, routes.engine, routes.mlnToken
         ];
-        Spoke(settings.accounting).initialize(spokes);
-        Spoke(settings.feeManager).initialize(spokes);
-        Spoke(settings.participation).initialize(spokes);
-        Spoke(settings.policyManager).initialize(spokes);
-        Spoke(settings.shares).initialize(spokes);
-        Spoke(settings.trading).initialize(spokes);
-        Spoke(settings.vault).initialize(spokes);
+        Spoke(routes.accounting).initialize(spokes);
+        Spoke(routes.feeManager).initialize(spokes);
+        Spoke(routes.participation).initialize(spokes);
+        Spoke(routes.policyManager).initialize(spokes);
+        Spoke(routes.shares).initialize(spokes);
+        Spoke(routes.trading).initialize(spokes);
+        Spoke(routes.vault).initialize(spokes);
         routingSet = true;
     }
 
-    // TODO: decide how to handle `owner`; should any of the components have an owner? if not then we need to remove owner after everything is initialized.
     function setPermissions() onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(routingSet, "Routing must be set");
         require(!permissionsSet, "Permissioning already set");
-        permit(settings.participation, settings.vault, bytes4(keccak256('withdraw(address,uint256)')));
-        permit(settings.trading, settings.vault, bytes4(keccak256('withdraw(address,uint256)')));
-        permit(settings.participation, settings.shares, bytes4(keccak256('createFor(address,uint256)')));
-        permit(settings.participation, settings.shares, bytes4(keccak256('destroyFor(address,uint256)')));
-        permit(settings.feeManager, settings.shares, bytes4(keccak256('createFor(address,uint256)')));
-        permit(settings.participation, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
-        permit(settings.participation, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
-        permit(settings.trading, settings.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
-        permit(settings.trading, settings.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
-        permit(settings.accounting, settings.feeManager, bytes4(keccak256('rewardAllFees()')));
-        permit(manager, settings.policyManager, bytes4(keccak256('register(bytes4,address)')));
-        permit(manager, settings.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[]))')));
-        permit(manager, settings.participation, bytes4(keccak256('enableInvestment(address[])')));
-        permit(manager, settings.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.trading, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.participation, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
+        permit(routes.participation, routes.shares, bytes4(keccak256('destroyFor(address,uint256)')));
+        permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
+        permit(routes.participation, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(routes.participation, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(routes.trading, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(routes.trading, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
+        permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
+        permit(manager, routes.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[]))')));
+        permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
+        permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
         permissionsSet = true;
     }
 
-    function vault() view returns (address) { return settings.vault; }
-    function accounting() view returns (address) { return settings.accounting; }
-    function priceSource() view returns (address) { return settings.priceSource; }
-    function participation() view returns (address) { return settings.participation; }
-    function trading() view returns (address) { return settings.trading; }
-    function shares() view returns (address) { return settings.shares; }
-    function registry() view returns (address) { return settings.registry; }
-    function policyManager() view returns (address) { return settings.policyManager; }
+    function vault() view returns (address) { return routes.vault; }
+    function accounting() view returns (address) { return routes.accounting; }
+    function priceSource() view returns (address) { return routes.priceSource; }
+    function participation() view returns (address) { return routes.participation; }
+    function trading() view returns (address) { return routes.trading; }
+    function shares() view returns (address) { return routes.shares; }
+    function registry() view returns (address) { return routes.registry; }
+    function policyManager() view returns (address) { return routes.policyManager; }
 }
 

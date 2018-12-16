@@ -14,7 +14,7 @@ import {
   transactionFactory,
 } from '~/utils/solidity/transactionFactory';
 import { getHub } from '../../hub/calls/getHub';
-import { getSettings } from '../../hub/calls/getSettings';
+import { getRoutes } from '../../hub/calls/getRoutes';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
@@ -30,7 +30,7 @@ const guard: GuardFunction<Make0xOrderArgs> = async (
   contractAddress,
 ) => {
   const hubAddress = await getHub(environment, contractAddress);
-  const { vaultAddress } = await getSettings(environment, hubAddress);
+  const { vaultAddress } = await getRoutes(environment, hubAddress);
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     signedOrder.makerAssetData,
   ).tokenAddress;
