@@ -16,7 +16,9 @@ interface PriceSourceInterface {
     function safeGetPrices(address[] _assets) public view returns (uint[] prices);
 
     /// @notice Get price with decimal and recency information
-    function getPriceInfo(address _asset) view returns (bool isRecent, uint price, uint assetDecimals);
+    function getPriceInfo(address _asset) view returns (bool isRecent, uint price, uint decimals);
+    function getInvertedPriceInfo(address ofAsset) view returns (bool isRecent, uint price, uint decimals);
+
 
     function getReferencePriceInfo(address ofBase, address ofQuote) public view returns (bool isRecent, uint referencePrice, uint decimal);
     function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) public view returns (uint orderPrice);
