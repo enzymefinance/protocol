@@ -9,11 +9,19 @@ import {
   approveOrder,
   isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+
 import { fillOrder } from '~/contracts/exchanges/third-party/0x';
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
+import {
+  BigInteger,
+  add,
+  subtract,
+  multiply,
+  divide,
+  power,
+} from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -37,6 +45,8 @@ import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deplo
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
+const precisionUnits = power(new BigInteger(10), new BigInteger(18));
+const kyberEthAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 let s: any = {};
 
@@ -81,6 +91,13 @@ beforeAll(async () => {
   const hubAddress = await completeSetup(envManager, s.version.options.address);
   s.fund = await getFundComponents(envManager, hubAddress);
   await updateTestingPriceFeed(s, s.environment);
+
+  await updateTestingPriceFeed(s, s.environment);
+  [, s.mlnPrice] = Object.values(
+    await s.priceSource.methods
+      .getReferencePriceInfo(s.mln.options.address, s.weth.options.address)
+      .call(),
+  ).map(e => new BigInteger(e));
 });
 
 const initialTokenAmount = new BigInteger(10 ** 19);
@@ -119,62 +136,86 @@ test('fund receives ETH from investment', async () => {
   expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
 });
 
-// test.serial(
-//   'swap ethToken for mlnToken with specific order price (minRate)',
-//   async t => {
-//     const pre = await getAllBalances(deployed, accounts, fund);
-//     const srcAmount = new BigNumber(10 ** 17);
-//     const destAmount = new BigNumber(srcAmount)
-//       .mul(precisionUnits)
-//       .div(mlnPrice)
-//       .div(1.05);
-//     const [, bestRate] = Object.values(
-//       await deployed.KyberNetwork.methods
-//         .findBestRate(ethAddress, mlnToken.options.address, srcAmount.toFixed())
-//         .call(),
-//     ).map(e => new BigNumber(e));
-//     await fund.trading.methods
-//       .callOnExchange(
-//         0,
-//         takeOrderSignature,
-//         [
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//           ethToken.options.address,
-//           mlnToken.options.address,
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//         ],
-//         [
-//           srcAmount.toFixed(0),
-//           destAmount.toFixed(0),
-//           0,
-//           0,
-//           0,
-//           0,
-//           destAmount.toFixed(0),
-//           0,
-//         ],
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//       )
-//       .send({ from: manager, gas: config.gas });
-//     await fund.trading.methods
-//       .returnBatchToVault([mlnToken.options.address])
-//       .send({ from: manager, gas: config.gas });
-//     const expectedMln = srcAmount.mul(bestRate).div(new BigNumber(10 ** 18));
-//     const post = await getAllBalances(deployed, accounts, fund);
-//     t.deepEqual(post.fund.EthToken, pre.fund.EthToken.sub(srcAmount));
-//     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.add(expectedMln));
-//     t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-//     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-//     t.deepEqual(post.investor.ether, pre.investor.ether);
-//     t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-//     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-//   },
-// );
+test('swap ethToken for mlnToken with specific order price (minRate)', async () => {
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const srcAmount = new BigInteger(10 ** 17);
+  const destAmount = 0;
+  const [, bestRate] = Object.values(
+    await s.kyberNetwork.methods
+      .findBestRate(kyberEthAddress, s.mln.options.address, srcAmount)
+      .call(),
+  ).map(e => new BigInteger(e));
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      takeOrderSignature,
+      [
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        s.weth.options.address,
+        s.mln.options.address,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+      ],
+      [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+      randomHexOfSize(20),
+      '0x0',
+      '0x0',
+      '0x0',
+    )
+    .send({ from: s.manager, gas: s.gas });
+  // await s.fund.trading.methods
+  //   .returnBatchToVault([mlnToken.options.address])
+  //   .send({ from: manager, gas: config.gas });
+  const expectedMln = divide(
+    multiply(srcAmount, bestRate),
+    new BigInteger(10 ** 18),
+  );
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
+  expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedMln));
+});
+
+test('swap mlnToken for ethToken with specific order price (minRate)', async () => {
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const srcAmount = new BigInteger(10 ** 17);
+  const destAmount = divide(
+    multiply(new BigInteger(srcAmount), precisionUnits),
+    s.mlnPrice,
+  );
+  // .div(1.05);
+  const [, bestRate] = Object.values(
+    await s.KyberNetwork.methods
+      .findBestRate(s.mln.options.address, kyberEthAddress, srcAmount)
+      .call(),
+  ).map(e => new BigInteger(e));
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      takeOrderSignature,
+      [
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        s.mln.options.address,
+        s.weth.options.address,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+      ],
+      [srcAmount, destAmount, 0, 0, 0, 0, destAmount, 0],
+      randomHexOfSize(20),
+      '0x0',
+      '0x0',
+      '0x0',
+    )
+    .send({ from: s.manager, gas: s.gas });
+  // await s.fund.trading.methods
+  //   .returnBatchToVault([mlnToken.options.address])
+  //   .send({ from: manager, gas: config.gas });
+  const expectedWeth = srcAmount.mul(bestRate).div(new BigInteger(10 ** 18));
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
+  expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedWeth));
+});
 
 // test.serial(
 //   'swap mlnToken for ethToken with specific order price (minRate)',
@@ -231,74 +272,59 @@ test('fund receives ETH from investment', async () => {
 //   },
 // );
 
-// test.serial(
-//   'swap mlnToken directly to eurToken without minimum destAmount',
-//   async t => {
-//     const fundPreEur = new BigNumber(
-//       await eurToken.methods.balanceOf(fund.vault.options.address).call(),
-//     );
-//     const srcAmount = new BigNumber(10 ** 17);
-//     const pre = await getAllBalances(deployed, accounts, fund);
-//     const [, bestRate] = Object.values(
-//       await deployed.KyberNetwork.methods
-//         .findBestRate(
-//           mlnToken.options.address,
-//           eurToken.options.address,
-//           srcAmount.toFixed(0),
-//         )
-//         .call(),
-//     ).map(e => new BigNumber(e));
-//     const destAmount = new BigNumber(srcAmount)
-//       .mul(bestRate)
-//       .div(precisionUnits);
-//     await fund.trading.methods
-//       .callOnExchange(
-//         0,
-//         takeOrderSignature,
-//         [
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//           mlnToken.options.address,
-//           eurToken.options.address,
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//         ],
-//         [
-//           srcAmount.toFixed(0),
-//           destAmount.toFixed(0),
-//           0,
-//           0,
-//           0,
-//           0,
-//           destAmount.toFixed(0),
-//           0,
-//         ],
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//       )
-//       .send({ from: manager, gas: config.gas });
-//     const expectedEurToken = new BigNumber(srcAmount)
-//       .mul(bestRate)
-//       .div(new BigNumber(10 ** 18));
-//     await fund.trading.methods
-//       .returnBatchToVault([eurToken.options.address])
-//       .send(opts);
-//     const fundPostEur = new BigNumber(
-//       await eurToken.methods.balanceOf(fund.vault.options.address).call(),
-//     );
-//     const post = await getAllBalances(deployed, accounts, fund);
-//     t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
-//     t.deepEqual(fundPostEur, fundPreEur.add(expectedEurToken));
-//     t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
-//     t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-//     t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-//     t.deepEqual(post.investor.ether, pre.investor.ether);
-//     t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-//     t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
-//   },
-// );
+test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
+  const fundPreEur = new BigInteger(
+    await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
+  );
+  const srcAmount = new BigInteger(10 ** 17);
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const [, bestRate] = Object.values(
+    await s.KyberNetwork.methods
+      .findBestRate(s.mln.options.address, s.eur.options.address, srcAmount)
+      .call(),
+  ).map(e => new BigInteger(e));
+  const destAmount = divide(
+    multiply(new BigInteger(srcAmount), bestRate),
+    precisionUnits,
+  );
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      takeOrderSignature,
+      [
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        s.mln.options.address,
+        s.eur.options.address,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+      ],
+      [srcAmount, destAmount, 0, 0, 0, 0, destAmount, 0],
+      randomHexOfSize(20),
+      '0x0',
+      '0x0',
+      '0x0',
+    )
+    .send({ from: s.manager, gas: s.gas });
+  const expectedEurToken = new BigNumber(srcAmount)
+    .mul(bestRate)
+    .div(new BigNumber(10 ** 18));
+  await fund.trading.methods
+    .returnBatchToVault([eurToken.options.address])
+    .send(opts);
+  const fundPostEur = new BigNumber(
+    await eurToken.methods.balanceOf(fund.vault.options.address).call(),
+  );
+  const post = await getAllBalances(deployed, accounts, fund);
+  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
+  t.deepEqual(fundPostEur, fundPreEur.add(expectedEurToken));
+  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
+  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
+  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
+  t.deepEqual(post.investor.ether, pre.investor.ether);
+  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
+  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+});
 
 // test.serial('takeOrder fails if minPrice is not satisfied', async t => {
 //   const srcAmount = new BigNumber(10 ** 17);
