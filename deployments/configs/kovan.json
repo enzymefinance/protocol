@@ -11,204 +11,101 @@
     },
     "tokens": [
       {
-        "address": "0x560848C7a470b9aA87F7283FDb31bD6773771660",
+        "address": "0x31F7e02B09b4d6AB5D57a8F48EC06b288Feb7EcB",
         "name": "Aragon Network Token",
-        "decimals": 18,
-        "symbol": "ANT"
+        "symbol": "ANT",
+        "decimals": 18
       },
       {
-        "address": "0x3f9cf17C8cC1883B75AE9a532597340564601538",
-        "name": "AventCoin",
-        "decimals": 18,
-        "symbol": "AVT"
-      },
-      {
-        "address": "0x79Fe4882428F457C086Be4584e3E164C13F2017e",
-        "name": "Bancor Network Token",
-        "decimals": 18,
-        "symbol": "BNT"
-      },
-      {
-        "address": "0x47eB525440e976387b80b41cB22CF4dc0A7E9Db0",
+        "address": "0xB14c0f4a8150c028806bE46Afb5214daea870CB7",
         "name": "Basic Attention Token",
-        "decimals": 18,
-        "symbol": "BAT"
+        "symbol": "BAT",
+        "decimals": 18
       },
       {
-        "address": "0x3824e72d60Ec60f3f02ae172de7c37C59876cC14",
-        "name": "Bitcoin Token",
-        "decimals": 8,
-        "symbol": "BTC"
-      },
-      {
-        "address": "0xe67E7cE765b67AA1Dcd731458eD50C04BfC78d74",
+        "address": "0xEeDD208514B92d6057E1370e9aFc69d479D5E5F9",
         "name": "Digix Dao Token",
-        "decimals": 9,
-        "symbol": "DGD"
+        "symbol": "DGD",
+        "decimals": 9
       },
       {
-        "address": "0xc6194A293784FC652488c0570759E2eBb8456104",
+        "address": "0x16886a2B35BF40C59087500dEC9Bbc24765382C2",
         "name": "Digix Gold Token",
-        "decimals": 9,
-        "symbol": "DGX"
+        "symbol": "DGX",
+        "decimals": 9
       },
       {
-        "address": "0x1cbe9e3FeD97A51BA6bef63C00124aAea8411a78",
-        "name": "Dogecoin Token",
-        "decimals": 8,
-        "symbol": "DOGE"
-      },
-      {
-        "address": "0x8D57263632EFDC077b5417Baa434f8Fa9365A1d7",
-        "name": "Ether Classic Token",
-        "decimals": 18,
-        "symbol": "ETC"
-      },
-      {
-        "address": "0x26bB6da136a71Aa8D62D488BD3C91cC2151F029b",
-        "name": "Ether Token",
-        "decimals": 18,
-        "symbol": "ETH"
-      },
-      {
-        "address": "0x6d49eB0E3bDef4F907d3952AC4Cab06c3ea9fE6b",
-        "name": "Euro Token",
-        "decimals": 8,
-        "symbol": "EUR"
-      },
-      {
-        "address": "0x89C6dd6A72E2e5838B1CfDc1059Dad22CE4b6A4b",
+        "address": "0x5F65E97C0533Da34c7Bd72595B5bE179c731d382",
         "name": "Gnosis Token",
-        "decimals": 18,
-        "symbol": "GNO"
+        "symbol": "GNO",
+        "decimals": 18
       },
       {
-        "address": "0x3A3c7f4eF0589F18eFEc7EBA767EdAe3e73B95cD",
-        "name": "Golem Network Token",
-        "decimals": 18,
-        "symbol": "GNT"
-      },
-      {
-        "address": "0xAAe7a8C55e31b94A67B411be035573F5dEF419fB",
-        "name": "Iconomi Token",
-        "decimals": 18,
-        "symbol": "ICN"
-      },
-      {
-        "address": "0x38a31aD4F640280d973687C76433276F2817F5C1",
-        "name": "Litecoin Token",
-        "decimals": 8,
-        "symbol": "LTC"
-      },
-      {
-        "address": "0x19044fF4C8f00b16AB660407ABfFFac8FD1cE833",
+        "address": "0xa80C98433E2a82DF3636ED934083E3285163Fad8",
         "name": "Rep Token",
-        "decimals": 18,
-        "symbol": "REP"
+        "symbol": "REP",
+        "decimals": 18
       },
       {
-        "address": "0x664a756CBb64A207cD69BacCb1d153F010Bc02ED",
-        "name": "Ripple Token",
-        "decimals": 6,
-        "symbol": "XRP"
+        "address": "0x0A3610a0E87cEDDEE6b81b62b462c7a0fD450E2a",
+        "name": "ZeroX Protocol Token",
+        "symbol": "ZRX",
+        "decimals": 18
       },
       {
-        "address": "0xd466408b253beA8DC07b484c43B5d9690396D0c6",
-        "name": "SingularDTV Token",
-        "decimals": 0,
-        "symbol": "SNGLS"
-      },
-      {
-        "address": "0xc5Ab5219a293426eb60ab0A0091D40FF676816c2",
-        "name": "Status Network Token",
-        "decimals": 18,
-        "symbol": "SNT"
-      },
-      {
-        "address": "0x8925daf23aD19c68fF317038C6c6018cfBB70704",
-        "name": "0x Protocol Token",
-        "decimals": 18,
-        "symbol": "ZRX"
-      },
-      {
-        "address": "0x30C64c8D3e985D91F9c1eFAf4CCDe66b2925ea7C",
+        "address": "0x5C092c72a655Bf14fC3C796C35840bc8bd126d27",
         "name": "Request Network",
-        "decimals": 18,
-        "symbol": "REQ"
+        "symbol": "REQ",
+        "decimals": 18
       },
       {
-        "address": "0x28d1FC38670499E0C439FefC886A91B203139a1f",
-        "name": "FunFair",
-        "decimals": 8,
-        "symbol": "FUN"
+        "address": "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
+        "name": "Eth Token",
+        "symbol": "WETH",
+        "decimals": 18
       },
       {
-        "address": "0x76B614b11afB1474836e5762984fC0445F5F9d70",
-        "name": "Santiment Network Token",
-        "decimals": 18,
-        "symbol": "SAN"
-      },
-      {
-        "address": "0x2d29f5cA0e8d10822552Bf73553E263eE68278d0",
-        "name": "Decentraland",
-        "decimals": 18,
-        "symbol": "MANA"
-      },
-      {
-        "address": "0x57030466f1C62cDF9201EcCa416c68cEB89378da",
-        "name": "Tether",
-        "decimals": 6,
-        "symbol": "USDT"
-      },
-      {
-        "address": "0x3D9Ac387cf69F6F65Aa32EE78A46bEd0C147F6A9",
-        "name": "ZCash",
-        "decimals": 8,
-        "symbol": "ZEC"
-      },
-      {
-        "address": "0xa27Af8713623fCc239d49108B1A7b187c133e88B",
-        "name": "Wrapped Ether Token",
-        "decimals": 18,
-        "symbol": "WETH"
-      },
-      {
-        "address": "0xDC5fC5DaB642f688Bc5BB58bEF6E0d452D7ae123",
+        "address": "0x2C2edf394638931eb672BD9261d2AA1934874d45",
         "name": "Melon Token",
-        "decimals": 18,
-        "symbol": "MLN"
+        "symbol": "MLN",
+        "decimals": 18
       },
       {
-        "address": "0x71BE1386EC4d6d780b208529ABc349Ee69c241Cd",
+        "address": "0xbdaD7a926A7E70C6B0AF367d97D992b904BBAFcf",
         "name": "MakerDao",
-        "decimals": 18,
-        "symbol": "MKR"
+        "symbol": "MKR",
+        "decimals": 18
       },
       {
-        "address": "0x82789d9a0951974E58EbB91DF13b84424e51Acc4",
+        "address": "0x1D3bC44DD6C3F00640A6825B48F1C78770fd21d8",
         "name": "Dai",
-        "decimals": 18,
-        "symbol": "DAI"
+        "symbol": "DAI",
+        "decimals": 18
       },
       {
-        "address": "0x46c4B65F40f686c3F3738395c36AceA70C06F3C2",
+        "address": "0xB5098BAFbF90F278374EcFA973A703fD0eb87A12",
         "name": "Kyber Network",
-        "decimals": 18,
-        "symbol": "KNC"
+        "symbol": "KNC",
+        "decimals": 18
       },
       {
-        "address": "0xB04985BFaB8550C43C00528D9d06492916cB9df6",
+        "address": "0x4a2b588BE548FF50C05Fd5Fc5041384d80D2a8ed",
         "name": "Jibrel Network",
-        "decimals": 18,
-        "symbol": "JNT"
+        "symbol": "JNT",
+        "decimals": 18
       },
       {
-        "address": "0xfdBe0D69a110D1f0dc6aEc8588804da88173B8F0",
+        "address": "0xb2edad34d3B6318252a35Cb80af4DF75B398692c",
         "name": "Omise-Go",
-        "decimals": 18,
-        "symbol": "OMG"
+        "symbol": "OMG",
+        "decimals": 18
+      },
+      {
+        "address": "0x5A261fa748EA3053b32790963b2De588b100aB24",
+        "name": "Numeraire",
+        "symbol": "NMR",
+        "decimals": 18
       }
     ]
   }
 }
-

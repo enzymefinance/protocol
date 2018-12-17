@@ -174,7 +174,7 @@ export const deploySystem = async (
   }
 
   contracts.version =
-    adoptedContracts.registry ||
+    adoptedContracts.version ||
     (await deployVersion(environment, {
       engine: contracts.engine,
       factories: contracts.factories,
