@@ -237,20 +237,20 @@ contract Trading is DSMath, Spoke, TradingInterface {
                 continue;
             }
             address sellAsset;
-            uint sellQuantity;
-            (sellAsset, , sellQuantity, ) =
+            uint remainingSellQuantity;
+            (sellAsset, , remainingSellQuantity, ) =
                 ExchangeAdapter(exchanges[i].adapter)
                 .getOrder(
                     exchanges[i].exchange,
                     exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id,
                     ofAsset
                 );
-            if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
+            if (remainingSellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
-            totalSellQuantity = add(totalSellQuantity, sellQuantity);
+            totalSellQuantity = add(totalSellQuantity, remainingSellQuantity);
             if (!exchanges[i].takesCustody) {
-                totalSellQuantityInApprove += sellQuantity;
+                totalSellQuantityInApprove += remainingSellQuantity;
             }
         }
         if (totalSellQuantity == 0) {

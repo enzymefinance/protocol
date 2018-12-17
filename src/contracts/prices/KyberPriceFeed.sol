@@ -10,7 +10,6 @@ import "Registry.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-/// @notice TODO: ERC20Clone inconsistency
 contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     // FIELDS
@@ -19,7 +18,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     Registry public REGISTRY;
     uint public MAX_SPREAD;
 
-    address public constant ETH_TOKEN_ADDRESS = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    address public constant KYBER_ETH_TOKEN = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
     uint public constant KYBER_PRECISION = 18;
 
     // METHODS
@@ -102,8 +101,8 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     {
         require(REGISTRY.assetIsRegistered(ofAsset), "Asset not registered in the registry");
         if (ofAsset == QUOTE_ASSET) return true;
-        var (price, ) = getPrice(ofAsset);
-        return price != 0;
+        var (isValid, price, ) = getPriceInfo(ofAsset);
+        return price != 0 && isValid;
     }
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
@@ -123,7 +122,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     function getPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint price, uint assetDecimals)
+        returns (bool isValid, uint price, uint assetDecimals)
     {
         return getReferencePriceInfo(ofAsset, QUOTE_ASSET);
     }
@@ -148,42 +147,63 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     /**
     @notice Gets reference price of an asset pair
-    @dev One of the address is equal to quote asset
-    @dev either ofBase == QUOTE_ASSET or ofQuote == QUOTE_ASSET
     @param _baseAsset Address of base asset
     @param _quoteAsset Address of quote asset
     @return {
-        "isRecent": "Whether the price is fresh, given VALIDITY interval",
+        "isValid": "Whether the price is valid",
         "referencePrice": "Reference price",
-        "decimals": "Decimal places for this asset"
+        "decimals": "Decimal places for quote asset"
     }
     */
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
         view
-        returns (bool isRecent, uint referencePrice, uint decimals)
+        returns (bool isValid, uint referencePrice, uint decimals)
     {
-        // TODO: decimals = getDecimals(_quoteAsset);
         decimals = ERC20Clone(_quoteAsset).decimals();
-        isRecent = true;
-        if (_baseAsset == QUOTE_ASSET) _baseAsset = ETH_TOKEN_ADDRESS;
-        if (_quoteAsset == QUOTE_ASSET) _quoteAsset = ETH_TOKEN_ADDRESS;
+        if (_baseAsset == QUOTE_ASSET) {
+            _baseAsset = KYBER_ETH_TOKEN;
+        }
+        if (_quoteAsset == QUOTE_ASSET) {
+            _quoteAsset = KYBER_ETH_TOKEN;
+        }
 
-        // 10 ** 10 some random value for now TODO
-        var (bidRate, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(ERC20Clone(_baseAsset), ERC20Clone(_quoteAsset), 10 ** 10);
-        var (bidRateOfReversePair, ) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20Clone(_quoteAsset), ERC20Clone(_baseAsset), 10 ** 10
+        // TODO: 10 ** 10 some random value for now
+        uint bidRate;
+        uint bidRateOfReversePair;
+        KyberNetworkProxy netProxy = KyberNetworkProxy(KYBER_NETWORK_PROXY);
+        (bidRate,) = netProxy.getExpectedRate(
+            ERC20Clone(_baseAsset),
+            ERC20Clone(_quoteAsset),
+            10 ** 10
         );
+        (bidRateOfReversePair,) = netProxy.getExpectedRate(
+            ERC20Clone(_quoteAsset),
+            ERC20Clone(_baseAsset),
+            10 ** 10
+        );
+        if (bidRate == 0 || bidRateOfReversePair == 0) {
+            return (false, 0, 0);  // return early and avoid revert
+        }
+
         uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
 
         // Check the the spread and average the price on both sides
-        uint spreadFromKyber = mul(sub(askRate, bidRate), 10 ** KYBER_PRECISION) / bidRate;
-        require(
-            spreadFromKyber <= MAX_SPREAD,
-            "Kyber spread is higher than allowed"
-        );
-        uint averagedPriceFromKyber = add(bidRate, askRate) / 2;
+        uint spreadFromKyber = mul(
+            sub(askRate, bidRate),
+            10 ** KYBER_PRECISION
+        ) / bidRate;
 
-        referencePrice = mul(averagedPriceFromKyber, 10 ** decimals) / 10 ** KYBER_PRECISION;
+        uint averagePriceFromKyber = add(bidRate, askRate) / 2;
+        referencePrice = mul(
+            averagePriceFromKyber,
+            10 ** decimals
+        ) / 10 ** KYBER_PRECISION;
+
+        isValid =
+            spreadFromKyber <= MAX_SPREAD &&
+            averagePriceFromKyber != 0;
+
+        return (isValid, referencePrice, decimals);
     }
 
     /// @notice Gets price of Order

@@ -192,10 +192,15 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             "Sender does not have enough shares to fulfill request"
         );
 
-        FeeManager(routes.feeManager).rewardManagementFee();
-        uint owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
-        shares.destroyFor(msg.sender, owedPerformanceFees);
-        shares.createFor(hub.manager(), owedPerformanceFees);
+        uint owedPerformanceFees = 0;
+        if (
+            PriceSourceInterface(routes.priceSource).hasRecentPrices(requestedAssets)
+        ) {
+            FeeManager(routes.feeManager).rewardManagementFee();
+            owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
+            shares.destroyFor(msg.sender, owedPerformanceFees);
+            shares.createFor(hub.manager(), owedPerformanceFees);
+        }
         uint remainingShareQuantity = sub(shareQuantity, owedPerformanceFees);
 
         address ofAsset;

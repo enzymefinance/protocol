@@ -318,7 +318,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
                 10 ** uint(quoteDecimals),
                 10 ** uint(assetDecimals)
             ) / inputPrice,
-            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
+            quoteDecimals
         );
     }
 

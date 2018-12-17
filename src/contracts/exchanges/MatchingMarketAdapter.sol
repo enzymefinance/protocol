@@ -173,6 +173,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             uint(identifier)
         );
         getTrading().returnAssetToVault(makerAsset);
+        getTrading().updateOwnedAssets();
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),

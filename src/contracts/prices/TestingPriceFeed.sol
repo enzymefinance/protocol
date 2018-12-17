@@ -24,11 +24,9 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         setDecimals(_quoteAsset, _quoteDecimals);
     }
 
-    /** Ex:
-     *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
-     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
-     *  and let EUR-T decimals == 8.
-     *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
+    /**
+      Input price is how much quote asset you would get
+      for one unit of _asset (10**assetDecimals)
      */
     function update(address[] _assets, uint[] _prices) external {
         require(_assets.length == _prices.length, "Array lengths unequal");
@@ -99,7 +97,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
                 10 ** uint(quoteDecimals),
                 10 ** uint(assetDecimals)
             ) / inputPrice,
-            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
+            quoteDecimals
         );
     }
 

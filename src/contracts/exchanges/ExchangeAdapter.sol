@@ -143,9 +143,9 @@ contract ExchangeAdapter {
         uint id,
         address makerAsset
     ) view returns (
-        address,
-        address,
-        uint,
-        uint
+        address makerAsset,
+        address takerAsset,
+        uint makerQuantity,
+        uint takerQuantity
     ) { revert("Unimplemented"); }
 }

@@ -65,6 +65,8 @@ contract Registry is DSAuth {
 
     mapping (address => address) public fundsToVersions;
 
+    uint public constant MAX_REGISTERED_ENTITIES = 20;
+
     address public priceSource;
     address public mlnToken;
     address public engine;
@@ -101,6 +103,7 @@ contract Registry is DSAuth {
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
+        require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
         require(!assetInformation[_asset].exists);
         assetInformation[_asset].exists = true;
         registeredAssets.push(_asset);
@@ -129,6 +132,7 @@ contract Registry is DSAuth {
         bool _takesCustody,
         bytes4[] _sigs
     ) auth {
+        require(registeredExchanges.length < MAX_REGISTERED_ENTITIES);
         require(!exchangeInformation[_exchange].exists);
         exchangeInformation[_exchange].exists = true;
         registeredExchanges.push(_exchange);
@@ -224,7 +228,6 @@ contract Registry is DSAuth {
         );
     }
 
-    // TODO: check max size of array before remaking this becomes untenable
     /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
     /// @param _asset address for which specific information is requested

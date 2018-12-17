@@ -164,7 +164,6 @@ contract CanonicalRegistrar is DSThing, DBC {
         exchange.functionSignatures = inputFunctionSignatures;
     }
 
-    // TODO: check max size of array before remaking this becomes untenable
     /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
     /// @param ofAsset address for which specific information is requested
