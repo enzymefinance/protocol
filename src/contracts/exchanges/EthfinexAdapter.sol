@@ -119,6 +119,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
+            getTrading().returnAssetToVault(orderAddresses[i]);
+            getAccounting().safeAddToOwnedAssets(orderAddresses[i]);
         }
     }
 
