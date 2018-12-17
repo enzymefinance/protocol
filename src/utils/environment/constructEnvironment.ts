@@ -90,6 +90,13 @@ export const constructEnvironment = ({
     );
   }
 
+  logger(
+    'melon:protocol:utils:environment',
+    LogLevels.DEBUG,
+    'Construct environment',
+    { endpoint, provider: !!provider, deployment, wallet, track, options },
+  );
+
   return {
     deployment,
     eth: new web3Eth(provider || constructProvider(endpoint, logger)),

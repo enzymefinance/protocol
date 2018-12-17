@@ -25,7 +25,7 @@ export type TransactionArgs = TransactionArg[] | any;
 // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
 export interface UnsignedRawTransaction {
   from: string;
-  to: string;
+  to?: string;
   value?: string;
   gas?: string;
   gasPrice?: string;

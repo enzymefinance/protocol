@@ -2,12 +2,63 @@
 // require('babel-polyfill');
 const R = require('ramda');
 const path = require('path');
+const readline = require('readline');
 const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 const { getPrice } = require('@melonproject/token-math/price');
 const { createQuantity } = require('@melonproject/token-math/quantity');
 const { createToken } = require('@melonproject/token-math/token');
+
+const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const {
+        initEnvironment,
+      } = require('../lib/utils/environment/initEnvironment');
+
+      const environmentWithoutWallet = initEnvironment({
+        endpoint,
+        gasPrice,
+        gasLimit,
+      });
+
+      if (pathToKeystore) {
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        console.log('Keystore file at:', pathToKeystore);
+
+        rl.question(
+          `Please type the password to unlock the keystore: `,
+          password => {
+            const keystore = require(`../${pathToKeystore}`);
+            const {
+              withKeystoreSigner,
+            } = require('../lib/utils/environment/withKeystoreSigner');
+            const withWallet = withKeystoreSigner(environmentWithoutWallet, {
+              keystore,
+              password,
+            });
+            rl.close();
+
+            resolve(withWallet);
+          },
+        );
+      } else {
+        const {
+          withUnlockedSigner,
+        } = require('../lib/utils/environment/withUnlockedSigner');
+
+        const withWallet = await withUnlockedSigner(environmentWithoutWallet);
+        resolve(withWallet);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
 
 program
   .version(pkg.version, '-v, --version')
@@ -46,13 +97,11 @@ program
     '-e, --endpoint <endpoint>',
     'The JSON RPC endpoint url. By default: https://localhost:8545',
   )
+  .option('-g, --gas <number>', 'Default number of gas units to provide')
+  .option('-p, --gas-price <number>', 'Price (in wei) of each gas unit')
   .option(
-    '-g, --gas <number>',
-    'Default number of gas units to provide',
-  )
-  .option(
-    '-p, --gas-price <number>',
-    'Price (in wei) of each gas unit',
+    '-k, --keystore <pathToKeystore>',
+    'Load the deployer account from a keystore file',
   )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts (development setup).`);
@@ -68,18 +117,16 @@ program
     if (config) console.log('Loaded config from', `../${options.config}`);
 
     const {
-      initUnlockedEnvironment,
-    } = require('../lib/utils/environment/initUnlockedEnvironment');
-    const {
       deployThirdParty,
     } = require('../lib/utils/deploy/deployThirdParty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
     try {
-      const environment = await initUnlockedEnvironment({
+      const environment = await getEnvironment({
         endpoint: options.endpoint || 'http://localhost:8545',
         gasLimit: options.gas || undefined,
         gasPrice: options.gasPrice || undefined,
+        pathToKeystore: options.keystore || undefined,
       });
 
       const thirdPartyContracts =

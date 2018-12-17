@@ -71,14 +71,6 @@ const getGanache = () => {
 export const initTestEnvironment = async (endpoint?: string) => {
   const jsonRpcEndpoint = endpoint || process.env.JSON_RPC_ENDPOINT;
 
-  testLogger(
-    'melon:protocol:test:utils',
-    LogLevels.DEBUG,
-    'Endpoint:',
-    jsonRpcEndpoint,
-    endpoint ? 'via function arg' : 'via JSON_RPC_ENDPOINT envvar',
-  );
-
   const environment = constructEnvironment({
     // Pass in Ganache.provider but only if
     // process.env.JSON_RPC_ENDPOINT is not set

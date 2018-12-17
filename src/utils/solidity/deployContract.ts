@@ -8,6 +8,7 @@ import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { Address } from '@melonproject/token-math/address';
 import { ensure } from '~/utils/guards/ensure';
+import { sign } from '../environment/sign';
 
 // TODO: Refactor all callers to only use the Contract interface
 type DeployContract = {
@@ -37,9 +38,10 @@ export const deployContract: DeployContract = async (
     LogLevels.INFO,
   );
 
-  const txIdentifier = `${pathToSolidityFile}(${args &&
+  const txIdentifier = `${pathToSolidityFile}(${(args &&
     args.length &&
-    args.join(',')})`;
+    args.join(',')) ||
+    ''})`;
   const parsed = path.parse(pathToSolidityFile);
 
   const rawABI = fs.readFileSync(
@@ -90,12 +92,15 @@ export const deployContract: DeployContract = async (
 
   try {
     const encodedAbi = transaction.encodeABI();
+    const unsignedTransaction = {
+      data: encodedAbi,
+      ...options,
+    };
+    const signedTransaction = await sign(environment, unsignedTransaction);
+
     let txHash;
     const receipt = await environment.eth
-      .sendTransaction({
-        data: encodedAbi,
-        ...options,
-      })
+      .sendSignedTransaction(signedTransaction)
       .on('error', error => {
         throw error;
       })
@@ -105,10 +110,11 @@ export const deployContract: DeployContract = async (
       })
       .once('confirmation', c => debug('Confirmation', txIdentifier, c));
     info(
-      'Got receipt',
+      'Got receipt for:',
       txIdentifier,
+      'at contract address:',
       receipt.contractAddress,
-      `${args.join(', ')}`,
+      'transaction hash:',
       txHash,
     );
     return new Address(receipt.contractAddress);

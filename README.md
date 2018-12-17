@@ -37,26 +37,39 @@ yarn install
 
 If you don't set `JSON_RPC_ENDPOINT`, the test will load ganache in-memory which works but is much slower.
 
-### Deployment and testing
+### Development and testing
 
 After installation, go to the above `protocol` directory, open a terminal and:
 
 ```sh
-# Generate bytecode and abi of smart-contracts
-yarn compile
 # Launch parity dev chain:
 yarn devchain
-# Open a second terminal and deploy the contracts to the development network:
-yarn deploy (Not working yet)
+# Generate bytecode and abi of smart-contracts
+yarn compile
 # Run the tests using
-yarn test (Not working yet)
+yarn test
 ```
 
-### Alternatives
+## Deploy
 
-### Kovan Deployment
+To just develop and test, you don't need to deploy. Unit & integration-tests do deploy the contracts they need.
 
-After installation is complete, go to the above `protocol` directory, open a terminal and:
+But if you want to deploy the protcol to Kovan or Mainnet, here is the recommended way:
+
+### Deploy to Kovan through Infura with a keystore V3 file
+
+- Create a `.keystore.json` file in the project root. See [What is an Ethereum Keystore file](https://medium.com/@julien.maffre/what-is-an-ethereum-keystore-file-86c8c5917b97) about keystore v3 JSON files.
+- To deploy the kovan config to infura, type the following command:
+
+```bash
+yarn deploy \
+  --config deployments/configs/kovan.json \
+  --gas-price 2000000000 \
+  --keystore .keystore.json \
+  --endpoint wss://kovan.infura.io/ws/v3/YOUR-PROJECT-ID
+```
+
+### Run an unlocked node to deploy
 
 ```sh
 # Launch an ethereum client. For example something similar to this:
@@ -70,7 +83,9 @@ parity \
   --password <password file>
 
 # Open a second terminal and deploy the contracts:
-npm run deploy:kovan
+yarn deploy \
+  --config deployments/configs/kovan.json \
+  --gas-price 2000000000 \
 ```
 
 ## Use it as a consumer
