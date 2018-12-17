@@ -138,14 +138,22 @@ contract ExchangeAdapter {
 
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
+    /*
+    @return {
+        "makerAsset": "Maker asset",
+        "takerAsset": "Taker asset",
+        "makerQuantity": "Amount of maker asset"
+        "takerQuantity": "Amount of taker asset"
+    }
+    */
     function getOrder(
         address onExchange,
         uint id,
         address makerAsset
     ) view returns (
-        address makerAsset,
-        address takerAsset,
-        uint makerQuantity,
-        uint takerQuantity
+        address,
+        address,
+        uint,
+        uint
     ) { revert("Unimplemented"); }
 }

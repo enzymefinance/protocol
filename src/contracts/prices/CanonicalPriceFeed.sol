@@ -242,11 +242,11 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
 
     /// @notice Whether price of asset has been updated less than VALIDITY seconds ago
     /// @param ofAsset Asset in registrar
-    /// @return isRecent Price information ofAsset is recent
-    function hasRecentPrice(address ofAsset)
+    /// @return isValid Price information ofAsset is recent
+    function hasValidPrice(address ofAsset)
         view
         pre_cond(assetIsRegistered(ofAsset))
-        returns (bool isRecent)
+        returns (bool isValid)
     {
         var ( , timestamp) = getPrice(ofAsset);
         return (sub(now, timestamp) <= VALIDITY);
@@ -254,38 +254,23 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
 
     /// @notice Whether prices of assets have been updated less than VALIDITY seconds ago
     /// @param ofAssets All assets in registrar
-    /// @return isRecent Price information ofAssets array is recent
-    function hasRecentPrices(address[] ofAssets)
+    /// @return isValid Price information ofAssets array is recent
+    function hasValidPrices(address[] ofAssets)
         view
         returns (bool areRecent)
     {
         for (uint i; i < ofAssets.length; i++) {
-            if (!hasRecentPrice(ofAssets[i])) {
+            if (!hasValidPrice(ofAssets[i])) {
                 return false;
             }
         }
         return true;
     }
 
-    function safeGetPrice(address _asset) public view returns (uint) {
-        require(hasRecentPrice(_asset));
-        uint price;
-        (price,) = getPrice(_asset);
-        return price;
-    }
-
-    function safeGetPrices(address[] _assets) public view returns (uint[]) {
-        require(hasRecentPrices(_assets));
-        uint[] memory prices;
-        (prices,) = getPrices(_assets);
-        return prices;
-    }
-
     function getPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint price, uint assetDecimals)
+        returns (uint price, uint assetDecimals)
     {
-        isRecent = hasRecentPrice(ofAsset);
         (price, ) = getPrice(ofAsset);
         assetDecimals = getDecimals(ofAsset);
     }
@@ -296,24 +281,23 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     @dev Existing price ofAssets quoted in QUOTE_ASSET (convention)
     @param ofAsset Asset for which inverted price should be return
     @return {
-        "isRecent": "Whether the price is fresh, given VALIDITY interval",
+        "isValid": "Whether the price is fresh, given VALIDITY interval",
         "invertedPrice": "Price based (instead of quoted) against QUOTE_ASSET",
         "assetDecimals": "Decimal places for this asset"
     }
     */
     function getInvertedPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint invertedPrice, uint assetDecimals)
+        returns (uint invertedPrice, uint assetDecimals)
     {
         uint inputPrice;
         // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
+        (inputPrice, assetDecimals) = getPriceInfo(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
         uint quoteDecimals = getDecimals(QUOTE_ASSET);
 
         return (
-            isRecent,
             mul(
                 10 ** uint(quoteDecimals),
                 10 ** uint(assetDecimals)
@@ -329,19 +313,21 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     @param ofBase Address of base asset
     @param ofQuote Address of quote asset
     @return {
-        "isRecent": "Whether the price is fresh, given VALIDITY interval",
+        "isValid": "Whether the price is fresh, given VALIDITY interval",
         "referencePrice": "Reference price",
         "decimal": "Decimal places for this asset"
     }
     */
     function getReferencePriceInfo(address ofBase, address ofQuote)
         view
-        returns (bool isRecent, uint referencePrice, uint decimal)
+        returns (uint referencePrice, uint decimal)
     {
+        require(hasValidPrice(ofBase));
+        require(hasValidPrice(ofQuote));
         if (getQuoteAsset() == ofQuote) {
-            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
+            (referencePrice, decimal) = getPriceInfo(ofBase);
         } else if (getQuoteAsset() == ofBase) {
-            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
+            (referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
             revert("One of the parameters must be quoteAsset");
         }
@@ -375,8 +361,8 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         returns (bool isExistent)
     {
         return
-            hasRecentPrice(sellAsset) &&
-            hasRecentPrice(buyAsset) &&
+            hasValidPrice(sellAsset) &&
+            hasValidPrice(buyAsset) &&
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }

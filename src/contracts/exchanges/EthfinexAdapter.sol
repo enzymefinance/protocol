@@ -84,7 +84,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
         ExchangeEfx(targetExchange).cancelOrder(order);
 
-        getTrading().updateOwnedAssets();
+        getAccounting().updateOwnedAssets();
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
         getTrading().orderUpdateHook(
             targetExchange,

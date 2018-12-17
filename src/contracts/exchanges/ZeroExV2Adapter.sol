@@ -150,7 +150,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
         getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
         getTrading().returnAssetToVault(makerAsset);
-        getTrading().updateOwnedAssets();
+        getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(
             targetExchange,
             identifier,

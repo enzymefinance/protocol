@@ -73,11 +73,9 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     function calcAssetGAV(address _asset) returns (uint) {
         uint quantityHeld = assetHoldings(_asset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-        bool isRecent;
         uint assetPrice;
         uint assetDecimals;
-        (isRecent, assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(_asset);
-        require(isRecent, "Price is not recent");
+        (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(_asset);
         return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
@@ -88,11 +86,9 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint quantityHeld = assetHoldings(asset);
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-            bool isRecent;
             uint assetPrice;
             uint assetDecimals;
-            (isRecent, assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(asset);
-            require(isRecent, "Price is not recent");
+            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(asset);
             // TODO: invest in non-pricefeed-quote asset
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(

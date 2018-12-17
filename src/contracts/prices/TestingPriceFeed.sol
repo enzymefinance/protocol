@@ -57,42 +57,26 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         return (prices, timestamps);
     }
 
-    /// @dev For testing we don't need these checks
-    function safeGetPrice(address _asset) view returns (uint) {
-        uint price;
-        (price,) = getPrice(_asset);
-        return price;
-    }
-
-    /// @dev For testing we don't need these checks
-    function safeGetPrices(address[] _assets) view returns (uint[]) {
-        uint[] memory prices;
-        (prices,) = getPrices(_assets);
-        return prices;
-    }
-
     function getPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint price, uint assetDecimals)
+        returns (uint price, uint assetDecimals)
     {
-        isRecent = mockIsRecent;
         (price, ) = getPrice(ofAsset);
         assetDecimals = assetsToDecimals[ofAsset];
     }
 
     function getInvertedPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint invertedPrice, uint assetDecimals)
+        returns (uint invertedPrice, uint assetDecimals)
     {
         uint inputPrice;
         // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
+        (inputPrice, assetDecimals) = getPriceInfo(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
         uint quoteDecimals = assetsToDecimals[QUOTE_ASSET];
 
         return (
-            isRecent,
             mul(
                 10 ** uint(quoteDecimals),
                 10 ** uint(assetDecimals)
@@ -120,12 +104,12 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
 
     function getReferencePriceInfo(address ofBase, address ofQuote)
         view
-        returns (bool isRecent, uint referencePrice, uint decimal)
+        returns (uint referencePrice, uint decimal)
     {
         if (QUOTE_ASSET == ofQuote) {
-            (isRecent, referencePrice, decimal) = getPriceInfo(ofBase);
+            (referencePrice, decimal) = getPriceInfo(ofBase);
         } else if (QUOTE_ASSET == ofBase) {
-            (isRecent, referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
+            (referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
         } else {
             revert("One of the parameters must be quoteAsset");
         }

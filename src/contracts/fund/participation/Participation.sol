@@ -116,9 +116,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             investAllowed[request.investmentAsset],
             "Investment not allowed in this asset"
         );
-        bool isRecent;
-        (isRecent, , ) = PriceSourceInterface(routes.priceSource).getPriceInfo(request.investmentAsset);
-        require(isRecent, "Price not recent");
+        require(
+            PriceSourceInterface(routes.priceSource).hasValidPrice(request.investmentAsset),
+            "Price not valid"
+        );
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
@@ -128,7 +129,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
             uint invertedInvestmentAssetPrice;
             uint investmentAssetDecimal;
-            (, invertedInvestmentAssetPrice, investmentAssetDecimal) = PriceSourceInterface(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
+            (invertedInvestmentAssetPrice, investmentAssetDecimal) = PriceSourceInterface(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
             totalShareCost = mul(totalShareCost, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
         }
 
@@ -194,7 +195,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
         uint owedPerformanceFees = 0;
         if (
-            PriceSourceInterface(routes.priceSource).hasRecentPrices(requestedAssets)
+            PriceSourceInterface(routes.priceSource).hasValidPrices(requestedAssets)
         ) {
             FeeManager(routes.feeManager).rewardManagementFee();
             owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
