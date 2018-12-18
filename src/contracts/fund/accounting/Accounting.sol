@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "ERC20.i.sol";
+import "StandardToken.sol";
 import "Factory.sol";
 import "PriceSource.i.sol";
 import "FeeManager.sol";
@@ -24,10 +24,11 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     uint constant public MAX_OWNED_ASSETS = 20;
     address[] public ownedAssets;
     mapping (address => bool) public isInAssetList;
-    address public QUOTE_ASSET;
+    uint public constant SHARES_DECIMALS = 18;
     address public NATIVE_ASSET;
+    address public QUOTE_ASSET;
+    uint public QUOTE_ASSET_DECIMALS;
     uint public DEFAULT_SHARE_PRICE;
-    uint public SHARES_DECIMALS;
     Calculations public atLastAllocation;
 
     constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
@@ -38,8 +39,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         }
         QUOTE_ASSET = _quoteAsset;
         NATIVE_ASSET = _nativeAsset;
-        SHARES_DECIMALS = 18;
-        DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
+        QUOTE_ASSET_DECIMALS = ERC20WithFields(QUOTE_ASSET).decimals();
+        DEFAULT_SHARE_PRICE = 10 ** QUOTE_ASSET_DECIMALS;
     }
 
     function getOwnedAssetsLength() view returns (uint) {
@@ -48,7 +49,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     function assetHoldings(address _asset) public returns (uint) {
         return add(
-            uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
+            uint(ERC20WithFields(_asset).balanceOf(Vault(routes.vault))),
             Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
         );
     }
@@ -88,8 +89,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
             uint assetPrice;
             uint assetDecimals;
-            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(asset);
-            // TODO: invest in non-pricefeed-quote asset
+            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, QUOTE_ASSET);
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(
                 gav,
@@ -134,11 +134,28 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         sharePrice = (totalSupply > 0) ?
             valuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
+        return (gav, unclaimedFees, feesInShares, nav, sharePrice);
     }
 
     function calcSharePrice() returns (uint sharePrice) {
         (,,,,sharePrice) = performCalculations();
         return sharePrice;
+    }
+
+    function getShareCostInAsset(uint _numShares, address _altAsset) returns (uint) {
+        uint costInDenominationAsset = mul(
+            _numShares,
+            calcSharePrice()
+        ) / 10 ** SHARES_DECIMALS;
+        uint altAssetPerDenominationAsset;
+        (altAssetPerDenominationAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
+            QUOTE_ASSET,  // TODO: denomination asset naming
+            _altAsset
+        );
+        return mul(
+            altAssetPerDenominationAsset,
+            costInDenominationAsset
+        ) / 10 ** QUOTE_ASSET_DECIMALS;
     }
 
     /// @notice Reward all fees and perform some updates

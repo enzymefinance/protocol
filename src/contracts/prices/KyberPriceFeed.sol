@@ -188,12 +188,11 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /**
-    @notice Gets reference price of an asset pair
     @param _baseAsset Address of base asset
     @param _quoteAsset Address of quote asset
     @return {
-        "referencePrice": "Reference price",
-        "decimals": "Decimal places for quote asset"
+        "referencePrice": "Quantity of quoteAsset per whole baseAsset",
+        "decimals": "Decimal places for quoteAsset"
     }
     */
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)

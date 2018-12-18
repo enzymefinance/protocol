@@ -123,25 +123,22 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
-        // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
-        uint totalShareCost;
-        totalShareCost = mul(request.requestedShares, Accounting(routes.accounting).calcSharePrice()) / 10 ** SHARES_DECIMALS;
-        if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
-            uint invertedInvestmentAssetPrice;
-            uint investmentAssetDecimal;
-            (invertedInvestmentAssetPrice, investmentAssetDecimal) = PriceSourceInterface(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
-            totalShareCost = mul(totalShareCost, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
-        }
+        uint totalShareCostInInvestmentAsset = Accounting(routes.accounting)
+            .getShareCostInAsset(
+                request.requestedShares,
+                request.investmentAsset
+            );
 
         require(
-            totalShareCost <= request.investmentAmount,
+            totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
 
         delete requests[requestOwner];
         require(
             ERC20(request.investmentAsset).transferFrom(
-                requestOwner, address(routes.vault), totalShareCost
+                requestOwner, address(routes.vault),
+                totalShareCostInInvestmentAsset
             ),
             "Failed to transfer investment asset to vault"
         );

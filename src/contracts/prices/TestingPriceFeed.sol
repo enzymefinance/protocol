@@ -111,7 +111,12 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (uint referencePrice, uint decimal)
     {
-        if (QUOTE_ASSET == ofQuote) {
+        if (ofBase == ofQuote) {
+            return (
+                10 ** assetsToDecimals[ofQuote],
+                assetsToDecimals[ofQuote]
+            );
+        } else if (QUOTE_ASSET == ofQuote) {
             (referencePrice, decimal) = getPriceInfo(ofBase);
         } else if (QUOTE_ASSET == ofBase) {
             (referencePrice, decimal) = getInvertedPriceInfo(ofQuote);

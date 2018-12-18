@@ -91,7 +91,6 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
 };
 
 const postProcess: PostProcessFunction<Make0xOrderArgs, boolean> = async () => {
-  // console.log(JSON.stringify(receipt, null, 2));
   return true;
 };
 
