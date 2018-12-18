@@ -18,6 +18,8 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     uint public MAX_SPREAD;
     address public constant KYBER_ETH_TOKEN = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
     uint public constant KYBER_PRECISION = 18;
+    uint public constant VALIDITY_INTERVAL = 2 days;
+    uint public lastUpdate;
 
     // FIELDS
 
@@ -50,6 +52,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
             prices[assets[i]] = isValid ? price : 0;
         }
+        lastUpdate = block.timestamp;
     }
 
     // PUBLIC VIEW METHODS
@@ -96,7 +99,8 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         returns (bool)
     {
         bool isRegistered = REGISTRY.assetIsRegistered(_asset);
-        return prices[_asset] != 0 && isRegistered;
+        bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
+        return prices[_asset] != 0 && isRegistered && isFresh;
     }
 
     function hasValidPrices(address[] _assets)
@@ -111,29 +115,70 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return true;
     }
 
-    function getPriceInfo(address ofAsset)
+    /**
+    @param _baseAsset Address of base asset
+    @param _quoteAsset Address of quote asset
+    @return {
+        "referencePrice": "Quantity of quoteAsset per whole baseAsset",
+        "decimals": "Decimal places for quoteAsset"
+    }
+    */
+    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        view
+        returns (uint referencePrice, uint decimals)
+    {
+        bool isValid;
+        (
+            isValid,
+            referencePrice,
+            decimals
+        ) = getRawReferencePriceInfo(_baseAsset, _quoteAsset);
+        require(isValid);
+        return (referencePrice, decimals);
+    }
+
+    function getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        view
+        returns (bool isValid, uint referencePrice, uint decimals)
+    {
+        isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
+        uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
+        uint baseDecimals = ERC20Clone(_baseAsset).decimals();
+
+        if (prices[_quoteAsset] == 0) {
+            return (false, 0, 0);  // return early and avoid revert
+        }
+
+        referencePrice = mul(
+            prices[_baseAsset],
+            10 ** quoteDecimals
+        ) / prices[_quoteAsset];
+
+        return (isValid, referencePrice, quoteDecimals);
+    }
+
+    function getPriceInfo(address _asset)
         view
         returns (uint price, uint assetDecimals)
     {
-        return getReferencePriceInfo(ofAsset, QUOTE_ASSET);
+        return getReferencePriceInfo(_asset, QUOTE_ASSET);
     }
 
     /**
     @notice Gets inverted price of an asset
     @dev Asset has been initialised and its price is non-zero
-    @dev Existing price ofAssets quoted in QUOTE_ASSET (convention)
-    @param ofAsset Asset for which inverted price should be return
+    @param _asset Asset for which inverted price should be return
     @return {
-        "isValid": "Whether the price is fresh, given VALIDITY interval",
+        "isValid": "Whether the price is fresh, given VALIDITY_INTERVAL",
         "invertedPrice": "Price based (instead of quoted) against QUOTE_ASSET",
         "assetDecimals": "Decimal places for this asset"
     }
     */
-    function getInvertedPriceInfo(address ofAsset)
+    function getInvertedPriceInfo(address _asset)
         view
         returns (uint invertedPrice, uint assetDecimals)
     {
-        return getReferencePriceInfo(QUOTE_ASSET, ofAsset);
+        return getReferencePriceInfo(QUOTE_ASSET, _asset);
     }
 
     /// @dev Get Kyber representation of ETH if necessary
@@ -185,48 +230,6 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             spreadFromKyber <= MAX_SPREAD && averagePriceFromKyber != 0,
             kyberPrice
         );
-    }
-
-    /**
-    @param _baseAsset Address of base asset
-    @param _quoteAsset Address of quote asset
-    @return {
-        "referencePrice": "Quantity of quoteAsset per whole baseAsset",
-        "decimals": "Decimal places for quoteAsset"
-    }
-    */
-    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
-        view
-        returns (uint referencePrice, uint decimals)
-    {
-        bool isValid;
-        (
-            isValid,
-            referencePrice,
-            decimals
-        ) = getRawReferencePriceInfo(_baseAsset, _quoteAsset);
-        require(isValid);
-        return (referencePrice, decimals);
-    }
-
-    function getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
-        view
-        returns (bool isValid, uint referencePrice, uint decimals)
-    {
-        isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
-        uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
-        uint baseDecimals = ERC20Clone(_baseAsset).decimals();
-
-        if (prices[_quoteAsset] == 0) {
-            return (false, 0, 0);  // return early and avoid revert
-        }
-
-        referencePrice = mul(
-            prices[_baseAsset],
-            10 ** quoteDecimals
-        ) / prices[_quoteAsset];
-
-        return (isValid, referencePrice, quoteDecimals);
     }
 
     /// @notice Gets price of Order
