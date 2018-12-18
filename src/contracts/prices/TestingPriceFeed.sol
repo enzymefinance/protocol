@@ -18,6 +18,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
     bool mockIsRecent = true;
+    bool alwaysValid = true;
 
     constructor(address _quoteAsset, uint _quoteDecimals) {
         QUOTE_ASSET = _quoteAsset;
@@ -85,6 +86,10 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         );
     }
 
+    function setAlwaysValid(bool _state) {
+        alwaysValid = _state;
+    }
+
     function setIsRecent(bool _state) {
         mockIsRecent = _state;
     }
@@ -128,14 +133,26 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     /// @notice Doesn't check validity as TestingPriceFeed has no validity variable
-    /// @param ofAsset Asset in registrar
-    /// @return isRecent Price information ofAsset is recent
-    function hasRecentPrice(address ofAsset)
+    /// @param _asset Asset in registrar
+    /// @return isValid Price information ofAsset is recent
+    function hasValidPrice(address _asset)
         view
-        returns (bool isRecent)
+        returns (bool isValid)
     {
-        var (price, ) = getPrice(ofAsset);
-        return (price != 0);
+        var (price, ) = getPrice(_asset);
+        return alwaysValid || price != 0;
+    }
+
+    function hasValidPrices(address[] _assets)
+        view
+        returns (bool)
+    {
+        for (uint i; i < _assets.length; i++) {
+            if (!hasValidPrice(_assets[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// @notice Checks whether data exists for a given asset pair
@@ -148,8 +165,8 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         returns (bool isExistent)
     {
         return
-            hasRecentPrice(sellAsset) &&
-            hasRecentPrice(buyAsset) &&
+            hasValidPrice(sellAsset) &&
+            hasValidPrice(buyAsset) &&
             (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
             (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
     }

@@ -12,6 +12,7 @@ contract Registry is DSAuth {
         string symbol,
         uint decimals,
         string url,
+        uint reserveMin,
         uint[] standards,
         bytes4[] sigs
     );
@@ -28,6 +29,7 @@ contract Registry is DSAuth {
     event VersionRegistration(address indexed version);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
+    event NativeAssetChange(address indexed nativeAsset);
     event EngineChange(address indexed engine);
 
     // TYPES
@@ -37,6 +39,7 @@ contract Registry is DSAuth {
         string symbol;
         uint decimals;
         string url;
+        uint reserveMin;
         uint[] standards;
         bytes4[] sigs;
     }
@@ -69,6 +72,7 @@ contract Registry is DSAuth {
 
     address public priceSource;
     address public mlnToken;
+    address public nativeAsset;
     address public engine;
     address public ethfinexWrapperRegistry;
 
@@ -100,6 +104,7 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
+        uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -113,6 +118,7 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
+            _reserveMin,
             _standards,
             _sigs
         );
@@ -169,6 +175,11 @@ contract Registry is DSAuth {
         emit MlnTokenChange(_mlnToken);
     }
 
+    function setNativeAsset(address _nativeAsset) auth {
+        nativeAsset = _nativeAsset;
+        emit NativeAssetChange(_nativeAsset);
+    }
+
     function setEngine(address _engine) auth {
         engine = _engine;
         emit EngineChange(_engine);
@@ -187,6 +198,7 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
+        uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
@@ -196,6 +208,7 @@ contract Registry is DSAuth {
         asset.symbol = _symbol;
         asset.decimals = _decimals;
         asset.url = _url;
+        asset.reserveMin = _reserveMin;
         asset.standards = _standards;
         asset.sigs = _sigs;
         emit AssetUpsert(
@@ -204,6 +217,7 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
+            _reserveMin,
             _standards,
             _sigs
         );
@@ -273,6 +287,7 @@ contract Registry is DSAuth {
     function getName(address _asset) view returns (string) { return assetInformation[_asset].name; }
     function getSymbol(address _asset) view returns (string) { return assetInformation[_asset].symbol; }
     function getDecimals(address _asset) view returns (uint) { return assetInformation[_asset].decimals; }
+    function getReserveMin(address _asset) view returns (uint) { return assetInformation[_asset].reserveMin; }
     function assetIsRegistered(address _asset) view returns (bool) { return assetInformation[_asset].exists; }
     function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)

@@ -21,7 +21,7 @@ export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 export { getStepFor } from '~/contracts/factory/calls/getStepFor';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-export { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
+export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 export { isAddress } from '~/utils/checks/isAddress';
 export { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 export { managersToHubs } from '~/contracts/factory/calls/managersToHubs';

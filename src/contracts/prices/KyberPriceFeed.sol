@@ -42,7 +42,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     /// @dev Stores zero as a convention for invalid price
     function update() {
-        require(msg.sender == REGISTRY.owner());
+        require(msg.sender == REGISTRY.owner(), "Only registry owner can call");
         address[] memory assets = REGISTRY.getRegisteredAssets();
         for (uint i; i < assets.length; i++) {
             bool isValid;
@@ -136,31 +136,35 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return getReferencePriceInfo(QUOTE_ASSET, ofAsset);
     }
 
+    /// @dev Get Kyber representation of ETH if necessary
+    function getKyberMaskAsset(address _asset) returns (address) {
+        if (_asset == REGISTRY.nativeAsset()) {
+            return KYBER_ETH_TOKEN;
+        }
+        return _asset;
+    }
+
     function getKyberPrice(address _baseAsset, address _quoteAsset)
         public
         view
         returns (bool isValid, uint kyberPrice)
     {
-        if (_baseAsset == QUOTE_ASSET) {
-            _baseAsset = KYBER_ETH_TOKEN;
-        }
-        if (_quoteAsset == QUOTE_ASSET) {
-            _quoteAsset = KYBER_ETH_TOKEN;
-        }
-        // TODO: 10 ** 10 some random value for now
+        address maskedBaseAsset = getKyberMaskAsset(_baseAsset);
+        address maskedQuoteAsset = getKyberMaskAsset(_quoteAsset);
+
         uint bidRate;
         uint bidRateOfReversePair;
-        KyberNetworkProxy netProxy = KyberNetworkProxy(KYBER_NETWORK_PROXY);
-        (bidRate,) = netProxy.getExpectedRate(
-            ERC20Clone(_baseAsset),
-            ERC20Clone(_quoteAsset),
-            10 ** 10
+        (bidRate,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+            ERC20Clone(maskedBaseAsset),
+            ERC20Clone(maskedQuoteAsset),
+            REGISTRY.getReserveMin(maskedBaseAsset)
         );
-        (bidRateOfReversePair,) = netProxy.getExpectedRate(
-            ERC20Clone(_quoteAsset),
-            ERC20Clone(_baseAsset),
-            10 ** 10
+        (bidRateOfReversePair,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+            ERC20Clone(maskedQuoteAsset),
+            ERC20Clone(maskedBaseAsset),
+            REGISTRY.getReserveMin(maskedQuoteAsset)
         );
+
         if (bidRate == 0 || bidRateOfReversePair == 0) {
             return (false, 0);  // return early and avoid revert
         }
@@ -174,14 +178,13 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint averagePriceFromKyber = add(bidRate, askRate) / 2;
         kyberPrice = mul(
             averagePriceFromKyber,
-            10 ** ERC20Clone(_quoteAsset).decimals()
+            10 ** ERC20Clone(_quoteAsset).decimals() // use original quote decimals (not defined on mask)
         ) / 10 ** KYBER_PRECISION;
 
-        isValid =
-            spreadFromKyber <= MAX_SPREAD &&
-            averagePriceFromKyber != 0;
-
-        return (isValid, kyberPrice);
+        return (
+            spreadFromKyber <= MAX_SPREAD && averagePriceFromKyber != 0,
+            kyberPrice
+        );
     }
 
     /**
@@ -214,6 +217,10 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
         uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
         uint baseDecimals = ERC20Clone(_baseAsset).decimals();
+
+        if (prices[_quoteAsset] == 0) {
+            return (false, 0, 0);  // return early and avoid revert
+        }
 
         referencePrice = mul(
             prices[_baseAsset],

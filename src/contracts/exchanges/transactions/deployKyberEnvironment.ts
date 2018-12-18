@@ -48,7 +48,7 @@ export const deployKyberEnvironment = async (
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();
-  const validRateDurationInBlocks = 50;
+  const validRateDurationInBlocks = 5000;
   const precisionUnits = new BigNumber(10).pow(18).toFixed();
   const maxTotalImbalance = new BigNumber(maxPerBlockImbalance)
     .mul(12)

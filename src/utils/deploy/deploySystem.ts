@@ -26,6 +26,7 @@ import { thirdPartyContracts } from './deployThirdParty';
 import { getContract } from '~/utils/solidity/getContract';
 import { Address } from '@melonproject/token-math/address';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
+import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
 import { setEngine } from '~/contracts/version/transactions/setEngine';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
@@ -154,6 +155,10 @@ export const deploySystem = async (
     adoptedContracts.registry || (await deployRegistry(environment));
 
   if (!adoptedContracts.registry) {
+    await setNativeAsset(environment, contracts.registry, {
+      address: thirdPartyContracts.tokens.find(t => t.symbol === 'WETH')
+        .address,
+    });
     await setMlnToken(environment, contracts.registry, {
       address: thirdPartyContracts.tokens.find(t => t.symbol === 'MLN').address,
     });
@@ -236,6 +241,7 @@ export const deploySystem = async (
       assetSymbol: asset.symbol,
       decimals: asset.decimals,
       name: '',
+      reserveMin: '1',
       sigs: [],
       standards: [],
       url: '',
