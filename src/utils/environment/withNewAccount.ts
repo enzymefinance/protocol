@@ -8,7 +8,7 @@ const withNewAccount = (environment: Environment) => {
   const account = web3Accounts.create();
 
   const signer = unsignedTransaction =>
-    account.signTransaction(unsignedTransaction);
+    account.signTransaction(unsignedTransaction).then(t => t.rawTransaction);
 
   const withWallet = {
     ...environment,

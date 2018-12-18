@@ -3,8 +3,12 @@ import web3EthAbi from 'web3-eth-abi';
 import {
   QuantityInterface,
   createQuantity,
+  greaterThan,
+  toFixed,
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
+import { add, multiply, toBI } from '@melonproject/token-math/bigInteger';
+
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
@@ -16,6 +20,7 @@ import {
 import { ensure } from '~/utils/guards/ensure';
 import { sign } from '../environment/sign';
 import { EnsureError } from '../guards/EnsureError';
+import { getBalance } from '../evm/getBalance';
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -239,6 +244,26 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         transactionArgs: prepared.transaction.arguments,
       };
 
+      const totalCost = createQuantity(
+        'ETH',
+        add(
+          toBI(melonTransaction.rawTransaction.value),
+          multiply(
+            toBI(melonTransaction.rawTransaction.gas),
+            toBI(melonTransaction.rawTransaction.gasPrice),
+          ),
+        ),
+      );
+
+      const balance = await getBalance(environment);
+
+      ensure(
+        greaterThan(balance, totalCost),
+        `Insufficent balance. Got: ${toFixed(balance)}, need: ${toFixed(
+          totalCost,
+        )}`,
+      );
+
       log(LogLevels.DEBUG, 'Transaction prepared', melonTransaction);
 
       return melonTransaction;
@@ -269,7 +294,6 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
-      // .sendTransaction(prepared.rawTransaction)
       .then(null, error => {
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
