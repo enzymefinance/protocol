@@ -69,6 +69,8 @@ yarn deploy \
   --endpoint wss://kovan.infura.io/ws/v3/YOUR-PROJECT-ID
 ```
 
+This will prompt to enter the password for the keystore file. A solution on CI would be to set the `KEYSTORE_PASSWORD` env var.
+
 ### Run an unlocked node to deploy
 
 ```sh

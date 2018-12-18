@@ -179,17 +179,18 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       LogLevels.DEBUG,
     );
 
+    const options: Options =
+      typeof optionsOrCallback === 'function'
+        ? optionsOrCallback(environment)
+        : optionsOrCallback;
+
+    if (!options.skipGuards) {
+      await guard(environment, params, contractAddress, options);
+    }
+
+    const args = await prepareArgs(environment, params, contractAddress);
+
     try {
-      const options: Options =
-        typeof optionsOrCallback === 'function'
-          ? optionsOrCallback(environment)
-          : optionsOrCallback;
-
-      if (!options.skipGuards) {
-        await guard(environment, params, contractAddress, options);
-      }
-
-      const args = await prepareArgs(environment, params, contractAddress);
       const contractInstance = getContract(
         environment,
         contract,
@@ -250,7 +251,12 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       if (e instanceof EnsureError) {
         throw e;
       } else {
-        throw new Error(`Error in prepare transaction: ${e.message}`);
+        throw new Error(
+          // tslint:disable-next-line:max-line-length
+          `Error in prepare transaction ${contract}.${name}(${args.join(
+            ',',
+          )}): ${e.message}`,
+        );
       }
     }
   };
@@ -285,20 +291,25 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         return carry;
       }
 
-      const decoded = web3EthAbi.decodeLog(
-        eventABI.inputs,
-        log.data,
-        eventABI.anonymous ? log.topics : log.topics.slice(1),
-      );
-      const keys = R.map(R.prop('name'), eventABI.inputs);
-      const picked = R.pick(keys, decoded);
+      try {
+        const decoded = web3EthAbi.decodeLog(
+          eventABI.inputs,
+          log.data !== '0x' && log.data,
+          eventABI.anonymous ? log.topics : log.topics.slice(1),
+        );
+        const keys = R.map(R.prop('name'), eventABI.inputs);
+        const picked = R.pick(keys, decoded);
 
-      return {
-        ...carry,
-        [eventABI.name]: {
-          returnValues: picked,
-        },
-      };
+        return {
+          ...carry,
+          [eventABI.name]: {
+            returnValues: picked,
+          },
+        };
+      } catch (e) {
+        console.warn('Error with parsing logs', eventABI, log, e);
+        return carry;
+      }
     }, {});
 
     receipt.events = events;

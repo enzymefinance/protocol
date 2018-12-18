@@ -10,6 +10,25 @@ const { getPrice } = require('@melonproject/token-math/price');
 const { createQuantity } = require('@melonproject/token-math/quantity');
 const { createToken } = require('@melonproject/token-math/token');
 
+const checkPeerCount = environment => {
+  let lastPeerCount;
+
+  global.setInterval(async () => {
+    const currentPeerCount = await environment.eth.net.getPeerCount();
+
+    if (lastPeerCount === undefined && currentPeerCount > 0) {
+      lastPeerCount = currentPeerCount;
+      console.log('Node has', lastPeerCount, 'peers');
+    } else if (lastPeerCount !== 0 && currentPeerCount === 0) {
+      lastPeerCount = currentPeerCount;
+      console.warn('Node has no peers!');
+    } else if (lastPeerCount === 0 && currentPeerCount > 0) {
+      lastPeerCount = currentPeerCount;
+      console.log('Found some peers:', lastPeerCount);
+    }
+  }, 5000);
+};
+
 const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
   new Promise(async (resolve, reject) => {
     try {
@@ -24,20 +43,32 @@ const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
       });
 
       if (pathToKeystore) {
+        console.log('Keystore file at:', pathToKeystore);
+
+        const keystore = require(`../${pathToKeystore}`);
+        const {
+          withKeystoreSigner,
+        } = require('../lib/utils/environment/withKeystoreSigner');
+
+        if (process.env.KEYSTORE_PASSWORD) {
+          console.log('Using KEYSTORE_PASSWORD from env vars');
+
+          const withWallet = withKeystoreSigner(environmentWithoutWallet, {
+            keystore,
+            password: process.env.KEYSTORE_PASSWORD,
+          });
+
+          return resolve(withWallet);
+        }
+
         const rl = readline.createInterface({
           input: process.stdin,
           output: process.stdout,
         });
 
-        console.log('Keystore file at:', pathToKeystore);
-
         rl.question(
           `Please type the password to unlock the keystore: `,
           password => {
-            const keystore = require(`../${pathToKeystore}`);
-            const {
-              withKeystoreSigner,
-            } = require('../lib/utils/environment/withKeystoreSigner');
             const withWallet = withKeystoreSigner(environmentWithoutWallet, {
               keystore,
               password,
@@ -128,6 +159,8 @@ program
         gasPrice: options.gasPrice || undefined,
         pathToKeystore: options.keystore || undefined,
       });
+
+      checkPeerCount(environment);
 
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||
