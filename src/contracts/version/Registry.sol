@@ -2,6 +2,7 @@ pragma solidity ^0.4.21;
 
 import "auth.sol";
 import "Hub.sol";
+import "ERC20.i.sol";
 
 contract Registry is DSAuth {
 
@@ -203,6 +204,7 @@ contract Registry is DSAuth {
         bytes4[] _sigs
     ) auth {
         require(assetInformation[_asset].exists);
+        require(_decimals == ERC20WithFields(_asset).decimals());
         Asset asset = assetInformation[_asset];
         asset.name = _name;
         asset.symbol = _symbol;
