@@ -86,7 +86,7 @@ export const constructEnvironment = ({
 }): Environment => {
   if (!endpoint && !provider) {
     throw new Error(
-      'You need to provide either a endpoint or a provider instance.',
+      'You need to provide either an endpoint or a provider instance.',
     );
   }
 

@@ -33,13 +33,18 @@ const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
   new Promise(async (resolve, reject) => {
     try {
       const {
-        initEnvironment,
-      } = require('../lib/utils/environment/initEnvironment');
+        constructEnvironment,
+      } = require('../lib/utils/environment/constructEnvironment');
 
-      const environmentWithoutWallet = initEnvironment({
+      const { cliLogger } = require('../lib/utils/environment/cliLogger');
+
+      const environmentWithoutWallet = constructEnvironment({
         endpoint,
-        gasPrice,
-        gasLimit,
+        logger: cliLogger,
+        options: {
+          gasPrice,
+          gasLimit,
+        },
       });
 
       if (pathToKeystore) {
@@ -154,7 +159,10 @@ program
 
     try {
       const environment = await getEnvironment({
-        endpoint: options.endpoint || 'http://localhost:8545',
+        endpoint:
+          options.endpoint ||
+          process.env.JSON_RPC_ENDPOINT ||
+          'http://localhost:8545',
         gasLimit: options.gas || undefined,
         gasPrice: options.gasPrice || undefined,
         pathToKeystore: options.keystore || undefined,
