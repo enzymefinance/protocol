@@ -26,21 +26,21 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     mapping (address => bool) public isInAssetList;
     uint public constant SHARES_DECIMALS = 18;
     address public NATIVE_ASSET;
-    address public QUOTE_ASSET;
-    uint public QUOTE_ASSET_DECIMALS;
+    address public DENOMINATION_ASSET;
+    uint public DENOMINATION_ASSET_DECIMALS;
     uint public DEFAULT_SHARE_PRICE;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
             _addAssetToOwnedAssets(_defaultAssets[i]);
         }
-        QUOTE_ASSET = _quoteAsset;
+        DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
-        QUOTE_ASSET_DECIMALS = ERC20WithFields(QUOTE_ASSET).decimals();
-        DEFAULT_SHARE_PRICE = 10 ** QUOTE_ASSET_DECIMALS;
+        DENOMINATION_ASSET_DECIMALS = ERC20WithFields(DENOMINATION_ASSET).decimals();
+        DEFAULT_SHARE_PRICE = 10 ** DENOMINATION_ASSET_DECIMALS;
     }
 
     function getOwnedAssetsLength() view returns (uint) {
@@ -80,7 +80,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
-    // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
+    // prices quoted in DENOMINATION_ASSET and multiplied by 10 ** assetDecimal
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
@@ -89,7 +89,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
             uint assetPrice;
             uint assetDecimals;
-            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, QUOTE_ASSET);
+            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, DENOMINATION_ASSET);
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(
                 gav,
@@ -147,15 +147,16 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             _numShares,
             calcSharePrice()
         ) / 10 ** SHARES_DECIMALS;
-        uint altAssetPerDenominationAsset;
-        (altAssetPerDenominationAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
-            QUOTE_ASSET,  // TODO: denomination asset naming
+        uint denominationAssetPriceInAltAsset;
+        (denominationAssetPriceInAltAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
+            DENOMINATION_ASSET,
             _altAsset
         );
-        return mul(
-            altAssetPerDenominationAsset,
+        uint shareCostInAltAsset = mul(
+            denominationAssetPriceInAltAsset,
             costInDenominationAsset
-        ) / 10 ** QUOTE_ASSET_DECIMALS;
+        ) / 10 ** DENOMINATION_ASSET_DECIMALS;
+        return shareCostInAltAsset;
     }
 
     /// @notice Reward all fees and perform some updates
@@ -167,17 +168,17 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     {
         updateOwnedAssets();
         uint gav;
-        uint feesInQuote;
+        uint feesInDenomination;
         uint feesInShares;
         uint nav;
         uint sharePrice;
-        (gav, feesInQuote, feesInShares, nav, ) = performCalculations();
+        (gav, feesInDenomination, feesInShares, nav, ) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
             gav: gav,
             nav: nav,
-            allocatedFees: feesInQuote,
+            allocatedFees: feesInDenomination,
             totalSupply: totalSupply,
             timestamp: block.timestamp
         });
@@ -189,7 +190,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             address asset = ownedAssets[i];
             if (
                 assetHoldings(asset) > 0 ||
-                asset == address(QUOTE_ASSET)
+                asset == address(DENOMINATION_ASSET)
             ) {
                 _addAssetToOwnedAssets(asset);
             } else {
@@ -239,15 +240,15 @@ contract AccountingFactory is Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,
-        address quoteAsset,
+        address denominationAsset,
         address nativeAsset,
         address[] defaultAssets
     );
 
-    function createInstance(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
-        address accounting = new Accounting(_hub, _quoteAsset, _nativeAsset, _defaultAssets);
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
+        address accounting = new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
-        emit NewInstance(_hub, accounting, _quoteAsset, _nativeAsset, _defaultAssets);
+        emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);
         return accounting;
     }
 }
