@@ -151,8 +151,6 @@ export const deploySystem = async (
   };
 
   const monthInSeconds = 30 * 24 * 60 * 60;
-  // Not used since deployer is assumed to be governance
-  // const governanceAddress = accounts[0];
 
   contracts.engine =
     adoptedContracts.engine ||
