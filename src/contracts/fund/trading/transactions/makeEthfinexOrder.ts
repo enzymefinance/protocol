@@ -51,7 +51,7 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
 ) => {
   const exchangeIndex = await getExchangeIndex(
     contractAddress,
-    { exchange: Exchanges.ZeroEx },
+    { exchange: Exchanges.Ethfinex },
     environment,
   );
 
