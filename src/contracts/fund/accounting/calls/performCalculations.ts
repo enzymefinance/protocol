@@ -1,6 +1,6 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getQuoteToken } from './getQuoteToken';
+import { getDenominationAsset } from './getDenominationAsset';
 import {
   createQuantity,
   QuantityInterface,
@@ -17,7 +17,10 @@ const postProcess = async (
   result,
   prepared,
 ): Promise<PerformCalculationsResult> => {
-  const quoteToken = await getQuoteToken(environment, prepared.contractAddress);
+  const quoteToken = await getDenominationAsset(
+    environment,
+    prepared.contractAddress,
+  );
   const calculations = {
     gav: createQuantity(quoteToken, result.gav),
     nav: createQuantity(quoteToken, result.nav),

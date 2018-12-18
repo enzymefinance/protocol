@@ -14,16 +14,16 @@ contract MockAccounting is Spoke {
     mapping (address => bool) public isInAssetList;
     mapping (address => uint) public held; // mock total held across all components
     mapping (address => uint) public assetGav;
-    address public QUOTE_ASSET;
+    address public DENOMINATION_ASSET;
     address public NATIVE_ASSET;
     uint public DEFAULT_SHARE_PRICE;
     uint public SHARES_DECIMALS;
 
-    constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         setOwnedAssets(_defaultAssets);
-        QUOTE_ASSET = _quoteAsset;
+        DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         SHARES_DECIMALS = 18;
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
