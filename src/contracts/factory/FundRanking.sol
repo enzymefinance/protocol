@@ -20,10 +20,9 @@ contract FundRanking {
         for (uint i = 0; i < numberOfFunds; i++) {
             address hubAddress = factory.funds(i);
             Hub hub = Hub(hubAddress);
-            Accounting accounting = Accounting(hub.accounting());
             hubs[i] = hubAddress;
-            sharePrices[i] = accounting.calcSharePrice();
-            quoteAssets[i] = accounting.QUOTE_ASSET();
+            sharePrices[i] = Accounting(hub.accounting()).calcSharePrice();
+            quoteAssets[i] = Accounting(hub.accounting()).QUOTE_ASSET();
             creationTimes[i] = hub.creationTime();
             names[i] = hub.name();
         }
