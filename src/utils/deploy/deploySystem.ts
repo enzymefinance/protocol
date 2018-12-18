@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { Exchanges, Contracts } from '~/Contracts';
+import { Exchanges } from '~/Contracts';
 
 import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
@@ -23,7 +23,6 @@ import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdap
 import { LogLevels, Environment } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { thirdPartyContracts } from './deployThirdParty';
-import { getContract } from '~/utils/solidity/getContract';
 import { Address } from '@melonproject/token-math/address';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
@@ -33,6 +32,7 @@ import { registerVersion } from '~/contracts/version/transactions/registerVersio
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 
 const pkg = require('~/../package.json');
 
@@ -230,11 +230,6 @@ export const deploySystem = async (
     });
   }
 
-  const priceSourceContract = await getContract(
-    environment,
-    Contracts.TestingPriceFeed,
-    contracts.priceSource,
-  );
   for (const asset of thirdPartyContracts.tokens) {
     await registerAsset(environment, contracts.registry, {
       assetAddress: `${asset.address}`,
@@ -246,9 +241,7 @@ export const deploySystem = async (
       standards: [],
       url: '',
     });
-    await priceSourceContract.methods
-      .setDecimals(asset.address, asset.decimals)
-      .send({ from: accounts[0] });
+    await setDecimals(environment, contracts.priceSource, asset);
   }
 
   const addresses = {
