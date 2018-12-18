@@ -20,9 +20,13 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
-import { LogLevels, Environment } from '../environment/Environment';
+import {
+  LogLevels,
+  Environment,
+  WithDeployment,
+} from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
-import { thirdPartyContracts } from './deployThirdParty';
+import { ThirdPartyContracts } from './deployThirdParty';
 import { Address } from '@melonproject/token-math/address';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
@@ -33,10 +37,10 @@ import { getVersionInformation } from '~/contracts/version/calls/getVersionInfor
 import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
+import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
 
 const pkg = require('~/../package.json');
 
-type Partial<T> = { [P in keyof T]?: T[P] };
 export interface Factories {
   accountingFactory: Address;
   feeManagerFactory: Address;
@@ -71,10 +75,15 @@ type MelonContractsDraft = Partial<MelonContracts>;
  * Deploys all contracts and checks their health
  */
 export const deploySystem = async (
-  environment: Environment,
-  thirdPartyContracts: thirdPartyContracts,
+  environmentWithoutDeployment: Environment,
+  thirdPartyContracts: ThirdPartyContracts,
   adoptedContracts: MelonContractsDraft = {},
-): Promise<Environment> => {
+): Promise<WithDeployment> => {
+  // Set thirdPartyContracts already to have them available in subsequent calls
+  const environment = {
+    ...environmentWithoutDeployment,
+    deployment: { thirdPartyContracts },
+  };
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
   const accounts = await environment.eth.getAccounts();
 
@@ -154,6 +163,11 @@ export const deploySystem = async (
   contracts.registry =
     adoptedContracts.registry || (await deployRegistry(environment));
 
+  const registryInformation = await getRegistryInformation(
+    environment,
+    contracts.registry,
+  );
+
   if (!adoptedContracts.registry) {
     await setNativeAsset(environment, contracts.registry, {
       address: thirdPartyContracts.tokens.find(t => t.symbol === 'WETH')
@@ -218,30 +232,35 @@ export const deploySystem = async (
   };
 
   for (const exchangeConfig of Object.values(exchangeConfigs)) {
-    await registerExchange(environment, contracts.registry, {
-      adapter: exchangeConfig.adapter,
-      exchange: exchangeConfig.exchange,
-      sigs: [
-        FunctionSignatures.makeOrder,
-        FunctionSignatures.takeOrder,
-        FunctionSignatures.cancelOrder,
-      ],
-      takesCustody: exchangeConfig.takesCustody,
-    });
+    const exchange = exchangeConfig.exchange.toLowerCase();
+
+    if (!registryInformation.registeredExchanges[exchange]) {
+      await registerExchange(environment, contracts.registry, {
+        adapter: exchangeConfig.adapter,
+        exchange: exchangeConfig.exchange,
+        sigs: [
+          FunctionSignatures.makeOrder,
+          FunctionSignatures.takeOrder,
+          FunctionSignatures.cancelOrder,
+        ],
+        takesCustody: exchangeConfig.takesCustody,
+      });
+    }
   }
 
   for (const asset of thirdPartyContracts.tokens) {
-    await registerAsset(environment, contracts.registry, {
-      assetAddress: `${asset.address}`,
-      assetSymbol: asset.symbol,
-      decimals: asset.decimals,
-      name: '',
-      reserveMin: '1',
-      sigs: [],
-      standards: [],
-      url: '',
-    });
-    await setDecimals(environment, contracts.priceSource, asset);
+    if (!registryInformation.registeredAssets[asset.address.toLowerCase()]) {
+      await registerAsset(environment, contracts.registry, {
+        assetAddress: `${asset.address}`,
+        assetSymbol: asset.symbol,
+        decimals: asset.decimals,
+        name: '',
+        sigs: [],
+        standards: [],
+        url: '',
+      });
+      await setDecimals(environment, contracts.priceSource, asset);
+    }
   }
 
   const addresses = {

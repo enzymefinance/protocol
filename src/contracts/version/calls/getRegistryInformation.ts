@@ -13,12 +13,14 @@ interface AssetInformation extends TokenInterface {
 }
 
 interface ExchangeInformation {
+  address: Address;
   adapter: Address;
   takesCustody: boolean;
   sigs: string[];
 }
 
 interface VersionInformation {
+  address: Address;
   name: string;
 }
 
@@ -27,9 +29,19 @@ interface RegistryInformation {
   priceSource: Address;
   mlnToken: TokenInterface;
   ethfinexWrapperRegistry: Address;
-  registeredAssets: Map<Address, AssetInformation>;
-  registeredExchanges: Map<Address, ExchangeInformation>;
-  registeredVersions: Map<Address, VersionInformation>;
+  registeredAssets: {
+    // Its easier to look up through the address string because
+    // a = Address('a')
+    // b = Address('a')
+    // a !== b // :( --> Reference comparison
+    [address: string]: AssetInformation;
+  };
+  registeredExchanges: {
+    [address: string]: ExchangeInformation;
+  };
+  registeredVersions: {
+    [address: string]: VersionInformation;
+  };
 }
 
 const postProcess = async (environment, result, prepared) => {
@@ -52,9 +64,9 @@ const postProcess = async (environment, result, prepared) => {
       priceSource: new Address(
         await registryContract.methods.priceSource().call(),
       ),
-      registeredAssets: new Map(),
-      registeredExchanges: new Map(),
-      registeredVersions: new Map(),
+      registeredAssets: {},
+      registeredExchanges: {},
+      registeredVersions: {},
     };
 
     const registeredAssets = await registryContract.methods
@@ -72,14 +84,15 @@ const postProcess = async (environment, result, prepared) => {
         .assetInformation(asset)
         .call();
 
-      registryInformation.registeredAssets.set(new Address(asset), {
+      registryInformation.registeredAssets[asset.toLowerCase()] = {
+        address: asset,
         decimals: assetInfo.decimals,
         name: assetInfo.name,
         sigs: assetInfo.sigs,
         standards: assetInfo.standards,
         symbol: assetInfo.symbol,
         url: assetInfo.url,
-      });
+      };
     }
 
     for (const exchange of registeredExchanges) {
@@ -87,11 +100,12 @@ const postProcess = async (environment, result, prepared) => {
         .exchangeInformation(exchange)
         .call();
 
-      registryInformation.registeredExchanges.set(new Address(exchange), {
+      registryInformation.registeredExchanges[exchange.toLowerCase()] = {
         adapter: new Address(exchangeInfo.adapter),
+        address: new Address(exchange),
         sigs: exchangeInfo.sigs,
         takesCustody: exchangeInfo.takesCustody,
-      });
+      };
     }
 
     for (const version of registeredVersions) {
@@ -99,9 +113,10 @@ const postProcess = async (environment, result, prepared) => {
         .versionInformation(version)
         .call();
 
-      registryInformation.registeredVersions.set(new Address(version), {
+      registryInformation.registeredVersions[version.toLowerCase()] = {
+        address: new Address(version),
         name: versionInfo.name,
-      });
+      };
     }
 
     return registryInformation;
