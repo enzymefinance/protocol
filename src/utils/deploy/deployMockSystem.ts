@@ -1,11 +1,15 @@
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import {
+  deployWETH9,
+  deployToken,
+} from '~/contracts/dependencies/token/transactions/deploy';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { LogLevels } from '../environment/Environment';
 import { Environment } from '~/utils/environment/Environment';
+import { BigInteger, power } from '@melonproject/token-math/bigInteger';
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
@@ -34,18 +38,20 @@ export const deployMockSystem = async (
   const accounts = await env.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
-  const wethTokenAddress = await deployToken(env, 'ETH');
+  const wethTokenAddress = await deployWETH9(env);
   const mlnTokenAddress = await deployToken(env, 'MLN');
   const baseTokenAddress = mlnTokenAddress;
   const quoteTokenAddress = wethTokenAddress;
   const quoteToken = await getToken(env, quoteTokenAddress);
   const baseToken = await getToken(env, baseTokenAddress);
   const mln = await getContract(env, Contracts.StandardToken, mlnTokenAddress);
-  const weth = await getContract(
-    env,
-    Contracts.StandardToken,
-    wethTokenAddress,
-  );
+  const weth = await getContract(env, Contracts.WETH9, wethTokenAddress);
+
+  // Deposit Ether to get WETH Tokens
+  const depositAmount = power(new BigInteger(10), new BigInteger(24));
+  await weth.methods
+    .deposit()
+    .send({ from: env.wallet.address, value: `${depositAmount}` });
 
   const priceSource = await deployAndGetContract(env, priceSourceContract, [
     quoteToken.address.toString(),

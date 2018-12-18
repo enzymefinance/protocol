@@ -48,7 +48,7 @@ export const deployKyberEnvironment = async (
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();
-  const validRateDurationInBlocks = 50;
+  const validRateDurationInBlocks = 500;
   const precisionUnits = new BigNumber(10).pow(18).toFixed();
   const maxTotalImbalance = new BigNumber(maxPerBlockImbalance)
     .mul(12)
@@ -204,7 +204,7 @@ export const deployKyberEnvironment = async (
   await environment.eth.sendTransaction({
     from: deployer,
     to: kyberReserveContract.options.address,
-    value: new BigNumber(10 ** 18),
+    value: new BigNumber(10 ** 22),
   });
   await kyberReserveContract.methods
     .setContracts(

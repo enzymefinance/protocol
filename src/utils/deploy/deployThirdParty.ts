@@ -1,6 +1,10 @@
 import { Environment } from '../environment/Environment';
+import { getContract } from '~/utils/solidity/getContract';
 import { TokenInterface, createToken } from '@melonproject/token-math/token';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
+import {
+  deployToken,
+  deployWETH9,
+} from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
 import {
@@ -10,6 +14,8 @@ import {
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
+import { Contracts } from '~/Contracts';
+import { BigInteger, power } from '@melonproject/token-math/bigInteger';
 
 export interface thirdPartyContracts {
   exchanges: {
@@ -38,16 +44,29 @@ const deployThirdParty = async (
   const deployedTokens: TokenInterface[] = await tokens.reduce(
     async (carryP, current) => {
       const carry = await carryP;
-
-      const deployed = await getToken(
-        environment,
-        await deployToken(environment, current.symbol, current.decimals),
-      );
+      let deployed;
+      if (current.symbol === 'WETH') {
+        deployed = await getToken(environment, await deployWETH9(environment));
+      } else {
+        deployed = await getToken(
+          environment,
+          await deployToken(environment, current.symbol, current.decimals),
+        );
+      }
       return [...carry, deployed];
     },
     Promise.resolve([]),
   );
 
+  // Deposit WETH
+  const depositAmount = power(new BigInteger(10), new BigInteger(24));
+  await getContract(
+    environment,
+    Contracts.WETH9,
+    deployedTokens.find(t => t.symbol === 'WETH').address,
+  )
+    .methods.deposit()
+    .send({ from: environment.wallet.address, value: `${depositAmount}` });
   const zrxToken = deployedTokens.find(t => t.symbol === 'ZRX');
 
   const matchingMarket = await deployMatchingMarket(environment, {
