@@ -174,7 +174,9 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     optionsOrCallback = defaultOptions,
   ) => {
-    const log = environment.logger('melon:protocol:utils:solidity');
+    const log = environment.logger(
+      'melon:protocol:utils:solidity:transactionFactory',
+    );
 
     const options: Options =
       typeof optionsOrCallback === 'function'
@@ -261,7 +263,9 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     // prepared,
     params,
   ) => {
-    const log = environment.logger('melon:protocol:utils:solidity');
+    const log = environment.logger(
+      'melon:protocol:utils:solidity:transactionFactory',
+    );
 
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
