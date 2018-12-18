@@ -174,10 +174,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     optionsOrCallback = defaultOptions,
   ) => {
-    const debug = environment.logger(
-      'melon:protocol:utils:solidity',
-      LogLevels.DEBUG,
-    );
+    const log = environment.logger('melon:protocol:utils:solidity');
 
     const options: Options =
       typeof optionsOrCallback === 'function'
@@ -189,6 +186,8 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     }
 
     const args = await prepareArgs(environment, params, contractAddress);
+    const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
+    log(LogLevels.INFO, 'Prepare transaction', txId);
 
     try {
       const contractInstance = getContract(
@@ -238,24 +237,18 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         transactionArgs: prepared.transaction.arguments,
       };
 
-      debug('Transaction prepared', melonTransaction);
+      log(LogLevels.DEBUG, 'Transaction prepared', melonTransaction);
 
       return melonTransaction;
     } catch (e) {
-      debug(e, {
-        contract,
-        contractAddress,
-        name,
-      });
+      log(LogLevels.ERROR, txId, e);
 
       if (e instanceof EnsureError) {
         throw e;
       } else {
         throw new Error(
           // tslint:disable-next-line:max-line-length
-          `Error in prepare transaction ${contract}.${name}(${args.join(
-            ',',
-          )}): ${e.message}`,
+          `Error in prepare transaction ${txId}): ${e.message}`,
         );
       }
     }
@@ -267,12 +260,8 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     signedTransactionData,
     // prepared,
     params,
-    options = defaultOptions,
   ) => {
-    const debug = environment.logger(
-      'melon:protocol:utils:solidity',
-      LogLevels.DEBUG,
-    );
+    const log = environment.logger('melon:protocol:utils:solidity');
 
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
@@ -281,7 +270,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
 
-    debug(`Receipt for ${name}`, receipt);
+    log(LogLevels.DEBUG, `Receipt for ${name}`, receipt);
 
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
@@ -307,7 +296,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           },
         };
       } catch (e) {
-        console.warn('Error with parsing logs', eventABI, log, e);
+        log(LogLevels.WARN, 'Error with parsing logs', eventABI, log, e);
         return carry;
       }
     }, {});

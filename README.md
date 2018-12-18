@@ -147,7 +147,7 @@ const hub = await protocol.factory.managersToHubs(
 
 ### Using the logger
 
-To help debug the system, the test environment has a test logger that logs into `./logs/`. This keeps the terminal clean but also a great possibility to inspect the logs in detail. Here is how it works:
+To help debug the system, the test environment has loggers that log into `./logs/`. This keeps the terminal clean but also a great possibility to inspect the logs in detail. Here is how it works:
 
 Inside a function that has the environment, the `environment.logger` is a curried function with the following signature:
 
@@ -159,12 +159,22 @@ Inside a function that has the environment, the `environment.logger` is a currie
 This currying gives a high level of flexibility, but basically we just use this pattern:
 
 ```ts
-const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
+const log = environment.logger('melon:protocol:module');
 
 // and then use debug as you would console.log:
 
-debug('Something happened', interestingObject, ' ... and more ...', whatever);
+log(
+  LogLevels.DEBUG,
+  'Something happened',
+  interestingObject,
+  ' ... and more ...',
+  whatever,
+);
 ```
+
+Basically, `LogLevels.DEBUG` just logs into the log files and does not output to the screen. `LogLevels.INFO` logs to the console for deployment but not during tests. So INFO logs should be concise whereas DEBUG logs should be verbose. `LogLevels.WARN` and `LogLevels.ERROR` log always to the console.
+
+A consumer can obviously inject its own logger.
 
 ### Deconstruct a transaction from the transactionFactory
 

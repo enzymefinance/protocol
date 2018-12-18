@@ -26,7 +26,7 @@ export type LoggerFunction = (...messages: any) => void;
 
 export type LoggerFunctionWithLevel = {
   (level: LogLevels): LoggerFunction;
-  (level: LogLevels, message: void, ...messages: any): void;
+  (level: LogLevels, message: any, ...messages: any): void;
 };
 
 export type CurriedLogger = {
