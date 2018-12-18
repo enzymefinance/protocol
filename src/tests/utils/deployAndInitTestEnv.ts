@@ -5,8 +5,8 @@ import { deploySystem } from '~/utils/deploy/deploySystem';
 
 const deployAndInitTestEnv = async (): Promise<Environment> => {
   const environment = await initTestEnvironment();
-  const testthirdParty = await deployThirdParty(environment);
-  const withDeployment = await deploySystem(environment, testthirdParty);
+  const testThirdParty = await deployThirdParty(environment);
+  const withDeployment = await deploySystem(environment, testThirdParty);
   return withDeployment;
 };
 

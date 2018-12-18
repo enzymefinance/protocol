@@ -4,6 +4,7 @@ import { Address } from '@melonproject/token-math/address';
 import { TokenInterface } from '@melonproject/token-math/token';
 import { getContract } from '~/utils/solidity/getContract';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
 interface AssetInformation extends TokenInterface {
   name?: string;
@@ -25,10 +26,10 @@ interface VersionInformation {
 }
 
 interface RegistryInformation {
-  engine: Address;
-  priceSource: Address;
-  mlnToken: TokenInterface;
-  ethfinexWrapperRegistry: Address;
+  engine?: Address;
+  priceSource?: Address;
+  mlnToken?: TokenInterface;
+  ethfinexWrapperRegistry?: Address;
   registeredAssets: {
     // Its easier to look up through the address string because
     // a = Address('a')
@@ -53,17 +54,27 @@ const postProcess = async (environment, result, prepared) => {
     );
 
     const mlnAddress = await registryContract.methods.mlnToken().call();
-    const mlnToken = await getToken(environment, mlnAddress);
+    const mlnToken = isEmptyAddress(mlnAddress)
+      ? undefined
+      : await getToken(environment, mlnAddress);
+
+    const engine = isEmptyAddress(result) ? undefined : new Address(result);
+
+    const ethfinexWrapperRegistry = await registryContract.methods
+      .ethfinexWrapperRegistry()
+      .call();
+
+    const priceSource = await registryContract.methods.priceSource().call();
 
     const registryInformation: RegistryInformation = {
-      engine: new Address(result),
-      ethfinexWrapperRegistry: new Address(
-        await registryContract.methods.ethfinexWrapperRegistry().call(),
-      ),
+      engine,
+      ethfinexWrapperRegistry: isEmptyAddress(ethfinexWrapperRegistry)
+        ? undefined
+        : new Address(ethfinexWrapperRegistry),
       mlnToken,
-      priceSource: new Address(
-        await registryContract.methods.priceSource().call(),
-      ),
+      priceSource: isEmptyAddress(priceSource)
+        ? undefined
+        : new Address(priceSource),
       registeredAssets: {},
       registeredExchanges: {},
       registeredVersions: {},
