@@ -10,7 +10,6 @@ import "Registry.sol";
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Updates and exposes price information for consuming contracts
-/// TODO: SimplePriceFeed cannot inherit PriceSourceInterface because of missing functions
 contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
 
     // TYPES

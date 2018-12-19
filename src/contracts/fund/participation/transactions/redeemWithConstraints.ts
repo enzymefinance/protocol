@@ -16,7 +16,7 @@ import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 // tslint:disable-next-line:max-line-length
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
@@ -33,9 +33,9 @@ export interface RedeemWithConstraintsResult {
 const guard = async (environment, params, contractAddress) => {
   const hub = await getHub(environment, contractAddress);
   await ensureIsNotShutDown(environment, hub);
-  const settings = await getSettings(environment, hub);
-  const fundToken = await getToken(environment, settings.sharesAddress);
-  const balance = await balanceOf(environment, settings.sharesAddress, {
+  const routes = await getRoutes(environment, hub);
+  const fundToken = await getToken(environment, routes.sharesAddress);
+  const balance = await balanceOf(environment, routes.sharesAddress, {
     address: environment.wallet.address,
   });
   const shareQuantity = createQuantity(fundToken, `${params.sharesQuantity}`);

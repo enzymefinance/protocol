@@ -16,7 +16,7 @@ import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakeP
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { Exchanges } from '~/Contracts';
@@ -35,7 +35,7 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   contractAddress,
 ) => {
   const hubAddress = await getHub(environment, contractAddress);
-  const { vaultAddress } = await getSettings(environment, hubAddress);
+  const { vaultAddress } = await getRoutes(environment, hubAddress);
 
   const minBalance = makerQuantity;
   await ensureSufficientBalance(environment, minBalance, vaultAddress);

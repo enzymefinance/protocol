@@ -14,22 +14,23 @@ contract MockAccounting is Spoke {
     mapping (address => bool) public isInAssetList;
     mapping (address => uint) public held; // mock total held across all components
     mapping (address => uint) public assetGav;
-    address public QUOTE_ASSET;
+    address public DENOMINATION_ASSET;
     address public NATIVE_ASSET;
     uint public DEFAULT_SHARE_PRICE;
     uint public SHARES_DECIMALS;
 
-    constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         setOwnedAssets(_defaultAssets);
-        QUOTE_ASSET = _quoteAsset;
+        DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         SHARES_DECIMALS = 18;
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
     function setOwnedAssets(address[] _assets) { ownedAssets = _assets; }
+    function getOwnedAssetsLength() returns (uint) { return ownedAssets.length; }
     function setGav(uint _gav) { gav = _gav; }
     function setNav(uint _nav) { nav = _nav; }
     function setAssetGAV(address _asset, uint _amt) { assetGav[_asset] = _amt; }
@@ -55,20 +56,12 @@ contract MockAccounting is Spoke {
         return (_quantities, _assets);
     }
 
-    function getFundHoldingsLength() view returns (uint) {
-        address[] memory addresses;
-        (, addresses) = getFundHoldings();
-        return addresses.length;
-    }
-
     function calcGav() public returns (uint) { return gav; }
     function calcNav() public returns (uint) { return nav; }
 
     function calcAssetGAV(address _a) returns (uint) { return assetGav[_a]; }
 
-    function calcUnclaimedFees() view returns (uint) { return unclaimedFees; }
-
-    function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
         return valuePerShare;
     }
 

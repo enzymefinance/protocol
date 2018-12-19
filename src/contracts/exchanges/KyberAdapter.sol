@@ -59,10 +59,10 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
 
         uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
 
-        // TODO: Maybe post policy check for PriceTolerance based on actualReceiveAmount (Overkill maybe)
-        safeAddToOwnedAssets(destToken);
-        Trading(address(this)).returnAssetToVault(destToken);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(destToken);
+        getAccounting().updateOwnedAssets();
+        getTrading().returnAssetToVault(destToken);
+        getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,

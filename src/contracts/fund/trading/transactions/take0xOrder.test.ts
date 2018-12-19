@@ -21,7 +21,7 @@ describe('take0xOrder', () => {
     //   shared.env,
     // );
 
-    shared.settings = await setupInvestedTestFund(shared.env);
+    shared.routes = await setupInvestedTestFund(shared.env);
     shared.zeroExAddress =
       shared.env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
@@ -47,14 +47,10 @@ describe('take0xOrder', () => {
   it('Take off-chain order from fund', async () => {
     const takerQuantity = createQuantity(shared.weth, 0.02);
 
-    const order = await take0xOrder(
-      shared.env,
-      shared.settings.tradingAddress,
-      {
-        signedOrder: shared.signedOrder,
-        takerQuantity,
-      },
-    );
+    const order = await take0xOrder(shared.env, shared.routes.tradingAddress, {
+      signedOrder: shared.signedOrder,
+      takerQuantity,
+    });
 
     expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
   });

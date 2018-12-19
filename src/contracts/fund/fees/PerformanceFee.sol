@@ -7,12 +7,12 @@ import "Hub.sol";
 import "Shares.sol";
 import "math.sol";
 
-// TODO: think about third function on interface that conditionally updates but is also aware of fee amount
 contract PerformanceFee is DSMath, Fee {
 
     event HighWaterMarkUpdate(uint hwm);
 
-    uint public DIVISOR = 10 ** 18;
+    uint public constant DIVISOR = 10 ** 18;
+    uint public constant INITIAL_SHARE_PRICE = 10 ** 18;
 
     mapping(address => uint) public highWaterMark;
     mapping(address => uint) public lastPayoutTime;
@@ -20,13 +20,22 @@ contract PerformanceFee is DSMath, Fee {
     mapping(address => uint) public performanceFeePeriod;
 
 
+    /// @notice Sets initial state of the fee for a user
+    function initializeForUser(uint feeRate, uint feePeriod) external {
+        require(lastPayoutTime[msg.sender] == 0, "Already initialized");
+        performanceFeeRate[msg.sender] == feeRate;
+        performanceFeePeriod[msg.sender] = feePeriod;
+        highWaterMark[msg.sender] = INITIAL_SHARE_PRICE;
+        lastPayoutTime[msg.sender] = block.timestamp;
+    }
+
     /// @notice Assumes management fee is zero
     function feeAmount() public view returns (uint feeInShares) {
         Hub hub = FeeManager(msg.sender).hub();
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
         uint gav = accounting.calcGav();
-        uint gavPerShare = shares.totalSupply() > 0 ? accounting.calcValuePerShare(gav, shares.totalSupply()) 
+        uint gavPerShare = shares.totalSupply() > 0 ? accounting.valuePerShare(gav, shares.totalSupply())
             : accounting.DEFAULT_SHARE_PRICE();
         if (gavPerShare > highWaterMark[msg.sender] && gav != 0) {
             uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
@@ -43,16 +52,6 @@ contract PerformanceFee is DSMath, Fee {
         return feeInShares;
     }
 
-    function initializeForUser(uint feeRate, uint feePeriod) external {
-        require(lastPayoutTime[msg.sender] == 0, "Already initialized");
-        performanceFeeRate[msg.sender] == feeRate;
-        performanceFeePeriod[msg.sender] = feePeriod;
-        highWaterMark[msg.sender] = 10 ** 18; // Assumes starting share price is 10 ** 18
-        lastPayoutTime[msg.sender] = block.timestamp;
-    }
-
-    // TODO: avoid replication of variables between this and feeAmount
-    // TODO: avoid running everything twice when calculating & claiming fees
     function updateState() external {
         require(lastPayoutTime[msg.sender] != 0, "Not initialized");
         Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());

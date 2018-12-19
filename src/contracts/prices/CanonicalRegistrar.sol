@@ -32,8 +32,6 @@ contract CanonicalRegistrar is DSThing, DBC {
         bool takesCustody; // True in case of exchange implementation which requires  are approved when an order is made instead of transfer
         bytes4[] functionSignatures; // Whitelisted function signatures that can be called using `useExternalFunction` in Fund contract. Note: Adhere to a naming convention for `Fund<->ExchangeAdapter` as much as possible. I.e. name same concepts with the same functionSignature.
     }
-    // TODO: populate each field here
-    // TODO: add whitelistFunction function
 
     // FIELDS
 
@@ -166,7 +164,6 @@ contract CanonicalRegistrar is DSThing, DBC {
         exchange.functionSignatures = inputFunctionSignatures;
     }
 
-    // TODO: check max size of array before remaking this becomes untenable
     /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
     /// @param ofAsset address for which specific information is requested

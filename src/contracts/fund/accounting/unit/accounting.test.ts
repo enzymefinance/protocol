@@ -39,9 +39,9 @@ describe('accounting', () => {
       ).resolves.toBe(true);
     }
 
-    await expect(shared.accounting.methods.QUOTE_ASSET().call()).resolves.toBe(
-      shared.mockQuoteAsset,
-    );
+    await expect(
+      shared.accounting.methods.DENOMINATION_ASSET().call(),
+    ).resolves.toBe(shared.mockQuoteAsset);
     await expect(shared.accounting.methods.NATIVE_ASSET().call()).resolves.toBe(
       shared.mockNativeAsset,
     );
@@ -56,7 +56,7 @@ describe('accounting', () => {
 
     expect(initialCalculations.gav).toBe('0');
     expect(initialCalculations.unclaimedFees).toBe('0');
-    expect(initialCalculations.feesShareQuantity).toBe('0');
+    expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe('0');
     expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
   });
@@ -102,7 +102,7 @@ describe('accounting', () => {
 
     expect(initialCalculations.gav).toBe(tokenQuantity);
     expect(initialCalculations.unclaimedFees).toBe('0');
-    expect(initialCalculations.feesShareQuantity).toBe('0');
+    expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe(tokenQuantity);
     // Since there is no investment yet
     expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);

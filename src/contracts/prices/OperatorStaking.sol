@@ -46,7 +46,6 @@ contract OperatorStaking is DBC {
     uint public numStakers; // Current number of stakers (Needed because of array holes)
     ERC20 public stakingToken;
 
-    // TODO: consider renaming "operator" depending on how this is implemented
     //  (i.e. is pricefeed staking itself?)
     function OperatorStaking(
         ERC20 _stakingToken,

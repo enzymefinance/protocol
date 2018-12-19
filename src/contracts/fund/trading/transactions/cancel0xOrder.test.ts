@@ -17,7 +17,7 @@ describe('cancel0xOrder', () => {
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
-    shared.settings = await setupInvestedTestFund(shared.env);
+    shared.routes = await setupInvestedTestFund(shared.env);
 
     shared.zeroExAddress =
       shared.env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
@@ -29,7 +29,7 @@ describe('cancel0xOrder', () => {
       shared.env,
       shared.zeroExAddress,
       {
-        makerAddress: shared.settings.tradingAddress,
+        makerAddress: shared.routes.tradingAddress,
         makerQuantity: createQuantity(shared.weth, 0.05),
         takerQuantity: createQuantity(shared.mln, 1),
       },
@@ -37,13 +37,9 @@ describe('cancel0xOrder', () => {
 
     shared.signedOrder = await signOrder(shared.env, unsigned0xOrder);
 
-    const result = await make0xOrder(
-      shared.env,
-      shared.settings.tradingAddress,
-      {
-        signedOrder: shared.signedOrder,
-      },
-    );
+    const result = await make0xOrder(shared.env, shared.routes.tradingAddress, {
+      signedOrder: shared.signedOrder,
+    });
 
     expect(result).toBe(true);
   });
@@ -52,7 +48,7 @@ describe('cancel0xOrder', () => {
   it('Previously made 0x order cancelled and not takeable anymore', async () => {
     const result = await cancel0xOrder(
       shared.env,
-      shared.settings.tradingAddress,
+      shared.routes.tradingAddress,
       { signedOrder: shared.signedOrder },
     );
 

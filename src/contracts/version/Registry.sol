@@ -2,6 +2,7 @@ pragma solidity ^0.4.21;
 
 import "auth.sol";
 import "Hub.sol";
+import "ERC20.i.sol";
 
 contract Registry is DSAuth {
 
@@ -12,6 +13,7 @@ contract Registry is DSAuth {
         string symbol,
         uint decimals,
         string url,
+        uint reserveMin,
         uint[] standards,
         bytes4[] sigs
     );
@@ -28,6 +30,7 @@ contract Registry is DSAuth {
     event VersionRegistration(address indexed version);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
+    event NativeAssetChange(address indexed nativeAsset);
     event EngineChange(address indexed engine);
 
     // TYPES
@@ -37,6 +40,7 @@ contract Registry is DSAuth {
         string symbol;
         uint decimals;
         string url;
+        uint reserveMin;
         uint[] standards;
         bytes4[] sigs;
     }
@@ -65,11 +69,14 @@ contract Registry is DSAuth {
 
     mapping (address => address) public fundsToVersions;
 
+    uint public constant MAX_REGISTERED_ENTITIES = 20;
+
     address public priceSource;
     address public mlnToken;
+    address public nativeAsset;
     address public engine;
     address public ethfinexWrapperRegistry;
-    
+
     // METHODS
 
     // PUBLIC METHODS
@@ -98,9 +105,11 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
+        uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
+        require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
         require(!assetInformation[_asset].exists);
         assetInformation[_asset].exists = true;
         registeredAssets.push(_asset);
@@ -110,6 +119,7 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
+            _reserveMin,
             _standards,
             _sigs
         );
@@ -129,6 +139,7 @@ contract Registry is DSAuth {
         bool _takesCustody,
         bytes4[] _sigs
     ) auth {
+        require(registeredExchanges.length < MAX_REGISTERED_ENTITIES);
         require(!exchangeInformation[_exchange].exists);
         exchangeInformation[_exchange].exists = true;
         registeredExchanges.push(_exchange);
@@ -165,6 +176,11 @@ contract Registry is DSAuth {
         emit MlnTokenChange(_mlnToken);
     }
 
+    function setNativeAsset(address _nativeAsset) auth {
+        nativeAsset = _nativeAsset;
+        emit NativeAssetChange(_nativeAsset);
+    }
+
     function setEngine(address _engine) auth {
         engine = _engine;
         emit EngineChange(_engine);
@@ -183,15 +199,18 @@ contract Registry is DSAuth {
         string _symbol,
         uint _decimals,
         string _url,
+        uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
     ) auth {
         require(assetInformation[_asset].exists);
+        require(_decimals == ERC20WithFields(_asset).decimals());
         Asset asset = assetInformation[_asset];
         asset.name = _name;
         asset.symbol = _symbol;
         asset.decimals = _decimals;
         asset.url = _url;
+        asset.reserveMin = _reserveMin;
         asset.standards = _standards;
         asset.sigs = _sigs;
         emit AssetUpsert(
@@ -200,6 +219,7 @@ contract Registry is DSAuth {
             _symbol,
             _decimals,
             _url,
+            _reserveMin,
             _standards,
             _sigs
         );
@@ -224,7 +244,6 @@ contract Registry is DSAuth {
         );
     }
 
-    // TODO: check max size of array before remaking this becomes untenable
     /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
     /// @param _asset address for which specific information is requested
@@ -270,6 +289,7 @@ contract Registry is DSAuth {
     function getName(address _asset) view returns (string) { return assetInformation[_asset].name; }
     function getSymbol(address _asset) view returns (string) { return assetInformation[_asset].symbol; }
     function getDecimals(address _asset) view returns (uint) { return assetInformation[_asset].decimals; }
+    function getReserveMin(address _asset) view returns (uint) { return assetInformation[_asset].reserveMin; }
     function assetIsRegistered(address _asset) view returns (bool) { return assetInformation[_asset].exists; }
     function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
@@ -296,6 +316,10 @@ contract Registry is DSAuth {
             exchange.adapter,
             exchange.takesCustody
         );
+    }
+    function adapterForExchange(address _exchange) view returns (address) {
+        Exchange exchange = exchangeInformation[_exchange];
+        return exchange.adapter;
     }
     function getExchangeFunctionSignatures(address _exchange)
         view

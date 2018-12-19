@@ -5,12 +5,14 @@ import {
   deployKyberEnvironment,
   KyberEnvironment,
 } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
+import { getContract } from '~/utils/solidity/getContract';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { isAddress } from '~/utils/checks/isAddress';
-import { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
+import { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
+import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { Environment } from '~/utils/environment/Environment';
 import { Contracts } from '~/Contracts';
 import { deployContract } from '~/utils/solidity/deployContract';
@@ -37,6 +39,20 @@ describe('kyber-price-feed', () => {
       shared.env,
       Contracts.MockRegistry,
     );
+    shared.mockRegistry = await getContract(
+      shared.env,
+      Contracts.MockRegistry,
+      `${shared.mockRegistryAddress}`,
+    );
+    await shared.mockRegistry.methods
+      .setNativeAsset(shared.tokens.weth.address.toString())
+      .send({ from: `${shared.env.wallet.address}` });
+
+    for (const token of Object.values(shared.tokens)) {
+      await shared.mockRegistry.methods
+        .register(`${token['address']}`)
+        .send({ from: `${shared.env.wallet.address}` });
+    }
   });
 
   it('Deploy kyber pricefeed', async () => {
@@ -48,13 +64,18 @@ describe('kyber-price-feed', () => {
     expect(isAddress(shared.kyberPriceFeed));
   });
 
+  // it('Update kyber feed', async () => {
+  //   expect();
+  // });
+
   it('Get price', async () => {
-    const hasRecentMlnPrice = await hasRecentPrice(
+    await updateKyber(shared.env, shared.kyberPriceFeed);
+    const hasValidMlnPrice = await hasValidPrice(
       shared.env,
       shared.kyberPriceFeed,
       shared.tokens.mln,
     );
-    expect(hasRecentMlnPrice).toBe(true);
+    expect(hasValidMlnPrice).toBe(true);
 
     const mlnPrice = await getPrice(
       shared.env,

@@ -27,6 +27,12 @@ describe('trading', () => {
     shared.env = await initTestEnvironment();
     shared = Object.assign(shared, await deployMockSystem(shared.env));
     shared.user = shared.env.wallet.address;
+    for (let i = 0; i < mockExchanges.length; i = i + 1) {
+      await shared.registry.methods
+        .registerAdapterForExchange(mockExchanges[i], mockExchangeAdapters[i])
+        .send({ from: shared.user });
+    }
+
     shared.trading = getContract(
       shared.env,
       Contracts.Trading,

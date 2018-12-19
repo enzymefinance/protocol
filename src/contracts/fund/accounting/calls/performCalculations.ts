@@ -1,12 +1,12 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { getQuoteToken } from './getQuoteToken';
+import { getDenominationAsset } from './getDenominationAsset';
 import {
   createQuantity,
   QuantityInterface,
 } from '@melonproject/token-math/quantity';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getSettings } from '../../hub/calls/getSettings';
+import { getRoutes } from '../../hub/calls/getRoutes';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getPrice, PriceInterface } from '@melonproject/token-math/price';
 
@@ -21,9 +21,12 @@ const postProcess = async (
   result,
   prepared,
 ): Promise<PerformCalculationsResult> => {
-  const quoteToken = await getQuoteToken(environment, prepared.contractAddress);
+  const quoteToken = await getDenominationAsset(
+    environment,
+    prepared.contractAddress,
+  );
   const hub = await getHub(environment, prepared.contractAddress);
-  const settings = await getSettings(environment, hub);
+  const settings = await getRoutes(environment, hub);
   const fundToken = await getToken(environment, settings.sharesAddress);
 
   const calculations = {

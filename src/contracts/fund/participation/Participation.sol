@@ -7,7 +7,7 @@ import "Vault.sol";
 import "ERC20.i.sol";
 import "Factory.sol";
 import "math.sol";
-import "CanonicalPriceFeed.sol";
+import "PriceSource.i.sol";
 import "AmguConsumer.sol";
 import "Participation.i.sol";
 
@@ -61,9 +61,14 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         notShutDown
         amguPayable
         payable
-        // TODO: implement and use below modifiers
-        // pre_cond(compliance.isInvestmentPermitted(msg.sender, giveQuantity, shareQuantity))    // Compliance Module: Investment permitted
+        onlyInitialized
     {
+        PolicyManager(routes.policyManager).preValidate(
+            bytes4(sha3("requestInvestment(address)")),
+            [msg.sender, address(0), address(0), address(0), address(0)],
+            [uint(0), uint(0), uint(0)],
+            bytes32(0)
+        );
         require(
             investAllowed[investmentAsset],
             "Investment not allowed in this asset"
@@ -106,51 +111,39 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         );
         PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
-        require(
-            hasRequest(requestOwner),
-            "No request for this address"
-        );
+        require(hasRequest(requestOwner), "No request for this address");
         require(
             investAllowed[request.investmentAsset],
             "Investment not allowed in this asset"
         );
-        bool isRecent;
-        (isRecent, , ) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(request.investmentAsset);
-        require(isRecent, "Price not recent");
+        require(
+            PriceSourceInterface(routes.priceSource).hasValidPrice(request.investmentAsset),
+            "Price not valid"
+        );
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
-        // sharePrice quoted in QUOTE_ASSET and multiplied by 10 ** fundDecimals
-        uint costQuantity; // TODO: better naming after refactor (this variable is how much the shares wanted cost in total, in the desired payment token)
-        costQuantity = mul(request.requestedShares, Accounting(routes.accounting).calcSharePrice()) / 10 ** SHARES_DECIMALS;
-        // TODO: maybe allocate fees in a separate step (to come later)
-        if(request.investmentAsset != address(Accounting(routes.accounting).QUOTE_ASSET())) {
-            bool isPriceRecent;
-            uint invertedInvestmentAssetPrice;
-            uint investmentAssetDecimal;
-            (isPriceRecent, invertedInvestmentAssetPrice, investmentAssetDecimal) = CanonicalPriceFeed(routes.priceSource).getInvertedPriceInfo(request.investmentAsset);
-            // TODO: is below check needed, given the recency check a few lines above?
-            require(isPriceRecent, "Investment asset price not recent");
-            costQuantity = mul(costQuantity, invertedInvestmentAssetPrice) / 10 ** investmentAssetDecimal;
-        }
+        uint totalShareCostInInvestmentAsset = Accounting(routes.accounting)
+            .getShareCostInAsset(
+                request.requestedShares,
+                request.investmentAsset
+            );
 
         require(
-            costQuantity <= request.investmentAmount,
+            totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
 
         delete requests[requestOwner];
         require(
             ERC20(request.investmentAsset).transferFrom(
-                requestOwner, address(routes.vault), costQuantity
+                requestOwner, address(routes.vault),
+                totalShareCostInInvestmentAsset
             ),
             "Failed to transfer investment asset to vault"
         );
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-        // // TODO: this should be done somewhere else
-        if (!Accounting(routes.accounting).isInAssetList(request.investmentAsset)) {
-            Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
-        }
+        Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 
         emit RequestExecution(
             requestOwner,
@@ -184,11 +177,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     function redeemQuantity(uint shareQuantity) public {
         address[] memory assetList;
         (, assetList) = Accounting(routes.accounting).getFundHoldings();
-        redeemWithConstraints(shareQuantity, assetList); //TODO: assetList from another module
+        redeemWithConstraints(shareQuantity, assetList);
     }
 
-    // NB1: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
-    // TODO: readjust with calls and changed variable names where needed
+    // TODO: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
         Shares shares = Shares(routes.shares);
@@ -198,10 +190,15 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             "Sender does not have enough shares to fulfill request"
         );
 
-        FeeManager(routes.feeManager).rewardManagementFee();
-        uint owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
-        shares.destroyFor(msg.sender, owedPerformanceFees);
-        shares.createFor(hub.manager(), owedPerformanceFees);
+        uint owedPerformanceFees = 0;
+        if (
+            PriceSourceInterface(routes.priceSource).hasValidPrices(requestedAssets)
+        ) {
+            FeeManager(routes.feeManager).rewardManagementFee();
+            owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
+            shares.destroyFor(msg.sender, owedPerformanceFees);
+            shares.createFor(hub.manager(), owedPerformanceFees);
+        }
         uint remainingShareQuantity = sub(shareQuantity, owedPerformanceFees);
 
         address ofAsset;

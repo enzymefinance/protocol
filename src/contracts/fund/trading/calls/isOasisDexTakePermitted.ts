@@ -1,7 +1,7 @@
 import web3EthAbi from 'web3-eth-abi';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts, Exchanges } from '~/Contracts';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
@@ -17,7 +17,7 @@ const isOasisDexTakePermitted = async (
   fillTakerTokenAmount: QuantityInterface,
 ) => {
   const hubAddress = await getHub(environment, tradingContractAddress);
-  const { policyManagerAddress, tradingAddress } = await getSettings(
+  const { policyManagerAddress, tradingAddress } = await getRoutes(
     environment,
     hubAddress,
   );

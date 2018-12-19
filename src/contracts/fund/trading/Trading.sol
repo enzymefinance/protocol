@@ -73,8 +73,18 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function() public payable {}
 
     function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
-        require(Registry(routes.registry).exchangeIsRegistered(_exchange));
         require(!exchangeIsAdded[_exchange], "Exchange already added");
+        Registry registry = Registry(routes.registry);
+        require(
+            registry.exchangeIsRegistered(_exchange),
+            "Exchange is not registered"
+        );
+        address registeredAdapter;
+        registeredAdapter = registry.adapterForExchange(_exchange);
+        require(
+            registeredAdapter == _adapter,
+            "Exchange and adapter do not match"
+        );
         exchangeIsAdded[_exchange] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
@@ -111,13 +121,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
         bytes signature
     )
         public
+        onlyInitialized
     {
-        // TODO: re-enable
-        // require(
-        //     routes.registry.exchangeMethodIsAllowed(
-        //         exchanges[exchangeIndex].exchange, bytes4(keccak256(methodSignature))
-        //     )
-        // );
+        require(
+            Registry(routes.registry).exchangeMethodIsAllowed(
+                exchanges[exchangeIndex].exchange,
+                bytes4(keccak256(methodSignature))
+            )
+        );
         PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
             require(Registry(routes.registry).assetIsRegistered(
@@ -143,8 +154,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             ),
             "Delegated call to exchange failed"
         );
-        // TODO: re-enable
-        // PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
             methodSignature,
@@ -199,7 +209,6 @@ contract Trading is DSMath, Spoke, TradingInterface {
         uint[3] orderValues
     ) delegateInternal {
         // only save make/take
-        // TODO: change to more generic datastore when that shift is made generally
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
             orders.push(Order({
                 exchangeAddress: ofExchange,
@@ -228,20 +237,20 @@ contract Trading is DSMath, Spoke, TradingInterface {
                 continue;
             }
             address sellAsset;
-            uint sellQuantity;
-            (sellAsset, , sellQuantity, ) =
+            uint remainingSellQuantity;
+            (sellAsset, , remainingSellQuantity, ) =
                 ExchangeAdapter(exchanges[i].adapter)
                 .getOrder(
                     exchanges[i].exchange,
                     exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id,
                     ofAsset
                 );
-            if (sellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
+            if (remainingSellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
                 delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
             }
-            totalSellQuantity = add(totalSellQuantity, sellQuantity);
+            totalSellQuantity = add(totalSellQuantity, remainingSellQuantity);
             if (!exchanges[i].takesCustody) {
-                totalSellQuantityInApprove += sellQuantity;
+                totalSellQuantityInApprove += remainingSellQuantity;
             }
         }
         if (totalSellQuantity == 0) {
@@ -258,7 +267,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     function returnAssetToVault(address _token) public {
         require(
-            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(), 
+            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
         ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));
