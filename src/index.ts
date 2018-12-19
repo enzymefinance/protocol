@@ -52,3 +52,6 @@ export { update } from '~/contracts/prices/transactions/update';
 export {
   triggerRewardAllFees,
 } from '~/contracts/fund/fees/transactions/triggerRewardAllFees';
+export {
+  getDenominationAsset,
+} from '~/contracts/fund/accounting/calls/getDenominationAsset';
