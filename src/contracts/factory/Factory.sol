@@ -12,6 +12,7 @@ contract Factory {
     function isInstance(address _child) public returns (bool) {
         return childExists[_child];
     }
+
     // function createInstance() returns (address);
 }
 

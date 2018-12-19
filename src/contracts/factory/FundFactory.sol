@@ -11,9 +11,10 @@ import "Trading.sol";
 import "Vault.sol";
 import "Version.i.sol";
 import "AmguConsumer.sol";
+import "Factory.sol";
 
 /// @notice Creates fund routes and links them together
-contract FundFactory is AmguConsumer {
+contract FundFactory is AmguConsumer, Factory {
 
     event NewFund(
         address manager,
@@ -35,7 +36,6 @@ contract FundFactory is AmguConsumer {
     VaultFactory public vaultFactory;
 
     address[] public funds;
-    mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
     mapping (address => Hub.Routes) public managersToRoutes;
 
@@ -172,7 +172,7 @@ contract FundFactory is AmguConsumer {
     function completeSetup() step(9) amguPayable payable {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
-        hubExists[address(hub)] = true;
+        childExists[address(hub)] = true;
         hub.setSpokes([
             routes.accounting,
             routes.feeManager,
