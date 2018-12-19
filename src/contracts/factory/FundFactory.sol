@@ -38,11 +38,9 @@ contract FundFactory is AmguConsumer, Factory {
     address[] public funds;
     mapping (address => address) public managersToHubs;
     mapping (address => Hub.Routes) public managersToRoutes;
-
-    // Only used internally
     mapping (address => Settings) public managersToSettings;
-    mapping (address => uint8) public stepFor;
 
+    /// @dev Parameters stored when beginning setup
     struct Settings {
         string name;
         address[] exchanges;
@@ -57,10 +55,12 @@ contract FundFactory is AmguConsumer, Factory {
         uint[] feePeriods;
     }
 
-    modifier step(uint8 n) {
-        require(stepFor[msg.sender] == n - 1, "Invalid step");
+    modifier componentNotSet(address _component) {
+        require(
+            _component == address(0),
+            "This step has already been run"
+        );
         _;
-        stepFor[msg.sender] = n;
     }
 
     constructor(
@@ -91,8 +91,6 @@ contract FundFactory is AmguConsumer, Factory {
 
     function beginSetup(
         string _name,
-        // address _compliance,
-        // address[] _policies,
         address[] _fees,
         uint[] _feeRates,
         uint[] _feePeriods,
@@ -103,7 +101,7 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) step(1) {
+    ) componentNotSet(managersToHubs[msg.sender]) {
         require(!version.getShutDownStatus(), "Version cannot be shut down");
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
@@ -126,11 +124,24 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[msg.sender].mlnToken = mlnToken;
     }
 
-    function createAccounting() step(2) amguPayable payable {
-        managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
+    function createAccounting()
+        componentNotSet(managersToRoutes[msg.sender].accounting)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
+            managersToHubs[msg.sender],
+            managersToSettings[msg.sender].nativeAsset,
+            managersToSettings[msg.sender].quoteAsset,
+            managersToSettings[msg.sender].defaultAssets
+        );
     }
 
-    function createFeeManager() step(3) amguPayable payable {
+    function createFeeManager()
+        componentNotSet(managersToRoutes[msg.sender].feeManager)
+        amguPayable
+        payable
+    {
         managersToRoutes[msg.sender].feeManager = feeManagerFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].fees,
@@ -139,7 +150,11 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function createParticipation() step(4) amguPayable payable {
+    function createParticipation()
+        componentNotSet(managersToRoutes[msg.sender].participation)
+        amguPayable
+        payable
+    {
         managersToRoutes[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].defaultAssets,
@@ -147,16 +162,32 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function createPolicyManager() step(5) amguPayable payable {
-        managersToRoutes[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
+    function createPolicyManager()
+        componentNotSet(managersToRoutes[msg.sender].policyManager)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].policyManager = policyManagerFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function createShares() step(6) amguPayable payable {
-        managersToRoutes[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
+    function createShares()
+        componentNotSet(managersToRoutes[msg.sender].shares)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].shares = sharesFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function createTrading() step(7) amguPayable payable {
-           managersToRoutes[msg.sender].trading = tradingFactory.createInstance(
+    function createTrading()
+        componentNotSet(managersToRoutes[msg.sender].trading)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].trading = tradingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].exchanges,
             managersToSettings[msg.sender].adapters,
@@ -165,13 +196,20 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function createVault() step(8) amguPayable payable {
-        managersToRoutes[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
+    function createVault()
+        componentNotSet(managersToRoutes[msg.sender].vault)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].vault = vaultFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function completeSetup() step(9) amguPayable payable {
+    function completeSetup() amguPayable payable {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
+        require(!childExists[address(hub)], "Setup already complete");
         childExists[address(hub)] = true;
         hub.setSpokes([
             routes.accounting,
@@ -191,8 +229,6 @@ contract FundFactory is AmguConsumer, Factory {
         hub.setPermissions();
         funds.push(hub);
         Registry(registry).registerFund(address(hub));
-
-        delete managersToSettings[msg.sender];
 
         emit NewFund(
             msg.sender,
