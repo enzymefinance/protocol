@@ -162,7 +162,7 @@ test('swap ethToken for mlnToken with specific order price (minRate)', async () 
 
 test('swap mlnToken for ethToken with specific order price (minRate)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const srcAmount = power(new BigInteger(10), new BigInteger(17));
+  const srcAmount = power(new BigInteger(10), new BigInteger(16));
   const [bestRate] = Object.values(
     await s.kyberNetwork.methods
       .getExpectedRate(s.mln.options.address, kyberEthAddress, `${srcAmount}`)
@@ -198,7 +198,7 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
 });
 
 test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
-  const srcAmount = new BigInteger(10 ** 17);
+  const srcAmount = new BigInteger(10 ** 16);
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preFundEur = new BigInteger(
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
@@ -241,48 +241,48 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
   );
 
-  expect(post.fund.mln).toEqual(pre.fund.mln);
-  expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
+  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
   expect(postFundEur).toEqual(add(preFundEur, expectedEur));
 });
 
-// test.serial('takeOrder fails if minPrice is not satisfied', async t => {
-//   const srcAmount = new BigNumber(10 ** 17);
-//   const destAmount = srcAmount
-//     .mul(mlnPrice)
-//     .div(precisionUnits)
-//     .mul(2);
-//   await t.throws(
-//     fund.trading.methods
-//       .callOnExchange(
-//         0,
-//         takeOrderSignature,
-//         [
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//           mlnToken.options.address,
-//           ethToken.options.address,
-//           NULL_ADDRESS,
-//           NULL_ADDRESS,
-//         ],
-//         [
-//           srcAmount.toFixed(0),
-//           destAmount.toFixed(0),
-//           0,
-//           0,
-//           0,
-//           0,
-//           destAmount.toFixed(0),
-//           0,
-//         ],
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//         web3.utils.padLeft('0x0', 64),
-//       )
-//       .send({ from: manager, gas: config.gas }),
-//   );
-// });
+test('takeOrder fails if minPrice is not satisfied', async () => {
+  const srcAmount = new BigInteger(10 ** 17);
+  const [bestRate] = Object.values(
+    await s.kyberNetwork.methods
+      .getExpectedRate(
+        s.mln.options.address,
+        s.eur.options.address,
+        `${srcAmount}`,
+      )
+      .call(),
+  ).map(e => new BigInteger(e));
+  const destAmount = divide(
+    multiply(multiply(srcAmount, bestRate), new BigInteger(2)),
+    precisionUnits,
+  );
+  expect(
+    s.fund.trading.methods
+      .callOnExchange(
+        0,
+        takeOrderSignature,
+        [
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+          s.mln.options.address,
+          s.eur.options.address,
+          NULL_ADDRESS,
+          NULL_ADDRESS,
+        ],
+        [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+        randomHexOfSize(20),
+        '0x0',
+        '0x0',
+        '0x0',
+      )
+      .send({ from: s.manager, gas: s.gas }),
+  ).resolves.toThrow();
+});
 
 // test.serial(
 //   'risk management prevents swap in the case of bad kyber network price',

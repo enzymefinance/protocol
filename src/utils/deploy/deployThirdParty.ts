@@ -66,13 +66,20 @@ const deployThirdParty = async (
     deployedTokens.find(t => t.symbol === 'WETH').address,
   )
     .methods.deposit()
-    .send({ from: environment.wallet.address, value: `${depositAmount}` });
+    .send({
+      from: environment.wallet.address,
+      value: `${depositAmount}`,
+    });
+
   const zrxToken = deployedTokens.find(t => t.symbol === 'ZRX');
 
   const matchingMarket = await deployMatchingMarket(environment, {
     tokens: deployedTokens,
   });
-  const kyber = await deployKyberEnvironment(environment, deployedTokens);
+  const kyber = await deployKyberEnvironment(environment, [
+    deployedTokens.find(t => t.symbol === 'MLN'),
+    deployedTokens.find(t => t.symbol === 'EUR'),
+  ]);
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
 
   return {
