@@ -163,8 +163,8 @@ program
           options.endpoint ||
           process.env.JSON_RPC_ENDPOINT ||
           'http://localhost:8545',
-        gasLimit: options.gas || undefined,
-        gasPrice: options.gasPrice || undefined,
+        gasLimit: options.gas || '8000000',
+        gasPrice: options.gasPrice || '2000000000',
         pathToKeystore: options.keystore || undefined,
       });
 

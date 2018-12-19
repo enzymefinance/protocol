@@ -85,9 +85,8 @@ export const deploySystem = async (
     deployment: { thirdPartyContracts },
   };
   const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
-  const accounts = await environment.eth.getAccounts();
 
-  debug('Deploying system from', accounts[0], {
+  debug('Deploying system from', environment.wallet.address, {
     adoptedContracts,
     thirdPartyContracts,
   });
@@ -122,7 +121,7 @@ export const deploySystem = async (
       (await deployPriceTolerance(environment, 10)),
     userWhitelist:
       R.path(['policies', 'userWhitelist'], adoptedContracts) ||
-      (await deployUserWhitelist(environment, [accounts[0]])),
+      (await deployUserWhitelist(environment, [environment.wallet.address])),
   };
 
   // Factories
