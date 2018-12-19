@@ -14,6 +14,7 @@ import { requestInvestment } from '~/contracts/fund/participation/transactions/r
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { Environment } from '~/utils/environment/Environment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 const setupInvestedTestFund = async (environment: Environment) => {
   const fundName = `test-fund-${randomString()}`;
@@ -21,10 +22,10 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const {
     exchangeConfigs,
     melonContracts: { version, priceSource },
-    thirdPartyContracts,
   } = environment.deployment;
 
-  const [weth, mln] = thirdPartyContracts.tokens;
+  const weth = getTokenBySymbol(environment, 'WETH');
+  const mln = getTokenBySymbol(environment, 'MLN');
   const fees = [];
 
   await beginSetup(environment, version, {
