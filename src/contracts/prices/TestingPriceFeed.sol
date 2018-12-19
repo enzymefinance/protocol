@@ -111,18 +111,14 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (uint referencePrice, uint decimal)
     {
-        if (ofBase == ofQuote) {
-            return (
-                10 ** assetsToDecimals[ofQuote],
-                assetsToDecimals[ofQuote]
-            );
-        } else if (QUOTE_ASSET == ofQuote) {
-            (referencePrice, decimal) = getPriceInfo(ofBase);
-        } else if (QUOTE_ASSET == ofBase) {
-            (referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
-        } else {
-            revert("One of the parameters must be quoteAsset");
-        }
+        uint quoteDecimals = assetsToDecimals[ofQuote];
+
+        referencePrice = mul(
+            assetsToPrices[ofBase].price,
+            10 ** quoteDecimals
+        ) / assetsToPrices[ofQuote].price;
+
+        return (referencePrice, quoteDecimals);
     }
 
     function getOrderPriceInfo(
