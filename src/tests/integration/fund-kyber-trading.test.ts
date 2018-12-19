@@ -1,19 +1,4 @@
-import {
-  makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature,
-} from '~/utils/constants/orderSignatures';
-import {
-  createOrder,
-  signOrder,
-  approveOrder,
-  isValidSignatureOffChain,
-} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-
-import { fillOrder } from '~/contracts/exchanges/third-party/0x';
-import { orderHashUtils } from '@0x/order-utils';
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
+import { takeOrderSignature } from '~/utils/constants/orderSignatures';
 import {
   BigInteger,
   add,
@@ -40,7 +25,6 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 // import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 
 // mock data
@@ -181,7 +165,7 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
   const srcAmount = power(new BigInteger(10), new BigInteger(17));
   const [bestRate] = Object.values(
     await s.kyberNetwork.methods
-      .findBestRate(s.mln.options.address, kyberEthAddress, `${srcAmount}`)
+      .getExpectedRate(s.mln.options.address, kyberEthAddress, `${srcAmount}`)
       .call(),
   ).map(e => new BigInteger(e));
   const destAmount = divide(multiply(srcAmount, bestRate), precisionUnits);
@@ -209,19 +193,19 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
     new BigInteger(10 ** 18),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
-  expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedWeth));
+  expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
+  expect(post.fund.weth).toEqual(add(pre.fund.weth, expectedWeth));
 });
 
 test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
-  const fundPreEur = new BigInteger(
-    await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
-  );
   const srcAmount = new BigInteger(10 ** 17);
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const [, bestRate] = Object.values(
+  const preFundEur = new BigInteger(
+    await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
+  );
+  const [bestRate] = Object.values(
     await s.kyberNetwork.methods
-      .findBestRate(
+      .getExpectedRate(
         s.mln.options.address,
         s.eur.options.address,
         `${srcAmount}`,
@@ -241,28 +225,25 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [srcAmount, destAmount, 0, 0, 0, 0, destAmount, 0],
+      [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
       '0x0',
     )
     .send({ from: s.manager, gas: s.gas });
-  const expectedEurToken = new BigNumber(srcAmount)
-    .mul(bestRate)
-    .div(new BigNumber(10 ** 18));
-  const fundPostEur = new BigNumber(
-    await eurToken.methods.balanceOf(fund.vault.options.address).call(),
+  const expectedEur = divide(
+    multiply(srcAmount, bestRate),
+    new BigInteger(10 ** 18),
   );
-  const post = await getAllBalances(deployed, accounts, fund);
-  t.deepEqual(post.fund.MlnToken, pre.fund.MlnToken.sub(srcAmount));
-  t.deepEqual(fundPostEur, fundPreEur.add(expectedEurToken));
-  t.deepEqual(post.fund.EthToken, pre.fund.EthToken);
-  t.deepEqual(post.investor.MlnToken, pre.investor.MlnToken);
-  t.deepEqual(post.investor.EthToken, pre.investor.EthToken);
-  t.deepEqual(post.investor.ether, pre.investor.ether);
-  t.deepEqual(post.manager.EthToken, pre.manager.EthToken);
-  t.deepEqual(post.manager.MlnToken, pre.manager.MlnToken);
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postFundEur = new BigInteger(
+    await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
+  );
+
+  expect(post.fund.mln).toEqual(pre.fund.mln);
+  expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
+  expect(postFundEur).toEqual(add(preFundEur, expectedEur));
 });
 
 // test.serial('takeOrder fails if minPrice is not satisfied', async t => {
