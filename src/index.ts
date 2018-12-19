@@ -49,3 +49,6 @@ export { createTrading } from '~/contracts/factory/transactions/createTrading';
 export { createVault } from '~/contracts/factory/transactions/createVault';
 export { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 export { update } from '~/contracts/prices/transactions/update';
+export {
+  triggerRewardAllFees,
+} from '~/contracts/fund/fees/transactions/triggerRewardAllFees';

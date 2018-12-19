@@ -2,12 +2,99 @@
 // require('babel-polyfill');
 const R = require('ramda');
 const path = require('path');
+const readline = require('readline');
 const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 const { getPrice } = require('@melonproject/token-math/price');
 const { createQuantity } = require('@melonproject/token-math/quantity');
 const { createToken } = require('@melonproject/token-math/token');
+
+const checkPeerCount = environment => {
+  let lastPeerCount;
+
+  global.setInterval(async () => {
+    const currentPeerCount = await environment.eth.net.getPeerCount();
+
+    if (lastPeerCount === undefined && currentPeerCount > 0) {
+      lastPeerCount = currentPeerCount;
+      console.log('Node has', lastPeerCount, 'peers');
+    } else if (lastPeerCount !== 0 && currentPeerCount === 0) {
+      lastPeerCount = currentPeerCount;
+      console.warn('Node has no peers!');
+    } else if (lastPeerCount === 0 && currentPeerCount > 0) {
+      lastPeerCount = currentPeerCount;
+      console.log('Found some peers:', lastPeerCount);
+    }
+  }, 5000);
+};
+
+const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const {
+        constructEnvironment,
+      } = require('../lib/utils/environment/constructEnvironment');
+
+      const { cliLogger } = require('../lib/utils/environment/cliLogger');
+
+      const environmentWithoutWallet = constructEnvironment({
+        endpoint,
+        logger: cliLogger,
+        options: {
+          gasPrice,
+          gasLimit,
+        },
+      });
+
+      if (pathToKeystore) {
+        console.log('Keystore file at:', pathToKeystore);
+
+        const keystore = require(`../${pathToKeystore}`);
+        const {
+          withKeystoreSigner,
+        } = require('../lib/utils/environment/withKeystoreSigner');
+
+        if (process.env.KEYSTORE_PASSWORD) {
+          console.log('Using KEYSTORE_PASSWORD from env vars');
+
+          const withWallet = withKeystoreSigner(environmentWithoutWallet, {
+            keystore,
+            password: process.env.KEYSTORE_PASSWORD,
+          });
+
+          return resolve(withWallet);
+        }
+
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        rl.question(
+          `Please type the password to unlock the keystore: `,
+          password => {
+            const withWallet = withKeystoreSigner(environmentWithoutWallet, {
+              keystore,
+              password,
+            });
+            rl.close();
+
+            resolve(withWallet);
+          },
+        );
+      } else {
+        const {
+          withUnlockedSigner,
+        } = require('../lib/utils/environment/withUnlockedSigner');
+
+        const withWallet = await withUnlockedSigner(environmentWithoutWallet);
+        resolve(withWallet);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
 
 program
   .version(pkg.version, '-v, --version')
@@ -46,13 +133,11 @@ program
     '-e, --endpoint <endpoint>',
     'The JSON RPC endpoint url. By default: https://localhost:8545',
   )
+  .option('-g, --gas <number>', 'Default number of gas units to provide')
+  .option('-p, --gas-price <number>', 'Price (in wei) of each gas unit')
   .option(
-    '-g, --gas <number>',
-    'Default number of gas units to provide',
-  )
-  .option(
-    '-p, --gas-price <number>',
-    'Price (in wei) of each gas unit',
+    '-k, --keystore <pathToKeystore>',
+    'Load the deployer account from a keystore file',
   )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts (development setup).`);
@@ -68,19 +153,22 @@ program
     if (config) console.log('Loaded config from', `../${options.config}`);
 
     const {
-      initUnlockedEnvironment,
-    } = require('../lib/utils/environment/initUnlockedEnvironment');
-    const {
       deployThirdParty,
     } = require('../lib/utils/deploy/deployThirdParty');
     const { deploySystem } = require('../lib/utils/deploy/deploySystem');
 
     try {
-      const environment = await initUnlockedEnvironment({
-        endpoint: options.endpoint || 'http://localhost:8545',
+      const environment = await getEnvironment({
+        endpoint:
+          options.endpoint ||
+          process.env.JSON_RPC_ENDPOINT ||
+          'http://localhost:8545',
         gasLimit: options.gas || undefined,
         gasPrice: options.gasPrice || undefined,
+        pathToKeystore: options.keystore || undefined,
       });
+
+      checkPeerCount(environment);
 
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||

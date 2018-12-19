@@ -11,7 +11,7 @@ import {
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
-  gasPrice: '5000000000',
+  gasPrice: '2000000000',
 };
 
 const checkIpc = endpoint => {
@@ -86,9 +86,16 @@ export const constructEnvironment = ({
 }): Environment => {
   if (!endpoint && !provider) {
     throw new Error(
-      'You need to provide either a endpoint or a provider instance.',
+      'You need to provide either an endpoint or a provider instance.',
     );
   }
+
+  logger(
+    'melon:protocol:utils:environment',
+    LogLevels.DEBUG,
+    'Construct environment',
+    { endpoint, provider: !!provider, deployment, wallet, track, options },
+  );
 
   return {
     deployment,

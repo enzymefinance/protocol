@@ -35,6 +35,7 @@
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
+    "clean:logs": "rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
     "deploy": "node bin/melon.js deploy",
     "deploy:dev": "node bin/melon.js deploy -t EUR:2,ANT,KNT",
@@ -86,8 +87,6 @@
     "tslint-config-airbnb": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.1.1",
-    "web3": "^1.0.0-beta.37",
-    "web3-eth-accounts": "^1.0.0-beta.37",
     "winston": "^3.1.0"
   },
   "dependencies": {
@@ -102,6 +101,7 @@
     "solc": "^0.4.25",
     "web3-eth": "1.0.0-beta.37",
     "web3-eth-abi": "1.0.0-beta.37",
+    "web3-eth-accounts": "^1.0.0-beta.37",
     "web3-utils": "1.0.0-beta.37",
     "yup": "^0.26.6",
     "zen-observable-ts": "^0.8.10"
