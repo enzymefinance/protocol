@@ -19,7 +19,7 @@ import { withDeployment } from '~/utils/environment/withDeployment';
  *       interact)
  */
 
-describe('playground', () => {
+describe.skip('playground', () => {
   beforeAll(() => {
     expect(process.env).toHaveProperty('JSON_RPC_ENDPOINT');
     expect(process.env).toHaveProperty('KEYSTORE_PASSWORD');
