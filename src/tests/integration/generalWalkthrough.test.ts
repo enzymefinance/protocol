@@ -1,5 +1,11 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
+import {
+  BigInteger,
+  power,
+  multiply,
+} from '@melonproject/token-math/bigInteger';
+
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts, Exchanges } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
@@ -31,11 +37,6 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
-import {
-  BigInteger,
-  power,
-  multiply,
-} from '@melonproject/token-math/bigInteger';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { LogLevels, Environment } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';

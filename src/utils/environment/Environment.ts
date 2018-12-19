@@ -2,7 +2,7 @@ import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
 import { MelonContracts } from '../deploy/deploySystem';
-import { thirdPartyContracts } from '../deploy/deployThirdParty';
+import { ThirdPartyContracts } from '../deploy/deployThirdParty';
 import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
 
 export type SignFunction = (
@@ -26,7 +26,7 @@ export type LoggerFunction = (...messages: any) => void;
 
 export type LoggerFunctionWithLevel = {
   (level: LogLevels): LoggerFunction;
-  (level: LogLevels, message: void, ...messages: any): void;
+  (level: LogLevels, message: any, ...messages: any): void;
 };
 
 export type CurriedLogger = {
@@ -49,7 +49,7 @@ export interface Options {
 export interface Deployment {
   exchangeConfigs: ExchangeConfigs;
   melonContracts: MelonContracts;
-  thirdPartyContracts: thirdPartyContracts;
+  thirdPartyContracts: ThirdPartyContracts;
 }
 
 export interface Environment {
@@ -58,7 +58,7 @@ export interface Environment {
   readonly wallet?: Wallet;
   readonly options: Options;
   readonly logger: CurriedLogger;
-  readonly deployment?: Deployment;
+  readonly deployment?: Partial<Deployment>;
 }
 
 export interface WithDeployment extends Environment {

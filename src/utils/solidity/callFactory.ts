@@ -1,6 +1,6 @@
 import { Observable } from 'zen-observable-ts';
 import * as R from 'ramda';
-import { Environment } from '../environment/Environment';
+import { Environment, LogLevels } from '../environment/Environment';
 import { getContract } from './getContract';
 import { TransactionArgs } from './transactionFactory';
 
@@ -48,34 +48,59 @@ const callFactory = (
   };
 
   const prepare = (environment, contractAddress, params = {}) => {
+    const log = environment.logger('melon:protocol:utils:solidity:callFactory');
     const args = prepareArgs(environment, params, contractAddress);
-    const contractInstance = getContract(
-      environment,
-      contract,
-      contractAddress,
-    );
-    const txObject = contractInstance.methods[name](...args);
-    const prepared = {
-      contractAddress,
-      params,
-      txObject,
-    };
-    return prepared;
+    const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
+
+    try {
+      log(LogLevels.INFO, 'Prepare call', txId);
+      const contractInstance = getContract(
+        environment,
+        contract,
+        contractAddress,
+      );
+
+      const txObject = contractInstance.methods[name](...args);
+
+      const prepared = {
+        contractAddress,
+        params,
+        txObject,
+      };
+      return prepared;
+    } catch (error) {
+      log(LogLevels.ERROR, txId, error);
+
+      throw new Error(
+        // tslint:disable-next-line:max-line-length
+        `Error in prepare call ${txId}): ${error.message}`,
+      );
+    }
   };
 
   const call = async (environment, prepared) => {
+    const log = environment.logger('melon:protocol:utils:solidity:callFactory');
+    const txId = `${contract}@${
+      prepared.contractAddress
+    }.${name}(${prepared.txObject.arguments.join(',')})`;
+
     let result;
     try {
       result = await prepared.txObject.call();
     } catch (error) {
-      throw new Error(
-        `Call failed. ${name}(${prepared.txObject.arguments.join(', ')}): ${
-          error.message
-        }`,
-      );
+      log(LogLevels.ERROR, txId, error);
+      throw new Error(`Call failed. ${txId}: ${error.message}`);
     }
-    const postProcessed = await postProcess(environment, result, prepared);
-    return postProcessed;
+
+    try {
+      const postProcessed = await postProcess(environment, result, prepared);
+      log(LogLevels.DEBUG, 'Call processed', txId, { result, postProcessed });
+      return postProcessed;
+    } catch (error) {
+      log(LogLevels.ERROR, txId, result, error);
+      throw error;
+      // throw new Error(`Postprocess failed. ${txId}: ${error.message}`);
+    }
   };
 
   // TODO: Possibility to specify custom filters

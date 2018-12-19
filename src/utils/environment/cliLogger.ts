@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import * as winston from 'winston';
-import { CurriedLogger, LogLevels } from '../../utils/environment/Environment';
+import { CurriedLogger, LogLevels } from './Environment';
 
 const { combine, timestamp, printf } = winston.format;
 
@@ -13,17 +13,22 @@ const logger = winston.createLogger({
   level: LogLevels.DEBUG,
   transports: [
     new winston.transports.File({
-      filename: `./logs/test-${process.pid}.log`,
+      filename: `./logs/cli-${process.pid}.log`,
     }),
     new winston.transports.File({
-      filename: './logs/test-latest.log',
+      filename: './logs/cli-latest.log',
+    }),
+    new winston.transports.Console({
+      level: LogLevels.INFO,
     }),
   ],
 });
 
-logger.debug(['melon:protocol:logger', 'init', ...process.argv].join(' '));
+logger.debug(
+  ['melon:protocol:logger', 'init cliLogger', ...process.argv].join(' '),
+);
 
-const testLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
+const cliLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
   const message = [
     `${namespace}:`,
     ...msgs.map(msg => JSON.stringify(msg, null, 2)),
@@ -32,4 +37,4 @@ const testLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
   require('debug')(namespace)(level, ...msgs);
 });
 
-export { testLogger };
+export { cliLogger };

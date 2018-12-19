@@ -3,8 +3,12 @@ import web3EthAbi from 'web3-eth-abi';
 import {
   QuantityInterface,
   createQuantity,
+  greaterThan,
+  toFixed,
 } from '@melonproject/token-math/quantity';
 import { Address } from '@melonproject/token-math/address';
+import { add, multiply, toBI } from '@melonproject/token-math/bigInteger';
+
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
@@ -16,6 +20,7 @@ import {
 import { ensure } from '~/utils/guards/ensure';
 import { sign } from '../environment/sign';
 import { EnsureError } from '../guards/EnsureError';
+import { getBalance } from '../evm/getBalance';
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -25,7 +30,7 @@ export type TransactionArgs = TransactionArg[] | any;
 // https://web3js.readthedocs.io/en/1.0/web3-eth.html#sendtransaction
 export interface UnsignedRawTransaction {
   from: string;
-  to: string;
+  to?: string;
   value?: string;
   gas?: string;
   gasPrice?: string;
@@ -174,22 +179,24 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     optionsOrCallback = defaultOptions,
   ) => {
-    const debug = environment.logger(
-      'melon:protocol:utils:solidity',
-      LogLevels.DEBUG,
+    const log = environment.logger(
+      'melon:protocol:utils:solidity:transactionFactory',
     );
 
+    const options: Options =
+      typeof optionsOrCallback === 'function'
+        ? optionsOrCallback(environment)
+        : optionsOrCallback;
+
+    if (!options.skipGuards) {
+      await guard(environment, params, contractAddress, options);
+    }
+
+    const args = await prepareArgs(environment, params, contractAddress);
+    const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
+    log(LogLevels.INFO, 'Prepare transaction', txId);
+
     try {
-      const options: Options =
-        typeof optionsOrCallback === 'function'
-          ? optionsOrCallback(environment)
-          : optionsOrCallback;
-
-      if (!options.skipGuards) {
-        await guard(environment, params, contractAddress, options);
-      }
-
-      const args = await prepareArgs(environment, params, contractAddress);
       const contractInstance = getContract(
         environment,
         contract,
@@ -237,20 +244,39 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         transactionArgs: prepared.transaction.arguments,
       };
 
-      debug('Transaction prepared', melonTransaction);
+      const totalCost = createQuantity(
+        'ETH',
+        add(
+          toBI(melonTransaction.rawTransaction.value),
+          multiply(
+            toBI(melonTransaction.rawTransaction.gas),
+            toBI(melonTransaction.rawTransaction.gasPrice),
+          ),
+        ),
+      );
+
+      const balance = await getBalance(environment);
+
+      ensure(
+        greaterThan(balance, totalCost),
+        `Insufficent balance. Got: ${toFixed(balance)}, need: ${toFixed(
+          totalCost,
+        )}`,
+      );
+
+      log(LogLevels.DEBUG, 'Transaction prepared', melonTransaction);
 
       return melonTransaction;
     } catch (e) {
-      debug(e, {
-        contract,
-        contractAddress,
-        name,
-      });
+      log(LogLevels.ERROR, txId, e);
 
       if (e instanceof EnsureError) {
         throw e;
       } else {
-        throw new Error(`Error in prepare transaction: ${e.message}`);
+        throw new Error(
+          // tslint:disable-next-line:max-line-length
+          `Error in prepare transaction ${txId}): ${e.message}`,
+        );
       }
     }
   };
@@ -261,21 +287,18 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     signedTransactionData,
     // prepared,
     params,
-    options = defaultOptions,
   ) => {
-    const debug = environment.logger(
-      'melon:protocol:utils:solidity',
-      LogLevels.DEBUG,
+    const log = environment.logger(
+      'melon:protocol:utils:solidity:transactionFactory',
     );
 
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
-      // .sendTransaction(prepared.rawTransaction)
       .then(null, error => {
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
 
-    debug(`Receipt for ${name}`, receipt);
+    log(LogLevels.DEBUG, `Receipt for ${name}`, receipt);
 
     const events = receipt.logs.reduce((carry, log) => {
       const eventABI = eventSignatureABIMap[log.topics[0]];
@@ -285,20 +308,25 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         return carry;
       }
 
-      const decoded = web3EthAbi.decodeLog(
-        eventABI.inputs,
-        log.data,
-        eventABI.anonymous ? log.topics : log.topics.slice(1),
-      );
-      const keys = R.map(R.prop('name'), eventABI.inputs);
-      const picked = R.pick(keys, decoded);
+      try {
+        const decoded = web3EthAbi.decodeLog(
+          eventABI.inputs,
+          log.data !== '0x' && log.data,
+          eventABI.anonymous ? log.topics : log.topics.slice(1),
+        );
+        const keys = R.map(R.prop('name'), eventABI.inputs);
+        const picked = R.pick(keys, decoded);
 
-      return {
-        ...carry,
-        [eventABI.name]: {
-          returnValues: picked,
-        },
-      };
+        return {
+          ...carry,
+          [eventABI.name]: {
+            returnValues: picked,
+          },
+        };
+      } catch (e) {
+        log(LogLevels.WARN, 'Error with parsing logs', eventABI, log, e);
+        return carry;
+      }
     }, {});
 
     receipt.events = events;
