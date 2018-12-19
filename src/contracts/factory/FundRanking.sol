@@ -15,17 +15,17 @@ contract FundRanking {
         uint[] memory sharePrices = new uint[](numberOfFunds);
         uint[] memory creationTimes = new uint[](numberOfFunds);
         string[] memory names = new string[](numberOfFunds);
-        address[] memory quoteAssets = new address[](numberOfFunds);
+        address[] memory denominationAssets = new address[](numberOfFunds);
 
         for (uint i = 0; i < numberOfFunds; i++) {
             address hubAddress = factory.funds(i);
             Hub hub = Hub(hubAddress);
             hubs[i] = hubAddress;
             sharePrices[i] = Accounting(hub.accounting()).calcSharePrice();
-            quoteAssets[i] = Accounting(hub.accounting()).QUOTE_ASSET();
+            denominationAssets[i] = Accounting(hub.accounting()).DENOMINATION_ASSET();
             creationTimes[i] = hub.creationTime();
             names[i] = hub.name();
         }
-        return (hubs, sharePrices, creationTimes, names, quoteAssets);
+        return (hubs, sharePrices, creationTimes, names, denominationAssets);
     }
 }
