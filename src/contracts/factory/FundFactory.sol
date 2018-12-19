@@ -38,6 +38,7 @@ contract FundFactory is AmguConsumer {
     mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
     mapping (address => Hub.Routes) public managersToRoutes;
+
     // Only used internally
     mapping (address => Settings) public managersToSettings;
     mapping (address => uint8) public stepFor;
