@@ -18,7 +18,6 @@ export { getPrice } from '~/contracts/prices/calls/getPrice';
 export { getPrices } from '~/contracts/prices/calls/getPrices';
 export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
 export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
-export { getStepFor } from '~/contracts/factory/calls/getStepFor';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';

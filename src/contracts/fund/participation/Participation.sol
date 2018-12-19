@@ -53,13 +53,20 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     function hasRequest(address _who) view returns (bool) {
-        return requests[_who].requestedShares > 0;
+        return requests[_who].timestamp > 0;
     }
 
+    /// @notice Whether request is OK and invest delay is being respected
+    /// @dev For the very first investment, we ignore delay
     function hasValidRequest(address _who) public view returns (bool) {
-        return hasRequest(_who) &&
+        bool delayRespected= Shares(routes.shares).totalSupply() == 0 ||
             block.timestamp >= add(requests[_who].timestamp, INVEST_DELAY) &&
             block.timestamp <= add(requests[_who].timestamp, mul(2, INVEST_DELAY));
+
+        return hasRequest(_who) &&
+            delayRespected &&
+            requests[_who].investmentAmount > 0 &&
+            requests[_who].requestedShares > 0;
     }
 
     function requestInvestment(
@@ -100,7 +107,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     function cancelRequest() external {
         require(
-            requests[msg.sender].timestamp > 0,
+            hasRequest(msg.sender),
             "No request to cancel"
         );
         delete requests[msg.sender];
@@ -114,7 +121,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         payable
     {
         require(
-            Shares(routes.shares).totalSupply() == 0 ||
             hasValidRequest(requestOwner),
             "No valid request for this address"
         );
