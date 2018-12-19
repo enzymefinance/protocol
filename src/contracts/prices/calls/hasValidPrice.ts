@@ -3,7 +3,7 @@ import { Environment } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
-export const hasRecentPrice = async (
+export const hasValidPrice = async (
   environment: Environment,
   contractAddress: string,
   token: TokenInterface,
@@ -14,5 +14,5 @@ export const hasRecentPrice = async (
     contractAddress,
   );
 
-  return contract.methods.hasRecentPrice(token.address).call();
+  return contract.methods.hasValidPrice(token.address).call();
 };

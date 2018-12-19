@@ -6,7 +6,7 @@ import "ERC20.i.sol";
 import "Factory.sol";
 
 /// @notice Dumb custody component
-contract Vault is Spoke, VaultInterface {
+contract Vault is VaultInterface, Spoke {
 
     event Lock(bool status);
 
@@ -27,11 +27,6 @@ contract Vault is Spoke, VaultInterface {
     function unlock() auth {
         locked = false;
         emit Lock(false);
-    }
-
-    // TODO: evaluate whether we need this function, or can just deposit as normal
-    function deposit(address token, uint amount) auth {
-        ERC20(token).transferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(address token, uint amount) onlyUnlocked auth {

@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 /**
  * @title ERC20 interface
  * @dev see https://github.com/ethereum/EIPs/issues/20
@@ -16,11 +15,9 @@ interface ERC20 {
 
   function transfer(address _to, uint256 _value) public returns (bool);
 
-  function approve(address _spender, uint256 _value)
-    public returns (bool);
+  function approve(address _spender, uint256 _value) public returns (bool);
 
-  function transferFrom(address _from, address _to, uint256 _value)
-    public returns (bool);
+  function transferFrom(address _from, address _to, uint256 _value) public returns (bool);
 
   event Transfer(
     address indexed from,
@@ -33,4 +30,11 @@ interface ERC20 {
     address indexed spender,
     uint256 value
   );
+}
+
+/// @dev Just adds extra functions that we use elsewhere
+contract ERC20WithFields is ERC20 {
+    string public symbol;
+    string public name;
+    uint8 public decimals;
 }

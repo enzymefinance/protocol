@@ -10,7 +10,7 @@ import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 // tslint:disable-next-line:max-line-length
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
@@ -21,8 +21,8 @@ export interface ExecuteRequestForArgs {
 const guard = async (environment, params, contractAddress) => {
   const hub = await getHub(environment, contractAddress);
   await ensureIsNotShutDown(environment, hub);
-  const settings = await getSettings(environment, hub);
-  const fundToken = await getToken(environment, settings.sharesAddress);
+  const routes = await getRoutes(environment, hub);
+  const fundToken = await getToken(environment, routes.sharesAddress);
   const request = await getRequest(environment, contractAddress, {
     of: environment.wallet.address,
   });
@@ -45,8 +45,8 @@ const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async (
 
 const postProcess = async (environment, receipt, params, contractAddress) => {
   const hub = await getHub(environment, contractAddress);
-  const settings = await getSettings(environment, hub);
-  const fundToken = await getToken(environment, settings.sharesAddress);
+  const routes = await getRoutes(environment, hub);
+  const fundToken = await getToken(environment, routes.sharesAddress);
 
   return {
     shareQuantity: createQuantity(

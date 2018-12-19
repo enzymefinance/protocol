@@ -12,12 +12,10 @@ const postProcess = async (
   return fundToken;
 };
 
-const getQuoteToken = callFactoryWithoutParams(
-  'QUOTE_ASSET',
+const getDenominationAsset = callFactoryWithoutParams(
+  'DENOMINATION_ASSET',
   Contracts.Accounting,
-  {
-    postProcess,
-  },
+  { postProcess },
 );
 
-export { getQuoteToken };
+export { getDenominationAsset };

@@ -56,15 +56,6 @@ contract ExchangeAdapter {
         return getHub().manager();
     }
 
-    function safeAddToOwnedAssets(address _asset) internal {
-        require(
-            getAccounting().isInAssetList(_asset) ||
-            getAccounting().getOwnedAssetsLength() < getAccounting().MAX_OWNED_ASSETS(),
-            "Max owned asset limit reached"
-        );
-        getAccounting().addAssetToOwnedAssets(_asset);
-    }
-
     function ensureNotInOpenMakeOrder(address _asset) internal view {
         require(
             !getTrading().isInOpenMakeOrder(_asset),
@@ -147,6 +138,14 @@ contract ExchangeAdapter {
 
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
+    /*
+    @return {
+        "makerAsset": "Maker asset",
+        "takerAsset": "Taker asset",
+        "makerQuantity": "Amount of maker asset"
+        "takerQuantity": "Amount of taker asset"
+    }
+    */
     function getOrder(
         address onExchange,
         uint id,

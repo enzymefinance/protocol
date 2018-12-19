@@ -3,27 +3,16 @@ pragma solidity ^0.4.21;
 import "Hub.sol";
 import "auth.sol";
 
-// TODO: ACL consumption may be better placed in each component; evaluate this
 /// @notice Has one Hub
 contract Spoke is DSAuth {
-    struct Routes {     // TODO: better naming; also maybe move this to be inherited by Spoke and Hub
-        address accounting;
-        address feeManager;
-        address participation;
-        address policyManager;
-        address shares;
-        address trading;
-        address vault;
-        address priceSource;
-        address registry;
-        address version;
-        address engine;
-        address mlnAddress;
-    }
-
     Hub public hub;
-    Routes public routes;
+    Hub.Routes public routes;
     bool public initialized;
+
+    modifier onlyInitialized() {
+        require(initialized, "Component not yet initialized");
+        _;
+    }
 
     modifier notShutDown() {
         require(!hub.isShutDown(), "Hub is shut down");
@@ -33,14 +22,13 @@ contract Spoke is DSAuth {
     constructor(address _hub) {
         hub = Hub(_hub);
         setAuthority(hub);
+        setOwner(hub); // temporary, to allow initialization
     }
 
-    // TODO: remove owner?
-    // TODO: onlyInitialized modifier?
-    function initialize(address[12] _spokes) public {
+    function initialize(address[12] _spokes) public auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
-        routes = Routes(
+        routes = Hub.Routes(
             _spokes[0],
             _spokes[1],
             _spokes[2],
@@ -55,10 +43,11 @@ contract Spoke is DSAuth {
             _spokes[11]
         );
         initialized = true;
+        setOwner(address(0));
     }
 
     function engine() view returns (address) { return routes.engine; }
-    function mlnToken() view returns (address) { return routes.mlnAddress; }
+    function mlnToken() view returns (address) { return routes.mlnToken; }
     function priceSource() view returns (address) { return routes.priceSource; }
     function version() view returns (address) { return routes.version; }
     function registry() view returns (address) { return routes.registry; }

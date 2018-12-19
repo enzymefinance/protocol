@@ -79,10 +79,10 @@ describe('investment', () => {
   });
 
   it('Need fresh price to execute request', async () => {
-    const errorMessage = 'Price not recent';
+    const errorMessage = 'Price not valid';
     const amount = '1000000000000000000';
     await shared.priceSource.methods
-      .setIsRecent(false)
+      .setAlwaysValid(false)
       .send({ from: shared.user });
     await shared.participation.methods
       .requestInvestment(amount, amount, shared.weth.options.address)
@@ -99,7 +99,7 @@ describe('investment', () => {
     ).rejects.toThrow(errorMessage);
 
     await shared.priceSource.methods
-      .setIsRecent(true)
+      .setAlwaysValid(true)
       .send({ from: shared.user });
     await shared.participation.methods
       .cancelRequest()

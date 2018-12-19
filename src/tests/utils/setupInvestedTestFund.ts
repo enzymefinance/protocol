@@ -9,7 +9,7 @@ import { createPolicyManager } from '~/contracts/factory/transactions/createPoli
 import { createShares } from '~/contracts/factory/transactions/createShares';
 import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
@@ -44,22 +44,22 @@ const setupInvestedTestFund = async (environment: Environment) => {
   await createTrading(environment, version);
   await createVault(environment, version);
   const hubAddress = await completeSetup(environment, version);
-  const settings = await getSettings(environment, hubAddress);
+  const routes = await getRoutes(environment, hubAddress);
 
   const investmentAmount = createQuantity(weth, 1);
 
   await approve(environment, {
     howMuch: investmentAmount,
-    spender: settings.participationAddress,
+    spender: routes.participationAddress,
   });
 
-  await requestInvestment(environment, settings.participationAddress, {
+  await requestInvestment(environment, routes.participationAddress, {
     investmentAmount,
   });
 
-  await executeRequest(environment, settings.participationAddress);
+  await executeRequest(environment, routes.participationAddress);
 
-  return settings;
+  return routes;
 };
 
 export { setupInvestedTestFund };

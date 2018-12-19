@@ -1,19 +1,17 @@
 pragma solidity ^0.4.21;
 
-import "math.sol";
-import "ERC20.i.sol";
+import "StandardToken.sol";
 import "Factory.sol";
-import "CanonicalPriceFeed.sol";
+import "PriceSource.i.sol";
 import "FeeManager.sol";
 import "Spoke.sol";
 import "Shares.sol";
 import "Trading.sol";
 import "Vault.sol";
 import "Accounting.i.sol";
+import "AmguConsumer.sol";
 
-// NB: many functions simplified for now
-// TODO: remove any of these functions we don't use; a lot of this can be trimmed down
-contract Accounting is AccountingInterface, DSMath, Spoke {
+contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     struct Calculations {
         uint gav;
@@ -23,30 +21,37 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         uint timestamp;
     }
 
-    uint constant public MAX_OWNED_ASSETS = 50; // TODO: Analysis
-    address[] public ownedAssets;   // TODO: should this be here or in vault, or somewhere else?
-    mapping (address => bool) public isInAssetList; // TODO: same as above
-    address public QUOTE_ASSET;
+    uint constant public MAX_OWNED_ASSETS = 20;
+    address[] public ownedAssets;
+    mapping (address => bool) public isInAssetList;
+    uint public constant SHARES_DECIMALS = 18;
     address public NATIVE_ASSET;
+    address public DENOMINATION_ASSET;
+    uint public DENOMINATION_ASSET_DECIMALS;
     uint public DEFAULT_SHARE_PRICE;
-    uint public SHARES_DECIMALS;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets)
         Spoke(_hub)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
             _addAssetToOwnedAssets(_defaultAssets[i]);
         }
-        QUOTE_ASSET = _quoteAsset;
+        DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
-        SHARES_DECIMALS = 18;
-        DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
+        DENOMINATION_ASSET_DECIMALS = ERC20WithFields(DENOMINATION_ASSET).decimals();
+        DEFAULT_SHARE_PRICE = 10 ** DENOMINATION_ASSET_DECIMALS;
     }
 
-    /// TODO: Is this redundant?
     function getOwnedAssetsLength() view returns (uint) {
         return ownedAssets.length;
+    }
+
+    function assetHoldings(address _asset) public returns (uint) {
+        return add(
+            uint(ERC20WithFields(_asset).balanceOf(Vault(routes.vault))),
+            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
+        );
     }
 
     /// @dev Returns sparse array
@@ -66,136 +71,130 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         return (_quantities, _assets);
     }
 
-    /// TODO: is this needed? can we just return the array?
-    function getFundHoldingsLength() view returns (uint) {
-        address[] memory addresses;
-        (, addresses) = getFundHoldings();
-        return addresses.length;
-    }
-
-    /// TODO: is this needed? can we implement in the policy itself?
-    function calcAssetGAV(address ofAsset) returns (uint) {
-        uint quantityHeld = assetHoldings(ofAsset);
+    function calcAssetGAV(address _asset) returns (uint) {
+        uint quantityHeld = assetHoldings(_asset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-        bool isRecent;
         uint assetPrice;
         uint assetDecimals;
-        (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
-        require(isRecent, "Price is not recent");
-        return mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals));
+        (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getPriceInfo(_asset);
+        return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
-    function assetHoldings(address _asset) public returns (uint) {
-        return add(
-            uint(ERC20(_asset).balanceOf(Vault(routes.vault))),
-            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
-        );
-    }
-
-    // prices quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-    // NB: removed the in-line adding to and removing from ownedAssets so taht it can be a view function
+    // prices quoted in DENOMINATION_ASSET and multiplied by 10 ** assetDecimal
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
-            address ofAsset = ownedAssets[i];
+            address asset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint quantityHeld = assetHoldings(ofAsset);
+            uint quantityHeld = assetHoldings(asset);
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
-            bool isRecent;
             uint assetPrice;
             uint assetDecimals;
-            (isRecent, assetPrice, assetDecimals) = CanonicalPriceFeed(routes.priceSource).getPriceInfo(ofAsset);
-            // NB: should we revert inside this view function, or just calculate it optimistically?
-            //     maybe it should be left to consumers to decide whether to use older prices?
-            //     or perhaps even source's job not to give untrustworthy prices?
-            require(isRecent, "Price is not recent");
+            (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, DENOMINATION_ASSET);
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            gav = add(gav, mul(quantityHeld, assetPrice) / (10 ** uint(assetDecimals)));
+            gav = add(
+                gav,
+                (
+                    mul(quantityHeld, assetPrice) /
+                    (10 ** assetDecimals)
+                )
+            );
         }
         return gav;
     }
 
-    // TODO: this view function calls a non-view function; adjust accordingly
-    // TODO: this may be redundant, and does not use its input parameter now
-    function calcUnclaimedFees(uint gav) view returns (uint) {
-        return FeeManager(routes.feeManager).totalFeeAmount();
-    }
-
-    // TODO: this view function calls a non-view function; adjust accordingly
-    function calcNav(uint gav, uint unclaimedFees) pure returns (uint) {
+    function calcNav(uint gav, uint unclaimedFees) public pure returns (uint) {
         return sub(gav, unclaimedFees);
     }
 
-    function calcValuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
         require(numShares > 0, "No shares to calculate value for");
         return (totalValue * 10 ** SHARES_DECIMALS) / numShares;
     }
 
     function performCalculations()
-        view
         returns (
             uint gav,
             uint unclaimedFees,
-            uint feesShareQuantity,
+            uint feesInShares,
             uint nav,
             uint sharePrice
         )
     {
         gav = calcGav();
-        unclaimedFees = calcUnclaimedFees(gav);
+        unclaimedFees = FeeManager(routes.feeManager).totalFeeAmount();
         nav = calcNav(gav, unclaimedFees);
 
         uint totalSupply = Shares(routes.shares).totalSupply();
         // The value of unclaimedFees measured in shares of this fund at current value
-        feesShareQuantity = (gav == 0) ? 0 : mul(totalSupply, unclaimedFees) / gav;
+        feesInShares = (gav == 0) ?
+            0 :
+            mul(totalSupply, unclaimedFees) / gav;
         // The total share supply including the value of unclaimedFees, measured in shares of this fund
-        uint totalSupplyAccountingForFees = add(totalSupply, feesShareQuantity);
-        sharePrice = totalSupply > 0 ?
-            calcValuePerShare(gav, totalSupplyAccountingForFees) :
+        uint totalSupplyAccountingForFees = add(totalSupply, feesInShares);
+        sharePrice = (totalSupply > 0) ?
+            valuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
+        return (gav, unclaimedFees, feesInShares, nav, sharePrice);
     }
 
-    // TODO: delete if possible, or revise implementation
-    function calcSharePrice() view returns (uint sharePrice) {
+    function calcSharePrice() returns (uint sharePrice) {
         (,,,,sharePrice) = performCalculations();
         return sharePrice;
     }
 
-    // calculates several metrics, updates stored calculation object and rewards fees
-    // TODO: find a better way to do these things without this exact method
-    // TODO: math is off here (need to check fees, when they are calculated, quantity in exchanges and trading module, etc.)
-    // TODO: look at permissioning
-    function calcSharePriceAndAllocateFees() public returns (uint) {
+    function getShareCostInAsset(uint _numShares, address _altAsset) returns (uint) {
+        uint costInDenominationAsset = mul(
+            _numShares,
+            calcSharePrice()
+        ) / 10 ** SHARES_DECIMALS;
+        uint denominationAssetPriceInAltAsset;
+        (denominationAssetPriceInAltAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
+            DENOMINATION_ASSET,
+            _altAsset
+        );
+        uint shareCostInAltAsset = mul(
+            denominationAssetPriceInAltAsset,
+            costInDenominationAsset
+        ) / 10 ** DENOMINATION_ASSET_DECIMALS;
+        return shareCostInAltAsset;
+    }
+
+    /// @notice Reward all fees and perform some updates
+    /// @dev Anyone can call this
+    function triggerRewardAllFees()
+        public
+        amguPayable
+        payable
+    {
         updateOwnedAssets();
         uint gav;
-        uint unclaimedFees;
-        uint feesShareQuantity;
+        uint feesInDenomination;
+        uint feesInShares;
         uint nav;
         uint sharePrice;
-        (gav, unclaimedFees, feesShareQuantity, nav, sharePrice) = performCalculations();
+        (gav, feesInDenomination, feesInShares, nav, ) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
             gav: gav,
             nav: nav,
-            allocatedFees: unclaimedFees,
+            allocatedFees: feesInDenomination,
             totalSupply: totalSupply,
             timestamp: block.timestamp
         });
-        return sharePrice;
     }
 
-    // TODO: maybe run as a "bump" or "stub" function, every state-changing method call
-    // TODO: run on some state changes (from trading for example)
+    /// @dev Check holdings for all assets, and adjust list
     function updateOwnedAssets() public {
         for (uint i = 0; i < ownedAssets.length; i++) {
-            address ofAsset = ownedAssets[i];
-            // TODO: verify commented condition is redundant and remove if so
-            // (i.e. it is always the case when `assetHoldings > 0` is true)
-            // || Trading(routes.trading).isInOpenMakeOrder(ofAsset)
-            if (assetHoldings(ofAsset) > 0 || ofAsset == address(QUOTE_ASSET)) {
-                _addAssetToOwnedAssets(ofAsset);
+            address asset = ownedAssets[i];
+            if (
+                assetHoldings(asset) > 0 ||
+                asset == address(DENOMINATION_ASSET)
+            ) {
+                _addAssetToOwnedAssets(asset);
             } else {
-                _removeFromOwnedAssets(ofAsset);
+                _removeFromOwnedAssets(asset);
             }
         }
     }
@@ -208,26 +207,29 @@ contract Accounting is AccountingInterface, DSMath, Spoke {
         _removeFromOwnedAssets(_asset);
     }
 
-    // needed for constructor to be able to call
-    // TODO: consider redesign of this approach; does it work now that we've introduced auth?
+    /// @dev Just pass if asset already in list
     function _addAssetToOwnedAssets(address _asset) internal {
-        if (!isInAssetList[_asset]) {
-            isInAssetList[_asset] = true;
-            ownedAssets.push(_asset);
-        }
+        if (isInAssetList[_asset]) { return; }
+
+        require(
+            ownedAssets.length < MAX_OWNED_ASSETS,
+            "Max owned asset limit reached"
+        );
+        isInAssetList[_asset] = true;
+        ownedAssets.push(_asset);
         emit AssetAddition(_asset);
     }
 
-    // TODO: ownedAssets length needs upper limit due to iteration here and elsewhere
+    /// @dev Just pass if asset not in list
     function _removeFromOwnedAssets(address _asset) internal {
-        if (isInAssetList[_asset]) {
-            isInAssetList[_asset] = false;
-            for (uint i; i < ownedAssets.length; i++) {
-                if (ownedAssets[i] == _asset) {
-                    ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
-                    ownedAssets.length--;
-                    break;
-                }
+        if (!isInAssetList[_asset]) { return; }
+
+        isInAssetList[_asset] = false;
+        for (uint i; i < ownedAssets.length; i++) {
+            if (ownedAssets[i] == _asset) {
+                ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
+                ownedAssets.length--;
+                break;
             }
         }
         emit AssetRemoval(_asset);
@@ -238,15 +240,15 @@ contract AccountingFactory is Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,
-        address quoteAsset,
+        address denominationAsset,
         address nativeAsset,
         address[] defaultAssets
     );
 
-    function createInstance(address _hub, address _quoteAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
-        address accounting = new Accounting(_hub, _quoteAsset, _nativeAsset, _defaultAssets);
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
+        address accounting = new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
-        emit NewInstance(_hub, accounting, _quoteAsset, _nativeAsset, _defaultAssets);
+        emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);
         return accounting;
     }
 }

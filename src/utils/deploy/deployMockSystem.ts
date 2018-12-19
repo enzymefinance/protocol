@@ -69,6 +69,12 @@ export const deployMockSystem = async (
   await registry.methods
     .setMlnToken(`${mlnTokenAddress}`)
     .send({ from: accounts[0] });
+  await registry.methods
+    .registerAdapterForExchange(
+      matchingMarketAddress.toString(),
+      matchingMarketAdapter.options.address.toString(),
+    )
+    .send({ from: accounts[0] });
 
   const ranking = await deployAndGetContract(env, rankingContract);
 

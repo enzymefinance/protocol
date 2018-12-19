@@ -5,7 +5,7 @@ import { Environment } from '~/utils/environment/Environment';
 
 // TODO: Share interfaces between .sol and .ts?
 //  Code generation out of solidity AST?
-export interface Settings {
+export interface Routes {
   accountingAddress: Address;
   feeManagerAddress: Address;
   participationAddress: Address;
@@ -18,25 +18,25 @@ export interface Settings {
   versionAddress: Address;
 }
 
-export const getSettings = async (
+export const getRoutes = async (
   environment: Environment,
   hubAddress: Address,
-): Promise<Settings> => {
+): Promise<Routes> => {
   const hubContract = await getContract(environment, Contracts.Hub, hubAddress);
 
-  const settings = await hubContract.methods.settings().call();
+  const routes = await hubContract.methods.routes().call();
 
   const components = {
-    accountingAddress: new Address(settings.accounting),
-    feeManagerAddress: new Address(settings.feeManager),
-    participationAddress: new Address(settings.participation),
-    policyManagerAddress: new Address(settings.policyManager),
-    priceSourceAddress: new Address(settings.priceSource),
-    registryAddress: new Address(settings.registry),
-    sharesAddress: new Address(settings.shares),
-    tradingAddress: new Address(settings.trading),
-    vaultAddress: new Address(settings.vault),
-    versionAddress: new Address(settings.version),
+    accountingAddress: new Address(routes.accounting),
+    feeManagerAddress: new Address(routes.feeManager),
+    participationAddress: new Address(routes.participation),
+    policyManagerAddress: new Address(routes.policyManager),
+    priceSourceAddress: new Address(routes.priceSource),
+    registryAddress: new Address(routes.registry),
+    sharesAddress: new Address(routes.shares),
+    tradingAddress: new Address(routes.trading),
+    vaultAddress: new Address(routes.vault),
+    versionAddress: new Address(routes.version),
   };
 
   return components;
