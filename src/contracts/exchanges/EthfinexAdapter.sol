@@ -119,7 +119,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
-            getAccounting().safeAddToOwnedAssets(orderAddresses[i]);
+            getAccounting().addAssetToOwnedAssets(orderAddresses[i]);
         }
     }
 
