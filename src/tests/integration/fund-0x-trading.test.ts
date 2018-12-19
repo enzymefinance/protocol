@@ -32,6 +32,7 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
+import { increaseTime } from '~/utils/evm/increaseTime';
 // import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 
 // mock data
@@ -507,4 +508,92 @@ test('Fund can cancel the order using just the orderId', async () => {
   );
   expect(makerAssetAllowance).toEqual(new BigInteger(0));
   expect(isOrderCancelled).toBeTruthy();
+});
+
+test('Expired order is removed from open maker order', async () => {
+  const makerAddress = s.fund.trading.options.address.toLowerCase();
+  const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
+  const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
+  const duration = 50;
+  s.unsignedOrder = await createOrder(
+    s.environment,
+    s.zeroExExchange.options.address,
+    {
+      duration,
+      feeRecipientAddress: s.investor,
+      makerAddress,
+      makerQuantity,
+      takerQuantity,
+    },
+  );
+  s.signedOrder = await signOrder(s.environment, s.unsignedOrder, s.manager);
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      makeOrderSignature,
+      [
+        makerAddress,
+        NULL_ADDRESS,
+        s.weth.options.address,
+        s.mln.options.address,
+        s.signedOrder.feeRecipientAddress,
+        NULL_ADDRESS,
+      ],
+      [
+        s.signedOrder.makerAssetAmount.toFixed(),
+        s.signedOrder.takerAssetAmount.toFixed(),
+        s.signedOrder.makerFee.toFixed(),
+        s.signedOrder.takerFee.toFixed(),
+        s.signedOrder.expirationTimeSeconds.toFixed(),
+        s.signedOrder.salt.toFixed(),
+        0,
+        0,
+      ],
+      randomHexOfSize(20),
+      s.signedOrder.makerAssetData,
+      s.signedOrder.takerAssetData,
+      s.signedOrder.signature,
+    )
+    .send({ from: s.manager, gas: s.gas });
+  const makerAssetAllowance = new BigInteger(
+    await s.weth.methods
+      .allowance(
+        s.fund.trading.options.address,
+        s.erc20ProxyAddress.toLowerCase(),
+      )
+      .call(),
+  );
+  expect(makerAssetAllowance).toEqual(
+    new BigInteger(s.signedOrder.makerAssetAmount),
+  );
+
+  const orderHashHex = orderHashUtils.getOrderHashHex(s.unsignedOrder);
+  await increaseTime(s.environment, duration);
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      cancelOrderSignature,
+      [
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+      ],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      orderHashHex,
+      '0x0',
+      '0x0',
+      '0x0',
+    )
+    .send({ from: s.manager, gas: s.gas });
+  await s.fund.trading.methods
+    .updateAndGetQuantityBeingTraded(s.weth.options.address)
+    .send({ from: s.manager, gas: s.gas });
+  const isInOpenMakeOrder = await s.fund.trading.methods
+    .isInOpenMakeOrder(s.weth.options.address)
+    .call();
+
+  expect(isInOpenMakeOrder).toBeFalsy();
 });

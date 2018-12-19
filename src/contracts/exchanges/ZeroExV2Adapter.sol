@@ -59,7 +59,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), orderValues[4]);
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
@@ -144,7 +144,10 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         Hub hub = getHub();
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
-        Exchange(targetExchange).cancelOrder(order);
+
+        if (order.expirationTimeSeconds > block.timestamp) {
+            Exchange(targetExchange).cancelOrder(order);
+        }
 
         // Set the approval back to 0
         approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);

@@ -172,17 +172,22 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address ofExchange,
         address sellAsset,
         uint orderId,
-        uint expiryTime
+        uint expirationTime
     ) delegateInternal {
         require(!isInOpenMakeOrder[sellAsset], "Asset already in open order");
         require(orders.length > 0, "No orders in array");
+
+        // If expirationTime is 0, actualExpirationTime is set to ORDER_LIFESPAN from now
+        uint actualExpirationTime = (expirationTime == 0) ? add(block.timestamp, ORDER_LIFESPAN) : expirationTime;
+
         require(
-            expiryTime <= add(block.timestamp, ORDER_LIFESPAN),
-            "Expiry time greater than max order lifespan"
+            actualExpirationTime <= add(block.timestamp, ORDER_LIFESPAN) &&
+            actualExpirationTime > block.timestamp,
+            "Expiry time greater than max order lifespan or has already passed"
         );
         isInOpenMakeOrder[sellAsset] = true;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
-        exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = (expiryTime == 0) ? add(block.timestamp, ORDER_LIFESPAN) : expiryTime;
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = actualExpirationTime;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].orderIndex = sub(orders.length, 1);
     }
 
@@ -334,4 +339,3 @@ contract TradingFactory is Factory {
         return trading;
     }
 }
-

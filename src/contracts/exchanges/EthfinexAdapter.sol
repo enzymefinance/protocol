@@ -65,7 +65,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), orderValues[4]);
+        getTrading().addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
     }
 
@@ -118,6 +118,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
+            getTrading().returnAssetToVault(orderAddresses[i]);
+            getAccounting().safeAddToOwnedAssets(orderAddresses[i]);
         }
     }
 
