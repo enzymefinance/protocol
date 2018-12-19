@@ -253,6 +253,7 @@ export const deploySystem = async (
         assetSymbol: asset.symbol,
         decimals: asset.decimals,
         name: '',
+        reserveMin: '',
         sigs: [],
         standards: [],
         url: '',

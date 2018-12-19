@@ -7,6 +7,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+
 interface RegisterAssetArgs {
   assetAddress: Address;
   name: String;
