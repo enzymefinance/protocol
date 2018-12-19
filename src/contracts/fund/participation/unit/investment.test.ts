@@ -55,7 +55,7 @@ describe('investment', () => {
   });
 
   it('Request must exist to execute', async () => {
-    const errorMessage = 'No request for this address';
+    const errorMessage = 'No valid request for this address';
     const requestExists = await shared.participation.methods
       .hasRequest(shared.user)
       .call();

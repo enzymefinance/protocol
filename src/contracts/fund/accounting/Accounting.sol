@@ -102,8 +102,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return gav;
     }
 
-    function calcNav(uint gav, uint unclaimedFees) public pure returns (uint) {
-        return sub(gav, unclaimedFees);
+    function calcNav(uint gav, uint unclaimedFeesInDenominationAsset) public pure returns (uint) {
+        return sub(gav, unclaimedFeesInDenominationAsset);
     }
 
     function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
@@ -114,27 +114,27 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     function performCalculations()
         returns (
             uint gav,
-            uint unclaimedFees,
-            uint feesInShares,
+            uint feesInDenominationAsset,  // unclaimed amount
+            uint feesInShares,             // unclaimed amount
             uint nav,
             uint sharePrice
         )
     {
         gav = calcGav();
-        unclaimedFees = FeeManager(routes.feeManager).totalFeeAmount();
-        nav = calcNav(gav, unclaimedFees);
+        feesInDenominationAsset = FeeManager(routes.feeManager).totalFeeAmount();
+        nav = calcNav(gav, feesInDenominationAsset);
 
         uint totalSupply = Shares(routes.shares).totalSupply();
-        // The value of unclaimedFees measured in shares of this fund at current value
+        // The value of feesInDenominationAsset measured in shares of this fund at current value
         feesInShares = (gav == 0) ?
             0 :
-            mul(totalSupply, unclaimedFees) / gav;
-        // The total share supply including the value of unclaimedFees, measured in shares of this fund
+            mul(totalSupply, feesInDenominationAsset) / gav;
+        // The total share supply including the value of feesInDenominationAsset, measured in shares of this fund
         uint totalSupplyAccountingForFees = add(totalSupply, feesInShares);
         sharePrice = (totalSupply > 0) ?
             valuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
-        return (gav, unclaimedFees, feesInShares, nav, sharePrice);
+        return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice);
     }
 
     function calcSharePrice() returns (uint sharePrice) {

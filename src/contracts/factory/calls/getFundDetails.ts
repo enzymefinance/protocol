@@ -24,12 +24,12 @@ export const getFundDetails = async (
     1: sharePrices,
     2: creationTimes,
     3: names,
-    4: quoteAsset,
+    4: denominationAsset,
   } = fundDetails;
 
   const result = addresses.map((address, index) => {
-    const quoteToken = environment.deployment.thirdPartyContracts.tokens.find(
-      token => token.address === quoteAsset[index],
+    const denominationToken = environment.deployment.thirdPartyContracts.tokens.find(
+      token => token.address === denominationAsset[index],
     );
 
     const fundToken = {
@@ -39,13 +39,13 @@ export const getFundDetails = async (
 
     return {
       address,
-      rank: index + 1,
+      creationTime: new Date(creationTimes[index] * 1000),
       name: names[index],
+      rank: index + 1,
       sharePrice: getPrice(
         createQuantity(fundToken, 1),
-        createQuantity(quoteToken, sharePrices[index]),
+        createQuantity(denominationToken, sharePrices[index]),
       ),
-      creationTime: new Date(creationTimes[index] * 1000),
     };
   });
 
