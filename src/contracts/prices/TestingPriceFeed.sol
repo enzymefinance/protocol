@@ -111,18 +111,19 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (uint referencePrice, uint decimal)
     {
+        uint quoteDecimals = assetsToDecimals[ofQuote];
+
+        // Price of 1 unit for the pair of same asset
         if (ofBase == ofQuote) {
-            return (
-                10 ** assetsToDecimals[ofQuote],
-                assetsToDecimals[ofQuote]
-            );
-        } else if (QUOTE_ASSET == ofQuote) {
-            (referencePrice, decimal) = getPriceInfo(ofBase);
-        } else if (QUOTE_ASSET == ofBase) {
-            (referencePrice, decimal) = getInvertedPriceInfo(ofQuote);
-        } else {
-            revert("One of the parameters must be quoteAsset");
+            return (10 ** quoteDecimals, quoteDecimals);
         }
+
+        referencePrice = mul(
+            assetsToPrices[ofBase].price,
+            10 ** quoteDecimals
+        ) / assetsToPrices[ofQuote].price;
+
+        return (referencePrice, quoteDecimals);
     }
 
     function getOrderPriceInfo(
@@ -171,9 +172,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     {
         return
             hasValidPrice(sellAsset) &&
-            hasValidPrice(buyAsset) &&
-            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
-            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+            hasValidPrice(buyAsset);
     }
 
     function getLastUpdateId() public view returns (uint) { return updateId; }

@@ -45,7 +45,7 @@ contract FundFactory is AmguConsumer, Factory {
         string name;
         address[] exchanges;
         address[] adapters;
-        address quoteAsset;
+        address denominationAsset;
         address nativeAsset;
         address[] defaultAssets;
         bool[] takesCustody;
@@ -96,7 +96,7 @@ contract FundFactory is AmguConsumer, Factory {
         uint[] _feePeriods,
         address[] _exchanges,
         address[] _adapters,
-        address _quoteAsset,
+        address _denominationAsset,
         address _nativeAsset,
         address[] _defaultAssets,
         bool[] _takesCustody,
@@ -108,7 +108,7 @@ contract FundFactory is AmguConsumer, Factory {
             _name,
             _exchanges,
             _adapters,
-            _quoteAsset,
+            _denominationAsset,
             _nativeAsset,
             _defaultAssets,
             _takesCustody,
@@ -131,8 +131,8 @@ contract FundFactory is AmguConsumer, Factory {
     {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
             managersToHubs[msg.sender],
+            managersToSettings[msg.sender].denominationAsset,
             managersToSettings[msg.sender].nativeAsset,
-            managersToSettings[msg.sender].quoteAsset,
             managersToSettings[msg.sender].defaultAssets
         );
     }
