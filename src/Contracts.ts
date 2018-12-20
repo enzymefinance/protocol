@@ -196,7 +196,7 @@ export const requireMap = {
   [Contracts.Version]:
     require('../out/Version.abi.json'),
   [Contracts.Weth]:
-    require('../out/Weth.abi.json'),
+    require('../out/WETH9.abi.json'),
   [Contracts.ZeroExExchange]:
     require('../out/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:
