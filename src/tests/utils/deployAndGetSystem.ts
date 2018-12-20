@@ -1,8 +1,8 @@
-import { deploySystem } from './deploy/deploySystem';
-import { deployThirdParty } from './deploy/deployThirdParty';
+import { deploySystem } from '../../utils/deploy/deploySystem';
+import { deployThirdParty } from '../../utils/deploy/deployThirdParty';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
-import { Environment } from './environment/Environment';
+import { Environment } from '../../utils/environment/Environment';
 
 export const deployAndGetSystem = async (environment: Environment) => {
   const thirdParty = await deployThirdParty(environment);
