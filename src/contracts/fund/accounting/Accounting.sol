@@ -75,8 +75,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         uint quantityHeld = assetHoldings(_asset);
         // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
         uint assetPrice;
-        uint assetDecimals;
-        (assetPrice, assetDecimals) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(_asset, DENOMINATION_ASSET);
+        (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(_asset, DENOMINATION_ASSET);
+        uint assetDecimals = ERC20WithFields(_asset).decimals();
         return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
