@@ -39,7 +39,7 @@ describe('monitoringTool', () => {
   const shared: any = {};
 
   beforeAll(async () => {
-    shared.env = await deployAndInitTestEnv(1);
+    shared.env = await deployAndInitTestEnv();
     shared.accounts = await shared.env.eth.getAccounts();
     // console.log('Accounts: ', shared.accounts);
     // shared.envNotManager = await withDifferentAccount(
@@ -158,7 +158,7 @@ describe('monitoringTool', () => {
     console.log('Balance: ', balance);
 
     await sendEth(shared.env, {
-      howMuch: createQuantity('ETH', 5),
+      howMuch: createQuantity(weth, 5),
       to: env2.wallet.address,
     });
 
@@ -168,21 +168,21 @@ describe('monitoringTool', () => {
     const fund2 = await setupInvestedTestFund(env2);
     console.log('2nd Fund: ', fund2);
 
-    // const investmentAmount2 = createQuantity(weth, 1);
+    const investmentAmount2 = createQuantity(weth, 1);
 
-    // await approve(env2, {
-    //   howMuch: investmentAmount2,
-    //   spender: fund2.participationAddress,
-    // });
+    await approve(shared.env, {
+      howMuch: investmentAmount2,
+      spender: fund2.participationAddress,
+    });
 
-    // await requestInvestment(env2, fund2.participationAddress, {
-    //   investmentAmount,
-    // });
+    await requestInvestment(shared.env, fund2.participationAddress, {
+      investmentAmount,
+    });
 
-    // await executeRequest(env2, fund2.participationAddress);
+    await executeRequest(shared.env, fund2.participationAddress);
 
-    // const hub2 = await getHub(shared.env, fund2.accountingAddress);
-    // console.log('Hub: ', hub2);
+    const hub2 = await getHub(shared.env, fund2.accountingAddress);
+    console.log('Hub: ', hub2);
 
     // get fund list
     const fundList = await getFundDetails(shared.env, ranking, version);
