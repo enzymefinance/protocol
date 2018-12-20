@@ -37,6 +37,7 @@ const prepare = async (environment: Environment, contractAddress, prices) => {
 const send = async (environment: Environment, transaction) => {
   const receipt = await transaction.send({
     from: environment.wallet.address.toString(),
+    gas: 8000000,
   });
 
   return receipt;
