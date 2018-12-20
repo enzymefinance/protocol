@@ -140,7 +140,7 @@ program
     'Load the deployer account from a keystore file',
   )
   .action(async options => {
-    console.log(`Deploying thirdParty & melon contracts (development setup).`);
+    console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
     const tokens = ['WETH', 'MLN', 'ZRX', ...providedTokens];
     const tokenInterfaces = tokens.map(token => {
@@ -173,6 +173,7 @@ program
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||
         (await deployThirdParty(environment, tokenInterfaces));
+
       const { deployment } = await deploySystem(
         environment,
         thirdPartyContracts,

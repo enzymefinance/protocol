@@ -2,7 +2,6 @@ import * as R from 'ramda';
 
 import { Exchanges } from '~/Contracts';
 
-import { deployTestingPriceFeed as deployPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
@@ -70,11 +69,36 @@ export interface MelonContracts {
   factories: Factories;
 }
 
-type MelonContractsDraft = Partial<MelonContracts>;
+export type MelonContractsDraft = Partial<MelonContracts>;
 
-const maybeDeploy = async (environment, path, deployFunction) => {
-  const adoptedContract =
-}
+const maybeDeploy = R.curry(
+  async (
+    path: string[],
+    deployFunction: Function,
+    environmentPromise: Promise<Environment>,
+  ) => {
+    const environment = await environmentPromise;
+    const environmentPath = ['deployment', 'melonContracts', ...path];
+
+    const info = environment.logger(
+      'melon:protocol:utils:deploySystem',
+      LogLevels.INFO,
+    );
+
+    const adoptedContract = R.path(environmentPath, environment);
+
+    if (adoptedContract === 'DEPLOY') {
+      info('Deploying', path.join('.'));
+      const address = await deployFunction(environment);
+      const newEnvironment = R.assocPath(environmentPath, address);
+      return newEnvironment;
+    }
+
+    info('Not Deploying', path.join('.'));
+
+    return environment;
+  },
+);
 
 /**
  * Deploys all contracts and checks their health
@@ -87,12 +111,9 @@ export const deploySystem = async (
   // Set thirdPartyContracts already to have them available in subsequent calls
   const environment = {
     ...environmentWithoutDeployment,
-    deployment: { thirdPartyContracts },
+    deployment: { thirdPartyContracts, melonContracts: adoptedContracts },
   };
-  const log = environment.logger(
-    'melon:protocol:utils:deploySystem',
-    LogLevels.DEBUG,
-  );
+  const log = environment.logger('melon:protocol:utils:deploySystem');
 
   log(LogLevels.INFO, 'Deploying system from:', environment.wallet.address);
   log(LogLevels.DEBUG, 'Deploying system', {
@@ -103,143 +124,133 @@ export const deploySystem = async (
   const wethToken = thirdPartyContracts.tokens.find(t => t.symbol === 'WETH');
   const mlnToken = thirdPartyContracts.tokens.find(t => t.symbol === 'MLN');
 
-  const contracts: MelonContractsDraft = {};
-
-  /// Exchange Adapters
-  contracts.adapters = {
-    kyberAdapter:
-      R.path(['adapters', 'kyberAdapter'], adoptedContracts) ||
-      (await deployKyberAdapter(environment)),
-    matchingMarketAdapter:
-      R.path(['adapters', 'matchingMarketAdapter'], adoptedContracts) ||
-      (await deployMatchingMarketAdapter(environment)),
-    zeroExAdapter:
-      R.path(['adapters', 'zeroExAdapter'], adoptedContracts) ||
-      (await deploy0xAdapter(environment)),
-  };
-
-  // Policies
-  // TODO: Possibility to set policy params?
-  contracts.policies = {
-    priceTolerance:
-      R.path(['policies', 'priceTolerance'], adoptedContracts) ||
-      (await deployPriceTolerance(environment, 10)),
-    userWhitelist:
-      R.path(['policies', 'userWhitelist'], adoptedContracts) ||
-      (await deployUserWhitelist(environment, [environment.wallet.address])),
-  };
-
-  // Factories
-  contracts.factories = {
-    accountingFactory:
-      R.path(['factories', 'accountingFactory'], adoptedContracts) ||
-      (await deployAccountingFactory(environment)),
-    feeManagerFactory:
-      R.path(['factories', 'feeManagerFactory'], adoptedContracts) ||
-      (await deployFeeManagerFactory(environment)),
-    participationFactory:
-      R.path(['factories', 'participationFactory'], adoptedContracts) ||
-      (await deployParticipationFactory(environment)),
-    policyManagerFactory:
-      R.path(['factories', 'policyManagerFactory'], adoptedContracts) ||
-      (await deployPolicyManagerFactory(environment)),
-    sharesFactory:
-      R.path(['factories', 'sharesFactory'], adoptedContracts) ||
-      (await deploySharesFactory(environment)),
-    tradingFactory:
-      R.path(['factories', 'tradingFactory'], adoptedContracts) ||
-      (await deployTradingFactory(environment)),
-    vaultFactory:
-      R.path(['factories', 'vaultFactory'], adoptedContracts) ||
-      (await deployVaultFactory(environment)),
-  };
-
   const monthInSeconds = 30 * 24 * 60 * 60;
 
-  contracts.engine =
-    adoptedContracts.engine ||
-    (await deployEngine(environment, {
-      delay: monthInSeconds,
-    }));
+  const environmentWithDeployment = await R.pipe(
+    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
+      deployKyberAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
+      deployMatchingMarketAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
+      deploy0xAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
+      deployKyberAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
+      deployKyberAdapter(environment),
+    ),
+    maybeDeploy(['policies', 'priceTolerance'], environment =>
+      deployPriceTolerance(environment, 10),
+    ),
+    maybeDeploy(['policies', 'userWhitelist'], environment =>
+      deployUserWhitelist(environment, [environment.wallet.address]),
+    ),
+    maybeDeploy(['factories', 'accountingFactory'], environment =>
+      deployAccountingFactory(environment),
+    ),
+    maybeDeploy(['factories', 'feeManaberFactory'], environment =>
+      deployFeeManagerFactory(environment),
+    ),
+    maybeDeploy(['factories', 'participationFactory'], environment =>
+      deployParticipationFactory(environment),
+    ),
+    maybeDeploy(['factories', 'policyManagerFactory'], environment =>
+      deployPolicyManagerFactory(environment),
+    ),
+    maybeDeploy(['factories', 'sharesFactory'], environment =>
+      deploySharesFactory(environment),
+    ),
+    maybeDeploy(['factories', 'tradingFactory'], environment =>
+      deployTradingFactory(environment),
+    ),
+    maybeDeploy(['factories', 'vaultFactory'], environment =>
+      deployVaultFactory(environment),
+    ),
+    maybeDeploy(['engine'], environment =>
+      deployEngine(environment, { delay: monthInSeconds }),
+    ),
+    maybeDeploy(['registry'], environment => deployRegistry(environment)),
+    maybeDeploy(['priceSource'], environment =>
+      deployKyberPriceFeed(environment, {
+        // tslint:disable-next-line:max-line-length
+        kyberNetworkProxy:
+          environment.deployment.thirdPartyContracts.exchanges.kyber
+            .kyberNetworkProxy,
+        quoteToken: wethToken,
+        registry: environment.deployment.melonContracts.registry,
+      }),
+    ),
+    maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
+  )(new Promise(resolve => resolve(environment)));
 
-  contracts.registry =
-    adoptedContracts.registry || (await deployRegistry(environment));
+  const { melonContracts } = environmentWithDeployment;
 
   const registryInformation = await getRegistryInformation(
-    environment,
-    contracts.registry,
+    environmentWithDeployment,
+    environmentWithDeployment.melonContracts.registry,
   );
 
-  contracts.priceSource =
-    adoptedContracts.priceSource ||
-    (await deployKyberPriceFeed(environment, {
-      kyberNetworkProxy: thirdPartyContracts.exchanges.kyber.kyberNetworkProxy,
-      quoteToken: wethToken,
-      registry: contracts.registry,
-    }));
-  //  (await deployPriceFeed(environment, wethToken));
-
   if (!adoptedContracts.priceSource || !adoptedContracts.registry) {
-    log(LogLevels.INFO, 'Register priceSource', contracts.priceSource);
-    await setPriceSource(environment, contracts.registry, {
-      address: contracts.priceSource,
+    log(LogLevels.INFO, 'Register priceSource', melonContracts.priceSource);
+    await setPriceSource(environmentWithDeployment, melonContracts.registry, {
+      address: melonContracts.priceSource,
     });
   }
 
   if (!adoptedContracts.registry) {
-    await setNativeAsset(environment, contracts.registry, {
+    await setNativeAsset(environmentWithDeployment, melonContracts.registry, {
       address: wethToken.address,
     });
-    await setMlnToken(environment, contracts.registry, {
+    await setMlnToken(environmentWithDeployment, melonContracts.registry, {
       address: mlnToken.address,
     });
-    await setEngine(environment, contracts.registry, {
-      address: contracts.engine,
+    await setEngine(environmentWithDeployment, melonContracts.registry, {
+      address: melonContracts.engine,
     });
-    await setRegistry(environment, contracts.engine, {
-      address: contracts.registry,
+    await setRegistry(environmentWithDeployment, melonContracts.engine, {
+      address: melonContracts.registry,
     });
   }
 
-  contracts.version =
+  melonContracts.version =
     adoptedContracts.version ||
     (await deployVersion(environment, {
-      engine: contracts.engine,
-      factories: contracts.factories,
+      engine: melonContracts.engine,
+      factories: melonContracts.factories,
       mlnToken,
-      priceSource: contracts.priceSource,
-      registry: contracts.registry,
+      priceSource: melonContracts.priceSource,
+      registry: melonContracts.registry,
     }));
 
   const versionInformation = await getVersionInformation(
     environment,
-    contracts.registry,
-    { version: contracts.version },
+    melonContracts.registry,
+    { version: melonContracts.version },
   );
 
   if (!versionInformation) {
-    await registerVersion(environment, contracts.registry, {
-      address: contracts.version,
+    await registerVersion(environment, melonContracts.registry, {
+      address: melonContracts.version,
       name: pkg.version,
     });
   }
 
-  contracts.ranking =
-    adoptedContracts.ranking || (await deployFundRanking(environment));
-
   const exchangeConfigs = {
     [Exchanges.MatchingMarket]: {
-      adapter: contracts.adapters.matchingMarketAdapter,
+      adapter: melonContracts.adapters.matchingMarketAdapter,
       exchange: thirdPartyContracts.exchanges.matchingMarket,
       takesCustody: false,
     },
     [Exchanges.KyberNetwork]: {
-      adapter: contracts.adapters.kyberAdapter,
+      adapter: melonContracts.adapters.kyberAdapter,
       exchange: thirdPartyContracts.exchanges.kyber.kyberNetworkProxy,
       takesCustody: false,
     },
     [Exchanges.ZeroEx]: {
-      adapter: contracts.adapters.zeroExAdapter,
+      adapter: melonContracts.adapters.zeroExAdapter,
       exchange: thirdPartyContracts.exchanges.zeroEx,
       takesCustody: false,
     },
@@ -249,7 +260,7 @@ export const deploySystem = async (
     const exchange = exchangeConfig.exchange.toLowerCase();
 
     if (!registryInformation.registeredExchanges[exchange]) {
-      await registerExchange(environment, contracts.registry, {
+      await registerExchange(environment, melonContracts.registry, {
         adapter: exchangeConfig.adapter,
         exchange: exchangeConfig.exchange,
         sigs: [
@@ -264,7 +275,7 @@ export const deploySystem = async (
 
   for (const asset of thirdPartyContracts.tokens) {
     if (!registryInformation.registeredAssets[asset.address.toLowerCase()]) {
-      await registerAsset(environment, contracts.registry, {
+      await registerAsset(environment, melonContracts.registry, {
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
         decimals: asset.decimals,
@@ -274,13 +285,13 @@ export const deploySystem = async (
         standards: [],
         url: '',
       });
-      await setDecimals(environment, contracts.priceSource, asset);
+      await setDecimals(environment, melonContracts.priceSource, asset);
     }
   }
 
   const addresses = {
     exchangeConfigs,
-    melonContracts: contracts as MelonContracts,
+    melonContracts: melonContracts as MelonContracts,
     thirdPartyContracts,
   };
 
