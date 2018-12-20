@@ -15,6 +15,9 @@ import {
 import { makeEthfinexOrder } from './makeEthfinexOrder';
 import { Exchanges } from '~/Contracts';
 import { getWrapperLock } from '~/contracts/exchanges/thirdparty/ethfinex/calls/getWrapperLock';
+import { getHub } from '../../hub/calls/getHub';
+import { getSettings } from '../../hub/calls/getSettings';
+import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 // tslint:enable:max-line-length
 
 const shared: any = {};
@@ -36,6 +39,7 @@ beforeAll(async () => {
 
   shared.mln = getTokenBySymbol(deployment.tokens, 'MLN');
   shared.weth = getTokenBySymbol(deployment.tokens, 'WETH');
+  shared.zx = getTokenBySymbol(deployment.tokens, 'ZRX');
 
   shared.mlnWrapperLock = await getWrapperLock(shared.ethfinexAddress, {
     token: shared.mln,
@@ -44,10 +48,24 @@ beforeAll(async () => {
   shared.wethWrapperLock = await getWrapperLock(shared.ethfinexAddress, {
     token: shared.weth,
   });
+
+  shared.zxWrapperLock = await getWrapperLock(shared.ethfinexAddress, {
+    token: shared.zx,
+  });
 });
 
-test('Make ethfinex order from fund and take it from account', async () => {
-  const makerQuantity = createQuantity(shared.wethWrapperLock, 0.05);
+test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
+  const hubAddress = await getHub(
+    shared.settings.tradingAddress,
+    shared.environment,
+  );
+  const { vaultAddress } = await getSettings(hubAddress);
+  const howMuch = createQuantity(shared.zx, 1);
+
+  const receipt = await transfer({ howMuch, to: vaultAddress });
+  expect(receipt).toBeTruthy();
+
+  const makerQuantity = createQuantity(shared.zxWrapperLock, 0.05);
   const takerQuantity = createQuantity(shared.mln, 1);
 
   const unsignedEthfinexOrder = await createOrder(
