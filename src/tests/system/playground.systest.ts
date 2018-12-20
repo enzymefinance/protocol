@@ -12,6 +12,8 @@ import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 import { withDeployment } from '~/utils/environment/withDeployment';
 // import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { Deployment } from '~/utils/environment/Environment';
+import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 /**
@@ -67,11 +69,18 @@ describe('playground', () => {
     const masterBalance = await getBalance(masterEnvironment);
 
     await sendEth(masterEnvironment, {
-      howMuch: createQuantity('ETH', 2),
+      howMuch: createQuantity('ETH', 5),
       to: environment.wallet.address,
     });
 
     const balance = await getBalance(environment);
+
+    const weth = getTokenBySymbol(environment, 'WETH');
+    const quantity = createQuantity(weth, 2);
+
+    await deposit(environment, quantity.token.address, undefined, {
+      value: quantity.quantity.toString(),
+    });
 
     const settings = await setupInvestedTestFund(environment);
 

@@ -7,7 +7,7 @@ module.exports = {
   },
   testRegex: '((\\.|/)(systest))\\.(js|ts)$',
   moduleFileExtensions: ['ts', 'js', 'json', 'node', 'bin'],
-  setupTestFrameworkScriptFile: '<rootDir>/jest.setup.js',
+  setupTestFrameworkScriptFile: `${__dirname}/jest.setup.js`,
   moduleNameMapper: {
     '~/(.*)': '<rootDir>/src/$1',
   },
