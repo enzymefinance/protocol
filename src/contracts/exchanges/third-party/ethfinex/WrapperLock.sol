@@ -30,15 +30,15 @@ contract WrapperLock is BasicToken, Ownable {
     mapping (address => uint256) public balances;
 
     function WrapperLock(
-        address _originalToken, 
-        string _name, 
-        string _symbol, 
-        uint _decimals, 
-        bool _erc20old, 
-        address _proxyEfx, 
+        address _originalToken,
+        string _name,
+        string _symbol,
+        uint _decimals,
+        bool _erc20old,
+        address _proxyEfx,
         address _proxyV2
-    ) 
-        Ownable() 
+    )
+        Ownable()
     {
         originalToken = _originalToken;
         name = _name;

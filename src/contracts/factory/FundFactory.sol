@@ -11,15 +11,15 @@ import "Trading.sol";
 import "Vault.sol";
 import "Version.i.sol";
 import "AmguConsumer.sol";
+import "Factory.sol";
 
-// TODO: inherit from Factory
-/// @notice Creates fund components and links them together
-contract FundFactory is AmguConsumer {
+/// @notice Creates fund routes and links them together
+contract FundFactory is AmguConsumer, Factory {
 
     event NewFund(
         address manager,
         address hub,
-        address[12] components
+        address[12] routes
     );
 
     address public factoryPriceSource;
@@ -35,34 +35,17 @@ contract FundFactory is AmguConsumer {
     TradingFactory public tradingFactory;
     VaultFactory public vaultFactory;
 
-    struct Components {
-        address accounting;
-        address feeManager;
-        address participation;
-        address policyManager;
-        address shares;
-        address trading;
-        address vault;
-        address priceSource;
-        address registry;
-        address version;
-        address engine;
-        address mlnToken;
-    }
-
     address[] public funds;
-    mapping (address => bool) public hubExists;
     mapping (address => address) public managersToHubs;
-    mapping (address => Components) public managersToComponents;
-    // Only used internally
+    mapping (address => Hub.Routes) public managersToRoutes;
     mapping (address => Settings) public managersToSettings;
-    mapping (address => uint8) public stepFor;
 
+    /// @dev Parameters stored when beginning setup
     struct Settings {
         string name;
         address[] exchanges;
         address[] adapters;
-        address quoteAsset;
+        address denominationAsset;
         address nativeAsset;
         address[] defaultAssets;
         bool[] takesCustody;
@@ -72,10 +55,12 @@ contract FundFactory is AmguConsumer {
         uint[] feePeriods;
     }
 
-    modifier step(uint8 n) {
-        require(stepFor[msg.sender] == n - 1, "Invalid step");
+    modifier componentNotSet(address _component) {
+        require(
+            _component == address(0),
+            "This step has already been run"
+        );
         _;
-        stepFor[msg.sender] = n;
     }
 
     constructor(
@@ -106,26 +91,24 @@ contract FundFactory is AmguConsumer {
 
     function beginSetup(
         string _name,
-        // address _compliance,
-        // address[] _policies,
         address[] _fees,
         uint[] _feeRates,
         uint[] _feePeriods,
         address[] _exchanges,
         address[] _adapters,
-        address _quoteAsset,
+        address _denominationAsset,
         address _nativeAsset,
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) step(1) {
+    ) componentNotSet(managersToHubs[msg.sender]) {
         require(!version.getShutDownStatus(), "Version cannot be shut down");
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
             _exchanges,
             _adapters,
-            _quoteAsset,
+            _denominationAsset,
             _nativeAsset,
             _defaultAssets,
             _takesCustody,
@@ -134,19 +117,32 @@ contract FundFactory is AmguConsumer {
             _feeRates,
             _feePeriods
         );
-        managersToComponents[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
-        managersToComponents[msg.sender].registry = registry;
-        managersToComponents[msg.sender].version = address(version);
-        managersToComponents[msg.sender].engine = engine;
-        managersToComponents[msg.sender].mlnToken = mlnToken;
+        managersToRoutes[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
+        managersToRoutes[msg.sender].registry = registry;
+        managersToRoutes[msg.sender].version = address(version);
+        managersToRoutes[msg.sender].engine = engine;
+        managersToRoutes[msg.sender].mlnToken = mlnToken;
     }
 
-    function createAccounting() step(2) amguPayable payable {
-        managersToComponents[msg.sender].accounting = accountingFactory.createInstance(managersToHubs[msg.sender], managersToSettings[msg.sender].nativeAsset, managersToSettings[msg.sender].quoteAsset, managersToSettings[msg.sender].defaultAssets);
+    function createAccounting()
+        componentNotSet(managersToRoutes[msg.sender].accounting)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
+            managersToHubs[msg.sender],
+            managersToSettings[msg.sender].denominationAsset,
+            managersToSettings[msg.sender].nativeAsset,
+            managersToSettings[msg.sender].defaultAssets
+        );
     }
 
-    function createFeeManager() step(3) amguPayable payable {
-        managersToComponents[msg.sender].feeManager = feeManagerFactory.createInstance(
+    function createFeeManager()
+        componentNotSet(managersToRoutes[msg.sender].feeManager)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].feeManager = feeManagerFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
@@ -154,77 +150,102 @@ contract FundFactory is AmguConsumer {
         );
     }
 
-    function createParticipation() step(4) amguPayable payable {
-        managersToComponents[msg.sender].participation = participationFactory.createInstance(
+    function createParticipation()
+        componentNotSet(managersToRoutes[msg.sender].participation)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].defaultAssets,
-            managersToComponents[msg.sender].registry
+            managersToRoutes[msg.sender].registry
         );
     }
 
-    function createPolicyManager() step(5) amguPayable payable {
-        managersToComponents[msg.sender].policyManager = policyManagerFactory.createInstance(managersToHubs[msg.sender]);
+    function createPolicyManager()
+        componentNotSet(managersToRoutes[msg.sender].policyManager)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].policyManager = policyManagerFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function createShares() step(6) amguPayable payable {
-        managersToComponents[msg.sender].shares = sharesFactory.createInstance(managersToHubs[msg.sender]);
+    function createShares()
+        componentNotSet(managersToRoutes[msg.sender].shares)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].shares = sharesFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function createTrading() step(7) amguPayable payable {
-           managersToComponents[msg.sender].trading = tradingFactory.createInstance(
+    function createTrading()
+        componentNotSet(managersToRoutes[msg.sender].trading)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].trading = tradingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].exchanges,
             managersToSettings[msg.sender].adapters,
             managersToSettings[msg.sender].takesCustody,
-            managersToComponents[msg.sender].registry
+            managersToRoutes[msg.sender].registry
         );
     }
 
-    function createVault() step(8) amguPayable payable {
-        managersToComponents[msg.sender].vault = vaultFactory.createInstance(managersToHubs[msg.sender]);
+    function createVault()
+        componentNotSet(managersToRoutes[msg.sender].vault)
+        amguPayable
+        payable
+    {
+        managersToRoutes[msg.sender].vault = vaultFactory.createInstance(
+            managersToHubs[msg.sender]
+        );
     }
 
-    function completeSetup() step(9) amguPayable payable {
-        Components components = managersToComponents[msg.sender];
+    function completeSetup() amguPayable payable {
+        Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
-        hubExists[address(hub)] = true;
+        require(!childExists[address(hub)], "Setup already complete");
+        childExists[address(hub)] = true;
         hub.setSpokes([
-            components.accounting,
-            components.feeManager,
-            components.participation,
-            components.policyManager,
-            components.shares,
-            components.trading,
-            components.vault,
-            components.priceSource,
-            components.registry,
-            components.version,
-            components.engine,
-            components.mlnToken
+            routes.accounting,
+            routes.feeManager,
+            routes.participation,
+            routes.policyManager,
+            routes.shares,
+            routes.trading,
+            routes.vault,
+            routes.priceSource,
+            routes.registry,
+            routes.version,
+            routes.engine,
+            routes.mlnToken
         ]);
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
         Registry(registry).registerFund(address(hub));
 
-        delete managersToSettings[msg.sender];
-
         emit NewFund(
             msg.sender,
             hub,
             [
-                components.accounting,
-                components.feeManager,
-                components.participation,
-                components.policyManager,
-                components.shares,
-                components.trading,
-                components.vault,
-                components.priceSource,
-                components.registry,
-                components.version,
-                components.engine,
-                components.mlnToken
+                routes.accounting,
+                routes.feeManager,
+                routes.participation,
+                routes.policyManager,
+                routes.shares,
+                routes.trading,
+                routes.vault,
+                routes.priceSource,
+                routes.registry,
+                routes.version,
+                routes.engine,
+                routes.mlnToken
             ]
         );
     }

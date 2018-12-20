@@ -6,19 +6,9 @@ import "PriceSource.i.sol";
 import "Version.i.sol";
 import "Engine.sol";
 
-// cleanup
-// TODO: can function know it is payable?
-// TODO: can modifier itself be payable?
-
-// cleanup
-// TODO: can function know it is payable?
-// TODO: can modifier itself be payable?
-
-// TODO: collect AMGU in other contracts
 /// @notice inherit this pay AMGU
 contract AmguConsumer is DSMath {
 
-    // TODO: fix error in here leading to revert
     modifier amguPayable() {
         uint initialGas = gasleft();
         _;

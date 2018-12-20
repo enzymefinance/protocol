@@ -3,7 +3,7 @@ pragma solidity ^0.4.21;
 import "Hub.sol";
 import "Policy.sol";
 import "MatchingMarketAdapter.sol";
-import "CanonicalPriceFeed.sol";
+import "PriceSource.i.sol";
 import "math.sol";
 
 contract PriceTolerance is DSMath, Policy {
@@ -27,8 +27,9 @@ contract PriceTolerance is DSMath, Policy {
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
-        var (, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        uint referencePrice;
+        (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
         uint orderPrice = pricefeed.getOrderPriceInfo(
             takerAsset,
@@ -44,8 +45,9 @@ contract PriceTolerance is DSMath, Policy {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
 
-        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
-        var (, referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        uint referencePrice;
+        (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
         uint orderPrice = pricefeed.getOrderPriceInfo(
             takerAsset,
@@ -66,10 +68,11 @@ contract PriceTolerance is DSMath, Policy {
     }
 
     function makeOrder(address[5] addresses, uint[3] values, bytes32 identifier) public view returns (bool) {
-        CanonicalPriceFeed pricefeed = CanonicalPriceFeed(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
 
-        var (,ratio,)   = CanonicalPriceFeed(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
-        uint _value     = CanonicalPriceFeed(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
+        uint ratio;
+        (ratio,) = PriceSourceInterface(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
+        uint _value = PriceSourceInterface(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
 
         int res = int(ratio) - int(_value);
         if (res < 0) {

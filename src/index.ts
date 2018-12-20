@@ -17,11 +17,10 @@ export { getName } from '~/contracts/fund/hub/calls/getName';
 export { getPrice } from '~/contracts/prices/calls/getPrice';
 export { getPrices } from '~/contracts/prices/calls/getPrices';
 export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
-export { getSettings } from '~/contracts/fund/hub/calls/getSettings';
-export { getStepFor } from '~/contracts/factory/calls/getStepFor';
+export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-export { hasRecentPrice } from '~/contracts/prices/calls/hasRecentPrice';
+export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 export { isAddress } from '~/utils/checks/isAddress';
 export { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 export { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
@@ -50,3 +49,9 @@ export { createTrading } from '~/contracts/factory/transactions/createTrading';
 export { createVault } from '~/contracts/factory/transactions/createVault';
 export { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 export { update } from '~/contracts/prices/transactions/update';
+export {
+  triggerRewardAllFees,
+} from '~/contracts/fund/fees/transactions/triggerRewardAllFees';
+export {
+  getDenominationAsset,
+} from '~/contracts/fund/accounting/calls/getDenominationAsset';

@@ -58,7 +58,6 @@ export enum Contracts {
   Trading = 'Trading',
   TradingFactory = 'TradingFactory',
   TruePolicy = 'TruePolicy',
-  UserBlacklist = 'UserBlacklist',
   UserWhitelist = 'UserWhitelist',
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
@@ -188,8 +187,6 @@ export const requireMap = {
     require(`../out/${Contracts.TradingFactory}.abi.json`),
   [Contracts.TruePolicy]:
     require('../out/TruePolicy.abi.json'),
-  [Contracts.UserBlacklist]:
-    require(`../out/${Contracts.UserBlacklist}.abi.json`),
   [Contracts.UserWhitelist]:
     require(`../out/${Contracts.UserWhitelist}.abi.json`),
   [Contracts.Vault]:

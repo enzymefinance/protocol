@@ -18,17 +18,16 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
     bool mockIsRecent = true;
+    bool alwaysValid = true;
 
     constructor(address _quoteAsset, uint _quoteDecimals) {
         QUOTE_ASSET = _quoteAsset;
         setDecimals(_quoteAsset, _quoteDecimals);
     }
 
-    /** Ex:
-     *  Let QUOTE_ASSET == MLN (base units), let asset == EUR-T,
-     *  let Value of 1 EUR-T := 1 EUR == 0.080456789 MLN, hence price 0.080456789 MLN / EUR-T
-     *  and let EUR-T decimals == 8.
-     *  Input would be: information[EUR-T].price = 8045678 [MLN/ (EUR-T * 10**8)]
+    /**
+      Input price is how much quote asset you would get
+      for one unit of _asset (10**assetDecimals)
      */
     function update(address[] _assets, uint[] _prices) external {
         require(_assets.length == _prices.length, "Array lengths unequal");
@@ -61,29 +60,34 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
 
     function getPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint price, uint assetDecimals)
+        returns (uint price, uint assetDecimals)
     {
-        isRecent = mockIsRecent;
         (price, ) = getPrice(ofAsset);
         assetDecimals = assetsToDecimals[ofAsset];
     }
 
     function getInvertedPriceInfo(address ofAsset)
         view
-        returns (bool isRecent, uint invertedPrice, uint assetDecimals)
+        returns (uint invertedPrice, uint assetDecimals)
     {
         uint inputPrice;
         // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        (isRecent, inputPrice, assetDecimals) = getPriceInfo(ofAsset);
+        (inputPrice, assetDecimals) = getPriceInfo(ofAsset);
 
         // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
         uint quoteDecimals = assetsToDecimals[QUOTE_ASSET];
 
         return (
-            isRecent,
-            mul(10 ** uint(quoteDecimals), 10 ** uint(assetDecimals)) / inputPrice,
-            quoteDecimals   // TODO: check on this; shouldn't it be assetDecimals?
+            mul(
+                10 ** uint(quoteDecimals),
+                10 ** uint(assetDecimals)
+            ) / inputPrice,
+            quoteDecimals
         );
+    }
+
+    function setAlwaysValid(bool _state) {
+        alwaysValid = _state;
     }
 
     function setIsRecent(bool _state) {
@@ -105,17 +109,21 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
 
     function getReferencePriceInfo(address ofBase, address ofQuote)
         view
-        returns (bool isRecent, uint referencePrice, uint decimal)
+        returns (uint referencePrice, uint decimal)
     {
-        isRecent = hasRecentPrice(ofBase) && hasRecentPrice(ofQuote);
         uint quoteDecimals = assetsToDecimals[ofQuote];
+
+        // Price of 1 unit for the pair of same asset
+        if (ofBase == ofQuote) {
+            return (10 ** quoteDecimals, quoteDecimals);
+        }
 
         referencePrice = mul(
             assetsToPrices[ofBase].price,
             10 ** quoteDecimals
         ) / assetsToPrices[ofQuote].price;
 
-        return (isRecent, referencePrice, quoteDecimals);
+        return (referencePrice, quoteDecimals);
     }
 
     function getOrderPriceInfo(
@@ -131,14 +139,26 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     /// @notice Doesn't check validity as TestingPriceFeed has no validity variable
-    /// @param ofAsset Asset in registrar
-    /// @return isRecent Price information ofAsset is recent
-    function hasRecentPrice(address ofAsset)
+    /// @param _asset Asset in registrar
+    /// @return isValid Price information ofAsset is recent
+    function hasValidPrice(address _asset)
         view
-        returns (bool isRecent)
+        returns (bool isValid)
     {
-        var (price, ) = getPrice(ofAsset);
-        return (price != 0);
+        var (price, ) = getPrice(_asset);
+        return alwaysValid || price != 0;
+    }
+
+    function hasValidPrices(address[] _assets)
+        view
+        returns (bool)
+    {
+        for (uint i; i < _assets.length; i++) {
+            if (!hasValidPrice(_assets[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// @notice Checks whether data exists for a given asset pair
@@ -151,10 +171,8 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         returns (bool isExistent)
     {
         return
-            hasRecentPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            hasRecentPrice(buyAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
-            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
-            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+            hasValidPrice(sellAsset) &&
+            hasValidPrice(buyAsset);
     }
 
     function getLastUpdateId() public view returns (uint) { return updateId; }

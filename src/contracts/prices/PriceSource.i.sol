@@ -3,10 +3,20 @@ pragma solidity ^0.4.21;
 /// @notice Must return a value for an asset
 interface PriceSourceInterface {
     function getQuoteAsset() public view returns (address);
-    function hasRecentPrice(address) public view returns (bool);
-    function getPrice(address ofAsset) public view returns (uint price, uint timestamp);
-    function getPrices(address[] ofAssets) public view returns (uint[] prices, uint[] timestamps);
-    function getReferencePriceInfo(address ofBase, address ofQuote) public view returns (bool isRecent, uint referencePrice, uint decimal);
+
+    /// @notice Returns false if asset not applicable, or price not recent
+    function hasValidPrice(address) public view returns (bool);
+    function hasValidPrices(address[]) public view returns (bool);
+
+    /// @notice Return the last known price, and when it was issued
+    function getPrice(address _asset) public view returns (uint price, uint timestamp);
+    function getPrices(address[] _assets) public view returns (uint[] prices, uint[] timestamps);
+
+    /// @notice Get price info, and revert if not valid
+    function getPriceInfo(address _asset) view returns (uint price, uint decimals);
+    function getInvertedPriceInfo(address ofAsset) view returns (uint price, uint decimals);
+
+    function getReferencePriceInfo(address _base, address _quote) public view returns (uint referencePrice, uint decimal);
     function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) public view returns (uint orderPrice);
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) public view returns (bool isExistent);
 }

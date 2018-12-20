@@ -4,7 +4,7 @@ import { Contracts } from '~/Contracts';
 export const getFundComponents = async (environment, hubAddress) => {
   let components: any = {};
   components.hub = await getContract(environment, Contracts.Hub, hubAddress);
-  const routes = await components.hub.methods.settings().call();
+  const routes = await components.hub.methods.routes().call();
   components = Object.assign(components, {
     accounting: await getContract(
       environment,

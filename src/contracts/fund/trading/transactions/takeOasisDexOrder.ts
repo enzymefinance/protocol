@@ -2,7 +2,7 @@ import { withTransactionDecorator } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
@@ -34,7 +34,7 @@ const guard = async (
   contractAddress,
 ) => {
   const hubAddress = await getHub(environment, contractAddress);
-  const { vaultAddress } = await getSettings(environment, hubAddress);
+  const { vaultAddress } = await getRoutes(environment, hubAddress);
 
   const minBalance = fillTakerTokenAmount;
 

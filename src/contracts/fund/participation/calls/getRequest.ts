@@ -5,7 +5,7 @@ import {
 import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 
 export interface RequestInvestmentResult {
@@ -22,8 +22,8 @@ const postProcess = async (
 ): Promise<RequestInvestmentResult> => {
   const investToken = await getToken(environment, result.investmentAsset);
   const hub = await getHub(environment, prepared.contractAddress);
-  const settings = await getSettings(environment, hub);
-  const fundToken = await getToken(environment, settings.sharesAddress);
+  const routes = await getRoutes(environment, hub);
+  const fundToken = await getToken(environment, routes.sharesAddress);
 
   return {
     investmentAmount: createQuantity(investToken, result.investmentAmount),

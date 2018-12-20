@@ -7,12 +7,14 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+
 interface RegisterAssetArgs {
   assetAddress: Address;
   name: String;
   assetSymbol: String; // actually bytes8
   decimals: Number; // actually uint
   url: String;
+  reserveMin: String;
   standards: String[]; // actually uint[]
   sigs: FunctionSignatures[];
 }
@@ -25,6 +27,7 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
     assetSymbol,
     decimals,
     url,
+    reserveMin,
     standards,
     sigs,
   }: RegisterAssetArgs,
@@ -34,6 +37,7 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
   assetSymbol,
   `${decimals}`,
   url,
+  reserveMin,
   standards,
   sigs.map(sig => web3EthAbi.encodeFunctionSignature(sig)),
 ];

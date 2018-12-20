@@ -17,7 +17,7 @@ describe('make0xOrder', () => {
     const env = await deployAndInitTestEnv();
     shared.env = env;
     shared.accounts = await shared.env.eth.getAccounts();
-    shared.settings = await setupInvestedTestFund(shared.env);
+    shared.routes = await setupInvestedTestFund(shared.env);
 
     shared.zeroExAddress =
       env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
@@ -34,7 +34,7 @@ describe('make0xOrder', () => {
       shared.env,
       shared.zeroExAddress,
       {
-        makerAddress: shared.settings.tradingAddress,
+        makerAddress: shared.routes.tradingAddress,
         makerQuantity,
         takerQuantity,
       },
@@ -42,13 +42,9 @@ describe('make0xOrder', () => {
 
     const signedOrder = await signOrder(shared.env, unsigned0xOrder);
 
-    const result = await make0xOrder(
-      shared.env,
-      shared.settings.tradingAddress,
-      {
-        signedOrder,
-      },
-    );
+    const result = await make0xOrder(shared.env, shared.routes.tradingAddress, {
+      signedOrder,
+    });
 
     expect(result).toBe(true);
 

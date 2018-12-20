@@ -28,7 +28,7 @@ const guard: GuardFunction<CancelOasisDexOrderArgs> = async (
   contractAddress,
 ) => {
   // const hubAddress = await getHub(environment, contractAddress);
-  // const { vaultAddress } = await getSettings(environment, hubAddress);
+  // const { vaultAddress } = await getRoutes(environment, hubAddress);
 
   await ensureFundOwner(environment, contractAddress);
 };

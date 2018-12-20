@@ -77,7 +77,7 @@ beforeAll(async () => {
   s.fund = await getFundComponents(envManager, hubAddress);
 
   await updateTestingPriceFeed(s, s.environment);
-  const [, referencePrice] = Object.values(
+  const [referencePrice] = Object.values(
     await s.priceSource.methods
       .getReferencePriceInfo(s.weth.options.address, s.mln.options.address)
       .call(),
@@ -272,6 +272,13 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     await s.weth.methods
       .approve(s.exchanges[i].options.address, `${s.trade2.sellQuantity}`)
       .send({ from: s.deployer, gas: s.gas });
+    console.log(
+      `${s.trade2.sellQuantity}`,
+      s.weth.options.address,
+      `${s.trade2.buyQuantity}`,
+      s.mln.options.address,
+    );
+
     await s.exchanges[i].methods
       .offer(
         `${s.trade2.sellQuantity}`,

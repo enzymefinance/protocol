@@ -57,16 +57,16 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        safeAddToOwnedAssets(takerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(takerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.make,
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), orderValues[4]);
-        Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
+        getTrading().addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
+        getTrading().addZeroExOrderData(orderInfo.orderHash, order);
     }
 
     /// @notice Cancel the 0x make order
@@ -84,9 +84,8 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
         ExchangeEfx(targetExchange).cancelOrder(order);
 
+        getAccounting().updateOwnedAssets();
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
-        // address makerAsset = ExchangeEfx(targetExchange).token2WrapperLookup(getAssetAddress(order.makerAssetData));
-        // Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             identifier,
@@ -119,11 +118,12 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
                 WETH9(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
+            getTrading().returnAssetToVault(orderAddresses[i]);
+            getAccounting().addAssetToOwnedAssets(orderAddresses[i]);
         }
     }
 
      /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted
-     // TODO: Check if return values more accurate to their names (E.g if order is filled does it mean maker / taker quantities are 0)
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)

@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-const componentsFromSettings = settings => {
+const componentsFromRoutes = routes => {
   return R.pick(
     [
       'accountingAddress',
@@ -11,8 +11,8 @@ const componentsFromSettings = settings => {
       'tradingAddress',
       'vaultAddress',
     ],
-    settings,
+    routes,
   );
 };
 
-export { componentsFromSettings };
+export { componentsFromRoutes };

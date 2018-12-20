@@ -18,9 +18,6 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: './logs/test-latest.log',
     }),
-    new winston.transports.Console({
-      level: LogLevels.INFO,
-    }),
   ],
 });
 

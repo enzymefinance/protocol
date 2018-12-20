@@ -17,7 +17,7 @@ import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
 import { BigInteger, power } from '@melonproject/token-math/bigInteger';
 
-export interface thirdPartyContracts {
+export interface ThirdPartyContracts {
   exchanges: {
     kyber: KyberEnvironment;
     matchingMarket: Address;
@@ -32,12 +32,14 @@ const deployThirdParty = async (
     createToken('WETH'),
     createToken('MLN'),
     createToken('EUR'),
+    createToken('DGX', undefined, 9),
     createToken('ZRX'),
   ],
-): Promise<thirdPartyContracts> => {
+): Promise<ThirdPartyContracts> => {
   ensure(!!tokens.find(t => t.symbol === 'WETH'), 'WETH Token is required');
   ensure(!!tokens.find(t => t.symbol === 'MLN'), 'MLN Token is required');
   ensure(!!tokens.find(t => t.symbol === 'EUR'), 'EUR Token is required');
+  ensure(!!tokens.find(t => t.symbol === 'DGX'), 'DGX Token is required');
   ensure(!!tokens.find(t => t.symbol === 'ZRX'), 'ZRX Token is required');
 
   // : Promise<thirdPartyContracts>

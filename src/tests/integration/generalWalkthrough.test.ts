@@ -1,5 +1,11 @@
 import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
+import {
+  BigInteger,
+  power,
+  multiply,
+} from '@melonproject/token-math/bigInteger';
+
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts, Exchanges } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
@@ -12,7 +18,7 @@ import { createPolicyManager } from '~/contracts/factory/transactions/createPoli
 import { createShares } from '~/contracts/factory/transactions/createShares';
 import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
-import { getSettings } from '~/contracts/fund/hub/calls/getSettings';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
@@ -31,11 +37,6 @@ import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cance
 import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
-import {
-  BigInteger,
-  power,
-  multiply,
-} from '@melonproject/token-math/bigInteger';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { LogLevels, Environment } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
@@ -131,55 +132,60 @@ describe('generalWalkthrough', () => {
     await createVault(shared.env, version);
     const hubAddress = await completeSetup(shared.env, version);
 
-    const settings = await getSettings(shared.env, hubAddress);
+    const routes = await getRoutes(shared.env, hubAddress);
 
-    await register(shared.env, settings.policyManagerAddress, {
+    await register(shared.env, routes.policyManagerAddress, {
       method: FunctionSignatures.makeOrder,
       policy: policies.priceTolerance,
     });
 
-    await register(shared.env, settings.policyManagerAddress, {
+    await register(shared.env, routes.policyManagerAddress, {
       method: FunctionSignatures.takeOrder,
       policy: policies.priceTolerance,
     });
 
-    await register(shared.env, settings.policyManagerAddress, {
+    await register(shared.env, routes.policyManagerAddress, {
       method: FunctionSignatures.executeRequestFor,
       policy: policies.userWhitelist,
     });
 
-    const newPrice = getPrice(
+    const ethPrice = getPrice(
+      createQuantity(quoteToken, '1'),
+      createQuantity(quoteToken, '1'),
+    );
+
+    const mlnPrice = getPrice(
       createQuantity(baseToken, '1'),
       createQuantity(quoteToken, '2'),
     );
 
-    await update(shared.env, priceSource, [newPrice]);
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
     const investmentAmount = createQuantity(quoteToken, 1);
 
     await expect(
-      requestInvestment(shared.env, settings.participationAddress, {
+      requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount,
       }),
     ).rejects.toThrow(`Insufficient allowance`);
 
     await approve(shared.env, {
       howMuch: investmentAmount,
-      spender: settings.participationAddress,
+      spender: routes.participationAddress,
     });
 
-    await requestInvestment(shared.env, settings.participationAddress, {
+    await requestInvestment(shared.env, routes.participationAddress, {
       investmentAmount,
     });
 
-    await executeRequest(shared.env, settings.participationAddress);
+    await executeRequest(shared.env, routes.participationAddress);
 
     debug('Executed request');
 
-    // const redemption = await redeem(settings.participationAddress);
+    // const redemption = await redeem(routes.participationAddress);
     // debug('Redeemed');
 
-    await getFundHoldings(shared.env, settings.accountingAddress);
+    await getFundHoldings(shared.env, routes.accountingAddress);
 
     const matchingMarketAddress =
       shared.env.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
@@ -226,7 +232,7 @@ describe('generalWalkthrough', () => {
 
     const orderFromFund = await makeOasisDexOrder(
       shared.env,
-      settings.tradingAddress,
+      routes.tradingAddress,
       {
         makerQuantity: createQuantity(tokens[0], 0.1),
         takerQuantity: createQuantity(tokens[1], 2),
@@ -236,13 +242,13 @@ describe('generalWalkthrough', () => {
 
     const fundOrder = await getFundOpenOrder(
       shared.env,
-      settings.tradingAddress,
+      routes.tradingAddress,
       0,
     );
 
-    await cancelOasisDexOrder(shared.env, settings.tradingAddress, {
+    await cancelOasisDexOrder(shared.env, routes.tradingAddress, {
       id: fundOrder.id,
-      maker: settings.tradingAddress,
+      maker: routes.tradingAddress,
       makerAsset: fundOrder.makerAsset,
       takerAsset: fundOrder.takerAsset,
     });
@@ -261,7 +267,7 @@ describe('generalWalkthrough', () => {
     expect(order3.buy).toEqual(createQuantity(tokens[0], 0.1));
     debug(`Made order from account with id ${order3.id}`);
 
-    await takeOasisDexOrder(shared.env, settings.tradingAddress, {
+    await takeOasisDexOrder(shared.env, routes.tradingAddress, {
       id: order3.id,
       maker: order3.maker,
       makerQuantity: order3.sell,
@@ -270,14 +276,14 @@ describe('generalWalkthrough', () => {
 
     debug(`Took order from fund with id ${order3.id} `);
 
-    await performCalculations(shared.env, settings.accountingAddress);
+    await performCalculations(shared.env, routes.accountingAddress);
 
     await shutDownFund(shared.env, version, { hub: hubAddress });
 
     debug('Shut down fund');
 
     await expect(
-      requestInvestment(shared.env, settings.participationAddress, {
+      requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount: createQuantity(quoteToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);

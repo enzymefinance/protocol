@@ -51,15 +51,15 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        safeAddToOwnedAssets(takerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(takerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.make,
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), orderValues[4]);
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
@@ -119,9 +119,10 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
             takerAssetFilledAmount == fillTakerQuantity,
             "Filled amount does not match desired fill amount"
         );
-        safeAddToOwnedAssets(makerAsset);
-        Trading(address(this)).returnAssetToVault(makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getAccounting().addAssetToOwnedAssets(makerAsset);
+        getAccounting().updateOwnedAssets();
+        getTrading().returnAssetToVault(makerAsset);
+        getTrading().orderUpdateHook(
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.take,
@@ -143,13 +144,17 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         Hub hub = getHub();
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
-        Exchange(targetExchange).cancelOrder(order);
+
+        if (order.expirationTimeSeconds > block.timestamp) {
+            Exchange(targetExchange).cancelOrder(order);
+        }
 
         // Set the approval back to 0
         approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
-        Trading(address(this)).removeOpenMakeOrder(targetExchange, makerAsset);
-        Trading(address(this)).returnAssetToVault(makerAsset);
-        Trading(address(this)).orderUpdateHook(
+        getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
+        getTrading().returnAssetToVault(makerAsset);
+        getAccounting().updateOwnedAssets();
+        getTrading().orderUpdateHook(
             targetExchange,
             identifier,
             Trading.UpdateType.cancel,
