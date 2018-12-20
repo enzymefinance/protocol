@@ -62,7 +62,7 @@ export enum Contracts {
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
   Version = 'Version',
-  Weth = 'Weth',
+  Weth = 'WETH',
   ZeroExAdapter = 'ZeroExV2Adapter',
   ZeroExExchange = 'Exchange',
 }
