@@ -11,7 +11,7 @@ import {
   BigInteger,
 } from '@melonproject/token-math/bigInteger';
 import {
-  getPrice,
+  createPrice,
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
@@ -66,7 +66,7 @@ test('Set amgu and check its usage', async () => {
     quoteToken,
   };
 
-  const newPrice = getPrice(
+  const newPrice = createPrice(
     createQuantity(baseToken, '1'),
     createQuantity(quoteToken, '2'),
   );

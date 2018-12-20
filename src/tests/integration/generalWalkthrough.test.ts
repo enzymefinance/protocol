@@ -1,4 +1,4 @@
-import { getPrice } from '@melonproject/token-math/price';
+import { createPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
   BigInteger,
@@ -149,7 +149,7 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
-    const newPrice = getPrice(
+    const newPrice = createPrice(
       createQuantity(baseToken, '1'),
       createQuantity(quoteToken, '2'),
     );

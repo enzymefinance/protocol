@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { getPrice, PriceInterface } from '@melonproject/token-math/price';
+import { createPrice, PriceInterface } from '@melonproject/token-math/price';
 import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { Environment } from '~/utils/environment/Environment';
@@ -32,12 +32,12 @@ export const getPrices = async (
 
   const processed = R.zipWith(processResult, result['0'], result['1']);
 
-  const createPrice = (t: TokenInterface, { price, timestamp }) => {
+  const makePrice = (t: TokenInterface, { price, timestamp }) => {
     const base = createQuantity(t, appendDecimals(t, 1));
     const quote = createQuantity(quoteToken, price);
-    return getPrice(base, quote, preventCancelDown);
+    return createPrice(base, quote, preventCancelDown);
   };
 
-  const prices = R.zipWith(createPrice, tokens, processed);
+  const prices = R.zipWith(makePrice, tokens, processed);
   return prices;
 };
