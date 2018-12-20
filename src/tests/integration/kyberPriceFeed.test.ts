@@ -82,6 +82,16 @@ describe('kyber-price-feed', () => {
       shared.kyberPriceFeed,
       shared.tokens.mln,
     );
+
+    const eurPrice = await getPrice(
+      shared.env,
+      shared.kyberPriceFeed,
+      shared.tokens.eur,
+    );
+    // console.log("--------------------------------");
+    // console.log(eurPrice);
+    require('fs').writeFileSync('log.txt', JSON.stringify(eurPrice));
+
     expect(toFixed(mlnPrice)).toBe('1.000000');
   });
 });

@@ -131,6 +131,7 @@ test(`fund gets non-denomination asset from investment`, async () => {
       .getReferencePriceInfo(s.weth.options.address, fundDenominationAsset)
       .call(),
   ).map(e => new BigInteger(e));
+
   expect(fundDenominationAsset).toEqual(s.dgx.options.address);
   expect(postTotalSupply).toEqual(add(preTotalSupply, wantedShares));
   expect(expectedCostOfShares).toEqual(actualCostOfShares);
