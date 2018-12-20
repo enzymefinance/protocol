@@ -48,7 +48,7 @@ beforeAll(async () => {
 
 test('Make ethfinex order from fund and take it from account', async () => {
   const makerQuantity = createQuantity(shared.wethWrapperLock, 0.05);
-  const takerQuantity = createQuantity(shared.mlnWrapperLock, 1);
+  const takerQuantity = createQuantity(shared.mln, 1);
 
   const unsignedEthfinexOrder = await createOrder(
     shared.ethfinexAddress,
