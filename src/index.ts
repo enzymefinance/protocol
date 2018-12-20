@@ -23,6 +23,7 @@ export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 export { isAddress } from '~/utils/checks/isAddress';
 export { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
+export { childExists } from '~/contracts/factory/calls/childExists';
 export { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 export {
   managersToSettings,
