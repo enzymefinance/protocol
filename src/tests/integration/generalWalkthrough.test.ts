@@ -149,12 +149,17 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
-    const newPrice = getPrice(
+    const ethPrice = getPrice(
+      createQuantity(quoteToken, '1'),
+      createQuantity(quoteToken, '1'),
+    );
+
+    const mlnPrice = getPrice(
       createQuantity(baseToken, '1'),
       createQuantity(quoteToken, '2'),
     );
 
-    await update(shared.env, priceSource, [newPrice]);
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
     const investmentAmount = createQuantity(quoteToken, 1);
 

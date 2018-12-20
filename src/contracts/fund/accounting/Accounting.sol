@@ -86,6 +86,10 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             address asset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint quantityHeld = assetHoldings(asset);
+            // Dont bother with the calculations if the balance of the asset is 0
+            if (quantityHeld == 0) {
+                continue;
+            }
             // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
             uint assetPrice;
             (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, DENOMINATION_ASSET);

@@ -84,9 +84,6 @@ test(`fund gets non-denomination asset from investment`, async () => {
   const wantedShares = power(new BigInteger(10), new BigInteger(20));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  const preFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
 
   await s.weth.methods
     .approve(s.fund.participation.options.address, wantedShares)
@@ -155,9 +152,6 @@ test(`investor redeems his shares`, async () => {
     .balanceOf(s.investor)
     .call();
   const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  const preFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
 
   await s.fund.participation.methods
     .redeem()

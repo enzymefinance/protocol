@@ -113,6 +113,11 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     {
         uint quoteDecimals = assetsToDecimals[ofQuote];
 
+        // Price of 1 unit for the pair of same asset
+        if (ofBase == ofQuote) {
+            return (10 ** quoteDecimals, quoteDecimals);
+        }
+
         referencePrice = mul(
             assetsToPrices[ofBase].price,
             10 ** quoteDecimals
@@ -167,9 +172,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     {
         return
             hasValidPrice(sellAsset) &&
-            hasValidPrice(buyAsset) &&
-            (buyAsset == QUOTE_ASSET || sellAsset == QUOTE_ASSET) && // One asset must be QUOTE_ASSET
-            (buyAsset != QUOTE_ASSET || sellAsset != QUOTE_ASSET); // Pair must consists of diffrent assets
+            hasValidPrice(buyAsset);
     }
 
     function getLastUpdateId() public view returns (uint) { return updateId; }
