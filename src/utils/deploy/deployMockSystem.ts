@@ -1,7 +1,7 @@
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import {
-  deployWETH9,
+  deployWeth,
   deployToken,
 } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
@@ -38,14 +38,14 @@ export const deployMockSystem = async (
   const accounts = await env.eth.getAccounts();
 
   debug('Deploying mocks from', accounts[0]);
-  const wethTokenAddress = await deployWETH9(env);
+  const wethTokenAddress = await deployWeth(env);
   const mlnTokenAddress = await deployToken(env, 'MLN');
   const baseTokenAddress = mlnTokenAddress;
   const quoteTokenAddress = wethTokenAddress;
   const quoteToken = await getToken(env, quoteTokenAddress);
   const baseToken = await getToken(env, baseTokenAddress);
   const mln = await getContract(env, Contracts.StandardToken, mlnTokenAddress);
-  const weth = await getContract(env, Contracts.WETH9, wethTokenAddress);
+  const weth = await getContract(env, Contracts.Weth, wethTokenAddress);
 
   // Deposit Ether to get WETH Tokens
   const depositAmount = power(new BigInteger(10), new BigInteger(24));

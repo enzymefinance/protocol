@@ -3,7 +3,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { TokenInterface, createToken } from '@melonproject/token-math/token';
 import {
   deployToken,
-  deployWETH9,
+  deployWeth,
 } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployMatchingMarket } from '~/contracts/exchanges/transactions/deployMatchingMarket';
@@ -48,7 +48,7 @@ const deployThirdParty = async (
       const carry = await carryP;
       let deployed;
       if (current.symbol === 'WETH') {
-        deployed = await getToken(environment, await deployWETH9(environment));
+        deployed = await getToken(environment, await deployWeth(environment));
       } else {
         deployed = await getToken(
           environment,
@@ -64,7 +64,7 @@ const deployThirdParty = async (
   const depositAmount = power(new BigInteger(10), new BigInteger(24));
   await getContract(
     environment,
-    Contracts.WETH9,
+    Contracts.Weth,
     deployedTokens.find(t => t.symbol === 'WETH').address,
   )
     .methods.deposit()
