@@ -56,7 +56,7 @@ To just develop and test, you don't need to deploy. Unit & integration-tests do 
 
 But if you want to deploy the protcol to Kovan or Mainnet, here is the recommended way:
 
-### Deploy a fresh version to Kovan through Infura with a keystore V3 file
+### Deploy a fresh test version to Kovan through Infura with a keystore V3 file
 
 - Create a `.keystore.json` file in the project root. See [What is an Ethereum Keystore file](https://medium.com/@julien.maffre/what-is-an-ethereum-keystore-file-86c8c5917b97) about keystore v3 JSON files.
 - To deploy the kovan config to infura, type the following command:
@@ -78,15 +78,19 @@ Deployment is flexible: basically it just deploys all contracts that are not fou
 - Copy the latest deployment into configs:
 
 ```sh
-cp deployments/kovan-default.json deployments/configs/kovan-0.9.100.json
+cp deployments/kovan-default.json deployments/configs/kovan-default/001-change-0.9.100.json
 ```
 
-- Remove the addresses of the factory that you want to redeploy and of the version. This will redeploy the factory, and redeploy the version with the new factory and all old factories registered.
+Naming is: `deployments/configs/[chain]-[track]/[index]-[short-name]-[version from package.json].json`
+
+- Append the README.md in `deployments/configs/[chain]-[track]/` with your change.
+
+- Change the addresses of the factory that you want to redeploy and of the version to "DEPLOY". This will redeploy the factory, and redeploy the version with the new factory and all old factories registered. Remove `exchangeConfigs` anyways, this is just for information.
 
 - Run deploy:
 
 ```sh
-yarn deploy --config deployments/configs//kovan-0.9.100.json.json
+yarn deploy --config deployments/configs/kovan-default/001-change-0.9.100.json
 ```
 
 ### Run an unlocked node to deploy

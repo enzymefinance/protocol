@@ -38,6 +38,7 @@ import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
+import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 
 const pkg = require('~/../package.json');
 
@@ -71,6 +72,10 @@ export interface MelonContracts {
 
 type MelonContractsDraft = Partial<MelonContracts>;
 
+const maybeDeploy = async (environment, path, deployFunction) => {
+  const adoptedContract =
+}
+
 /**
  * Deploys all contracts and checks their health
  */
@@ -84,9 +89,13 @@ export const deploySystem = async (
     ...environmentWithoutDeployment,
     deployment: { thirdPartyContracts },
   };
-  const debug = environment.logger('melon:protocol:utils', LogLevels.DEBUG);
+  const log = environment.logger(
+    'melon:protocol:utils:deploySystem',
+    LogLevels.DEBUG,
+  );
 
-  debug('Deploying system from', environment.wallet.address, {
+  log(LogLevels.INFO, 'Deploying system from:', environment.wallet.address);
+  log(LogLevels.DEBUG, 'Deploying system', {
     adoptedContracts,
     thirdPartyContracts,
   });
@@ -95,10 +104,6 @@ export const deploySystem = async (
   const mlnToken = thirdPartyContracts.tokens.find(t => t.symbol === 'MLN');
 
   const contracts: MelonContractsDraft = {};
-
-  contracts.priceSource =
-    adoptedContracts.priceSource ||
-    (await deployPriceFeed(environment, wethToken));
 
   /// Exchange Adapters
   contracts.adapters = {
@@ -165,16 +170,28 @@ export const deploySystem = async (
     contracts.registry,
   );
 
-  if (!adoptedContracts.registry) {
-    await setNativeAsset(environment, contracts.registry, {
-      address: thirdPartyContracts.tokens.find(t => t.symbol === 'WETH')
-        .address,
-    });
-    await setMlnToken(environment, contracts.registry, {
-      address: thirdPartyContracts.tokens.find(t => t.symbol === 'MLN').address,
-    });
+  contracts.priceSource =
+    adoptedContracts.priceSource ||
+    (await deployKyberPriceFeed(environment, {
+      kyberNetworkProxy: thirdPartyContracts.exchanges.kyber.kyberNetworkProxy,
+      quoteToken: wethToken,
+      registry: contracts.registry,
+    }));
+  //  (await deployPriceFeed(environment, wethToken));
+
+  if (!adoptedContracts.priceSource || !adoptedContracts.registry) {
+    log(LogLevels.INFO, 'Register priceSource', contracts.priceSource);
     await setPriceSource(environment, contracts.registry, {
       address: contracts.priceSource,
+    });
+  }
+
+  if (!adoptedContracts.registry) {
+    await setNativeAsset(environment, contracts.registry, {
+      address: wethToken.address,
+    });
+    await setMlnToken(environment, contracts.registry, {
+      address: mlnToken.address,
     });
     await setEngine(environment, contracts.registry, {
       address: contracts.engine,
@@ -271,7 +288,8 @@ export const deploySystem = async (
   const network = await environment.eth.net.getId();
   const deploymentId = `${network}:${track}`;
 
-  debug('Deployed:', deploymentId, addresses);
+  log(LogLevels.INFO, 'Deployed:', deploymentId);
+  log(LogLevels.DEBUG, 'Deployed:', addresses);
 
   return {
     ...environment,
