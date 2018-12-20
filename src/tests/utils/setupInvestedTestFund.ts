@@ -46,18 +46,18 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const hubAddress = await completeSetup(environment, version);
   const routes = await getRoutes(environment, hubAddress);
 
-  const investmentAmount = createQuantity(weth, 1);
+  // const investmentAmount = createQuantity(weth, 1);
 
-  await approve(environment, {
-    howMuch: investmentAmount,
-    spender: routes.participationAddress,
-  });
+  // await approve(environment, {
+  //   howMuch: investmentAmount,
+  //   spender: routes.participationAddress,
+  // });
 
-  await requestInvestment(environment, routes.participationAddress, {
-    investmentAmount,
-  });
+  // await requestInvestment(environment, routes.participationAddress, {
+  //   investmentAmount,
+  // });
 
-  await executeRequest(environment, routes.participationAddress);
+  // await executeRequest(environment, routes.participationAddress);
 
   return routes;
 };
