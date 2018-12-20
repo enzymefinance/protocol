@@ -13,6 +13,7 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 // import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
+
 // import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 
@@ -42,8 +43,8 @@ import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 // import { version } from 'ethers';
 // import { last } from 'rxjs/operators';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
-import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
-import { getHub } from '~/contracts/fund/hub/calls/getHub';
+// import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
+// import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 
 describe('monitoringTool', () => {
@@ -63,25 +64,25 @@ describe('monitoringTool', () => {
     // const fundName = `test-fund-${randomString()}`;
 
     const {
-      exchangeConfigs,
+      // exchangeConfigs,
       melonContracts,
-      thirdPartyContracts,
+      // thirdPartyContracts,
     } = shared.env.deployment;
 
-    const { priceSource, policies, version, engine } = melonContracts;
+    const { version, engine } = melonContracts;
 
     // const [quoteToken, baseToken] = tokens;
     // const defaultTokens = [quoteToken, baseToken];
 
     // amgu Price
-    const tokens = thirdPartyContracts.tokens;
+    // const tokens = thirdPartyContracts.tokens;
 
-    const [quoteToken, baseToken] = tokens;
-    const defaultTokens = [quoteToken, baseToken];
+    // const [quoteToken, baseToken] = tokens;
+    // const defaultTokens = [quoteToken, baseToken];
     const amguToken = await getAmguToken(shared.env, version);
     const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice();
-    const myAmguPrice = setAmguPrice();
+    await setAmguPrice(shared.env, engine, amguPrice);
+    const myAmguPrice = await getAmguPrice(shared.env, engine);
 
     console.log(
       'Amgu Price: ',
@@ -130,8 +131,6 @@ describe('monitoringTool', () => {
     console.log('Fund holdings: ', fundHoldings, '\n\n\n');
 
     // fund list
-
-    console.log('# of funds: ', nFunds);
 
     // // Deploy fees
     // const managementFee = getContract(
