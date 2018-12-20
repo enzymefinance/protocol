@@ -1,7 +1,5 @@
 // import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deploySystem } from '~/utils/deploy/deploySystem';
 // import { deploy } from '~/utils/solidity/deploy';
 // import { Contracts } from '~/Contracts';
 // import { getContract } from '~/utils/solidity/getContract';
@@ -38,7 +36,7 @@ import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 // import { LogLevels } from '~/utils/environment/Environment';
 
 import axios from 'axios';
-import { getLastFundId } from '~/contracts/factory/calls/getLastFundId';
+
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 // import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 // import { version } from 'ethers';
@@ -71,7 +69,7 @@ describe('monitoringTool', () => {
     } = shared.env.deployment;
 
     const { priceSource, policies, version, engine } = melonContracts;
-    
+
     // const [quoteToken, baseToken] = tokens;
     // const defaultTokens = [quoteToken, baseToken];
 
@@ -82,8 +80,15 @@ describe('monitoringTool', () => {
     const defaultTokens = [quoteToken, baseToken];
     const amguToken = await getAmguToken(shared.env, version);
     const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice();
+    const myAmguPrice = setAmguPrice();
 
-    console.log('Amgu Price: ', myAmguPrice.quantity.value, ' ', myAmguPrice.token.symbol);
+    console.log(
+      'Amgu Price: ',
+      myAmguPrice.quantity.value,
+      ' ',
+      myAmguPrice.token.symbol,
+    );
 
     // exchange rates
     let rates = {
@@ -124,12 +129,7 @@ describe('monitoringTool', () => {
     );
     console.log('Fund holdings: ', fundHoldings, '\n\n\n');
 
-    // # funds
-
-    // const fundAddress2 = await setupInvestedTestFund(shared.envNotManager);
-
-    const lastID = await getLastFundId(shared.env, engine);
-    let nFunds = lastID + 1;
+    // fund list
 
     console.log('# of funds: ', nFunds);
 
