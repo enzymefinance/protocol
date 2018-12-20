@@ -25,6 +25,10 @@ export { isAddress } from '~/utils/checks/isAddress';
 export { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 export { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 export {
+  managersToSettings,
+} from '~/contracts/factory/calls/managersToSettings';
+export { managersToRoutes } from '~/contracts/factory/calls/managersToRoutes';
+export {
   performCalculations,
 } from '~/contracts/fund/accounting/calls/performCalculations';
 export {
