@@ -100,6 +100,20 @@ const maybeDeploy = R.curry(
   },
 );
 
+const maybeDoSomething = R.curry(
+  async (
+    shouldIt: boolean,
+    something: Function,
+    environmentPromise: Promise<Environment>,
+  ) => {
+    const environment = await environmentPromise;
+
+    if (shouldIt) await something(environment);
+
+    return environment;
+  },
+);
+
 /**
  * Deploys all contracts and checks their health
  */
@@ -136,12 +150,6 @@ export const deploySystem = async (
     maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
       deploy0xAdapter(environment),
     ),
-    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
-      deployKyberAdapter(environment),
-    ),
-    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
-      deployKyberAdapter(environment),
-    ),
     maybeDeploy(['policies', 'priceTolerance'], environment =>
       deployPriceTolerance(environment, 10),
     ),
@@ -151,7 +159,7 @@ export const deploySystem = async (
     maybeDeploy(['factories', 'accountingFactory'], environment =>
       deployAccountingFactory(environment),
     ),
-    maybeDeploy(['factories', 'feeManaberFactory'], environment =>
+    maybeDeploy(['factories', 'feeManagerFactory'], environment =>
       deployFeeManagerFactory(environment),
     ),
     maybeDeploy(['factories', 'participationFactory'], environment =>
@@ -173,6 +181,25 @@ export const deploySystem = async (
       deployEngine(environment, { delay: monthInSeconds }),
     ),
     maybeDeploy(['registry'], environment => deployRegistry(environment)),
+    maybeDoSomething(
+      adoptedContracts.registry === 'DEPLOY',
+      environment => async () => {
+        const { melonContracts } = environment.deployment;
+
+        await setNativeAsset(environment, melonContracts.registry, {
+          address: wethToken.address,
+        });
+        await setMlnToken(environment, melonContracts.registry, {
+          address: mlnToken.address,
+        });
+        await setEngine(environment, melonContracts.registry, {
+          address: melonContracts.engine,
+        });
+        await setRegistry(environment, melonContracts.engine, {
+          address: melonContracts.registry,
+        });
+      },
+    ),
     maybeDeploy(['priceSource'], environment =>
       deployKyberPriceFeed(environment, {
         // tslint:disable-next-line:max-line-length
@@ -184,46 +211,33 @@ export const deploySystem = async (
       }),
     ),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
+    maybeDeploy(['version'], environment =>
+      deployVersion(environment, {
+        engine: environment.deployment.melonContracts.engine,
+        factories: environment.deployment.melonContracts.factories,
+        mlnToken,
+        priceSource: environment.deployment.melonContracts.priceSource,
+        registry: environment.deployment.melonContracts.registry,
+      }),
+    ),
   )(new Promise(resolve => resolve(environment)));
 
-  const { melonContracts } = environmentWithDeployment;
+  const { melonContracts } = environmentWithDeployment.deployment;
 
   const registryInformation = await getRegistryInformation(
     environmentWithDeployment,
-    environmentWithDeployment.melonContracts.registry,
+    melonContracts.registry,
   );
 
-  if (!adoptedContracts.priceSource || !adoptedContracts.registry) {
+  if (
+    adoptedContracts.priceSource === 'DEPLOY' ||
+    adoptedContracts.registry === 'DEPLOY'
+  ) {
     log(LogLevels.INFO, 'Register priceSource', melonContracts.priceSource);
     await setPriceSource(environmentWithDeployment, melonContracts.registry, {
       address: melonContracts.priceSource,
     });
   }
-
-  if (!adoptedContracts.registry) {
-    await setNativeAsset(environmentWithDeployment, melonContracts.registry, {
-      address: wethToken.address,
-    });
-    await setMlnToken(environmentWithDeployment, melonContracts.registry, {
-      address: mlnToken.address,
-    });
-    await setEngine(environmentWithDeployment, melonContracts.registry, {
-      address: melonContracts.engine,
-    });
-    await setRegistry(environmentWithDeployment, melonContracts.engine, {
-      address: melonContracts.registry,
-    });
-  }
-
-  melonContracts.version =
-    adoptedContracts.version ||
-    (await deployVersion(environment, {
-      engine: melonContracts.engine,
-      factories: melonContracts.factories,
-      mlnToken,
-      priceSource: melonContracts.priceSource,
-      registry: melonContracts.registry,
-    }));
 
   const versionInformation = await getVersionInformation(
     environment,
