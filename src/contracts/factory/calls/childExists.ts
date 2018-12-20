@@ -18,7 +18,5 @@ export const childExists = async (
     .childExists(fundAddress.toString())
     .call();
 
-  console.log(isComplete);
-
   return isComplete;
 };
