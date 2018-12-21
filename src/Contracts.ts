@@ -12,6 +12,7 @@ export enum Contracts {
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
   ERC20Proxy = 'ERC20Proxy',
+  EthfinexAdapter = 'EthfinexAdapter',
   ExchangeAdapter = 'ExchangeAdapter',
   FalsePolicy = 'FalsePolicy',
   FeeManager = 'FeeManager',
@@ -92,6 +93,8 @@ export const requireMap = {
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/Engine.abi.json'),
+  [Contracts.EthfinexAdapter]:
+    require(`../out/${Contracts.EthfinexAdapter}.abi.json`),
   [Contracts.ExchangeAdapter]:
     require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:

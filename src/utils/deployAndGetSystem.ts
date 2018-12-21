@@ -56,6 +56,11 @@ export const deployAndGetSystem = async (environment: Environment) => {
       Contracts.TestingPriceFeed,
       addresses.melonContracts.priceSource,
     ),
+    registry: getContract(
+      environment,
+      Contracts.Registry,
+      addresses.melonContracts.registry,
+    ),
     version: getContract(
       environment,
       Contracts.Version,
