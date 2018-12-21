@@ -94,13 +94,15 @@ describe('playground', () => {
 
     await updateKyber(masterEnvironment, melonContracts.priceSource);
 
+    console.log(amguToken);
+
     const mlnPrice = await getPrice(
       masterEnvironment,
       melonContracts.priceSource.toString(),
       amguToken,
     );
 
-    console.log(mlnPrice);
+    console.log(amguToken, mlnPrice);
 
     const masterBalance = await getBalance(masterEnvironment);
 
