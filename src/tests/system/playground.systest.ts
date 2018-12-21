@@ -16,6 +16,10 @@ import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getChainName } from '~/utils/environment/chainName';
 import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
+import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
+import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
+import { getPrice } from '~/contracts/prices/calls/getPrice';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 /**
@@ -26,7 +30,7 @@ import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
  *       interact)
  */
 
-const getEnvironment = async () => {
+const getEnvironment = async (): Promise<Environment> => {
   const baseEnvironment = constructEnvironment({
     endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
     logger: testLogger,
@@ -38,13 +42,13 @@ const getEnvironment = async () => {
   // tslint:disable-next-line:max-line-length
   const deployment: Deployment = require(`../../../deployments/${deploymentId}.json`);
 
-  const withDeployment = { ...baseEnvironment, deployment };
+  const environmentWithDeployment = withDeployment(baseEnvironment, deployment);
 
   const selectSigner = R.cond([
     [
       R.prop('KEYSTORE_FILE'),
       async env =>
-        await withKeystoreSigner(withDeployment, {
+        await withKeystoreSigner(environmentWithDeployment, {
           keystore: require(path.join(
             process.cwd(),
             R.prop('KEYSTORE_FILE', env),
@@ -55,7 +59,10 @@ const getEnvironment = async () => {
     [
       R.prop('PRIVATE_KEY'),
       async env =>
-        await withPrivateKeySigner(withDeployment, R.prop('PRIVATE_KEY', env)),
+        await withPrivateKeySigner(
+          environmentWithDeployment,
+          R.prop('PRIVATE_KEY', env),
+        ),
     ],
     [
       R.T,
@@ -74,18 +81,26 @@ describe('playground', () => {
   test('Happy path', async () => {
     const masterEnvironment = await getEnvironment();
 
+    const { melonContracts } = masterEnvironment.deployment;
+
     const environment = withNewAccount(masterEnvironment);
 
-    // const amguToken = await getAmguToken(
-    //   masterEnvironment,
-    //   deployment.melonContracts.version,
-    // );
-    // const amguPrice = createQuantity(amguToken, '1000000000');
-    // await setAmguPrice(
-    //   masterEnvironment,
-    //   deployment.melonContracts.engine,
-    //   amguPrice,
-    // );
+    const amguToken = await getAmguToken(
+      masterEnvironment,
+      melonContracts.version,
+    );
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(masterEnvironment, melonContracts.engine, amguPrice);
+
+    await updateKyber(masterEnvironment, melonContracts.priceSource);
+
+    const mlnPrice = await getPrice(
+      masterEnvironment,
+      melonContracts.priceSource.toString(),
+      amguToken,
+    );
+
+    console.log(mlnPrice);
 
     const masterBalance = await getBalance(masterEnvironment);
 
