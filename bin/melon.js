@@ -167,7 +167,7 @@ program
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
-    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', ...providedTokens];
+    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', 'DGX', ...providedTokens];
     const tokenInterfaces = tokens.map(token => {
       const [symbol, decimals] = token.split(':');
       return createToken(symbol, undefined, decimals && parseInt(decimals, 10));

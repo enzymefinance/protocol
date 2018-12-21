@@ -11,9 +11,11 @@ import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 import { withDeployment } from '~/utils/environment/withDeployment';
 // import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { Deployment } from '~/utils/environment/Environment';
+import { Deployment, Environment } from '~/utils/environment/Environment';
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { getChainName } from '~/utils/environment/chainName';
+import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 /**
@@ -24,34 +26,53 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
  *       interact)
  */
 
-describe('playground', () => {
-  beforeAll(() => {
-    expect(process.env).toHaveProperty('JSON_RPC_ENDPOINT');
-    expect(process.env).toHaveProperty('KEYSTORE_PASSWORD');
-    expect(process.env).toHaveProperty('KEYSTORE_FILE');
+const getEnvironment = async () => {
+  const baseEnvironment = constructEnvironment({
+    endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
+    logger: testLogger,
   });
 
-  test('Happy path', async () => {
-    const keystore = require(path.join(
-      process.cwd(),
-      process.env.KEYSTORE_FILE,
-    ));
+  const deploymentId = `${await getChainName(baseEnvironment)}-${
+    baseEnvironment.track
+  }`;
+  // tslint:disable-next-line:max-line-length
+  const deployment: Deployment = require(`../../../deployments/${deploymentId}.json`);
 
-    // tslint:disable-next-line:max-line-length
-    const deployment: Deployment = require('../../../deployments/kovan-default.json');
+  const withDeployment = { ...baseEnvironment, deployment };
 
-    const masterEnvironment = R.compose(
-      R.curry(withDeployment)(R.__, deployment),
-      R.curry(withKeystoreSigner)(R.__, {
-        keystore,
-        password: process.env.KEYSTORE_PASSWORD,
-      }),
-      () =>
-        constructEnvironment({
-          endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
-          logger: testLogger,
+  const selectSigner = R.cond([
+    [
+      R.prop('KEYSTORE_FILE'),
+      async env =>
+        await withKeystoreSigner(withDeployment, {
+          keystore: require(path.join(
+            process.cwd(),
+            R.prop('KEYSTORE_FILE', env),
+          )),
+          password: R.prop('KEYSTORE_PASSWORD', env),
         }),
-    )();
+    ],
+    [
+      R.prop('PRIVATE_KEY'),
+      async env =>
+        await withPrivateKeySigner(withDeployment, R.prop('PRIVATE_KEY', env)),
+    ],
+    [
+      R.T,
+      () => {
+        throw new Error('Neither PRIVATE_KEY nor KEYSTORE_FILE found in env');
+      },
+    ],
+  ]);
+
+  const environment = await selectSigner(process.env);
+
+  return environment;
+};
+
+describe('playground', () => {
+  test('Happy path', async () => {
+    const masterEnvironment = await getEnvironment();
 
     const environment = withNewAccount(masterEnvironment);
 
