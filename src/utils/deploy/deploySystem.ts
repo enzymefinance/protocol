@@ -34,6 +34,7 @@ import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSigna
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
+import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 
 const pkg = require('~/../package.json');
 
@@ -66,6 +67,32 @@ export interface MelonContracts {
 }
 
 export type MelonContractsDraft = Partial<MelonContracts>;
+
+export const deployAllContractsConfig = JSON.parse(`{
+  "priceSource": "DEPLOY",
+  "adapters": {
+    "kyberAdapter": "DEPLOY",
+    "matchingMarketAdapter": "DEPLOY",
+    "zeroExAdapter": "DEPLOY"
+  },
+  "policies": {
+    "priceTolerance": "DEPLOY",
+    "userWhitelist": "DEPLOY"
+  },
+  "factories": {
+    "accountingFactory": "DEPLOY",
+    "feeManagerFactory": "DEPLOY",
+    "participationFactory": "DEPLOY",
+    "policyManagerFactory": "DEPLOY",
+    "sharesFactory": "DEPLOY",
+    "tradingFactory": "DEPLOY",
+    "vaultFactory": "DEPLOY"
+  },
+  "engine": "DEPLOY",
+  "registry": "DEPLOY",
+  "version": "DEPLOY",
+  "ranking": "DEPLOY"
+}`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
 
@@ -116,7 +143,7 @@ const maybeDoSomething = R.curry(
 export const deploySystem = async (
   environmentWithoutDeployment: Environment,
   thirdPartyContracts: ThirdPartyContracts,
-  adoptedContracts: MelonContractsDraft = {},
+  adoptedContracts: MelonContractsDraft,
 ): Promise<WithDeployment> => {
   // Set thirdPartyContracts already to have them available in subsequent calls
   const environment = {
@@ -124,6 +151,8 @@ export const deploySystem = async (
     deployment: { thirdPartyContracts, melonContracts: adoptedContracts },
   };
   const log = getLog(environment);
+
+  log.info('ASDF');
 
   log.info('Deploying system from:', environment.wallet.address);
   log.debug('Deploying system', {
@@ -303,6 +332,12 @@ export const deploySystem = async (
       // await setDecimals(environment, melonContracts.priceSource, asset);
     }
   }
+
+  // Only for kyber
+  await updateKyber(
+    environmentWithDeployment,
+    environmentWithDeployment.deployment.melonContracts.priceSource,
+  );
 
   const track = environment.track;
   const network = await environment.eth.net.getId();
