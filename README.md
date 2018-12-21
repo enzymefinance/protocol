@@ -85,7 +85,7 @@ Naming is: `deployments/configs/[chain]-[track]/[index]-[short-name]-[version fr
 
 - Append the README.md in `deployments/configs/[chain]-[track]/` with your change.
 
-- Change the addresses of the factory that you want to redeploy and of the version to "DEPLOY". This will redeploy the factory, and redeploy the version with the new factory and all old factories registered. Remove `exchangeConfigs` anyways, this is just for information.
+- Change the addresses of the factory that you want to redeploy and of the version to **"DEPLOY"**. This will redeploy the factory, and redeploy the version with the new factory and all old factories registered. Remove `exchangeConfigs` anyways, this is just for information.
 
 - Run deploy:
 
