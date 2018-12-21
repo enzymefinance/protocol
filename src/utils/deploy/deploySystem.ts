@@ -304,21 +304,29 @@ export const deploySystem = async (
     }
   }
 
-  const addresses = {
-    exchangeConfigs,
-    melonContracts: melonContracts as MelonContracts,
-    thirdPartyContracts,
-  };
-
   const track = environment.track;
   const network = await environment.eth.net.getId();
   const deploymentId = `${network}:${track}`;
 
+  // tslint:disable:object-literal-sort-keys
+  const deployment = {
+    meta: {
+      deployer: environment.wallet.address,
+      timestamp: new Date().toISOString(),
+      track,
+      version: pkg.version,
+      chain: network,
+    },
+    melonContracts: melonContracts as MelonContracts,
+    thirdPartyContracts,
+    exchangeConfigs,
+  };
+
   log.info('Deployed:', deploymentId);
-  log.debug('Deployed:', addresses);
+  log.debug('Deployed:', deployment);
 
   return {
     ...environment,
-    deployment: addresses,
+    deployment,
   };
 };

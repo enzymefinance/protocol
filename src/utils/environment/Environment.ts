@@ -46,13 +46,23 @@ export interface Options {
   readonly gasPrice: string;
 }
 
+export interface DeployMeta {
+  deployer: Address;
+  timestamp: string;
+  track: Tracks;
+  version: string;
+  chain: number;
+}
+
 export interface Deployment {
+  meta: DeployMeta;
   exchangeConfigs: ExchangeConfigs;
   melonContracts: MelonContracts;
   thirdPartyContracts: ThirdPartyContracts;
 }
 
 export interface PartialDeployment {
+  meta?: DeployMeta;
   exchangeConfigs?: ExchangeConfigs;
   thirdPartyContracts?: Partial<ThirdPartyContracts>;
   melonContracts?: MelonContractsDraft;
