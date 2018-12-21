@@ -112,6 +112,21 @@ yarn deploy \
   --gas-price 2000000000 \
 ```
 
+### Note on versioning
+
+It is recommended to change the version in package.json before changing the code base. Here is the step-by-step guide:
+
+1. Change the version in package.json (`yarn version`)
+2. Do the code changes
+3. Check if they run (`yarn test`)
+4. Deploy the contracts to Kovan/Mainnet (`yarn compile && yarn deploy ...`)
+5. Run the system tests (`yarn test:system`)
+6. Publish the package to npm (`yarn build && yarn publish`)
+
+... repeat
+
+This workflow ensures, that all versions are always in sync
+
 ## Use it as a consumer
 
 To integrate the Melon Protocol into your application, you do not need to clone this repo, you can just install it from npm:
