@@ -25,7 +25,7 @@ async function requestWithRetries(options, maxRetries) {
  */
 // TODO: Change to BigInteger
 async function getConvertedPrices(deployed, fromSymbol) {
-  const toSymbols = ['MLN', 'EUR', 'ETH'];
+  const toSymbols = ['MLN', 'EUR', 'ETH', 'DGX'];
   const options = {
     json: true,
     uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
@@ -38,37 +38,26 @@ async function getConvertedPrices(deployed, fromSymbol) {
     throw new Error('API call returned a zero price');
   }
 
-  // TODO: We used to get decimals from token info file in legacy code
-  const quoteDecimals = 18;
-  const ethDecimals = 18;
-  const eurDecimals = 18;
-  const mlnDecimals = 18;
-  const inverseEth = new BigNumber(1)
-    .div(new BigNumber(queryResult.ETH))
-    .toNumber()
-    .toFixed(15);
-  const inverseEur = new BigNumber(1)
-    .div(new BigNumber(queryResult.EUR))
-    .toNumber()
-    .toFixed(15);
-  const inverseMln = new BigNumber(1)
-    .div(new BigNumber(queryResult.MLN))
-    .toNumber()
-    .toFixed(15);
-  const convertedEth = new BigNumber(inverseEth)
-    .div(10 ** (ethDecimals - quoteDecimals))
-    .times(10 ** ethDecimals);
-  const convertedEur = new BigNumber(inverseEur)
-    .div(10 ** (eurDecimals - quoteDecimals))
-    .times(10 ** eurDecimals);
-  const convertedMln = new BigNumber(inverseMln)
-    .div(10 ** (mlnDecimals - quoteDecimals))
-    .times(10 ** mlnDecimals);
+  const quoteDecimals = 18; // Hardcoded for now
+
+  const convertedEth = new BigNumber((1 / queryResult.ETH).toFixed(16)).mul(
+    10 ** quoteDecimals,
+  );
+  const convertedEur = new BigNumber((1 / queryResult.EUR).toFixed(16)).mul(
+    10 ** quoteDecimals,
+  );
+  const convertedMln = new BigNumber((1 / queryResult.MLN).toFixed(16)).mul(
+    10 ** quoteDecimals,
+  );
+  const convertedDgx = new BigNumber((1 / queryResult.DGX).toFixed(16)).mul(
+    10 ** quoteDecimals,
+  );
 
   return {
     [deployed.eur.options.address]: convertedEur,
     [deployed.weth.options.address]: convertedEth,
     [deployed.mln.options.address]: convertedMln,
+    [deployed.dgx.options.address]: convertedDgx,
   };
 }
 

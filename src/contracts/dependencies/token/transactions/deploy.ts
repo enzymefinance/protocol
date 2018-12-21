@@ -16,3 +16,8 @@ export const deployToken = async (
 
   return address;
 };
+
+export const deployWeth = async (environment: Environment) => {
+  const address = await deployContract(environment, Contracts.Weth);
+  return address;
+};

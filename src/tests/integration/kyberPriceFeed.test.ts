@@ -82,6 +82,7 @@ describe('kyber-price-feed', () => {
       shared.kyberPriceFeed,
       shared.tokens.mln,
     );
+
     expect(toFixed(mlnPrice)).toBe('1.000000');
   });
 });

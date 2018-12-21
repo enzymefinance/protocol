@@ -62,7 +62,7 @@ export enum Contracts {
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
   Version = 'Version',
-  Weth = 'WETH9',
+  Weth = 'WETH',
   ZeroExAdapter = 'ZeroExV2Adapter',
   ZeroExExchange = 'Exchange',
 }
@@ -196,7 +196,7 @@ export const requireMap = {
   [Contracts.Version]:
     require('../out/Version.abi.json'),
   [Contracts.Weth]:
-    require(`../out/${Contracts.Weth}.abi.json`),
+    require('../out/WETH9.abi.json'),
   [Contracts.ZeroExExchange]:
     require('../out/Exchange.abi.json'),
   [Contracts.ZeroExAdapter]:

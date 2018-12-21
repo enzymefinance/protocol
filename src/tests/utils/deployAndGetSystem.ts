@@ -32,6 +32,12 @@ export const deployAndGetSystem = async (environment: Environment) => {
   );
 
   const contracts = {
+    dgx: getContract(
+      environment,
+      Contracts.StandardToken,
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'DGX')
+        .address,
+    ),
     engine: getContract(
       environment,
       Contracts.Engine,
