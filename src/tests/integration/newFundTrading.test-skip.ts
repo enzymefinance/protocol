@@ -1,5 +1,5 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
+import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import {
   makeOrderSignature,

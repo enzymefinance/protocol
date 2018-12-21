@@ -1,4 +1,3 @@
-import { getPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
   BigInteger,
@@ -20,7 +19,6 @@ import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { register } from '~/contracts/fund/policies/transactions/register';
-import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
@@ -148,18 +146,6 @@ describe('generalWalkthrough', () => {
       method: FunctionSignatures.executeRequestFor,
       policy: policies.userWhitelist,
     });
-
-    const ethPrice = getPrice(
-      createQuantity(quoteToken, '1'),
-      createQuantity(quoteToken, '1'),
-    );
-
-    const mlnPrice = getPrice(
-      createQuantity(baseToken, '1'),
-      createQuantity(quoteToken, '2'),
-    );
-
-    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
     const investmentAmount = createQuantity(quoteToken, 1);
 

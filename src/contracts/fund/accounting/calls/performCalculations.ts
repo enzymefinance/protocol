@@ -8,7 +8,7 @@ import {
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '../../hub/calls/getRoutes';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { getPrice, PriceInterface } from '@melonproject/token-math/price';
+import { createPrice, PriceInterface } from '@melonproject/token-math/price';
 
 interface PerformCalculationsResult {
   gav: QuantityInterface;
@@ -32,7 +32,7 @@ const postProcess = async (
   const calculations = {
     gav: createQuantity(quoteToken, result.gav),
     nav: createQuantity(quoteToken, result.nav),
-    sharePrice: getPrice(
+    sharePrice: createPrice(
       createQuantity(fundToken, 1),
       createQuantity(quoteToken, result.sharePrice),
     ),

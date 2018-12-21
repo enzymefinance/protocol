@@ -10,6 +10,11 @@ import { toFixed, createQuantity } from '@melonproject/token-math/quantity';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 import { withDeployment } from '~/utils/environment/withDeployment';
+// import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
+import { Deployment } from '~/utils/environment/Environment';
+import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+// import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 /**
  * TODO:
@@ -19,7 +24,7 @@ import { withDeployment } from '~/utils/environment/withDeployment';
  *       interact)
  */
 
-describe.skip('playground', () => {
+describe('playground', () => {
   beforeAll(() => {
     expect(process.env).toHaveProperty('JSON_RPC_ENDPOINT');
     expect(process.env).toHaveProperty('KEYSTORE_PASSWORD');
@@ -32,7 +37,8 @@ describe.skip('playground', () => {
       process.env.KEYSTORE_FILE,
     ));
 
-    const deployment = require('../../../deployments/kovan-default.json');
+    // tslint:disable-next-line:max-line-length
+    const deployment: Deployment = require('../../../deployments/kovan-default.json');
 
     const masterEnvironment = R.compose(
       R.curry(withDeployment)(R.__, deployment),
@@ -49,14 +55,32 @@ describe.skip('playground', () => {
 
     const environment = withNewAccount(masterEnvironment);
 
+    // const amguToken = await getAmguToken(
+    //   masterEnvironment,
+    //   deployment.melonContracts.version,
+    // );
+    // const amguPrice = createQuantity(amguToken, '1000000000');
+    // await setAmguPrice(
+    //   masterEnvironment,
+    //   deployment.melonContracts.engine,
+    //   amguPrice,
+    // );
+
     const masterBalance = await getBalance(masterEnvironment);
 
     await sendEth(masterEnvironment, {
-      howMuch: createQuantity('ETH', 2),
+      howMuch: createQuantity('ETH', 5),
       to: environment.wallet.address,
     });
 
     const balance = await getBalance(environment);
+
+    const weth = getTokenBySymbol(environment, 'WETH');
+    const quantity = createQuantity(weth, 2);
+
+    await deposit(environment, quantity.token.address, undefined, {
+      value: quantity.quantity.toString(),
+    });
 
     const settings = await setupInvestedTestFund(environment);
 

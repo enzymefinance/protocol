@@ -1,7 +1,4 @@
-import {
-  getPrice as getPriceTokenMath,
-  PriceInterface,
-} from '@melonproject/token-math/price';
+import { createPrice, PriceInterface } from '@melonproject/token-math/price';
 import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { Environment } from '~/utils/environment/Environment';
@@ -25,5 +22,5 @@ export const getPrice = async (
   const { 0: price } = await contract.methods.getPrice(token.address).call();
   const base = createQuantity(token, appendDecimals(token, 1));
   const quote = createQuantity(quoteToken, price);
-  return getPriceTokenMath(base, quote, preventCancelDown);
+  return createPrice(base, quote, preventCancelDown);
 };

@@ -1,12 +1,19 @@
 import { Environment } from '~/utils/environment/Environment';
 import { initTestEnvironment } from './initTestEnvironment';
 import { deployThirdParty } from '~/utils/deploy/deployThirdParty';
-import { deploySystem } from '~/utils/deploy/deploySystem';
+import {
+  deploySystem,
+  deployAllContractsConfig,
+} from '~/utils/deploy/deploySystem';
 
 const deployAndInitTestEnv = async (): Promise<Environment> => {
   const environment = await initTestEnvironment();
   const testThirdParty = await deployThirdParty(environment);
-  const withDeployment = await deploySystem(environment, testThirdParty);
+  const withDeployment = await deploySystem(
+    environment,
+    testThirdParty,
+    deployAllContractsConfig,
+  );
   return withDeployment;
 };
 

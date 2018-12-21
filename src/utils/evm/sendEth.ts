@@ -22,7 +22,11 @@ const sendEth = async (
 
   const signedTx = await environment.wallet.sign(tx);
 
-  await environment.eth.sendSignedTransaction(signedTx);
+  try {
+    await environment.eth.sendSignedTransaction(signedTx);
+  } catch (error) {
+    throw new Error(`Error with sendEth ${error.message}`);
+  }
 };
 
 export { sendEth };

@@ -1,5 +1,5 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getPrice, isEqual } from '@melonproject/token-math/price';
+import { createPrice, isEqual } from '@melonproject/token-math/price';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { update } from './update';
 import { deployTestingPriceFeed } from './deployTestingPriceFeed';
@@ -26,7 +26,7 @@ describe('update', () => {
   });
 
   it('update', async () => {
-    const newPrice = getPrice(
+    const newPrice = createPrice(
       createQuantity(shared.mlnToken, 1),
       createQuantity(shared.quoteToken, 0.34),
     );
