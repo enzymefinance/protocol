@@ -19,11 +19,7 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
-import {
-  LogLevels,
-  Environment,
-  WithDeployment,
-} from '../environment/Environment';
+import { Environment, WithDeployment } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
 import { Address } from '@melonproject/token-math/address';
@@ -35,9 +31,9 @@ import { registerVersion } from '~/contracts/version/transactions/registerVersio
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
+import { getLogCurried } from '../environment/getLogCurried';
 
 const pkg = require('~/../package.json');
 
@@ -71,6 +67,8 @@ export interface MelonContracts {
 
 export type MelonContractsDraft = Partial<MelonContracts>;
 
+const getLog = getLogCurried('melon:protocol:utils:deploySystem');
+
 const maybeDeploy = R.curry(
   async (
     path: string[],
@@ -80,17 +78,15 @@ const maybeDeploy = R.curry(
     const environment = await environmentPromise;
     const environmentPath = ['deployment', 'melonContracts', ...path];
 
-    const info = environment.logger(
-      'melon:protocol:utils:deploySystem',
-      LogLevels.INFO,
-    );
+    const { info } = getLog(environment);
 
     const adoptedContract = R.path(environmentPath, environment);
 
     if (adoptedContract === 'DEPLOY') {
       info('Deploying', path.join('.'));
       const address = await deployFunction(environment);
-      const newEnvironment = R.assocPath(environmentPath, address);
+      const newEnvironment = R.assocPath(environmentPath, address, environment);
+
       return newEnvironment;
     }
 
@@ -127,10 +123,10 @@ export const deploySystem = async (
     ...environmentWithoutDeployment,
     deployment: { thirdPartyContracts, melonContracts: adoptedContracts },
   };
-  const log = environment.logger('melon:protocol:utils:deploySystem');
+  const log = getLog(environment);
 
-  log(LogLevels.INFO, 'Deploying system from:', environment.wallet.address);
-  log(LogLevels.DEBUG, 'Deploying system', {
+  log.info('Deploying system from:', environment.wallet.address);
+  log.debug('Deploying system', {
     adoptedContracts,
     thirdPartyContracts,
   });
@@ -183,8 +179,9 @@ export const deploySystem = async (
     maybeDeploy(['registry'], environment => deployRegistry(environment)),
     maybeDoSomething(
       adoptedContracts.registry === 'DEPLOY',
-      environment => async () => {
+      async environment => {
         const { melonContracts } = environment.deployment;
+        getLog(environment).info('Setting registry & engine');
 
         await setNativeAsset(environment, melonContracts.registry, {
           address: wethToken.address,
@@ -210,6 +207,19 @@ export const deploySystem = async (
         registry: environment.deployment.melonContracts.registry,
       }),
     ),
+    maybeDoSomething(
+      adoptedContracts.priceSource === 'DEPLOY' ||
+        adoptedContracts.registry === 'DEPLOY',
+      async environment => {
+        const { melonContracts } = environment.deployment;
+
+        getLog(environment).info('Register priceSource');
+
+        await setPriceSource(environment, melonContracts.registry, {
+          address: melonContracts.priceSource,
+        });
+      },
+    ),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
@@ -228,16 +238,6 @@ export const deploySystem = async (
     environmentWithDeployment,
     melonContracts.registry,
   );
-
-  if (
-    adoptedContracts.priceSource === 'DEPLOY' ||
-    adoptedContracts.registry === 'DEPLOY'
-  ) {
-    log(LogLevels.INFO, 'Register priceSource', melonContracts.priceSource);
-    await setPriceSource(environmentWithDeployment, melonContracts.registry, {
-      address: melonContracts.priceSource,
-    });
-  }
 
   const versionInformation = await getVersionInformation(
     environment,
@@ -299,7 +299,8 @@ export const deploySystem = async (
         standards: [],
         url: '',
       });
-      await setDecimals(environment, melonContracts.priceSource, asset);
+      // Only used for testing price feed
+      // await setDecimals(environment, melonContracts.priceSource, asset);
     }
   }
 
@@ -313,8 +314,8 @@ export const deploySystem = async (
   const network = await environment.eth.net.getId();
   const deploymentId = `${network}:${track}`;
 
-  log(LogLevels.INFO, 'Deployed:', deploymentId);
-  log(LogLevels.DEBUG, 'Deployed:', addresses);
+  log.info('Deployed:', deploymentId);
+  log.debug('Deployed:', addresses);
 
   return {
     ...environment,
