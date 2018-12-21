@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.9.0-alpha.21",
+  "version": "0.9.0-alpha.22",
   "description": "Technology Regulated and Operated Investment Funds",
   "main": "lib/index.umd.js",
   "module": "lib/index.js",
