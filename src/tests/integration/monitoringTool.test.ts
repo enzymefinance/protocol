@@ -1,5 +1,5 @@
-import * as R from 'ramda';
-import * as path from 'path';
+// import * as R from 'ramda';
+// import * as path from 'path';
 
 import { createQuantity } from '@melonproject/token-math/quantity';
 
@@ -22,15 +22,15 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { withNewAccount } from '~/utils/environment/withNewAccount';
+// import { withNewAccount } from '~/utils/environment/withNewAccount';
 import { getBalance } from '~/utils/evm/getBalance';
 import { sendEth } from '~/utils/evm/sendEth';
-import { withDeployment } from '~/utils/environment/withDeployment';
-import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
-import { constructEnvironment } from '~/utils/environment/constructEnvironment';
-import { testLogger } from '../utils/testLogger';
+// import { withDeployment } from '~/utils/environment/withDeployment';
+// import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
+// import { constructEnvironment } from '~/utils/environment/constructEnvironment';
+// import { testLogger } from '../utils/testLogger';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-import { getAllBalances } from '../utils/getAllBalances';
+// import { getAllBalances } from '../utils/getAllBalances';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
@@ -50,68 +50,66 @@ describe('monitoringTool', () => {
     // console.log('EnvNotManager: ', shared.envNotManager);
   });
 
-  // test('Set and get amgu', async () => {
-  //   // const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
-  //   // const fundName = `test-fund-${randomString()}`;
+  test('Set and get amgu', async () => {
+    // const debug = shared.env.logger('melon:protocol:utils', LogLevels.DEBUG);
+    // const fundName = `test-fund-${randomString()}`;
 
-  //   const {
-  //     // exchangeConfigs,
-  //     melonContracts,
-  //     // thirdPartyContracts,
-  //   } = shared.env.deployment;
+    const {
+      // exchangeConfigs,
+      melonContracts,
+      // thirdPartyContracts,
+    } = shared.env.deployment;
 
-  //   const { version, engine } = melonContracts;
+    const { version, engine } = melonContracts;
 
-  //   // amgu Price
-  //   // const tokens = thirdPartyContracts.tokens;
+    // amgu Price
+    // const tokens = thirdPartyContracts.tokens;
 
-  //   // const [quoteToken, baseToken] = tokens;
-  //   // const defaultTokens = [quoteToken, baseToken];
-  //   const amguToken = await getAmguToken(shared.env, version);
-  //   const amguPrice = createQuantity(amguToken, '1000000000');
-  //   await setAmguPrice(shared.env, engine, amguPrice);
-  //   const myAmguPrice = await getAmguPrice(shared.env, engine);
+    // const [quoteToken, baseToken] = tokens;
+    // const defaultTokens = [quoteToken, baseToken];
+    const amguToken = await getAmguToken(shared.env, version);
+    const amguPrice = createQuantity(amguToken, '1000000000');
+    await setAmguPrice(shared.env, engine, amguPrice);
+    const myAmguPrice = await getAmguPrice(shared.env, engine);
 
-  //   // console.log(
-  //   //   'Amgu Price: ',
-  //   //   myAmguPrice.quantity.value,
-  //   //   ' ',
-  //   //   myAmguPrice.token.symbol,
-  //   // );
+    console.log(
+      'Amgu Price: ',
+      myAmguPrice.quantity.value,
+      ' ',
+      myAmguPrice.token.symbol,
+    );
+  });
 
-  // });
+  test('Read exchange rates', async () => {
+    // exchange rates
+    let rates = {
+      ETHMLN: 0,
+      MLNUSD: 0,
+      ETHUSD: 0,
+    };
 
-  // test('Read exchange rates', async () => {
-  //   // exchange rates
-  //   let rates = {
-  //     ETHMLN: 0,
-  //     MLNUSD: 0,
-  //     ETHUSD: 0,
-  //   };
+    let axinst = axios.create({
+      baseURL: 'https://rest.coinapi.io',
+      headers: { 'X-CoinAPI-Key': '6F388926-927B-4582-AE90-B1C8CD3D5B60' },
+    });
 
-  //   let axinst = axios.create({
-  //     baseURL: 'https://rest.coinapi.io',
-  //     headers: { 'X-CoinAPI-Key': '6F388926-927B-4582-AE90-B1C8CD3D5B60' },
-  //   });
+    const getRate = async (a, b) => {
+      try {
+        const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
+        return response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  //   const getRate = async (a, b) => {
-  //     try {
-  //       const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
-  //       return response.data;
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
+    for (let [key] of Object.entries(rates)) {
+      let a = key.substr(0, 3);
+      let b = key.substr(3, 3);
 
-  //   for (let [key] of Object.entries(rates)) {
-  //     let a = key.substr(0, 3);
-  //     let b = key.substr(3, 3);
-
-  //     rates[key] = await getRate(a, b);
-  //     // console.log(key + ': ', rates[key]);
-  //   }
-
-  // });
+      rates[key] = await getRate(a, b);
+      // console.log(key + ': ', rates[key]);
+    }
+  });
 
   test('Reading fund list', async () => {
     const {
@@ -122,7 +120,7 @@ describe('monitoringTool', () => {
 
     const { version, ranking } = melonContracts;
 
-    const [weth, mln] = thirdPartyContracts.tokens;
+    const [weth] = thirdPartyContracts.tokens;
 
     // setup fund
     const fundAddress = await setupInvestedTestFund(shared.env);
