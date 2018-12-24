@@ -39,6 +39,7 @@ import { BigNumber } from 'bignumber.js';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -53,34 +54,21 @@ beforeAll(async () => {
   s = Object.assign(s, contracts);
 
   [s.deployer, s.manager, s.investor] = s.accounts;
-  s.exchanges = [s.matchingMarket]; // , matchingMarket2];
+  s.exchanges = [s.ethfinex]; // , matchingMarket2];
   s.gas = 8000000;
   s.opts = { from: s.deployer, gas: s.gas };
   s.numberofExchanges = 1;
-  s.exchanges = [s.matchingMarket];
   s.erc20ProxyAddress = (await getAssetProxy(
     s.environment,
     s.zeroExExchange.options.address,
   )).toString();
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-
-  const ethfinexAdapterAddress = await deployContract(
-    s.environment,
-    Contracts.EthfinexAdapter,
-    [],
-  );
-  await registerExchange(s.environment, contracts.registry.options.address, {
-    adapter: ethfinexAdapterAddress,
-    exchange: s.zeroExExchange.options.address,
-    sigs: [FunctionSignatures.makeOrder, FunctionSignatures.cancelOrder],
-    takesCustody: true,
-  });
   const exchangeConfigs = {
-    [Exchanges.ZeroEx]: {
-      adapter: ethfinexAdapterAddress,
-      exchange: s.zeroExExchange.options.address,
-      takesCustody: false,
+    [Exchanges.Ethfinex]: {
+      adapter: s.ethfinexAdapter.options.address,
+      exchange: s.ethfinex.options.address,
+      takesCustody: true,
     },
   };
   const envManager = withDifferentAccount(s.environment, s.manager);
@@ -217,7 +205,7 @@ test('Make order through the fund', async () => {
     .send({ from: s.deployer, gas: s.gas });
   const makerAddress = s.fund.trading.options.address.toLowerCase();
   const order: Order = {
-    exchangeAddress: s.zeroExExchange.options.address.toLowerCase(),
+    exchangeAddress: s.ethfinex.options.address.toLowerCase(),
     makerAddress,
     takerAddress: NULL_ADDRESS,
     senderAddress: NULL_ADDRESS,

@@ -20,6 +20,7 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
+import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
 import {
   LogLevels,
   Environment,
@@ -61,6 +62,7 @@ export interface MelonContracts {
     kyberAdapter: Address;
     zeroExAdapter: Address;
     matchingMarketAdapter: Address;
+    ethfinexAdapter: Address;
   };
   policies: {
     priceTolerance: Address;
@@ -103,6 +105,9 @@ export const deploySystem = async (
 
   /// Exchange Adapters
   contracts.adapters = {
+    ethfinexAdapter:
+      R.path(['adapters', 'ethfinexAdapter'], adoptedContracts) ||
+      (await deployEthfinexAdapter(environment)),
     kyberAdapter:
       R.path(['adapters', 'kyberAdapter'], adoptedContracts) ||
       (await deployKyberAdapter(environment)),
@@ -225,6 +230,11 @@ export const deploySystem = async (
     [Exchanges.ZeroEx]: {
       adapter: contracts.adapters.zeroExAdapter,
       exchange: thirdPartyContracts.exchanges.zeroEx,
+      takesCustody: false,
+    },
+    [Exchanges.Ethfinex]: {
+      adapter: contracts.adapters.zeroExAdapter,
+      exchange: thirdPartyContracts.exchanges.ethfinex,
       takesCustody: false,
     },
   };

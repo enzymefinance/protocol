@@ -19,6 +19,16 @@ export const deployAndGetSystem = async (environment: Environment) => {
       Contracts.Engine,
       addresses.melonContracts.engine,
     ),
+    ethfinex: getContract(
+      environment,
+      Contracts.ZeroExExchange,
+      addresses.exchangeConfigs['Ethfinex'].exchange,
+    ),
+    ethfinexAdapter: getContract(
+      environment,
+      Contracts.EthfinexAdapter,
+      addresses.exchangeConfigs['Ethfinex'].adapter,
+    ),
     eur: getContract(
       environment,
       Contracts.StandardToken,

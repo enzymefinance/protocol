@@ -261,4 +261,5 @@ export enum Exchanges {
   MatchingMarket = 'MatchingMarket',
   KyberNetwork = 'KyberNetwork',
   ZeroEx = 'ZeroEx',
+  Ethfinex = 'Ethfinex',
 }
