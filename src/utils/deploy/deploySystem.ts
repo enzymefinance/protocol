@@ -233,7 +233,7 @@ export const deploySystem = async (
       takesCustody: false,
     },
     [Exchanges.Ethfinex]: {
-      adapter: contracts.adapters.zeroExAdapter,
+      adapter: contracts.adapters.ethfinexAdapter,
       exchange: thirdPartyContracts.exchanges.ethfinex,
       takesCustody: false,
     },

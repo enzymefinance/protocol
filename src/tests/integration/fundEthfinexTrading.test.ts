@@ -54,10 +54,8 @@ beforeAll(async () => {
   s = Object.assign(s, contracts);
 
   [s.deployer, s.manager, s.investor] = s.accounts;
-  s.exchanges = [s.ethfinex]; // , matchingMarket2];
   s.gas = 8000000;
   s.opts = { from: s.deployer, gas: s.gas };
-  s.numberofExchanges = 1;
   s.erc20ProxyAddress = (await getAssetProxy(
     s.environment,
     s.zeroExExchange.options.address,
@@ -71,6 +69,7 @@ beforeAll(async () => {
       takesCustody: true,
     },
   };
+  console.log(exchangeConfigs);
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
@@ -231,6 +230,7 @@ test('Make order through the fund', async () => {
   );
   orderSignature = orderSignature.substring(0, orderSignature.length - 1) + '6';
   const preGav = await s.fund.accounting.methods.calcGav().call();
+  console.log(await s.fund.trading.methods.exchanges(0).call());
   await s.fund.trading.methods
     .callOnExchange(
       0,
@@ -259,7 +259,7 @@ test('Make order through the fund', async () => {
       orderSignature,
     )
     .send({ from: s.manager, gas: s.gas });
-  const isValidSignatureBeforeMake = await s.zeroExExchange.methods
+  const isValidSignatureBeforeMake = await s.ethfinex.methods
     .isValidSignature(
       orderHashHex,
       s.fund.trading.options.address,
