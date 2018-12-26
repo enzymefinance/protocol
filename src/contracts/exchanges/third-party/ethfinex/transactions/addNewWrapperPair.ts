@@ -4,16 +4,17 @@ import { Address } from '@melonproject/token-math/address';
 import {
   transactionFactory,
   GuardFunction,
+  PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { ensure } from '~/utils/guards/ensure';
 
-interface AddNewWrapperPairArgs {
+export interface AddNewWrapperPairArgs {
   tokens: TokenInterface[];
   wrappers: Address[];
 }
 
-const guard: GuardFunction<AddNewWrapperPairArgs> = async params => {
+const guard: GuardFunction<AddNewWrapperPairArgs> = async (_, params) => {
   ensure(
     params.tokens.length === params.wrappers.length,
     `Different length of tokens (${params.tokens.length}) and wrappers (${
@@ -22,12 +23,12 @@ const guard: GuardFunction<AddNewWrapperPairArgs> = async params => {
   );
 };
 
-const prepareArgs = async ({ tokens, wrappers }: AddNewWrapperPairArgs) => [
-  tokens.map(t => t.address.toString()),
-  wrappers.map(w => w.toString()),
-];
+const prepareArgs: PrepareArgsFunction<AddNewWrapperPairArgs> = async (
+  _,
+  { tokens, wrappers },
+) => [tokens.map(t => t.address.toString()), wrappers.map(w => w.toString())];
 
-const postProcess = async (result, params) => {
+const postProcess = async (_, result, params) => {
   ensure(
     result.events.AddNewPair.length === params.tokens.length &&
       result.events.AddNewPair.length === params.wrappers.length,
@@ -39,7 +40,7 @@ const postProcess = async (result, params) => {
 
 const addNewWrapperPair = transactionFactory(
   'addNewWrapperPair',
-  Contracts.EthfinexExchangeEfx,
+  Contracts.WrapperRegistryEFX,
   guard,
   prepareArgs,
   postProcess,

@@ -4,19 +4,19 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { TokenInterface } from '@melonproject/token-math/token';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
-const prepareArgs = ({ token }: { token: TokenInterface }) => [
+const prepareArgs = (environment, { token }: { token: TokenInterface }) => [
   token.address.toString(),
 ];
 
-const postProcess = async (result, _, environment) => {
-  if (isEmptyAddress(result)) return;
-  const token = await getToken(result, environment);
+const postProcess = async (environment, result, prepared) => {
+  if (isEmptyAddress(result)) return undefined;
+  const token = await getToken(environment, result);
   return token;
 };
 
 const getWrapperLock = callFactory(
   'wrapper2TokenLookup',
-  Contracts.EthfinexExchangeEfx,
+  Contracts.WrapperRegistryEFX,
   {
     postProcess,
     prepareArgs,

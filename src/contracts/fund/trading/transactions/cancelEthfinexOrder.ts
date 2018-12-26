@@ -1,4 +1,5 @@
-import { SignedOrder, orderHashUtils } from '0x.js';
+import { SignedOrder } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils';
 
 import { Contracts, Exchanges } from '~/Contracts';
 import {
@@ -14,17 +15,13 @@ interface CancelEthfinexOrderArgs {
 }
 
 const prepareArgs: PrepareArgsFunction<CancelEthfinexOrderArgs> = async (
+  environment,
   { signedOrder },
   contractAddress,
-  environment,
 ) => {
-  const exchangeIndex = await getExchangeIndex(
-    contractAddress,
-    {
-      exchange: Exchanges.Ethfinex,
-    },
-    environment,
-  );
+  const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
+    exchange: Exchanges.Ethfinex,
+  });
 
   const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
 

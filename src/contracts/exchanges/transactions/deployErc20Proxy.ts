@@ -1,7 +1,7 @@
-import { deploy } from '~/utils/solidity/deploy';
+import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 
 const deployErc20Proxy = async environment =>
-  deploy(Contracts.ERC20Proxy, [], environment);
+  deployContract(environment, Contracts.ERC20Proxy, []);
 
 export { deployErc20Proxy };

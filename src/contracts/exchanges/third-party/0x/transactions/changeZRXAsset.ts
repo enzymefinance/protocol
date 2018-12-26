@@ -1,9 +1,19 @@
-import { assetDataUtils } from '0x.js';
+import { assetDataUtils } from '@0x/order-utils';
 import { TokenInterface } from '@melonproject/token-math/token';
-import { transactionFactory } from '~/utils/solidity/transactionFactory';
+import {
+  transactionFactory,
+  PrepareArgsFunction,
+} from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 
-const prepareArgs = async ({ zrxToken }: { zrxToken: TokenInterface }) => {
+export interface changeZRXAssetArgs {
+  zrxToken: TokenInterface;
+}
+
+const prepareArgs: PrepareArgsFunction<changeZRXAssetArgs> = async (
+  _,
+  { zrxToken },
+) => {
   const zrxAssetData = assetDataUtils.encodeERC20AssetData(
     zrxToken.address.toString(),
   );

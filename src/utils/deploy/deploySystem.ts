@@ -80,8 +80,8 @@ export type MelonContractsDraft = Partial<MelonContracts>;
 export const deployAllContractsConfig = JSON.parse(`{
   "priceSource": "DEPLOY",
   "adapters": {
-    "kyberAdapter": "DEPLOY",
     "ethfinexAdapter": "DEPLOY",
+    "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
     "zeroExAdapter": "DEPLOY"
   },
@@ -175,11 +175,11 @@ export const deploySystem = async (
   const monthInSeconds = 30 * 24 * 60 * 60;
 
   const environmentWithDeployment = await R.pipe(
-    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
-      deployKyberAdapter(environment),
-    ),
     maybeDeploy(['adapters', 'ethfinexAdapter'], environment =>
       deployEthfinexAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
+      deployKyberAdapter(environment),
     ),
     maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
       deployMatchingMarketAdapter(environment),
@@ -313,8 +313,8 @@ export const deploySystem = async (
     },
     [Exchanges.Ethfinex]: {
       adapter: melonContracts.adapters.ethfinexAdapter,
-      exchange: thirdPartyContracts.exchanges.ethfinex,
-      takesCustody: true,
+      exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
+      takesCustody: false,
     },
   };
 
