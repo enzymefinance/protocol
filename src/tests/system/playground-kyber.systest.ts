@@ -43,11 +43,17 @@ describe('playground', () => {
     // ]);
 
     const mln = getTokenBySymbol(environment, 'MLN');
-    const mlnPrice = await getPrice(
-      masterEnvironment,
-      melonContracts.priceSource.toString(),
-      mln,
-    );
+    try {
+      const mlnPrice = await getPrice(
+        masterEnvironment,
+        melonContracts.priceSource.toString(),
+        mln,
+      );
+
+      console.log(mlnPrice);
+    } catch (e) {
+      throw new Error('Cannot get MLN Price from Kyber');
+    }
 
     const masterBalance = await getBalance(masterEnvironment);
 
