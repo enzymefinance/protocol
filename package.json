@@ -31,7 +31,7 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "allchecks": "yarn clean && yarn build && yarn compile && yarn lint && yarn test && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721",
+    "allchecks": "yarn clean && yarn build && yarn compile && yarn lint && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 && yarn test",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out && rimraf logs/*.log",

@@ -182,7 +182,10 @@ program
     const {
       deployThirdParty,
     } = require('../lib/utils/deploy/deployThirdParty');
-    const { deploySystem } = require('../lib/utils/deploy/deploySystem');
+    const {
+      deploySystem,
+      deployAllContractsConfig,
+    } = require('../lib/utils/deploy/deploySystem');
 
     try {
       const environment = await getEnvironment({
@@ -206,7 +209,7 @@ program
       const { deployment } = await deploySystem(
         environment,
         thirdPartyContracts,
-        config && config.melonContracts,
+        (config && config.melonContracts) || deployAllContractsConfig,
         R.path(['meta', 'description'], config),
       );
       const chainId = await environment.eth.net.getId();
