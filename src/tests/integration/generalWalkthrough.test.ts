@@ -54,6 +54,7 @@ describe('generalWalkthrough', () => {
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
+    expect(shared.env.track).toBe(Tracks.TESTING);
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
@@ -154,19 +155,17 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
-    if (shared.env.track === Tracks.TESTING) {
-      const mlnPrice = createPrice(
-        createQuantity(mlnToken, '1'),
-        createQuantity(ethToken, '2'),
-      );
+    const mlnPrice = createPrice(
+      createQuantity(mlnToken, '1'),
+      createQuantity(ethToken, '2'),
+    );
 
-      const ethPrice = createPrice(
-        createQuantity(ethToken, '1'),
-        createQuantity(ethToken, '1'),
-      );
+    const ethPrice = createPrice(
+      createQuantity(ethToken, '1'),
+      createQuantity(ethToken, '1'),
+    );
 
-      await update(shared.env, priceSource, [ethPrice, mlnPrice]);
-    }
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
