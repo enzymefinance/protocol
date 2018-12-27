@@ -1,17 +1,6 @@
-import {
-  createOrder,
-  signOrder,
-  approveOrder,
-  isValidSignatureOffChain,
-} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x';
-import {
-  orderHashUtils,
-  signatureUtils,
-  assetDataUtils,
-  Order,
-} from '@0x/order-utils';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { orderHashUtils, assetDataUtils, Order } from '@0x/order-utils';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
@@ -32,14 +21,11 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges, Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { BigNumber } from 'bignumber.js';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
-import { registerExchange } from '~/contracts/version/transactions/registerExchange';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
+import { getLatestBlock } from '~/utils/evm';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -58,7 +44,7 @@ beforeAll(async () => {
   s.opts = { from: s.deployer, gas: s.gas };
   s.erc20ProxyAddress = (await getAssetProxy(
     s.environment,
-    s.zeroExExchange.options.address,
+    s.ethfinex.options.address,
   )).toString();
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
@@ -69,7 +55,6 @@ beforeAll(async () => {
       takesCustody: true,
     },
   };
-  console.log(exchangeConfigs);
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
@@ -106,13 +91,7 @@ beforeAll(async () => {
   s.ethTokenWrapper = await deployContract(
     s.environment,
     Contracts.WrapperLockEth,
-    [
-      'WETH',
-      'WETH Token',
-      18,
-      s.zeroExExchange.options.address,
-      s.erc20ProxyAddress,
-    ],
+    ['WETH', 'WETH Token', 18, s.ethfinex.options.address, s.erc20ProxyAddress],
   );
 
   s.mlnTokenWrapper = await deployContract(
@@ -124,7 +103,7 @@ beforeAll(async () => {
       'Melon',
       18,
       false,
-      s.zeroExExchange.options.address,
+      s.ethfinex.options.address,
       s.erc20ProxyAddress,
     ],
   );
@@ -138,7 +117,7 @@ beforeAll(async () => {
       'Euro Token',
       18,
       false,
-      s.zeroExExchange.options.address,
+      s.ethfinex.options.address,
       s.erc20ProxyAddress,
     ],
   );
@@ -203,34 +182,30 @@ test('Make order through the fund', async () => {
     .transfer(s.fund.vault.options.address, new BigNumber(10 ** 18).toFixed())
     .send({ from: s.deployer, gas: s.gas });
   const makerAddress = s.fund.trading.options.address.toLowerCase();
+  const latestBlock = await getLatestBlock(s.environment);
   const order: Order = {
     exchangeAddress: s.ethfinex.options.address.toLowerCase(),
-    makerAddress,
-    takerAddress: NULL_ADDRESS,
-    senderAddress: NULL_ADDRESS,
+    expirationTimeSeconds: new BigNumber(latestBlock.timestamp).add(10000),
     feeRecipientAddress: NULL_ADDRESS,
-    expirationTimeSeconds: new BigNumber(9999999999999),
-    salt: '5555',
-    makerAssetAmount: new BigNumber(10000),
-    takerAssetAmount: new BigNumber(10000),
+    makerAddress,
+    makerAssetAmount: new BigNumber(10 ** 17),
     makerAssetData: assetDataUtils.encodeERC20AssetData(
       s.mlnTokenWrapper.toString(),
     ),
+    makerFee: new BigNumber(0),
+    salt: '5555',
+    senderAddress: NULL_ADDRESS,
+    takerAddress: NULL_ADDRESS,
+    takerAssetAmount: new BigNumber(10 ** 16),
+
     takerAssetData: assetDataUtils.encodeERC20AssetData(
       s.weth.options.address.toLowerCase(),
     ),
-    makerFee: new BigNumber(0),
     takerFee: new BigNumber(0),
   };
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
-  let orderSignature = await signatureUtils.ecSignHashAsync(
-    s.environment.eth.currentProvider,
-    orderHashHex,
-    s.manager,
-  );
-  orderSignature = orderSignature.substring(0, orderSignature.length - 1) + '6';
+  s.signedOrder = await signOrder(s.environment, order, s.manager);
   const preGav = await s.fund.accounting.methods.calcGav().call();
-  console.log(await s.fund.trading.methods.exchanges(0).call());
   await s.fund.trading.methods
     .callOnExchange(
       0,
@@ -256,15 +231,51 @@ test('Make order through the fund', async () => {
       randomHexOfSize(20),
       order.makerAssetData,
       order.takerAssetData,
-      orderSignature,
+      s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
+  const postGav = await s.fund.accounting.methods.calcGav().call();
   const isValidSignatureBeforeMake = await s.ethfinex.methods
     .isValidSignature(
       orderHashHex,
       s.fund.trading.options.address,
-      orderSignature,
+      s.signedOrder.signature,
     )
     .call();
   expect(isValidSignatureBeforeMake).toBeTruthy();
+  expect(preGav).toBe(postGav);
+});
+
+test('Third party takes the order made by the fund', async () => {
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const mlnWrapperContract = await getContract(
+    s.environment,
+    Contracts.WrapperLock,
+    s.mlnTokenWrapper,
+  );
+  const preDeployerWrappedMLN = new BigInteger(
+    await mlnWrapperContract.methods.balanceOf(s.deployer).call(),
+  );
+  const result = await fillOrder(s.environment, s.ethfinex.options.address, {
+    signedOrder: s.signedOrder,
+  });
+
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postDeployerWrappedMLN = new BigInteger(
+    await mlnWrapperContract.methods.balanceOf(s.deployer).call(),
+  );
+
+  expect(result).toBeTruthy();
+  expect(post.fund.mln).toEqual(
+    subtract(pre.fund.mln, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.fund.weth).toEqual(
+    add(pre.fund.weth, s.signedOrder.takerAssetAmount),
+  );
+  expect(postDeployerWrappedMLN).toEqual(
+    add(preDeployerWrappedMLN, s.signedOrder.makerAssetAmount),
+  );
+  expect(post.deployer.weth).toEqual(
+    subtract(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+  );
 });

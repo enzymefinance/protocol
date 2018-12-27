@@ -123,7 +123,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         }
     }
 
-     /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted
+     /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted. To be called by Trading spoke
     function getOrder(address targetExchange, uint id, address makerAsset)
         view
         returns (address, address, uint, uint)
@@ -138,7 +138,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         }
 
         // Check if tokens have been withdrawn (cancelled order may still need to be accounted if there is balance)
-        uint balance = WrapperLock(getWrapperToken(makerAsset)).balanceOf(msg.sender);
+        uint balance = WrapperLock(getWrapperTokenFromAdapterContext(makerAsset)).balanceOf(msg.sender);
         if (balance == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
@@ -225,12 +225,23 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         }
     }
 
+    /// @dev Function to be called from Trading spoke context (Delegate call)
     function getWrapperToken(address token)
         internal
         view
         returns (address wrapperToken)
     {
         address wrapperRegistry = Registry(Trading(address(this)).registry()).ethfinexWrapperRegistry();
+        return WrapperRegistryEFX(wrapperRegistry).wrapper2TokenLookup(token);
+    }
+
+    /// @dev Function to be called by Trading spoke without change of context (Non delegate call)
+    function getWrapperTokenFromAdapterContext(address token)
+        internal
+        view
+        returns (address wrapperToken)
+    {
+        address wrapperRegistry = Registry(Trading(msg.sender).registry()).ethfinexWrapperRegistry();
         return WrapperRegistryEFX(wrapperRegistry).wrapper2TokenLookup(token);
     }
 }
