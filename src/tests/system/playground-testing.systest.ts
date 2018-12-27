@@ -1,92 +1,27 @@
-import * as path from 'path';
-import * as R from 'ramda';
-
-import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
-import { constructEnvironment } from '~/utils/environment/constructEnvironment';
-import { testLogger } from '../utils/testLogger';
 import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
 import { toFixed, createQuantity } from '@melonproject/token-math/quantity';
+import {
+  createPrice,
+  toFixed as toFixedPrice,
+} from '@melonproject/token-math/price';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
-import { withDeployment } from '~/utils/environment/withDeployment';
 // import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import {
-  Deployment,
-  Environment,
-  Tracks,
-} from '~/utils/environment/Environment';
+
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { getChainName } from '~/utils/environment/chainName';
-import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-// import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
+
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { update } from '~/contracts/prices/transactions/update';
-import { createPrice } from '@melonproject/token-math/price';
+import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-
-/**
- * TODO:
- * - [ ] Share logic between integration and system tests
- * - [x] Load wallet from keystore
- * - [x] Create new accounts and fund them (not use the keystore account to
- *       interact)
- */
-
-const getEnvironment = async (track = Tracks.TESTING): Promise<Environment> => {
-  const baseEnvironment = constructEnvironment({
-    endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
-    logger: testLogger,
-    track,
-  });
-
-  const deploymentId = `${await getChainName(baseEnvironment)}-${
-    baseEnvironment.track
-  }`;
-  // tslint:disable-next-line:max-line-length
-  const deployment: Deployment = require(`../../../deployments/${deploymentId}.json`);
-
-  const environmentWithDeployment = withDeployment(baseEnvironment, deployment);
-
-  const selectSigner = R.cond([
-    [
-      R.prop('KEYSTORE_FILE'),
-      async env =>
-        await withKeystoreSigner(environmentWithDeployment, {
-          keystore: require(path.join(
-            process.cwd(),
-            R.prop('KEYSTORE_FILE', env),
-          )),
-          password: R.prop('KEYSTORE_PASSWORD', env),
-        }),
-    ],
-    [
-      R.prop('PRIVATE_KEY'),
-      async env =>
-        await withPrivateKeySigner(
-          environmentWithDeployment,
-          R.prop('PRIVATE_KEY', env),
-        ),
-    ],
-    [
-      R.T,
-      () => {
-        throw new Error('Neither PRIVATE_KEY nor KEYSTORE_FILE found in env');
-      },
-    ],
-  ]);
-
-  const environment = await selectSigner(process.env);
-
-  return environment;
-};
 
 describe('playground', () => {
   test('Happy path', async () => {
-    const masterEnvironment = await getEnvironment();
+    const masterEnvironment = await getSystemTestEnvironment();
 
     const { melonContracts } = masterEnvironment.deployment;
 
@@ -99,7 +34,6 @@ describe('playground', () => {
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(masterEnvironment, melonContracts.engine, amguPrice);
 
-    // await updateKyber(masterEnvironment, melonContracts.priceSource);
     const weth = getTokenBySymbol(environment, 'WETH');
     const mln = getTokenBySymbol(environment, 'MLN');
 
@@ -108,15 +42,13 @@ describe('playground', () => {
       createPrice(createQuantity(mln, 1), createQuantity(weth, 2)),
     ]);
 
-    console.log(amguToken);
-
     const mlnPrice = await getPrice(
       masterEnvironment,
       melonContracts.priceSource.toString(),
       amguToken,
     );
 
-    console.log(amguToken, mlnPrice);
+    console.log('MLN Price', toFixedPrice(mlnPrice));
 
     const masterBalance = await getBalance(masterEnvironment);
 
