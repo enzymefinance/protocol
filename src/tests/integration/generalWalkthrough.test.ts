@@ -71,8 +71,8 @@ describe('generalWalkthrough', () => {
 
     const tokens = thirdPartyContracts.tokens;
 
-    const [quoteToken, baseToken] = tokens;
-    const defaultTokens = [quoteToken, baseToken];
+    const [ethToken, mlnToken] = tokens;
+    const defaultTokens = [ethToken, mlnToken];
     const amguToken = await getAmguToken(shared.env, version);
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(shared.env, engine, amguPrice);
@@ -121,9 +121,9 @@ describe('generalWalkthrough', () => {
         exchangeConfigs,
         fees,
         fundName,
-        nativeToken: quoteToken,
+        nativeToken: ethToken,
         priceSource,
-        quoteToken,
+        quoteToken: ethToken,
       },
       { gas: '8000000' },
     );
@@ -155,17 +155,22 @@ describe('generalWalkthrough', () => {
     });
 
     if (shared.env.track === Tracks.TESTING) {
-      const newPrice = createPrice(
-        createQuantity(baseToken, '1'),
-        createQuantity(quoteToken, '2'),
+      const mlnPrice = createPrice(
+        createQuantity(mlnToken, '1'),
+        createQuantity(ethToken, '2'),
       );
 
-      await update(shared.env, priceSource, [newPrice]);
+      const ethPrice = createPrice(
+        createQuantity(ethToken, '1'),
+        createQuantity(ethToken, '1'),
+      );
+
+      await update(shared.env, priceSource, [ethPrice, mlnPrice]);
     }
 
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
-    const investmentAmount = createQuantity(quoteToken, 1);
+    const investmentAmount = createQuantity(ethToken, 1);
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
@@ -291,7 +296,7 @@ describe('generalWalkthrough', () => {
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
-        investmentAmount: createQuantity(quoteToken, 1),
+        investmentAmount: createQuantity(ethToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   });
