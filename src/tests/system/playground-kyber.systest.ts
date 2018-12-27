@@ -13,8 +13,7 @@ import { getPrice } from '~/contracts/prices/calls/getPrice';
 // import { createPrice } from '@melonproject/token-math/price';
 import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
-import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
-// import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
+import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 describe('playground', () => {
   test('Happy path', async () => {
@@ -26,8 +25,8 @@ describe('playground', () => {
 
     const environment = withNewAccount(masterEnvironment);
 
-    const amguPrice = await getAmguPrice(environment, melonContracts.engine);
-    console.log({ amguPrice });
+    const amguPrice = createQuantity('MLN', '1000000000');
+    await setAmguPrice(environment, melonContracts.engine, amguPrice);
     await updateKyber(masterEnvironment, melonContracts.priceSource);
     const weth = getTokenBySymbol(environment, 'WETH');
 

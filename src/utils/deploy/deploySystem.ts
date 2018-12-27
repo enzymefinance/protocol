@@ -231,8 +231,6 @@ export const deploySystem = async (
         await setRegistry(environment, melonContracts.engine, {
           address: melonContracts.registry,
         });
-        const amguPrice = createQuantity('MLN', '1000000000');
-        await setAmguPrice(environment, melonContracts.engine, amguPrice);
       },
     ),
     maybeDeploy(['priceSource'], environment =>
