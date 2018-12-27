@@ -11,7 +11,10 @@ export type SignFunction = (
 ) => Promise<string>;
 
 export enum Tracks {
-  DEFAULT = 'default',
+  // Track for testing with our own testing price feed
+  TESTING = 'testing',
+  // Track linked to the kyber price feed
+  KYBER_PRICE = 'kyberPrice',
 }
 
 // Subset of NPM logging levels without numbers

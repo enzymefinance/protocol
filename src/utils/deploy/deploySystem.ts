@@ -19,7 +19,11 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
-import { Environment, WithDeployment } from '../environment/Environment';
+import {
+  Environment,
+  WithDeployment,
+  Tracks,
+} from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
 import { Address } from '@melonproject/token-math/address';
@@ -35,6 +39,8 @@ import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInf
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
+import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
+import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 
 const pkg = require('~/../package.json');
 
@@ -144,6 +150,7 @@ export const deploySystem = async (
   environmentWithoutDeployment: Environment,
   thirdPartyContracts: ThirdPartyContracts,
   adoptedContracts: MelonContractsDraft,
+  description?: string,
 ): Promise<WithDeployment> => {
   // Set thirdPartyContracts already to have them available in subsequent calls
   const environment = {
@@ -151,8 +158,6 @@ export const deploySystem = async (
     deployment: { thirdPartyContracts, melonContracts: adoptedContracts },
   };
   const log = getLog(environment);
-
-  log.info('ASDF');
 
   log.info('Deploying system from:', environment.wallet.address);
   log.debug('Deploying system', {
@@ -227,14 +232,16 @@ export const deploySystem = async (
       },
     ),
     maybeDeploy(['priceSource'], environment =>
-      deployKyberPriceFeed(environment, {
-        // tslint:disable-next-line:max-line-length
-        kyberNetworkProxy:
-          environment.deployment.thirdPartyContracts.exchanges.kyber
-            .kyberNetworkProxy,
-        quoteToken: wethToken,
-        registry: environment.deployment.melonContracts.registry,
-      }),
+      environment.track === Tracks.KYBER_PRICE
+        ? deployKyberPriceFeed(environment, {
+            // tslint:disable-next-line:max-line-length
+            kyberNetworkProxy:
+              environment.deployment.thirdPartyContracts.exchanges.kyber
+                .kyberNetworkProxy,
+            quoteToken: wethToken,
+            registry: environment.deployment.melonContracts.registry,
+          })
+        : deployTestingPriceFeed(environment, wethToken),
     ),
     maybeDoSomething(
       adoptedContracts.priceSource === 'DEPLOY' ||
@@ -328,16 +335,19 @@ export const deploySystem = async (
         standards: [],
         url: '',
       });
-      // Only used for testing price feed
-      // await setDecimals(environment, melonContracts.priceSource, asset);
+
+      if (environment.track !== Tracks.KYBER_PRICE) {
+        await setDecimals(environment, melonContracts.priceSource, asset);
+      }
     }
   }
 
-  // Only for kyber
-  await updateKyber(
-    environmentWithDeployment,
-    environmentWithDeployment.deployment.melonContracts.priceSource,
-  );
+  if (environment.track === Tracks.KYBER_PRICE) {
+    await updateKyber(
+      environmentWithDeployment,
+      environmentWithDeployment.deployment.melonContracts.priceSource,
+    );
+  }
 
   const track = environment.track;
   const network = await environment.eth.net.getId();
@@ -351,6 +361,7 @@ export const deploySystem = async (
       track,
       version: pkg.version,
       chain: network,
+      description,
     },
     melonContracts: melonContracts as MelonContracts,
     thirdPartyContracts,

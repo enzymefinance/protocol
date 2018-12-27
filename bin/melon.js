@@ -35,6 +35,7 @@ const getEnvironment = ({
   gasPrice,
   gasLimit,
   privateKey,
+  track,
 }) =>
   new Promise(async (resolve, reject) => {
     try {
@@ -51,6 +52,7 @@ const getEnvironment = ({
           gasPrice,
           gasLimit,
         },
+        track,
       });
 
       if (pathToKeystore) {
@@ -192,6 +194,7 @@ program
         gasPrice: options.gasPrice || '2000000000',
         pathToKeystore: options.keystore || undefined,
         privateKey: options.privateKey || undefined,
+        track: R.path(['meta', 'track'], config),
       });
 
       checkPeerCount(environment);
@@ -204,6 +207,7 @@ program
         environment,
         thirdPartyContracts,
         config && config.melonContracts,
+        R.path(['meta', 'description'], config),
       );
       const chainId = await environment.eth.net.getId();
 
