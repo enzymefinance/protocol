@@ -7,14 +7,13 @@ import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 // import { update } from '~/contracts/prices/transactions/update';
 // import { createPrice } from '@melonproject/token-math/price';
 import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
+import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 describe('playground', () => {
@@ -27,13 +26,8 @@ describe('playground', () => {
 
     const environment = withNewAccount(masterEnvironment);
 
-    const amguToken = await getAmguToken(
-      masterEnvironment,
-      melonContracts.version,
-    );
-    const amguPrice = createQuantity(amguToken, '1000000000');
-    await setAmguPrice(masterEnvironment, melonContracts.engine, amguPrice);
-
+    const amguPrice = await getAmguPrice(environment, melonContracts.engine);
+    console.log({ amguPrice });
     await updateKyber(masterEnvironment, melonContracts.priceSource);
     const weth = getTokenBySymbol(environment, 'WETH');
 
