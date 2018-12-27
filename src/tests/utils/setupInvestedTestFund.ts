@@ -1,3 +1,5 @@
+import * as R from 'ramda';
+
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { randomString } from '~/utils/helpers/randomString';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
@@ -13,18 +15,26 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 const setupInvestedTestFund = async (environment: Environment) => {
   const fundName = `test-fund-${randomString()}`;
 
+  const debug = environment.logger(
+    'melon:protocol:tests:setupInvestedTestFund',
+    LogLevels.DEBUG,
+  );
+
+  debug('Setting up testfund', fundName);
+
   const {
     exchangeConfigs,
     melonContracts: { version, priceSource },
-    thirdPartyContracts,
   } = environment.deployment;
 
-  const [weth, mln] = thirdPartyContracts.tokens;
+  const weth = getTokenBySymbol(environment, 'WETH');
+  const mln = getTokenBySymbol(environment, 'MLN');
   const fees = [];
 
   await beginSetup(environment, version, {
@@ -46,6 +56,21 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const hubAddress = await completeSetup(environment, version);
   const routes = await getRoutes(environment, hubAddress);
 
+  expect(R.keys(routes)).toEqual(
+    expect.arrayContaining([
+      'accountingAddress',
+      'feeManagerAddress',
+      'participationAddress',
+      'policyManagerAddress',
+      'priceSourceAddress',
+      'registryAddress',
+      'sharesAddress',
+      'tradingAddress',
+      'vaultAddress',
+      'versionAddress',
+    ]),
+  );
+
   const investmentAmount = createQuantity(weth, 1);
 
   await approve(environment, {
@@ -58,6 +83,8 @@ const setupInvestedTestFund = async (environment: Environment) => {
   });
 
   await executeRequest(environment, routes.participationAddress);
+
+  debug('Testfund setup and invested', fundName, routes);
 
   return routes;
 };

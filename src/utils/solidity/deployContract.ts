@@ -79,13 +79,11 @@ export const deployContract: DeployContract = async (
 
   debug('Gas estimation:', gasEstimation, options);
 
-  if (greaterThan(toBI(gasEstimation), toBI(environment.options.gasLimit))) {
+  if (greaterThan(toBI(gasEstimation), toBI(options.gas || 0))) {
     throw new Error(
       [
         `Estimated gas consumption (${gasEstimation})`,
-        `is higher than the provided gas limit: ${
-          environment.options.gasLimit
-        }`,
+        `is higher than the provided gas limit: ${options.gas}`,
       ].join(' '),
     );
   }

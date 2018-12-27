@@ -7,7 +7,7 @@ import {
   isEqual,
 } from '@melonproject/token-math/bigInteger';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getPrice } from '@melonproject/token-math/price';
+import { createPrice } from '@melonproject/token-math/price';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -88,7 +88,7 @@ describe('sellAndBurnMln', () => {
     await shared.engine.methods
       .setRegistry(shared.registry.options.address)
       .send({ from: shared.accounts[0], gas: 8000000 });
-    const newPrice = getPrice(
+    const newPrice = createPrice(
       createQuantity(await getToken(shared.env, shared.mln.options.address), 1),
       createQuantity(await getToken(shared.env, wethAddress), 2.94),
       true,

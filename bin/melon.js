@@ -29,7 +29,13 @@ const checkPeerCount = environment => {
   }, 5000);
 };
 
-const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
+const getEnvironment = ({
+  pathToKeystore,
+  endpoint,
+  gasPrice,
+  gasLimit,
+  privateKey,
+}) =>
   new Promise(async (resolve, reject) => {
     try {
       const {
@@ -83,7 +89,22 @@ const getEnvironment = ({ pathToKeystore, endpoint, gasPrice, gasLimit }) =>
             resolve(withWallet);
           },
         );
+      } else if (privateKey) {
+        console.log('With private key');
+
+        const {
+          withPrivateKeySigner,
+        } = require('../lib/utils/environment/withPrivateKeySigner');
+
+        const withWallet = await withPrivateKeySigner(
+          environmentWithoutWallet,
+          privateKey,
+        );
+
+        resolve(withWallet);
       } else {
+        console.log('With unlocked node');
+
         const {
           withUnlockedSigner,
         } = require('../lib/utils/environment/withUnlockedSigner');
@@ -139,10 +160,14 @@ program
     '-k, --keystore <pathToKeystore>',
     'Load the deployer account from a keystore file',
   )
+  .option(
+    '-P, --private-key <string>',
+    'Load the deployer account from a private key',
+  )
   .action(async options => {
-    console.log(`Deploying thirdParty & melon contracts (development setup).`);
+    console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
-    const tokens = ['WETH', 'MLN', 'ZRX', ...providedTokens];
+    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', ...providedTokens];
     const tokenInterfaces = tokens.map(token => {
       const [symbol, decimals] = token.split(':');
       return createToken(symbol, undefined, decimals && parseInt(decimals, 10));
@@ -163,9 +188,10 @@ program
           options.endpoint ||
           process.env.JSON_RPC_ENDPOINT ||
           'http://localhost:8545',
-        gasLimit: options.gas || undefined,
-        gasPrice: options.gasPrice || undefined,
+        gasLimit: options.gas || '8000000',
+        gasPrice: options.gasPrice || '2000000000',
         pathToKeystore: options.keystore || undefined,
+        privateKey: options.privateKey || undefined,
       });
 
       checkPeerCount(environment);
@@ -173,6 +199,7 @@ program
       const thirdPartyContracts =
         (config && config.thirdPartyContracts) ||
         (await deployThirdParty(environment, tokenInterfaces));
+
       const { deployment } = await deploySystem(
         environment,
         thirdPartyContracts,

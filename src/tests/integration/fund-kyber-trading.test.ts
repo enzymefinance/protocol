@@ -10,7 +10,6 @@ import {
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
@@ -25,7 +24,7 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-// import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
+import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';

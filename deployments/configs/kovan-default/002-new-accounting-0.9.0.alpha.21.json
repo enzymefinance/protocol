@@ -1,11 +1,4 @@
 {
-  "meta": {
-    "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2018-12-21T15:23:24.073Z",
-    "track": "default",
-    "version": "0.9.0-alpha.21",
-    "chain": 42
-  },
   "melonContracts": {
     "priceSource": "0xA004Db18cE2bD6544E08fd5361E69161AF3C0624",
     "adapters": {
@@ -18,7 +11,7 @@
       "userWhitelist": "0xbCf8853D7821481d9ff911F9EeBc76b68ffF33F7"
     },
     "factories": {
-      "accountingFactory": "0x9E8a629E90E4e354792a05Bb680062868f20a99a",
+      "accountingFactory": "DEPLOY",
       "feeManagerFactory": "0xfdca2AE17D9a1c5f7A1d50fB805E7Cd54C0Ac5aE",
       "participationFactory": "0x85cEeC6858D6DD289327E311007fC0df78A337e5",
       "policyManagerFactory": "0x1Ea386Dca6EaBF8Ca6D749C74E196672f91AC76c",
@@ -28,7 +21,7 @@
     },
     "engine": "0x0C777708f6D6Bbfb80fc054342A6cEeC22188184",
     "registry": "0xC8B8f0b0578C4885E8beE649bD49d7f8FB601fE4",
-    "version": "0xcFC255a5E2ff0316819962F43a13b3949abbA25C",
+    "version": "DEPLOY",
     "ranking": "0xa75Cb60aE273dD933EC3577a89822A85Ec362d44"
   },
   "thirdPartyContracts": {
@@ -139,22 +132,5 @@
         "decimals": 18
       }
     ]
-  },
-  "exchangeConfigs": {
-    "MatchingMarket": {
-      "adapter": "0x5f44bEDfF3f3801dfc4DA6DDb9E11DB142607fF3",
-      "exchange": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
-      "takesCustody": false
-    },
-    "KyberNetwork": {
-      "adapter": "0xe72666020dC30d1Cf0D6B81c1DA54fadecC02119",
-      "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
-      "takesCustody": false
-    },
-    "ZeroEx": {
-      "adapter": "0x66b2A28c0e2e5E0c8b9fe0e29e02f780992A4F5d",
-      "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
-      "takesCustody": false
-    }
   }
 }

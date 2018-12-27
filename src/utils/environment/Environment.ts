@@ -1,7 +1,7 @@
 import * as Eth from 'web3-eth';
 import { Address } from '@melonproject/token-math/address';
 import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
-import { MelonContracts } from '../deploy/deploySystem';
+import { MelonContracts, MelonContractsDraft } from '../deploy/deploySystem';
 import { ThirdPartyContracts } from '../deploy/deployThirdParty';
 import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
 
@@ -46,10 +46,26 @@ export interface Options {
   readonly gasPrice: string;
 }
 
+export interface DeployMeta {
+  deployer: Address;
+  timestamp: string;
+  track: Tracks;
+  version: string;
+  chain: number;
+}
+
 export interface Deployment {
+  meta: DeployMeta;
   exchangeConfigs: ExchangeConfigs;
   melonContracts: MelonContracts;
   thirdPartyContracts: ThirdPartyContracts;
+}
+
+export interface PartialDeployment {
+  meta?: DeployMeta;
+  exchangeConfigs?: ExchangeConfigs;
+  thirdPartyContracts?: Partial<ThirdPartyContracts>;
+  melonContracts?: MelonContractsDraft;
 }
 
 export interface Environment {
@@ -58,7 +74,7 @@ export interface Environment {
   readonly wallet?: Wallet;
   readonly options: Options;
   readonly logger: CurriedLogger;
-  readonly deployment?: Partial<Deployment>;
+  readonly deployment?: PartialDeployment;
 }
 
 export interface WithDeployment extends Environment {

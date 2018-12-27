@@ -2,7 +2,9 @@ import { Address } from '@melonproject/token-math/address';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { createQuantity } from '@melonproject/token-math/quantity';
-import { getPrice } from '@melonproject/token-math/price';
+import { createPrice } from '@melonproject/token-math/price';
+
+import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 
 export const getFundDetails = async (
   environment,
@@ -28,8 +30,9 @@ export const getFundDetails = async (
   } = fundDetails;
 
   const result = addresses.map((address, index) => {
-    const denominationToken = environment.deployment.thirdPartyContracts.tokens.find(
-      token => token.address === denominationAsset[index],
+    const denominationToken = getTokenByAddress(
+      environment,
+      denominationAsset[index],
     );
 
     const fundToken = {
@@ -42,7 +45,7 @@ export const getFundDetails = async (
       creationTime: new Date(creationTimes[index] * 1000),
       name: names[index],
       rank: index + 1,
-      sharePrice: getPrice(
+      sharePrice: createPrice(
         createQuantity(fundToken, 1),
         createQuantity(denominationToken, sharePrices[index]),
       ),

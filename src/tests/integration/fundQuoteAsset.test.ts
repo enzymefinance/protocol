@@ -1,5 +1,4 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployAndGetSystem } from '~/utils/deployAndGetSystem';
 import {
   BigInteger,
   add,
@@ -22,6 +21,7 @@ import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
+import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
