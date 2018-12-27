@@ -1,4 +1,3 @@
-import { Address } from '@melonproject/token-math/address';
 import {
   isEqual,
   PriceInterface,
@@ -8,54 +7,44 @@ import { ensureAccountAddress } from '~/utils/environment/ensureAccountAddress';
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { ensure } from '~/utils/guards/ensure';
 import { getPrices } from '../calls/getPrices';
-import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
+import {
+  transactionFactory,
+  GuardFunction,
+  PrepareArgsFunction,
+  PostProcessFunction,
+} from '~/utils/solidity/transactionFactory';
 
-const guards = async (environment: Environment, contractAddress) => {
+type UpdateParams = PriceInterface[];
+
+const guard: GuardFunction<UpdateParams> = async (
+  environment: Environment,
+  _,
+  contractAddress,
+) => {
   ensureAddress(contractAddress);
   ensureAccountAddress(environment);
 
   // TODO: check if given price is against quote
 };
 
-const prepare = async (environment: Environment, contractAddress, prices) => {
-  const contract = getContract(
-    environment,
-    Contracts.TestingPriceFeed,
-    contractAddress,
-  );
+const prepareArgs: PrepareArgsFunction<UpdateParams> = async (_, prices) => [
+  prices.map(p => p.base.token.address),
+  prices.map(p => `${toAtomic(p)}`),
+];
 
-  const transaction = contract.methods.update(
-    prices.map(p => p.base.token.address),
-    prices.map(p => `${toAtomic(p)}`),
-  );
-
-  return transaction;
-};
-
-const send = async (environment: Environment, transaction) => {
-  const receipt = await transaction.send({
-    from: environment.wallet.address.toString(),
-    gas: 8000000,
-  });
-
-  return receipt;
-};
-
-// TODO: Real postprocessing
-const postProcess = async (
+const postProcess: PostProcessFunction<UpdateParams, UpdateParams> = async (
   environment: Environment,
-  contractAddress,
+  _,
   prices,
-  preventCancelDown,
-  receipt,
+  contractAddress,
 ) => {
   const updatedPrices = await getPrices(
     environment,
     contractAddress,
     prices.map(p => p.base.token),
-    preventCancelDown,
+    false,
   );
 
   ensure(isEqual(updatedPrices[0], prices[0]), 'Price did not update', {
@@ -66,21 +55,10 @@ const postProcess = async (
   return updatedPrices;
 };
 
-export const update = async (
-  environment: Environment,
-  contractAddress: Address,
-  prices: PriceInterface[],
-  preventCancelDown: boolean = false,
-): Promise<PriceInterface[]> => {
-  await guards(environment, contractAddress);
-  const transaction = await prepare(environment, contractAddress, prices);
-  const receipt = await send(environment, transaction);
-  const result = postProcess(
-    environment,
-    contractAddress,
-    prices,
-    preventCancelDown,
-    receipt,
-  );
-  return result;
-};
+export const update = transactionFactory(
+  'update',
+  Contracts.TestingPriceFeed,
+  guard,
+  prepareArgs,
+  postProcess,
+);
