@@ -93,7 +93,7 @@ describe('sellAndBurnMln', () => {
       createQuantity(await getToken(shared.env, wethAddress), 2.94),
       true,
     );
-    await update(shared.env, feedAddress, [newPrice], true);
+    await update(shared.env, feedAddress, [newPrice]);
   });
 
   it('directly sending eth fails', async () => {
