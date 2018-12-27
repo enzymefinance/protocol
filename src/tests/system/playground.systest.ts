@@ -11,15 +11,21 @@ import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 import { withDeployment } from '~/utils/environment/withDeployment';
 // import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { Deployment, Environment } from '~/utils/environment/Environment';
+import {
+  Deployment,
+  Environment,
+  Tracks,
+} from '~/utils/environment/Environment';
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getChainName } from '~/utils/environment/chainName';
 import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
+// import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
+import { update } from '~/contracts/prices/transactions/update';
+import { createPrice } from '@melonproject/token-math/price';
 // import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 /**
@@ -30,10 +36,11 @@ import { getPrice } from '~/contracts/prices/calls/getPrice';
  *       interact)
  */
 
-const getEnvironment = async (): Promise<Environment> => {
+const getEnvironment = async (track = Tracks.TESTING): Promise<Environment> => {
   const baseEnvironment = constructEnvironment({
     endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
     logger: testLogger,
+    track,
   });
 
   const deploymentId = `${await getChainName(baseEnvironment)}-${
@@ -92,7 +99,14 @@ describe('playground', () => {
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(masterEnvironment, melonContracts.engine, amguPrice);
 
-    await updateKyber(masterEnvironment, melonContracts.priceSource);
+    // await updateKyber(masterEnvironment, melonContracts.priceSource);
+    const weth = getTokenBySymbol(environment, 'WETH');
+    const mln = getTokenBySymbol(environment, 'MLN');
+
+    await update(masterEnvironment, melonContracts.priceSource, [
+      createPrice(createQuantity(weth, 1), createQuantity(weth, 1)),
+      createPrice(createQuantity(mln, 1), createQuantity(weth, 2)),
+    ]);
 
     console.log(amguToken);
 
@@ -113,7 +127,6 @@ describe('playground', () => {
 
     const balance = await getBalance(environment);
 
-    const weth = getTokenBySymbol(environment, 'WETH');
     const quantity = createQuantity(weth, 2);
 
     await deposit(environment, quantity.token.address, undefined, {
