@@ -1,3 +1,4 @@
+import { createPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
   BigInteger,
@@ -19,6 +20,7 @@ import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { register } from '~/contracts/fund/policies/transactions/register';
+import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
@@ -36,8 +38,13 @@ import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { LogLevels, Environment } from '~/utils/environment/Environment';
+import {
+  LogLevels,
+  Environment,
+  Tracks,
+} from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
 
 describe('generalWalkthrough', () => {
   const shared: {
@@ -147,6 +154,17 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
+    if (shared.env.track === Tracks.TESTING) {
+      const newPrice = createPrice(
+        createQuantity(baseToken, '1'),
+        createQuantity(quoteToken, '2'),
+      );
+
+      await update(shared.env, priceSource, [newPrice]);
+    }
+
+    debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
+
     const investmentAmount = createQuantity(quoteToken, 1);
 
     await expect(
@@ -166,7 +184,10 @@ describe('generalWalkthrough', () => {
 
     await executeRequest(shared.env, routes.participationAddress);
 
-    debug('Executed request');
+    debug(
+      'Executed request',
+      await calcGav(shared.env, routes.accountingAddress),
+    );
 
     // const redemption = await redeem(routes.participationAddress);
     // debug('Redeemed');
@@ -260,7 +281,7 @@ describe('generalWalkthrough', () => {
       takerQuantity: order3.buy,
     });
 
-    debug(`Took order from fund with id ${order3.id} `);
+    debug(`Took order from fund with id ${order3.id}`);
 
     await performCalculations(shared.env, routes.accountingAddress);
 

@@ -55,6 +55,7 @@ export interface DeployMeta {
   track: Tracks;
   version: string;
   chain: number;
+  description?: string;
 }
 
 export interface Deployment {
