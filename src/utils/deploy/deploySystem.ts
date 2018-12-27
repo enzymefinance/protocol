@@ -27,7 +27,6 @@ import {
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
 import { Address } from '@melonproject/token-math/address';
-import { createQuantity } from '@melonproject/token-math/quantity';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
@@ -42,7 +41,6 @@ import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
-import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 
 const pkg = require('~/../package.json');
 
