@@ -35,17 +35,10 @@ beforeAll(async () => {
   s.addresses = addresses;
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-  s.eurTokenInterface = await getToken(s.environment, s.eur.options.address);
   [s.deployer, s.manager, s.investor] = s.accounts;
   s.gas = 8000000;
   s.opts = { from: s.deployer, gas: s.gas };
-  const exchangeConfigs = {
-    [Exchanges.KyberNetwork]: {
-      adapter: s.kyberAdapter.options.address,
-      exchange: s.kyberNetwork.options.address,
-      takesCustody: false,
-    },
-  };
+  const exchangeConfigs = {};
 
   const maliciousTokenAddress = await deployContract(
     s.environment,
@@ -99,7 +92,6 @@ beforeAll(async () => {
   const hubAddress = await completeSetup(envManager, s.version.options.address);
   s.fund = await getFundComponents(envManager, hubAddress);
   await updateTestingPriceFeed(s, s.environment);
-
   await updateTestingPriceFeed(s, s.environment);
 });
 
