@@ -22,6 +22,7 @@ export interface ThirdPartyContracts {
     kyber: KyberEnvironment;
     matchingMarket: Address;
     zeroEx: Address;
+    ethfinex: Address;
   };
   tokens: TokenInterface[];
 }
@@ -83,9 +84,11 @@ const deployThirdParty = async (
     deployedTokens.find(t => t.symbol === 'EUR'),
   ]);
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
+  const ethfinex = await deploy0xExchange(environment, { zrxToken });
 
   return {
     exchanges: {
+      ethfinex,
       kyber,
       matchingMarket,
       zeroEx,

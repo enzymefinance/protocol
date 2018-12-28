@@ -19,6 +19,7 @@ import { deployTradingFactory } from '~/contracts/fund/trading/transactions/depl
 import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVaultFactory';
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
+import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
 import {
   Environment,
   WithDeployment,
@@ -64,6 +65,7 @@ export interface MelonContracts {
     kyberAdapter: Address;
     zeroExAdapter: Address;
     matchingMarketAdapter: Address;
+    ethfinexAdapter: Address;
   };
   policies: {
     priceTolerance: Address;
@@ -78,6 +80,7 @@ export const deployAllContractsConfig = JSON.parse(`{
   "priceSource": "DEPLOY",
   "adapters": {
     "kyberAdapter": "DEPLOY",
+    "ethfinexAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
     "zeroExAdapter": "DEPLOY"
   },
@@ -173,6 +176,9 @@ export const deploySystem = async (
   const environmentWithDeployment = await R.pipe(
     maybeDeploy(['adapters', 'kyberAdapter'], environment =>
       deployKyberAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'ethfinexAdapter'], environment =>
+      deployEthfinexAdapter(environment),
     ),
     maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
       deployMatchingMarketAdapter(environment),
@@ -302,6 +308,11 @@ export const deploySystem = async (
     [Exchanges.ZeroEx]: {
       adapter: melonContracts.adapters.zeroExAdapter,
       exchange: thirdPartyContracts.exchanges.zeroEx,
+      takesCustody: false,
+    },
+    [Exchanges.Ethfinex]: {
+      adapter: melonContracts.adapters.ethfinexAdapter,
+      exchange: thirdPartyContracts.exchanges.ethfinex,
       takesCustody: false,
     },
   };
