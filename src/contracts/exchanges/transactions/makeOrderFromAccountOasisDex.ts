@@ -14,16 +14,23 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { ensure } from '~/utils/guards/ensure';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import * as web3Utils from 'web3-utils';
+import { getLogCurried } from '~/utils/environment/getLogCurried';
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;
   buy: QuantityInterface;
 }
+
+const getLog = getLogCurried(
+  'melon:protocol:contracts:makeOrderFromAccountOasisDex',
+);
 
 const guard: GuardFunction<CallOnExchangeArgs> = async (
   environment,
   params,
   contractAddress,
 ) => {
+  const log = getLog(environment);
+
   await approve(environment, {
     howMuch: params.sell,
     spender: contractAddress,
@@ -33,25 +40,39 @@ const guard: GuardFunction<CallOnExchangeArgs> = async (
     Contracts.MatchingMarket,
     contractAddress,
   );
+
   const dust = await oasisDexContract.methods
     ._dust(params.sell.token.address)
     .call();
+
+  log.debug({ dust });
 
   ensure(
     greaterThan(params.sell, createQuantity(params.sell.token, dust)),
     'Selling quantity too low.',
   );
 
+  log.debug(params.sell.token.address, params.buy.token.address);
+
   const isWhitelisted = await oasisDexContract.methods
-    .isTokenPairWhitelisted(params.sell.token.address, params.buy.token.address)
+    .isTokenPairWhitelisted(
+      params.sell.token.address.toString(),
+      params.buy.token.address.toString(),
+    )
     .call();
+
+  log.debug({ isWhitelisted });
 
   ensure(isWhitelisted, 'Token pair not whitelisted');
 
   ensureSufficientBalance(environment, params.sell, environment.wallet.address);
 
+  log.debug('Sufficient balance');
+
   const isMarketClosed = await oasisDexContract.methods.isClosed().call();
   ensure(!isMarketClosed, 'Market closed');
+
+  log.debug('Guards passed');
 };
 
 const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async (
