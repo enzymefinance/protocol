@@ -18,7 +18,7 @@ import { createShares } from '~/contracts/factory/transactions/createShares';
 import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { Exchanges, Contracts } from '~/Contracts';
+import { Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
@@ -163,5 +163,7 @@ test(`Redeem with constraints works as expected`, async () => {
   expect(postTotalSupply).toEqual(subtract(preTotalSupply, investorShares));
   expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
   expect(post.fund.weth).toEqual(new BigInteger(0));
+  expect(post.fund.mln).toEqual(pre.fund.mln);
+  expect(post.investor.mln).toEqual(pre.investor.mln);
   expect(postFundGav).toEqual(new BigInteger(0));
 });
