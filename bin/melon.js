@@ -166,6 +166,10 @@ program
     '-P, --private-key <string>',
     'Load the deployer account from a private key',
   )
+  .option(
+    '-T, --track <string>',
+    'Specify a track',
+  )
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
@@ -197,7 +201,7 @@ program
         gasPrice: options.gasPrice || '2000000000',
         pathToKeystore: options.keystore || undefined,
         privateKey: options.privateKey || undefined,
-        track: R.path(['meta', 'track'], config),
+        track: options.track || R.path(['meta', 'track'], config),
       });
 
       checkPeerCount(environment);

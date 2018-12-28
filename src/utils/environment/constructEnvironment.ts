@@ -8,6 +8,7 @@ import {
   CurriedLogger,
   Tracks,
 } from './Environment';
+import { ensure } from '../guards/ensure';
 
 export const defaultOptions: Options = {
   gasLimit: '8000000',
@@ -84,11 +85,17 @@ export const constructEnvironment = ({
   track = Tracks.TESTING,
   options = defaultOptions,
 }): Environment => {
-  if (!endpoint && !provider) {
-    throw new Error(
-      'You need to provide either an endpoint or a provider instance.',
-    );
-  }
+  ensure(
+    Object.values(Tracks).includes(track),
+    `Unknown track: ${track}. Possible tracks: ${Object.values(Tracks).join(
+      ', ',
+    )}`,
+  );
+
+  ensure(
+    !!endpoint || !!provider,
+    'You need to provide either an endpoint or a provider instance.',
+  );
 
   logger(
     'melon:protocol:utils:environment',
