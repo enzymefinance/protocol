@@ -1,7 +1,8 @@
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
-
+import { getPrices } from '~/contracts/prices/calls/getPrices';
+import { update } from '~/contracts/prices/transactions/update';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import {
@@ -9,10 +10,13 @@ import {
   greaterThan,
   BigInteger,
 } from '@melonproject/token-math/bigInteger';
-
+import {
+  createPrice,
+  isEqual as isEqualPrice,
+} from '@melonproject/token-math/price';
 import { sign } from '~/utils/environment/sign';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
-import { Environment } from '~/utils/environment/Environment';
+import { Environment, Tracks } from '~/utils/environment/Environment';
 
 const shared: {
   env?: Environment;
@@ -61,6 +65,20 @@ test('Set amgu and check its usage', async () => {
     priceSource: melonContracts.priceSource,
     quoteToken,
   };
+
+  if (shared.env.track === Tracks.TESTING) {
+    const newPrice = createPrice(
+      createQuantity(baseToken, '1'),
+      createQuantity(quoteToken, '2'),
+    );
+
+    await update(shared.env, melonContracts.priceSource, [newPrice]);
+
+    const [price] = await getPrices(shared.env, melonContracts.priceSource, [
+      baseToken,
+    ]);
+    expect(isEqualPrice(price, newPrice)).toBe(true);
+  }
 
   const prepared = await beginSetup.prepare(
     shared.env,

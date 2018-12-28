@@ -88,12 +88,20 @@ describe('sellAndBurnMln', () => {
     await shared.engine.methods
       .setRegistry(shared.registry.options.address)
       .send({ from: shared.accounts[0], gas: 8000000 });
-    const newPrice = createPrice(
-      createQuantity(await getToken(shared.env, shared.mln.options.address), 1),
-      createQuantity(await getToken(shared.env, wethAddress), 2.94),
-      true,
-    );
-    await update(shared.env, feedAddress, [newPrice], true);
+
+    await update(shared.env, feedAddress, [
+      createPrice(
+        createQuantity(await getToken(shared.env, wethAddress), 1),
+        createQuantity(await getToken(shared.env, wethAddress), 1),
+      ),
+      createPrice(
+        createQuantity(
+          await getToken(shared.env, shared.mln.options.address),
+          1,
+        ),
+        createQuantity(await getToken(shared.env, wethAddress), 2.94),
+      ),
+    ]);
   });
 
   it('directly sending eth fails', async () => {

@@ -35,6 +35,7 @@ const getEnvironment = ({
   gasPrice,
   gasLimit,
   privateKey,
+  track,
 }) =>
   new Promise(async (resolve, reject) => {
     try {
@@ -51,6 +52,7 @@ const getEnvironment = ({
           gasPrice,
           gasLimit,
         },
+        track,
       });
 
       if (pathToKeystore) {
@@ -167,7 +169,7 @@ program
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
-    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', ...providedTokens];
+    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', 'DGX', ...providedTokens];
     const tokenInterfaces = tokens.map(token => {
       const [symbol, decimals] = token.split(':');
       return createToken(symbol, undefined, decimals && parseInt(decimals, 10));
@@ -180,7 +182,10 @@ program
     const {
       deployThirdParty,
     } = require('../lib/utils/deploy/deployThirdParty');
-    const { deploySystem } = require('../lib/utils/deploy/deploySystem');
+    const {
+      deploySystem,
+      deployAllContractsConfig,
+    } = require('../lib/utils/deploy/deploySystem');
 
     try {
       const environment = await getEnvironment({
@@ -192,6 +197,7 @@ program
         gasPrice: options.gasPrice || '2000000000',
         pathToKeystore: options.keystore || undefined,
         privateKey: options.privateKey || undefined,
+        track: R.path(['meta', 'track'], config),
       });
 
       checkPeerCount(environment);
@@ -203,7 +209,8 @@ program
       const { deployment } = await deploySystem(
         environment,
         thirdPartyContracts,
-        config && config.melonContracts,
+        (config && config.melonContracts) || deployAllContractsConfig,
+        R.path(['meta', 'description'], config),
       );
       const chainId = await environment.eth.net.getId();
 
