@@ -21,7 +21,8 @@
     "adapters": {
       "kyberAdapter": "0xE23E76C424afF6395C83251e07D6a68Ddd9E47dD",
       "matchingMarketAdapter": "0x38ed49300335A839B4ea65f47cd8BE1229f2E447",
-      "zeroExAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97"
+      "zeroExAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97",
+      "ethfinexAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97"
     },
     "policies": {
       "priceTolerance": "0x4c98B3438f78F744Fa87F3a3b635504A21a73932",
@@ -49,7 +50,8 @@
         "kyberNetworkProxy": "0x585c37C28e6E6BE50914c1392db333d375c62CB5"
       },
       "matchingMarket": "0x843C1028F40c2410531Af049eAC27F135B296247",
-      "zeroEx": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1"
+      "zeroEx": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1",
+      "ethfinex": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1"
     },
     "tokens": [
       {

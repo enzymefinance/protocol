@@ -81,7 +81,7 @@ export const constructEnvironment = ({
   deployment = undefined,
   logger = dummyLogger,
   wallet = undefined,
-  track = Tracks.DEFAULT,
+  track = Tracks.TESTING,
   options = defaultOptions,
 }): Environment => {
   if (!endpoint && !provider) {

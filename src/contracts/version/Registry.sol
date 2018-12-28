@@ -32,6 +32,7 @@ contract Registry is DSAuth {
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
     event EngineChange(address indexed engine);
+    event EfxWrapperRegistryChange(address indexed registry);
 
     // TYPES
     struct Asset {
@@ -184,6 +185,11 @@ contract Registry is DSAuth {
     function setEngine(address _engine) auth {
         engine = _engine;
         emit EngineChange(_engine);
+    }
+
+    function setEthfinexWrapperRegistry(address _registry) auth {
+        ethfinexWrapperRegistry = _registry;
+        emit EfxWrapperRegistryChange(_registry);
     }
 
     /// @notice Updates description information of a registered Asset

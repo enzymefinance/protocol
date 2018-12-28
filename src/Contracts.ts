@@ -12,6 +12,7 @@ export enum Contracts {
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
   ERC20Proxy = 'ERC20Proxy',
+  EthfinexAdapter = 'EthfinexAdapter',
   ExchangeAdapter = 'ExchangeAdapter',
   FalsePolicy = 'FalsePolicy',
   FeeManager = 'FeeManager',
@@ -63,6 +64,9 @@ export enum Contracts {
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
   Version = 'Version',
+  WrapperLock = 'WrapperLock',
+  WrapperLockEth = 'WrapperLockEth',
+  WrapperRegistryEFX = 'WrapperRegistryEFX',
   Weth = 'WETH',
   ZeroExAdapter = 'ZeroExV2Adapter',
   ZeroExExchange = 'Exchange',
@@ -90,6 +94,8 @@ export const requireMap = {
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/Engine.abi.json'),
+  [Contracts.EthfinexAdapter]:
+    require(`../out/${Contracts.EthfinexAdapter}.abi.json`),
   [Contracts.ExchangeAdapter]:
     require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
   [Contracts.FalsePolicy]:
@@ -198,6 +204,12 @@ export const requireMap = {
     require('../out/VaultFactory.abi.json'),
   [Contracts.Version]:
     require('../out/Version.abi.json'),
+  [Contracts.WrapperLock]:
+    require(`../out/${Contracts.WrapperLock}.abi.json`),
+  [Contracts.WrapperLockEth]:
+    require(`../out/${Contracts.WrapperLockEth}.abi.json`),
+  [Contracts.WrapperRegistryEFX]:
+    require(`../out/${Contracts.WrapperRegistryEFX}.abi.json`),
   [Contracts.Weth]:
     require('../out/WETH9.abi.json'),
   [Contracts.ZeroExExchange]:
@@ -252,4 +264,5 @@ export enum Exchanges {
   MatchingMarket = 'MatchingMarket',
   KyberNetwork = 'KyberNetwork',
   ZeroEx = 'ZeroEx',
+  Ethfinex = 'Ethfinex',
 }

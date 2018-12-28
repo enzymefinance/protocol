@@ -1,3 +1,4 @@
+import { createPrice } from '@melonproject/token-math/price';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import {
   BigInteger,
@@ -19,6 +20,7 @@ import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { register } from '~/contracts/fund/policies/transactions/register';
+import { update } from '~/contracts/prices/transactions/update';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
@@ -36,8 +38,13 @@ import { randomString } from '~/utils/helpers/randomString';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { LogLevels, Environment } from '~/utils/environment/Environment';
+import {
+  LogLevels,
+  Environment,
+  Tracks,
+} from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
 
 describe('generalWalkthrough', () => {
   const shared: {
@@ -47,6 +54,7 @@ describe('generalWalkthrough', () => {
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
+    expect(shared.env.track).toBe(Tracks.TESTING);
     shared.accounts = await shared.env.eth.getAccounts();
   });
 
@@ -64,8 +72,8 @@ describe('generalWalkthrough', () => {
 
     const tokens = thirdPartyContracts.tokens;
 
-    const [quoteToken, baseToken] = tokens;
-    const defaultTokens = [quoteToken, baseToken];
+    const [ethToken, mlnToken] = tokens;
+    const defaultTokens = [ethToken, mlnToken];
     const amguToken = await getAmguToken(shared.env, version);
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(shared.env, engine, amguPrice);
@@ -114,9 +122,9 @@ describe('generalWalkthrough', () => {
         exchangeConfigs,
         fees,
         fundName,
-        nativeToken: quoteToken,
+        nativeToken: ethToken,
         priceSource,
-        quoteToken,
+        quoteToken: ethToken,
       },
       { gas: '8000000' },
     );
@@ -147,7 +155,21 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
-    const investmentAmount = createQuantity(quoteToken, 1);
+    const mlnPrice = createPrice(
+      createQuantity(mlnToken, '1'),
+      createQuantity(ethToken, '2'),
+    );
+
+    const ethPrice = createPrice(
+      createQuantity(ethToken, '1'),
+      createQuantity(ethToken, '1'),
+    );
+
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
+
+    debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
+
+    const investmentAmount = createQuantity(ethToken, 1);
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
@@ -166,7 +188,10 @@ describe('generalWalkthrough', () => {
 
     await executeRequest(shared.env, routes.participationAddress);
 
-    debug('Executed request');
+    debug(
+      'Executed request',
+      await calcGav(shared.env, routes.accountingAddress),
+    );
 
     // const redemption = await redeem(routes.participationAddress);
     // debug('Redeemed');
@@ -260,7 +285,7 @@ describe('generalWalkthrough', () => {
       takerQuantity: order3.buy,
     });
 
-    debug(`Took order from fund with id ${order3.id} `);
+    debug(`Took order from fund with id ${order3.id}`);
 
     await performCalculations(shared.env, routes.accountingAddress);
 
@@ -270,7 +295,7 @@ describe('generalWalkthrough', () => {
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
-        investmentAmount: createQuantity(quoteToken, 1),
+        investmentAmount: createQuantity(ethToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   });

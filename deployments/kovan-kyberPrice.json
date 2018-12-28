@@ -1,13 +1,13 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2018-12-21T15:23:24.073Z",
-    "track": "default",
-    "version": "0.9.0-alpha.21",
+    "timestamp": "2018-12-27T17:38:01.357Z",
+    "track": "kyberPrice",
+    "version": "0.9.0-alpha.23",
     "chain": 42
   },
   "melonContracts": {
-    "priceSource": "0xA004Db18cE2bD6544E08fd5361E69161AF3C0624",
+    "priceSource": "0x4261D40E6276517d2432a72e3D845243BecbD80b",
     "adapters": {
       "kyberAdapter": "0xe72666020dC30d1Cf0D6B81c1DA54fadecC02119",
       "matchingMarketAdapter": "0x5f44bEDfF3f3801dfc4DA6DDb9E11DB142607fF3",
@@ -26,9 +26,9 @@
       "tradingFactory": "0x6e5cb65afAAc4c7465A507c756e94Ad965Aee3BE",
       "vaultFactory": "0x01bf93Ec48072eb84FC56aFD4cE9B89088d95a7C"
     },
-    "engine": "0x0C777708f6D6Bbfb80fc054342A6cEeC22188184",
+    "engine": "0x2076b120fe4B0EC73Be855fe1a4d3e798161B626",
     "registry": "0xC8B8f0b0578C4885E8beE649bD49d7f8FB601fE4",
-    "version": "0xcFC255a5E2ff0316819962F43a13b3949abbA25C",
+    "version": "0x8343040746142FFb883CDC4848057c9B7F4D64C4",
     "ranking": "0xa75Cb60aE273dD933EC3577a89822A85Ec362d44"
   },
   "thirdPartyContracts": {
