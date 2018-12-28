@@ -218,7 +218,7 @@ export const deploySystem = async (
     ),
     maybeDeploy(['registry'], environment => deployRegistry(environment)),
     maybeDoSomething(
-      adoptedContracts.registry === 'DEPLOY',
+      true, // ensure these steps are done at each deployment
       async environment => {
         const { melonContracts } = environment.deployment;
         getLog(environment).info('Setting registry & engine');

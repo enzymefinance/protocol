@@ -18,7 +18,7 @@ const deployKyberPriceFeed = async (
   {
     registry,
     quoteToken,
-    maxSpread = 0.1,
+    maxSpread = 0.5,
     kyberNetworkProxy,
   }: DeployKyberPriceFeed,
 ) => {
