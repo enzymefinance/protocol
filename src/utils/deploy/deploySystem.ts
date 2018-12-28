@@ -20,7 +20,6 @@ import { deployVaultFactory } from '~/contracts/fund/vault/transactions/deployVa
 import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
 import { deploy0xAdapter } from '~/contracts/exchanges/transactions/deploy0xAdapter';
 import { deployEthfinexAdapter } from '~/contracts/exchanges/transactions/deployEthfinexAdapter';
-=======
 import {
   Environment,
   WithDeployment,
