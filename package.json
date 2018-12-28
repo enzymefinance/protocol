@@ -55,7 +55,7 @@
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test:system": "yarn jest --config ./src/tests/system/jest.config.js --runInBand --forceExit",
-    "test:system:devchain": "PRIVATE_KEY=0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 yarn test:system"
+    "test:system:devchain": "PRIVATE_KEY=0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 yarn test:system testing"
   },
   "devDependencies": {
     "@0x/types": "^1.3.0",
