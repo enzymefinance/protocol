@@ -26,6 +26,7 @@ export enum Contracts {
   KyberPriceFeed = 'KyberPriceFeed',
   KyberReserve = 'KyberReserve',
   KyberWhiteList = 'KyberWhiteList',
+  MaliciousToken = 'MaliciousToken',
   ManagementFee = 'ManagementFee',
   MatchingMarket = 'MatchingMarket',
   MatchingMarketAdapter = 'MatchingMarketAdapter',
@@ -131,6 +132,8 @@ export const requireMap = {
     require('../out/ConversionRates.abi.json'),
   [Contracts.KyberWhiteList]:
     require('../out/KyberWhiteList.abi.json'),
+  [Contracts.MaliciousToken]:
+    require('../out/MaliciousToken.abi.json'),
   [Contracts.MaxPositions]:
     require('../out/MaxPositions.abi.json'),
   [Contracts.MaxConcentration]:
