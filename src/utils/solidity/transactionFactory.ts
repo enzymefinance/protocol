@@ -299,20 +299,20 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
 
-    const events = receipt.logs.reduce((carry, log) => {
-      const eventABI = eventSignatureABIMap[log.topics[0]];
+    const events = receipt.logs.reduce((carry, txLog) => {
+      const eventABI = eventSignatureABIMap[txLog.topics[0]];
 
       // Ignore event if not found in eventSignaturesABI map;
       if (!eventABI) {
-        log.debug('No Event-ABI found for', log, eventSignatureABIMap);
+        log.debug('No Event-ABI found for', txLog);
         return carry;
       }
 
       try {
         const decoded = web3EthAbi.decodeLog(
           eventABI.inputs,
-          log.data !== '0x' && log.data,
-          eventABI.anonymous ? log.topics : log.topics.slice(1),
+          txLog.data !== '0x' && txLog.data,
+          eventABI.anonymous ? txLog.topics : txLog.topics.slice(1),
         );
         const keys = R.map(R.prop('name'), eventABI.inputs);
         const picked = R.pick(keys, decoded);
@@ -324,7 +324,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           },
         };
       } catch (e) {
-        log.warn('Error with parsing logs', eventABI, log, e);
+        log.warn('Error with parsing logs', eventABI, txLog, e);
         return carry;
       }
     }, {});
