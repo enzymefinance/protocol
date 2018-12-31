@@ -205,12 +205,12 @@ describe('generalWalkthrough', () => {
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(tokens[1], 2),
-        sell: createQuantity(tokens[0], 0.1),
+        buy: createQuantity(mlnToken, 2),
+        sell: createQuantity(ethToken, 0.1),
       },
     );
-    expect(order1.buy).toEqual(createQuantity(tokens[1], 2));
-    expect(order1.sell).toEqual(createQuantity(tokens[0], 0.1));
+    expect(order1.buy).toEqual(createQuantity(mlnToken, 2));
+    expect(order1.sell).toEqual(createQuantity(ethToken, 0.1));
     debug(`Made order from account with id ${order1.id}`);
 
     await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -226,13 +226,13 @@ describe('generalWalkthrough', () => {
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(tokens[1], 2),
-        sell: createQuantity(tokens[0], 0.1),
+        buy: createQuantity(mlnToken, 2),
+        sell: createQuantity(ethToken, 0.1),
       },
     );
 
-    expect(order2.buy).toEqual(createQuantity(tokens[1], 2));
-    expect(order2.sell).toEqual(createQuantity(tokens[0], 0.1));
+    expect(order2.buy).toEqual(createQuantity(mlnToken, 2));
+    expect(order2.sell).toEqual(createQuantity(ethToken, 0.1));
     debug(`Made order from account with id ${order2.id}`);
 
     await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
@@ -245,8 +245,8 @@ describe('generalWalkthrough', () => {
       shared.env,
       routes.tradingAddress,
       {
-        makerQuantity: createQuantity(tokens[0], 0.1),
-        takerQuantity: createQuantity(tokens[1], 2),
+        makerQuantity: createQuantity(ethToken, 0.1),
+        takerQuantity: createQuantity(mlnToken, 2),
       },
     );
     debug(`Made order from fund with id ${orderFromFund.id}`);
@@ -270,12 +270,12 @@ describe('generalWalkthrough', () => {
       shared.env,
       matchingMarketAddress,
       {
-        buy: createQuantity(tokens[0], 0.1),
-        sell: createQuantity(tokens[1], 2),
+        buy: createQuantity(ethToken, 0.1),
+        sell: createQuantity(mlnToken, 2),
       },
     );
-    expect(order3.sell).toEqual(createQuantity(tokens[1], 2));
-    expect(order3.buy).toEqual(createQuantity(tokens[0], 0.1));
+    expect(order3.sell).toEqual(createQuantity(mlnToken, 2));
+    expect(order3.buy).toEqual(createQuantity(ethToken, 0.1));
     debug(`Made order from account with id ${order3.id}`);
 
     await takeOasisDexOrder(shared.env, routes.tradingAddress, {

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2015",
     "module": "commonjs",
-    "lib": ["dom", "es2015", "es2017.object", "es2017.string"],
+    "lib": ["dom", "es2015", "es2017"],
     "declaration": true,
     "sourceMap": false,
     "skipLibCheck": true,

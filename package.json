@@ -31,14 +31,14 @@
     "melon": "./bin/melon.js"
   },
   "scripts": {
-    "allchecks": "yarn clean && yarn build && yarn compile && yarn lint && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 && yarn test",
+    "allchecks": "yarn clean && yarn build && yarn compile && yarn lint && yarn deploy:dev && yarn test && yarn test:system:devchain",
     "build": "tsc -p tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null",
     "bundle": "rollup -c",
     "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
     "clean:logs": "rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
     "deploy": "node bin/melon.js deploy",
-    "deploy:dev": "node bin/melon.js deploy -t EUR:2,ANT,KNT",
+    "deploy:dev": "yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T testing && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T kyberPrice",
     "deploy:kovan": "node bin/melon.js deploy -c ./deployments/configs/kovan.json",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
@@ -51,10 +51,11 @@
     "prebuild": "rimraf lib",
     "publish:alpha": "yarn publish --tag alpha",
     "snyk": "synk test",
-    "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "pretest": "rimraf logs/test-*.log",
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit",
-    "test:system": "yarn jest --config ./src/tests/system/jest.config.js --runInBand --forceExit"
+    "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
+    "test:system": "yarn jest --config ./src/tests/system/jest.config.js --runInBand --forceExit",
+    "test:system:devchain": "PRIVATE_KEY=0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 yarn test:system testing"
   },
   "devDependencies": {
     "@0x/types": "^1.3.0",

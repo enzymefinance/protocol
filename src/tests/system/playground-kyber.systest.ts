@@ -26,7 +26,7 @@ describe('playground', () => {
     const environment = withNewAccount(masterEnvironment);
 
     const amguPrice = createQuantity('MLN', '1000000000');
-    await setAmguPrice(environment, melonContracts.engine, amguPrice);
+    await setAmguPrice(masterEnvironment, melonContracts.engine, amguPrice);
     await updateKyber(masterEnvironment, melonContracts.priceSource);
     const weth = getTokenBySymbol(environment, 'WETH');
 
