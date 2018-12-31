@@ -176,16 +176,20 @@ test(`investor redeems his shares`, async () => {
 
 test(`fund gets non pricefeed quote asset from investment`, async () => {
   const wantedShares = power(new BigInteger(10), new BigInteger(18));
+  const offeredValue = power(new BigInteger(10), new BigInteger(21));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const preFundGav = new BigInteger(
+    await s.fund.accounting.methods.calcGav().call(),
+  );
   const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
 
   await s.mln.methods
-    .approve(s.fund.participation.options.address, wantedShares)
+    .approve(s.fund.participation.options.address, `${offeredValue}`)
     .send({ from: s.investor, gas: s.gas });
   await s.fund.participation.methods
     .requestInvestment(
       `${wantedShares}`,
-      `${(new BigInteger(10), new BigInteger(21))}`,
+      `${offeredValue}`,
       s.mln.options.address,
     )
     .send({ from: s.investor, gas: s.gas });
@@ -235,7 +239,7 @@ test(`fund gets non pricefeed quote asset from investment`, async () => {
   expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedCostOfShares));
   expect(postFundGav).toEqual(
     add(
-      pre.fund.mln,
+      preFundGav,
       divide(multiply(expectedCostOfShares, mlnPriceInDgx), precisionUnits),
     ),
   );
