@@ -24,6 +24,7 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { allLogsWritten } from '../utils/testLogger';
+import { Tracks } from '~/utils/environment/Environment';
 
 expect.extend({ toBeTrueWith });
 
@@ -35,11 +36,14 @@ describe('playground', () => {
   });
 
   test('Happy path', async () => {
-    const master = await getSystemTestEnvironment();
+    const master = await getSystemTestEnvironment(Tracks.TESTING);
 
     const log = getLog(master);
 
     const { melonContracts } = master.deployment;
+
+    const matchingMarket =
+      master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     const manager = withNewAccount(master);
     const trader = withNewAccount(master);
@@ -50,9 +54,6 @@ describe('playground', () => {
 
     const weth = getTokenBySymbol(manager, 'WETH');
     const mln = getTokenBySymbol(manager, 'MLN');
-
-    const matchingMarket =
-      master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     await update(master, melonContracts.priceSource, [
       createPrice(createQuantity(weth, 1), createQuantity(weth, 1)),
