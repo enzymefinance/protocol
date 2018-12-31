@@ -68,19 +68,23 @@ beforeAll(async () => {
   await updateTestingPriceFeed(s, s.environment);
 });
 
-test('Transfer ethToken to the investor', async () => {
+test('Transfer ethToken and mlnToken to the investor', async () => {
   const initialTokenAmount = power(new BigInteger(10), new BigInteger(21));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
+    .transfer(s.investor, `${initialTokenAmount}`)
+    .send({ from: s.deployer });
+  await s.mln.methods
     .transfer(s.investor, `${initialTokenAmount}`)
     .send({ from: s.deployer });
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.investor.weth).toEqual(
     add(pre.investor.weth, initialTokenAmount),
   );
+  expect(post.investor.mln).toEqual(add(pre.investor.mln, initialTokenAmount));
 });
 
-test(`fund gets non-denomination asset from investment`, async () => {
+test(`fund gets non fund denomination asset from investment`, async () => {
   const wantedShares = power(new BigInteger(10), new BigInteger(20));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
@@ -168,4 +172,71 @@ test(`investor redeems his shares`, async () => {
   expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
   expect(post.fund.weth).toEqual(new BigInteger(0));
   expect(postFundGav).toEqual(new BigInteger(0));
+});
+
+test(`fund gets non pricefeed quote asset from investment`, async () => {
+  const wantedShares = power(new BigInteger(10), new BigInteger(18));
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
+
+  await s.mln.methods
+    .approve(s.fund.participation.options.address, wantedShares)
+    .send({ from: s.investor, gas: s.gas });
+  await s.fund.participation.methods
+    .requestInvestment(
+      `${wantedShares}`,
+      `${(new BigInteger(10), new BigInteger(21))}`,
+      s.mln.options.address,
+    )
+    .send({ from: s.investor, gas: s.gas });
+
+  const fundDenominationAsset = await s.fund.accounting.methods
+    .DENOMINATION_ASSET()
+    .call();
+  const [dgxPriceInMln] = Object.values(
+    await s.priceSource.methods
+      .getReferencePriceInfo(fundDenominationAsset, s.mln.options.address)
+      .call(),
+  ).map(e => new BigInteger(e));
+  const expectedCostOfShares = divide(
+    multiply(wantedShares, dgxPriceInMln),
+    precisionUnits,
+  );
+  const actualCostOfShares = new BigInteger(
+    await s.fund.accounting.methods
+      .getShareCostInAsset(`${wantedShares}`, s.mln.options.address)
+      .call(),
+  );
+
+  await updateTestingPriceFeed(s, s.environment);
+  await updateTestingPriceFeed(s, s.environment);
+
+  await s.fund.participation.methods
+    .executeRequestFor(s.investor)
+    .send({ from: s.investor, gas: s.gas });
+
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
+  const postFundGav = new BigInteger(
+    await s.fund.accounting.methods.calcGav().call(),
+  );
+  const [mlnPriceInDgx] = Object.values(
+    await s.priceSource.methods
+      .getReferencePriceInfo(s.weth.options.address, fundDenominationAsset)
+      .call(),
+  ).map(e => new BigInteger(e));
+
+  expect(fundDenominationAsset).toEqual(s.dgx.options.address);
+  expect(postTotalSupply).toEqual(add(preTotalSupply, wantedShares));
+  expect(expectedCostOfShares).toEqual(actualCostOfShares);
+  expect(post.investor.mln).toEqual(
+    subtract(pre.investor.mln, expectedCostOfShares),
+  );
+  expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedCostOfShares));
+  expect(postFundGav).toEqual(
+    add(
+      pre.fund.mln,
+      divide(multiply(expectedCostOfShares, mlnPriceInDgx), precisionUnits),
+    ),
+  );
 });
