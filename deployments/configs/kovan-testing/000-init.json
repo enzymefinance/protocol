@@ -1,33 +1,29 @@
 {
-  "meta": {
-    "track": "testing",
-    "description": "Separate deployment to our own price feed",
-    "chain": 42
-  },
   "melonContracts": {
     "priceSource": "DEPLOY",
     "adapters": {
       "kyberAdapter": "DEPLOY",
-      "matchingMarketAdapter": "0x5f44bEDfF3f3801dfc4DA6DDb9E11DB142607fF3",
-      "zeroExAdapter": "0x66b2A28c0e2e5E0c8b9fe0e29e02f780992A4F5d"
+      "ethfinexAdapter": "DEPLOY",
+      "matchingMarketAdapter": "DEPLOY",
+      "zeroExAdapter": "DEPLOY"
     },
     "policies": {
-      "priceTolerance": "0xAFC00e064718fF75208E52719c2C7174843b1BEa",
-      "userWhitelist": "0xbCf8853D7821481d9ff911F9EeBc76b68ffF33F7"
+      "priceTolerance": "DEPLOY",
+      "userWhitelist": "DEPLOY"
     },
     "factories": {
-      "accountingFactory": "0x9E8a629E90E4e354792a05Bb680062868f20a99a",
-      "feeManagerFactory": "0xfdca2AE17D9a1c5f7A1d50fB805E7Cd54C0Ac5aE",
-      "participationFactory": "0x85cEeC6858D6DD289327E311007fC0df78A337e5",
-      "policyManagerFactory": "0x1Ea386Dca6EaBF8Ca6D749C74E196672f91AC76c",
-      "sharesFactory": "0x337C74a27b1eeCA29762D8d0c684022D2157146D",
-      "tradingFactory": "0x6e5cb65afAAc4c7465A507c756e94Ad965Aee3BE",
-      "vaultFactory": "0x01bf93Ec48072eb84FC56aFD4cE9B89088d95a7C"
+      "accountingFactory": "DEPLOY",
+      "feeManagerFactory": "DEPLOY",
+      "participationFactory": "DEPLOY",
+      "policyManagerFactory": "DEPLOY",
+      "sharesFactory": "DEPLOY",
+      "tradingFactory": "DEPLOY",
+      "vaultFactory": "DEPLOY"
     },
     "engine": "DEPLOY",
     "registry": "DEPLOY",
     "version": "DEPLOY",
-    "ranking": "0xa75Cb60aE273dD933EC3577a89822A85Ec362d44"
+    "ranking": "DEPLOY"
   },
   "thirdPartyContracts": {
     "exchanges": {
@@ -36,8 +32,9 @@
         "kyberNetwork": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA",
         "kyberNetworkProxy": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df"
       },
-      "matchingMarket": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
-      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2"
+      "matchingMarket": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
+      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "ethfinex": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9"
     },
     "tokens": [
       {

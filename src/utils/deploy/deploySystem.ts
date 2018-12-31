@@ -318,7 +318,7 @@ export const deploySystem = async (
     },
   };
 
-  for (const exchangeConfig of Object.values(exchangeConfigs)) {
+  for (const [exchangeName, exchangeConfig] of R.toPairs(exchangeConfigs)) {
     const exchange = exchangeConfig.exchange.toLowerCase();
 
     // HACK: Blindly just update all registered exchanges on every deploy
@@ -328,7 +328,12 @@ export const deploySystem = async (
       ? updateExchange
       : registerExchange;
 
-    await action(environment, melonContracts.registry, {
+    // Action.name is "execute" for both
+    const actionName = registryInformation.registeredExchanges[exchange]
+      ? 'updateExchange'
+      : 'registerExchange';
+
+    const args = {
       adapter: exchangeConfig.adapter,
       exchange: exchangeConfig.exchange,
       sigs: [
@@ -337,7 +342,11 @@ export const deploySystem = async (
         FunctionSignatures.cancelOrder,
       ],
       takesCustody: exchangeConfig.takesCustody,
-    });
+    };
+
+    log.debug(actionName, exchangeName, args);
+
+    await action(environment, melonContracts.registry, args);
   }
 
   for (const asset of thirdPartyContracts.tokens) {
