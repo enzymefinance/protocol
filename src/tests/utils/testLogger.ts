@@ -23,13 +23,23 @@ const logger = winston.createLogger({
 
 logger.debug(['melon:protocol:logger', 'init', ...process.argv].join(' '));
 
-const testLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
-  const message = [
-    `${namespace}:`,
-    ...msgs.map(msg => JSON.stringify(msg, null, 2)),
-  ].join(' ');
-  logger.log(level, message);
-  require('debug')(namespace)(level, ...msgs);
-});
+const testLogger: CurriedLogger = R.curryN(
+  3,
+  async (namespace, level, ...msgs) => {
+    const message = [
+      `${namespace}:`,
+      ...msgs.map(msg => JSON.stringify(msg, null, 2)),
+    ].join(' ');
+    require('debug')(namespace)(level, ...msgs);
+    logger.log(level, message);
+  },
+);
 
-export { testLogger };
+// Helper function to await that all logs are written to the filesystem
+const allLogsWritten = async () =>
+  new Promise(resolve => {
+    logger.on('finish', resolve);
+    setTimeout(resolve, 1000);
+  });
+
+export { testLogger, allLogsWritten };

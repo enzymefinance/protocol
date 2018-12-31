@@ -23,12 +23,17 @@ import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
+import { allLogsWritten } from '../utils/testLogger';
 
 expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:playground');
 
 describe('playground', () => {
+  afterAll(async () => {
+    await allLogsWritten();
+  });
+
   test('Happy path', async () => {
     const master = await getSystemTestEnvironment();
 
