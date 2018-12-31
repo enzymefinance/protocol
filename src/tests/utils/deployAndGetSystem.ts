@@ -1,5 +1,3 @@
-import * as R from 'ramda';
-
 import {
   deploySystem,
   deployAllContractsConfig,
