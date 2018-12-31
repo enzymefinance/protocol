@@ -8,6 +8,7 @@ import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-m
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
 import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
+import { updateExchange } from '~/contracts/version/transactions/updateExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
@@ -320,18 +321,23 @@ export const deploySystem = async (
   for (const exchangeConfig of Object.values(exchangeConfigs)) {
     const exchange = exchangeConfig.exchange.toLowerCase();
 
-    if (!registryInformation.registeredExchanges[exchange]) {
-      await registerExchange(environment, melonContracts.registry, {
-        adapter: exchangeConfig.adapter,
-        exchange: exchangeConfig.exchange,
-        sigs: [
-          FunctionSignatures.makeOrder,
-          FunctionSignatures.takeOrder,
-          FunctionSignatures.cancelOrder,
-        ],
-        takesCustody: exchangeConfig.takesCustody,
-      });
-    }
+    // HACK: Blindly just update all registered exchanges on every deploy
+    // TODO: Check the individual entries (address, adapter, takesCustory, sigs)
+    //       and only update if changed
+    const action = registryInformation.registeredExchanges[exchange]
+      ? updateExchange
+      : registerExchange;
+
+    await action(environment, melonContracts.registry, {
+      adapter: exchangeConfig.adapter,
+      exchange: exchangeConfig.exchange,
+      sigs: [
+        FunctionSignatures.makeOrder,
+        FunctionSignatures.takeOrder,
+        FunctionSignatures.cancelOrder,
+      ],
+      takesCustody: exchangeConfig.takesCustody,
+    });
   }
 
   for (const asset of thirdPartyContracts.tokens) {

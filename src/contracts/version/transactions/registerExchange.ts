@@ -7,7 +7,8 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-interface RegisterExchangeArgs {
+
+export interface RegisterExchangeArgs {
   exchange: Address;
   adapter: Address;
   takesCustody: Boolean;
