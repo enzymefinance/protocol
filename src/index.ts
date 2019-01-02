@@ -2,6 +2,7 @@ export { approve } from '~/contracts/dependencies/token/transactions/approve';
 export { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 export { constructEnvironment } from '~/utils/environment/constructEnvironment';
 export { deploySystem } from '~/utils/deploy/deploySystem';
+export { deployAllContractsConfig } from '~/utils/deploy/deploySystem';
 export { deployThirdParty } from '~/utils/deploy/deployThirdParty';
 export {
   executeRequest,
