@@ -95,7 +95,7 @@
     "@0x/contract-wrappers": "^4.1.1",
     "@0x/order-utils": "^3.0.2",
     "@melonproject/ganache-cli": "^6.1.9",
-    "@melonproject/token-math": "0.0.21",
+    "@melonproject/token-math": "0.0.22",
     "ava": "0.25.0",
     "commander": "^2.19.0",
     "ramda": "^0.25.0",
