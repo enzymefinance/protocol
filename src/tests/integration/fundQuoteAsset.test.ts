@@ -76,17 +76,9 @@ beforeAll(async () => {
   const hubAddress = await completeSetup(envManager, s.version.options.address);
   s.fund = await getFundComponents(envManager, hubAddress);
 
-  const mlnTokenInterface = await getToken(
-    s.environment,
-    s.mln.options.address,
-  );
-  const dgxTokenInterface = await getToken(
-    s.environment,
-    s.dgx.options.address,
-  );
   await addTokenPairWhitelist(s.environment, s.matchingMarket.options.address, {
-    baseToken: mlnTokenInterface,
-    quoteToken: dgxTokenInterface,
+    baseToken: s.mlnTokenInterface,
+    quoteToken: s.dgxTokenInterface,
   });
   await updateTestingPriceFeed(s, s.environment);
 });
