@@ -3,6 +3,7 @@
     "priceSource": "DEPLOY",
     "adapters": {
       "kyberAdapter": "DEPLOY",
+      "ethfinexAdapter": "DEPLOY",
       "matchingMarketAdapter": "DEPLOY",
       "zeroExAdapter": "DEPLOY"
     },

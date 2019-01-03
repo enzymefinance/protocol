@@ -28,8 +28,15 @@ const testLogger: CurriedLogger = R.curryN(3, (namespace, level, ...msgs) => {
     `${namespace}:`,
     ...msgs.map(msg => JSON.stringify(msg, null, 2)),
   ].join(' ');
-  logger.log(level, message);
   require('debug')(namespace)(level, ...msgs);
+  logger.log(level, message);
 });
 
-export { testLogger };
+// Helper function to await that all logs are written to the fil
+const allLogsWritten = async () =>
+  new Promise(resolve => {
+    logger.on('finish', resolve);
+    setTimeout(resolve, 1000);
+  });
+
+export { testLogger, allLogsWritten };

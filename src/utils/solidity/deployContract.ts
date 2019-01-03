@@ -9,6 +9,7 @@ import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { Address } from '@melonproject/token-math/address';
 import { ensure } from '~/utils/guards/ensure';
 import { sign } from '../environment/sign';
+import { EnsureError } from '../guards/EnsureError';
 
 // TODO: Refactor all callers to only use the Contract interface
 type DeployContract = {
@@ -64,31 +65,30 @@ export const deployContract: DeployContract = async (
     environment.wallet.address,
   );
 
-  const contract = new environment.eth.Contract(parsedABI);
+  try {
+    const contract = new environment.eth.Contract(parsedABI);
 
-  const transaction = contract.deploy({
-    arguments: args,
-    data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`,
-  });
+    const transaction = contract.deploy({
+      arguments: args,
+      data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`,
+    });
 
-  const options = getWeb3Options(environment);
+    const options = getWeb3Options(environment);
 
-  const gasEstimation = await transaction.estimateGas({
-    from: environment.wallet.address.toString(),
-  });
+    const gasEstimation = await transaction.estimateGas({
+      from: environment.wallet.address.toString(),
+    });
 
-  debug('Gas estimation:', gasEstimation, options);
+    debug('Gas estimation:', gasEstimation, options);
 
-  if (greaterThan(toBI(gasEstimation), toBI(options.gas || 0))) {
-    throw new Error(
+    ensure(
+      !greaterThan(toBI(gasEstimation), toBI(options.gas || 0)),
       [
         `Estimated gas consumption (${gasEstimation})`,
         `is higher than the provided gas limit: ${options.gas}`,
       ].join(' '),
     );
-  }
 
-  try {
     const encodedAbi = transaction.encodeABI();
     const unsignedTransaction = {
       data: encodedAbi,
@@ -117,6 +117,10 @@ export const deployContract: DeployContract = async (
     );
     return new Address(receipt.contractAddress);
   } catch (e) {
-    throw new Error(`Error with ${txIdentifier}\n${e.message}`);
+    if (e instanceof EnsureError) {
+      throw e;
+    } else {
+      throw new Error(`Error deploy contract ${txIdentifier}\n${e.message}`);
+    }
   }
 };
