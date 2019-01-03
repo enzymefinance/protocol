@@ -22,6 +22,10 @@ import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
+import { Exchanges } from '~/Contracts';
+import { makeOrderSignature } from '~/utils/constants/orderSignatures';
+import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
+import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -40,7 +44,13 @@ beforeAll(async () => {
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
   s.dgxTokenInterface = await getToken(s.environment, s.dgx.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-  const exchangeConfigs = {};
+  const exchangeConfigs = {
+    [Exchanges.MatchingMarket]: {
+      adapter: s.matchingMarketAdapter.options.address,
+      exchange: s.matchingMarket.options.address,
+      takesCustody: true,
+    },
+  };
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [
@@ -65,6 +75,18 @@ beforeAll(async () => {
   const hubAddress = await completeSetup(envManager, s.version.options.address);
   s.fund = await getFundComponents(envManager, hubAddress);
 
+  const mlnTokenInterface = await getToken(
+    s.environment,
+    s.mln.options.address,
+  );
+  const dgxTokenInterface = await getToken(
+    s.environment,
+    s.dgx.options.address,
+  );
+  await addTokenPairWhitelist(s.environment, s.matchingMarket.options.address, {
+    baseToken: mlnTokenInterface,
+    quoteToken: dgxTokenInterface,
+  });
   await updateTestingPriceFeed(s, s.environment);
 });
 
@@ -226,7 +248,7 @@ test(`fund gets non pricefeed quote asset from investment`, async () => {
   );
   const [mlnPriceInDgx] = Object.values(
     await s.priceSource.methods
-      .getReferencePriceInfo(s.weth.options.address, fundDenominationAsset)
+      .getReferencePriceInfo(s.mln.options.address, fundDenominationAsset)
       .call(),
   ).map(e => new BigInteger(e));
 
@@ -243,4 +265,61 @@ test(`fund gets non pricefeed quote asset from investment`, async () => {
       divide(multiply(expectedCostOfShares, mlnPriceInDgx), precisionUnits),
     ),
   );
+});
+
+test(`Fund make order with a non-18 decimal asset`, async () => {
+  s.trade1 = {};
+  s.trade1.sellQuantity = power(new BigInteger(10), new BigInteger(8));
+  await s.dgx.methods
+    .transfer(s.fund.vault.options.address, `${s.trade1.sellQuantity}`)
+    .send({ from: s.deployer });
+  const [dgxPriceInMln] = Object.values(
+    await s.priceSource.methods
+      .getReferencePriceInfo(s.dgx.options.address, s.mln.options.address)
+      .call(),
+  ).map(e => new BigInteger(e));
+  s.trade1.buyQuantity = divide(
+    multiply(s.trade1.sellQuantity, dgxPriceInMln),
+    power(new BigInteger(10), new BigInteger(9)),
+  );
+
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const exchangePreDgx = new BigInteger(
+    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const exchangePreMln = new BigInteger(
+    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  await s.fund.trading.methods
+    .callOnExchange(
+      0,
+      makeOrderSignature,
+      [
+        randomHexOfSize(20),
+        randomHexOfSize(20),
+        s.dgx.options.address,
+        s.mln.options.address,
+        randomHexOfSize(20),
+        randomHexOfSize(20),
+      ],
+      [`${s.trade1.sellQuantity}`, `${s.trade1.buyQuantity}`, 0, 0, 0, 0, 0, 0],
+      randomHexOfSize(20),
+      '0x0',
+      '0x0',
+      '0x0',
+    )
+    .send({ from: s.manager, gas: s.gas });
+
+  const exchangePostDgx = new BigInteger(
+    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const exchangePostMln = new BigInteger(
+    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+  expect(exchangePostMln).toEqual(exchangePreMln);
+  expect(exchangePostDgx).toEqual(add(exchangePreDgx, s.trade1.sellQuantity));
+  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.deployer.mln).toEqual(pre.deployer.mln);
 });
