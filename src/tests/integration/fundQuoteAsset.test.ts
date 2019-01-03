@@ -26,6 +26,7 @@ import { Exchanges } from '~/Contracts';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
+import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -284,6 +285,10 @@ test(`Fund make order with a non-18 decimal asset`, async () => {
   );
 
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const preFundCalculations = await performCalculations(
+    s.environment,
+    s.fund.accounting.options.address,
+  );
   const exchangePreDgx = new BigInteger(
     await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
   );
@@ -317,9 +322,60 @@ test(`Fund make order with a non-18 decimal asset`, async () => {
     await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postFundCalculations = await performCalculations(
+    s.environment,
+    s.fund.accounting.options.address,
+  );
 
   expect(exchangePostMln).toEqual(exchangePreMln);
   expect(exchangePostDgx).toEqual(add(exchangePreDgx, s.trade1.sellQuantity));
-  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.fund.dgx).toEqual(pre.fund.dgx);
+  expect(post.fund.mln).toEqual(pre.fund.mln);
+  expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
+  expect(postFundCalculations.sharePrice).toEqual(
+    preFundCalculations.sharePrice,
+  );
   expect(post.deployer.mln).toEqual(pre.deployer.mln);
+});
+
+test(`Third party takes entire order`, async () => {
+  const orderId = await s.matchingMarket.methods.last_offer_id().call();
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const exchangePreMln = new BigInteger(
+    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const exchangePreDgx = new BigInteger(
+    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+
+  await s.mln.methods
+    .approve(s.matchingMarket.options.address, `${s.trade1.buyQuantity}`)
+    .send({ from: s.deployer, gasPrice: 8000000 });
+  await s.matchingMarket.methods
+    .buy(orderId, `${s.trade1.sellQuantity}`)
+    .send({ from: s.deployer, gas: s.gas });
+  await s.fund.trading.methods
+    .returnBatchToVault([s.mln.options.address, s.weth.options.address])
+    .send({ from: s.manager, gas: s.gas });
+
+  const exchangePostMln = new BigInteger(
+    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const exchangePostDgx = new BigInteger(
+    await s.weth.methods.balanceOf(s.matchingMarket.options.address).call(),
+  );
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+  expect(exchangePostMln).toEqual(exchangePreMln);
+  expect(exchangePostDgx).toEqual(
+    subtract(exchangePreDgx, s.trade1.sellQuantity),
+  );
+  expect(post.fund.dgx).toEqual(subtract(pre.fund.dgx, s.trade1.sellQuantity));
+  expect(post.fund.mln).toEqual(add(pre.fund.mln, s.trade1.buyQuantity));
+  expect(post.deployer.dgx).toEqual(
+    add(pre.deployer.dgx, s.trade1.sellQuantity),
+  );
+  expect(post.deployer.mln).toEqual(
+    subtract(pre.deployer.mln, s.trade1.buyQuantity),
+  );
 });
