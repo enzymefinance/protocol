@@ -86,7 +86,7 @@ const setupInvestedTestFund = async (environment: Environment) => {
 
   debug('Testfund setup and invested', fundName, routes);
 
-  return routes;
+  return { ...routes, hubAddress };
 };
 
 export { setupInvestedTestFund };
