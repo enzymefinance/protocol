@@ -3,7 +3,7 @@ import { UnsignedRawTransaction } from '../solidity/transactionFactory';
 import { ensureAccountAddress } from './ensureAccountAddress';
 import { ensure } from '../guards/ensure';
 
-const sign = async (
+const signTransaction = async (
   environment: Environment,
   unsignedTransaction: UnsignedRawTransaction,
 ) => {
@@ -20,4 +20,4 @@ const sign = async (
   );
 };
 
-export { sign };
+export { signTransaction };
