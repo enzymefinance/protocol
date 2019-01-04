@@ -10,7 +10,7 @@ import { ensure } from '~/utils/guards/ensure';
 const testMnemonic =
   'exhibit now news planet fame thank swear reform tilt accident bitter axis';
 
-const keyPairs = new Map([
+export const keyPairs = new Map([
   [
     '0xc0c82081f2ad248391cd1483ae211d56c280887a',
     '0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721',
