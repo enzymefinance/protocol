@@ -5,8 +5,14 @@ import { MelonContracts, MelonContractsDraft } from '../deploy/deploySystem';
 import { ThirdPartyContracts } from '../deploy/deployThirdParty';
 import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
 
-export type SignFunction = (
+// Note: The
+export type SignTransactionFunction = (
   unsignedTransaction: UnsignedRawTransaction,
+  from?: Address,
+) => Promise<string>;
+
+export type SignMessageFunction = (
+  message: string,
   from?: Address,
 ) => Promise<string>;
 
@@ -41,7 +47,8 @@ export type CurriedLogger = {
 export interface Wallet {
   // TODO: Rename this to currentAccount
   address: Address;
-  sign?: SignFunction;
+  signTransaction?: SignTransactionFunction;
+  signMessage?: SignMessageFunction;
 }
 
 export interface Options {

@@ -20,7 +20,7 @@ const sendEth = async (
     value: howMuch.quantity.toString(),
   };
 
-  const signedTx = await environment.wallet.sign(tx);
+  const signedTx = await environment.wallet.signTransaction(tx);
 
   try {
     await environment.eth.sendSignedTransaction(signedTx);

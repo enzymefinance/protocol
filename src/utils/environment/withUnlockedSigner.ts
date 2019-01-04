@@ -6,14 +6,14 @@ const withUnlockedSigner = async (environment: Environment) => {
 
   ensure(accounts.length > 0, 'No unlocked accounts found');
 
-  const signer = (unsignedTransaction, from = accounts[0]) =>
+  const signTransaction = (unsignedTransaction, from = accounts[0]) =>
     environment.eth.signTransaction(unsignedTransaction, from).then(t => t.raw);
 
   const withWallet = {
     ...environment,
     wallet: {
       address: accounts[0],
-      sign: signer,
+      signTransaction,
     },
   };
 

@@ -94,7 +94,10 @@ export const initTestEnvironment = async (endpoint?: string) => {
 
   const web3Accounts = new Web3Accounts(environment.eth.currentProvider);
 
-  const signer = (unsignedTransaction, from = new Address(accounts[0])) =>
+  const signTransaction = (
+    unsignedTransaction,
+    from = new Address(accounts[0]),
+  ) =>
     web3Accounts
       .signTransaction(unsignedTransaction, keyPairs.get(from.toLowerCase()))
       .then(t => t.rawTransaction);
@@ -103,7 +106,7 @@ export const initTestEnvironment = async (endpoint?: string) => {
     ...environment,
     wallet: {
       address: accounts[0],
-      sign: signer,
+      signTransaction,
     },
   };
 

@@ -23,7 +23,7 @@ const withKeystoreSigner = (
   const web3Accounts = new Web3Accounts(environment.eth.currentProvider);
 
   const account = web3Accounts.decrypt(keystore, password);
-  const sign = async unsignedTransaction => {
+  const signTransaction = async unsignedTransaction => {
     const signedTransaction = await account.signTransaction(
       unsignedTransaction,
     );
@@ -34,7 +34,7 @@ const withKeystoreSigner = (
     ...environment,
     wallet: {
       address: account.address,
-      sign,
+      signTransaction,
     },
   };
 
