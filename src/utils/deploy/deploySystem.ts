@@ -299,7 +299,7 @@ export const deploySystem = async (
     [Exchanges.MatchingMarket]: {
       adapter: melonContracts.adapters.matchingMarketAdapter,
       exchange: thirdPartyContracts.exchanges.matchingMarket,
-      takesCustody: false,
+      takesCustody: true,
     },
     [Exchanges.KyberNetwork]: {
       adapter: melonContracts.adapters.kyberAdapter,
@@ -314,7 +314,7 @@ export const deploySystem = async (
     [Exchanges.Ethfinex]: {
       adapter: melonContracts.adapters.ethfinexAdapter,
       exchange: thirdPartyContracts.exchanges.ethfinex,
-      takesCustody: false,
+      takesCustody: true,
     },
   };
 

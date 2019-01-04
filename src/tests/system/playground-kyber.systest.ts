@@ -18,6 +18,11 @@ import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
+import { toFixed } from '@melonproject/token-math/price';
+import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
+import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
+import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 
 expect.extend({ toBeTrueWith });
 
@@ -36,7 +41,7 @@ describe('playground', () => {
 
     const manager = withNewAccount(master);
     const trader = withNewAccount(master);
-
+    console.log('Manager address is: ', manager.wallet.address);
     const amguPrice = createQuantity('MLN', '1000000000');
     await setAmguPrice(master, melonContracts.engine, amguPrice);
     await updateKyber(master, melonContracts.priceSource);
@@ -84,10 +89,14 @@ describe('playground', () => {
       value: quantity.quantity.toString(),
     });
 
-    const order = await makeOrderFromAccountOasisDex(trader, matchingMarket, {
-      buy: createQuantity(weth, 0.1),
-      sell: createQuantity(mln, 1),
-    });
+    const orderFromTrader = await makeOrderFromAccountOasisDex(
+      trader,
+      matchingMarket,
+      {
+        buy: createQuantity(weth, 0.1),
+        sell: createQuantity(mln, 1),
+      },
+    );
 
     const routes = await setupInvestedTestFund(manager);
 
@@ -98,23 +107,67 @@ describe('playground', () => {
 
     log.debug({ preCalculations });
 
-    await takeOasisDexOrder(manager, routes.tradingAddress, {
-      id: order.id,
-      maker: order.maker,
-      makerQuantity: order.sell,
-      takerQuantity: order.buy,
-    });
+    log.debug(
+      'After first investment, share price is: ',
+      toFixed(preCalculations.sharePrice),
+    );
 
-    const calculations = await performCalculations(
+    expect(toFixed(preCalculations.sharePrice)).toEqual('1.000000');
+
+    const orderFromFund = await makeOasisDexOrder(
+      manager,
+      routes.tradingAddress,
+      {
+        makerQuantity: createQuantity(weth, 0.5),
+        takerQuantity: createQuantity(mln, 8),
+      },
+    );
+
+    log.debug('Made an order ', orderFromFund);
+
+    let calculations = await performCalculations(
       manager,
       routes.accountingAddress,
     );
 
+    expect(toFixed(calculations.sharePrice)).toEqual('1.000000');
+
+    await cancelOasisDexOrder(manager, routes.tradingAddress, {
+      id: orderFromFund.id,
+      maker: orderFromFund.maker,
+      makerAsset: orderFromFund.sell.token.address,
+      takerAsset: orderFromFund.buy.token.address,
+    });
+
+    log.debug('Canceled order ', orderFromFund.id);
+
+    await takeOasisDexOrder(manager, routes.tradingAddress, {
+      id: orderFromTrader.id,
+      maker: orderFromTrader.maker,
+      makerQuantity: orderFromTrader.sell,
+      takerQuantity: orderFromTrader.buy,
+    });
+
+    calculations = await performCalculations(manager, routes.accountingAddress);
+
+    log.debug(
+      'After taking an order, share price is: ',
+      toFixed(calculations.sharePrice),
+    );
     log.debug({ calculations });
 
     expect(calculations.gav).toBeTrueWith(
       greaterThan,
       createQuantity(weth, 0.8),
     );
+
+    await shutDownFund(manager, melonContracts.version, {
+      hub: routes.hubAddress,
+    });
+    log.debug('Shut down fund');
+
+    const isFundShutDown = await isShutDown(manager, routes.hubAddress);
+
+    expect(isFundShutDown).toBeTruthy();
   });
 });
