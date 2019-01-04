@@ -17,14 +17,13 @@ import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
 import { BigInteger, power } from '@melonproject/token-math/bigInteger';
-import { deployWrapperRegistryEFX } from '~/contracts/exchanges/transactions/deployWrapperRegistryEFX';
 
 export interface ThirdPartyContracts {
   exchanges: {
     kyber: KyberEnvironment;
     matchingMarket: Address;
     zeroEx: Address;
-    ethfinex: Address;
+    ethfinex: any;
   };
   tokens: TokenInterface[];
 }
