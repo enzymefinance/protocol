@@ -207,12 +207,6 @@ export const requireMap = {
     require('../out/VaultFactory.abi.json'),
   [Contracts.Version]:
     require('../out/Version.abi.json'),
-  [Contracts.WrapperLock]:
-    require(`../out/${Contracts.WrapperLock}.abi.json`),
-  [Contracts.WrapperLockEth]:
-    require(`../out/${Contracts.WrapperLockEth}.abi.json`),
-  [Contracts.WrapperRegistryEFX]:
-    require(`../out/${Contracts.WrapperRegistryEFX}.abi.json`),
   [Contracts.Weth]:
     require('../out/WETH9.abi.json'),
   [Contracts.WrapperLock]:

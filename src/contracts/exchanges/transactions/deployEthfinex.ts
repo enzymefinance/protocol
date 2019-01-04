@@ -39,23 +39,27 @@ export const deployEthfinex = async (
 
   const erc20Proxy = givenErc20Proxy || (await deployErc20Proxy(environment));
 
-  // const ethWrapper = await deploy(
-  // Contracts.WrapperlockEth,
-  // ['WETH', 'WETH Token', 18, ethfinex.toString(), erc20Proxy.toString()],
-  // environment,
-  // );
-
-  const tokenWrappersPromises = tokens.map(token => async () =>
-    deployContract(environment, Contracts.WrapperLock, [
-      token.address.toString(),
-      `W-${token.symbol}`,
-      `${token.symbol} Token`,
-      token.decimals,
-      false,
-      ethfinex.toString(),
-      erc20Proxy.toString(),
-    ]),
-  );
+  const tokenWrappersPromises = tokens.map(token => async () => {
+    if (token.symbol == 'WETH') {
+      return deployContract(environment, Contracts.WrapperLockEth, [
+        'WETH',
+        'WETH token',
+        18,
+        ethfinex.toString(),
+        erc20Proxy.toString(),
+      ]);
+    } else {
+      return deployContract(environment, Contracts.WrapperLock, [
+        token.address.toString(),
+        `W-${token.symbol}`,
+        `${token.symbol} Token`,
+        token.decimals,
+        false,
+        ethfinex.toString(),
+        erc20Proxy.toString(),
+      ]);
+    }
+  });
 
   const tokenWrappers: Address[] = await promisesSerial(tokenWrappersPromises);
 
