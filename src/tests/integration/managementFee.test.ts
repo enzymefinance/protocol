@@ -2,10 +2,10 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import {
   BigInteger,
   add,
-  subtract,
   multiply,
-  divide,
   power,
+  subtract,
+  divide,
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -47,21 +47,20 @@ beforeAll(async () => {
   const exchangeConfigs = {};
 
   // Init fees
+  s.yearInSeconds = new BigInteger(31536000);
   s.managementFee = getContract(
     s.environment,
     Contracts.ManagementFee,
     await deployContract(s.environment, Contracts.ManagementFee, []),
   );
+  s.managementFeeRate = new BigInteger(
+    multiply(new BigInteger(2), power(new BigInteger(10), new BigInteger(16))),
+  );
   const fees = [
     {
       feeAddress: s.managementFee.options.address,
       feePeriod: new BigInteger(0),
-      feeRate: new BigInteger(
-        multiply(
-          new BigInteger(2),
-          power(new BigInteger(10), new BigInteger(16)),
-        ),
-      ),
+      feeRate: s.managementFeeRate,
     },
   ];
 
@@ -124,32 +123,63 @@ test(`fund gets ethToken from investment`, async () => {
 
 test(`Reward fee rewards management fee in the form of shares`, async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preManagerShares = await s.fund.shares.methods
-    .balanceOf(s.manager)
-    .call();
+  const preManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const fundCreationTime = new BigInteger(
+    await s.managementFee.methods
+      .lastPayoutTime(s.fund.feeManager.options.address)
+      .call(),
+  );
+  const preTotalSupply = new BigInteger(
+    await s.fund.shares.methods.totalSupply().call(),
+  );
   const preFundCalculations = await performCalculations(
     s.environment,
     s.fund.accounting.options.address,
   );
+
   await s.fund.feeManager.methods
     .rewardManagementFee()
     .send({ from: s.manager, gas: s.gas });
-  const payoutTime = await s.managementFee.methods
-    .lastPayoutTime(s.fund.feeManager.options.address)
-    .call();
-  const postManagerShares = await s.fund.shares.methods
-    .balanceOf(s.manager)
-    .call();
+  const payoutTime = new BigInteger(
+    await s.managementFee.methods
+      .lastPayoutTime(s.fund.feeManager.options.address)
+      .call(),
+  );
+  const expectedPreDilutionFeeShares = divide(
+    multiply(
+      preTotalSupply,
+      divide(
+        multiply(s.managementFeeRate, subtract(payoutTime, fundCreationTime)),
+        s.yearInSeconds,
+      ),
+    ),
+    precisionUnits,
+  );
+  const expectedFeeShares = divide(
+    multiply(preTotalSupply, expectedPreDilutionFeeShares),
+    subtract(preTotalSupply, expectedPreDilutionFeeShares),
+  );
+
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const postTotalSupply = new BigInteger(
+    await s.fund.shares.methods.totalSupply().call(),
+  );
   const postFundCalculations = await performCalculations(
     s.environment,
     s.fund.accounting.options.address,
   );
 
-  console.log(postManagerShares);
-  expect(postManagerShares).toEqual(preManagerShares);
+  expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
+  expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
   expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
-  expect(postFundCalculations.nav).toEqual(preFundCalculations.nav);
-  expect(postFundCalculations.sharePrice).toEqual(
-    preFundCalculations.sharePrice,
-  );
+  // expect(postFundCalculations.sharePrice).toEqual(
+  //   preFundCalculations.sharePrice,
+  // );
+  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.manager.weth).toEqual(pre.manager.weth);
 });

@@ -67,8 +67,9 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   const quoteTokenAddress = quoteToken.address;
   const nativeTokenAddress = nativeToken.address;
   const feeAddresses = fees.map(f => f.feeAddress);
-  const feeRates = fees.map(f => f.feeRate);
-  const feePeriods = fees.map(f => f.feePeriod);
+  // TODO: Hacky fix. Could be some problem with BN.js
+  const feeRates = fees.map(f => `${f.feeRate}`);
+  const feePeriods = fees.map(f => `${f.feePeriod}`);
 
   const args = [
     fundName,

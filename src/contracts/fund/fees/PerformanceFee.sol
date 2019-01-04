@@ -23,7 +23,7 @@ contract PerformanceFee is DSMath, Fee {
     /// @notice Sets initial state of the fee for a user
     function initializeForUser(uint feeRate, uint feePeriod) external {
         require(lastPayoutTime[msg.sender] == 0, "Already initialized");
-        performanceFeeRate[msg.sender] == feeRate;
+        performanceFeeRate[msg.sender] = feeRate;
         performanceFeePeriod[msg.sender] = feePeriod;
         highWaterMark[msg.sender] = INITIAL_SHARE_PRICE;
         lastPayoutTime[msg.sender] = block.timestamp;
