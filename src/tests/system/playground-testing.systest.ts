@@ -45,8 +45,8 @@ describe('playground', () => {
     const matchingMarket =
       master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
-    const manager = withNewAccount(master);
-    const trader = withNewAccount(master);
+    const manager = await withNewAccount(master);
+    const trader = await withNewAccount(master);
 
     const amguToken = await getAmguToken(master, melonContracts.version);
     const amguPrice = createQuantity(amguToken, '1000000000');

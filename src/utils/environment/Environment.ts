@@ -4,6 +4,7 @@ import { UnsignedRawTransaction } from '~/utils/solidity/transactionFactory';
 import { MelonContracts, MelonContractsDraft } from '../deploy/deploySystem';
 import { ThirdPartyContracts } from '../deploy/deployThirdParty';
 import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
+import { Provider } from 'ethereum-types';
 
 // Note: The
 export type SignTransactionFunction = (
@@ -81,6 +82,7 @@ export interface PartialDeployment {
 
 export interface Environment {
   readonly eth: Eth;
+  readonly provider: Provider;
   readonly track: Tracks;
   readonly wallet?: Wallet;
   readonly options: Options;

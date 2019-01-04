@@ -1,6 +1,7 @@
 import { default as Web3Accounts } from 'web3-eth-accounts';
 
 import { Environment } from './Environment';
+import { withPrivateKeySigner } from './withPrivateKeySigner';
 
 export interface KeystoreItem {
   id: string;
@@ -16,27 +17,17 @@ export interface WithKeystoreSignerArgs {
   password: string;
 }
 
-const withKeystoreSigner = (
+const withKeystoreSigner = async (
   environment: Environment,
   { keystore, password }: WithKeystoreSignerArgs,
 ) => {
   const web3Accounts = new Web3Accounts(environment.eth.currentProvider);
-
   const account = web3Accounts.decrypt(keystore, password);
-  const signTransaction = async unsignedTransaction => {
-    const signedTransaction = await account.signTransaction(
-      unsignedTransaction,
-    );
-    return signedTransaction.rawTransaction;
-  };
 
-  const enhancedEnvironment = {
-    ...environment,
-    wallet: {
-      address: account.address,
-      signTransaction,
-    },
-  };
+  const enhancedEnvironment = await withPrivateKeySigner(
+    environment,
+    account.privateKey,
+  );
 
   return enhancedEnvironment;
 };
