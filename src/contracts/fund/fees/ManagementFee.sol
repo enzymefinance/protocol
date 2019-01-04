@@ -32,7 +32,7 @@ contract ManagementFee is DSMath, Fee {
 
     function initializeForUser(uint feeRate, uint feePeriod) external {
         require(lastPayoutTime[msg.sender] == 0);
-        managementFeeRate[msg.sender] == feeRate;
+        managementFeeRate[msg.sender] = feeRate;
         lastPayoutTime[msg.sender] = block.timestamp;
     }
 
