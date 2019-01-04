@@ -1,3 +1,4 @@
+// tslint:disable:max-line-length
 /*
 "TODO: Remove this
 ReferenceError: regeneratorRuntime is not defined
@@ -5,6 +6,7 @@ ReferenceError: regeneratorRuntime is not defined
   at Object.<anonymous> (node_modules/@ledgerhq/hw-transport-u2f/lib/TransportU2F.js:228:2)
   at Object.<anonymous> (node_modules/@0xproject/subproviders/src/index.ts:2:1)
 */
+// tslint:enable:max-line-length
 
 import {
   generatePseudoRandomSalt,
@@ -14,7 +16,7 @@ import {
 } from '@0x/order-utils';
 import { BigNumber } from 'bignumber.js';
 import { BigInteger, add, toBI } from '@melonproject/token-math/bigInteger';
-import { Order, SignedOrder, SignatureType } from '@0x/types';
+import { Order } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
 import { Address } from '@melonproject/token-math/address';
 import {
@@ -110,38 +112,6 @@ const approveOrder = async (
   await approve(environment, { howMuch: makerQuantity, spender: erc20Proxy });
 };
 
-// This is just a reference implementation
-const signOrder = async (
-  environment: Environment,
-  order: Order,
-  signer?: Address,
-): Promise<SignedOrder> => {
-  // const orderHash = orderHashUtils.getOrderHashHex(order);
-  // const web3signature = await environment.eth.sign(
-  //   orderHash,
-  //   environment.wallet.address.toString(),
-  // );
-
-  const orderSigner = (signer || environment.wallet.address).toLowerCase();
-  const signedOrder = await signatureUtils.ecSignOrderAsync(
-    environment.eth.currentProvider,
-    order,
-    orderSigner,
-  );
-
-  const signatureTyped =
-    signedOrder.makerAddress.toLowerCase() === orderSigner
-      ? signedOrder
-      : {
-          ...signedOrder,
-          signature: `${signedOrder.signature.slice(0, -1)}${
-            SignatureType.PreSigned
-          }`,
-        };
-
-  return signatureTyped;
-};
-
 const isValidSignatureOffChain = async (
   environment: Environment,
   order: Order,
@@ -158,4 +128,4 @@ const isValidSignatureOffChain = async (
   );
 };
 
-export { createOrder, signOrder, approveOrder, isValidSignatureOffChain };
+export { createOrder, approveOrder, isValidSignatureOffChain };

@@ -1,5 +1,4 @@
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils, assetDataUtils, Order } from '@0x/order-utils';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
@@ -26,6 +25,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { BigNumber } from 'bignumber.js';
 import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { getLatestBlock } from '~/utils/evm';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -151,6 +151,7 @@ test('investor gets initial ethToken for testing)', async () => {
   );
 });
 
+// tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
   const offeredValue = new BigInteger(10 ** 18);
   const wantedShares = new BigInteger(10 ** 18);

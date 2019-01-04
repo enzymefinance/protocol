@@ -2,9 +2,9 @@ import { createQuantity } from '@melonproject/token-math/quantity';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import {
   createOrder,
-  signOrder,
   approveOrder,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';

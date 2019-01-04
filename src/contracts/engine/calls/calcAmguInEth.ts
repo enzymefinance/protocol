@@ -18,12 +18,9 @@ const calcAmguInEth = async (
   const engineAddress = await getEngine(environment, contractAddress);
   const priceSourceAddress = await getPriceSource(environment, contractAddress);
   const mlnPerAmgu = await getAmguPrice(environment, engineAddress);
-  const ethPerMln = await getPrices(
-    environment,
-    priceSourceAddress,
-    [amguToken],
-    false,
-  );
+  const ethPerMln = await getPrices(environment, priceSourceAddress, [
+    amguToken,
+  ]);
 
   return createQuantity(
     'ETH',
