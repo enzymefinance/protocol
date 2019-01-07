@@ -113,7 +113,6 @@ export const constructEnvironment = ({
     eth,
     logger,
     options,
-    provider,
     track,
     wallet,
   };
