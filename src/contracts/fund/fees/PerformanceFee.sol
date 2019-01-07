@@ -37,7 +37,7 @@ contract PerformanceFee is DSMath, Fee {
         uint gav = accounting.calcGav();
         uint gavPerShare = shares.totalSupply() > 0 ? accounting.valuePerShare(gav, shares.totalSupply())
             : accounting.DEFAULT_SHARE_PRICE();
-        if (gavPerShare > highWaterMark[msg.sender] && gav != 0) {
+        if (gavPerShare > highWaterMark[msg.sender] && gav != 0 && shares.totalSupply() != 0) {
             uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
             uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
             uint feeInAsset = mul(totalGain, performanceFeeRate[msg.sender]) / DIVISOR;
