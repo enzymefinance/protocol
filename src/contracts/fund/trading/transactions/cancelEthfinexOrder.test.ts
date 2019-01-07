@@ -9,14 +9,12 @@ import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls
 import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 import { Exchanges } from '~/Contracts';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import {
-  createOrder,
-  signOrder,
-  fillOrder,
-} from '~/contracts/exchanges/third-party/0x';
 
 import { makeEthfinexOrder } from './makeEthfinexOrder';
 import { cancelEthfinexOrder } from './cancelEthfinexOrder';
+import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 const shared: any = {};
 

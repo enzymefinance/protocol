@@ -1,13 +1,6 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 
-// tslint:disable:max-line-length
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import {
-  createOrder,
-  signOrder,
-  fillOrder,
-} from '~/contracts/exchanges/third-party/0x';
-
 import { makeEthfinexOrder } from './makeEthfinexOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
@@ -17,7 +10,9 @@ import { getHub } from '../../hub/calls/getHub';
 import { getRoutes } from '../../hub/calls/getRoutes';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-// tslint:enable:max-line-length
+import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 const shared: any = {};
 
@@ -54,6 +49,7 @@ beforeAll(async () => {
   });
 });
 
+// tslint:disable-next-line:max-line-length
 test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
   const hubAddress = await getHub(shared.env, shared.routes.tradingAddress);
   const { vaultAddress } = await getRoutes(shared.env, hubAddress);
