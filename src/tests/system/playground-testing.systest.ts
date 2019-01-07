@@ -23,18 +23,27 @@ import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
+import { allLogsWritten } from '../utils/testLogger';
+import { Tracks } from '~/utils/environment/Environment';
 
 expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:playground');
 
 describe('playground', () => {
+  afterAll(async () => {
+    await allLogsWritten();
+  });
+
   test('Happy path', async () => {
-    const master = await getSystemTestEnvironment();
+    const master = await getSystemTestEnvironment(Tracks.TESTING);
 
     const log = getLog(master);
 
     const { melonContracts } = master.deployment;
+
+    const matchingMarket =
+      master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     const manager = withNewAccount(master);
     const trader = withNewAccount(master);
@@ -46,12 +55,9 @@ describe('playground', () => {
     const weth = getTokenBySymbol(manager, 'WETH');
     const mln = getTokenBySymbol(manager, 'MLN');
 
-    const matchingMarket =
-      master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
-
     await update(master, melonContracts.priceSource, [
       createPrice(createQuantity(weth, 1), createQuantity(weth, 1)),
-      createPrice(createQuantity(mln, 1), createQuantity(weth, 2)),
+      createPrice(createQuantity(mln, 1), createQuantity(weth, 0.05)),
     ]);
 
     const mlnPrice = await getPrice(
@@ -90,12 +96,19 @@ describe('playground', () => {
       value: quantity.quantity.toString(),
     });
 
-    const routes = await setupInvestedTestFund(manager);
-
     const order = await makeOrderFromAccountOasisDex(trader, matchingMarket, {
       buy: createQuantity(weth, 0.1),
-      sell: createQuantity(mln, 2),
+      sell: createQuantity(mln, 1),
     });
+
+    const routes = await setupInvestedTestFund(manager);
+
+    const preCalculations = await performCalculations(
+      manager,
+      routes.accountingAddress,
+    );
+
+    log.debug({ preCalculations });
 
     await takeOasisDexOrder(manager, routes.tradingAddress, {
       id: order.id,
@@ -111,9 +124,6 @@ describe('playground', () => {
 
     log.debug({ calculations });
 
-    expect(calculations.gav).toBeTrueWith(isEqual, createQuantity(weth, 4.9));
-
-    const a = 1;
-    expect(a).toBe(1);
+    expect(calculations.gav).toBeTrueWith(isEqual, createQuantity(weth, 0.95));
   });
 });

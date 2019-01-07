@@ -8,6 +8,7 @@ import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-m
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
 import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { registerExchange } from '~/contracts/version/transactions/registerExchange';
+import { updateExchange } from '~/contracts/version/transactions/updateExchange';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
 import { deployFundRanking } from '~/contracts/factory/transactions/deployFundRanking';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
@@ -79,8 +80,8 @@ export type MelonContractsDraft = Partial<MelonContracts>;
 export const deployAllContractsConfig = JSON.parse(`{
   "priceSource": "DEPLOY",
   "adapters": {
-    "kyberAdapter": "DEPLOY",
     "ethfinexAdapter": "DEPLOY",
+    "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
     "zeroExAdapter": "DEPLOY"
   },
@@ -174,11 +175,11 @@ export const deploySystem = async (
   const monthInSeconds = 30 * 24 * 60 * 60;
 
   const environmentWithDeployment = await R.pipe(
-    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
-      deployKyberAdapter(environment),
-    ),
     maybeDeploy(['adapters', 'ethfinexAdapter'], environment =>
       deployEthfinexAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'kyberAdapter'], environment =>
+      deployKyberAdapter(environment),
     ),
     maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
       deployMatchingMarketAdapter(environment),
@@ -298,7 +299,7 @@ export const deploySystem = async (
     [Exchanges.MatchingMarket]: {
       adapter: melonContracts.adapters.matchingMarketAdapter,
       exchange: thirdPartyContracts.exchanges.matchingMarket,
-      takesCustody: false,
+      takesCustody: true,
     },
     [Exchanges.KyberNetwork]: {
       adapter: melonContracts.adapters.kyberAdapter,
@@ -312,26 +313,40 @@ export const deploySystem = async (
     },
     [Exchanges.Ethfinex]: {
       adapter: melonContracts.adapters.ethfinexAdapter,
-      exchange: thirdPartyContracts.exchanges.ethfinex,
-      takesCustody: false,
+      exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
+      takesCustody: true,
     },
   };
 
-  for (const exchangeConfig of Object.values(exchangeConfigs)) {
+  for (const [exchangeName, exchangeConfig] of R.toPairs(exchangeConfigs)) {
     const exchange = exchangeConfig.exchange.toLowerCase();
 
-    if (!registryInformation.registeredExchanges[exchange]) {
-      await registerExchange(environment, melonContracts.registry, {
-        adapter: exchangeConfig.adapter,
-        exchange: exchangeConfig.exchange,
-        sigs: [
-          FunctionSignatures.makeOrder,
-          FunctionSignatures.takeOrder,
-          FunctionSignatures.cancelOrder,
-        ],
-        takesCustody: exchangeConfig.takesCustody,
-      });
-    }
+    // HACK: Blindly just update all registered exchanges on every deploy
+    // TODO: Check the individual entries (address, adapter, takesCustory, sigs)
+    //       and only update if changed
+    const action = registryInformation.registeredExchanges[exchange]
+      ? updateExchange
+      : registerExchange;
+
+    // Action.name is "execute" for both
+    const actionName = registryInformation.registeredExchanges[exchange]
+      ? 'updateExchange'
+      : 'registerExchange';
+
+    const args = {
+      adapter: exchangeConfig.adapter,
+      exchange: exchangeConfig.exchange,
+      sigs: [
+        FunctionSignatures.makeOrder,
+        FunctionSignatures.takeOrder,
+        FunctionSignatures.cancelOrder,
+      ],
+      takesCustody: exchangeConfig.takesCustody,
+    };
+
+    log.debug(actionName, exchangeName, args);
+
+    await action(environment, melonContracts.registry, args);
   }
 
   for (const asset of thirdPartyContracts.tokens) {

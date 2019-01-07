@@ -10,7 +10,7 @@ import { Address } from '@melonproject/token-math/address';
 import { add, multiply, toBI } from '@melonproject/token-math/bigInteger';
 
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
-import { Environment, LogLevels } from '~/utils/environment/Environment';
+import { Environment } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import {
   prepareTransaction,
@@ -21,6 +21,11 @@ import { ensure } from '~/utils/guards/ensure';
 import { sign } from '../environment/sign';
 import { EnsureError } from '../guards/EnsureError';
 import { getBalance } from '../evm/getBalance';
+import { getLogCurried } from '../environment/getLogCurried';
+
+const getLog = getLogCurried(
+  'melon:protocol:utils:solidity:transactionFactory',
+);
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -179,9 +184,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     params,
     optionsOrCallback = defaultOptions,
   ) => {
-    const log = environment.logger(
-      'melon:protocol:utils:solidity:transactionFactory',
-    );
+    const log = getLog(environment);
 
     const options: Options =
       typeof optionsOrCallback === 'function'
@@ -194,7 +197,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
     const args = await prepareArgs(environment, params, contractAddress);
     const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
-    log(LogLevels.INFO, 'Prepare transaction', txId);
+    log.info('Prepare transaction', txId);
 
     try {
       const contractInstance = getContract(
@@ -264,11 +267,11 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         )}`,
       );
 
-      log(LogLevels.DEBUG, 'Transaction prepared', melonTransaction);
+      log.debug('Transaction prepared', melonTransaction);
 
       return melonTransaction;
     } catch (e) {
-      log(LogLevels.ERROR, txId, e);
+      log.error(txId, e);
 
       if (e instanceof EnsureError) {
         throw e;
@@ -288,9 +291,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     // prepared,
     params,
   ) => {
-    const log = environment.logger(
-      'melon:protocol:utils:solidity:transactionFactory',
-    );
+    const log = getLog(environment);
 
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransactionData)
@@ -298,38 +299,48 @@ const transactionFactory: TransactionFactory = <Args, Result>(
         throw new Error(`Transaction failed for ${name}: ${error.message}`);
       });
 
-    log(LogLevels.DEBUG, `Receipt for ${name}`, receipt);
-
-    const events = receipt.logs.reduce((carry, log) => {
-      const eventABI = eventSignatureABIMap[log.topics[0]];
+    const events = receipt.logs.reduce((carry, txLog) => {
+      const eventABI = eventSignatureABIMap[txLog.topics[0]];
 
       // Ignore event if not found in eventSignaturesABI map;
       if (!eventABI) {
+        log.debug('No Event-ABI found for', txLog);
         return carry;
       }
 
       try {
         const decoded = web3EthAbi.decodeLog(
           eventABI.inputs,
-          log.data !== '0x' && log.data,
-          eventABI.anonymous ? log.topics : log.topics.slice(1),
+          txLog.data !== '0x' && txLog.data,
+          eventABI.anonymous ? txLog.topics : txLog.topics.slice(1),
         );
         const keys = R.map(R.prop('name'), eventABI.inputs);
         const picked = R.pick(keys, decoded);
 
+        const current = R.cond([
+          [
+            Array.isArray,
+            existingEventLog => [...existingEventLog, { returnValues: picked }],
+          ],
+          [R.isNil, R.always({ returnValues: picked })],
+          [
+            R.T,
+            existingEventLog => [existingEventLog, { returnValues: picked }],
+          ],
+        ])(carry[eventABI.name]);
+
         return {
           ...carry,
-          [eventABI.name]: {
-            returnValues: picked,
-          },
+          [eventABI.name]: current,
         };
       } catch (e) {
-        log(LogLevels.WARN, 'Error with parsing logs', eventABI, log, e);
+        log.warn('Error with parsing logs', eventABI, txLog, e);
         return carry;
       }
     }, {});
 
     receipt.events = events;
+    log.debug(`Receipt for ${name}`, receipt);
 
     const postprocessed = await postProcess(
       environment,

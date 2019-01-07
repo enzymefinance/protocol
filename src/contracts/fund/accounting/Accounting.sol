@@ -125,14 +125,13 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         )
     {
         gav = calcGav();
-        feesInDenominationAsset = FeeManager(routes.feeManager).totalFeeAmount();
+        uint totalSupply = Shares(routes.shares).totalSupply();
+        feesInShares = FeeManager(routes.feeManager).totalFeeAmount();
+        feesInDenominationAsset = (totalSupply == 0) ?
+            0 :
+            mul(feesInShares, gav) / totalSupply;
         nav = calcNav(gav, feesInDenominationAsset);
 
-        uint totalSupply = Shares(routes.shares).totalSupply();
-        // The value of feesInDenominationAsset measured in shares of this fund at current value
-        feesInShares = (gav == 0) ?
-            0 :
-            mul(totalSupply, feesInDenominationAsset) / gav;
         // The total share supply including the value of feesInDenominationAsset, measured in shares of this fund
         uint totalSupplyAccountingForFees = add(totalSupply, feesInShares);
         sharePrice = (totalSupply > 0) ?

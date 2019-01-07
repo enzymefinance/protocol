@@ -1,45 +1,47 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2018-12-27T16:49:08.477Z",
+    "timestamp": "2018-12-31T12:36:12.613Z",
     "track": "testing",
     "version": "0.9.0-alpha.23",
     "chain": 42
   },
   "melonContracts": {
-    "priceSource": "0x119D38a7B7774Cf2BfB11B813Ad70f7b004aBc03",
+    "priceSource": "0xC00fd1a028f11256403A58092f1a598bdB43a3dE",
     "adapters": {
-      "kyberAdapter": "0xe72666020dC30d1Cf0D6B81c1DA54fadecC02119",
-      "matchingMarketAdapter": "0x5f44bEDfF3f3801dfc4DA6DDb9E11DB142607fF3",
-      "zeroExAdapter": "0x66b2A28c0e2e5E0c8b9fe0e29e02f780992A4F5d"
+      "kyberAdapter": "0x5a403F093f66806D37622077e2D6D461228cD971",
+      "ethfinexAdapter": "0xF78b70a85FEB533FD35D7fF8EEdc762CA08d05B4",
+      "matchingMarketAdapter": "0x1E8abEC83c5573f1dC91580DeC3247FC62ac54be",
+      "zeroExAdapter": "0x3917B4156E83F3267c8c23f1A81c7E5BA946E0e4"
     },
     "policies": {
-      "priceTolerance": "0xAFC00e064718fF75208E52719c2C7174843b1BEa",
-      "userWhitelist": "0xbCf8853D7821481d9ff911F9EeBc76b68ffF33F7"
+      "priceTolerance": "0x10492a748a65A8B70b63cb9E0f4748c2954E35CD",
+      "userWhitelist": "0x202119A5926B261c57880B200760DF9ABF043579"
     },
     "factories": {
-      "accountingFactory": "0x9E8a629E90E4e354792a05Bb680062868f20a99a",
-      "feeManagerFactory": "0xfdca2AE17D9a1c5f7A1d50fB805E7Cd54C0Ac5aE",
-      "participationFactory": "0x85cEeC6858D6DD289327E311007fC0df78A337e5",
-      "policyManagerFactory": "0x1Ea386Dca6EaBF8Ca6D749C74E196672f91AC76c",
-      "sharesFactory": "0x337C74a27b1eeCA29762D8d0c684022D2157146D",
-      "tradingFactory": "0x6e5cb65afAAc4c7465A507c756e94Ad965Aee3BE",
-      "vaultFactory": "0x01bf93Ec48072eb84FC56aFD4cE9B89088d95a7C"
+      "accountingFactory": "0x955eFaE18A4D57bA6208346709a5604eeB5D9038",
+      "feeManagerFactory": "0x36041f4F5d7d8413FeFdC0908FaaBde7c629c1f2",
+      "participationFactory": "0x9A4E744D6a5Fde2e634bEF0E4Fe8F65a2c821965",
+      "policyManagerFactory": "0x886F02c04dAbbB3848cb815Def8f34C62501C835",
+      "sharesFactory": "0xD2979096e1534284B5e3270baF1749027c0af878",
+      "tradingFactory": "0x27c343632fB90205CE5d1D159065B0dDF2D95A38",
+      "vaultFactory": "0xadc7B5749CF8677EE5a7a73d10472850E1909Be0"
     },
-    "engine": "0x0C777708f6D6Bbfb80fc054342A6cEeC22188184",
-    "registry": "0xC8B8f0b0578C4885E8beE649bD49d7f8FB601fE4",
-    "version": "0x531d90f930E06c3C550582C273E1E871f6A7AA83",
-    "ranking": "0xa75Cb60aE273dD933EC3577a89822A85Ec362d44"
+    "engine": "0xeB3cCB3dF85b03C8E2D7033069c724Fddfa1D2bB",
+    "registry": "0xB4e5a19a90e0368779E93e50807b9BD67A6b030D",
+    "version": "0x03e03d0E128dF376FcE6EBf8DF9A8baeD0b920b2",
+    "ranking": "0x4e0947609cA44e85108680ef242073f25F801d84"
   },
   "thirdPartyContracts": {
     "exchanges": {
       "kyber": {
         "conversionRates": "0xEddEeC7f5da5df29722D3252FC542E77D115a378",
-        "kyberNetwork": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
-        "kyberNetworkProxy": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA"
+        "kyberNetwork": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA",
+        "kyberNetworkProxy": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df"
       },
-      "matchingMarket": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
-      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2"
+      "matchingMarket": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
+      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "ethfinex": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9"
     },
     "tokens": [
       {
@@ -142,18 +144,23 @@
   },
   "exchangeConfigs": {
     "MatchingMarket": {
-      "adapter": "0x5f44bEDfF3f3801dfc4DA6DDb9E11DB142607fF3",
-      "exchange": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
+      "adapter": "0x1E8abEC83c5573f1dC91580DeC3247FC62ac54be",
+      "exchange": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
       "takesCustody": false
     },
     "KyberNetwork": {
-      "adapter": "0xe72666020dC30d1Cf0D6B81c1DA54fadecC02119",
-      "exchange": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA",
+      "adapter": "0x5a403F093f66806D37622077e2D6D461228cD971",
+      "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
       "takesCustody": false
     },
     "ZeroEx": {
-      "adapter": "0x66b2A28c0e2e5E0c8b9fe0e29e02f780992A4F5d",
+      "adapter": "0x3917B4156E83F3267c8c23f1A81c7E5BA946E0e4",
       "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "takesCustody": false
+    },
+    "Ethfinex": {
+      "adapter": "0xF78b70a85FEB533FD35D7fF8EEdc762CA08d05B4",
+      "exchange": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9",
       "takesCustody": false
     }
   }

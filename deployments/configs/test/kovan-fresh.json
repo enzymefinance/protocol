@@ -2,27 +2,28 @@
   "melonContracts": {
     "priceSource": "DEPLOY",
     "adapters": {
-      "kyberAdapter": "DEPOLY",
-      "matchingMarketAdapter": "DEPOLY",
-      "zeroExAdapter": "DEPOLY"
+      "kyberAdapter": "DEPLOY",
+      "ethfinexAdapter": "DEPLOY",
+      "matchingMarketAdapter": "DEPLOY",
+      "zeroExAdapter": "DEPLOY"
     },
     "policies": {
-      "priceTolerance": "DEPOLY",
-      "userWhitelist": "DEPOLY"
+      "priceTolerance": "DEPLOY",
+      "userWhitelist": "DEPLOY"
     },
     "factories": {
-      "accountingFactory": "DEPOLY",
-      "feeManagerFactory": "DEPOLY",
-      "participationFactory": "DEPOLY",
-      "policyManagerFactory": "DEPOLY",
-      "sharesFactory": "DEPOLY",
-      "tradingFactory": "DEPOLY",
-      "vaultFactory": "DEPOLY"
+      "accountingFactory": "DEPLOY",
+      "feeManagerFactory": "DEPLOY",
+      "participationFactory": "DEPLOY",
+      "policyManagerFactory": "DEPLOY",
+      "sharesFactory": "DEPLOY",
+      "tradingFactory": "DEPLOY",
+      "vaultFactory": "DEPLOY"
     },
-    "engine": "DEPOLY",
-    "registry": "DEPOLY",
-    "version": "DEPOLY",
-    "ranking": "DEPOLY"
+    "engine": "DEPLOY",
+    "registry": "DEPLOY",
+    "version": "DEPLOY",
+    "ranking": "DEPLOY"
   },
   "thirdPartyContracts": {
     "exchanges": {
@@ -31,8 +32,9 @@
         "kyberNetwork": "0xF27dbBeA1856f18142cDD3B575146199f7f3a7eA",
         "kyberNetworkProxy": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df"
       },
-      "matchingMarket": "0xdB3b642eBc6Ff85A3AB335CFf9af2954F9215994",
-      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2"
+      "matchingMarket": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
+      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "ethfinex": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9"
     },
     "tokens": [
       {
