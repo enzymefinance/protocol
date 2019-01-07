@@ -36,6 +36,10 @@ export interface CreateOrderArgs {
   takerFee?: BigInteger;
 }
 
+/**
+ * For Ethfinex orders: The makerQuantity.token has to be the
+ * Ethfinex Wrapper contract
+ */
 const createOrder = async (
   environment: Environment,
   exchange: Address,

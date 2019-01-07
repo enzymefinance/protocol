@@ -12,6 +12,7 @@ import {
   KyberEnvironment,
 } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
+import { deployEthfinex } from '~/contracts/exchanges/transactions/deployEthfinex';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
@@ -22,7 +23,7 @@ export interface ThirdPartyContracts {
     kyber: KyberEnvironment;
     matchingMarket: Address;
     zeroEx: Address;
-    ethfinex: Address;
+    ethfinex: any;
   };
   tokens: TokenInterface[];
 }
@@ -84,7 +85,9 @@ const deployThirdParty = async (
     deployedTokens.find(t => t.symbol === 'EUR'),
   ]);
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
-  const ethfinex = await deploy0xExchange(environment, { zrxToken });
+  const ethfinex = await deployEthfinex(environment, {
+    tokens: deployedTokens,
+  });
 
   return {
     exchanges: {
