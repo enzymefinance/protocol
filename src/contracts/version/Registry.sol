@@ -55,7 +55,7 @@ contract Registry is DSAuth {
 
     struct Version {
         bool exists;
-        string name;
+        bytes32 name;
     }
 
     // FIELDS
@@ -69,6 +69,7 @@ contract Registry is DSAuth {
     address[] public registeredVersions;
 
     mapping (address => address) public fundsToVersions;
+    mapping (bytes32 => bool) public versionNameExists;
 
     uint public constant MAX_REGISTERED_ENTITIES = 20;
 
@@ -158,10 +159,13 @@ contract Registry is DSAuth {
     /// @param _name Name of the version
     function registerVersion(
         address _version,
-        string _name
+        bytes32 _name
     ) auth {
         require(!versionInformation[_version].exists);
+        require(!versionNameExists[_name]);
         versionInformation[_version].exists = true;
+        versionNameExists[_name] = true;
+        versionInformation[_version].name = _name;
         registeredVersions.push(_version);
         assert(versionInformation[_version].exists);
         emit VersionRegistration(_version);
