@@ -8,6 +8,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
+import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
@@ -72,7 +73,7 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   const feePeriods = fees.map(f => `${f.feePeriod}`);
 
   const args = [
-    fundName,
+    stringToBytes32(fundName),
     feeAddresses,
     feeRates,
     feePeriods,

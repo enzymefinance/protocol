@@ -70,6 +70,7 @@ contract Registry is DSAuth {
 
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
+    mapping (bytes32 => address) public fundNameHashToOwner;
 
     uint public constant MAX_REGISTERED_ENTITIES = 20;
 
@@ -83,12 +84,20 @@ contract Registry is DSAuth {
 
     // PUBLIC METHODS
 
-    function registerFund(address _fund) {
+    function registerFund(address _fund, address _owner, string _name) {
         require(
             versionInformation[msg.sender].exists,
             "Only a Version can register a fund"
         );
+        bytes32 nameHash = keccak256(_name);
+        require(
+            fundNameHashToOwner[nameHash] == address(0) ||
+            fundNameHashToOwner[nameHash] == _owner,
+            "Fund name already exists"
+        );
+
         fundsToVersions[_fund] = msg.sender;
+        fundNameHashToOwner[nameHash] = _owner;
     }
 
     /// @notice Registers an Asset information entry
