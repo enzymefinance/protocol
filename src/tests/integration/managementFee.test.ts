@@ -149,13 +149,10 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
   );
   const expectedPreDilutionFeeShares = divide(
     multiply(
-      preTotalSupply,
-      divide(
-        multiply(s.managementFeeRate, subtract(payoutTime, fundCreationTime)),
-        s.yearInSeconds,
-      ),
+      divide(multiply(preTotalSupply, s.managementFeeRate), precisionUnits),
+      subtract(payoutTime, fundCreationTime),
     ),
-    precisionUnits,
+    s.yearInSeconds,
   );
   const expectedFeeShares = divide(
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
@@ -208,13 +205,10 @@ test(`investor redeems his shares`, async () => {
   );
   const expectedPreDilutionFeeShares = divide(
     multiply(
-      preTotalSupply,
-      divide(
-        multiply(s.managementFeeRate, subtract(payoutTime, fundCreationTime)),
-        s.yearInSeconds,
-      ),
+      divide(multiply(preTotalSupply, s.managementFeeRate), precisionUnits),
+      subtract(payoutTime, fundCreationTime),
     ),
-    precisionUnits,
+    s.yearInSeconds,
   );
   const expectedFeeShares = divide(
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
@@ -228,11 +222,28 @@ test(`investor redeems his shares`, async () => {
   const postTotalSupply = new BigInteger(
     await s.fund.shares.methods.totalSupply().call(),
   );
+  // const expectedFeeShareProportion = divide(
+  //   multiply(expectedFeeShares, precisionUnits),
+  //   add(preTotalSupply, expectedFeeShares),
+  // );
 
   expect(postTotalSupply).toEqual(
     add(subtract(preTotalSupply, investorShares), expectedFeeShares),
   );
-  expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
-  expect(post.fund.weth).toEqual(new BigInteger(0));
-  expect(postFundGav).toEqual(new BigInteger(0));
+  // expect(post.investor.weth).toEqual(
+  //   add(
+  //     pre.investor.weth,
+  //     divide(
+  //       multiply(
+  //         pre.fund.weth,
+  //         subtract(precisionUnits, expectedFeeShareProportion),
+  //       ),
+  //       precisionUnits,
+  //     ),
+  //   ),
+  // );
+  expect(post.fund.weth).toEqual(
+    subtract(pre.fund.weth, subtract(post.investor.weth, pre.investor.weth)),
+  );
+  expect(postFundGav).toEqual(post.fund.weth);
 });
