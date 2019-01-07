@@ -25,6 +25,12 @@ import { performCalculations } from '~/contracts/fund/accounting/calls/performCa
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { allLogsWritten } from '../utils/testLogger';
 import { Tracks } from '~/utils/environment/Environment';
+import {
+  createOrder,
+  approveOrder,
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+import { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
 
 expect.extend({ toBeTrueWith });
 
@@ -44,6 +50,8 @@ describe('playground', () => {
 
     const matchingMarket =
       master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
+
+    const zeroEx = master.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
     const manager = await withNewAccount(master);
     const trader = await withNewAccount(master);
@@ -125,5 +133,21 @@ describe('playground', () => {
     log.debug({ calculations });
 
     expect(calculations.gav).toBeTrueWith(isEqual, createQuantity(weth, 0.95));
+
+    const unsignedZeroExOrder = await createOrder(trader, zeroEx, {
+      makerQuantity: createQuantity(mln, 1),
+      takerQuantity: createQuantity(weth, 0.1),
+    });
+    const signedZeroExOrder = await signOrder(trader, unsignedZeroExOrder);
+    await approveOrder(trader, zeroEx, signedZeroExOrder);
+
+    const filledOrder = await take0xOrder(manager, routes.tradingAddress, {
+      signedOrder: signedZeroExOrder,
+    });
+
+    expect(filledOrder.makerFilledAmount).toBeTrueWith(
+      isEqual,
+      createQuantity(mln, 1),
+    );
   });
 });
