@@ -22,7 +22,6 @@ import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
@@ -134,10 +133,9 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
   const preTotalSupply = new BigInteger(
     await s.fund.shares.methods.totalSupply().call(),
   );
-  const preFundCalculations = await performCalculations(
-    s.environment,
-    s.fund.accounting.options.address,
-  );
+  const preFundCalculations = await s.fund.accounting.methods
+    .performCalculations()
+    .call();
 
   await s.fund.feeManager.methods
     .rewardManagementFee()
@@ -158,7 +156,6 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
     subtract(preTotalSupply, expectedPreDilutionFeeShares),
   );
-
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postManagerShares = new BigInteger(
     await s.fund.shares.methods.balanceOf(s.manager).call(),
@@ -166,10 +163,9 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
   const postTotalSupply = new BigInteger(
     await s.fund.shares.methods.totalSupply().call(),
   );
-  const postFundCalculations = await performCalculations(
-    s.environment,
-    s.fund.accounting.options.address,
-  );
+  const postFundCalculations = await s.fund.accounting.methods
+    .performCalculations()
+    .call();
 
   expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
   expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
@@ -177,6 +173,76 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
   // expect(postFundCalculations.sharePrice).toEqual(
   //   preFundCalculations.sharePrice,
   // );
+  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.manager.weth).toEqual(pre.manager.weth);
+});
+
+test(`Claims fee using triggerRewardAllFees`, async () => {
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const preManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const lastFeeConversion = new BigInteger(
+    await s.managementFee.methods
+      .lastPayoutTime(s.fund.feeManager.options.address)
+      .call(),
+  );
+  const preTotalSupply = new BigInteger(
+    await s.fund.shares.methods.totalSupply().call(),
+  );
+  const preFundCalculations = await s.fund.accounting.methods
+    .performCalculations()
+    .call();
+
+  await s.fund.accounting.methods
+    .triggerRewardAllFees()
+    .send({ from: s.manager, gas: s.gas });
+  const payoutTime = new BigInteger(
+    await s.managementFee.methods
+      .lastPayoutTime(s.fund.feeManager.options.address)
+      .call(),
+  );
+  const expectedPreDilutionFeeShares = divide(
+    multiply(
+      divide(multiply(preTotalSupply, s.managementFeeRate), precisionUnits),
+      subtract(payoutTime, lastFeeConversion),
+    ),
+    s.yearInSeconds,
+  );
+  const expectedFeeShares = divide(
+    multiply(preTotalSupply, expectedPreDilutionFeeShares),
+    subtract(preTotalSupply, expectedPreDilutionFeeShares),
+  );
+  const expectedFeeInDenominationAsset = divide(
+    multiply(expectedFeeShares, preFundCalculations.gav),
+    preTotalSupply,
+  );
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const postManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const postTotalSupply = new BigInteger(
+    await s.fund.shares.methods.totalSupply().call(),
+  );
+  const postFundCalculations = await s.fund.accounting.methods
+    .performCalculations()
+    .call();
+  const lastConversionCalculations = await s.fund.accounting.methods
+    .atLastAllocation()
+    .call();
+
+  expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
+  expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
+  expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
+  // expect(postFundCalculations.sharePrice).toEqual(
+  //   preFundCalculations.sharePrice,
+  // );
+  // expect(new BigInteger(preFundCalculations.feesInDenominationAsset)).toBe(
+  //   expectedFeeInDenominationAsset,
+  // );
+  expect(new BigInteger(lastConversionCalculations.allocatedFees)).toEqual(
+    expectedFeeInDenominationAsset,
+  );
   expect(post.fund.weth).toEqual(pre.fund.weth);
   expect(post.manager.weth).toEqual(pre.manager.weth);
 });
